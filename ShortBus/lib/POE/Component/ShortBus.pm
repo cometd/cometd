@@ -117,7 +117,7 @@ sub _poe_shutdown {
 }
 
 # Session management.  When the session starts, set an alias on it to
-# match the PCBT object.  Any PCTB method can post to the session with
+# match the object.  Any object method can then post to the session with
 # little or no fuss.
 
 sub _poe_start {
