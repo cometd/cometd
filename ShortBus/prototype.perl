@@ -3,8 +3,8 @@
 use warnings;
 use strict;
 
-our $VERSION;
-$VERSION = do {my($r)=(q$Revision$=~/(\d+)/);sprintf"1.%04d",$r};
+#our $VERSION;
+#$VERSION = do {my($r)=(q$Revision$=~/(\d+)/);sprintf"1.%04d",$r};
 
 use lib "./lib";
 
