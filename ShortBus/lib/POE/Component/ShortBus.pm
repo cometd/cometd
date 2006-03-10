@@ -37,7 +37,7 @@ sub new {
 
     $self->_session_start();
 
-    $self->_routers_start();
+    $self->_plugins_start();
 
     $self;
 }
@@ -80,6 +80,9 @@ sub _session_start {
 
                 # Event notification.
                 notify        => "_poe_notify",
+                
+                plugin_start  => "_poe_plugin_start",
+                add_plugin    => "_poe_add_plugin",
             },
         ],
     );
@@ -126,10 +129,27 @@ sub _poe_start {
     $kernel->alias_set("$self");
 }
 
-sub _routers_start {
+sub _plugins_start {
     my $self = shift;
-    
-    
+    $poe_kernel->call("$self", "plugins_start", @_);
+}
+
+sub _poe_plugins_start {
+    my ($self, $kernel, $sender) = @_[ OBJECT, KERNEL, SENDER ];
+
+}
+
+sub add_plugin {
+    my $self = shift;
+    $poe_kernel->call("$self", "add_plugin", @_);
+}
+
+sub _poe_add_plugin {
+    my ($self, $kernel, $plugin) = @_[ OBJECT, KERNEL, ARG0 ];
+    eval "use $plugin;";
+    if ($@) {
+        warn $@;
+    }        
 }
 
 sub register {

@@ -22,15 +22,14 @@ $poe_kernel->run();
 sub start {
     my ( $kernel, $heap ) = @_[ KERNEL, HEAP ];
 
-    my $ui = $heap->{ui} = ShortBus::Interface->new();
-    my $bus = $heap->{b} = POE::Component::ShortBus->new({
-        BindAddress => '0.0.0.0',
-        BindPort => '2020',
-    });
+#    my $ui = $heap->{ui} = ShortBus::Interface->new();
+    my $bus = $heap->{b} = POE::Component::ShortBus->new();
+#    $ui->add_bus( $bus );
 
-    $bus->add_router( ShortBus::Socket->new() );
+    $bus->register();
 
-    $ui->add_bus( $bus );
+    $bus->add_plugin( "POE::Component::ShortBus::Plugin::TCP" );
+
 }
 
 sub trace_unknown {
@@ -49,14 +48,14 @@ exit;
 
 {
 
-package ShortBus::Socket;
+package POE::Component::ShortBus::Plugin::TCP;
 
 use warnings;
 use strict;
 
 sub new {
     my $class = shift;
-    return bless [], $class;
+    return bless {}, $class;
 }
 
 our $AUTOLOAD;
@@ -79,7 +78,7 @@ use strict;
 
 sub new {
     my $class = shift;
-    return bless [], $class;
+    return bless {}, $class;
 }
 
 our $AUTOLOAD;
