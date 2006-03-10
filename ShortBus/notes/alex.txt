@@ -1,0 +1,73 @@
+Sorry for the lag. I didn't forget = )
+
+So given that in POE we're blessed with a server environment that won't 
+fall over when presented w/ thousands of zombie connections, here's how 
+I propose we tackle the problem of low-latency message passing to the 
+browser. The server side (for now) can just be a dumb event router. No 
+guaranteed delivery, no guaranteed event delivery (although uniqueness 
+would be good to assure).
+
+1.) the client (browser) initializes a connection for communication. All 
+data will be send to the client over this connection. Should this 
+connection fail, the client will attempt to re-connect. The protocol 
+for identification and reconnection is TBD. At initialization, the 
+client will supply a tunnel format (perhaps in a GET param?). The 
+specified tunnel format will determine which set of strf-able strings 
+will be used for:
+
+	* connection-open header
+	* message envelope
+	* keepalive message
+	* connection-close footer
+
+At tunnel initialization, the client is assigned a unique client ID 
+(usually transmitted in the header). Clients may also be assigned a 
+unique path in the event delivery path cloud. Tunnel initializaiton 
+requests will carry a "new tunnel request" flag in order to distinguish 
+them from tunnel re-connect attempts. Authentication and authorization 
+for setup happens before tunnel initialization and the server may delay 
+tunnel opening and tunnel ID assignment until it is complete.
+
+2.) the server multiplexes outgoing content over the connection via a 
+standard datagram format. The payload is a JSON message that specifies 
+routing information and a data payload. The data payload is an opaque, 
+JSON encoded string, or optinoally, a JSON object.
+
+3.) datagrams are sent over the connection as they become available on 
+the server. Each datagram is wrapped in the envelope specified by the 
+the tunnel type. Tunnel types may also require further encoding of 
+outgoing content.
+
+4.) all outgoing datagrams are given a unique ID. Repeated datagrams may 
+contain the same ID (which is useful for clients to prevent 
+re-delivery). Datagrams also specify a "delivery path". Typically this 
+will either be a path directed at the current client's open tunnel or a 
+path to which the current client is subscribed.
+
+5.) once intitialization is complete, clients may send "path interest 
+registration" messages to the server. These messages inform the server 
+to send messages subsequently published to that path (and optionally, 
+subpaths) to the requesting tunnel.
+
+6.) at a transport-specified interval, a keep-alive message may be sent. 
+
+7.) clients provide new events to the server via GET or POST to a 
+different endpoint URL. These messages follow the same datagram format 
+as outbound requests but do not contain a tunnel evenlope. 
+Client-provided events always include the tunnel ID.
+
+8.) should the client lose it's connection, it will attempt to 
+re-connect to the same tunnel ID as it was originally assigned.
+
+9.) the server shall cull inactive tunnels after a server-defined 
+timeout. Subsequent tunnel re-attach attempts will force new-tunnel 
+creation and assignment of a new tunnel ID. 
+Authentication/authorization may once again be enforced as a 
+pre-requisite.
+
+Regards
+
+-- 
+Alex Russell
+alex@jot.com
+alex@dojotoolkit.org BE03 E88D EABB 2116 CC49 8259 CF78 E242 59C3 9723
