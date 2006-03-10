@@ -81,7 +81,7 @@ sub _session_start {
                 # Event notification.
                 notify        => "_poe_notify",
                 
-                plugin_start  => "_poe_plugin_start",
+                plugin_start  => "_poe_plugins_start",
                 add_plugin    => "_poe_add_plugin",
             },
         ],
@@ -136,7 +136,7 @@ sub _plugins_start {
 
 sub _poe_plugins_start {
     my ($self, $kernel, $sender) = @_[ OBJECT, KERNEL, SENDER ];
-
+    # needed?
 }
 
 sub add_plugin {
