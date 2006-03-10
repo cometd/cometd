@@ -1,4 +1,4 @@
-package POE::Component::ShortBus::Plugin::TCP;
+package POE::Component::ShortBus::Plugin::Client::TCP;
 
 use warnings;
 use strict;
