@@ -8,15 +8,9 @@ use strict;
 
 use Carp qw( carp croak );
 
-use Socket qw( INADDR_ANY inet_ntoa );
-
-use POE qw( Wheel::ReadWrite );
+use POE;
 
 # constants
-use constant SVR_PORT_DFLT => 8081;
-use constant SVR_ADDR_BIND => "server.addr.bind";
-use constant SVR_PORT_BIND => "server.port.bind";
-use constant SVR_WHEEL     => "server.wheel";
 use constant LST_BY_ID     => "listeners.by_id";
 use constant LST_BY_EVENT  => "listeners.by_event";
 use constant TIMERS        => "timers";
@@ -25,15 +19,6 @@ sub new {
     my ($class, $params) = @_;
 
     my $self = bless { }, $class;
-
-    $self->{+SVR_ADDR_BIND} = delete($params->{BindAddress})
-        if exists $params->{BindAddress};
-    
-    $self->{+SVR_PORT_BIND} = delete($params->{BindPort})
-        if exists $params->{BindPort};
-
-    $self->{+SVR_ADDR_BIND} ||= inet_ntoa(INADDR_ANY);
-    $self->{+SVR_PORT_BIND} ||= SVR_PORT_DFLT;
 
     $self->_session_start();
 
@@ -54,16 +39,6 @@ sub _mutator {
      
     return $self->{$field} if @_ == 2;
     croak "Bad number of parameters";
-}
-
-sub bind_address {
-    my $self = shift;
-    return $self->_mutator(SVR_ADDR_BIND, @_);
-}
-
-sub bind_port {
-    my $self = shift;
-    return $self->_mutator(SVR_PORT_BIND, @_);
 }
 
 sub _session_start {

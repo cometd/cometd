@@ -28,7 +28,8 @@ sub start {
 
     $bus->register();
 
-    $bus->add_plugin( "POE::Component::ShortBus::Plugin::TCP" );
+    $bus->add_plugin( "POE::Component::ShortBus::Plugin::Server::HTTP" );
+    $bus->add_plugin( "POE::Component::ShortBus::Plugin::Client::TCP" );
 
 }
 
