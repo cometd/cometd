@@ -12,12 +12,17 @@ use Carp qw( carp croak );
 
 use POE;
 
+use base qw/Exporter/;
+
 use constant SB_QUEUES        => 'queues';
 use constant SB_NEXT_ID       => 'next_id';
 
-use constant Q_EVENT_ID       => 'event_id';
-use constant Q_QUEUE          => 'queue';
-use constant Q_LISTENER       => 'listener';
+use constant SB_Q_EVENT_ID    => 'event_id';
+use constant SB_Q_QUEUE       => 'queue';
+use constant SB_Q_LISTENER    => 'listener';
+
+our @EXPORT = map { 'SB_RC_'.$_ }
+                  qw/OK ARGS EXISTS NOSUCH ALREADY NOCONN DESTROY DETACH/;
 
 # success
 use constant SB_RC_OK         => 0;
@@ -89,8 +94,8 @@ sub _poe_start {
 }
 
 sub shutdown {
-    my $self = $_[OBJECT];
-    $poe_kernel->call("$self", "shutdown", @_[ARG0 .. $#_]);
+    my $self = shift;
+    $poe_kernel->call("$self", "shutdown", @_);
 }
 
 sub _poe_shutdown {
@@ -105,8 +110,8 @@ sub _poe_shutdown {
 # Queue creation and teardown
 
 sub create {
-    my $self = $_[OBJECT];
-    $poe_kernel->call("$self", "create", @_[ARG0 .. $#_]);
+    my $self = shift;
+    $poe_kernel->call("$self", "create", @_);
 }
 
 sub _poe_create {
@@ -121,15 +126,15 @@ sub _poe_create {
 
     my $queue = $self->{+SB_QUEUES}{$new_id} = { };
 
-    $queue->{+Q_EVENT_ID} = 0;
-    $queue->{+Q_QUEUE} = []; 
+    $queue->{+SB_Q_EVENT_ID} = 0;
+    $queue->{+SB_Q_QUEUE} = []; 
 
     $postback->(+SB_RC_OK, $new_id);
 }        
 
 sub destroy {
-    my $self = $_[OBJECT];
-    $poe_kernel->call("$self", "destroy", @_[ARG0 .. $#_]);
+    my $self = shift;
+    $poe_kernel->call("$self", "destroy", @_);
 }
 
 sub _poe_destroy {
@@ -147,7 +152,7 @@ sub _poe_destroy {
 
     if (my $queue = delete $self->{+SB_QUEUES}{$queue_id}) {
 
-        if (my $listener = $queue->{+Q_LISTENER}) {
+        if (my $listener = $queue->{+SB_Q_LISTENER}) {
 
             $listener->(+SB_RC_DESTROY);
         }
@@ -163,8 +168,8 @@ sub _poe_destroy {
 # Posting messages to a queue
 
 sub post {
-    my $self = $_[OBJECT];
-    $poe_kernel->call("$self", "post", @_[ARG0 .. $#_]);
+    my $self = shift;
+    $poe_kernel->call("$self", "post", @_);
 }
 
 sub _poe_post {
@@ -182,11 +187,11 @@ sub _poe_post {
 
     if (my $queue = $self->{+SB_QUEUES}{$queue_id}) {
 
-        push(@{$queue->{+Q_QUEUE}}, $message_body);
+        push(@{$queue->{+SB_Q_QUEUE}}, $message_body);
 
-        my $event_id = $queue->{+Q_EVENT_ID} + scalar(@{$queue->{+Q_QUEUE}});
+        my $event_id = $queue->{+SB_Q_EVENT_ID} + scalar(@{$queue->{+SB_Q_QUEUE}});
 
-        if (my $listener = $queue->{+Q_LISTENER}) {
+        if (my $listener = $queue->{+SB_Q_LISTENER}) {
 
             $listener->(+SB_RC_OK, $event_id, $message_body);
         }
@@ -202,8 +207,8 @@ sub _poe_post {
 # Connect and disconnect
 
 sub connect {
-    my $self = $_[OBJECT];
-    $poe_kernel->call("$self", "connect", @_[ARG0 .. $#_]);
+    my $self = shift;
+    $poe_kernel->call("$self", "connect", @_);
 }
 
 sub _poe_connect {
@@ -221,17 +226,17 @@ sub _poe_connect {
 
     if (my $queue = $self->{+SB_QUEUES}{$queue_id}) {
 
-        if (exists $queue->{+Q_LISTENER}) {
+        if (exists $queue->{+SB_Q_LISTENER}) {
 
             $postback->(+SB_RC_ALREADY);
 
         } else {
 
-            $queue->{+Q_LISTENER} = $listener;
+            $queue->{+SB_Q_LISTENER} = $listener;
 
-            my $event_id = $queue->{+Q_EVENT_ID};
+            my $event_id = $queue->{+SB_Q_EVENT_ID};
 
-            foreach my $message (@{$queue->{+Q_QUEUE}}) {
+            foreach my $message (@{$queue->{+SB_Q_QUEUE}}) {
 
                 $listener->(+SB_RC_OK, ++$event_id, $message);
             }
@@ -246,8 +251,8 @@ sub _poe_connect {
 }
 
 sub disconnect {
-    my $self = $_[OBJECT];
-    $poe_kernel->call("$self", "disconnect", @_[ARG0 .. $#_]);
+    my $self = shift;
+    $poe_kernel->call("$self", "disconnect", @_);
 }
 
 sub _poe_disconnect {
@@ -265,7 +270,7 @@ sub _poe_disconnect {
 
     if (my $queue = $self->{+SB_QUEUES}{$queue_id}) {
 
-        if (my $listener = delete $queue->{+Q_LISTENER}) {
+        if (my $listener = delete $queue->{+SB_Q_LISTENER}) {
 
             $listener->(+SB_RC_DETACH);
             $postback->(+SB_RC_OK);
@@ -284,8 +289,8 @@ sub _poe_disconnect {
 # Acking delivered messages
 
 sub acknowledge {
-    my $self = $_[OBJECT];
-    $poe_kernel->call("$self", "acknowledge", @_[ARG0 .. $#_]);
+    my $self = shift;
+    $poe_kernel->call("$self", "acknowledge", @_);
 }
 
 sub _poe_acknowledge {
@@ -303,7 +308,7 @@ sub _poe_acknowledge {
 
     if (my $queue = $self->{+SB_QUEUES}{$queue_id}) {
 
-        my $current_id = $queue->{+Q_EVENT_ID};
+        my $current_id = $queue->{+SB_Q_EVENT_ID};
 
         if ($event_id < $current_id) {
 
@@ -317,14 +322,14 @@ sub _poe_acknowledge {
 
             my $clear = $event_id - $current_id;
 
-            if ($clear > scalar(@{$queue->{+Q_QUEUE}})) {
+            if ($clear > scalar(@{$queue->{+SB_Q_QUEUE}})) {
 
                 $postback->(+SB_RC_EID_HIGH);
 
             } else {
 
-                splice(@{$queue->{+Q_QUEUE}}, 0, $clear);
-                $queue->{+Q_EVENT_ID} = $event_id;
+                splice(@{$queue->{+SB_Q_QUEUE}}, 0, $clear);
+                $queue->{+SB_Q_EVENT_ID} = $event_id;
 
                 $postback->(+SB_RC_OK);
             }
@@ -332,11 +337,4 @@ sub _poe_acknowledge {
     }
 }
 
-our $AUTOLOAD;
-sub AUTOLOAD {
-    my $self = shift;
-    warn "$self->$AUTOLOAD(@_)";
-}
-
 1;
-
