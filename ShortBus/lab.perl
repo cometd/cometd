@@ -28,7 +28,7 @@ sub start {
 
     $kernel->refcount_increment($bus->ID, "shortbus");
     
-    $bus->connect();
+#    $bus->connect();
     
     $bus->create($session->postback("created"));
 }
