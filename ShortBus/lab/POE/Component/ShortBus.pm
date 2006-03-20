@@ -14,6 +14,8 @@ use POE;
 
 use base qw/Exporter/;
 
+use constant SB_SESSION_ID    => 'session_id';
+
 use constant SB_QUEUES        => 'queues';
 use constant SB_NEXT_ID       => 'next_id';
 
@@ -22,7 +24,7 @@ use constant SB_Q_QUEUE       => 'queue';
 use constant SB_Q_LISTENER    => 'listener';
 
 our @EXPORT = map { 'SB_RC_'.$_ }
-                  qw/OK ARGS EXISTS NOSUCH ALREADY NOCONN DESTROY DETACH/;
+                  qw/OK ARGS EXISTS NOSUCH ALREADY NOCONN DESTROY DETACH EID_LOW EID_HIGH/;
 
 # success
 use constant SB_RC_OK         => 0;
@@ -63,7 +65,7 @@ sub new {
 sub _session_start {
     my $self = shift;
 
-    POE::Session->create(
+    $self->{+SB_SESSION_ID} = POE::Session->create(
         object_states => [
             $self => {
                 _start        => "_poe_start",
@@ -78,9 +80,13 @@ sub _session_start {
                 acknowledge   => "_poe_acknowledge",
             },
         ],
-    );
+    )->ID;
 
     undef;
+}
+
+sub ID {
+    return shift->{+SB_SESSION_ID};
 }
 
 # Session management.  When the session starts, set an alias on it to
