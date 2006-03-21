@@ -125,7 +125,7 @@ sub _poe_create {
         = @_[ OBJECT, KERNEL, ARG0 ];
 
     unless (ref($postback) eq 'CODE') {
-        return; # XXX
+        $postback = $_[SENDER]->postback($postback || "create");
     }
 
     my $new_id = $self->{+SB_NEXT_ID}++;
@@ -136,6 +136,7 @@ sub _poe_create {
     $queue->{+SB_Q_QUEUE} = []; 
 
     $postback->(+SB_RC_OK, $new_id);
+    return ( +SB_RC_OK, $new_id );
 }        
 
 sub destroy {
@@ -148,12 +149,12 @@ sub _poe_destroy {
         = @_[ OBJECT, KERNEL, ARG0, ARG1 ];
 
     unless (ref($postback) eq 'CODE') {
-        return; # XXX
+        $postback = $_[SENDER]->postback($postback || "destroy");
     }
 
     unless (defined $queue_id) {
         $postback->(+SB_RC_ARGS);
-        return;
+        return +SB_RC_ARGS;
     }
 
     if (my $queue = delete $self->{+SB_QUEUES}{$queue_id}) {
@@ -164,10 +165,13 @@ sub _poe_destroy {
         }
 
         $postback->(+SB_RC_OK);
-
+        return +SB_RC_OK;
+        
     } else {
 
         $postback->(+SB_RC_NOSUCH);
+        return +SB_RC_NOSUCH;
+        
     }
 }
 
@@ -183,12 +187,12 @@ sub _poe_post {
         = @_[ OBJECT, KERNEL, ARG0, ARG1, ARG2 ];
 
     unless (ref($postback) eq 'CODE') {
-        return; # XXX
+        $postback = $_[SENDER]->postback($postback || "post");
     }
 
     unless (defined $queue_id && defined $message_body) {
         $postback->(+SB_RC_ARGS);
-        return;
+        return +SB_RC_ARGS;
     }
 
     if (my $queue = $self->{+SB_QUEUES}{$queue_id}) {
@@ -203,10 +207,13 @@ sub _poe_post {
         }
 
         $postback->(+SB_RC_OK, $event_id);
-
+        return ( +SB_RC_OK, $event_id );
+        
     } else {
 
         $postback->(+SB_RC_NOSUCH);
+        return +SB_RC_NOSUCH;
+        
     }
 }
 
@@ -222,12 +229,12 @@ sub _poe_connect {
         = @_[ OBJECT, KERNEL, ARG0, ARG1, ARG2 ];
 
     unless (ref($postback) eq 'CODE') {
-        return; # XXX
+        $postback = $_[SENDER]->postback($postback  || "connect");
     }
 
     unless (defined $queue_id && (ref($listener) eq 'CODE')) {
         $postback->(+SB_RC_ARGS);
-        return;
+        return +SB_RC_ARGS;
     }
 
     if (my $queue = $self->{+SB_QUEUES}{$queue_id}) {
@@ -235,7 +242,8 @@ sub _poe_connect {
         if (exists $queue->{+SB_Q_LISTENER}) {
 
             $postback->(+SB_RC_ALREADY);
-
+            return +SB_RC_ALREADY;
+            
         } else {
 
             $queue->{+SB_Q_LISTENER} = $listener;
@@ -248,11 +256,15 @@ sub _poe_connect {
             }
 
             $postback->(+SB_RC_OK);
+            return +SB_RC_OK;
+            
         }
 
     } else {
 
         $postback->(+SB_RC_NOSUCH);
+        return +SB_RC_NOSUCH;
+        
     }
 }
 
@@ -266,12 +278,12 @@ sub _poe_disconnect {
         = @_[ OBJECT, KERNEL, ARG0, ARG1 ];
 
     unless (ref($postback) eq 'CODE') {
-        return; # XXX
+        $postback = $_[SENDER]->postback($postback || "disconnect");
     }
 
     unless (defined $queue_id) {
         $postback->(+SB_RC_ARGS);
-        return;
+        return +SB_RC_ARGS;
     }
 
     if (my $queue = $self->{+SB_QUEUES}{$queue_id}) {
@@ -280,15 +292,20 @@ sub _poe_disconnect {
 
             $listener->(+SB_RC_DETACH);
             $postback->(+SB_RC_OK);
-
+            return +SB_RC_OK;
+            
         } else {
 
             $postback->(+SB_RC_NOCONN);
+            return +SB_RC_NOCONN;
+            
         }
 
     } else {
 
         $postback->(+SB_RC_NOSUCH);
+        return +SB_RC_NOSUCH;
+        
     }
 }
 
@@ -304,12 +321,12 @@ sub _poe_acknowledge {
         = @_[ OBJECT, KERNEL, ARG0, ARG1, ARG2 ];
 
     unless (ref($postback) eq 'CODE') {
-        return; # XXX
+        $postback = $_[SENDER]->postback($postback || "acknowledge");
     }
 
     unless (defined $queue_id && defined $event_id) {
         $postback->(+SB_RC_ARGS);
-        return;
+        return +SB_RC_ARGS;
     }
 
     if (my $queue = $self->{+SB_QUEUES}{$queue_id}) {
@@ -319,11 +336,13 @@ sub _poe_acknowledge {
         if ($event_id < $current_id) {
 
             $postback->(+SB_RC_EID_LOW);
-
+            return +SB_RC_EID_LOW;
+            
         } elsif ($event_id == $current_id) {
 
-           $postback->(+SB_RC_OK); # Dupe ack, no worries
-
+            $postback->(+SB_RC_OK); # Dupe ack, no worries
+            return +SB_RC_OK;
+            
         } else {
 
             my $clear = $event_id - $current_id;
@@ -331,13 +350,16 @@ sub _poe_acknowledge {
             if ($clear > scalar(@{$queue->{+SB_Q_QUEUE}})) {
 
                 $postback->(+SB_RC_EID_HIGH);
-
+                return +SB_RC_EID_HIGH;
+                
             } else {
 
                 splice(@{$queue->{+SB_Q_QUEUE}}, 0, $clear);
                 $queue->{+SB_Q_EVENT_ID} = $event_id;
 
                 $postback->(+SB_RC_OK);
+                return +SB_RC_OK;
+                
             }
         }
     }

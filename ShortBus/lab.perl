@@ -8,7 +8,8 @@ use strict;
 
 use lib "./lab";
 
-use POE qw( Component::ShortBus );
+use POE;
+use POE::Component::ShortBus qw( SB_RC_OK );
 
 POE::Session->create(
     inline_states => {
@@ -28,15 +29,19 @@ sub start {
 
     $kernel->refcount_increment($bus->ID, "shortbus");
     
-#    $bus->connect();
+    my ( $rt, $queue_id ) = $bus->create( "created" );
     
-    $bus->create($session->postback("created"));
+    if ( $rt != SB_RC_OK ) {
+        die "queue create failed";
+    }
+   
+    $bus->connect( "connected", $queue_id, $bus );
 }
 
 sub queue_created {
-    my ( $kernel, $heap, $id ) = @_[ KERNEL, HEAP, ARG0 ];
+    my ( $kernel, $heap, $id ) = @_[ KERNEL, HEAP, ARG1 ];
     
-    warn "queue created: @$id";
+    warn "queue created: $id->[1]";
 }
 
 sub trace_unknown {
@@ -46,7 +51,8 @@ sub trace_unknown {
         my @arg = map { defined() ? $_ : "(undef)" } @$args;
         print "$event = @arg\n";
     } else {
-        print "---- $event = ( @$args )\n";
+        my @arg = map { defined() ? @$_ : "(undef)" } @$args;
+        print "---- $event = ( @arg )\n";
     }
 }
 
