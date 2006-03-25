@@ -3,7 +3,7 @@ use warnings;
 
 use Test::More;
 
-plan tests => 35;
+plan tests => 39;
 
 use Test::MockObject;
 
@@ -24,6 +24,8 @@ $mock->fake_module('POE::Kernel',
 use POE::Session;
 
 $mock->set_true('session_alloc');
+
+$mock->set_true('ID_session_to_id');
 
 use_ok('POE::Component::ShortBus');
 
@@ -73,12 +75,13 @@ $sb->_poe_start(@state_args);
 $sb->_poe_shutdown(@state_args);
 
 my @postback_args = ();
+my @return_value  = ();
 
 my $pb = sub { @postback_args = @_; };
 
 $state_args[ARG0-1] = $pb;
 
-$sb->_poe_create(@state_args);
+@return_value = $sb->_poe_create(@state_args);
 
 cmp_ok($postback_args[0], '==', POE::Component::ShortBus::SB_RC_OK(),
         'create ok');
@@ -86,6 +89,8 @@ cmp_ok($postback_args[0], '==', POE::Component::ShortBus::SB_RC_OK(),
 cmp_ok($postback_args[1], '==', 0, 'new id ok');
 
 cmp_ok($sb->{+POE::Component::ShortBus::SB_NEXT_ID()}, '==', 1, 'next id ok');
+
+is_deeply(\@postback_args, \@return_value, 'Postback args returned ok');
 
 my $save = $sb->{+POE::Component::ShortBus::SB_QUEUES()}{0};
 
@@ -99,10 +104,12 @@ is_deeply($save,
 
 @postback_args = ();
 
-$sb->_poe_destroy(@state_args);
+@return_value = $sb->_poe_destroy(@state_args);
 
 cmp_ok($postback_args[0], '==', POE::Component::ShortBus::SB_RC_ARGS(),
         'destroy args error without queue id ok');
+
+is_deeply(\@postback_args, \@return_value, 'Postback args returned ok');
 
 $state_args[ARG0] = 0;
 
@@ -113,18 +120,22 @@ $state_args[ARG0] = 0;
     = sub { cmp_ok($_[0], '==', POE::Component::ShortBus::SB_RC_DESTROY(),
                     'Destroy sent to listener ok'); };
 
-  $sb->_poe_destroy(@state_args);
+  @return_value = $sb->_poe_destroy(@state_args);
 
   cmp_ok($postback_args[0], '==', POE::Component::ShortBus::SB_RC_OK(),
           'Destroy returned ok');
+
+  is_deeply(\@postback_args, \@return_value, 'Postback args returned ok');
 
 }
 
 @postback_args = ();
 
-$sb->_poe_destroy(@state_args);
+@return_value = $sb->_poe_destroy(@state_args);
 
 cmp_ok($postback_args[0], '==', POE::Component::ShortBus::SB_RC_NOSUCH(),
         'Destroy on invalid queue returned nosuch');
+
+is_deeply(\@postback_args, \@return_value, 'Postback args returned ok');
 
 @postback_args = ();

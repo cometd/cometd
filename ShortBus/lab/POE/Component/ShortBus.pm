@@ -128,7 +128,7 @@ sub _poe_create {
         $postback = $_[SENDER]->postback($postback || "create");
     }
 
-    my $new_id = ++$self->{+SB_NEXT_ID};
+    my $new_id = $self->{+SB_NEXT_ID}++;
 
     my $queue = $self->{+SB_QUEUES}{$new_id} = { };
 
