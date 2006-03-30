@@ -112,7 +112,7 @@ sub bcast_event {
             $cleanup = 1;
             next;
         }
-        $_->{alive} = $time;
+        $_->{alive_time} = $time;
         $_->write( "<script>sb('$json');</script>\n" );
     }
     
