@@ -7,6 +7,7 @@ use Data::GUID;
 
 our @listeners;
 our %lmap;
+our $plugin;
 
 sub register {
     shift;
@@ -15,13 +16,13 @@ sub register {
     Perlbal::Socket::register_callback( 1, sub {
         my $count = scalar( grep { !$_->{closed} } @listeners );
         if ( scalar( @listeners ) != $count ) {
-            bcast_event( "{connectionCount:$count}" );
+            bcast_event( { connectionCount => $count } );
         }
         return 1;
     } );
     
     Perlbal::Socket::register_callback( 5, sub {
-        bcast_event( "{ka:1}" );
+        bcast_event( { ka => time() } );
         return 5;
     } );
     
@@ -35,10 +36,12 @@ sub unregister {
 }
 
 sub load {
+    $plugin = ShortBus::Filter::JSON->new();
     return 1;
 }
 
 sub unload {
+    @listeners = %lmap = ();
     return 1;
 }
 
@@ -82,14 +85,14 @@ sub start_proxy_request {
         push( @listeners, $self );
         
         $self->write( $res->to_string_ref );
-        $self->write( "<script>sb({id:'".$lmap{"$self"}."'});</script>\n" );
-        bcast_event( "{connectionCount:".scalar(@listeners)."}" );
+        $self->write( filter( { id => "".$lmap{"$self"} } ) );
+        bcast_event( { connectionCount => scalar(@listeners) } );
         
         return 1;
     }
 
     if ( $mode eq "bcast" ) {
-        bcast_event( "$q" );
+        bcast_event( { data => "$q" } );
 
         $send->( "text/plain", \ "OK" );
         
@@ -101,7 +104,7 @@ sub start_proxy_request {
 
 
 sub bcast_event {
-    my $json = shift;
+    my $obj = shift;
     my $cleanup = 0;
     
     my $time = time();
@@ -113,13 +116,38 @@ sub bcast_event {
             next;
         }
         $_->{alive_time} = $time;
-        $_->write( "<script>sb('$json');</script>\n" );
+        $_->write( filter( $obj ) );
     }
     
     if ( $cleanup ) {
         @listeners = grep { !$_->{closed} } @listeners;
-        bcast_event( "{connectionCount:".scalar(@listeners)."}" );
+        bcast_event( { connectionCount => scalar(@listeners) } );
     }
+}
+
+
+sub filter {
+    $plugin->freeze(shift);
+}
+
+1;
+
+package ShortBus::Filter::JSON;
+
+use JSON;
+
+sub new {
+    bless({},shift);
+}
+
+sub freeze {
+    shift;
+    return "<script>sb('".objToJson(shift)."');<script>\n";
+}
+
+sub thaw {
+    shift;
+    return jsonToObj(shift);
 }
 
 1;
