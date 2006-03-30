@@ -1,0 +1,33 @@
+14:43 <@xantus> ok, shortbus will be a perlbal plugin, and a poe component
+14:43 <@xantus> perlbal does the connection holding and can work totally without the poe side
+14:44 <@xantus> so those that don't want to use poe, don't have to
+14:44 <@xantus> flow:
+14:44 <@xantus> client connects to perlbal
+14:44 <@xantus> receives iframe via static serving in perlbal
+14:45 <@xantus> connects to perlbal via forever frame
+14:45 <@xantus> perlbal plugin connects to poe server (can be clustered)
+14:45 < slightlyoff> hmmm
+14:45 <@xantus> receives info about if it needs to push, or just return access denied
+14:46 <@xantus> disconnects from poe server
+14:46 <@xantus> but keeps connection on perlbal open
+14:46 <@xantus> poe server knows what perlbal it recieved a connection on
+14:46 <@xantus> perlbal knows what server it connected to before
+14:47 <@xantus> posts (sending data) to perlbal can be redirected to correct poe server
+14:47 <@xantus> events (receiving data) in poe server can post to the correct perlbal and deliver event to client
+14:48 <@mst> so you effectively get session affinity
+14:48 <@xantus> ok, if i have say, a message for client from some other process
+14:49 <@xantus> that perlbal server can be stored in a db for that users connection
+14:49 <@xantus> i retrieve that, connect to its perlbal and post the event
+14:50 <@xantus> if a stream needs to happen, it can connect to the same perlbal, and stream to the client already
+                connected
+14:50 <@xantus> mst: yep
+14:50 < slightlyoff> how will culling happen?
+14:51 <@xantus> so if i connect twice
+14:51 <@xantus> should the first be dropped?
+14:51 <@xantus> probably, if they are the same session uuid
+14:51 <@xantus> connect to that perlbal tell it to drop
+14:52 <@xantus> accept the new connection
+14:56 <@xantus> sound good?
+14:56 < slightlyoff> sure
+14:56 <@xantus> this could handle waaaay more connections than just poe
+
