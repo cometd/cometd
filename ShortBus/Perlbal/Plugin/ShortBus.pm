@@ -6,7 +6,6 @@ use warnings;
 use Data::GUID;
 
 our @listeners;
-our %lmap;
 our $plugin;
 
 sub register {
@@ -14,7 +13,8 @@ sub register {
     my $service = shift;
 
     Perlbal::Socket::register_callback( 1, sub {
-        my $count = scalar( grep { !$_->{closed} } @listeners );
+        my $count = scalar( @listeners );
+        @listeners = grep { !$_->{closed} } @listeners;
         if ( scalar( @listeners ) != $count ) {
             bcast_event( { connectionCount => $count } );
         }
@@ -22,7 +22,7 @@ sub register {
     } );
     
     Perlbal::Socket::register_callback( 5, sub {
-        bcast_event( { ka => time() } );
+        bcast_event( { "time" => time() } );
         return 5;
     } );
     
@@ -41,7 +41,8 @@ sub load {
 }
 
 sub unload {
-    @listeners = %lmap = ();
+    @listeners = ();
+    $plugin = undef;
     return 1;
 }
 
@@ -51,15 +52,15 @@ sub start_proxy_request {
     return 0 unless $head;
     my $uri = $head->request_uri;
     
-    return 0 unless $uri =~ m{^/shortbus/(\w+)(?:\?(.*))?};
-    my ( $mode, $q ) = ( $1, $2 );
+    return 0 unless $uri =~ m{^/shortbus/(\w+)(?:\?last=(\d+))?$};
+    my ( $action, $last ) = ( $1, $2 || 0 );
 
     my $send = sub {
         shift;
         my $body = shift;
         
         my $res = $self->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
-        $res->header( "Content-Type", "text/plain" );
+        $res->header( "Content-Type", "text/html" );
         $res->header( "Content-Length", length($$body) );
         $self->setup_keepalive( $res );
 
@@ -75,24 +76,62 @@ sub start_proxy_request {
         $self->write( sub { $self->http_response_sent; } );
     };
 
-    if ( $mode eq "register" ) {
+    if ( $action eq "register" ) {
         my $res = $self->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
-        $res->header( "Content-Type", "text/plain" );
+        $res->header( "Content-Type", "text/html" );
         $res->header( "Connection", "close" );
         
-        # TODO get guid from cookie
-        $lmap{"$self"} = Data::GUID->new();
+        # TODO get guid from backend return header
+        $self->{scratch}{guid} = Data::GUID->new();
         push( @listeners, $self );
         
         $self->write( $res->to_string_ref );
-        $self->write( filter( { id => "".$lmap{"$self"} } ) );
+       
+        $self->write( \ qq|<html>
+<body>
+<script>
+var domain = document.domain.split('.').reverse();
+document.domain = [domain[2],domain[1],domain[0]].join('.');
+if (window.parent.log) {
+    try {
+        log = window.parent.log;
+        log.warn = window.parent.log.warn;
+        log.error = window.parent.log.error;
+        log.debug = window.parent.log.debug;
+        log.debug('document domain for inner inner iframe is '+document.domain);
+        sb = window.parent.log; 
+   } catch(e) { };
+}
+</script>
+| );
+       
         bcast_event( { connectionCount => scalar(@listeners) } );
+        
+        my $last_ret = $self->write( filter(
+            {
+                id => "".$self->{scratch}{guid},
+                ( $last ? ( "last" => $last ) : () )
+            }
+        ) );
+        
+        if ($last) {
+            # TODO queue
+            if ( $self->{scratch}{queue} ) {
+                foreach ( @{$self->{scratch}{queue}} ) {
+                    next if ( $_->[0] < $last );
+                    $last_ret = $self->write( $_->[1] );
+                }
+            }
+        }
+
+        $self->watch_write(0) if ( $last_ret );
         
         return 1;
     }
 
-    if ( $mode eq "bcast" ) {
-        bcast_event( { data => "$q" } );
+    if ( $action eq "bcast" ) {
+        # TODO inject
+        bcast_event( { data => "" } );
 
         $send->( "text/plain", \ "OK" );
         
@@ -111,18 +150,20 @@ sub bcast_event {
 
     foreach ( @listeners ) {
         if ( $_->{closed} ) {
-            delete $lmap{"$_"};
             $cleanup = 1;
             next;
         }
+        
         $_->{alive_time} = $time;
-        $_->write( filter( $obj ) );
+        $_->watch_write(0) if $_->write( filter( $obj ) );
     }
+        
     
     if ( $cleanup ) {
         @listeners = grep { !$_->{closed} } @listeners;
         bcast_event( { connectionCount => scalar(@listeners) } );
     }
+
 }
 
 
@@ -142,7 +183,7 @@ sub new {
 
 sub freeze {
     shift;
-    return "<script>sb('".objToJson(shift)."');<script>\n";
+    return "<script>\nsb('".objToJson(shift)."');\n</script>\n";
 }
 
 sub thaw {
