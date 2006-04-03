@@ -9,6 +9,7 @@ WriteMakefile(
     'PREREQ_PM'		=> {
 		'POE'		=>	'0.3101',
 		'Carp'		=>	'0',
+        'Perlbal'   =>  '1.41',
     },
 	'dist'         => {
 		'SUFFIX'       => ".gz",
