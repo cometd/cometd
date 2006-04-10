@@ -3,18 +3,17 @@ package Perlbal::Plugin::ShortBus;
 use strict;
 use warnings;
 
-use Data::GUID;
+our (@listeners, %ids, %hex_chr, $plugin);
 
-our @listeners;
-our %ids;
-our $plugin;
+use constant CONNECTION_TIMER => 2;
+use constant KEEPALIVE_TIMER => 5;
 
 sub register {
     shift;
     my $service = shift;
    
-    Danga::Socket->AddTimer( 1, \&connection_count );
-    Danga::Socket->AddTimer( 5, \&time_keepalive );
+    Danga::Socket->AddTimer( CONNECTION_TIMER, \&connection_count );
+    Danga::Socket->AddTimer( KEEPALIVE_TIMER, \&time_keepalive );
     
     $service->register_hook( "ShortBus", "start_proxy_request", \&start_proxy_request );
 
@@ -26,12 +25,15 @@ sub unregister {
 }
 
 sub load {
+    for ( 0 .. 255 ) {
+        $hex_chr{lc( sprintf "%02x", $_ )} = chr($_);
+    }
     $plugin = ShortBus::Filter::JSON->new();
     return 1;
 }
 
 sub unload {
-    @listeners = %ids = ();
+    @listeners = %ids = %hex_chr = ();
     $plugin = undef;
     return 1;
 }
@@ -40,12 +42,30 @@ sub start_proxy_request {
     my Perlbal::ClientProxy $self = shift;
     my Perlbal::HTTPHeaders $head = $self->{req_headers};
     return 0 unless $head;
-    my $uri = $head->request_uri;
     
-#    return 0 unless $uri =~ m{^/shortbus/(\w+)(?:\?last=(\d+))?$};
-#    my ( $action, $last ) = ( $1, $2 || 0 );
-    my $action = 'register';
-    my $last = 0;
+    my $opts;
+    unless ( $self->{req_headers}
+        && $opts = $self->{req_headers}->{'x-shortbus'} ) {
+        return 0;
+    }
+
+    my %op = map { split(/=/) } split(/;\s*/, $opts);
+
+    unless ($op{id} && $op{domain}) {
+        return 0;
+    }
+    
+    # parse query string
+    my ($qs) = ( $head->request_uri =~ m/\?(.*)/ );
+    my %in = map {
+        my ( $k,$v ) = split(/=/);
+        $v = unescape($v);
+        ($k => $v);
+    } split(/&/, $qs);
+    
+    my $action = $op{action} || 'register';
+    my $last = $in{last} || 0;
+    my ($id, $domain) = @$op{qw( id domain )};
 
     my $send = sub {
         shift;
@@ -73,9 +93,7 @@ sub start_proxy_request {
         $res->header( "Content-Type", "text/html" );
         $res->header( "Connection", "close" );
         
-        # TODO get guid from backend return header
-        my $id = Data::GUID->new();
-        $self->{scratch}{guid} = $id = "$id";
+        $self->{scratch}{guid} = $id;
         $ids{ $id } = $self;
         push( @listeners, $self );
         
@@ -85,18 +103,10 @@ sub start_proxy_request {
         $self->write( qq|<html>
 <body>
 <script>
-var domain = document.domain.split('.').reverse();
-document.domain = [domain[2],domain[1],domain[0]].join('.');
-if (window.parent.log) {
-    try {
-        log = window.parent.log;
-        log.warn = window.parent.log.warn;
-        log.error = window.parent.log.error;
-        log.debug = window.parent.log.debug;
-        log.debug('document domain for inner inner iframe is '+document.domain);
-        sb = window.parent.log; 
-   } catch(e) { };
-}
+document.domain = '$domain';
+window.sb = function(json) { alert(json); };
+if (window.parent.shortbus)
+    window.parent.shortbus( window );
 </script>
 | );
        
@@ -104,7 +114,7 @@ if (window.parent.log) {
         
         my $last_ret = $self->write( filter(
             {
-                id => $self->{scratch}{guid},
+                id => $id,
                 ( $last ? ( "last" => $last ) : () )
             }
         ) );
@@ -180,7 +190,7 @@ sub filter {
 }
 
 sub connection_count {
-    Danga::Socket->AddTimer( 1, \&connection_count );
+    Danga::Socket->AddTimer( CONNECTION_TIMER, \&connection_count );
     
     my $count = scalar( @listeners );
     @listeners = map { if (!$_->{closed}) { $_; } else { delete $ids{$_->{scratch}{guid}}; (); } } @listeners;
@@ -191,11 +201,97 @@ sub connection_count {
 }
     
 sub time_keepalive {
-    Danga::Socket->AddTimer( 5, \&time_keepalive );
+    Danga::Socket->AddTimer( KEEPALIVE_TIMER, \&time_keepalive );
     
     bcast_event( { "time" => time() } );
     return 5;
 }
+
+sub unescape {
+	my $es = shift;
+	$es =~ s/([0-9a-fA-F]{2})/$hex_chr{$1}/gs;
+	return $es;
+}
+
+=pod
+
+=head1 NAME
+
+Perlbal::Plugin::ShortBus - Perlbal plugin for ShortBus
+
+=head1 SYNOPSIS
+    # perlbal.conf
+
+    LOAD ShortBus
+    LOAD vhosts
+
+    SERVER max_connections = 10000
+
+    CREATE POOL apache
+        POOL apache ADD 127.0.0.1:81
+    CREATE SERVICE apache_proxy
+        SET role = reverse_proxy
+        SET pool = apache
+        SET persist_backend = on
+        SET backend_persist_cache = 2
+        SET verify_backend = on
+        SET enable_reproxy = true
+    ENABLE apache_proxy
+
+    CREATE SERVICE shortbus
+        SET role = reverse_proxy
+        SET plugins = ShortBus
+    ENABLE shortbus
+
+    CREATE SERVICE web
+        SET listen         = 10.0.0.1:80
+        SET role           = selector
+        SET plugins        = vhosts
+        SET persist_client = on
+        VHOST *.yoursite.com = apache_proxy
+        VHOST *              = apache_proxy
+    ENABLE web
+
+=head1 ABSTRACT
+
+This plugin allows Perlbal to put clients into a push type connection state.
+
+=head1 DESCRIPTION
+
+This Plugin works by keeping a conneciton open after an external webserver has
+authorized the client.  That way, your valuable http processes can continue
+servicing other clients.
+
+The easiest way to use this module is to setup apache on port 81, and Perlbal
+on port 80 as in the synopsis.  Start perbal and use a supported javascript
+library.  You can find supported libraries at L<http://shortbus.xantus.org/>
+
+=head2 ShortBus Notes
+
+=head2 EXPORT
+
+Nothing.
+
+=head1 SEE ALSO
+
+L<Perlbal>
+
+=head1 AUTHOR
+
+David Davis E<lt>xantus@cpan.orgE<gt>
+
+=head1 RATING
+
+Please rate this module. L<http://cpanratings.perl.org/rate/?distribution=Perlbal-Plugin-ShortBus>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2006 by David Davis
+
+This library is free software; you can redistribute it and/or modify
+it under the terms of the [TODO LICENSE HERE] license.
+
+=cut
 
 1;
 
