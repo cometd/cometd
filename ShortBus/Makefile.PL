@@ -4,12 +4,10 @@ use ExtUtils::MakeMaker;
 # the contents of the Makefile that is written.
 
 WriteMakefile(
-    'NAME'			=> 'POE::Component::ShortBus',
-    'VERSION_FROM'	=> 'lib/POE/Component/ShortBus.pm', # finds $VERSION
+    'NAME'			=> 'Perlbal::Plugin::ShortBus',
+    'VERSION_FROM'	=> 'lib/Perlbal/Plugin/ShortBus.pm', # finds $VERSION
     'PREREQ_PM'		=> {
-		'POE'		=>	'0.3101',
-		'Carp'		=>	'0',
-        'Perlbal'   =>  '1.41',
+		'Perlbal'	=>	'1.41',
     },
 	'dist'         => {
 		'SUFFIX'       => ".gz",
@@ -19,6 +17,6 @@ WriteMakefile(
 
     # TODO other authors here
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
-		(ABSTRACT_FROM	=> 'lib/POE/Component/ShortBus.pm', # retrieve abstract from module
+		(ABSTRACT_FROM	=> 'lib/Perlbal/Plugin/ShortBus.pm', # retrieve abstract from module
 		 AUTHOR			=> 'David Davis <xantus@cpan.org>') : ()),
 );
