@@ -40,19 +40,22 @@ sub unload {
 
 sub start_proxy_request {
     my Perlbal::ClientProxy $self = shift;
+    # requires patched Perlbal
+    my Perlbal::HTTPHeaders $hd = $self->{res_headers};
     my Perlbal::HTTPHeaders $head = $self->{req_headers};
     return 0 unless $head;
-    
+   
     my $opts;
-    unless ( $self->{req_headers}
-        && $opts = $self->{req_headers}->{'x-shortbus'} ) {
-        return 0;
+    unless ( $opts = $hd->header('x-shortbus') ) {
+        $self->_simple_response(404, "No x-shortbus header returned from backend");
+        return 1;
     }
 
     my %op = map { split(/=/) } split(/;\s*/, $opts);
 
     unless ($op{id} && $op{domain}) {
-        return 0;
+        $self->_simple_response(404, "No client id and/or domain returned from backend");
+        return 1;
     }
     
     # parse query string
@@ -65,7 +68,7 @@ sub start_proxy_request {
     
     my $action = $op{action} || 'register';
     my $last = $in{last} || 0;
-    my ($id, $domain) = @$op{qw( id domain )};
+    my ($id, $domain) = ($op{id}, $op{domain});
 
     my $send = sub {
         shift;
@@ -80,8 +83,7 @@ sub start_proxy_request {
         $self->tcp_cork( 1 );
         $self->write( $res->to_string_ref );
         
-        unless ( $self->{req_headers}
-            && $self->{req_headers}->request_method eq "HEAD" ) {
+        unless ( $head->request_method eq "HEAD" ) {
             $self->write( $body );
         }
         
