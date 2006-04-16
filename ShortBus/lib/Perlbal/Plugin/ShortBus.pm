@@ -42,6 +42,10 @@ sub start_proxy_request {
     my Perlbal::ClientProxy $self = shift;
     # requires patched Perlbal
     my Perlbal::HTTPHeaders $hd = $self->{res_headers};
+    unless ($hd) {
+        warn "You are running an unpatched version of Perlbal, add line 123 of ClientProxy.pm: \$self->{res_headers} = \$primary_res_hdrs;\n";
+        return 0;
+    }
     my Perlbal::HTTPHeaders $head = $self->{req_headers};
     return 0 unless $head;
    
@@ -105,10 +109,12 @@ sub start_proxy_request {
         $self->write( qq|<html>
 <body>
 <script>
+<!--
 document.domain = '$domain';
 window.sb = function(json) { alert(json); };
 if (window.parent.shortbus)
     window.parent.shortbus( window );
+-->
 </script>
 | );
        
@@ -213,6 +219,30 @@ sub unescape {
 	my $es = shift;
 	$es =~ s/([0-9a-fA-F]{2})/$hex_chr{$1}/gs;
 	return $es;
+}
+
+# patch perlbal
+{
+    no warnings;
+    sub Perlbal::ClientProxy::start_reproxy_service {
+        my Perlbal::ClientProxy $self = $_[0];
+        my Perlbal::HTTPHeaders $primary_res_hdrs = $_[1];
+        my $svc_name = $_[2];
+    
+        my $svc = $svc_name ? Perlbal->service($svc_name) : undef;
+        unless ($svc) {
+            $self->_simple_response(404, "Vhost twiddling not configured for requested pair.");
+            return 1;
+        }
+    
+        $self->{backend_requested} = 0;
+        $self->{backend} = undef;
+        # start patch
+        $self->{res_headers} = $primary_res_hdrs;
+        # end patch
+    
+        $svc->adopt_base_client($self);
+    }
 }
 
 =pod
