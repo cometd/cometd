@@ -1,4 +1,4 @@
-package Perlbal::Plugin::ShortBus;
+package Perlbal::Plugin::Shortbus;
 
 use strict;
 use warnings;
