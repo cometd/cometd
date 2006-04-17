@@ -5,9 +5,11 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
     'NAME'			=> 'Perlbal::Plugin::ShortBus',
-    'VERSION_FROM'	=> 'lib/Perlbal/Plugin/ShortBus.pm', # finds $VERSION
+    'VERSION_FROM'	=> 'lib/ShortBus.pm', # finds $VERSION
     'PREREQ_PM'		=> {
-		'Perlbal'	=>	'1.41',
+		'Perlbal'	=> '1.41',
+        'Carp'      => undef,
+        'JSON'      => '1.05',
     },
 	'dist'         => {
 		'SUFFIX'       => ".gz",
@@ -17,6 +19,6 @@ WriteMakefile(
 
     # TODO other authors here
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
-		(ABSTRACT_FROM	=> 'lib/Perlbal/Plugin/ShortBus.pm', # retrieve abstract from module
+		(ABSTRACT_FROM	=> 'lib/ShortBus.pm', # retrieve abstract from module
 		 AUTHOR			=> 'David Davis <xantus@cpan.org>') : ()),
 );
