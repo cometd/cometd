@@ -4,7 +4,7 @@ use ShortBus;
 
 use Carp qw( croak );
 
-our (@listeners, %ids, $filter);
+our (@listeners, %ids, $filter, $filter_package);
 
 use constant CONNECTION_TIMER => 2;
 use constant KEEPALIVE_TIMER => 5;
@@ -33,18 +33,13 @@ sub import {
         }
     }
 
-    my $filt = delete $args->{filter} || 'Filter::JSON';
+    $filter_package = "ShortBus::" . ( delete $args->{filter} || 'Filter::JSON' );
 
     my @unknown = sort keys %$args;
     croak "Unknown $class import arguments: @unknown" if @unknown;
 
-    eval "use ShortBus::$filt";
+    eval "use $filter_package";
     croak $@ if ($@);
-
-    {
-        no strict 'refs';
-        $filter = "ShortBus::$filt"->new();
-    }
 }
 
 sub register {
@@ -65,7 +60,8 @@ sub unregister {
 }
 
 sub load {
-    $filter = ShortBus::Filter::JSON->new();
+    no strict 'refs';
+    $filter = $filter_package->new();
     return 1;
 }
 
