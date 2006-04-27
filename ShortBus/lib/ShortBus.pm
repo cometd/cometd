@@ -10,7 +10,7 @@ sub import {
 
     my @modules = @_;
 
-    push(@modules,'Common');
+    push(@modules, 'Common');
 
     my $package = caller();
     my @failed;

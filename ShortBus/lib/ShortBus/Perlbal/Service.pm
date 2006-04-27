@@ -141,7 +141,15 @@ sub start_proxy_request {
     $self->write( qq|<html><body><script>
 <!--
 document.domain = '$domain';
-window.sb = function(a) { alert(a); };
+window.onload = function() {
+    window.location.href = window.location.href;
+};
+sb = function(a) {
+    var d=document.createElement('div');
+    d.innerHTML = '<pre style="margin:0">'+a+'</pre>';
+    document.body.appendChild(d);
+};
+
 if (window.parent.shortbus)
     window.parent.shortbus( window );
 -->
