@@ -8,12 +8,15 @@ sub new {
 
 sub freeze {
     shift;
-    return "<script>sb('".objToJson(shift)."');</script>\n";
+    my $obj = shift;
+    my ($ev, $ch) = @$obj{qw( eid channel )};
+    $ch =~ s/'/\\'/g;
+    "<script>sb($ev,'$ch','".objToJson($obj)."');</script>\n";
 }
 
 sub thaw {
     shift;
-    return jsonToObj(shift);
+    jsonToObj(shift);
 }
 
 1;

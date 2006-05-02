@@ -96,7 +96,7 @@ sub start_proxy_request {
         return 1;
     }
 
-    my %op = map { split(/=/) } split(/;\s*/, $opts);
+    my %op = map { my ($k,$v) = split(/=/); unless($v) { $v = ''; }; $k => $v } split(/;\s*/, $opts);
 
     unless ($op{id} && $op{domain}) {
         $self->_simple_response(404, 'No client id and/or domain returned from backend');
@@ -144,12 +144,11 @@ document.domain = '$domain';
 window.onload = function() {
     window.location.href = window.location.href;
 };
-sb = function(a) {
+sb = function(ev,ch,obj) {
     var d=document.createElement('div');
-    d.innerHTML = '<pre style="margin:0">'+a+'</pre>';
+    d.innerHTML = '<pre style="margin:0">Event:'+ev+'\tChannel:'+ch+'\n'+obj+'</pre>';
     document.body.appendChild(d);
 };
-
 if (window.parent.shortbus)
     window.parent.shortbus( window );
 -->
@@ -167,14 +166,14 @@ if (window.parent.shortbus)
     } else {
         $last_ret = $self->write( filter(
             $self->{scratch}{eid}++,
-            {
-                id => $id,
+            local => {
+                clientid => $id,
                 ( $last ? ( 'last' => $last ) : () )
             }
         ) );
     }
     
-    bcast_event( { connectionCount => scalar(@listeners) }, $self );
+    bcast_event( global => { connectionCount => scalar(@listeners) } => $self );
     
     
     $self->watch_write( 0 ) if ( $last_ret );
@@ -184,34 +183,36 @@ if (window.parent.shortbus)
 
 
 sub bcast_event {
+    my $ch = shift;
     my $obj = shift;
-    my $l = shift;
+    my $client = shift;
     my $cleanup = 0;
     
     my $time = time();
 
+    # TODO client channels
     foreach ( @listeners ) {
-        next if ($l && $_ == $l);
+        next if ($client && $_ == $client);
         if ( $_->{closed} ) {
             $cleanup = 1;
             next;
         }
         
         $_->{alive_time} = $time;
-        $_->watch_write(0) if $_->write( filter( $_->{scratch}{eid}++, $obj ) );
+        $_->watch_write(0) if $_->write( filter( $_->{scratch}{eid}++, $obj->{channel} = $ch, $obj ) );
     }
         
     
     if ( $cleanup ) {
         @listeners = map { if (!$_->{closed}) { $_; } else { delete $ids{$_->{scratch}{id}}; (); } } @listeners;
-        bcast_event( { connectionCount => scalar(@listeners) } );
+        bcast_event( global => { connectionCount => scalar(@listeners) } );
     }
 
 }
 
 sub filter {
-    my ($eid,$obj) = @_;
-    $obj->{eid} = $eid;
+    my ($eid, $ch, $obj) = @_;
+    @$obj{qw( eid channel )} = ($eid, $ch);
     $filter->freeze($obj);
 }
 
@@ -220,8 +221,9 @@ sub connection_count {
     
     my $count = scalar( @listeners );
     @listeners = map { if (!$_->{closed}) { $_; } else { delete $ids{$_->{scratch}{id}}; (); } } @listeners;
-    if ( scalar( @listeners ) != $count ) {
-        bcast_event( { connectionCount => $count } );
+    my $ncount = scalar( @listeners );
+    if ($ncount != $count ) {
+        bcast_event( global => { connectionCount => $ncount } );
     }
     return 1;
 }
@@ -229,7 +231,7 @@ sub connection_count {
 sub time_keepalive {
     Danga::Socket->AddTimer( KEEPALIVE_TIMER, \&time_keepalive );
     
-    bcast_event( { 'time' => time() } );
+    bcast_event( global => { 'time' => time() } );
     return 5;
 }
 
