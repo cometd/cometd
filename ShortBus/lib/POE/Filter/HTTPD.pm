@@ -1,4 +1,4 @@
-# $Id: HTTPD.pm 1934 2006-04-10 22:38:22Z rcaputo $
+# $Id: HTTPD.pm 1951 2006-05-01 18:31:32Z teknikill $
 
 # Filter::HTTPD Copyright 1998 Artur Bergman <artur@vogon.se>.
 
@@ -17,7 +17,7 @@ use strict;
 use POE::Filter;
 
 use vars qw($VERSION @ISA);
-$VERSION = do {my($r)=(q$Revision: 1934 $=~/(\d+)/);sprintf"1.%04d",$r};
+$VERSION = do {my($r)=(q$Revision: 1951 $=~/(\d+)/);sprintf"1.%04d",$r};
 @ISA = qw(POE::Filter);
 
 sub BUFFER        () { 0 }
@@ -195,7 +195,7 @@ sub get {
   # body.  Finish up.
 
   my $method = $r->method();
-  if ($method eq 'GET' or $method eq 'HEAD' or $method eq 'OPTIONS') {
+  if ($method eq 'GET' or $method eq 'HEAD') {
     $self->[FINISH]++;
     # We are sending this back, so won't need it anymore.
     delete $self->[HEADER];
@@ -221,6 +221,13 @@ sub get {
           "Please verify your HTTP version and transaction content."
         )
       ];
+    }
+    elsif ($method eq 'OPTIONS') {
+      $self->[FINISH]++;
+      # OPTIONS requests can have an optional content length
+      # See http://www.faqs.org/rfcs/rfc2616.html, section 9.2
+      delete $self->[HEADER];
+      return [$r];
     }
     else {
       return [
