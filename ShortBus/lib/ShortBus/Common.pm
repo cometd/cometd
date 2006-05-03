@@ -27,7 +27,7 @@ sub import {
 
 sub unescape {
 	my $es = shift;
-	$es =~ s/([0-9a-fA-F]{2})/$hex_chr{$1}/gs;
+	$es =~ s/(%[0-9a-fA-F]{2})/$hex_chr{$1}/gs;
 	return $es;
 }
 
