@@ -72,75 +72,85 @@ sub unload {
 }
 
 sub backend_response {
-    my @tmp = @_;
-    foreach (@tmp) { 
-        warn "$_\n";
+    foreach (@_) { 
+        warn "backend: $_\n";
     }
     return 0;
 }
 
 sub start_proxy_request {
-    my Perlbal::ClientProxy $self = shift;
+    my Perlbal::ClientProxy $client = shift;
+    
     # requires patched Perlbal
-    my Perlbal::HTTPHeaders $hd = $self->{res_headers};
-    unless ($hd) {
+    my Perlbal::HTTPHeaders $hd = $client->{res_headers};
+    unless ( $hd ) {
         warn "You are running an unpatched version of Perlbal, add line 123 of ClientProxy.pm: \$self->{res_headers} = \$primary_res_hdrs;\n";
         return 0;
     }
-    my Perlbal::HTTPHeaders $head = $self->{req_headers};
+    
+    my Perlbal::HTTPHeaders $head = $client->{req_headers};
     return 0 unless $head;
    
     my $opts;
     unless ( $opts = $hd->header('x-shortbus') ) {
-        $self->_simple_response(404, 'No x-shortbus header returned from backend');
+        $client->_simple_response(404, 'No x-shortbus header returned from backend');
         return 1;
     }
 
-    my %op = map { my ($k,$v) = split(/=/); unless($v) { $v = ''; }; $k => $v } split(/;\s*/, $opts);
+    my %op = map {
+        my ( $k, $v ) = split( /=/ );
+        unless( $v ) { $v = ''; }
+        $k => $v
+    } split( /;\s*/, $opts );
 
-    unless ($op{id} && $op{domain}) {
-        $self->_simple_response(404, 'No client id and/or domain returned from backend');
-        return 1;
-    }
-    
     # parse query string
-    my ($qs) = ( $head->request_uri =~ m/\?(.*)/ );
+    # FIXME proper parsing
+    my ( $qs ) = ( $head->request_uri =~ m/\?(.*)/ );
     my %in;
-    if ($qs) {
+    if ( $qs ) {
         %in = map {
-            next unless(/=/);
-            my ( $k, $v ) = split(/=/,$_);
-            (unescape($k) => unescape($v));
-        } split(/&/, $qs);
+            next unless( /=/ );
+            my ( $k, $v ) = split( /=/ );
+            ( unescape( $k ) => unescape( $v ) );
+        } split( /&/, $qs );
     }
    
     # pull action, domain and id from backend request
     my $action = $op{action} || 'bind';
-    my $last = $in{last} || 0;
-    my ($id, $domain) = ($op{id}, $op{domain});
+    my $last = $in{last_eid} || 0;
 
-    unless ( $action eq 'bind' ) {
-        return 0;
+    if ( $action eq 'bind' && !( $op{id} && $op{domain} ) ) {
+        $client->_simple_response(404, 'No client id and/or domain returned from backend');
+        return 1;
     }
-
-    my $res = $self->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
-    $res->header( 'Content-Type', 'text/html' );
-    $res->header( 'Connection', 'close' );
- 
-    # client id
-    $self->{scratch}{id} = $id;
-    # event id for this client
-    $self->{scratch}{eid} = 0;
-    # id to listener obj map
-    $ids{ $id } = $self;
-    push( @listeners, $self );
-    
-    $self->write( $res->to_string_ref );
-    $self->tcp_cork( 1 );
    
-    $self->write( qq|<html><body><script>
+    SWITCH: {
+        
+        if ($action eq 'post') {
+            # take posted data and insert into clients quque
+            my $target = $ids{ $op{id} };
+            last;
+        }
+        
+        if ($action eq 'bind') {
+            my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
+            $res->header( 'Content-Type', 'text/html' );
+            $res->header( 'Connection', 'close' );
+ 
+            # client id
+            $client->{scratch}{id} = $op{id};
+            # event id for this client
+            $client->{scratch}{eid} = $last;
+            # id to listener obj map
+            $ids{ $op{id} } = $client;
+            push( @listeners, $client );
+    
+            $client->write( $res->to_string_ref );
+            $client->tcp_cork( 1 );
+   
+            $client->write( qq|<html><body><script>
 <!--
-document.domain = '$domain';
+document.domain = '$op{domain}';
 window.onload = function() {
     window.location.href = window.location.href;
 };
@@ -155,29 +165,39 @@ if (window.parent.shortbus)
 </script>
 | );
  
-    my $last_ret;
-    if ( $last ) {
-        if ( $self->{scratch}{queue} ) {
-            foreach ( @{$self->{scratch}{queue}} ) {
-                next if ( $_->[ 0 ] < $last );
-                $last_ret = $self->write( $_->[ 1 ] );
+            my $last_ret;
+            if ( $last ) {
+                if ( $client->{scratch}{queue} ) {
+                    my $lastidx;
+                    for my $i ( 0 .. $#{$client->{scratch}{queue}} ) {
+                        if ( $client->{scratch}{queue}[ $i ]->[ 0 ] < $last ) {
+                            $lastidx = $i;
+                            next;
+                        }
+                        $last_ret = $client->write( $client->{scratch}{queue}[ $i ]->[ 1 ] );
+                    }
+                    # splice out  previous events
+                    if ( defined( $lastidx ) ) {
+                        splice( @{$client->{scratch}{queue}}, 0, $lastidx );
+                    }
+                }
+            } else {
+                $last_ret = $client->write( filter(
+                    $client => local => {
+                        clientid => $op{id},
+                        ( $last ? ( 'last' => $last ) : () )
+                    }
+                ) );
             }
+    
+            bcast_event( global => { connectionCount => scalar( @listeners ) } => $client );
+    
+            $client->watch_write( 0 ) if ( $last_ret );
+            
+            last;
         }
-    } else {
-        $last_ret = $self->write( filter(
-            $self->{scratch}{eid}++,
-            local => {
-                clientid => $id,
-                ( $last ? ( 'last' => $last ) : () )
-            }
-        ) );
     }
     
-    bcast_event( global => { connectionCount => scalar(@listeners) } => $self );
-    
-    
-    $self->watch_write( 0 ) if ( $last_ret );
-
     return 1;
 }
 
@@ -192,27 +212,38 @@ sub bcast_event {
 
     # TODO client channels
     foreach ( @listeners ) {
-        next if ($client && $_ == $client);
+        next if ( $client && $_ == $client );
+        
         if ( $_->{closed} ) {
             $cleanup = 1;
             next;
         }
         
         $_->{alive_time} = $time;
-        $_->watch_write(0) if $_->write( filter( $_->{scratch}{eid}++, $obj->{channel} = $ch, $obj ) );
+        
+        $_->watch_write(0) if $_->write( filter( $_, $obj->{channel} = $ch, $obj ) );
     }
         
     
     if ( $cleanup ) {
-        @listeners = map { if (!$_->{closed}) { $_; } else { delete $ids{$_->{scratch}{id}}; (); } } @listeners;
+        @listeners = map {
+            if (!$_->{closed}) {
+                $_;
+            } else {
+                delete $ids{$_->{scratch}{id}};
+                ();
+            }
+        } @listeners;
         bcast_event( global => { connectionCount => scalar(@listeners) } );
     }
 
 }
 
 sub filter {
-    my ($eid, $ch, $obj) = @_;
-    @$obj{qw( eid channel )} = ($eid, $ch);
+    my ($client, $ch, $obj) = @_;
+    
+    @$obj{qw( eid channel )} = ( $client->{scratch}{eid}++, $ch );
+    
     $filter->freeze($obj);
 }
 
@@ -222,9 +253,11 @@ sub connection_count {
     my $count = scalar( @listeners );
     @listeners = map { if (!$_->{closed}) { $_; } else { delete $ids{$_->{scratch}{id}}; (); } } @listeners;
     my $ncount = scalar( @listeners );
+    
     if ($ncount != $count ) {
         bcast_event( global => { connectionCount => $ncount } );
     }
+    
     return 1;
 }
     
@@ -232,6 +265,7 @@ sub time_keepalive {
     Danga::Socket->AddTimer( KEEPALIVE_TIMER, \&time_keepalive );
     
     bcast_event( global => { 'time' => time() } );
+    
     return 5;
 }
 
