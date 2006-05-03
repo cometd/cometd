@@ -117,7 +117,10 @@ sub start_proxy_request {
    
     # pull action, domain and id from backend request
     my $action = $op{action} || 'bind';
-    my $last = $in{last_eid} || 0;
+    my $last = 0;
+    if ( $in{last_eid} =~ m/^\d+$/ ) {
+        $last = $in{last_eid};
+    }
 
     if ( $action eq 'bind' && !( $op{id} && $op{domain} ) ) {
         $client->_simple_response(404, 'No client id and/or domain returned from backend');
@@ -151,12 +154,14 @@ sub start_proxy_request {
             $client->write( qq|<html><body><script>
 <!--
 document.domain = '$op{domain}';
+window.last_eid = $last;
 window.onload = function() {
-    window.location.href = window.location.href;
+    window.location.href = window.location.href.replace( /last_eid=\\d+/, 'last_eid='+window.last_eid );
 };
 sb = function(ev,ch,obj) {
+    window.last_eid = ev;
     var d=document.createElement('div');
-    d.innerHTML = '<pre style="margin:0">Event:'+ev+'\tChannel:'+ch+'\n'+obj+'</pre>';
+    d.innerHTML = '<pre style="margin:0">Event:'+ev+'\\tChannel:'+ch+'\\t'+obj+'</pre>';
     document.body.appendChild(d);
 };
 if (window.parent.shortbus)
@@ -181,18 +186,38 @@ if (window.parent.shortbus)
                         splice( @{$client->{scratch}{queue}}, 0, $lastidx );
                     }
                 }
-            } else {
-                $last_ret = $client->write( filter(
-                    $client => local => {
-                        clientid => $op{id},
-                        ( $last ? ( 'last' => $last ) : () )
-                    }
-                ) );
-            }
+            } 
+   
+            $last_ret = $client->write( filter(
+                $client => local => {
+                    clientid => $op{id},
+                    ( $last ? ( 'last' => $last ) : () )
+                }
+            ) );
     
             bcast_event( global => { connectionCount => scalar( @listeners ) } => $client );
     
             $client->watch_write( 0 ) if ( $last_ret );
+    
+            last;
+            # test code
+    
+            Danga::Socket->AddTimer( 15, sub {
+                @listeners = map {
+                    if (!$_->{closed}) {
+                        if ($_ != $client) {
+                            $_;
+                        } else {
+                            $_->watch_write( 0 ) if $_->write( '</body></html>' );
+                            delete $ids{$client->{scratch}{id}};
+                            ();
+                        }
+                    } else {
+                        delete $ids{$_->{scratch}{id}};
+                        ();
+                    }
+                } @listeners;
+            } );
             
             last;
         }
