@@ -4,9 +4,9 @@ use ShortBus;
 
 use Carp qw( croak );
 
-our (@listeners, %ids, $filter, $filter_package);
+our (@listeners, %ids, $filter, $filter_package, $dispatch, $dispatch_package);
 
-use constant CONNECTION_TIMER => 2;
+use constant CONNECTION_TIMER => 3;
 use constant KEEPALIVE_TIMER => 5;
 
 sub import {
@@ -34,11 +34,15 @@ sub import {
     }
 
     $filter_package = "ShortBus::" . ( delete $args->{filter} || 'Filter::JSON' );
+    $dispatch_package = "ShortBus::" . ( delete $args->{dispatcher} || 'Dispatch::Trie' );
 
     my @unknown = sort keys %$args;
     croak "Unknown $class import arguments: @unknown" if @unknown;
 
     eval "use $filter_package";
+    croak $@ if ($@);
+    
+    eval "use $dispatch_package";
     croak $@ if ($@);
 }
 
@@ -50,7 +54,6 @@ sub register {
     Danga::Socket->AddTimer( KEEPALIVE_TIMER, \&time_keepalive );
  
     $service->register_hook( ShortBus => start_proxy_request => \&start_proxy_request );
-    $service->register_hook( ShortBus => backend_response_received => \&backend_response );
 
     return 1;
 }
@@ -62,64 +65,52 @@ sub unregister {
 sub load {
     no strict 'refs';
     $filter = $filter_package->new();
+    $dispatch = $dispatch_package->new();
     return 1;
 }
 
 sub unload {
     @listeners = %ids = ();
     $filter = undef;
+    $dispatch = undef;
     return 1;
-}
-
-sub backend_response {
-    foreach (@_) { 
-        warn "backend: $_\n";
-    }
-    return 0;
 }
 
 sub start_proxy_request {
     my Perlbal::ClientProxy $client = shift;
     
-    # requires patched Perlbal
-    my Perlbal::HTTPHeaders $hd = $client->{res_headers};
-    unless ( $hd ) {
-        warn "You are running an unpatched version of Perlbal, add line 123 of ClientProxy.pm: \$self->{res_headers} = \$primary_res_hdrs;\n";
-        return 0;
-    }
-    
     my Perlbal::HTTPHeaders $head = $client->{req_headers};
     return 0 unless $head;
    
+    # requires patched Perlbal
+    my Perlbal::HTTPHeaders $hd = $client->{res_headers};
+    unless ( $hd ) {
+        $hd = $head;
+        # XXX no res_headers are available when shortbus isn't reproxied
+#        warn "You are running an unpatched version of Perlbal, add line 123 of ClientProxy.pm: \$self->{res_headers} = \$primary_res_hdrs;\n";
+#        return 0;
+    }
+
     my $opts;
     unless ( $opts = $hd->header('x-shortbus') ) {
-        $client->_simple_response(404, 'No x-shortbus header returned from backend');
+        $client->_simple_response(404, 'No x-shortbus header sent');
         return 1;
     }
 
     my %op = map {
         my ( $k, $v ) = split( /=/ );
         unless( $v ) { $v = ''; }
-        $k => $v
+        lc($k) => $v
     } split( /;\s*/, $opts );
 
     # parse query string
-    # FIXME proper parsing
-    my ( $qs ) = ( $head->request_uri =~ m/\?(.*)/ );
-    my %in;
-    if ( $qs ) {
-        %in = map {
-            next unless( /=/ );
-            my ( $k, $v ) = split( /=/ );
-            ( unescape( $k ) => unescape( $v ) );
-        } split( /&/, $qs );
-    }
+    my $in = params( $client );
    
     # pull action, domain and id from backend request
     my $action = $op{action} || 'bind';
     my $last = 0;
-    if ( $in{last_eid} =~ m/^\d+$/ ) {
-        $last = $in{last_eid};
+    if ( exists($in->{last_eid}) && $in->{last_eid} =~ m/^\d+$/ ) {
+        $last = $in->{last_eid};
     }
 
     if ( $action eq 'bind' && !( $op{id} && $op{domain} ) ) {
@@ -129,21 +120,56 @@ sub start_proxy_request {
    
     SWITCH: {
         
-        if ($action eq 'post') {
-            # take posted data and insert into clients quque
-            my $target = $ids{ $op{id} };
-            last;
+        if ( $action eq 'post' ) {
+            unless ( defined( $op{id} ) ) {
+                $client->_simple_response(404, "No id param defined in X-SHORTBUS header");
+                return 1;
+            }
+            foreach (qw( id channel )) {
+                $in->{$_} = $op{$_} if ($op{$_});
+
+                unless ( defined( $in->{$_} ) ) {
+                    $client->_simple_response(404, "No $_ param defined");
+                    return 1;
+                }
+            }
+            warn "event inject, channel: $in->{channel} for id: $op{id}, and data $in->{data}";
+            # take posted data and insert into clients queque
+            if ( $op{id} eq '*' ) {
+                bcast_event( $in->{channel} => $in->{data} );
+            } else {
+                my $cli = $ids{ $op{id} };
+                $cli->write( filter( $cli => $in->{channel} => $in->{data} ) );
+            }
+            $client->_simple_response(200, 'OK');
+            return 1;
         }
         
-        if ($action eq 'bind') {
+        if ( $action eq 'bind' ) {
             my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
             $res->header( 'Content-Type', 'text/html' );
             $res->header( 'Connection', 'close' );
  
+            if ($in->{id}) {
+                $op{id} = $in->{id};
+            }
+            
             # client id
             $client->{scratch}{id} = $op{id};
             # event id for this client
             $client->{scratch}{eid} = $last;
+
+            # close already connected client if any
+            if ( my $cli = delete $ids{ $op{id} } ) {
+                $cli->write( filter(
+                    $client => local => {
+                        event => 'closing',
+                        reason => 'Closing previous connection',
+                    }
+                ) . '</body></html>' );
+                $cli->close();
+            }
+            
             # id to listener obj map
             $ids{ $op{id} } = $client;
             push( @listeners, $client );
@@ -209,6 +235,7 @@ if (window.parent.shortbus)
                             $_;
                         } else {
                             $_->watch_write( 0 ) if $_->write( '</body></html>' );
+                            $_->close();
                             delete $ids{$client->{scratch}{id}};
                             ();
                         }
@@ -266,9 +293,19 @@ sub bcast_event {
 
 sub filter {
     my ($client, $ch, $obj) = @_;
-    
-    @$obj{qw( eid channel )} = ( $client->{scratch}{eid}++, $ch );
-    
+   
+    unless ( ref( $obj ) ) {
+        eval {
+           $obj = $filter->thaw( $obj );
+        };
+        if ($@) {
+            warn "$@\n";
+            $obj = { event => 'error', error => $@ };
+        }
+    }
+   
+    @$obj{qw( eid channel )} = ( ++$client->{scratch}{eid}, $ch );
+
     $filter->freeze($obj);
 }
 
