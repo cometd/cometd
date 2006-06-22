@@ -10,6 +10,9 @@ WriteMakefile(
 		'Perlbal'	=> '1.41',
         'Carp'      => undef,
         'JSON'      => '1.05',
+        # includes my filter fix for the basic test http server
+        'POE'       => '0.3501',
+        'BSD::Resource' => undef,
     },
 	'dist'         => {
 		'SUFFIX'       => ".gz",
