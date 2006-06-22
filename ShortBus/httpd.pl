@@ -51,8 +51,13 @@ sub handle {
         $guid = Data::GUID->new();
     }
 
-    print STDERR $s->header('Host');
-    my ($domain) = ( $s->header('Host') =~ m/([^:]+):(\d+)/ );
+    unless ($s->header('Host')) {
+        $r->code(500);
+        $r->content('Invalid request');
+        return H_FINAL;
+    }
+    
+    my ($domain) = ( $s->header('Host') =~ m/([^:]+)(:?:(\d+))?/ );
     $domain =~ s/^[^\.]+\.//;
     my @sb = ( "id=$guid", "domain=$domain", "action=bind" );
     
