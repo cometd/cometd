@@ -31,9 +31,12 @@ sub new {
     my $package = shift;
     croak "$package requires an even number of parameters" if @_ % 2;
     my %opts = @_;
-    my $alias = $opts{Alias};
-    $alias = 'shortbusd' unless defined($alias) and length($alias);
-    $opts{Alias} = $alias;
+    my $s_alias = $opts{ServerAlias};
+    $s_alias = 'shortbus_server' unless defined($s_alias) and length($s_alias);
+    $opts{ServerAlias} = $s_alias;
+    my $c_alias = $opts{ClieintAlias};
+    $c_alias = 'shortbus_client' unless defined($c_alias) and length($c_alias);
+    $opts{ClientAlias} = $c_alias;
     $opts{ListenPort} = $opts{ListenPort} || 6000;
     $opts{TimeOut} = defined $opts{TimeOut} ? $opts{TimeOut} : 30;
     $opts{ListenAddress} = $opts{ListenAddress} || '0.0.0.0';
