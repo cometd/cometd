@@ -2,15 +2,26 @@
 
 use lib qw( lib );
 
-use POE qw( Component::Server::ShortBus );
+use POE;
+use POE::Component::ShortBus::Client;
+use POE::Component::ShortBus::Server;
 
-POE::Component::Server::ShortBus->spawn(
+my %opts = (
     LogLevel => 2,
     TimeOut => 0,
-    MaxConnections => 30000,
+    MaxConnections => 32000,
+);
+
+POE::Component::ShortBus::Server->spawn(
+    %opts,
+    ListenPort => 6000,
+);
+
+POE::Component::ShortBus::Client->spawn(
+    %opts,
     ClientList => [
-        (map { '127.0.0.1:6000' } ( 1 .. 5000 ))
-    ]
+        '127.0.0.1:6000',
+    ],
 );
 
 $poe_kernel->run();
