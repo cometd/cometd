@@ -238,7 +238,7 @@ acting tunnels or connections.
 
 tmp = md5.new()
 tmp.update(str(time.ctime()))
-mimeBoundary = "{"+tmp.hexdigest()+"}"
+mimeBoundary = tmp.hexdigest()
 
 # FIXME: these should probably be pulled from a file or directory containing
 # files and read at server startup. Hard-coding them here is fine for
@@ -246,6 +246,7 @@ mimeBoundary = "{"+tmp.hexdigest()+"}"
 ConnectionTypes = {
 	"iframe": {
 		"deliverMulti": True,
+		"closeOnDelivery": False,
 		"preamble":		"""
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -324,6 +325,7 @@ ConnectionTypes = {
 		# NOTE: the "callback-polling" method can be used via ScriptSrcIO for
 		# x-domain polling
 		"deliverMulti": True,
+		"closeOnDelivery": True,
 		"preamble":		"",
 		"envelope":		"cometd.deliver(%s);",
 		"keepalive":	" ",
@@ -333,6 +335,8 @@ ConnectionTypes = {
 	},
 	"long-polling": {
 		"deliverMulti": False,
+		"closeOnDelivery": True,
+		"preamble":		"",
 		"preamble":		"",
 		"envelope":		"%s",
 		"keepalive":	"",
@@ -344,6 +348,7 @@ ConnectionTypes = {
 		# NOTE: polling doesn't have a "wrapper", as we pass back an array of
 		# JSON objects for direct delivery
 		"deliverMulti": False,
+		"closeOnDelivery": True,
 		"preamble":		"",
 		"envelope":		"%s",
 		"keepalive":	"",
@@ -353,6 +358,7 @@ ConnectionTypes = {
 	},
 	"ie-message-block": {
 		"deliverMulti": True,
+		"closeOnDelivery": False,
 		"preamble":		"""<?xml version="1.0" encoding="UTF-8"?>
 			<cometd>
 		""",
@@ -366,22 +372,29 @@ ConnectionTypes = {
 	},
 	"mime-message-block": {
 		"deliverMulti": True,
-		"preamble":		"""
-		""",
-		"envelope":		"\n--"+mimeBoundary+"""
-Content-Type: text/plain\n\n
+		"closeOnDelivery": False,
+		"preamble":		"--"+mimeBoundary+"\r\n",
+		"envelope":		"""Content-Type: text/plain\r\n\r\n
 %s
-""",
+\r\n
+--"""+mimeBoundary+"\r\n",
+
+#		"preamble":		"",
+#		"envelope":		"\n--"+mimeBoundary+"""
+#Content-Type: text/plain\n\n
+#%s
+#
+#""",
+# --"""+mimeBoundary+"\n",
 		"signoff":		"\n--"+mimeBoundary+"--\n",
 		"tunnelInit":	"",
-		"contentType": "multipart/-x-mixed-replace; boundary=%s" % (mimeBoundary,)
+		"contentType": "multipart/x-mixed-replace; boundary=%s" % (mimeBoundary,)
 	},
 	"flash": {
 		"deliverMulti": True,
-		"preamble":		"""
-		""",
-		"envelope":		"""
-		""",
+		"closeOnDelivery": False,
+		"preamble":		"",
+		"envelope":		"",
 		"signoff":		"",
 		"tunnelInit":	"",
 		"contentType": "text/xml"
@@ -428,6 +441,11 @@ class Connection:
 		self.endpointId = 0
 		# we fall back to polling if otherwise unspecified
 		self.connectionType = message["connectionType"]
+		log.msg("****************************************************")
+		log.msg("connectionType:", self.connectionType);
+		log.msg("****************************************************")
+		self.ctypeProps = ConnectionTypes[self.connectionType]
+		self.contentType = self.ctypeProps["contentType"]
 		self.backlog = []
 		self.stream = stream.ProducerStream()
 		self.id = getIdStr()
@@ -447,17 +465,36 @@ class Connection:
 			"timestamp": 	str(time.ctime())
 		}
 
-		# log.msg(ConnectionTypes[self.connectionType]["preamble"])
-		self.stream.write(ConnectionTypes[self.connectionType]["preamble"])
+		# log.msg(self.ctypeProps["preamble"])
+		self.stream.write(self.ctypeProps["preamble"])
 
 		self.deliver(resp)
 
-	def deliver(self, message):
+	def deliver(self, message=None):
 		log.msg(simplejson.dumps(message))
-		tmsg = ConnectionTypes[self.connectionType]["envelope"] % (simplejson.dumps(message),)
 		# should this be using twisted.internet.reactor.callLater() to actually
 		# preform the writes?
-		self.stream.write(tmsg)
+		if message is not None:
+			self.backlog.append(message)
+		if not self.stream.closed:
+			while len(self.backlog):
+				log.msg(
+					self.ctypeProps["envelope"] % (
+						simplejson.dumps(self.backlog[0]),
+					)
+				)
+				self.stream.write(
+					self.ctypeProps["envelope"] % (
+						simplejson.dumps(self.backlog.pop(0)),
+					)
+				)
+			if self.ctypeProps["closeOnDelivery"]:
+				self.stream.finish()
+
+	def reopen(self):
+		if self.stream.closed:
+			self.stream = stream.ProducerStream()
+			self.deliver()
 
 class Client:
 	def __init__(self, id=None, authSuccess=False, authToken=None, lastError=""):
@@ -471,6 +508,19 @@ class Client:
 
 	def setConnection(self, conn):
 		self.connection = conn
+
+def buildResponse(data, code=200, type="text/html", headers={}):
+	respStream = None
+	if isinstance(data, str):
+		respStream = stream.MemoryStream(data)
+	else:
+		respStream = data
+	parts = type.split("/", 1)
+	thead = http_headers.Headers()
+	thead.addRawHeader("Content-Type", type)
+	for name in headers:
+		thead.addRawHeader(name, headers[name])
+	return http.Response(code, stream=respStream, headers=thead)
 
 class cometd(resource.PostableResource):
 
@@ -486,14 +536,6 @@ class cometd(resource.PostableResource):
 	############################################################################
 	# UTILITY METHODS
 	############################################################################
-
-	def buildResponse(self, data, code=200, type="text/html"):
-		parts = type.split("/", 1)
-		return http.Response(
-			code, 
-			{ "content-type": http_headers.MimeType(parts[0], parts[1]) },
-			stream=stream.MemoryStream(data)
-		)
 
 	############################################################################
 	# resource.Resource METHODS
@@ -525,7 +567,7 @@ class cometd(resource.PostableResource):
 			# log.msg(resp)
 			# FIXME: should we be getting the content type from the
 			# ConnectionTypes object?
-			return self.buildResponse(resp)
+			return buildResponse(resp)
 
 		# otherwise if we got a "message" parameter, deserialize it
 		if request.args.has_key("message"):
@@ -533,12 +575,12 @@ class cometd(resource.PostableResource):
 				message = simplejson.loads(request.args["message"][0])
 			except ValueError:
 				log.msg("message parsing error")
-				return self.buildResponse("message not valid JSON", 500, "text/plain")
+				return buildResponse("message not valid JSON", 500, "text/plain")
 		else:
-			return self.buildResponse("no message provided. Please pass a message parameter to cometd", 400)
+			return buildResponse("no message provided. Please pass a message parameter to cometd", 400)
 			
 		if not message.has_key("channel"):
-			return self.buildResponse('{ "error":"invalid message passed" }', 400, "text/plain")
+			return buildResponse('{ "error":"invalid message passed" }', 400, "text/plain")
 		
 		chan = message["channel"]
 		if chan == "/meta/handshake":
@@ -582,7 +624,7 @@ class cometd(resource.PostableResource):
 
 		log.msg(simplejson.dumps(resp))
 
-		return self.buildResponse(simplejson.dumps(resp), type="text/plain")
+		return buildResponse(simplejson.dumps(resp), type="text/plain")
 
 	# FIXME: should we look into using twisted.cred here to handle auth types?
 	def checkHandshakeAuth(self, request, message):
@@ -601,27 +643,39 @@ class cometd(resource.PostableResource):
 		# FIXME: plug in auth check here!
 		return (True, None, None)
 
+	def _sanityCheckConnection(self, request, message):
+		isSane = True
+		errorResp = None
+		error = ""
+		
+		# sanity check the connection request
+		if "connectionType" not in message or \
+			message["connectionType"] not in SupportedConnectionTypes:
+			isSane = False
+			error = "invalid connectionType requested"
+		elif "clientId" not in message or \
+			message["clientId"] not in self.clients:
+			isSane = False
+			log.msg(message["clientId"])
+			log.msg(resp)
+			return buildResponse(resp, 500, "text/plain")
+		
+		if not isSane:
+			resp = simplejson.dumps({ "error": "invalid clientId provided" })
+			errorResp = buildResponse(resp, 500, "text/plain")
+
+		return (isSane, errorResp)
+
 	def connect(self, request, message):
 		"""
 		Create a new connection object for the client.
 		"""
-		# sanity check the connection request
-		if "connectionType" not in message or \
-			message["connectionType"] not in SupportedConnectionTypes:
-			resp = simplejson.dumps({ "error": "invalid connectionType requested" })
-			log.msg(resp)
-			return self.buildResponse(resp, 500, "text/plain")
-
-		if "clientId" not in message or \
-			message["clientId"] not in self.clients:
-			resp = simplejson.dumps({ "error": "invalid clientId provided" })
-			log.msg(message["clientId"])
-			log.msg(resp)
-			return self.buildResponse(resp, 500, "text/plain")
+		
+		(isSane, errorResp) = self._sanityCheckConnection(request, message)
+		if not isSane: return errorResp
 
 		clientId = message["clientId"]
 		client = self.clients[clientId]
-
 
 		(	client.authSuccess, 
 			client.authToken,
@@ -632,20 +686,36 @@ class cometd(resource.PostableResource):
 			del self.clients[clientId]
 			resp = simplejson.dumps({ "error": client.error })
 			log.msg(resp)
-			return self.buildResponse(resp, 500, "text/plain")
+			return buildResponse(resp, 500, "text/plain")
 
 		# if the request is sane and valid, set up a new Connection object
 		# which will initiate the response and manage it from here on out
 		conn = Connection(request, message, client)
 		client.setConnection(conn)
-		return http.Response(200, stream=conn.stream)
+		return buildResponse(conn.stream, type=conn.contentType)
 
 	def reconnect(self, request, message):
 		# FIXME: implement!
-		resp = simplejson.dumps({ "error": "reconnect not implemented!" })
-		log.msg(resp)
-		return self.buildResponse(resp, 500, "text/plain")
-		
+		(isSane, errorResp) = self._sanityCheckConnection(request, message)
+		if not isSane: return errorResp
+
+		clientId = message["clientId"]
+		client = self.clients[clientId]
+
+		(	client.authSuccess, 
+			client.authToken,
+			client.lastError	) = self.checkCredentials(request, message)
+
+		if not client.authSuccess:
+			# auth failure, nuke the client from the list
+			del self.clients[clientId]
+			resp = simplejson.dumps({ "error": client.error })
+			log.msg(resp)
+			return buildResponse(resp, 500, "text/plain")
+
+		client.connection.reopen()
+
+		return buildResponse(client.connection.stream, type=client.connection.contentType)
 
 	def subscribe(self, request, message):
 		# get the client and the channel here
@@ -654,7 +724,7 @@ class cometd(resource.PostableResource):
 			message["clientId"] not in self.clients:
 			resp = simplejson.dumps({ "error": "invalid clientId provided" })
 			log.msg(resp)
-			return self.buildResponse(resp, 500, "text/plain")
+			return buildResponse(resp, 500, "text/plain")
 
 		client = self.clients[message["clientId"]]
 
@@ -667,8 +737,10 @@ class cometd(resource.PostableResource):
 			# "authToken":	"SOME_NONCE"
 		}
 
+		# FIXME: should we be calling client.deliver and having *that* dispatch
+		# down to the correct connection object?
 		client.connection.deliver(resp)
-		return self.buildResponse("{ success: true }", 200, "text/plain")
+		return buildResponse("{ success: true }", type="text/plain")
 
 	def _subscribe(self, client, chan):
 		"set up a subscription"
@@ -702,13 +774,13 @@ class cometd(resource.PostableResource):
 					log.msg(client)
 					subs[client].connection.deliver(message)
 			if not part in root:
-				log.msg("no part: ", part, " matches for delivery")
-				return self.buildResponse("{ success: true }", 200, "text/plain")
+				log.msg("no part:", part, "matches for delivery")
+				return buildResponse("{ success: true }", type="text/plain")
 			root = root[part]
 			subs = root["__cometd_subscribers"]
 			for client in subs:
 				subs[client].connection.deliver(message)
-		return self.buildResponse("{ success: true }", 200, "text/plain")
+		return buildResponse("{ success: true }", type="text/plain")
 
 class CometdRunner(resource.Resource):
 	# blah, hacky class. Wish we didn't need it
