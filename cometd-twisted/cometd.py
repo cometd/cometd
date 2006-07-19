@@ -218,10 +218,15 @@ The client ID turns out to be very important to subsequent connection.
 	}
 
 	// FIXME: need to specify the "status" and "ping" message types!!
+
 	// NOTE: the "status" message type may be used for introspection and channel
 	// subscription queries
+
 	// NOTE: the "/meta/ping" channel may be safely ignored by servers and
 	// clients alike. It may be used as a keepalive mechanism.
+
+	// FIXME: need to build in a provision for batching of queued messages in
+	// the returned data structure
 
 NOTE: the 0.1 version of the protocol does NOT acknowledge passing messages
 beyond a single router connected to multiple clients. Future protocol versions
@@ -336,7 +341,6 @@ ConnectionTypes = {
 	"long-polling": {
 		"deliverMulti": False,
 		"closeOnDelivery": True,
-		"preamble":		"",
 		"preamble":		"",
 		"envelope":		"%s",
 		"keepalive":	"",
@@ -471,24 +475,28 @@ class Connection:
 		self.deliver(resp)
 
 	def deliver(self, message=None):
-		log.msg(simplejson.dumps(message))
 		# should this be using twisted.internet.reactor.callLater() to actually
 		# preform the writes?
+		delivered = False
 		if message is not None:
 			self.backlog.append(message)
+
 		if not self.stream.closed:
 			while len(self.backlog):
-				log.msg(
-					self.ctypeProps["envelope"] % (
-						simplejson.dumps(self.backlog[0]),
-					)
-				)
+				delivered = True
+				# log.msg(
+				# 	self.ctypeProps["envelope"] % (
+				# 		simplejson.dumps(self.backlog[0]),
+				# 	)
+				# )
 				self.stream.write(
 					self.ctypeProps["envelope"] % (
 						simplejson.dumps(self.backlog.pop(0)),
 					)
 				)
-			if self.ctypeProps["closeOnDelivery"]:
+				if not self.ctypeProps["deliverMulti"]: break
+
+			if self.ctypeProps["closeOnDelivery"] and delivered is not False:
 				self.stream.finish()
 
 	def reopen(self):
@@ -656,12 +664,11 @@ class cometd(resource.PostableResource):
 		elif "clientId" not in message or \
 			message["clientId"] not in self.clients:
 			isSane = False
-			log.msg(message["clientId"])
-			log.msg(resp)
-			return buildResponse(resp, 500, "text/plain")
+			error = "invalid clientId provided"
+			# log.msg(message["clientId"])
 		
 		if not isSane:
-			resp = simplejson.dumps({ "error": "invalid clientId provided" })
+			resp = simplejson.dumps({ "error": str(error) })
 			errorResp = buildResponse(resp, 500, "text/plain")
 
 		return (isSane, errorResp)
