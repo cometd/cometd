@@ -329,10 +329,11 @@ ConnectionTypes = {
 	"callback-polling": {
 		# NOTE: the "callback-polling" method can be used via ScriptSrcIO for
 		# x-domain polling
-		"deliverMulti": True,
+		"deliverMulti": False,
 		"closeOnDelivery": True,
 		"preamble":		"",
-		"envelope":		"cometd.deliver(%s);",
+		# "envelope":		"cometd.deliver(%s);",
+		"envelope":		"(%s)",
 		"keepalive":	" ",
 		"signoff":		"",
 		"tunnelInit":	"",
@@ -454,6 +455,9 @@ class Connection:
 		self.stream = stream.ProducerStream()
 		self.id = getIdStr()
 
+		self.jsonp = False
+		self.jsonpCallback = None
+
 		self.initFromRequest(request, message)
 
 	def initFromRequest(self, request, message):
@@ -472,6 +476,10 @@ class Connection:
 		# log.msg(self.ctypeProps["preamble"])
 		self.stream.write(self.ctypeProps["preamble"])
 
+		if "jsonp" in request.args: # FIXME: hack!
+			self.jsonp = True
+			self.jsonpCallback = request.args["jsonp"][0]
+
 		self.deliver(resp)
 
 	def deliver(self, message=None):
@@ -489,18 +497,28 @@ class Connection:
 				# 		simplejson.dumps(self.backlog[0]),
 				# 	)
 				# )
+				if self.jsonp: # FIXME: hack!
+					self.stream.write(self.jsonpCallback+"(")
+
 				self.stream.write(
 					self.ctypeProps["envelope"] % (
 						simplejson.dumps(self.backlog.pop(0)),
 					)
 				)
+
+				if self.jsonp:
+					self.stream.write(");")
+
 				if not self.ctypeProps["deliverMulti"]: break
 
 			if self.ctypeProps["closeOnDelivery"] and delivered is not False:
 				self.stream.finish()
 
-	def reopen(self):
+	def reopen(self, request, message):
 		if self.stream.closed:
+			if "jsonp" in request.args: # FIXME: hack!
+				self.jsonp = True
+				self.jsonpCallback = request.args["jsonp"][0]
 			self.stream = stream.ProducerStream()
 			self.deliver()
 
@@ -630,9 +648,14 @@ class cometd(resource.PostableResource):
 		resp["authToken"] = client.authToken
 		resp["error"] = client.lastError
 
-		log.msg(simplejson.dumps(resp))
+		rstr = simplejson.dumps(resp)
+		log.msg(rstr)
 
-		return buildResponse(simplejson.dumps(resp), type="text/plain")
+		# accomidation for JSONP handshakes
+		if "jsonp" in request.args:
+			rstr = request.args["jsonp"][0]+"("+rstr+");"
+
+		return buildResponse(rstr, type="text/plain")
 
 	# FIXME: should we look into using twisted.cred here to handle auth types?
 	def checkHandshakeAuth(self, request, message):
@@ -720,7 +743,7 @@ class cometd(resource.PostableResource):
 			log.msg(resp)
 			return buildResponse(resp, 500, "text/plain")
 
-		client.connection.reopen()
+		client.connection.reopen(request, message)
 
 		return buildResponse(client.connection.stream, type=client.connection.contentType)
 
