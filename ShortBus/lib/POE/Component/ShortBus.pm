@@ -18,6 +18,8 @@ use POE qw(
     Filter::Line
 );
 
+use ShortBus::Transport;
+
 sub spawn {
     my $package = shift;
     croak "Do not call the spawn method in $package";
@@ -53,10 +55,22 @@ sub new {
         }
     }
 
+    my $trans = $opts{TransportPlugin} || ShortBus::Transport->new();
+    if ($opts{Transports}) {
+        foreach my $t (keys %{ $opts{Transports} }) {
+            $trans->add_transport(
+                $t,
+                $opts{Transports}->{$t}->{priority},
+                $opts{Transports}->{$t}->{plugin}
+            );
+        }
+    }
+
     bless( { 
         opts => \%opts, 
         heaps => {},
         connections => 0,
+        transport => $trans,
     }, $package );
 }
 

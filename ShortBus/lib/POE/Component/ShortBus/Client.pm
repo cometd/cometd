@@ -35,7 +35,7 @@ sub spawn {
         ],
     );
 
-    return 1;
+    return $self;
 }
 
 sub as_string {
@@ -151,6 +151,8 @@ sub remote_connect_success {
     $self->{connections}++;
 
     $cheap->{connected} = 1;
+
+    $self->{transport}->process_plugins( $socket, $cheap->{con}, $cheap );
 }
 
 sub remote_connect_error {

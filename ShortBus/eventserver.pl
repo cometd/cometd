@@ -5,17 +5,25 @@ use lib qw( lib );
 use POE;
 use POE::Component::ShortBus::Client;
 use POE::Component::ShortBus::Server;
+use ShortBus::Plugin::JSONTransport;
 
 my %opts = (
     LogLevel => 2,
     TimeOut => 0,
     MaxConnections => 32000,
+    Transports => {
+        JSON => {
+            priority => 0,
+            plugin => ShortBus::Plugin::JSONTransport->new(),
+        },
+    },
 );
 
-POE::Component::ShortBus::Server->spawn(
+my $server = POE::Component::ShortBus::Server->spawn(
     %opts,
     ListenPort => 6000,
 );
+
 
 POE::Component::ShortBus::Client->spawn(
     %opts,

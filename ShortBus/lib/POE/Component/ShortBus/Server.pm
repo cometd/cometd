@@ -33,7 +33,7 @@ sub spawn {
         ],
     );
 
-    return 1;
+    return $self;
 }
 
 sub as_string {
@@ -133,6 +133,8 @@ sub local_accept {
     $self->{connections}++;
     
     $kernel->yield(send => "$cheap" => "ShortBus Event Server ready.");
+    
+    $self->{transport}->process_plugins( $accept_handle, $cheap->{con}, $cheap );
 }
 
 
