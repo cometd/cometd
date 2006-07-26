@@ -1,0 +1,9 @@
+.magnet {
+	background: white;
+	border: 2px solid black;
+	padding: 4px;
+	margin: 10px;
+	float: left;
+	position: relative;
+	white-space: nowrap;
+}

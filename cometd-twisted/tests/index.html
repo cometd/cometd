@@ -11,6 +11,7 @@
 		<script type="text/javascript">
 			dojo.require("dojo.io.cometd");
 			dojo.addOnLoad(function(){
+				// cometd.init({}, "/cometd");
 				cometd.init({}, "/cometd");
 				cometd.subscribe("/foo/bar/baz", false, dojo, "debugShallow");
 				cometd.publish("/foo/bar/baz", { thud: "thonk!"});
