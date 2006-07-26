@@ -1,4 +1,4 @@
-package ShortBus::Perlbal::Service::Connector;
+package Cometd::Perlbal::Service::Connector;
 
 
 #    if ( $action eq 'stream' ) {

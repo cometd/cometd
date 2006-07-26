@@ -1,4 +1,4 @@
-package ShortBus;
+package Cometd;
 
 use Carp qw(croak);
 
@@ -16,7 +16,7 @@ sub import {
     my @failed;
 
     foreach my $module (@modules) {
-        my $code = "package $package; use ShortBus::$module;";
+        my $code = "package $package; use Cometd::$module;";
         eval($code);
         if ($@) {
             warn $@;
@@ -41,20 +41,20 @@ u
 
 =head1 NAME
 
-ShortBus - scalable HTTP-based event routing bus
+Cometd - scalable HTTP-based event routing bus
 
 =head1 SYNOPSIS
 
     # for a perlbal plugin
-    use ShortBus qw( Perlbal::Service );
+    use Cometd qw( Perlbal::Service );
 
 =head1 ABSTRACT
 
-ShortBus is a scalable HTTP-based publish / subscribe event routing bus
+Cometd is a scalable HTTP-based publish / subscribe event routing bus
 
 =head1 DESCRIPTION
 
-ShortBus uses a pattern commonly known as Comet (HTTP Push)
+Cometd uses a pattern commonly known as Comet (HTTP Push)
 
 =head1 SEE ALSO
 
@@ -62,11 +62,11 @@ L<Perlbal>
 
 =head1 AUTHOR
 
-David Davis E<lt>xantus@cpan.orgE<gt>
+David Davis E<lt>xantus@cometd.comE<gt>
 
 =head1 RATING
 
-Please rate this module. L<http://cpanratings.perl.org/rate/?distribution=ShortBus>
+Please rate this module. L<http://cpanratings.perl.org/rate/?distribution=Cometd>
 
 =head1 COPYRIGHT AND LICENSE
 

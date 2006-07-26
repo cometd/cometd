@@ -1,6 +1,6 @@
-package ShortBus::Perlbal::Service;
+package Cometd::Perlbal::Service;
 
-use ShortBus;
+use Cometd;
 
 use Carp qw( croak );
 
@@ -13,7 +13,7 @@ sub import {
     my ($class, $args) = @_;
     my $package = caller();
 
-    croak 'ShortBus requires args as a hash ref'
+    croak 'Cometd requires args as a hash ref'
         if ($args && ref($args) ne 'HASH');
 
     my %exports = qw(
@@ -33,8 +33,8 @@ sub import {
         }
     }
 
-    $filter_package = "ShortBus::" . ( delete $args->{filter} || 'Filter::JSON' );
-    $dispatch_package = "ShortBus::" . ( delete $args->{dispatcher} || 'Dispatch::Trie' );
+    $filter_package = "Cometd::" . ( delete $args->{filter} || 'Filter::JSON' );
+    $dispatch_package = "Cometd::" . ( delete $args->{dispatcher} || 'Dispatch::Trie' );
 
     my @unknown = sort keys %$args;
     croak "Unknown $class import arguments: @unknown" if @unknown;
@@ -53,7 +53,7 @@ sub register {
     Danga::Socket->AddTimer( CONNECTION_TIMER, \&connection_count );
     Danga::Socket->AddTimer( KEEPALIVE_TIMER, \&time_keepalive );
  
-    $service->register_hook( ShortBus => start_proxy_request => \&start_proxy_request );
+    $service->register_hook( Cometd => start_proxy_request => \&start_proxy_request );
 
     return 1;
 }
@@ -86,14 +86,14 @@ sub start_proxy_request {
     my Perlbal::HTTPHeaders $hd = $client->{res_headers};
     unless ( $hd ) {
         $hd = $head;
-        # XXX no res_headers are available when shortbus isn't reproxied
+        # XXX no res_headers are available when cometd isn't reproxied
 #        warn "You are running an unpatched version of Perlbal, add line 123 of ClientProxy.pm: \$self->{res_headers} = \$primary_res_hdrs;\n";
 #        return 0;
     }
 
     my $opts;
-    unless ( $opts = $hd->header('x-shortbus') ) {
-        $client->_simple_response(404, 'No x-shortbus header sent');
+    unless ( $opts = $hd->header('x-cometd') ) {
+        $client->_simple_response(404, 'No x-cometd header sent');
         return 1;
     }
 
@@ -184,14 +184,14 @@ window.last_eid = $last;
 window.onload = function() {
     window.location.href = window.location.href.replace( /last_eid=\\d+/, 'last_eid='+window.last_eid );
 };
-sb = function(ev,ch,obj) {
+cometd = function(ev,ch,obj) {
     window.last_eid = ev;
     var d=document.createElement('div');
     d.innerHTML = '<pre style="margin:0">Event:'+ev+'\\tChannel:'+ch+'\\t'+obj+'</pre>';
     document.body.appendChild(d);
 };
-if (window.parent.shortbus)
-    window.parent.shortbus( window );
+if (window.parent.cometd)
+    window.parent.cometd( window );
 -->
 </script>
 | );

@@ -1,4 +1,4 @@
-package ShortBus::Common;
+package Cometd::Common;
 
 our %hex_chr;
 

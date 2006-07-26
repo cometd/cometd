@@ -1,11 +1,11 @@
 #!/usr/bin/perl
 
-use lib qw( lib );
+use lib './lib';
 
 use POE;
-use POE::Component::ShortBus::Client;
-use POE::Component::ShortBus::Server;
-use ShortBus::Plugin::JSONTransport;
+use POE::Component::Cometd::Client;
+use POE::Component::Cometd::Server;
+use Cometd::Plugin::JSONTransport;
 
 my %opts = (
     LogLevel => 2,
@@ -14,18 +14,18 @@ my %opts = (
     Transports => {
         JSON => {
             priority => 0,
-            plugin => ShortBus::Plugin::JSONTransport->new(),
+            plugin => Cometd::Plugin::JSONTransport->new(),
         },
     },
 );
 
-my $server = POE::Component::ShortBus::Server->spawn(
+my $server = POE::Component::Cometd::Server->spawn(
     %opts,
     ListenPort => 6000,
 );
 
 
-POE::Component::ShortBus::Client->spawn(
+POE::Component::Cometd::Client->spawn(
     %opts,
     ClientList => [
         '127.0.0.1:6000',

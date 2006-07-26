@@ -1,4 +1,4 @@
-package ShortBus::Plugin::JSONTransport;
+package Cometd::Plugin::JSONTransport;
 
 
 sub new {

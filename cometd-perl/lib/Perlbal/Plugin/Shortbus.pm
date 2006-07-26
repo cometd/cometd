@@ -1,9 +1,9 @@
-package Perlbal::Plugin::Shortbus;
+package Perlbal::Plugin::Cometd;
 
 use strict;
 use warnings;
 
-use ShortBus qw( Perlbal::Service );
+use Cometd qw( Perlbal::Service );
 
 1;
 
@@ -13,12 +13,12 @@ __END__
 
 =head1 NAME
 
-Perlbal::Plugin::ShortBus - Perlbal plugin for ShortBus
+Perlbal::Plugin::Cometd - Perlbal plugin for Cometd
 
 =head1 SYNOPSIS
     # perlbal.conf
 
-    LOAD ShortBus
+    LOAD Cometd
     LOAD vhosts
 
     SERVER max_connections = 10000
@@ -34,10 +34,10 @@ Perlbal::Plugin::ShortBus - Perlbal plugin for ShortBus
         SET enable_reproxy = true
     ENABLE apache_proxy
 
-    CREATE SERVICE shortbus
+    CREATE SERVICE cometd
         SET role = reverse_proxy
-        SET plugins = ShortBus
-    ENABLE shortbus
+        SET plugins = Cometd
+    ENABLE cometd 
 
     CREATE SERVICE web
         SET listen         = 10.0.0.1:80
@@ -60,9 +60,9 @@ servicing other clients.
 
 The easiest way to use this module is to setup apache on port 81, and Perlbal
 on port 80 as in the synopsis.  Start perbal and use a supported javascript
-library.  You can find supported libraries at L<http://shortbus.xantus.org/>
+library.  You can find supported libraries at L<http://cometd.com/>
 
-=head2 ShortBus Notes
+=head2 Cometd Notes
 
 =head2 EXPORT
 
@@ -74,11 +74,11 @@ L<Perlbal>
 
 =head1 AUTHOR
 
-David Davis E<lt>xantus@cpan.orgE<gt>
+David Davis E<lt>xantus@cometd.comE<gt>
 
 =head1 RATING
 
-Please rate this module. L<http://cpanratings.perl.org/rate/?distribution=Perlbal-Plugin-ShortBus>
+Please rate this module. L<http://cpanratings.perl.org/rate/?distribution=Cometd>
 
 =head1 COPYRIGHT AND LICENSE
 

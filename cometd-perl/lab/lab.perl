@@ -9,7 +9,7 @@ use strict;
 use lib "./lib";
 
 use POE;
-use POE::Component::ShortBus qw( SB_RC_OK );
+use POE::Component::Cometd qw( SB_RC_OK );
 
 POE::Session->create(
     inline_states => {
@@ -25,9 +25,9 @@ $poe_kernel->run();
 sub start {
     my ( $kernel, $heap, $session ) = @_[ KERNEL, HEAP, SESSION ];
 
-    my $bus = $heap->{b} = POE::Component::ShortBus->new();
+    my $bus = $heap->{b} = POE::Component::CometCometdd->new();
 
-    $kernel->refcount_increment($bus->ID, "shortbus");
+    $kernel->refcount_increment($bus->ID, "cometd");
     
     my ( $rt, $queue_id ) = $bus->create( "created" );
     

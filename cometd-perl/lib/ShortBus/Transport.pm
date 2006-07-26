@@ -1,4 +1,4 @@
-package ShortBus::Transport;
+package Cometd::Transport;
 
 sub TRANSPORTS() { 0 }
 sub PRIORITIES() { 1 }

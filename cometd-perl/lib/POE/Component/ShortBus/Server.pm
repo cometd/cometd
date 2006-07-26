@@ -1,8 +1,8 @@
-package POE::Component::ShortBus::Server;
+package POE::Component::Cometd::Server;
 
-use POE qw( Component::ShortBus );
+use POE qw( Component::Cometd );
 
-use base qw( POE::Component::ShortBus );
+use base qw( POE::Component::Cometd );
 
 use Socket;
 use overload '""' => \&as_string;
@@ -132,7 +132,7 @@ sub local_accept {
 
     $self->{connections}++;
     
-    $kernel->yield(send => "$cheap" => "ShortBus Event Server ready.");
+    $kernel->yield(send => "$cheap" => "Cometd Event Server ready.");
     
     $self->{transport}->process_plugins( $accept_handle, $cheap->{con}, $cheap );
 }

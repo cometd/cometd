@@ -1,8 +1,8 @@
-package POE::Component::ShortBus::Client;
+package POE::Component::Cometd::Client;
 
-use POE qw( Component::ShortBus );
+use POE qw( Component::Cometd );
 
-use base qw( POE::Component::ShortBus );
+use base qw( POE::Component::Cometd );
 
 use overload '""' => \&as_string;
 

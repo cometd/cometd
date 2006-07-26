@@ -1,4 +1,4 @@
-package POE::Component::ShortBus;
+package POE::Component::Cometd;
 
 use strict;
 use warnings;
@@ -18,7 +18,7 @@ use POE qw(
     Filter::Line
 );
 
-use ShortBus::Transport;
+use Cometd::Transport;
 
 sub spawn {
     my $package = shift;
@@ -34,15 +34,15 @@ sub new {
     croak "$package requires an even number of parameters" if @_ % 2;
     my %opts = @_;
     my $s_alias = $opts{ServerAlias};
-    $s_alias = 'shortbus_server' unless defined($s_alias) and length($s_alias);
+    $s_alias = 'cometd_server' unless defined($s_alias) and length($s_alias);
     $opts{ServerAlias} = $s_alias;
     my $c_alias = $opts{ClieintAlias};
-    $c_alias = 'shortbus_client' unless defined($c_alias) and length($c_alias);
+    $c_alias = 'cometd_client' unless defined($c_alias) and length($c_alias);
     $opts{ClientAlias} = $c_alias;
     $opts{ListenPort} = $opts{ListenPort} || 6000;
     $opts{TimeOut} = defined $opts{TimeOut} ? $opts{TimeOut} : 30;
     $opts{ListenAddress} = $opts{ListenAddress} || '0.0.0.0';
-    $POE::Component::ShortBus::LogLevel = delete $opts{LogLevel} || 0;
+    $POE::Component::Cometd::LogLevel = delete $opts{LogLevel} || 0;
 
     if ($opts{MaxConnections}) {
         my $ret = setrlimit(RLIMIT_NOFILE, $opts{MaxConnections}, $opts{MaxConnections});
@@ -55,7 +55,7 @@ sub new {
         }
     }
 
-    my $trans = $opts{TransportPlugin} || ShortBus::Transport->new();
+    my $trans = $opts{TransportPlugin} || Cometd::Transport->new();
     if ($opts{Transports}) {
         foreach my $t (keys %{ $opts{Transports} }) {
             $trans->add_transport(
@@ -124,7 +124,7 @@ sub create_event {
 
 sub _log {
     my ($self, %o) = @_;
-    if ($o{v} <= $POE::Component::ShortBus::LogLevel) {
+    if ($o{v} <= $POE::Component::Cometd::LogLevel) {
         my $sender = (defined $self->{cheap} && defined $self->{cheap}->{peer_ip})
             ? $self->{cheap}->{peer_ip} : "?";
         my $type = (defined $o{type}) ? $o{type} : 'M';

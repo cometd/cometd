@@ -16,7 +16,7 @@ POE::Session->create(
             $server->port( 8021 );
             $server->handlers( [
                 '/' => new_handler( StaticHandler => $home ),
-                '/shortbus' => MyHandler->new(),
+                '/cometd' => MyHandler->new(),
             ] );
             $_[HEAP]->{svc} = $server->create_server();
         },
@@ -62,8 +62,8 @@ sub handle {
     my @sb = ( "id=$guid", "domain=$domain", "action=bind" );
     
     $r->code( 200 );
-    $r->header( 'X-REPROXY-SERVICE' => 'shortbus' );
-    $r->header( 'X-SHORTBUS' => join('; ',@sb ) );
+    $r->header( 'X-REPROXY-SERVICE' => 'cometd' );
+    $r->header( 'X-COMETD' => join('; ',@sb ) );
     
     my $c = HTTP::Cookies->new( {} );
     $c->set_cookie( 0, 'CID', "$guid", '/',

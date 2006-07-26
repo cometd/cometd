@@ -1,4 +1,4 @@
-package POE::Component::Server::ShortBus;
+package POE::Component::Server::Cometd;
 
 use strict;
 use warnings;
@@ -22,7 +22,7 @@ sub spawn {
     croak "$package requires an even number of parameters" if @_ % 2;
     my %opts = @_;
     my $alias = $opts{Alias};
-    $alias = 'shortbusd' unless defined($alias) and length($alias);
+    $alias = 'cometd' unless defined($alias) and length($alias);
     $opts{Alias} = $alias;
     $opts{ListenPort} = $opts{ListenPort} || 6000;
     $opts{TimeOut} = defined $opts{TimeOut} ? $opts{TimeOut} : 30;
@@ -410,7 +410,7 @@ sub local_accept {
 
     $self->{connections}++;
     
-    $kernel->yield(send => "$cheap" => "ShortBus Event Server ready.");
+    $kernel->yield(send => "$cheap" => "Cometd Event Server ready.");
 }
 
 
