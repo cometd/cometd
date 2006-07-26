@@ -6,7 +6,7 @@ use strict;
 #our $VERSION;
 #$VERSION = do {my($r)=(q$Revision$=~/(\d+)/);sprintf"1.%04d",$r};
 
-use lib "./lab";
+use lib "./lib";
 
 use POE;
 use POE::Component::ShortBus qw( SB_RC_OK );
