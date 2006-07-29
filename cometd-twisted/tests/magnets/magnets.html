@@ -12,6 +12,7 @@
 			dojo.require("dojo.html.layout");
 			dojo.require("dojo.widget.*");
 			dojo.require("dojo.widget.ContentPane");
+			dojo.require("dojo.widget.Dialog");
 			dojo.require("dojofun.widget.Magnet");
 
 			function addMagnets(type, data, e){
@@ -25,6 +26,13 @@
 					tray.addChild(tmp);
 				}	
 				dojo.lang.forEach(tray.children, function(ttmp){
+					dojo.event.connect(ttmp.drag, "onDragStart", function(){
+						cometd.publish("/magnets/moveStart", {
+							source: cometd.clientId,
+							widgetId: ttmp.widgetId
+						});
+					});
+
 					dojo.event.connect(ttmp.drag, "onDragEnd", function(){
 						cometd.publish("/magnets/move", {
 							source: cometd.clientId,
@@ -37,11 +45,15 @@
 
 			function serverMagnetMove(msg){
 				if(msg.data.source != cometd.clientId){
-					// FIXME: this should probably be moved to a method on the widget
 					var tmp = dojo.widget.byId(msg.data.widgetId);
-					tmp.domNode.style.position = "absolute";
-					tmp.domNode.style.left = msg.data.pos.x+"px";
-					tmp.domNode.style.top = msg.data.pos.y+"px";
+					tmp.unhighlight();
+					tmp.moveTo(msg.data.pos);
+				}
+			}
+
+			function serverMagnetMoveStart(msg){
+				if(msg.data.source != cometd.clientId){
+					dojo.widget.byId(msg.data.widgetId).highlight();
 				}
 			}
 
@@ -50,6 +62,7 @@
 				cometd.init({}, "/cometd");
 
 				cometd.subscribe("/magnets/move", true, "serverMagnetMove");
+				cometd.subscribe("/magnets/moveStart", true, "serverMagnetMoveStart");
 			}
 
 
