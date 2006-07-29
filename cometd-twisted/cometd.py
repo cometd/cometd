@@ -239,7 +239,16 @@ server event expiration.
 
 TODOC: when subscription happens, it's *clients* that are subscribed, not the
 acting tunnels or connections.
+
+FIXME: define globbing semantics
+FIXME: extend protocol with acking
+FIXME: outline server timeout strategies and why it's not part of the protocol
+FIXME: define event ordering
+FIXME: provide addendum for to define APIs of conformant JavaScript clients
 """
+
+# timeout constants
+clientTimeout = 30*60 # 30 minutes
 
 tmp = md5.new()
 tmp.update(str(time.ctime()))
@@ -340,18 +349,6 @@ ConnectionTypes = {
 		"contentType": "text/javascript"
 	},
 	"long-polling": {
-		"deliverMulti": False,
-		"closeOnDelivery": True,
-		"preamble":		"",
-		"envelope":		"%s",
-		"keepalive":	"",
-		"signoff":		"",
-		"tunnelInit":	"",
-		"contentType": "text/plain"
-	},
-	"http-polling": {
-		# NOTE: polling doesn't have a "wrapper", as we pass back an array of
-		# JSON objects for direct delivery
 		"deliverMulti": False,
 		"closeOnDelivery": True,
 		"preamble":		"",
