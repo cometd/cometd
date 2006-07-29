@@ -814,6 +814,7 @@ class CometdRunner(resource.Resource):
 	addSlash = True
 	log.msg("cometd initialized")
 	child_tests = static.File(path("./tests").abspath())
+	child_dojo = static.File(path("./dojo").abspath())
 	child_cometd = cometd()
 
 	def render(self, ctx):
