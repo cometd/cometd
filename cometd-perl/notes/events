@@ -1,4 +1,4 @@
-basic shortbus events:
+basic cometd events:
 
 Event: create ($postback)
 
@@ -37,13 +37,13 @@ Postback args: $status ('OK', 'no such queue', 'no listener to disconnect', ???)
 
 Event: acknowledge ($postback, $queue_id, $message_id)
 
-Does: Tells shortbus the specified $message_id and all before have been received and can be cleared from the queue
+Does: Tells cometd the specified $message_id and all before have been received and can be cleared from the queue
 
 Postback args: $status ('OK', 'no such queue', 'event_id too low', 'event_id too high', ???)
 
 
 
-When a $listener is connected to the queue, SB will call it sequentially with all messages in the queue -
+When a $listener is connected to the queue, CD will call it sequentially with all messages in the queue -
 
 $listener->($queue_id, $message_id, $message_body)
 
