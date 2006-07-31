@@ -7,8 +7,7 @@ sub new {
 }
 
 sub freeze {
-    shift;
-    my $obj = shift;
+    my $obj = $_[1];
     # save space
     my ($ev, $ch) = delete @$obj{qw( eid channel )};
     # TODO proper js escape, also, does JSON escape?
@@ -17,8 +16,7 @@ sub freeze {
 }
 
 sub thaw {
-    shift;
-    jsonToObj(shift);
+    jsonToObj($_[1]);
 }
 
 1;
