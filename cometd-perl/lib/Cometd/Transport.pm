@@ -14,7 +14,7 @@ sub new {
     my $session = POE::Session->create(
         object_states =>  [
             $self => {
-                '_start'          =>  'start',
+                '_start'          =>  '_start',
                 'process_plugins' =>  'process_plugins',
             },
         ],
