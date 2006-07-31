@@ -19,16 +19,18 @@ my %opts = (
     },
 );
 
+# accepts connections and receives events
 my $server = POE::Component::Cometd::Server->spawn(
     %opts,
     ListenPort => 6000,
 );
 
-
+# conencts to perlbal servers that handle client connections
+# TODO exponential backoff
 POE::Component::Cometd::Client->spawn(
     %opts,
     ClientList => [
-        '127.0.0.1:6000',
+        '127.0.0.1:2022',
     ],
 );
 
