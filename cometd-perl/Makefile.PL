@@ -11,7 +11,7 @@ WriteMakefile(
         'Carp'      => undef,
         'JSON'      => '1.05',
         # includes my filter fix for the basic test http server
-        'POE'       => '0.3501',
+        'POE'       => '0.3502',
         'BSD::Resource' => undef,
     },
 	'dist'         => {
