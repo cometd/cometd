@@ -4,7 +4,7 @@ use Cometd;
 
 use Carp qw( croak );
 
-our (@listeners, %ids, $filter, $filter_package, $dispatch, $dispatch_package);
+our ( @listeners, %ids, $filter, $filter_package );
 
 use constant CONNECTION_TIMER => 3;
 use constant KEEPALIVE_TIMER => 5;
@@ -34,15 +34,11 @@ sub import {
     }
 
     $filter_package = "Cometd::" . ( delete $args->{filter} || 'Filter::JSON' );
-    $dispatch_package = "Cometd::" . ( delete $args->{dispatcher} || 'Dispatch::Trie' );
 
     my @unknown = sort keys %$args;
     croak "Unknown $class import arguments: @unknown" if @unknown;
 
     eval "use $filter_package";
-    croak $@ if ($@);
-    
-    eval "use $dispatch_package";
     croak $@ if ($@);
 }
 
@@ -65,14 +61,12 @@ sub unregister {
 sub load {
     no strict 'refs';
     $filter = $filter_package->new();
-    $dispatch = $dispatch_package->new();
     return 1;
 }
 
 sub unload {
     @listeners = %ids = ();
     $filter = undef;
-    $dispatch = undef;
     return 1;
 }
 
