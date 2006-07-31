@@ -34,6 +34,7 @@ sub unescape {
     return $es;
 }
 
+# XXX this is ugly and will go away, don't depend on it
 sub params {
     my Perlbal::ClientProxy $client = shift;
     my $r = $client->{res_headers};

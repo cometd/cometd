@@ -29,7 +29,7 @@ sub import {
 
 sub new {
     my $class = shift;
-    warn "new cannot be used in $class";
+    warn "new cannot be used in package $class";
 }
 
 1;
