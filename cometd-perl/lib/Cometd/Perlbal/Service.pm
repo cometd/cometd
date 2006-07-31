@@ -162,7 +162,7 @@ sub start_proxy_request {
             # close already connected client if any
             if ( my $cli = delete $ids{ $op{id} } ) {
                 $cli->write( filter(
-                    $client => local => {
+                    $client => '/meta/local' => {
                         event => 'closing',
                         reason => 'Closing previous connection',
                     }
@@ -215,13 +215,13 @@ if (window.parent.cometd)
             } 
    
             $last_ret = $client->write( filter(
-                $client => local => {
+                $client => '/meta/local' => {
                     clientid => $op{id},
                     ( $last ? ( 'last' => $last ) : () )
                 }
             ) );
     
-            bcast_event( global => { connectionCount => scalar( @listeners ) } => $client );
+            bcast_event( '/meta/global' => { connectionCount => scalar( @listeners ) } => $client );
     
             $client->watch_write( 0 ) if ( $last_ret );
     
@@ -286,7 +286,7 @@ sub bcast_event {
                 ();
             }
         } @listeners;
-        bcast_event( global => { connectionCount => scalar(@listeners) } );
+        bcast_event( '/meta/global' => { connectionCount => scalar(@listeners) } );
     }
 
 }
@@ -317,7 +317,7 @@ sub connection_count {
     my $ncount = scalar( @listeners );
     
     if ($ncount != $count ) {
-        bcast_event( global => { connectionCount => $ncount } );
+        bcast_event( '/meta/global' => { connectionCount => $ncount } );
     }
     
     return 1;
@@ -326,7 +326,7 @@ sub connection_count {
 sub time_keepalive {
     Danga::Socket->AddTimer( KEEPALIVE_TIMER, \&time_keepalive );
     
-    bcast_event( global => { 'time' => time() } );
+    bcast_event( '/meta/global' => { 'time' => time() } );
     
     return 5;
 }
