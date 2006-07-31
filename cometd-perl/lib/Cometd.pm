@@ -5,6 +5,8 @@ use Carp qw(croak);
 use strict;
 use warnings;
 
+our $VERSION = '0.01';
+
 sub import {
     my $self = shift;
 
@@ -36,7 +38,7 @@ sub new {
 
 __END__
 
-u
+
 =pod
 
 =head1 NAME
