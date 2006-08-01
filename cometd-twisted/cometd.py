@@ -247,9 +247,11 @@ FIXME: define event ordering
 FIXME: provide addendum for to define APIs of conformant JavaScript clients
 """
 
-# timeout constants
+# constants and configuration 
 clientTimeout = 30*60 # 30 minutes
+verbose = True
 
+# auto-generated configuration
 tmp = md5.new()
 tmp.update(str(time.ctime()))
 mimeBoundary = tmp.hexdigest()
@@ -443,9 +445,10 @@ class Connection:
 		self.endpointId = 0
 		# we fall back to polling if otherwise unspecified
 		self.connectionType = message["connectionType"]
-		log.msg("****************************************************")
-		log.msg("connectionType:", self.connectionType);
-		log.msg("****************************************************")
+		if verbose:
+			log.msg("****************************************************")
+			log.msg("connectionType:", self.connectionType);
+			log.msg("****************************************************")
 		self.ctypeProps = ConnectionTypes[self.connectionType]
 		self.contentType = self.ctypeProps["contentType"]
 		self.backlog = []
@@ -470,7 +473,7 @@ class Connection:
 			"timestamp": 	str(time.ctime())
 		}
 
-		# log.msg(self.ctypeProps["preamble"])
+		if verbose: log.msg(self.ctypeProps["preamble"])
 		self.stream.write(self.ctypeProps["preamble"])
 
 		if "jsonp" in request.args: # FIXME: hack!
@@ -566,8 +569,9 @@ class cometd(resource.PostableResource):
 
 	def locateChild(self, request, segments):
 		# when we're reached, switch immediately to render mode
-		log.msg(request)
-		log.msg(segments)
+		if verbose:
+			log.msg(request)
+			log.msg(segments)
 		return (self, server.StopTraversal)
 
 	def render(self, request):
@@ -578,7 +582,7 @@ class cometd(resource.PostableResource):
 		message = None
 
 		# we'll get called as the result of a post or get
-		log.msg(request.args)
+		if verbose: log.msg(request.args)
 
 		# if we get a tunnelInit request in the form of:
 		# 	http://blah.endpoint.com/cometd/?tunnelInit=iframe&domain=endpoint.com
@@ -597,7 +601,8 @@ class cometd(resource.PostableResource):
 			try:
 				message = simplejson.loads(request.args["message"][0])
 			except ValueError:
-				log.msg("message parsing error")
+				if verbose:
+					log.msg("message parsing error")
 				return buildResponse("message not valid JSON", 500, "text/plain")
 		else:
 			return buildResponse("no message provided. Please pass a message parameter to cometd", 400)
@@ -646,7 +651,8 @@ class cometd(resource.PostableResource):
 		resp["error"] = client.lastError
 
 		rstr = simplejson.dumps(resp)
-		log.msg(rstr)
+		if verbose:
+			log.msg(rstr)
 
 		# accomidation for JSONP handshakes
 		if "jsonp" in request.args:
@@ -712,7 +718,8 @@ class cometd(resource.PostableResource):
 			# auth failure, nuke the client from the list
 			del self.clients[clientId]
 			resp = simplejson.dumps({ "error": client.error })
-			log.msg(resp)
+			if verbose:
+				log.msg(resp)
 			return buildResponse(resp, 500, "text/plain")
 
 		# if the request is sane and valid, set up a new Connection object
@@ -737,7 +744,8 @@ class cometd(resource.PostableResource):
 			# auth failure, nuke the client from the list
 			del self.clients[clientId]
 			resp = simplejson.dumps({ "error": client.error })
-			log.msg(resp)
+			if verbose:
+				log.msg(resp)
 			return buildResponse(resp, 500, "text/plain")
 
 		client.connection.reopen(request, message)
@@ -750,7 +758,8 @@ class cometd(resource.PostableResource):
 		if "clientId" not in message or \
 			message["clientId"] not in self.clients:
 			resp = simplejson.dumps({ "error": "invalid clientId provided" })
-			log.msg(resp)
+			if verbose:
+				log.msg(resp)
 			return buildResponse(resp, 500, "text/plain")
 
 		client = self.clients[message["clientId"]]
@@ -775,11 +784,12 @@ class cometd(resource.PostableResource):
 		# dictionary lookups to quickly return a list of interested clients.
 		# NOTE: we are not currently supporting the "*" glob operator in channels
 		cparts = chan.split("/")[1:]
-		log.msg(cparts)
+		if verbose: log.msg(cparts)
 		root = self.subscriptions
 		for part in cparts: # FIXME: is iteration order garunteed?
 			if not part in root:
-				log.msg("creating part: ", part)
+				if verbose:
+					log.msg("creating part: ", part)
 				root[part] = { "__cometd_subscribers": {} }
 			root = root[part]
 
@@ -790,45 +800,23 @@ class cometd(resource.PostableResource):
 		Event routing and delivery. The guts of cometd.
 		"""
 		cparts = message["channel"].split("/")[1:]
-		log.msg(cparts)
+		if verbose: log.msg(cparts)
 		root = self.subscriptions
 		for part in cparts: # FIXME: is iteration order garunteed?
 			if "*" in root:
 				log.msg("delivering to wildcard subscribers")
 				subs = root["*"]["__cometd_subscribers"]
 				for client in subs:
+					if verbose: log.msg(client)
 					# FIXME: check for "openness"?
-					log.msg(client)
 					subs[client].connection.deliver(message)
 			if not part in root:
-				log.msg("no part:", part, "matches for delivery")
+				if verbose: log.msg("no part:", part, "matches for delivery")
 				return buildResponse("{ success: true }", type="text/plain")
 			root = root[part]
 			subs = root["__cometd_subscribers"]
 			for client in subs:
 				subs[client].connection.deliver(message)
 		return buildResponse("{ success: true }", type="text/plain")
-
-class CometdRunner(resource.Resource):
-	# blah, hacky class. Wish we didn't need it
-	addSlash = True
-	log.msg("cometd initialized")
-	child_tests = static.File(path("./tests").abspath())
-	child_dojo = static.File(path("./dojo").abspath())
-	child_cometd = cometd()
-
-	def render(self, ctx):
-		return http.Response(200,
-			{ "content-type": http_headers.MimeType('text', 'plain') },
-			stream=stream.FileStream(path("cometd.txt").abspath().open())
-		)
-
-
-# FIXME: we don't always want to run this!? How do we tell if we're running under twistd?
-# FIXME: we should be getting all of this config info from a file!!
-site = server.Site(CometdRunner())
-application = service.Application("cometd")
-s = strports.service('tcp:8080', channel.HTTPFactory(site))
-s.setServiceParent(application)
 
 # vim:ts=4:noet:
