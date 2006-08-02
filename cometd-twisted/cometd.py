@@ -65,7 +65,7 @@ ConnectionTypes = {
 		"keepalive":	"<br>" + (" " * 2048),
 		"signoff":		"""
 		<script type="text/javascript">
-			window.parent.cometd.disconnect(%s);
+			window.parent.cometd.disconnect();
 		</script>
 	</body>
 </html>	
