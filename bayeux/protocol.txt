@@ -1,3 +1,7 @@
+Bayeux: A JSON Protocol For Publish/Subscribe Event Delivery
+Protocol Version: 0.1draft1
+-------------------------------------------------------------------------------
+
 Initial connection setup specifies to the system a message envelope type for
 all communications on a particular channel, but inside this envelope a
 normalized JSON structure is used to communicate with all endpoints.
@@ -23,44 +27,51 @@ ID which is unique to the router. No randomness is required in these
 identifiers although routers are expected to drop messages which they have
 previously "seen".
 
-All cometd messages are encoded in JSON format, but information in discrete
-messages MAY be repeated in HTTP headers in order to speed message routing.
-This is an example of the messages exchanged durring a connection setup
-process:
+All cometd messages are encoded in JSON format. Individual message objects make
+up the elements of the top-level array that comprises the root object of all
+protocol transmissions. This is an example of the messages exchanged durring a
+connection setup process:
 
 	// from client, to server
-	{
-		"channel":			"/meta/handshake",
-		// all meta channel messages MUST contain the protocol version the
-		// client expects
-		"version":			0.1,
-		// the oldest version of the protocol that this client will support
-		"minimumVersion":	0.1,
-		// the authScheme is outside the realm of this specification and
-		// provided here for illustration only. It's also optional.
-		"authScheme":		"SHA1",
-		// the authUser and authToken are optional and authScheme dependent
-		"authUser":			"alex",
-		"authToken":		"HASHJIBBERISH"
-	}
+	[
+		{
+			"channel":			"/meta/handshake",
+			// all meta channel messages MUST contain the protocol version the
+			// client expects
+			"version":			0.1,
+			// the oldest version of the protocol that this client will support
+			"minimumVersion":	0.1,
+			// the authScheme is outside the realm of this specification and
+			// provided here for illustration only. It's also optional.
+			"authScheme":		"SHA1",
+			// the authUser and authToken are optional and authScheme dependent
+			"authUser":			"alex",
+			"authToken":		"HASHJIBBERISH"
+		}
+		// servers MUST ignore other messages in the envelope should the first
+		// be a handshake request
+	]
 
 	// NOTE: data should be POSTed with an encoding of
 	// application/x-www-form-urlencoded, and the preceeding payload is
 	// expected to be stored in the "message" parameter
 
 	// from server, to client
-	{
-		"channel":					"/meta/handshake",
-		// preferred protocol version
-		"version":					0.1,
-		// the oldest version of the protocol that this server will support
-		"minimumVersion":			0.1,
-		"supportedConnectionTypes":	["iframe", "flash", "http-polling"],
-		"clientId":					"SOME_UNIQUE_CLIENT_ID"
-		"authSuccessful":			true,
-		// authToken is auth scheme dependent and entirely optional
-		"authToken":				"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY",
-	}
+	[
+		{
+			"channel":					"/meta/handshake",
+			// preferred protocol version
+			"version":					0.1,
+			// the oldest version of the protocol that this server will support
+			"minimumVersion":			0.1,
+			"supportedConnectionTypes":	["iframe", "flash", "http-polling"],
+			"clientId":					"SOME_UNIQUE_CLIENT_ID"
+			"authSuccessful":			true,
+			// authToken is auth scheme dependent and entirely optional
+			"authToken":				"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY",
+		}
+		// servers MUST send only a handshake message in response to a handshake request
+	]
 
 	// finally, the client opens up a tunnel by creating a new iframe whose
 	// initial contents were retreived from the following URL:
@@ -70,13 +81,16 @@ process:
 	// be sent for most transports.
 	//
 	// here's what the client then POST's:
-	{
-		"channel":	"/meta/connect",
-		"clientId":	"SOME_UNIQUE_CLIENT_ID",
-		"connectionType": "iframe",
-		// optional
-		"authToken":"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER"
-	}
+	[
+		{
+			"channel":	"/meta/connect",
+			"clientId":	"SOME_UNIQUE_CLIENT_ID",
+			"connectionType": "iframe",
+			// optional
+			"authToken":"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER"
+		}
+		// , ...
+	]
 
 	// NOTE: data should be POSTed with an encoding of
 	// application/x-www-form-urlencoded, and the preceeding payload is
@@ -89,34 +103,49 @@ process:
 		<head>
 			<title>Comet -- cleaning up web development</title>
 			<script type="text/javascript">
-				window.parent.cometd.deliver({
-					// user-sent data
-					"channel":		"/meta/connect",
-					"successful":	true,
-					"error":		"",
-					"connectionId":	"/meta/connections/26",
-					"timestamp":	"TimeAtServer",
-					// optional
-					"authToken":	"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY"
-				});
+				window.parent.cometd.deliver([
+					{
+						// user-sent data
+						"channel":		"/meta/connect",
+						"successful":	true,
+						"error":		"",
+						"connectionId":	"/meta/connections/26",
+						"timestamp":	"TimeAtServer",
+						// optional
+						"authToken":	"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY"
+					}
+				]);
 			</script>
 		</head>
 		<body>
 	<!-- end preamble -->
 	<!-- begin envelope -->
 			<script type="text/javascript">
-				window.parent.cometd.deliver({
-					// user-sent data
-					"data": {
-						"someField":	["some", "random", "values"],
+				window.parent.cometd.deliver([
+					{
+						// user-sent data
+						"data": {
+							"someField":	["some", "random", "values"],
+						},
+						// the usual message meta-data
+						"channel":		"/originating/channel",
+						"id":			"slkjdlkj30",
+						"timestamp":	"TimeAtServer",
+						// optional meta-data
+						"authToken":	"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY"
 					},
-					// the usual message meta-data
-					"channel":		"/originating/channel",
-					"id":			"slkjdlkj30",
-					"timestamp":	"TimeAtServer",
-					// optional meta-data
-					"authToken":	"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY"
-				});
+					{
+						"data": {
+							"blah blah":	["more", "random", "values"],
+						},
+						// the usual message meta-data
+						"channel":		"/originating/channel",
+						"id":			"slkjdlkj31",
+						"timestamp":	"TimeAtServer",
+						"authToken":	"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY"
+					}
+					// , ...
+				]);
 			</script>
 			<br><!-- insert 2K of whitespace here -->
 	<!-- end envelope -->
@@ -137,56 +166,71 @@ channel located at:
 The client ID turns out to be very important to subsequent connection.
 
 	// reconnection is very similar to initial connection:
-	{
-		"channel":		"/meta/reconnect",
-		"clientId":		"SOME_UNIQUE_CLIENT_ID",
-		"timestamp":	"LastReceivedTimeAtServer",
-		"id":			"LastReceivedMessageId"
-		"connectionId":	"/meta/connections/26",
-		"connectionType": "iframe", // FIXME: is this necessaray?
-		// optional
-		"authToken":	"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER"
-	}
+	[
+		{
+			"channel":		"/meta/reconnect",
+			"clientId":		"SOME_UNIQUE_CLIENT_ID",
+			"timestamp":	"LastReceivedTimeAtServer",
+			"id":			"LastReceivedMessageId"
+			"connectionId":	"/meta/connections/26",
+			"connectionType": "iframe", // FIXME: is this necessaray?
+			// optional
+			"authToken":	"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER"
+		}
+		// , ...
+	]
 
 	// and the response looks almost identical to normal
 	// preamble/envelope/signoff event delivery except that queued messages may
 	// be delivered en-masse. We don't cover it here for the sake of brevity.
 
 	// Subscribing and unsubscribing to channel is straightforward. Subscribing:
-	{
-		"channel":		"/meta/subscribe",
-		"subscription":	"/some/other/channel",
-		// optional
-		"authToken":	"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER"
-	}
+	[
+		{
+			"channel":		"/meta/subscribe",
+			"subscription":	"/some/other/channel",
+			// optional
+			"authToken":	"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER"
+		}
+		// , ...
+	]
 
 	// response to subscription
-	{
-		"channel":		"/meta/subscribe",
-		"subscription":	"/some/other/channel",
-		"successful":	true,
-		"error":		"",
-		// optional
-		"authToken":	"SOME_NONCE"
-	}
+	[
+		{
+			"channel":		"/meta/subscribe",
+			"subscription":	"/some/other/channel",
+			"successful":	true,
+			"error":		"",
+			// optional
+			"authToken":	"SOME_NONCE"
+		}
+		// , ...
+	]
 
 	// unsubscription for same:
-	{
-		"channel":		"/meta/unsubscribe",
-		"subscription":	"/some/other/channel",
-		// optional
-		"authToken":	"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER"
-	}
+	[
+		{
+			"channel":		"/meta/unsubscribe",
+			"subscription":	"/some/other/channel",
+			// optional
+			"authToken":	"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER"
+		}
+		// , ...
+	]
 
 	// and the server response:
-	{
-		"channel":		"/meta/unsubscribe",
-		"subscription":	"/some/other/channel",
-		"successful":	true,
-		"error":		"",
-		// optional
-		"authToken":	"SOME_NONCE"
-	}
+	[
+		{
+			"channel":		"/meta/unsubscribe",
+			"subscription":	"/some/other/channel",
+			"successful":	true,
+			"error":		"",
+			// optional
+			"authToken":	"SOME_NONCE"
+		}
+		// , ...
+	]
 
 	// FIXME: need to specify the "status" and "ping" message types!!
 
@@ -216,5 +260,11 @@ FIXME: extend protocol with acking
 FIXME: outline server timeout strategies and why it's not part of the protocol
 FIXME: define event ordering
 FIXME: provide addendum for to define APIs of conformant JavaScript clients
+
+-------------------------------------------------------------------------------
+Authors:
+	Alex Russell <alex@dojotoolkit.org>, SitePen Inc.
+	Greg Wilkins <gregw@webtide.com>, Webtide 
+
 
 # vim:ts=4:noet:
