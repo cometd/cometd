@@ -129,7 +129,8 @@ connection setup process:
 						},
 						// the usual message meta-data
 						"channel":		"/originating/channel",
-						"id":			"slkjdlkj30",
+						// event ID
+						"id":			"slkjdlkj32",
 						"timestamp":	"TimeAtServer",
 						// optional meta-data
 						"authToken":	"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY"
@@ -140,6 +141,7 @@ connection setup process:
 						},
 						// the usual message meta-data
 						"channel":		"/originating/channel",
+						// event ID
 						"id":			"slkjdlkj31",
 						"timestamp":	"TimeAtServer",
 						"authToken":	"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY"
@@ -231,6 +233,9 @@ The client ID turns out to be very important to subsequent connection.
 		}
 		// , ...
 	]
+	
+	// you should expect to receive sub / unsub events _at any time_,
+	// an outside source could subscribe or unsubscribe you from channels
 
 	// FIXME: need to specify the "status" and "ping" message types!!
 
@@ -264,7 +269,8 @@ FIXME: provide addendum for to define APIs of conformant JavaScript clients
 -------------------------------------------------------------------------------
 Authors:
 	Alex Russell <alex@dojotoolkit.org>, SitePen Inc.
-	Greg Wilkins <gregw@webtide.com>, Webtide 
+	Greg Wilkins <gregw@webtide.com>, Webtide
+	David Davis <xantus@cometd.com>, Six Apart
 
 
 # vim:ts=4:noet:
