@@ -14,6 +14,7 @@ import time
 import simplejson
 import string
 import base64
+import types
 
 """
 The cometd modules provides a twisted.web2.resource.Resource endpoint which
@@ -22,13 +23,13 @@ message format and protocol on the wire.
 
 Dependencies:
 
-	* Python >= 2.3 
+	* Python >= 2.3
 	* Twisted Python 2.4.0
 	* Twisted Web2 0.2
 	* simplejson >= 1.3
 """
 
-# constants and configuration 
+# constants and configuration
 clientTimeout = 30*60 # 30 minutes
 verbose = True
 
@@ -42,7 +43,6 @@ mimeBoundary = tmp.hexdigest()
 # development but just won't do for deployment.
 ConnectionTypes = {
 	"iframe": {
-		"deliverMulti": True,
 		"closeOnDelivery": False,
 		"preamble":		"""
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -68,7 +68,7 @@ ConnectionTypes = {
 			window.parent.cometd.disconnect();
 		</script>
 	</body>
-</html>	
+</html>
 		""",
 		# this tunnelInit is borrowed from Dojo
 		"tunnelInit":	"""
@@ -121,7 +121,6 @@ ConnectionTypes = {
 	"callback-polling": {
 		# NOTE: the "callback-polling" method can be used via ScriptSrcIO for
 		# x-domain polling
-		"deliverMulti": False,
 		"closeOnDelivery": True,
 		"preamble":		"",
 		# "envelope":		"cometd.deliver(%s);",
@@ -132,7 +131,6 @@ ConnectionTypes = {
 		"contentType": "text/javascript"
 	},
 	"long-polling": {
-		"deliverMulti": False,
 		"closeOnDelivery": True,
 		"preamble":		"",
 		"envelope":		"%s",
@@ -142,7 +140,6 @@ ConnectionTypes = {
 		"contentType": "text/plain"
 	},
 	"ie-message-block": {
-		"deliverMulti": True,
 		"closeOnDelivery": False,
 		"preamble":		"""<?xml version="1.0" encoding="UTF-8"?>
 			<cometd>
@@ -156,7 +153,6 @@ ConnectionTypes = {
 		"contentType": "text/xml"
 	},
 	"mime-message-block": {
-		"deliverMulti": True,
 		"closeOnDelivery": False,
 		"preamble":		"--"+mimeBoundary+"\r\n",
 		"envelope":		"""Content-Type: text/plain\r\n\r\n
@@ -176,7 +172,6 @@ ConnectionTypes = {
 		"contentType": "multipart/x-mixed-replace; boundary=%s" % (mimeBoundary,)
 	},
 	"flash": {
-		"deliverMulti": True,
 		"closeOnDelivery": False,
 		"preamble":		"",
 		"envelope":		"",
@@ -187,7 +182,7 @@ ConnectionTypes = {
 }
 
 SupportedConnectionTypes = [
-	"iframe", "ie-message-block", "mime-message-block", 
+	"iframe", "ie-message-block", "mime-message-block",
 	"callback-polling", "long-polling", "http-polling"
 ]
 
@@ -271,7 +266,7 @@ class Connection:
 			self.backlog.append(message)
 
 		if not self.stream.closed:
-			while len(self.backlog):
+			if len(self.backlog):
 				delivered = True
 				# log.msg(
 				# 	self.ctypeProps["envelope"] % (
@@ -283,14 +278,14 @@ class Connection:
 
 				self.stream.write(
 					self.ctypeProps["envelope"] % (
-						simplejson.dumps(self.backlog.pop(0)),
+						simplejson.dumps(self.backlog),
 					)
 				)
 
+				self.backlog = []
+
 				if self.jsonp:
 					self.stream.write(");")
-
-				if not self.ctypeProps["deliverMulti"]: break
 
 			if self.ctypeProps["closeOnDelivery"] and delivered is not False:
 				self.stream.finish()
@@ -337,7 +332,7 @@ class cometd(resource.PostableResource):
 	clients = {}
 	connections = {} # indexed by client ID
 	subscriptions = {
-		"__cometd_subscribers": {} 
+		"__cometd_subscribers": {}
 	}
 
 	############################################################################
@@ -360,7 +355,9 @@ class cometd(resource.PostableResource):
 		parse the request, dispatching it to the event router as necessaray and
 		returning errors where appropriate
 		"""
-		message = None
+		if verbose: log.msg("----------------------- render -----------------------------")
+		messages = None
+		resp = []
 
 		# we'll get called as the result of a post or get
 		if verbose: log.msg(request.args)
@@ -380,34 +377,55 @@ class cometd(resource.PostableResource):
 		# otherwise if we got a "message" parameter, deserialize it
 		if request.args.has_key("message"):
 			try:
-				message = simplejson.loads(request.args["message"][0])
+				# log.msg(request.args["message"][0])
+				messages = simplejson.loads(request.args["message"][0])
 			except ValueError:
-				if verbose:
-					log.msg("message parsing error")
+				if verbose: log.msg("message parsing error")
 				return buildResponse("message not valid JSON", 500, "text/plain")
 		else:
 			return buildResponse("no message provided. Please pass a message parameter to cometd", 400)
-			
-		if not message.has_key("channel"):
-			return buildResponse('{ "error":"invalid message passed" }', 400, "text/plain")
-		
-		chan = message["channel"]
-		if chan == "/meta/handshake":
-			# looks like we'll need to create a Connection
-			return self.initHandshake(request, message)
-		elif chan == "/meta/connect":
-			# finish connection initialization!
-			return self.connect(request, message)
-		elif chan == "/meta/reconnect":
-			return self.reconnect(request, message)
-		elif chan == "/meta/subscribe":
-			return self.subscribe(request, message)
-		elif chan == "/meta/unsubscribe":
-			return self.unsubscribe(request, message)
-		# FIXME: implement /meta/ping and /meta/status !!
 
-		# otherwise route the message to listeners
-		return self.route(request, message)
+		ctr = 0
+		if verbose: log.msg("messages:", type(messages), ":",  simplejson.dumps(messages))
+		while len(messages):
+			if verbose: log.msg(len(messages))
+			m = messages.pop(0)
+			if verbose:
+				log.msg("tmp message:", type(m), ":",  simplejson.dumps(m))
+			if not isinstance(m, dict):
+				continue
+			"""
+			if isinstance(m, types.StringTypes):
+				log.msg(m)
+				break
+			if isinstance(m, types.NoneType):
+				continue
+			"""
+			if not m.has_key("channel"):
+				resp.append({"error":"invalid message passed"})
+				break
+				# continue
+
+			chan = m["channel"]
+			if chan == "/meta/handshake" and ctr == 0:
+				# looks like we'll need to create a Connection
+				return self.initHandshake(request, m)
+			elif chan == "/meta/connect" and ctr == 0:
+				# finish connection initialization!
+				return self.connect(request, m)
+			elif chan == "/meta/reconnect" and ctr == 0:
+				return self.reconnect(request, m)
+			elif chan == "/meta/subscribe":
+				resp.append(self.subscribe(request, m))
+			elif chan == "/meta/unsubscribe":
+				resp.append(self.unsubscribe(request, m))
+			# FIXME: implement /meta/ping and /meta/status !!
+
+			# otherwise route the message to listeners
+			resp.append(self.route(request, m))
+			ctr += 1
+
+		return buildResponse(simplejson.dumps(resp), type="text/plain")
 
 	############################################################################
 	# PROTOCOL METHODS
@@ -432,8 +450,7 @@ class cometd(resource.PostableResource):
 		resp["error"] = client.lastError
 
 		rstr = simplejson.dumps(resp)
-		if verbose:
-			log.msg(rstr)
+		if verbose: log.msg("initHandshake response:", rstr)
 
 		# accomidation for JSONP handshakes
 		if "jsonp" in request.args:
@@ -462,7 +479,7 @@ class cometd(resource.PostableResource):
 		isSane = True
 		errorResp = None
 		error = ""
-		
+
 		# sanity check the connection request
 		if "connectionType" not in message or \
 			message["connectionType"] not in SupportedConnectionTypes:
@@ -473,7 +490,7 @@ class cometd(resource.PostableResource):
 			isSane = False
 			error = "invalid clientId provided"
 			# log.msg(message["clientId"])
-		
+
 		if not isSane:
 			resp = simplejson.dumps({ "error": str(error) })
 			errorResp = buildResponse(resp, 500, "text/plain")
@@ -484,14 +501,14 @@ class cometd(resource.PostableResource):
 		"""
 		Create a new connection object for the client.
 		"""
-		
+
 		(isSane, errorResp) = self._sanityCheckConnection(request, message)
 		if not isSane: return errorResp
 
 		clientId = message["clientId"]
 		client = self.clients[clientId]
 
-		(	client.authSuccess, 
+		(	client.authSuccess,
 			client.authToken,
 			client.lastError	) = self.checkCredentials(request, message)
 
@@ -517,7 +534,7 @@ class cometd(resource.PostableResource):
 		clientId = message["clientId"]
 		client = self.clients[clientId]
 
-		(	client.authSuccess, 
+		(	client.authSuccess,
 			client.authToken,
 			client.lastError	) = self.checkCredentials(request, message)
 
@@ -538,12 +555,13 @@ class cometd(resource.PostableResource):
 		# self._subscribe()
 		if "clientId" not in message or \
 			message["clientId"] not in self.clients:
-			resp = simplejson.dumps({ "error": "invalid clientId provided" })
+			resp = { "error": "invalid clientId provided" }
 			if verbose:
-				log.msg(resp)
-			return buildResponse(resp, 500, "text/plain")
+				log.msg(simplejson.dumps(resp))
+			return resp
 
 		client = self.clients[message["clientId"]]
+		if verbose: log.msg(client)
 
 		self._subscribe(client, message["subscription"])
 
@@ -557,7 +575,7 @@ class cometd(resource.PostableResource):
 		# FIXME: should we be calling client.deliver and having *that* dispatch
 		# down to the correct connection object?
 		client.connection.deliver(resp)
-		return buildResponse("{ success: true }", type="text/plain")
+		return { "success": True }
 
 	def _subscribe(self, client, chan):
 		"set up a subscription"
@@ -580,6 +598,7 @@ class cometd(resource.PostableResource):
 		"""
 		Event routing and delivery. The guts of cometd.
 		"""
+		success = { "success": True }
 		cparts = message["channel"].split("/")[1:]
 		if verbose: log.msg(cparts)
 		root = self.subscriptions
@@ -593,11 +612,13 @@ class cometd(resource.PostableResource):
 					subs[client].connection.deliver(message)
 			if not part in root:
 				if verbose: log.msg("no part:", part, "matches for delivery")
-				return buildResponse("{ success: true }", type="text/plain")
+				return success
 			root = root[part]
 			subs = root["__cometd_subscribers"]
 			for client in subs:
 				subs[client].connection.deliver(message)
-		return buildResponse("{ success: true }", type="text/plain")
+		return success
+		# FIXME: aggregate ACKs!
+		# return buildResponse("{ success: true }", type="text/plain")
 
 # vim:ts=4:noet:
