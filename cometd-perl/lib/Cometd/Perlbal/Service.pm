@@ -325,29 +325,4 @@ sub time_keepalive {
     return 5;
 }
 
-# patch perlbal
-{
-    no warnings 'redefine';
-    sub Perlbal::ClientProxy::start_reproxy_service {
-        my Perlbal::ClientProxy $self = $_[0];
-        my Perlbal::HTTPHeaders $primary_res_hdrs = $_[1];
-        my $svc_name = $_[2];
-    
-        my $svc = $svc_name ? Perlbal->service($svc_name) : undef;
-        unless ($svc) {
-            $self->_simple_response(404, "Vhost twiddling not configured for requested pair.");
-            return 1;
-        }
-    
-        $self->{backend_requested} = 0;
-        $self->{backend} = undef;
-        # start patch
-        $self->{res_headers} = $primary_res_hdrs;
-        # end patch
-    
-        $svc->adopt_base_client($self);
-    }
-}
-
-
 1;
