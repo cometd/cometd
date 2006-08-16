@@ -8,7 +8,7 @@ use base qw( Perlbal::Socket );
 use fields qw( service buffer is_http );
 
 BEGIN {
-    push(@{ $Perlbal::Service::tunables->{role}->{check_type}->[ 1 ] }, 'cometd' );
+    Perlbal::Service::add_role( cometd => \&new );
 };
 
 sub new {
@@ -92,43 +92,6 @@ sub handle_http_req {
                   .length($body)."\r\n\r\n$body" );
     $self->write( sub { $self->close; } );
     return;
-}
-
-# patch perlbal
-{
-    no warnings 'redefine';
-    sub Perlbal::TCPListener::event_read {
-        my Perlbal::TCPListener $self = shift;
-
-        # accept as many connections as we can
-        while (my ($psock, $peeraddr) = $self->{sock}->accept) {
-            my $service_role = $self->{service}->role;
-
-            if (Perlbal::DEBUG >= 1) {
-                my ($pport, $pipr) = Socket::sockaddr_in($peeraddr);
-                my $pip = Socket::inet_ntoa($pipr);
-                print "Got new conn: $psock ($pip:$pport) for $service_role\n";
-            }
-
-            IO::Handle::blocking($psock, 0);
-
-            if ($service_role eq "reverse_proxy") {
-                Perlbal::ClientProxy->new($self->{service}, $psock);
-            } elsif ($service_role eq "management") {
-                Perlbal::ClientManage->new($self->{service}, $psock);
-            } elsif ($service_role eq "web_server") {
-                Perlbal::ClientHTTP->new($self->{service}, $psock);
-            # BEGIN PATCH
-            } elsif ($service_role eq 'cometd') {
-                Cometd::Perlbal::Service::Connector->new($self->{service}, $psock);
-            # END PATCH
-            } elsif ($service_role eq "selector") {
-                # will be cast to a more specific class later...
-                Perlbal::ClientHTTPBase->new($self->{service}, $psock, $self->{service});
-            }
-
-        }
-    }
 }
 
 1;
