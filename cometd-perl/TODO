@@ -1,0 +1,17 @@
+** TODO **
+
+Legend:
+[ ] Not done
+[_] Untested, but done
+[*] Done
+[?] May not be needed
+[+] Started, not done
+
+[*] Client and Server, PoCo::Cometd::Server PoCo::Cometd::Client
+[?] Rename poco cometd * to poco server/client cometd
+[_] Perlbal service
+[ ] Channel system
+[+] Transport plugin system
+[ ] Tests
+[ ] Apache::Backend::Cometd ( see Apache::Backend::POE )
+[?] Data::ObjectDriver integration into Channel system
