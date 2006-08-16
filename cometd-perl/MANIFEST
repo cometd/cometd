@@ -17,4 +17,6 @@ tools/injectevent.pl
 httpd.pl
 perlbal.sh
 MANIFEST
+README
+TODO
 eventserver.pl
