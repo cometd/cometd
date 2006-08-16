@@ -15,3 +15,5 @@ Legend:
 [ ] Tests
 [ ] Apache::Backend::Cometd ( see Apache::Backend::POE )
 [?] Data::ObjectDriver integration into Channel system
+[ ] Config file in conf/ for eventserver.pl
+[ ] update PoCo::Filter::JSON to use JSON::Syck or create PoCo::Filter::JSON::Syck

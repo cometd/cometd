@@ -5,5 +5,20 @@ isn't in a complete working state yet.
 
 See the TODO for a list of things that need to be completed.
 
+
+Notes:
+
+
+perlbal.sh is for running perlbal with the right lib directories
+see conf/perlbal.conf
+
+httpd.pl is a simple http server used for testing, perlbal connects to this
+the doc root needs to be pointed at the dojo sources
+this hasn't been tested with dojo yet
+
+eventserver.pl loads the poe components that combine into the cometd event
+server
+
+
 David Davis
 aka Xantus
