@@ -19,6 +19,9 @@ this hasn't been tested with dojo yet
 eventserver.pl loads the poe components that combine into the cometd event
 server
 
+the lab/ directory is the old design for the cometd component.  This code
+may make its way back into cometd
+
 
 David Davis
 aka Xantus
