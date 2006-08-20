@@ -8,7 +8,9 @@ use base qw( Perlbal::Socket );
 use fields qw( service buffer is_http );
 
 BEGIN {
-    Perlbal::Service::add_role( cometd => \&new );
+    Perlbal::Service::add_role( cometd => sub {
+        __PACKAGE__->new(@_);
+    });
 };
 
 sub new {
