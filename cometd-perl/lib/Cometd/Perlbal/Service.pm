@@ -81,8 +81,8 @@ sub start_proxy_request {
     unless ( $hd ) {
         $hd = $head;
         # XXX no res_headers are available when cometd isn't reproxied
-#        warn "You are running an unpatched version of Perlbal, add line 123 of ClientProxy.pm: \$self->{res_headers} = \$primary_res_hdrs;\n";
-#        return 0;
+        warn "You are running an old version of Perlbal, please use check out the lastest build in svn at code.sixapart.com\n";
+        return 0;
     }
 
     my $opts;
