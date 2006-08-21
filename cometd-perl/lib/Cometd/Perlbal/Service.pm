@@ -247,6 +247,45 @@ if (window.parent.cometd)
     return 1;
 }
 
+sub handle_event {
+    my $objs = shift;
+    my $cleanup = 0;
+
+    $objs = [ $objs ] unless ( ref( $objs ) eq 'ARRAY' );
+    
+    my $time = time();
+
+    # TODO client channels
+    foreach my $l ( @listeners ) {
+        next if ( $client && $l == $client );
+        
+        if ( $l->{closed} ) {
+            $cleanup = 1;
+            next;
+        }
+        
+        $l->{alive_time} = $time;
+        
+        foreach $o ( @$objs ) {
+            next unless ( ref( $o ) eq 'HASH' );
+            next if ( !$o->{channel} );
+            $l->watch_write(0) if $l->write( filter( $l, $o->{channel}, $o ) );
+        }
+    }
+    
+    if ( $cleanup ) {
+        @listeners = map {
+            if (!$_->{closed}) {
+                $_;
+            } else {
+                delete $ids{$_->{scratch}{id}};
+                ();
+            }
+        } @listeners;
+        bcast_event( '/meta/global' => { connectionCount => scalar( @listeners ) } );
+    }
+
+}
 
 sub bcast_event {
     my $ch = shift;
@@ -294,11 +333,11 @@ sub filter {
         };
         if ($@) {
             warn "$@\n";
-            $obj = { event => 'error', error => $@ };
+#            $obj = { event => 'error', error => $@ };
         }
     }
    
-    @$obj{qw( eid channel )} = ( ++$client->{scratch}{eid}, $ch );
+    $obj{channel} = $ch;
 
     $filter->freeze($obj);
 }
