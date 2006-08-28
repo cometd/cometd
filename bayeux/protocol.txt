@@ -265,6 +265,7 @@ FIXME: extend protocol with acking
 FIXME: outline server timeout strategies and why it's not part of the protocol
 FIXME: define event ordering
 FIXME: provide addendum for to define APIs of conformant JavaScript clients
+FIXME: define /meta/disconnect
 
 -------------------------------------------------------------------------------
 Authors:
