@@ -6,7 +6,6 @@ use Carp qw( croak );
 
 our ( @listeners, %ids, $filter, $filter_package );
 
-use constant CONNECTION_TIMER => 3;
 use constant KEEPALIVE_TIMER => 5;
 
 sub import {
@@ -46,7 +45,6 @@ sub register {
     shift;
     my $service = shift;
    
-    Danga::Socket->AddTimer( CONNECTION_TIMER, \&connection_count );
     Danga::Socket->AddTimer( KEEPALIVE_TIMER, \&time_keepalive );
  
     $service->register_hook( Cometd => start_proxy_request => \&start_proxy_request );
@@ -114,31 +112,6 @@ sub start_proxy_request {
    
     SWITCH: {
         
-        if ( $action eq 'post' ) {
-            unless ( defined( $op{id} ) ) {
-                $client->_simple_response(404, "No id param defined in X-SHORTBUS header");
-                return 1;
-            }
-            foreach (qw( id channel )) {
-                $in->{$_} = $op{$_} if ($op{$_});
-
-                unless ( defined( $in->{$_} ) ) {
-                    $client->_simple_response(404, "No $_ param defined");
-                    return 1;
-                }
-            }
-            warn "event inject, channel: $in->{channel} for id: $op{id}, and data $in->{data}";
-            # take posted data and insert into clients queque
-            if ( $op{id} eq '*' ) {
-                bcast_event( $in->{channel} => $in->{data} );
-            } else {
-                my $cli = $ids{ $op{id} };
-                $cli->write( filter( $cli => $in->{channel} => $in->{data} ) );
-            }
-            $client->_simple_response(200, 'OK');
-            return 1;
-        }
-        
         if ( $action eq 'bind' ) {
             my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
             $res->header( 'Content-Type', 'text/html' );
@@ -156,17 +129,28 @@ sub start_proxy_request {
             # close already connected client if any
             if ( my $cli = delete $ids{ $op{id} } ) {
                 $cli->write( filter(
-                    $client => '/meta/local' => {
-                        event => 'closing',
+                    $client => '/meta/disconnect' => {
                         reason => 'Closing previous connection',
                     }
                 ) . '</body></html>' );
+                Cometd::Perlbal::Service::Connector::multiplex_send({
+                    channel => '/meta/disconnect',
+                    clientId => $op{id},
+                    data => {
+                        previous => 1,
+                    },
+                });
                 $cli->close();
             }
             
             # id to listener obj map
             $ids{ $op{id} } = $client;
             push( @listeners, $client );
+        
+            Cometd::Perlbal::Service::Connector::multiplex_send({
+                channel => '/meta/connect',
+                clientId => $op{id},
+            });
     
             $client->write( $res->to_string_ref );
             $client->tcp_cork( 1 );
@@ -178,44 +162,30 @@ window.last_eid = $last;
 window.onload = function() {
     window.location.href = window.location.href.replace( /last_eid=\\d+/, 'last_eid='+window.last_eid );
 };
-cometd = function(ev,ch,obj) {
+deliver = function(ev,ch,obj) {
     window.last_eid = ev;
     var d=document.createElement('div');
     d.innerHTML = '<pre style="margin:0">Event:'+ev+'\\tChannel:'+ch+'\\t'+obj+'</pre>';
     document.body.appendChild(d);
 };
 if (window.parent.cometd)
-    window.parent.cometd( window );
+    window.parent.cometd.setup( window );
 -->
 </script>
 | );
  
             my $last_ret;
-            if ( $last ) {
-                if ( $client->{scratch}{queue} ) {
-                    my $lastidx;
-                    for my $i ( 0 .. $#{$client->{scratch}{queue}} ) {
-                        if ( $client->{scratch}{queue}[ $i ]->[ 0 ] < $last ) {
-                            $lastidx = $i;
-                            next;
-                        }
-                        $last_ret = $client->write( $client->{scratch}{queue}[ $i ]->[ 1 ] );
-                    }
-                    # splice out  previous events
-                    if ( defined( $lastidx ) ) {
-                        splice( @{$client->{scratch}{queue}}, 0, $lastidx );
-                    }
-                }
-            } 
    
             $last_ret = $client->write( filter(
-                $client => '/meta/local' => {
-                    clientid => $op{id},
+                $client => '/meta/connect' => {
+                    successful => 'true',
+                    error => '',
+                    clientId => $op{id},
+                    connectionId => '/meta/connections/'.$op{id}, # XXX
+                    timestamp => time(), # XXX
                     ( $last ? ( 'last' => $last ) : () )
                 }
             ) );
-    
-            bcast_event( '/meta/global' => { connectionCount => scalar( @listeners ) } => $client );
     
             $client->watch_write( 0 ) if ( $last_ret );
     
@@ -282,7 +252,6 @@ sub handle_event {
                 ();
             }
         } @listeners;
-        bcast_event( '/meta/global' => { connectionCount => scalar( @listeners ) } );
     }
 
 }
@@ -319,7 +288,6 @@ sub bcast_event {
                 ();
             }
         } @listeners;
-        bcast_event( '/meta/global' => { connectionCount => scalar(@listeners) } );
     }
 
 }
@@ -342,24 +310,11 @@ sub filter {
     $filter->freeze($obj);
 }
 
-sub connection_count {
-    Danga::Socket->AddTimer( CONNECTION_TIMER, \&connection_count );
-    
-    my $count = scalar( @listeners );
-    @listeners = map { if (!$_->{closed}) { $_; } else { delete $ids{$_->{scratch}{id}}; (); } } @listeners;
-    my $ncount = scalar( @listeners );
-    
-    if ($ncount != $count ) {
-        bcast_event( '/meta/global' => { connectionCount => $ncount } );
-    }
-    
-    return 1;
-}
     
 sub time_keepalive {
     Danga::Socket->AddTimer( KEEPALIVE_TIMER, \&time_keepalive );
     
-    bcast_event( '/meta/global' => { 'time' => time() } );
+    bcast_event( '/meta/ping' => { 'time' => time() } );
     
     return 5;
 }

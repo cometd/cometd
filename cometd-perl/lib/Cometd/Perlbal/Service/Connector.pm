@@ -10,6 +10,8 @@ use fields qw( service buffer mode filter );
 use POE::Filter::Stackable;
 use POE::Filter::Line;
 use POE::Filter::JSON;
+use Scalar::Util qw( weaken isweak );
+use JSON;
 
 BEGIN {
     Perlbal::Service::add_role( cometd => sub { __PACKAGE__->new( @_ ); });
@@ -19,6 +21,8 @@ sub MODE_NA      { 0 }
 sub MODE_LINE    { 1 }
 sub MODE_HTTP    { 2 }
 sub MODE_BAYEUX  { 3 }
+
+our @socket_list;
 
 sub new {
     my ($class, $service, $sock) = @_;
@@ -36,6 +40,10 @@ sub new {
     bless $self, ref $class || $class;
     
     $self->watch_read( 1 );
+    
+    @socket_list = grep { defined } ( @socket_list, $self );
+    foreach (@socket_list) { weaken( $_ ); }
+    
     return $self;
 }
 
@@ -97,12 +105,31 @@ sub event_read {
         }
        
         
-        if ( $line =~ /^quit|exit$/ ) {
+        if ( $line =~ /^quit|exit$/i ) {
             $self->close( 'user_requested_quit' );
             return;
         }
+
+        if ( $line =~ m/^list sockets/i ) {
+            
+            $self->write("> # : mode socket\r\n");
+            my $num = 0;
+            foreach (@socket_list) {
+                next unless defined;
+                $num++;
+                $self->write("> $num : $_->{mode} $_ weak:".isweak($_)."\r\n");
+            }
+            $self->write("> total: $num\r\n");
+            return;
+        }
+
+        if ( $line =~ s/^bcast (.*)\s+?$/$1/i ) {
+            my $num = __PACKAGE__->multiplex_send( $line );
+            $self->write("> sent: '$line' to $num clients.\r\n");
+            return;
+        }
         
-        $self->write( "cometd:manage> $line\r\n" );
+        $self->write( "cometd:manage> unknown command:$line\r\n" );
     }
 
     return;
@@ -110,6 +137,15 @@ sub event_read {
 
 sub event_write {
     my $self = shift;
+
+    if ( $self->{mode} == MODE_BAYEUX ) {
+        my $lines = $self->{filter}->put( [] );
+        foreach (@$lines) {
+            warn "writing data: $_";
+            $self->write( $_ );
+        }
+    }
+    warn "writing on socket $self in mode $self->{mode}\n";
     $self->watch_write( 0 ) if $self->write( undef );
 }
 
@@ -142,6 +178,35 @@ sub handle_http_req {
                   .length($body)."\r\n\r\n$body" );
     $self->write( sub { $self->close; } );
     return;
+}
+
+sub multiplex_send {
+    my $data = $_[ 1 ];
+    
+    my $num = 0;
+    my $obj;
+    if ( ref( $data ) eq 'HASH' || ref( $data ) eq 'ARRAY' ) {
+        $obj = $data;
+    } else {
+        $obj = eval { jsonToObj( $data ); };
+        if ($@) {
+            warn $@;
+            return 0;
+        }
+    }
+    
+    # cleanup socket list
+    foreach (@socket_list) {
+        next unless ( $_->{mode} == MODE_BAYEUX );
+        $num++;
+        warn "sending $data which is $obj\n";
+        my $lines = $_->{filter}->put( [ $obj ] );
+        foreach my $blk (@$lines) {
+            $_->write( $blk );
+        }
+    }
+    
+    return $num;
 }
 
 1;
