@@ -8,7 +8,7 @@ use POE::Component::Cometd::Server;
 use Cometd::Plugin::JSONTransport;
 
 my %opts = (
-    LogLevel => 2,
+    LogLevel => 4,
     TimeOut => 0,
     MaxConnections => 32000,
     Transports => {

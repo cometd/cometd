@@ -7,9 +7,11 @@ Legend:
 [?] May not be needed
 [+] Started, not done
 
+[ ] Fix event server reconnect code, with incremental backoff
+[ ] Connect the json transport plugin into the json filter and channel system
 [*] Client and Server, PoCo::Cometd::Server PoCo::Cometd::Client
 [?] Rename poco cometd * to poco server/client cometd
-[_] Perlbal service
+[*] Perlbal service
 [ ] Channel system
 [+] Transport plugin system
 [ ] Tests

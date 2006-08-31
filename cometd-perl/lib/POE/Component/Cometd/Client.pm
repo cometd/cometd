@@ -151,8 +151,10 @@ sub remote_connect_success {
     $self->{connections}++;
 
     $cheap->{connected} = 1;
-
-    $self->{transport}->process_plugins( $socket, $cheap->{con}, $cheap );
+    
+    warn "connected";
+    
+    $self->{transport}->process_plugins( [ 'connected', $cheap, $socket, $cheap->{con} ] );
 }
 
 sub remote_connect_error {
@@ -185,7 +187,9 @@ sub remote_connect_timeout {
 
 sub remote_input {
     my $self = $_[OBJECT];
-    $self->_log(v => 4, msg => "got input");
+    my $input = $_[ARG0];
+    $self->_log(v => 4, msg => "got input $input");
+    $self->{transport}->process_plugins( [ 'remote_input', $cheap, $input ] );
 }
 
 sub remote_error {
@@ -199,6 +203,7 @@ sub remote_error {
 
 sub remote_flush {
 #    $_[OBJECT]->_log(v => 2, msg => "got flush");
+
 }
 
 

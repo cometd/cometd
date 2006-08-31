@@ -8,11 +8,10 @@ sub new {
 
 sub freeze {
     my $obj = $_[1];
-    # save space
-    my ($ev, $ch) = delete @$obj{qw( eid channel )};
+    my $ch = $obj->{channel};
     # TODO proper js escape, also, does JSON escape?
     $ch =~ s/'/\\'/g;
-    "<script>cometd($ev,'$ch','".objToJson($obj)."');</script>\n";
+    "<script>cometd('$ch',".objToJson($obj).");</script>\n";
 }
 
 sub thaw {

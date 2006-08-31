@@ -1,5 +1,9 @@
 package Cometd::Transport;
 
+use POE;
+use strict;
+use warnings;
+
 sub TRANSPORTS() { 0 }
 sub PRIORITIES() { 1 }
 sub SESSION()    { 2 }
@@ -15,7 +19,7 @@ sub new {
         object_states =>  [
             $self => {
                 '_start'          =>  '_start',
-                'process_plugins' =>  'process_plugins',
+                'process_plugins' =>  '_process_plugins',
             },
         ],
     ) or die 'Unable to create a new session!';
@@ -27,7 +31,7 @@ sub new {
 }
 
 sub _start {
-    # TODO setup?
+    $_[KERNEL]->alias_set( "$_[OBJECT]" );
 }
 
 
@@ -36,17 +40,17 @@ sub add_transport {
     my $name = shift;
     
     my $t = $self->[ TRANSPORTS ];
-    
+   
     $t->{ $name } = {
         priority => shift,
         plugin => shift,
     };
 
     # recalc priorities
-    $self->[ PRIORITIES ] = sort {
+    @{ $self->[ PRIORITIES ] } = sort {
         $t->{ $a }->{priority} <=> $t->{ $b }->{priority}
     } keys %{ $t };
-    
+
     return 1;
 }
 
@@ -59,24 +63,35 @@ sub remove_transport {
     delete $t->{ $tr };
     
     # recalc priorities
-    $self->[ PRIORITIES ] = sort {
+    @{ $self->[ PRIORITIES ] } = sort {
         $t->{ $a }->{priority} <=> $t->{ $b }->{priority}
     } keys %{ $t };
 }
 
-sub process_plugins {
+sub _process_plugins {
     my ( $kernel, $self, $i ) = @_[ KERNEL, OBJECT, ARG1 ];
 
     return unless ( @{ $self->[ PRIORITIES ] } );
 
-    if ( defined $i && $#{ $self->[ PRIORITIES ] } > $i ) {
-        return if ( $self->[ TRANSPORTS ]->{ $self->[ PRIORITIES ]->[ $i ] }->handle( @{ $_[ ARG0 ] } ) );
+    if ( defined $i && $#{ $self->[ PRIORITIES ] } >= $i ) {
+        return if ( $self->[ TRANSPORTS ]->{ $self->[ PRIORITIES ]->[ $i ] }->{plugin}->handle( @{ $_[ ARG0 ] } ) );
         $i++;
     } else {
         $i = 0;
     }
     
     $kernel->yield( process_plugins => $_[ ARG0 ] => $i );
+}
+
+sub process_plugins {
+    my $self = shift;
+    $self->yield( process_plugins => @_ );
+}
+
+sub yield {
+    my $self = shift;
+
+    $poe_kernel->post( $self->[ SESSION ] => @_ );
 }
 
 1;

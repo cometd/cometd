@@ -3,7 +3,7 @@ package Perlbal::Plugin::Cometd;
 use strict;
 use warnings;
 
-use Cometd qw( Perlbal::Service Perlbal::Service::Connector );
+use Cometd qw( Perlbal::Service );
 
 1;
 

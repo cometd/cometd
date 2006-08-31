@@ -13,14 +13,17 @@ use POE::Filter::JSON;
 use Scalar::Util qw( weaken isweak );
 use JSON;
 
-BEGIN {
-    Perlbal::Service::add_role( cometd => sub { __PACKAGE__->new( @_ ); });
-};
-
 sub MODE_NA      { 0 }
 sub MODE_LINE    { 1 }
 sub MODE_HTTP    { 2 }
 sub MODE_BAYEUX  { 3 }
+
+our %MODES = (
+    MODE_NA() => 'NA',
+    MODE_LINE() => 'LINE',
+    MODE_HTTP() => 'HTTP',
+    MODE_BAYEUX() => 'BAYEUX',
+);
 
 our @socket_list;
 
@@ -65,7 +68,8 @@ sub event_read {
     if ( $self->{mode} == MODE_HTTP ) {
         my $hd = $self->read_request_headers();
         return unless $hd;
-        # TODO support POST of json
+        # TODO POST
+        # TODO status html
         $self->handle_http_req();
         return;
     } elsif ( $self->{mode} == MODE_NA ) {
@@ -82,9 +86,10 @@ sub event_read {
 
     while ( my $line = shift @$lines ) {
         if ( $self->{mode} == MODE_BAYEUX ) {
+            # $line in this mode is a json event obj
             #require Data::Dumper;
             #$self->write( "cometd:bayeux> ".Data::Dumper->Dump( [ $line ] )."\r\n" );
-            Cometd::Perlbal::Service::handle_event($line);
+            Cometd::Perlbal::Service::handle_event( $line ); # 
             next;
         }
         
@@ -117,16 +122,16 @@ sub event_read {
             foreach (@socket_list) {
                 next unless defined;
                 $num++;
-                $self->write("> $num : $_->{mode} $_ weak:".isweak($_)."\r\n");
+                $self->write("> $num : ".$MODES{ $_->{mode} }." $_ weak ref:".( isweak($_) ? 1 : 0 )."\r\n");
             }
             $self->write("> total: $num\r\n");
-            return;
+            next;
         }
 
         if ( $line =~ s/^bcast (.*)\s+?$/$1/i ) {
             my $num = __PACKAGE__->multiplex_send( $line );
             $self->write("> sent: '$line' to $num clients.\r\n");
-            return;
+            next;
         }
         
         $self->write( "cometd:manage> unknown command:$line\r\n" );
@@ -165,6 +170,7 @@ sub handle_http_req {
     my $code = '200 OK';
     my $body;
 
+    # TODO commands, status, list connected clients and channels
     if ($uri eq '/') {
         $body .= '<h1>Cometd Perlbal Service</h1>';
         $body .= 'Visit the <a href="http://cometd.com/">Cometd</a> website for details';
