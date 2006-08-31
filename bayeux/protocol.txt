@@ -65,7 +65,7 @@ connection setup process:
 			// the oldest version of the protocol that this server will support
 			"minimumVersion":			0.1,
 			"supportedConnectionTypes":	["iframe", "flash", "http-polling"],
-			"clientId":					"SOME_UNIQUE_CLIENT_ID"
+			"clientId":					"SOME_UNIQUE_CLIENT_ID",
 			"authSuccessful":			true,
 			// authToken is auth scheme dependent and entirely optional
 			"authToken":				"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY",
@@ -110,6 +110,7 @@ connection setup process:
 						"successful":	true,
 						"error":		"",
 						"connectionId":	"/meta/connections/26",
+						"clientId":		"SOME_UNIQUE_CLIENT_ID",
 						"timestamp":	"TimeAtServer",
 						// optional
 						"authToken":	"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY"
@@ -203,6 +204,7 @@ The client ID turns out to be very important to subsequent connection.
 			"channel":		"/meta/subscribe",
 			"subscription":	"/some/other/channel",
 			"successful":	true,
+			"clientId":		"SOME_UNIQUE_CLIENT_ID",
 			"error":		"",
 			// optional
 			"authToken":	"SOME_NONCE"
@@ -227,6 +229,7 @@ The client ID turns out to be very important to subsequent connection.
 			"channel":		"/meta/unsubscribe",
 			"subscription":	"/some/other/channel",
 			"successful":	true,
+			"clientId":		"SOME_UNIQUE_CLIENT_ID",
 			"error":		"",
 			// optional
 			"authToken":	"SOME_NONCE"
@@ -247,6 +250,8 @@ The client ID turns out to be very important to subsequent connection.
 
 	// FIXME: need to build in a provision for batching of queued messages in
 	// the returned data structure
+
+	// FIXME: note which meta channel events require clientId
 
 NOTE: the 0.1 version of the protocol does NOT acknowledge passing messages
 beyond a single router connected to multiple clients. Future protocol versions
