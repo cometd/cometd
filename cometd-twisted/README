@@ -1,0 +1,50 @@
+Dependencies:
+-------------
+
+	* Python >= 2.3
+		http://python.org/
+	* Twisted Python 2.4.0
+		http://twistedmatrix.com/trac/
+	* Twisted Web2 0.2
+		http://twistedmatrix.com/trac/wiki/TwistedWeb2
+	* simplejson >= 1.3
+		http://cheeseshop.python.org/pypi/simplejson
+	* path >= 2.1
+		http://www.jorendorff.com/articles/python/path/
+
+Installation
+------------
+
+As with most python software, installation for most of the dependencies (once
+Python is installed) boils down to:
+
+	%> tar -zxvf Package.tar.gz && cd Package && sudo python setup.py install
+
+While installing Twisted, please make sure to install the included
+ZopeInterface package.
+
+Getting Started:
+----------------
+
+All configuration for cometd is housed in the .tac file which is used to kick
+off the deamon. Today, initscripts for Unix systems are not yet included.
+Starting the daemon is simple:
+
+	twistd -noy cometd.tac
+
+The arguments to "twistd", the Twisted service runner, should be modified for
+deployment use. You can investigate these with:
+
+	twistd --help
+
+By default the cometd server will attach to port 8080 and attempt to send log
+messages to a file located in /var/log/cometd. If this file does not exist, you
+can create it with:
+
+	%> touch /var/log/cometd && chmod ug+w /var/log/cometd
+
+If you run the daemon as a different user than yourself, you'll need to allow
+the user the systems runs as to write to this file.
+
+See the configuration parameters in the file cometd.tac for details on
+available configuration options.

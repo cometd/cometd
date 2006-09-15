@@ -20,13 +20,6 @@ import types
 The cometd modules provides a twisted.web2.resource.Resource endpoint which
 acts as a generalized multi-endpoint event router that speaks the cometd JSON
 message format and protocol on the wire.
-
-Dependencies:
-
-	* Python >= 2.3
-	* Twisted Python 2.4.0
-	* Twisted Web2 0.2
-	* simplejson >= 1.3
 """
 
 # constants and configuration

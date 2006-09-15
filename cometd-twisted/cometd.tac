@@ -1,11 +1,3 @@
-from twisted.web2 import http, resource, channel, stream, server, static, http_headers, responsecode
-from twisted.python import log
-from twisted.internet import reactor
-from twisted.application import service, strports
-from path import path
-import sys; sys.path.append(".")
-import cometd
-
 ## Cometd Configuration Block ##################################################
 
 # verboseLogging: boolean
@@ -25,9 +17,21 @@ connectionTimeout = 15
 #	where should we log cometd activity to?
 logFile = "/var/log/cometd" 
 
+# port: integer
+#	where should we log cometd activity to?
+logFile = 8080
+
 ## End Configuration Block #####################################################
 
 # WARNING:  Edit below this line only if you know what you're doing 
+from twisted.web2 import http, resource, channel, stream, server, static, http_headers, responsecode
+from twisted.python import log
+from twisted.internet import reactor
+from twisted.application import service, strports
+from path import path
+import sys; sys.path.append(".")
+import cometd
+
 
 cometd.verbose = verboseLogging
 cometd.clientTimeout = clientTimeout * 60
@@ -54,7 +58,7 @@ class CometdRunner(resource.Resource):
 # FIXME: we should be getting all of this config info from a file!!
 site = server.Site(CometdRunner())
 application = service.Application("cometd")
-s = strports.service('tcp:8080', channel.HTTPFactory(site))
+s = strports.service('tcp:'+port, channel.HTTPFactory(site))
 s.setServiceParent(application)
 
 # vim:ts=4:noet:ft=python
