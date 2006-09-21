@@ -43,6 +43,8 @@ sub params {
     
     my $input = '';
 
+    $r->{method} ||= 'GET';
+
     if ($r->{method} ne "GET") {
         # TODO proper client read
         my $data = $client->read(4096);
@@ -109,7 +111,7 @@ sub params {
         }
     }
 
-    my ( $qs ) = ( $r->request_uri =~ m/\?(.*)/ );
+    my ( $qs ) = ( $r->request_uri && $r->request_uri =~ m/\?(.*)/ );
     if ($qs) {
         $input .= "&" if ($input);
         $input .= $qs;

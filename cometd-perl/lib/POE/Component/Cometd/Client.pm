@@ -1,5 +1,8 @@
 package POE::Component::Cometd::Client;
 
+use strict;
+use warnings;
+
 use POE qw( Component::Cometd );
 
 use base qw( POE::Component::Cometd );
@@ -7,7 +10,7 @@ use base qw( POE::Component::Cometd );
 use overload '""' => \&as_string;
 
 sub spawn {
-    my $self = shift->SUPER::new(@_);
+    my $self = shift->SUPER::new( @_ );
     
     POE::Session->create(
 #       options => { trace=>1 },
@@ -43,26 +46,26 @@ sub as_string {
 }
 
 sub _start {
-    my ($kernel, $session, $self) = @_[KERNEL, SESSION, OBJECT];
+    my ( $kernel, $session, $self ) = @_[KERNEL, SESSION, OBJECT];
 
-    $session->option( @{$self->{opts}{ClientSessionOptions}} ) if $self->{opts}{ClientSessionOptions};
-    $kernel->alias_set($self->{opts}{ClientAlias}) if ($self->{opts}{ClientAlias});
+    $session->option( @{$self->{opts}{ClientSessionOptions}} )
+        if ( $self->{opts}{ClientSessionOptions} ); 
+    $kernel->alias_set( $self->{opts}{ClientAlias} )
+        if ( $self->{opts}{ClientAlias} );
 
-    # watch for SIGINT, SIGCHLD
-    foreach (qw( INT CHLD )) {
-        $kernel->sig($_ => 'signals');
-    }
+    $kernel->sig( INT => 'signals' );
     
     # connect to our client list
-    if ($self->{opts}{ClientList} && ref($self->{opts}{ClientList}) eq 'ARRAY') {
+    if ( $self->{opts}{ClientList} 
+        && ref( $self->{opts}{ClientList} ) eq 'ARRAY' ) {
         my $d = .1;
-        foreach (@{$self->{opts}{ClientList}}) {
-            $kernel->delay_set(connect_to_client => $d =>  $_);
+        foreach ( @{$self->{opts}{ClientList}} ) {
+            $kernel->delay_set( connect_to_client => $d => $_ );
             $d += .05;
         }
     }
 
-    $kernel->yield('_status_clients');
+    $kernel->yield( '_status_clients' );
 }
 
 sub _stop {
@@ -76,7 +79,7 @@ sub _status_clients {
 }
 
 sub signals {
-    my ($self, $signal_name) = @_[OBJECT, ARG0];
+    my ( $self, $signal_name ) = @_[OBJECT, ARG0];
 
     $self->_log(v => 1, msg => "Client caught SIG$signal_name");
 
@@ -89,32 +92,33 @@ sub signals {
 }
 
 sub reconnect_to_client {
-    my ($self, $cheap) = @_;
+    my ( $self, $cheap ) = @_;
 
     $cheap->{connected} = 0;
 
     delete $cheap->{sf};
     delete $cheap->{con};
 
-    if ($self->{opts}->{ConnectTimeOut}) {
+    if ( $self->{opts}->{ConnectTimeOut} ) {
         $cheap->{timeout_id} = $poe_kernel->alarm_set(
-            $self->create_event($cheap,'remote_connect_timeout') => time() + $self->{opts}->{ConnectTimeOut}
+            $self->create_event( $cheap,'remote_connect_timeout' )
+                => time() + $self->{opts}->{ConnectTimeOut}
         );
     }
 
     $cheap->{sf} = POE::Wheel::SocketFactory->new(
         RemoteAddress => $cheap->{peer_ip},
         RemotePort    => $cheap->{peer_port},
-        SuccessEvent  => $self->create_event($cheap,'remote_connect_success'),
-        FailureEvent  => $self->create_event($cheap,'remote_connect_error'),
+        SuccessEvent  => $self->create_event( $cheap,'remote_connect_success' ),
+        FailureEvent  => $self->create_event( $cheap,'remote_connect_error' ),
     );
     
 }
 
 sub connect_to_client {
-    my ($kernel, $self, $addr) = @_[KERNEL, OBJECT, ARG0];
+    my ( $kernel, $self, $addr ) = @_[KERNEL, OBJECT, ARG0];
 
-    my ($address, $port) = ($addr =~ /^([^:]+):(\d+)$/) or return;
+    my ( $address, $port ) = ( $addr =~ /^([^:]+):(\d+)$/ ) or return;
 
     my $cheap = {
         peer_ip => $address,
@@ -130,21 +134,21 @@ sub connect_to_client {
 }
 
 sub remote_connect_success {
-    my ($kernel, $self, $socket) = @_[KERNEL, OBJECT, ARG0];
+    my ( $kernel, $self, $socket ) = @_[KERNEL, OBJECT, ARG0];
     my $cheap = $self->{cheap};
-    my $addr = $cheap->{addr} = join(':',@$cheap{qw( peer_ip peer_port )}); 
+    my $addr = $cheap->{addr} = join( ':', @$cheap{qw( peer_ip peer_port )} ); 
     $self->_log(v => 3, msg => "Connected to $addr");
 
-    $kernel->alarm_remove(delete $cheap->{timeout_id})
-        if (exists($cheap->{timeout_id}));
+    $kernel->alarm_remove( delete $cheap->{timeout_id} )
+        if ( exists( $cheap->{timeout_id} ) );
     
     $cheap->{con} = POE::Wheel::ReadWrite->new(
         Handle       => $socket,
         Driver       => POE::Driver::SysRW->new(),
         Filter       => POE::Filter::Line->new(),
-        InputEvent   => $self->create_event($cheap,'remote_input'),
-        ErrorEvent   => $self->create_event($cheap,'remote_error'),
-        FlushedEvent => $self->create_event($cheap,'remote_flush'),
+        InputEvent   => $self->create_event( $cheap,'remote_input' ),
+        ErrorEvent   => $self->create_event( $cheap,'remote_error' ),
+#        FlushedEvent => $self->create_event( $cheap,'remote_flush' ),
     );
     delete $cheap->{sf};
 
@@ -158,14 +162,14 @@ sub remote_connect_success {
 }
 
 sub remote_connect_error {
-    my ($kernel, $self) = @_[KERNEL, OBJECT];
+    my ( $kernel, $self ) = @_[KERNEL, OBJECT];
 
     my $cheap = $self->{cheap};
 
     $self->_log(v => 2, msg => "Erorr connecting to $cheap->{addr} : $_[ARG0] error $_[ARG1] ($_[ARG2])");
 
-    $kernel->alarm_remove(delete $cheap->{timeout_id})
-        if (exists($cheap->{timeout_id}));
+    $kernel->alarm_remove( delete $cheap->{timeout_id} )
+        if ( exists( $cheap->{timeout_id} ) );
 
     $self->{connections}--;
     
@@ -173,7 +177,7 @@ sub remote_connect_error {
 }
 
 sub remote_connect_timeout {
-    my ($kernel, $self) = @_[KERNEL, OBJECT];
+    my ( $kernel, $self ) = @_[KERNEL, OBJECT];
     my $cheap = $self->{cheap};
 
     $self->_log(v => 2, msg => "Timeout connecting to $cheap->{addr}");
@@ -186,15 +190,14 @@ sub remote_connect_timeout {
 }
 
 sub remote_input {
-    my $self = $_[OBJECT];
-    my $input = $_[ARG0];
+    my ( $self, $input ) = @_[OBJECT, ARG0];
     $self->_log(v => 4, msg => "got input $input");
-    $self->{transport}->process_plugins( [ 'remote_input', $cheap, $input ] );
+    $self->{transport}->process_plugins( [ 'remote_input', $self->{cheap}, $input ] );
 }
 
 sub remote_error {
     my $self = $_[OBJECT];
-    $self->_log(v => 2, msg => "got error ".join(' : ',@_[ARG1 .. ARG2]));
+    $self->_log(v => 2, msg => "got error " . join( ' : ', @_[ARG1 .. ARG2] ) );
     
     $self->{connections}--;
     

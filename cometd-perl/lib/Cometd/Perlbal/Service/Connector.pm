@@ -55,7 +55,7 @@ sub event_read {
 
     my $ref;
     if ( $self->{mode} == MODE_NA ) {
-        $ref = $self->read( 1024 );
+        $ref = $self->read( 2048 );
         return $self->close() unless defined $ref;
         $self->{buffer} .= $$ref;
 
@@ -78,7 +78,7 @@ sub event_read {
 
     unless ( ref( $ref ) ) {
         $self->{buffer} = '';
-        $ref = $self->read( 1024 );
+        $ref = $self->read( 2048 );
         return $self->close() unless defined $ref;
     }
 
@@ -187,7 +187,7 @@ sub handle_http_req {
 }
 
 sub multiplex_send {
-    my $data = $_[ 1 ];
+    my $data = $_[ 0 ];
     
     my $num = 0;
     my $obj;
@@ -200,10 +200,15 @@ sub multiplex_send {
             return 0;
         }
     }
-    
+
+    unless ($obj) {
+        warn "obj not defined!";
+        return 0;
+    }
+
     # cleanup socket list
     foreach (@socket_list) {
-        next unless ( $_->{mode} == MODE_BAYEUX );
+        next unless ( $_ && $_->{mode} == MODE_BAYEUX );
         $num++;
         warn "sending $data which is $obj\n";
         my $lines = $_->{filter}->put( [ $obj ] );

@@ -59,7 +59,7 @@ sub handle {
     
     my ($domain) = ( $s->header('Host') =~ m/([^:]+)(:?:(\d+))?/ );
     $domain =~ s/^[^\.]+\.//;
-    my @sb = ( "id=$guid", "domain=$domain", "action=bind" );
+    my @sb = ( "id=$guid", "domain=$domain", "action=connect" );
     
     $r->code( 200 );
     $r->header( 'X-REPROXY-SERVICE' => 'cometd' );

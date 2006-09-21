@@ -16,10 +16,9 @@ httpd.pl is a simple http server used for testing, perlbal connects to this
 the doc root needs to be pointed at the dojo sources
 this hasn't been tested with dojo yet
 
-eventserver.pl loads the poe components that combine into the cometd event
-server
+eventserver.pl loads the components that combine into the cometd event server
 
-the lab/ directory is the old design for the cometd component.  This code
+The lab/ directory is the old design for the cometd component.  This code
 may make its way back into cometd
 
 

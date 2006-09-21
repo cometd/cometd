@@ -95,6 +95,7 @@ sub start_proxy_request {
 
     my $opts;
     unless ( $opts = $hd->header('x-cometd') ) {
+        warn "no x-cometd header sent";
         $client->_simple_response(404, 'No x-cometd header sent');
         return 1;
     }
@@ -116,6 +117,7 @@ sub start_proxy_request {
     }
 
     if ( $action eq 'connect' && !( $op{id} && $op{domain} ) ) {
+        warn "no client id and/or domain set";
         $client->_simple_response(404, 'No client id and/or domain returned from backend');
         return 1;
     }
@@ -153,6 +155,7 @@ sub start_proxy_request {
                     channel => '/meta/disconnect',
                     clientId => $op{id},
                     data => {
+                        channels => $cli->{scratch}{ch},
                         previous => 1,
                     },
                 });
@@ -168,27 +171,34 @@ sub start_proxy_request {
             Cometd::Perlbal::Service::Connector::multiplex_send({
                 channel => '/meta/connect',
                 clientId => $op{id},
+                data => {
+                    channels => $client->{scratch}{ch}
+                },
             });
     
             $client->write( $res->to_string_ref );
             $client->tcp_cork( 1 );
-   
-            $client->write( qq|<html><body><script>
-<!--
+  
+            $op{domain} =~ s/'/\\'/g;
+
+            $client->write( qq|<html><body><script type="text/javascript">
+// <![CDATA[ 
 document.domain = '$op{domain}';
 window.last_eid = $last;
 window.onload = function() {
     window.location.href = window.location.href.replace( /last_eid=\\d+/, 'last_eid='+window.last_eid );
 };
-deliver = function(ev,ch,obj) {
-    window.last_eid = ev;
+deliver = function(ch,obj) {
+    var ev;
+    if ( obj.eventId )
+        ev = window.last_eid = obj.eventId;
     var d=document.createElement('div');
-    d.innerHTML = '<pre style="margin:0">Event:'+ev+'\\tChannel:'+ch+'\\t'+obj+'</pre>';
+    d.innerHTML = '<pre style="margin:0">EventId:'+ev+'\\tChannel:'+ch+'\\t'+obj+'</pre>';
     document.body.appendChild(d);
 };
 if (window.parent.cometd)
     window.parent.cometd.setup( window );
--->
+// ]]>
 </script>
 | );
  
@@ -199,6 +209,9 @@ if (window.parent.cometd)
                     clientId => $op{id},
                     connectionId => '/meta/connections/'.$op{id}, # XXX
                     timestamp => time(), # XXX
+                    data => {
+                        channels => $client->{scratch}{ch}
+                    },
                     ( $last ? ( 'last' => $last ) : () )
                 }
             ) );
@@ -217,14 +230,16 @@ if (window.parent.cometd)
                             $_->close();
                             Cometd::Perlbal::Service::Connector::multiplex_send({
                                 channel => '/meta/disconnect',
-                                clientId => $client->{scratch}{id},
-                                data => { },
+                                clientId => $_->{scratch}{id},
+                                data => {
+                                    channels => $_->{scratch}{ch},
+                                },
                             });
-                            delete $ids{$client->{scratch}{id}};
+                            delete $ids{ $_->{scratch}{id} };
                             ();
                         }
                     } else {
-                        delete $ids{$_->{scratch}{id}};
+                        delete $ids{ $_->{scratch}{id} };
                         ();
                     }
                 } @listeners;
@@ -331,7 +346,9 @@ sub handle_event {
                 Cometd::Perlbal::Service::Connector::multiplex_send({
                     channel => '/meta/disconnect',
                     clientId => $l->{scratch}{id},
-                    data => { },
+                    data => {
+                        channels => $l->{scratch}{ch}
+                    },
                 });
                 $cleanup = 1;
                 next;
@@ -361,9 +378,11 @@ sub handle_event {
                 Cometd::Perlbal::Service::Connector::multiplex_send({
                     channel => '/meta/disconnect',
                     clientId => $_->{scratch}{id},
-                    data => { },
+                    data => {
+                        channels => $_->{scratch}{ch}
+                    },
                 });
-                delete $ids{$_->{scratch}{id}};
+                delete $ids{ $_->{scratch}{id} };
                 ();
             }
         } @listeners;
@@ -402,9 +421,11 @@ sub bcast_event {
                 Cometd::Perlbal::Service::Connector::multiplex_send({
                     channel => '/meta/disconnect',
                     clientId => $_->{scratch}{id},
-                    data => { },
+                    data => {
+                        channels => $_->{scratch}{ch}
+                    },
                 });
-                delete $ids{$_->{scratch}{id}};
+                delete $ids{ $_->{scratch}{id} };
                 ();
             }
         } @listeners;
@@ -426,6 +447,11 @@ sub time_keepalive {
     
     bcast_event( '/meta/ping' => { 'time' => time() } );
     
+    Cometd::Perlbal::Service::Connector::multiplex_send({
+        channel => '/meta/ping',
+        clientId => 'none',
+        data => {},
+    });
     return 5;
 }
 

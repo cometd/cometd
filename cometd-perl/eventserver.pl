@@ -6,6 +6,8 @@ use POE;
 use POE::Component::Cometd::Client;
 use POE::Component::Cometd::Server;
 use Cometd::Plugin::JSONTransport;
+use Cometd::Plugin::ChannelManager::InMemory;
+
 
 my %opts = (
     LogLevel => 4,
@@ -14,7 +16,9 @@ my %opts = (
     Transports => {
         JSON => {
             priority => 0,
-            plugin => Cometd::Plugin::JSONTransport->new(),
+            plugin => Cometd::Plugin::JSONTransport->new(
+                chman => Cometd::Plugin::ChannelManager::InMemory->new(),
+            ),
         },
     },
 );

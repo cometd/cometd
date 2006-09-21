@@ -6,7 +6,7 @@ use warnings;
 
 sub TRANSPORTS() { 0 }
 sub PRIORITIES() { 1 }
-sub SESSION()    { 2 }
+sub SESSIONID()    { 2 }
 
 sub new {
     my $self = bless([
@@ -25,7 +25,7 @@ sub new {
     ) or die 'Unable to create a new session!';
 
     # save the session id
-    $self->[ SESSION ] = $session->ID;
+    $self->[ SESSIONID ] = $session->ID;
 
     $self;
 }
@@ -72,7 +72,8 @@ sub _process_plugins {
     my ( $kernel, $self, $i ) = @_[ KERNEL, OBJECT, ARG1 ];
 
     return unless ( @{ $self->[ PRIORITIES ] } );
-
+    
+    # XXX rework this
     if ( defined $i && $#{ $self->[ PRIORITIES ] } >= $i ) {
         return if ( $self->[ TRANSPORTS ]->{ $self->[ PRIORITIES ]->[ $i ] }->{plugin}->handle( @{ $_[ ARG0 ] } ) );
         $i++;
@@ -91,7 +92,7 @@ sub process_plugins {
 sub yield {
     my $self = shift;
 
-    $poe_kernel->post( $self->[ SESSION ] => @_ );
+    $poe_kernel->post( $self->[ SESSIONID ] => @_ );
 }
 
 1;

@@ -43,8 +43,6 @@ sub get {
 sub get_one_start {
     my ($self, $lines) = @_;
     $lines = [ $lines ] unless ( ref( $lines ) );
-    require Data::Dumper;
-    warn Data::Dumper->Dump( [ $lines ] );
     push( @{ $self->[ BUFFER ] }, @{ $lines } );
 }
 
