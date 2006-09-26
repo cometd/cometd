@@ -8,11 +8,11 @@ Legend:
 [+] Started, not done
 
 [ ] Fix event server reconnect code, with incremental backoff
-[ ] Connect the json transport plugin into the json filter and channel system
+[*] Connect the json transport plugin into the json filter and channel system
 [*] Client and Server, PoCo::Cometd::Server PoCo::Cometd::Client
 [?] Rename poco cometd * to poco server/client cometd
 [*] Perlbal service
-[ ] Channel system
+[+] Channel system
 [+] Transport plugin system
 [ ] Tests
 [ ] Apache::Backend::Cometd ( see Apache::Backend::POE )

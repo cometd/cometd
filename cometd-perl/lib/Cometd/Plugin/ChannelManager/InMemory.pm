@@ -17,14 +17,16 @@ sub deliver {
     my ( $self, $cheap, $obj ) = @_;
     warn "obj:".Data::Dumper->Dump([$obj]);
 
-    # FIXME currently $obi is plain json, the JSONTransport needs to do the conversion first
-    return;
-    
-    my $c = $obj->{channel};
+    return unless (my $c = $obj->{channel});
+   
+    print "channel: $c\n";
+
     return if ( $c =~ '/meta/ping' );
     
     # FIXME more error checking
     if ( $c =~ '/meta/connect' ) {
+        return unless (ref($obj->{data}{channels}) eq 'ARRAY');
+
         foreach my $ch (@{$obj->{data}{channels}}) {
             $self->{ch}->{$ch}++;
         }
@@ -32,6 +34,8 @@ sub deliver {
     }
     
     if ( $c =~ '/meta/disconnect' ) {
+        return unless (ref($obj->{data}{channels}) eq 'ARRAY');
+        
         foreach my $ch (@{$obj->{data}{channels}}) {
             $self->{ch}->{$ch}--;
             delete $self->{ch}->{$ch} if ( $self->{ch}->{$ch} <= 0 );

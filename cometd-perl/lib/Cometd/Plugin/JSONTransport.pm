@@ -1,5 +1,6 @@
 package Cometd::Plugin::JSONTransport;
 
+use POE::Filter::Stackable;
 use POE::Filter::JSON;
 
 use strict;
@@ -10,7 +11,14 @@ sub BAYEUX_VERSION() { '1.0' }
 sub new {
     my $class = shift;
     bless({
-        filter => POE::Filter::JSON->new(),
+        filter => POE::Filter::Stackable->new(
+            Filters => [
+# XXX the cometd client/server should let us set 
+# the filter on the rw wheel at some point
+#                POE::Filter::Line->new(),
+                POE::Filter::JSON->new()
+            ]
+        ),
         @_
     }, $class);
 }
@@ -32,11 +40,13 @@ sub connected {
 }
 
 sub remote_input {
-    my $self = shift;
+    my ($self, $cheap, $input) = @_;
+    
+    my $objs = $self->{filter}->get( [ $input ] );
 
-    # TODO use filter stackable here, and migrate from filter line in poco cometd
-    # 0 is $cheap, and 1 is plain json
-    $self->{chman}->deliver(@_);
+    while ( my $obj = shift @$objs ) {
+        $self->{chman}->deliver($cheap, $obj);
+    }
 }
 
 1;

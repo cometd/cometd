@@ -18,7 +18,7 @@ sub freeze {
     } else {
         $ch = "/meta/unknown";
     }
-    "<script>deliver('$ch',".objToJson($obj).");</script>\n";
+    "<script>deliver('$ch','".objToJson($obj)."');</script>\n";
 }
 
 sub thaw {

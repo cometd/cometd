@@ -107,14 +107,14 @@ sub start_proxy_request {
     } split( /;\s*/, $opts );
 
     # parse query string
-    my $in = params( $client );
+    #my $in = params( $client );
    
     # pull action, domain and id from backend request
     my $action = $op{action} || 'connect';
     my $last = 0;
-    if ( exists($in->{last_eid}) && $in->{last_eid} =~ m/^\d+$/ ) {
-        $last = $in->{last_eid};
-    }
+    #if ( exists($in->{last_eid}) && $in->{last_eid} =~ m/^\d+$/ ) {
+    #    $last = $in->{last_eid};
+    #}
 
     if ( $action eq 'connect' && !( $op{id} && $op{domain} ) ) {
         warn "no client id and/or domain set";
@@ -130,7 +130,7 @@ sub start_proxy_request {
             # close
             $res->header( 'Connection', 'close' );
  
-            $op{id} = $in->{id} if ( $in->{id} );
+            #$op{id} = $in->{id} if ( $in->{id} );
             
             # client id
             $client->{scratch}{id} = $op{id};
@@ -435,8 +435,8 @@ sub bcast_event {
 
 sub filter {
     my ($ch, $obj) = @_;
-   
-    $obj{channel} = $ch;
+
+    $obj->{channel} = $ch;
 
     $filter->freeze($obj);
 }
