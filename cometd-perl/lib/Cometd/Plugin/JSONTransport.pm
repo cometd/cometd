@@ -54,10 +54,15 @@ sub local_connected {
         
         $filter->push(
             POE::Filter::Line->new(),
+        );
+            
+        $wheel->put( "bayeux " . BAYEUX_VERSION );
+        
+        $filter->push(
             POE::Filter::JSON->new(),
         );
         
-        $wheel->put({ test => 1 });
+        $wheel->put({ bayeux => BAYEUX_VERSION });
         
         # XXX should we pop the stream filter off the top?
     }
@@ -66,14 +71,11 @@ sub local_connected {
 
 sub remote_receive {
     my ($self, $cheap, $event) = @_;
-    
     $self->{chman}->deliver($cheap, $event);
 }
 
 sub local_receive {
-
     my ($self, $cheap, $event) = @_;
-    
     $self->{chman}->deliver($cheap, $event);
 }
 
