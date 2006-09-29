@@ -4,11 +4,10 @@ use lib qw( ./lib );
 
 use POE qw(
     Component::Client::TCP
-    Filter::Stackable
     Filter::Line
-    Filter::JSON
 );
 
+use JSON;
 use Carp qw( cluck );
 
 $SIG{__DIE__} = \&cluck;
@@ -33,14 +32,7 @@ POE::Component::Client::TCP->new(
         ServerError    => \&handle_server_error,
         ServerFlushed  => \&handle_server_flush,
 
-        Filter         => POE::Filter::Stackable->new(
-            Filters => [
-                POE::Filter::JSON->new(),
-                POE::Filter::Line->new(),
-            ]
-        ),
-#        InlineStates   => {
-#        }
+        Filter         => POE::Filter::Line->new(),
     );
 
 $poe_kernel->run();
@@ -53,12 +45,12 @@ sub handle_start {
 sub handle_connect {
     my ($socket, $peer_address, $peer_port) = @_[ARG0, ARG1, ARG2];
     warn "connect";
-#    $_[HEAP]->{server}->put({
-#        channel => '/pub/foo',
-#        data => {
-#            time => time(),
-#        }
-#    });
+    $_[HEAP]->{server}->put(objToJson({
+        channel => '/pub/foo',
+        data => {
+            time => time(),
+        }
+    }));
 }
 
 sub handle_connect_error {
