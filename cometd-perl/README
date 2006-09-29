@@ -6,8 +6,7 @@ IS in a working state.
 See the TODO for a list of things that need to be completed.
 
 
-Notes:
-
+* Notes *
 
 perlbal.sh is for running perlbal with the right lib directories
 see conf/perlbal.conf
@@ -20,6 +19,21 @@ eventserver.pl loads the components that combine into the cometd event server
 
 The lab/ directory is the old design for the cometd component.  This code
 may make its way back into cometd
+
+
+* START COMET AND DO A SIMPLE TEST *
+
+./httpd.pl &
+./perlbal.sh &
+./eventserver.pl
+
+Go to http://127.0.0.1:2021/cometd in IE and Firefox
+
+You will see a connect event, and some ping events ( every 15s )
+
+./tools/injectevent.pl "It works"
+
+You'll see the message on channel /pub/foo
 
 
 David Davis
