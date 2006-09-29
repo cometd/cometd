@@ -1,4 +1,3 @@
-lib/POE/Component/Server/Cometd.pm
 lib/POE/Component/Cometd/Client.pm
 lib/POE/Component/Cometd/Server.pm
 lib/POE/Component/Cometd.pm
@@ -7,6 +6,7 @@ lib/Cometd/Filter/JSON.pm
 lib/Cometd/Perlbal/Service/Connector.pm
 lib/Cometd/Perlbal/Service.pm
 lib/Cometd/Plugin/JSONTransport.pm
+lib/Cometd/Plugin/ChannelManager/InMemory.pm
 lib/Cometd/Common.pm
 lib/Cometd/Transport.pm
 lib/Cometd.pm
@@ -20,3 +20,4 @@ MANIFEST
 README
 TODO
 eventserver.pl
+html/index.html
