@@ -219,8 +219,9 @@ sub deliver_event {
     my ( $cheap, $event ) = @_;
     
     foreach my $heap (keys %{$singleton->{heaps}}) {
-        warn "heap $heap and cheap $cheap";
+        # $heap is a stringified version
         next if ( $heap eq "$cheap" ); # don't send back to the source
+        
         my $heap = $singleton->{heaps}->{$heap};
         warn "$heap is on $heap->{addr} event is from $cheap";
         if ( $heap->{connected} && $heap->{con} ) {
