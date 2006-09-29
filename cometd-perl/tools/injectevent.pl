@@ -48,7 +48,7 @@ sub handle_connect {
     $_[HEAP]->{server}->put(objToJson({
         channel => '/pub/foo',
         data => {
-            time => time(),
+            message => join(' ',@ARGV),
         }
     }));
 }
