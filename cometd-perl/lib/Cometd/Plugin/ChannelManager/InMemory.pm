@@ -14,41 +14,47 @@ sub new {
 }
 
 sub deliver {
-    my ( $self, $cheap, $obj ) = @_;
-    warn "obj:".Data::Dumper->Dump([$obj]);
+    my ( $self, $cheap, $event ) = @_;
+    warn "event:".Data::Dumper->Dump([$event]);
 
-    return unless (my $c = $obj->{channel});
+    return unless (my $c = $event->{channel});
    
-    print "channel: $c\n";
-
     return if ( $c =~ '/meta/ping' );
     
+    my $addr = $cheap->{addr};
+    
     # FIXME more error checking
-    if ( $c =~ '/meta/connect' ) {
-        return unless (ref($obj->{data}{channels}) eq 'ARRAY');
+    if ( $c eq '/meta/connect' ) {
+        return unless ($event->{data} && ref($event->{data}) eq 'HASH'
+            && ref($event->{data}->{channels}) eq 'ARRAY');
 
-        foreach my $ch (@{$obj->{data}{channels}}) {
-            $self->{ch}->{$ch}++;
+        foreach my $ch (@{$event->{data}->{channels}}) {
+            if ( !$self->{ch}->{$ch} ) {
+                $self->{ch}->{$ch} = { $addr => 1 };
+            } else {
+                $self->{ch}->{$ch}->{$addr}++;
+            }
         }
         return;
     }
     
-    if ( $c =~ '/meta/disconnect' ) {
-        return unless (ref($obj->{data}{channels}) eq 'ARRAY');
+    if ( $c eq '/meta/disconnect' ) {
+        return unless ($event->{data} && ref($event->{data}) eq 'HASH'
+            && ref($event->{data}->{channels}) eq 'ARRAY');
         
-        foreach my $ch (@{$obj->{data}{channels}}) {
-            $self->{ch}->{$ch}--;
-            delete $self->{ch}->{$ch} if ( $self->{ch}->{$ch} <= 0 );
+        foreach my $ch (@{$event->{data}->{channels}}) {
+            next if ( !$self->{ch}->{$ch} );
+            $self->{ch}->{$ch}->{$addr}--;
+            delete $self->{ch}->{$ch}->{$addr} if ( $self->{ch}->{$ch}->{$addr} <= 0 );
+            delete $self->{ch}->{$ch} if ( !scalar( keys %{$self->{ch}->{$ch}} ) );
         }
         return;
     }
 
-    if ( $self->{ch}->{$c} ) {
-        
-    }
+    # XXX check if this is client is allowed to send events
+    POE::Component::Cometd::Client::deliver_event( $cheap, $event );
     
-    # TODO locate the server that has the $obj->{channel}
-    # and deliver it there
+    return;
 }
 
 1;

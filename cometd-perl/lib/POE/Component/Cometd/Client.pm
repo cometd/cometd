@@ -3,14 +3,16 @@ package POE::Component::Cometd::Client;
 use strict;
 use warnings;
 
-use POE qw( Component::Cometd );
-
+use POE qw( Component::Cometd Filter::Stackable Filter::Stream );
 use base qw( POE::Component::Cometd );
 
 use overload '""' => \&as_string;
 
+our $singleton;
+
 sub spawn {
-    my $self = shift->SUPER::new( @_ );
+    return $singleton if ( $singleton );
+    my $self = $singleton = shift->SUPER::new( @_ );
     
     POE::Session->create(
 #       options => { trace=>1 },
@@ -32,7 +34,7 @@ sub spawn {
                 remote_connect_timeout
                 remote_connect_error
                 remote_error
-                remote_input
+                remote_receive
                 remote_flush
             )]
         ],
@@ -145,8 +147,12 @@ sub remote_connect_success {
     $cheap->{con} = POE::Wheel::ReadWrite->new(
         Handle       => $socket,
         Driver       => POE::Driver::SysRW->new(),
-        Filter       => POE::Filter::Line->new(),
-        InputEvent   => $self->create_event( $cheap,'remote_input' ),
+        Filter       => POE::Filter::Stackable->new(
+            Filters => [
+                POE::Filter::Stream->new(),
+            ]
+        ),
+        InputEvent   => $self->create_event( $cheap,'remote_receive' ),
         ErrorEvent   => $self->create_event( $cheap,'remote_error' ),
 #        FlushedEvent => $self->create_event( $cheap,'remote_flush' ),
     );
@@ -158,7 +164,7 @@ sub remote_connect_success {
     
     warn "connected";
     
-    $self->{transport}->process_plugins( [ 'connected', $cheap, $socket, $cheap->{con} ] );
+    $self->{transport}->process_plugins( [ 'remote_connected', $cheap, $socket, $cheap->{con} ] );
 }
 
 sub remote_connect_error {
@@ -189,10 +195,10 @@ sub remote_connect_timeout {
     undef;
 }
 
-sub remote_input {
-    my ( $self, $input ) = @_[OBJECT, ARG0];
-    $self->_log(v => 4, msg => "got input $input");
-    $self->{transport}->process_plugins( [ 'remote_input', $self->{cheap}, $input ] );
+sub remote_receive {
+    my $self = $_[OBJECT];
+    $self->_log(v => 4, msg => "got input ".$_[ARG0]);
+    $self->{transport}->process_plugins( [ 'remote_receive', $self->{cheap}, $_[ARG0] ] );
 }
 
 sub remote_error {
@@ -208,6 +214,23 @@ sub remote_flush {
 #    $_[OBJECT]->_log(v => 2, msg => "got flush");
 
 }
+
+sub deliver_event {
+    my ( $cheap, $event ) = @_;
+    
+    foreach my $heap (keys %{$singleton->{heaps}}) {
+        warn "heap $heap and cheap $cheap";
+        next if ( $heap eq "$cheap" ); # don't send back to the source
+        my $heap = $singleton->{heaps}->{$heap};
+        warn "$heap is on $heap->{addr} event is from $cheap";
+        if ( $heap->{connected} && $heap->{con} ) {
+            warn "putting event $event";
+            
+            $heap->{con}->put( $event );
+        }
+    }
+}
+
 
 
 1;

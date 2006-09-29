@@ -8,7 +8,6 @@ use POE::Component::Cometd::Server;
 use Cometd::Plugin::JSONTransport;
 use Cometd::Plugin::ChannelManager::InMemory;
 
-
 my %opts = (
     LogLevel => 4,
     TimeOut => 0,
@@ -30,8 +29,7 @@ my $server = POE::Component::Cometd::Server->spawn(
 );
 
 # conencts to perlbal servers that handle client connections
-# TODO exponential backoff
-POE::Component::Cometd::Client->spawn(
+my $client = POE::Component::Cometd::Client->spawn(
     %opts,
     ClientList => [
         '127.0.0.1:2022',

@@ -1,25 +1,88 @@
 #!/usr/bin/perl
 
-use LWP::UserAgent;
+use lib qw( ./lib );
 
-my $ua = LWP::UserAgent->new();
+use POE qw(
+    Component::Client::TCP
+    Filter::Stackable
+    Filter::Line
+    Filter::JSON
+);
 
+use Carp qw( cluck );
 
-$ua->agent('COMETd Event Injector/1.0');
+$SIG{__DIE__} = \&cluck;
 
-$ua->default_header( "X-REPROXY-SERVICE" => "cometd", "X-COMETd" => "ID=*; action=post;" );
+POE::Component::Client::TCP->new(
+        RemoteAddress  => "127.0.0.1",
+        RemotePort     => "6000",
+        BindAddress    => "127.0.0.1",
+        Alias          => 'client',
+        ConnectTimeout => 10,              # Seconds; optional.
 
-#my $r = $ua->get("http://127.0.0.1:2022/?channel=meta%2Fglobal&data=".$ARGV[0]);
+        SessionParams => [ options => { debug => 1 } ], # Optional.
 
-my $r = $ua->post("http://10.0.0.11:2022/", {
-    channel => 'meta/global',
-    data => $ARGV[ 0 ],
-});
+        Started        => \&handle_start,   # Optional.
+        Args           => [ "arg0", "arg1" ],  # Optional.  Start args.
 
-if ($r) {
-    print "Success\n".$r->content;
-} else {
-    print "Fail\n";
+        Connected      => \&handle_connect,
+        ConnectError   => \&handle_connect_error,
+        Disconnected   => \&handle_disconnect,
+
+        ServerInput    => \&handle_server_input,
+        ServerError    => \&handle_server_error,
+        ServerFlushed  => \&handle_server_flush,
+
+        Filter         => POE::Filter::Stackable->new(
+            Filters => [
+                POE::Filter::JSON->new(),
+                POE::Filter::Line->new(),
+            ]
+        ),
+#        InlineStates   => {
+#        }
+    );
+
+$poe_kernel->run();
+
+sub handle_start {
+    my @args = @_[ARG0..$#_];
+    warn "started";
 }
+
+sub handle_connect {
+    my ($socket, $peer_address, $peer_port) = @_[ARG0, ARG1, ARG2];
+    warn "connect";
+#    $_[HEAP]->{server}->put({
+#        channel => '/pub/foo',
+#        data => {
+#            time => time(),
+#        }
+#    });
+}
+
+sub handle_connect_error {
+    my ($syscall_name, $error_number, $error_string) = @_[ARG0, ARG1, ARG2];
+    warn "connect error $error_number $error_string";
+}
+
+sub handle_disconnect {
+    warn "disconnected";
+}
+
+sub handle_server_input {
+    my $input_record = $_[ARG0];
+    warn "input: $input_record";
+}
+
+sub handle_server_error {
+    my ($syscall_name, $error_number, $error_string) = @_[ARG0, ARG1, ARG2];
+    warn "error $error_number $error_string";
+}
+
+sub handle_server_flush {
+    $_[KERNEL]->yield('shutdown');
+}
+
 
 exit 0;

@@ -1,6 +1,6 @@
 package Cometd::Plugin::JSONTransport;
 
-use POE::Filter::Stackable;
+use POE::Filter::Line;
 use POE::Filter::JSON;
 
 use strict;
@@ -11,14 +11,6 @@ sub BAYEUX_VERSION() { '1.0' }
 sub new {
     my $class = shift;
     bless({
-        filter => POE::Filter::Stackable->new(
-            Filters => [
-# XXX the cometd client/server should let us set 
-# the filter on the rw wheel at some point
-#                POE::Filter::Line->new(),
-                POE::Filter::JSON->new()
-            ]
-        ),
         @_
     }, $class);
 }
@@ -31,22 +23,58 @@ sub handle {
     return 1;
 }
 
-sub connected {
+sub remote_connected {
     my ( $self, $cheap, $socket, $wheel ) = @_;
     $cheap->{transport} = 'JSON';
     if ( $wheel ) {
+        # POE::Filter::Stackable object:
+        my $filter = $wheel->[ POE::Wheel::ReadWrite::FILTER_INPUT ];
+        
+        $filter->push(
+            POE::Filter::Line->new()
+        );
+        
         $wheel->put( "bayeux " . BAYEUX_VERSION );
+            
+        $filter->push(
+            POE::Filter::JSON->new()
+        );
+        
+        # XXX should we pop the stream filter off the top?
     }
+    return;
 }
 
-sub remote_input {
-    my ($self, $cheap, $input) = @_;
-    
-    my $objs = $self->{filter}->get( [ $input ] );
-
-    while ( my $obj = shift @$objs ) {
-        $self->{chman}->deliver($cheap, $obj);
+sub local_connected {
+    my ( $self, $cheap, $socket, $wheel ) = @_;
+    $cheap->{transport} = 'JSON';
+    if ( $wheel ) {
+        # POE::Filter::Stackable object:
+        my $filter = $wheel->[ POE::Wheel::ReadWrite::FILTER_INPUT ];
+        
+        $filter->push(
+            POE::Filter::Line->new(),
+            POE::Filter::JSON->new(),
+        );
+        
+        $wheel->put({ test => 1 });
+        
+        # XXX should we pop the stream filter off the top?
     }
+    return;
+}
+
+sub remote_receive {
+    my ($self, $cheap, $event) = @_;
+    
+    $self->{chman}->deliver($cheap, $event);
+}
+
+sub local_receive {
+
+    my ($self, $cheap, $event) = @_;
+    
+    $self->{chman}->deliver($cheap, $event);
 }
 
 1;

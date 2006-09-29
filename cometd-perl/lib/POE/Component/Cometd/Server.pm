@@ -87,24 +87,25 @@ sub signals {
 # Accept a new connection
 
 sub local_accept {
-    my ( $kernel, $self, $session, $accept_handle, $peer_addr, $peer_port ) =
+    my ( $kernel, $self, $session, $socket, $peer_addr, $peer_port ) =
         @_[KERNEL, OBJECT, SESSION, ARG0, ARG1, ARG2];
 
     $peer_addr = inet_ntoa( $peer_addr );
-    my ($port, $ip) = ( sockaddr_in( getsockname( $accept_handle ) ) );
+    my ($port, $ip) = ( sockaddr_in( getsockname( $socket ) ) );
     $ip = inet_ntoa( $ip );
 
 
     my $cheap = {
-        handle => $accept_handle,
+        handle => $socket,
         local_ip => $ip,
         local_port => $port,
         peer_ip => $peer_addr,
         peer_port => $peer_port,
+        addr => "$peer_addr:$peer_port",
     };
     
 #    if ($kernel->call($session->ID => notify => sb_accept => $cheap)) {
-#            close($accept_handle);
+#            close($socket);
 #            return 0;
 #    }
 
@@ -115,7 +116,11 @@ sub local_accept {
     $cheap->{con} = POE::Wheel::ReadWrite->new(
         Handle          => delete $cheap->{handle}, 
         Driver          => POE::Driver::SysRW->new( BlockSize => 4096 ), 
-        Filter          => POE::Filter::Line->new(),
+        Filter       => POE::Filter::Stackable->new(
+            Filters => [
+                POE::Filter::Stream->new(),
+            ]
+        ),
         InputEvent      => $self->create_event( $cheap, 'local_receive' ),
         ErrorEvent      => $self->create_event( $cheap, 'local_error' ),
 #        FlushedEvent    => $self->create_event( $cheap, 'local_flushed' ),
@@ -133,16 +138,17 @@ sub local_accept {
 
     $self->{connections}++;
     
-    $kernel->yield( send => "$cheap" => "Cometd Event Server ready." );
+#    $kernel->yield( send => "$cheap" => "Cometd Event Server ready." );
     
-    $self->{transport}->process_plugins( $accept_handle, $cheap->{con}, $cheap );
+    $self->{transport}->process_plugins( [ 'local_connected', $cheap, $socket, $cheap->{con} ] );
 }
 
 
 sub local_receive {
     my $self = $_[OBJECT];
     $self->_log(v => 4, msg => "Receive $_[ARG0]");
-    $_[KERNEL]->yield( send => "$self->{cheap}" => $_[ARG0] );
+    #$_[KERNEL]->yield( send => "$self->{cheap}" => $_[ARG0] );
+    $self->{transport}->process_plugins( [ 'local_receive', $self->{cheap}, $_[ARG0] ] );
 }
 
 sub local_flushed {

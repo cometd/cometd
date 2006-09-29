@@ -57,8 +57,11 @@ sub handle {
         return H_FINAL;
     }
     
-    my ($domain) = ( $s->header('Host') =~ m/([^:]+)(:?:(\d+))?/ );
-    $domain =~ s/^[^\.]+\.//;
+    my ($domain,$extra) = ( $s->header('Host') =~ m/([^:]+)(\d+)/ );
+    
+    if ( $domain !~ m/^\d{1,3}\.\d{1,3}\.\d{1,3}/ ) {
+        $domain =~ s/^[^\.]+\.//;
+    }
     my @sb = ( "id=$guid", "domain=$domain", "channels=/pub/foo", "action=connect" );
     
     $r->code( 200 );

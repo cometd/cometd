@@ -8,7 +8,7 @@ use Cometd::Perlbal::Service::Connector;
 
 our ( @listeners, %ids, $filter, $filter_package );
 
-use constant KEEPALIVE_TIMER => 5;
+use constant KEEPALIVE_TIMER => 20;
 
 sub import {
     my ($class, $args) = @_;
@@ -155,7 +155,7 @@ sub start_proxy_request {
                     channel => '/meta/disconnect',
                     clientId => $op{id},
                     data => {
-                        channels => $cli->{scratch}{ch},
+                        channels => [ keys %{$cli->{scratch}{ch}} ],
                         previous => 1,
                     },
                 });
@@ -172,7 +172,7 @@ sub start_proxy_request {
                 channel => '/meta/connect',
                 clientId => $op{id},
                 data => {
-                    channels => $client->{scratch}{ch}
+                    channels => [ keys %{$client->{scratch}{ch}} ],
                 },
             });
     
@@ -210,7 +210,7 @@ if (window.parent.cometd)
                     connectionId => '/meta/connections/'.$op{id}, # XXX
                     timestamp => time(), # XXX
                     data => {
-                        channels => $client->{scratch}{ch}
+                        channels => [ keys %{$client->{scratch}{ch}} ],
                     },
                     ( $last ? ( 'last' => $last ) : () )
                 }
@@ -232,7 +232,7 @@ if (window.parent.cometd)
                                 channel => '/meta/disconnect',
                                 clientId => $_->{scratch}{id},
                                 data => {
-                                    channels => $_->{scratch}{ch},
+                                    channels => [ keys %{$client->{scratch}{ch}} ],
                                 },
                             });
                             delete $ids{ $_->{scratch}{id} };
@@ -347,7 +347,7 @@ sub handle_event {
                     channel => '/meta/disconnect',
                     clientId => $l->{scratch}{id},
                     data => {
-                        channels => $l->{scratch}{ch}
+                        channels => [ keys %{$l->{scratch}{ch}} ],
                     },
                 });
                 $cleanup = 1;
@@ -358,6 +358,7 @@ sub handle_event {
             # TODO more efficient
             foreach ( keys %{ $l->{scratch}{ch} } ) {
                 if ( $_ eq $o->{channel} ) {
+                    warn "delivering event on channel $_ : $json";
                     $l->watch_write(0) if $l->write( $json );
                     $l->{alive_time} = $time;
                     next LISTENER;
@@ -379,7 +380,7 @@ sub handle_event {
                     channel => '/meta/disconnect',
                     clientId => $_->{scratch}{id},
                     data => {
-                        channels => $_->{scratch}{ch}
+                        channels => [ keys %{$_->{scratch}{ch}} ],
                     },
                 });
                 delete $ids{ $_->{scratch}{id} };
