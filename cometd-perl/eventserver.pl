@@ -26,13 +26,14 @@ my %opts = (
 my $server = POE::Component::Cometd::Server->spawn(
     %opts,
     ListenPort => 6000,
+    ListenAddress => '0.0.0.0',
 );
 
 # conencts to perlbal servers that handle client connections
 my $client = POE::Component::Cometd::Client->spawn(
     %opts,
     ClientList => [
-        '127.0.0.1:2022',
+        '127.0.0.1:2022', # Perlbal Cometd manage port
     ],
 );
 
