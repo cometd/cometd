@@ -94,7 +94,6 @@ sub local_accept {
     my ($port, $ip) = ( sockaddr_in( getsockname( $socket ) ) );
     $ip = inet_ntoa( $ip );
 
-
     my $cheap = {
         handle => $socket,
         local_ip => $ip,
@@ -104,10 +103,7 @@ sub local_accept {
         addr => "$peer_addr:$peer_port",
     };
     
-#    if ($kernel->call($session->ID => notify => sb_accept => $cheap)) {
-#            close($socket);
-#            return 0;
-#    }
+    # XXX could do accept check ( plugin )
 
     $self->add_client_obj( $self->{cheap} = $cheap );
     
@@ -116,7 +112,7 @@ sub local_accept {
     $cheap->{con} = POE::Wheel::ReadWrite->new(
         Handle          => delete $cheap->{handle}, 
         Driver          => POE::Driver::SysRW->new( BlockSize => 4096 ), 
-        Filter       => POE::Filter::Stackable->new(
+        Filter          => POE::Filter::Stackable->new(
             Filters => [
                 POE::Filter::Stream->new(),
             ]
@@ -137,8 +133,6 @@ sub local_accept {
     $self->{cheap} = undef;
 
     $self->{connections}++;
-    
-#    $kernel->yield( send => "$cheap" => "Cometd Event Server ready." );
     
     $self->{transport}->process_plugins( [ 'local_connected', $cheap, $socket, $cheap->{con} ] );
 }
