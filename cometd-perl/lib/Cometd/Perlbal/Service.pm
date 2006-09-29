@@ -423,7 +423,7 @@ sub bcast_event {
                     channel => '/meta/disconnect',
                     clientId => $_->{scratch}{id},
                     data => {
-                        channels => $_->{scratch}{ch}
+                        channels => [ keys %{$_->{scratch}{ch}} ],
                     },
                 });
                 delete $ids{ $_->{scratch}{id} };
