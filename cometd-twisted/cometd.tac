@@ -19,7 +19,7 @@ logFile = "/var/log/cometd"
 
 # port: integer
 #	where should we log cometd activity to?
-logFile = 8080
+port = 8080
 
 ## End Configuration Block #####################################################
 
@@ -58,7 +58,7 @@ class CometdRunner(resource.Resource):
 # FIXME: we should be getting all of this config info from a file!!
 site = server.Site(CometdRunner())
 application = service.Application("cometd")
-s = strports.service('tcp:'+port, channel.HTTPFactory(site))
+s = strports.service('tcp:'+str(port), channel.HTTPFactory(site))
 s.setServiceParent(application)
 
 # vim:ts=4:noet:ft=python
