@@ -17,13 +17,17 @@ sub deliver {
     my ( $self, $cheap, $event ) = @_;
     warn "event:".Data::Dumper->Dump([$event]);
 
+    unless ( ref($event) eq 'HASH' ) {
+        warn 'event is not a hash ref';
+        return;
+    }
+    
     return unless (my $c = $event->{channel});
    
     return if ( $c =~ '/meta/ping' );
     
     my $addr = $cheap->{addr};
     
-    # FIXME more error checking
     if ( $c eq '/meta/connect' ) {
         return unless ($event->{data} && ref($event->{data}) eq 'HASH'
             && ref($event->{data}->{channels}) eq 'ARRAY');
@@ -48,6 +52,11 @@ sub deliver {
             delete $self->{ch}->{$ch}->{$addr} if ( $self->{ch}->{$ch}->{$addr} <= 0 );
             delete $self->{ch}->{$ch} if ( !scalar( keys %{$self->{ch}->{$ch}} ) );
         }
+        return;
+    }
+
+    if ( $c =~ m~/meta/~ ) {
+        warn "unhandled meta channel:$c";
         return;
     }
 
