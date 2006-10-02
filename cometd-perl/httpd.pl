@@ -35,13 +35,18 @@ use POE::Component::Server::HTTPServer::Handler;
 use base 'POE::Component::Server::HTTPServer::Handler';
 use Data::GUID;
 use HTTP::Cookies;
+use URI::Escape;
+use JSON;
 
 sub handle {
     my $self = shift;
     my $context = shift;
     my $r = $context->{response};
     my $s = $context->{request};
-    
+
+    require Data::Dumper;
+    warn Data::Dumper->Dump([$s]);
+
     my $guid;
     if ($s->header('Cookie')) {
         ($guid) = ( $s->header( 'Cookie' ) =~ m/CID=(.*)/ );
@@ -64,12 +69,56 @@ sub handle {
         $domain =~ s/^[^\.]+\.//;
     }
 
+    # message=%5B%7B%22version%22%3A0.1%2C%22minimumVersion%22%3A0.1%2C%22channel%22%3A%22/meta/handshake%22%7D%5D
+    
+    my %in;
+    foreach ( split ( /&/, $s->content ) ) {
+        my ($k, $v) = split(/=/);
+        $in{$k} = uri_unescape($v);
+    }
 
-    my @sb = ( "id=$guid", "domain=$domain", "channels=/pub/foo", "action=connect" );
+    my @ch = qw( /pub/foo );
+
+    if ( $in{message} ) {
+        # [{"version":0.1,"minimumVersion":0.1,"channel":"/meta/handshake"}]
+        print "$in{message}\n";
+        if ( $in{message} =~ m/^\[/ ) {
+            my $o = eval { jsonToObj($in{message}); };
+            if ($@) {
+                warn $@;
+            }
+            if (ref($o) eq 'ARRAY') {
+                foreach my $m (@$o) {
+                    next unless (ref($m) eq 'HASH');
+                    if ($m->{channel}) {
+                        next if ($m->{channel} =~ m~/meta/~i);
+                        push(@ch,$m->{channel});
+                    }
+                }
+            }
+        }
+    }
+    
+    my @sb = ( "id=$guid", "domain=$domain", "channels=".join(';',@ch), "action=connect" );
+    
+    my ( $qry ) = ( $s->uri =~ m/\?(.*)/ );
+    if ( $qry ) {
+        foreach ( split ( /&/, $qry ) ) {
+            my ( $k, $v ) = split( /=/ );
+            $in{$k} = uri_unescape($v);
+        }
+        if ( $in{tunnelInit} ) {
+            push( @sb, "tunnelType=".uri_escape( $in{tunnelInit} ) );
+        }
+    }
     
     $r->code( 200 );
     $r->header( 'X-REPROXY-SERVICE' => 'cometd' );
     $r->header( 'X-COMETD' => join('; ',@sb ) );
+    $r->header( 'X-COMETD-DATA' => uri_escape($in{message}) )
+        if ( $in{message} );
+    
+    warn "x-cometd:".join('; ',@sb );
     
     my $c = HTTP::Cookies->new( {} );
     $c->set_cookie( 0, 'CID', "$guid", '/',
@@ -79,6 +128,7 @@ sub handle {
     $r->header( split( ': ',$co ) );
     
     warn "cookie out: $co";
+    
     $r->content( "OK" );
     $r->content_type( 'text/html' );
     
