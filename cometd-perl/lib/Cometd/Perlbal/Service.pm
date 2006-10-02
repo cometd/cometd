@@ -193,7 +193,7 @@ deliver = function(ch,obj) {
     if ( obj.eventId )
         ev = window.last_eid = obj.eventId;
     var d=document.createElement('div');
-    d.innerHTML = '<pre style="margin:0">EventId:'+ev+'\\tChannel:'+ch+'\\t'+obj+'</pre>';
+    d.innerHTML = '<pre style="margin:0">Channel:'+ch+'\\t'+obj+'</pre>';
     document.body.appendChild(d);
 };
 if (window.parent.cometd)
