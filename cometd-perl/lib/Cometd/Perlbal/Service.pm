@@ -5,8 +5,10 @@ use Cometd;
 use Carp qw( croak );
 use Scalar::Util qw( weaken );
 use Cometd::Perlbal::Service::Connector;
+use URI::Escape;
+use JSON;
 
-our ( @listeners, %ids, $filter, $filter_package );
+our ( @clients, %ids, $filter, $filter_package );
 
 use constant KEEPALIVE_TIMER => 20;
 
@@ -18,7 +20,7 @@ sub import {
         if ($args && ref($args) ne 'HASH');
 
     my %exports = qw(
-        listeners   \@listeners
+        clients   \@clients
         ids         \%ids
         filter      \$filter
         load        \&load
@@ -73,7 +75,7 @@ sub load {
 }
 
 sub unload {
-    @listeners = %ids = ();
+    @clients = %ids = ();
     $filter = undef;
     return 1;
 }
@@ -109,143 +111,237 @@ sub start_proxy_request {
     # parse query string
     #my $in = params( $client );
    
-    # pull action, domain and id from backend request
-    my $action = $op{action} || 'connect';
-    my $last = 0;
-    #if ( exists($in->{last_eid}) && $in->{last_eid} =~ m/^\d+$/ ) {
-    #    $last = $in->{last_eid};
-    #}
-
-    if ( $action eq 'connect' && !( $op{id} && $op{domain} ) ) {
-        warn "no client id and/or domain set";
-        $client->_simple_response(404, 'No client id and/or domain returned from backend');
-        return 1;
+    require Data::Dumper;
+    warn Data::Dumper->Dump([$hd]);
+   
+    my $event = {};
+    
+    if ( my $msg = $hd->header('x-cometd-data') ) {
+        $msg = uri_unescape( $msg );
+        warn "!!!! $msg\n";
+        if ( $msg =~ m/^\[/ ) {
+            my $o = eval { jsonToObj( $msg ); };
+            if ( $@ ) {
+                warn $@;
+            } else {
+                if ( ref($o) eq 'ARRAY' ) {
+                    foreach my $m ( @$o ) {
+                        next unless ( ref( $m ) eq 'HASH' );
+                        if ( $m->{channel} && $m->{channel} eq '/meta/handshake' ) {
+                            $op{action} = 'handshake';
+                            $event = $m;
+                            last;
+                        }
+                    }
+                }
+            }
+        }
     }
    
-    SWITCH: {
+    # pull action, domain and id from backend request
+    my $action = $op{action} || 'connect';
+    $op{tunnelType} ||= 'http-polling';
+    my $last_eid = 0;
+    #if ( exists($in->{last_eid}) && $in->{last_eid} =~ m/^\d+$/ ) {
+    #    $last_eid = $in->{last_eid};
+    #}
+
+    warn "action: $action";
+
+    if ( $action eq 'handshake' ) {
+    
+        unless ( $op{id} ) {
+            warn "no client id set";
+            $client->_simple_response(404, 'No client id returned from backend');
+            return 1;
+        }
         
-        if ( $action eq 'connect' ) {
+        # $event = [{"version":0.1,"minimumVersion":0.1,"channel":"/meta/handshake"}]
+        my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
+        $res->header( 'Content-Type', 'text/html' );
+        # close
+        $res->header( 'Connection', 'close' );
+
+        $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
+            if ( $hd->header( 'set-cookie' ) );
+	    
+        $client->write( $res->to_string_ref );
+        $client->tcp_cork( 1 );
+        $client->watch_write( 0 ) if $client->write( objToJson({
+            channel => '/meta/handshake',
+			version => 0.1,
+  			minimumVersion => 0.1,
+            supportedConnectionTypes => [
+                'http-polling'
+            ],
+			clientId => $op{id},
+			authSuccessful => 'true',
+			#authToken => "SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY",
+        }) );
+        $client->close();
+        
+        return 1;
+    }
+    
+    if ( $action eq 'connect' ) {
+
+        unless ( $op{id} && $op{domain} ) {
+            warn "no client id and/or domain set";
+            $client->_simple_response(404, 'No client id and/or domain returned from backend');
+            return 1;
+        }
+   
+        my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
+        $res->header( 'Content-Type', 'text/html' );
+        # close
+        $res->header( 'Connection', 'close' );
+ 
+        $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
+            if ( $hd->header( 'set-cookie' ) );
+        
+        #$op{id} = $in->{id} if ( $in->{id} );
+        
+        # client id
+        $client->{scratch}{id} = $op{id};
+        # event id for this client
+        $client->{scratch}{eid} = $last_eid;
+
+        if ( $op{channels} ) {
+            $client->{scratch}{ch} = { map { $_ => 1 } split( /;\s?/, $op{channels} ) };
+        } else {
+            $client->{scratch}{ch} = {};
+        }
+        
+        # close already connected client if any
+        if ( my $cli = delete $ids{ $op{id} } ) {
+            $cli->write( filter(
+                '/meta/disconnect' => {
+                    reason => 'Closing previous connection',
+                }
+            ) . '</body></html>' );
+            Cometd::Perlbal::Service::Connector::multiplex_send({
+                channel => '/meta/disconnect',
+                clientId => $op{id},
+                data => {
+                    channels => [ keys %{$cli->{scratch}{ch}} ],
+                    previous => 1,
+                },
+            });
+            $cli->close();
+        }
+        
+        # id to listener obj map
+        $ids{ $op{id} } = $client;
+        weaken( $ids{ $op{id} } );
+        @clients = grep { defined } ( @clients, $client );
+        foreach (@socket_list) { weaken( $_ ); }
+    
+        Cometd::Perlbal::Service::Connector::multiplex_send({
+            channel => '/meta/connect',
+            clientId => $op{id},
+            data => {
+                channels => [ keys %{$client->{scratch}{ch}} ],
+            },
+        });
+
+        $client->write( $res->to_string_ref );
+        $client->tcp_cork( 1 );
+  
+        $client->{scratch}{tunnel} = $op{tunnelType};
+
+        if ( $op{tunnelType} eq 'http-polling' ) {
+
+            unless ( $op{id} ) {
+                warn "no client id set";
+                $client->_simple_response(404, 'No client id returned from backend');
+                return 1;
+            }
+        
+            # $event = [{"version":0.1,"minimumVersion":0.1,"channel":"/meta/handshake"}]
             my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
             $res->header( 'Content-Type', 'text/html' );
             # close
             $res->header( 'Connection', 'close' );
- 
-            #$op{id} = $in->{id} if ( $in->{id} );
-            
-            # client id
-            $client->{scratch}{id} = $op{id};
-            # event id for this client
-            $client->{scratch}{eid} = $last;
 
-            if ( $op{channels} ) {
-                # XXX negative subscription?
-                $client->{scratch}{ch} = { map { $_ => 1 } split( /;\s?/, $op{channels} ) };
-            } else {
-                $client->{scratch}{ch} = {};
-            }
-            
-            # close already connected client if any
-            if ( my $cli = delete $ids{ $op{id} } ) {
-                $cli->write( filter(
-                    '/meta/disconnect' => {
-                        reason => 'Closing previous connection',
-                    }
-                ) . '</body></html>' );
-                Cometd::Perlbal::Service::Connector::multiplex_send({
-                    channel => '/meta/disconnect',
-                    clientId => $op{id},
-                    data => {
-                        channels => [ keys %{$cli->{scratch}{ch}} ],
-                        previous => 1,
-                    },
-                });
-                $cli->close();
-            }
-            
-            # id to listener obj map
-            $ids{ $op{id} } = $client;
-            weaken( $ids{ $op{id} } );
-            @listeners = grep { defined } ( @listeners, $client );
-            foreach (@socket_list) { weaken( $_ ); }
-        
-            Cometd::Perlbal::Service::Connector::multiplex_send({
-                channel => '/meta/connect',
-                clientId => $op{id},
-                data => {
-                    channels => [ keys %{$client->{scratch}{ch}} ],
-                },
-            });
-    
+            $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
+                if ( $hd->header( 'set-cookie' ) );
+	    
             $client->write( $res->to_string_ref );
             $client->tcp_cork( 1 );
   
+            # XXX set timer or let client drop connection?
+            
+            return 1;
+                    
+        } elsif ( $op{tunnelType} eq 'iframe' ) {
+            
             $op{domain} =~ s/'/\\'/g;
 
-            $client->write( qq|<html><body><script type="text/javascript">
-// <![CDATA[ 
-document.domain = '$op{domain}';
-window.last_eid = $last;
-window.onload = function() {
-    window.location.href = window.location.href.replace( /last_eid=\\d+/, 'last_eid='+window.last_eid );
-};
-deliver = function(ch,obj) {
-    var ev;
-    if ( obj.eventId )
-        ev = window.last_eid = obj.eventId;
-    var d=document.createElement('div');
-    d.innerHTML = '<pre style="margin:0">Channel:'+ch+'\\t'+obj+'</pre>';
-    document.body.appendChild(d);
-};
-if (window.parent.cometd)
-    window.parent.cometd.setup( window );
-// ]]>
-</script>
-| );
+            $client->write( qq~<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+	<head>
+		<title>cometd: The Long Tail of Comet</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+		<script type="text/javascript">
+			// window.parent.dojo.debug("tunnelInit");
+			var noInit = false;
+			var domain = "";
+            var deliver = function() { };
+			function init(){
+				var sparams = document.location.search;
+				if(sparams.length >= 0){
+					if(sparams.charAt(0) == "?"){
+						sparams = sparams.substring(1);
+					}
+					var ss = (sparams.indexOf("&amp;") >= 0) ? "&amp;" : "&";
+					sparams = sparams.split(ss);
+					for(var x=0; x<sparams.length; x++){
+						var tp = sparams[x].split("=");
+						if(typeof window[tp[0]] != "undefined"){
+							window[tp[0]] = ((tp[1]=="true")||(tp[1]=="false")) ? eval(tp[1]) : tp[1];
+						}
+					}
+				}
+
+				if(noInit){ return; }
+				/*
+				if(domain.length > 0){
+					document.domain = domain;
+				}
+				*/
+				if(window.parent != window){
+					/* Notify parent that we are loaded. */
+					window.parent.cometd.tunnelInit(window.location, document.domain);
+                    deliver = function(ch,msg) {
+                        window.parent.cometd.deliver(msg);
+                    };
+				}
+			}
+		</script>
+	</head>
+	<body onload="try{ init(); }catch(e){ alert(e); }">
+		<h4>cometd: The Long Tail of Comet</h4>
+	</body>
+</html>~ );
  
-            $client->watch_write( 0 ) if $client->write( filter(
-                '/meta/connect' => {
-                    successful => 'true',
-                    error => '',
-                    clientId => $op{id},
-                    connectionId => '/meta/connections/'.$op{id}, # XXX
-                    timestamp => time(), # XXX
-                    data => {
-                        channels => [ keys %{$client->{scratch}{ch}} ],
-                    },
-                    ( $last ? ( 'last' => $last ) : () )
-                }
-            ) );
-    
-            last;
-            # test code
-    
-            Danga::Socket->AddTimer( 15, sub {
-                @listeners = map {
-                    if ( !$_->{closed} ) {
-                        if ($_ != $client) {
-                            weaken( $_ );
-                            $_;
-                        } else {
-                            $_->watch_write( 0 ) if $_->write( '</body></html>' );
-                            $_->close();
-                            Cometd::Perlbal::Service::Connector::multiplex_send({
-                                channel => '/meta/disconnect',
-                                clientId => $_->{scratch}{id},
-                                data => {
-                                    channels => [ keys %{$client->{scratch}{ch}} ],
-                                },
-                            });
-                            delete $ids{ $_->{scratch}{id} };
-                            ();
-                        }
-                    } else {
-                        delete $ids{ $_->{scratch}{id} };
-                        ();
-                    }
-                } @listeners;
-            } );
+        $client->watch_write( 0 ) if $client->write( filter(
+            '/meta/connect' => {
+                successful => 'true',
+                error => '',
+                clientId => $op{id},
+                connectionId => '/meta/connections/'.$op{id}, # XXX
+                timestamp => time(), # XXX
+                data => {
+                    channels => [ keys %{$client->{scratch}{ch}} ],
+                },
+                ( $last_eid ? ( 'last' => $last_eid ) : () )
+            }
+        ) );
+        
+        } elsif ( $op{tunnelType}  ) {
             
-            last;
         }
     }
     
@@ -339,7 +435,7 @@ sub handle_event {
 
         
         LISTENER:
-        foreach my $l ( @listeners ) {
+        foreach my $l ( @clients ) {
             next if ( $client && $l == $client );
         
             if ( $l->{closed} ) {
@@ -356,13 +452,11 @@ sub handle_event {
         
             # loop over client channels and deliver event
             # TODO more efficient
-            foreach ( keys %{ $l->{scratch}{ch} } ) {
-                if ( $_ eq $o->{channel} ) {
-                    warn "delivering event on channel $_ : $json";
-                    $l->watch_write(0) if $l->write( $json );
-                    $l->{alive_time} = $time;
-                    next LISTENER;
-                }
+            if ( exists( $l->{scratch}{ch}{ $o->{channel} } ) ) {
+                warn "delivering event on channel $o->{channel} : $json";
+                $l->watch_write(0) if $l->write( $json );
+                $l->{alive_time} = $time;
+                # XXX check tunnel, set disconnect timers, etc
             }    
         } # end LISTENER
 
@@ -371,7 +465,7 @@ sub handle_event {
     # TODO client channels
     
     if ( $cleanup ) {
-        @listeners = map {
+        @clients = map {
             if ( !$_->{closed} ) {
                 weaken( $_ );
                 $_;
@@ -386,7 +480,7 @@ sub handle_event {
                 delete $ids{ $_->{scratch}{id} };
                 ();
             }
-        } @listeners;
+        } @clients;
     }
 
 }
@@ -400,7 +494,7 @@ sub bcast_event {
     my $time = time();
     my $json = filter( $obj->{channel} = $ch, $obj );
     # TODO client channels
-    foreach ( @listeners ) {
+    foreach ( @clients ) {
         next if ( $client && $_ == $client );
         
         if ( $_->{closed} ) {
@@ -414,7 +508,7 @@ sub bcast_event {
     }
     
     if ( $cleanup ) {
-        @listeners = map {
+        @clients = map {
             if ( !$_->{closed} ) {
                 weaken( $_ );
                 $_;
@@ -429,7 +523,7 @@ sub bcast_event {
                 delete $ids{ $_->{scratch}{id} };
                 ();
             }
-        } @listeners;
+        } @clients;
     }
 
 }
@@ -448,11 +542,9 @@ sub time_keepalive {
     
     bcast_event( '/meta/ping' => { 'time' => time() } );
     
-    Cometd::Perlbal::Service::Connector::multiplex_send({
-        channel => '/meta/ping',
-        clientId => 'none',
-        data => {},
-    });
+#    Cometd::Perlbal::Service::Connector::multiplex_send({
+#        channel => '/meta/ping',
+#    });
     return 5;
 }
 
