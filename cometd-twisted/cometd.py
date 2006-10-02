@@ -292,12 +292,12 @@ class Connection:
 			self.deliver()
 
 class Client:
-	def __init__(self, id=None, authSuccess=False, authToken=None, lastError=""):
+	def __init__(self, id=None, authSuccessful=False, authToken=None, lastError=""):
 		self.connection = None
 		self.id = id
 		if not self.id:
 			self.id = getIdStr()
-		self.authSuccess = authSuccess
+		self.authSuccessful = authSuccessful
 		self.authToken = authToken
 		self.lastError = lastError
 
@@ -438,7 +438,7 @@ class cometd(resource.PostableResource):
 
 		client = self.checkHandshakeAuth(request, message)
 		resp["clientId"] = client.id
-		resp["authSuccess"] = client.authSuccess
+		resp["authSuccessful"] = client.authSuccessful
 		resp["authToken"] = client.authToken
 		resp["error"] = client.lastError
 
@@ -457,7 +457,7 @@ class cometd(resource.PostableResource):
 
 		# FIXME: mst suggests using something like md5(clientIP, localMAC, time) instead
 		if success:
-			client = Client(authSuccess=success, authToken=token, lastError=error)
+			client = Client(authSuccessful=success, authToken=token, lastError=error)
 			self.clients[client.id] = client
 
 		return client
@@ -501,11 +501,11 @@ class cometd(resource.PostableResource):
 		clientId = message["clientId"]
 		client = self.clients[clientId]
 
-		(	client.authSuccess,
+		(	client.authSuccessful,
 			client.authToken,
 			client.lastError	) = self.checkCredentials(request, message)
 
-		if not client.authSuccess:
+		if not client.authSuccessful:
 			# auth failure, nuke the client from the list
 			del self.clients[clientId]
 			resp = simplejson.dumps({ "error": client.error })
@@ -527,11 +527,11 @@ class cometd(resource.PostableResource):
 		clientId = message["clientId"]
 		client = self.clients[clientId]
 
-		(	client.authSuccess,
+		(	client.authSuccessful,
 			client.authToken,
 			client.lastError	) = self.checkCredentials(request, message)
 
-		if not client.authSuccess:
+		if not client.authSuccessful:
 			# auth failure, nuke the client from the list
 			del self.clients[clientId]
 			resp = simplejson.dumps({ "error": client.error })
