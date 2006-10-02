@@ -54,11 +54,6 @@ sub local_connected {
         
         $filter->push(
             POE::Filter::Line->new(),
-        );
-            
-        $wheel->put( "bayeux " . BAYEUX_VERSION );
-        
-        $filter->push(
             POE::Filter::JSON->new(),
         );
         
