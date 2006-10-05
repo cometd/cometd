@@ -126,11 +126,22 @@ sub start_proxy_request {
             } else {
                 if ( ref($o) eq 'ARRAY' ) {
                     foreach my $m ( @$o ) {
+                        # TODO handle multiple messages!!
                         next unless ( ref( $m ) eq 'HASH' );
-                        if ( $m->{channel} && $m->{channel} eq '/meta/handshake' ) {
-                            $op{action} = 'handshake';
-                            $event = $m;
-                            last;
+                        if ( $m->{channel} ) {
+                            if ( my ($act) = ( $m->{channel} =~ m!/meta/([^/]+)! ) ) {
+                                if ( $act eq 'handshake' || $act eq 'subscribe'
+                                || $act eq 'unsubscribe' || $act eq 'connect'
+                                || $act eq 'reconnect' ) {
+                                    $op{action} = $act;
+                                    $event = $m;
+                                    last;
+                                }
+                            } else {
+                                $op{action} = 'deliver';
+                                $event = $m;
+                                last;
+                            }
                         }
                     }
                 }
@@ -139,8 +150,8 @@ sub start_proxy_request {
     }
    
     # pull action, domain and id from backend request
-    my $action = $op{action} || 'connect';
-    $op{tunnelType} ||= 'http-polling';
+    my $action = $op{action} || 'handshake';
+    $op{tunnelType} ||= 'long-polling';
     my $last_eid = 0;
     #if ( exists($in->{last_eid}) && $in->{last_eid} =~ m/^\d+$/ ) {
     #    $last_eid = $in->{last_eid};
@@ -159,8 +170,7 @@ sub start_proxy_request {
         # $event = [{"version":0.1,"minimumVersion":0.1,"channel":"/meta/handshake"}]
         my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
         $res->header( 'Content-Type', 'text/html' );
-        # close
-        $res->header( 'Connection', 'close' );
+        #$res->header( 'Connection', 'close' );
 
         $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
             if ( $hd->header( 'set-cookie' ) );
@@ -172,7 +182,7 @@ sub start_proxy_request {
 			version => 0.1,
   			minimumVersion => 0.1,
             supportedConnectionTypes => [
-                'http-polling'
+                'long-polling'
             ],
 			clientId => $op{id},
 			authSuccessful => 'true',
@@ -180,10 +190,85 @@ sub start_proxy_request {
         }) );
         $client->close();
         
+        warn "sent handshake";
         return 1;
     }
     
-    if ( $action eq 'connect' ) {
+    if ( $action eq 'subscribe' || $action eq 'unsubscribe' ) {
+    
+        unless ( $op{id} ) {
+            warn "no client id set";
+            $client->_simple_response(404, 'No client id returned from backend');
+            return 1;
+        }
+
+        # XXX temporary, may ask the event server to reply instead
+        
+        # [{"channel":"/meta/subscribe","subscription":"/magnets/moveStart","connectionId":null,"clientId":"id"}]
+        my $ev = {};
+        # TODO arrays of valid keys for each type
+        @{$ev}{qw( channel subscription connectionId clientId authToken )} =
+            delete @{$event}{qw( channel subscription connectionId clientId authToken )};
+        
+        Cometd::Perlbal::Service::Connector::multiplex_send($ev);
+        
+        $ev{successful} = 'true';
+        
+        my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
+        $res->header( 'Content-Type', 'text/html' );
+        #$res->header( 'Connection', 'close' );
+
+        $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
+            if ( $hd->header( 'set-cookie' ) );
+	    
+        $client->write( $res->to_string_ref );
+        $client->tcp_cork( 1 );
+        $client->watch_write( 0 ) if $client->write( objToJson($ev) );
+        $client->close();
+        
+        warn "sent $action response";
+        return 1;
+    }
+
+    if ( $action eq 'deliver' ) {
+        
+        unless ( $op{id} ) {
+            warn "no client id set";
+            $client->_simple_response(404, 'No client id returned from backend');
+            return 1;
+        }
+
+        # XXX temporary, may ask the event server to reply instead
+        
+        # [{"channel":"/meta/subscribe","subscription":"/magnets/moveStart","connectionId":null,"clientId":"id"}]
+        my $ev = { };
+        # TODO arrays of valid keys for each type
+        @{$ev}{qw( channel data connectionId clientId authToken )} =
+            delete @{$event}{qw( channel data connectionId clientId authToken )};
+        
+        Cometd::Perlbal::Service::Connector::multiplex_send($ev);
+        
+        # TODO keep data and send it back?
+        delete $ev{data};
+        $ev{successful} = 'true';
+        
+        my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
+        $res->header( 'Content-Type', 'text/html' );
+        #$res->header( 'Connection', 'close' );
+
+        $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
+            if ( $hd->header( 'set-cookie' ) );
+	    
+        $client->write( $res->to_string_ref );
+        $client->tcp_cork( 1 );
+        $client->watch_write( 0 ) if $client->write( objToJson($ev) );
+        $client->close();
+        
+        warn "sent event response";
+        return 1;
+    }
+    
+    if ( $action eq 'connect' || $action eq 'reconnect' ) {
 
         unless ( $op{id} && $op{domain} ) {
             warn "no client id and/or domain set";
@@ -193,8 +278,7 @@ sub start_proxy_request {
    
         my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
         $res->header( 'Content-Type', 'text/html' );
-        # close
-        $res->header( 'Connection', 'close' );
+        #$res->header( 'Connection', 'close' );
  
         $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
             if ( $hd->header( 'set-cookie' ) );
@@ -218,7 +302,7 @@ sub start_proxy_request {
                 '/meta/disconnect' => {
                     reason => 'Closing previous connection',
                 }
-            ) . '</body></html>' );
+            ) . ( ( $cli->{scratch}{tunnel} eq 'iframe' ) ? '</body></html>' : '' ) );
             Cometd::Perlbal::Service::Connector::multiplex_send({
                 channel => '/meta/disconnect',
                 clientId => $op{id},
@@ -237,7 +321,7 @@ sub start_proxy_request {
         foreach (@socket_list) { weaken( $_ ); }
     
         Cometd::Perlbal::Service::Connector::multiplex_send({
-            channel => '/meta/connect',
+            channel => '/meta/'.$action,
             clientId => $op{id},
             data => {
                 channels => [ keys %{$client->{scratch}{ch}} ],
@@ -249,7 +333,7 @@ sub start_proxy_request {
   
         $client->{scratch}{tunnel} = $op{tunnelType};
 
-        if ( $op{tunnelType} eq 'http-polling' ) {
+        if ( $op{tunnelType} eq 'long-polling' ) {
 
             unless ( $op{id} ) {
                 warn "no client id set";
@@ -260,8 +344,7 @@ sub start_proxy_request {
             # $event = [{"version":0.1,"minimumVersion":0.1,"channel":"/meta/handshake"}]
             my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
             $res->header( 'Content-Type', 'text/html' );
-            # close
-            $res->header( 'Connection', 'close' );
+            #$res->header( 'Connection', 'close' );
 
             $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
                 if ( $hd->header( 'set-cookie' ) );
@@ -270,6 +353,8 @@ sub start_proxy_request {
             $client->tcp_cork( 1 );
   
             # XXX set timer or let client drop connection?
+        
+            warn "sent $action response for long-polling";
             
             return 1;
                     
@@ -327,7 +412,7 @@ sub start_proxy_request {
 </html>~ );
  
         $client->watch_write( 0 ) if $client->write( filter(
-            '/meta/connect' => {
+            '/meta/'.$action => {
                 successful => 'true',
                 error => '',
                 clientId => $op{id},
