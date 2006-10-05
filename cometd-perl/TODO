@@ -7,6 +7,9 @@ Legend:
 [?] May not be needed
 [+] Started, not done
 
+[+] Get dojo js working with the whole system
+[+] http-polling
+[+] forever iframe
 [ ] Fix event server reconnect code, with incremental backoff
 [*] Connect the json transport plugin into the json filter and channel system
 [*] Client and Server, PoCo::Cometd::Server PoCo::Cometd::Client
