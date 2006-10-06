@@ -164,6 +164,14 @@ ConnectionTypes = {
 		"tunnelInit":	"",
 		"contentType": "multipart/x-mixed-replace; boundary=%s" % (mimeBoundary,)
 	},
+#	"text-stream": {
+#		"closeOnDelivery": False,
+#		"preamble":		"--"+mimeBoundary+"\r\n",
+#		"envelope":		"""\r\n%s\r\n--"""+mimeBoundary+"\r\n"+(1024*" "),
+#		"signoff":		"\r\n--"+mimeBoundary+"--\r\n",
+#		"tunnelInit":	"",
+#		"contentType": "text/plain"
+#	},
 	"flash": {
 		"closeOnDelivery": False,
 		"preamble":		"",
@@ -442,7 +450,7 @@ class cometd(resource.PostableResource):
 		resp["authToken"] = client.authToken
 		resp["error"] = client.lastError
 
-		rstr = simplejson.dumps(resp)
+		rstr = simplejson.dumps([ resp ])
 		if verbose: log.msg("initHandshake response:", rstr)
 
 		# accomidation for JSONP handshakes
