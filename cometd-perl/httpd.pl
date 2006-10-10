@@ -90,6 +90,9 @@ sub handle {
             if (ref($o) eq 'ARRAY') {
                 foreach my $m (@$o) {
                     next unless (ref($m) eq 'HASH');
+                    if ($m->{clientId}) {
+                        $guid = $m->{clientId};
+                    }
                     if ($m->{channel}) {
                         next if ($m->{channel} =~ m~/meta/~i);
                         push(@ch,$m->{channel});

@@ -10,6 +10,12 @@ use JSON;
 
 our ( @clients, %ids, $filter, $filter_package );
 
+our %supported_tunnels = (
+    'long-polling' => 1,
+    'iframe' => 0,
+    'flash' => 0,
+);
+
 use constant KEEPALIVE_TIMER => 20;
 
 sub import {
@@ -102,17 +108,17 @@ sub start_proxy_request {
         return 1;
     }
 
-    my %op = map {
+    my $op = { map {
         my ( $k, $v ) = split( /=/ );
         unless( $v ) { $v = ''; }
         lc($k) => $v
-    } split( /;\s*/, $opts );
+    } split( /;\s*/, $opts ) };
 
     # parse query string
     #my $in = params( $client );
    
-    require Data::Dumper;
-    warn Data::Dumper->Dump([$hd]);
+    #require Data::Dumper;
+    #warn Data::Dumper->Dump([$hd]);
    
     my $event = {};
     
@@ -133,12 +139,12 @@ sub start_proxy_request {
                                 if ( $act eq 'handshake' || $act eq 'subscribe'
                                 || $act eq 'unsubscribe' || $act eq 'connect'
                                 || $act eq 'reconnect' ) {
-                                    $op{action} = $act;
+                                    $op->{action} = $act;
                                     $event = $m;
                                     last;
                                 }
                             } else {
-                                $op{action} = 'deliver';
+                                $op->{action} = 'deliver';
                                 $event = $m;
                                 last;
                             }
@@ -150,18 +156,16 @@ sub start_proxy_request {
     }
    
     # pull action, domain and id from backend request
-    my $action = $op{action} || 'handshake';
-    $op{tunnelType} ||= 'long-polling';
-    my $last_eid = 0;
-    #if ( exists($in->{last_eid}) && $in->{last_eid} =~ m/^\d+$/ ) {
-    #    $last_eid = $in->{last_eid};
-    #}
+    my $action = $op->{action} || 'handshake';
+    $op->{tunnelType} ||= 'long-polling';
+    $op->{connectionId} ||= '/meta/connections/' . $op->{id};
+    my $last_eid = $op->{eid} ||= 0;
 
     warn "action: $action";
 
     if ( $action eq 'handshake' ) {
     
-        unless ( $op{id} ) {
+        unless ( $op->{id} ) {
             warn "no client id set";
             $client->_simple_response(404, 'No client id returned from backend');
             return 1;
@@ -182,12 +186,13 @@ sub start_proxy_request {
 			version => 0.1,
   			minimumVersion => 0.1,
             supportedConnectionTypes => [
-                'long-polling'
+                grep { $supported_tunnels{$_} } keys %supported_tunnels
             ],
-			clientId => $op{id},
+			clientId => $op->{id},
 			authSuccessful => 'true',
 			#authToken => "SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY",
         }) );
+        warn "closing client";
         $client->close();
         
         warn "sent handshake";
@@ -196,7 +201,7 @@ sub start_proxy_request {
     
     if ( $action eq 'subscribe' || $action eq 'unsubscribe' ) {
     
-        unless ( $op{id} ) {
+        unless ( $op->{id} ) {
             warn "no client id set";
             $client->_simple_response(404, 'No client id returned from backend');
             return 1;
@@ -212,6 +217,7 @@ sub start_proxy_request {
         
         Cometd::Perlbal::Service::Connector::multiplex_send($ev);
         
+        # TODO have the event server do this response
         $ev{successful} = 'true';
         
         my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
@@ -224,6 +230,7 @@ sub start_proxy_request {
         $client->write( $res->to_string_ref );
         $client->tcp_cork( 1 );
         $client->watch_write( 0 ) if $client->write( objToJson($ev) );
+        warn "closing client";
         $client->close();
         
         warn "sent $action response";
@@ -232,12 +239,22 @@ sub start_proxy_request {
 
     if ( $action eq 'deliver' ) {
         
-        unless ( $op{id} ) {
+        $client->{scratch}{tunnel} = $op->{tunnelType};
+        
+        unless ( $op->{id} ) {
             warn "no client id set";
             $client->_simple_response(404, 'No client id returned from backend');
             return 1;
         }
 
+        warn "---------DELIVER------";
+
+        # id to client obj map
+        $ids{ $op->{id} } = $client;
+        weaken( $ids{ $op->{id} } );
+        @clients = grep { defined } ( @clients, $client );
+        foreach (@socket_list) { weaken( $_ ); }
+        
         # XXX temporary, may ask the event server to reply instead
         
         # [{"channel":"/meta/subscribe","subscription":"/magnets/moveStart","connectionId":null,"clientId":"id"}]
@@ -245,6 +262,11 @@ sub start_proxy_request {
         # TODO arrays of valid keys for each type
         @{$ev}{qw( channel data connectionId clientId authToken )} =
             delete @{$event}{qw( channel data connectionId clientId authToken )};
+        
+        Cometd::Perlbal::Service::Connector::multiplex_send({
+            channel => '/meta/connect',
+            clientId => $ev->{clientId},
+        });
         
         Cometd::Perlbal::Service::Connector::multiplex_send($ev);
         
@@ -259,18 +281,19 @@ sub start_proxy_request {
         $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
             if ( $hd->header( 'set-cookie' ) );
 	    
-        $client->write( $res->to_string_ref );
+        $client->watch_write( 0 ) if $client->write( $res->to_string_ref );
         $client->tcp_cork( 1 );
-        $client->watch_write( 0 ) if $client->write( objToJson($ev) );
-        $client->close();
+        #$client->watch_write( 0 ) if $client->write( objToJson($ev) );
+        #warn "closing client";
+        #$client->close();
         
-        warn "sent event response";
+        warn "PUTTING CLIENT ON HOLD UNTIL EVENT: $op->{id}";
         return 1;
     }
     
     if ( $action eq 'connect' || $action eq 'reconnect' ) {
 
-        unless ( $op{id} && $op{domain} ) {
+        unless ( $op->{id} && $op->{domain} ) {
             warn "no client id and/or domain set";
             $client->_simple_response(404, 'No client id and/or domain returned from backend');
             return 1;
@@ -283,59 +306,73 @@ sub start_proxy_request {
         $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
             if ( $hd->header( 'set-cookie' ) );
         
-        #$op{id} = $in->{id} if ( $in->{id} );
-        
-        # client id
-        $client->{scratch}{id} = $op{id};
-        # event id for this client
-        $client->{scratch}{eid} = $last_eid;
-
-        if ( $op{channels} ) {
-            $client->{scratch}{ch} = { map { $_ => 1 } split( /;\s?/, $op{channels} ) };
-        } else {
-            $client->{scratch}{ch} = {};
+        if ( !$supported_tunnels{ $op->{tunnelType} } ) { 
+            # not a valid tunnel type
+            $client->watch_write( 0 ) if $client->write( objToJson(
+                {
+                    channel => '/meta/'.$action,
+                    successful => 'false',
+                    error => 'Tunnel type not supported',
+                    clientId => $op->{id},
+                    connectionId => $op->{connectionId},
+                }
+            ) );
+            warn "closing client";
+            $client->close();
+            return 1;
         }
         
+        #$op{id} = $in->{id} if ( $in->{id} );
+        
+        if ( $op->{channels} ) {
+            $op->{channels} = { map { $_ => 1 } split( /;\s?/, $op->{channels} ) };
+        } else {
+            $op->{channels} = {};
+        }
+        
+        @{$client->{scratch}}{qw( id cid eid ch )} = @{$op}{qw( id connectionId eid channels )};
+
         # close already connected client if any
-        if ( my $cli = delete $ids{ $op{id} } ) {
-            $cli->write( filter(
-                '/meta/disconnect' => {
-                    reason => 'Closing previous connection',
-                }
-            ) . ( ( $cli->{scratch}{tunnel} eq 'iframe' ) ? '</body></html>' : '' ) );
+        if ( my $cli = $ids{ $op->{id} } ) {
+            # XXX check this
+            if ( $cli->{scratch}{tunnel} eq 'iframe' ) {
+                $cli->write( iframe_filter(
+                    '/meta/disconnect' => {
+                        reason => 'Closing previous connection',
+                    }
+                ) . ( ( $cli->{scratch}{tunnel} eq 'iframe' ) ? '</body></html>' : '' ) );
+            }
             Cometd::Perlbal::Service::Connector::multiplex_send({
                 channel => '/meta/disconnect',
-                clientId => $op{id},
+                clientId => $op->{id},
                 data => {
                     channels => [ keys %{$cli->{scratch}{ch}} ],
                     previous => 1,
                 },
             });
+            warn "closing old client $op->{id}";
             $cli->close();
         }
         
-        # id to listener obj map
-        $ids{ $op{id} } = $client;
-        weaken( $ids{ $op{id} } );
+        # id to client obj map
+        $ids{ $op->{id} } = $client;
+        weaken( $ids{ $op->{id} } );
         @clients = grep { defined } ( @clients, $client );
         foreach (@socket_list) { weaken( $_ ); }
     
         Cometd::Perlbal::Service::Connector::multiplex_send({
             channel => '/meta/'.$action,
-            clientId => $op{id},
+            clientId => $op->{id},
             data => {
                 channels => [ keys %{$client->{scratch}{ch}} ],
             },
         });
 
-        $client->write( $res->to_string_ref );
-        $client->tcp_cork( 1 );
-  
-        $client->{scratch}{tunnel} = $op{tunnelType};
+        $client->{scratch}{tunnel} = $op->{tunnelType};
 
-        if ( $op{tunnelType} eq 'long-polling' ) {
+        if ( $op->{tunnelType} eq 'long-polling' ) {
 
-            unless ( $op{id} ) {
+            unless ( $op->{id} ) {
                 warn "no client id set";
                 $client->_simple_response(404, 'No client id returned from backend');
                 return 1;
@@ -349,18 +386,21 @@ sub start_proxy_request {
             $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
                 if ( $hd->header( 'set-cookie' ) );
 	    
-            $client->write( $res->to_string_ref );
+            $client->watch_write( 0 ) if $client->write( $res->to_string_ref );
             $client->tcp_cork( 1 );
   
             # XXX set timer or let client drop connection?
         
             warn "sent $action response for long-polling";
-            
+
             return 1;
                     
-        } elsif ( $op{tunnelType} eq 'iframe' ) {
+        } elsif ( $op->{tunnelType} eq 'iframe' ) {
             
-            $op{domain} =~ s/'/\\'/g;
+            $client->write( $res->to_string_ref );
+            $client->tcp_cork( 1 );
+        
+            $op->{domain} =~ s/'/\\'/g;
 
             $client->write( qq~<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -411,22 +451,20 @@ sub start_proxy_request {
 	</body>
 </html>~ );
  
-        $client->watch_write( 0 ) if $client->write( filter(
-            '/meta/'.$action => {
-                successful => 'true',
-                error => '',
-                clientId => $op{id},
-                connectionId => '/meta/connections/'.$op{id}, # XXX
-                timestamp => time(), # XXX
-                data => {
-                    channels => [ keys %{$client->{scratch}{ch}} ],
-                },
-                ( $last_eid ? ( 'last' => $last_eid ) : () )
-            }
-        ) );
+            $client->watch_write( 0 ) if $client->write( iframe_filter(
+                '/meta/'.$action => {
+                    successful => 'true',
+                    error => '',
+                    clientId => $op->{id},
+                    connectionId => $op->{connectionId},
+                    timestamp => time(), # XXX
+                    data => {
+                        channels => [ keys %{$client->{scratch}{ch}} ],
+                    },
+                    ( $last_eid ? ( 'last' => $last_eid ) : () )
+                }
+            ) );
         
-        } elsif ( $op{tunnelType}  ) {
-            
         }
     }
     
@@ -437,6 +475,8 @@ sub handle_event {
     my $objs = shift;
     my $cleanup = 0;
 
+    warn "handle event";
+
     $objs = [ $objs ] unless ( ref( $objs ) eq 'ARRAY' );
     
     my $time = time();
@@ -444,15 +484,16 @@ sub handle_event {
     foreach $o ( @$objs ) {
         next unless ( ref( $o ) eq 'HASH' );
         next if ( !$o->{channel} );
-        
+         
         $o->{timestamp} = $time; # XXX
         
-        my $json = filter( $o->{channel}, $o );
+        my $ijson = iframe_filter( $o->{channel}, $o );
+        my $json = objToJson( $o );
         
         if ( $o->{channel} =~ m~^/meta/clients/(.*)~ ) {
             if ( exists( $ids{ $1 } ) ) {
                 my $l = $ids{ $1 };
-                $l->watch_write(0) if $l->write( $json );
+                $l->watch_write(0) if $l->write( $l->{scratch}{tunnel} eq 'iframe' ? $ijson : $json );
                 $l->{alive_time} = $time;
                 next;
             }
@@ -462,14 +503,23 @@ sub handle_event {
         my $action;
         if ( $o->{channel} =~ m~^/meta/(.*)~ ) {
             my $meta = $1;
+            warn "meta channel: $meta";
+            
             next if ( !$o->{clientId} );
-
-            if ( $meta = 'subscribe' && $o->{subscription} ) {
+           
+            if ( $meta eq 'internal/reconnect' && $o->{channels}
+                && ref($o->{channels}) eq 'ARRAY' ) {
+                $action = 'add_chs';
+                $id = $o->{clientId};
+                warn "channel update for $id!";
+            }
+            
+            if ( $meta eq 'subscribe' && $o->{subscription} ) {
                 if ( $o->{successful} ne 'false' ) {
                     # add channel
                     $action = 'add_ch';
                 }
-                $locate = $o->{clientId};
+                $id = $o->{clientId};
             }
 
             if ( $meta eq 'unsubscribe' && $o->{subscription} ) {
@@ -493,19 +543,32 @@ sub handle_event {
 
             if ( $id ) {
                 my $l = $ids{ $id };
-                next if ( !$l );
-        
-                $l->watch_write(0) if $l->write( $json );
-                $l->{alive_time} = $time;
-            
+                if ( !$l ) {
+                    warn "client id: $id not in id list: ".join(',',keys %ids);
+                    next;
+                }
+                
+                unless ( $action eq 'add_chs' ) {
+                    warn "out to $id: $json";
+                    $l->watch_write(0) if $l->write( $l->{scratch}{tunnel} eq 'iframe' ? $ijson : $json );
+                    $l->{alive_time} = $time;
+                }
+
                 if ( $action ) {
                     if ( $action eq 'add_ch' ) {
                         $l->{scratch}{ch}->{ $o->{subscription} } = 1;
+                    } elsif ( $action eq 'add_chs' ) {
+                        warn "+++++adding channels to client $id";
+                        foreach ( @{$o->{channels}} ) {
+                            warn "adding channel $_";
+                            $l->{scratch}{ch}->{ $_ } = 1;
+                        }
                     } elsif ( $action eq 'rem_ch' ) {
                         delete $l->{scratch}{ch}->{ $o->{subscription} };
                     } elsif ( $action eq 'dis_cli' ) {
                         # XXX is close immediate, or at least set {closed}
                         # we need to send the disconnect in the cleanup
+                        warn "closing client";
                         $l->close();
                         $cleanup = 1;
                     }
@@ -524,13 +587,15 @@ sub handle_event {
             next if ( $client && $l == $client );
         
             if ( $l->{closed} ) {
-                Cometd::Perlbal::Service::Connector::multiplex_send({
-                    channel => '/meta/disconnect',
-                    clientId => $l->{scratch}{id},
-                    data => {
-                        channels => [ keys %{$l->{scratch}{ch}} ],
-                    },
-                });
+                if ( $l->{scratch}{tunnel} eq 'iframe' ) {
+                    Cometd::Perlbal::Service::Connector::multiplex_send({
+                        channel => '/meta/disconnect',
+                        clientId => $l->{scratch}{id},
+                        data => {
+                            channels => [ keys %{$l->{scratch}{ch}} ],
+                        },
+                    });
+                }
                 $cleanup = 1;
                 next;
             }
@@ -538,8 +603,18 @@ sub handle_event {
             # loop over client channels and deliver event
             # TODO more efficient
             if ( exists( $l->{scratch}{ch}{ $o->{channel} } ) ) {
-                warn "delivering event on channel $o->{channel} : $json";
-                $l->watch_write(0) if $l->write( $json );
+                if ( $o->{clientId} && $o->{clientId} eq $l->{scratch}{id} ) {
+                    warn "NOT sending event back to client\n";
+                } else {
+                    my $i = $l->{scratch}{id};
+                    warn "******** delivering event on channel $o->{channel} : $i : $json";
+                    $l->watch_write(0) if $l->write( $l->{scratch}{tunnel} eq 'iframe' ? $ijson : $json );
+                    if ( $l->{scratch}{tunnel} eq 'long-polling' ) {
+                        $l->close();
+                        $cleanup = 1;
+                    }
+                    # TODO set timer to disconnect in 2 seconds
+                }
                 $l->{alive_time} = $time;
                 # XXX check tunnel, set disconnect timers, etc
             }    
@@ -562,7 +637,7 @@ sub handle_event {
                         channels => [ keys %{$_->{scratch}{ch}} ],
                     },
                 });
-                delete $ids{ $_->{scratch}{id} };
+                delete $ids{ $_->{scratch}{id} } if ( $ids{ $_->{scratch}{id} } );
                 ();
             }
         } @clients;
@@ -577,7 +652,7 @@ sub bcast_event {
     my $cleanup;
     
     my $time = time();
-    my $json = filter( $obj->{channel} = $ch, $obj );
+    my $json = iframe_filter( $obj->{channel} = $ch, $obj );
     # TODO client channels
     foreach ( @clients ) {
         next if ( $client && $_ == $client );
@@ -613,7 +688,7 @@ sub bcast_event {
 
 }
 
-sub filter {
+sub iframe_filter {
     my ($ch, $obj) = @_;
 
     $obj->{channel} = $ch;
@@ -625,7 +700,7 @@ sub filter {
 sub time_keepalive {
     Danga::Socket->AddTimer( KEEPALIVE_TIMER, \&time_keepalive );
     
-    bcast_event( '/meta/ping' => { 'time' => time() } );
+#    bcast_event( '/meta/ping' => { 'time' => time() } );
     
 #    Cometd::Perlbal::Service::Connector::multiplex_send({
 #        channel => '/meta/ping',

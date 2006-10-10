@@ -76,7 +76,7 @@ sub _stop {
 
 sub _status_clients {
     my $self = $_[OBJECT];
-    $_[KERNEL]->delay_set( _status_clients => 5 );
+#    $_[KERNEL]->delay_set( _status_clients => 5 );
     $self->_log(v => 2, msg => "in + out connections: $self->{connections}");
 }
 
@@ -216,17 +216,26 @@ sub remote_flush {
 }
 
 sub deliver_event {
-    my ( $cheap, $event ) = @_;
+    my ( $event, $cheap, $to_source ) = @_;
     
     foreach my $heap (keys %{$singleton->{heaps}}) {
         # $heap is a stringified version
-        next if ( $heap eq "$cheap" ); # don't send back to the source
-        
         my $heap = $singleton->{heaps}->{$heap};
-        warn "$heap is on $heap->{addr} event is from $cheap";
+        warn "$heap is on $heap->{addr}";
+        if ( $cheap ) {
+            if ( $to_source ) {
+                warn "to source";
+                # send only back to the source if requested
+                next if ( $heap ne "$cheap" );
+                warn "sending only to the source";
+            } else {
+                # don't send back to the source
+                #next if ( $heap eq "$cheap" );
+                warn "cheap passed in";
+            }
+        }
         if ( $heap->{connected} && $heap->{con} ) {
-            warn "putting event $event";
-            
+            warn "putting event $event to $heap->{addr}";
             $heap->{con}->put( $event );
         }
     }

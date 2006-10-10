@@ -51,7 +51,7 @@ sub get_one {
     my $ret = [];
 
     if ( my $line = shift ( @{ $self->[ BUFFER ] } ) ) {
-        warn "line:$line\n";
+        warn "get one line:$line\n";
         if ( my $json = eval { $self->[ OBJ ]->jsonToObj( $line ) } ) {
             push( @$ret, $json );
         } else {

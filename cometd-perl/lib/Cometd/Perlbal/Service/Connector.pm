@@ -213,6 +213,7 @@ sub multiplex_send {
         warn "sending $data which is $obj\n";
         my $lines = $_->{filter}->put( [ $obj ] );
         foreach my $blk (@$lines) {
+            warn "sending $blk\n";
             $_->write( $blk );
         }
     }
