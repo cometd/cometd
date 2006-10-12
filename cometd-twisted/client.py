@@ -122,8 +122,6 @@ class CometdClient:
 		d.addCallback(_tcpInit)
 		d.addErrback(_tcpInitFailure)
 
-		reactor.run()
-
 	def _finishInit(self, resp):
 		def handleJSON(jsonStr):
 			json = simplejson.loads(jsonStr)[0]
@@ -145,7 +143,7 @@ class CometdClient:
 			self.clientId = json["clientId"]
 			self.initialized = True
 			self.handshakeDeferred.callback(json)
-			print json
+			# print json
 
 		stream.readStream(resp.stream, handleJSON)
 
@@ -154,14 +152,14 @@ class CometdClient:
 			print "ERROR: already connected!"
 			return
 
-		print "startup start"
+		# print "startup start"
 
 		self._openTunnelWith({
 			"channel": "/meta/connect",
 			"clientId": self.clientId,
 			"connectionType": "mime-message-block"
 		})
-		print "startup! end"
+		# print "startup! end"
 
 	def _openTunnelWith(self, content):
 		d = self.channelClient.connectTCP(self.server, self.port)
@@ -173,7 +171,7 @@ class CometdClient:
 			proto.rawNotifier = self.handleRaw
 
 			def _readResponse(resp):
-				print "_readResponse"
+				# print "_readResponse"
 				def _print(data):
 					print data
 				stream.readStream(resp.stream, _print)
@@ -185,8 +183,9 @@ class CometdClient:
 		d.addCallback(_tcpInit)
 
 	def _tunnelOpened(self, data):
-		print "_tunnelOpened"
-		print str(data)
+		# print "_tunnelOpened"
+		# print str(data)
+		pass
 
 	def handleLine(self, line):
 		# if self._isFirstLine:
@@ -209,9 +208,9 @@ class CometdClient:
 			return line
 
 	def handleRaw(self, data):
-		print "---------------------- raw data --------------------------"
-		print data
-		print "---------------------- end raw data --------------------------"
+		# print "---------------------- raw data --------------------------"
+		# print data
+		# print "---------------------- end raw data --------------------------"
 
 		tdata = filter(
 			lambda x: len(x.strip()), 
@@ -228,6 +227,10 @@ class CometdClient:
 
 		if self._mimeBoundary in self._lines:
 			boundaryIndex = self._lines.index(self._mimeBoundary)
+			while 0 <= boundaryIndex <= 1:
+				self._lines = self._lines[1:]
+				boundaryIndex = self._lines.index(self._mimeBoundary)
+				
 			while boundaryIndex > 1:
 				ctypeIndex = self._lines.index("Content-Type: text/plain")
 				jsonStr = string.join(self._lines[(ctypeIndex+1):boundaryIndex], "\n")
@@ -244,8 +247,8 @@ class CometdClient:
 					else:
 						boundaryIndex = -1
 
-				print "---------------- lines ---------------------"
-				print self._lines
+				# print "---------------- lines ---------------------"
+				# print self._lines
 
 		# else:
 		# 	log.err("think we got a bad mime block!")
@@ -285,7 +288,7 @@ class CometdClient:
 		print message
 
 		if not message.has_key("channel"):
-			print "message has no channel!"
+			# print "message has no channel!"
 			log.err("message has no channel!")
 			log.info(str(essage))
 			return
@@ -302,7 +305,7 @@ class CometdClient:
 			str(message["channel"])[0:5] == "/meta":
 
 			if not message["successful"]:
-				print ("error for channel: "+message["channel"])
+				# print ("error for channel: "+message["channel"])
 				log.err("error for channel: ", message["channel"])
 				return
 
@@ -333,7 +336,7 @@ class CometdClient:
 		pass
 
 	def subscribe(self, channel, callback):
-		print "subscribing to "+channel
+		# print "subscribing to "+channel
 		
 		self.sendMessage({
 			"channel": "/meta/subscribe",
@@ -360,9 +363,14 @@ if __name__=="__main__":
 		print "/magnets/move"
 		print data
 
-	client = CometdClient()
-	reactor.callWhenRunning(client.subscribe, "/magnets/move", _move)
-	client.init()
+	clients = []
+	for x in xrange(50):
+		clients.append(CometdClient())
+		reactor.callWhenRunning(clients[x].subscribe, "/magnets/move", _move)
+		clients[x].init()
 	# client.subscribe("/magnets/move", _move)
+
+	reactor.run()
+
 
 # vim:ts=4:noet:
