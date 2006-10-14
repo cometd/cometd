@@ -2,8 +2,6 @@ dojo.provide("dojofun.widget.Magnet");
 dojo.require("dojo.html.style");
 dojo.require("dojo.lfx.html");
 dojo.require("dojo.dnd.HtmlDragMove");
-dojo.require("dojo.dnd.HtmlDragMoveSource");
-dojo.require("dojo.dnd.HtmlDragMoveObject");
 
 dojo.widget.defineWidget("dojofun.widget.Magnet", dojo.widget.HtmlWidget, { 
 	templatePath: dojo.uri.dojoUri("../tests/magnets/dojofun/widget/templates/Magnet.html"),
