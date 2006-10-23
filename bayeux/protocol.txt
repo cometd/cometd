@@ -1,5 +1,5 @@
 Bayeux: A JSON Protocol For Publish/Subscribe Event Delivery
-Protocol Version: 0.1draft1
+Protocol Version: 0.1draft2
 -------------------------------------------------------------------------------
 
 Initial connection setup specifies to the system a message envelope type for
@@ -69,9 +69,40 @@ connection setup process:
 			"authSuccessful":			true,
 			// authToken is auth scheme dependent and entirely optional
 			"authToken":				"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY",
+			// advice determines the client behavior on errors
+			"advice":	{
+
+				"reconnect": true, // or false 
+				"rehandshake": true, // or false
+
+				// transport specializations of the top-level generalized
+				// advice
+				"transport": {
+					"iframe": { },
+					"flash": { },
+					"http-polling": {
+						// delay before reconnecting
+						"interval": 5000 // ms
+					}
+				}
+			}
 		}
 		// servers MUST send only a handshake message in response to a handshake request
 	]
+
+The "advice" property MUST be persisted by clients for the course of a
+connection's lifetime and until reconnection failure or until being reset by
+the server in a subsequent message. Advice properties that are
+transport-specific over-ride those that are part of the top-level advice
+object. If the server sends new advice to clients, old advice MUST be discarded
+and only provisions in the new advice SHOULD be used for subsequent actions.
+
+NOTE to implementers: servers SHOULD support publishing to topics without
+explicit handshake. If authToken, authScheme, and authUser are provided and
+valid, publishing to topics should be allowed from client that have not
+previously connected or authenticated. A clientId may be generated through this
+style of interaction but it has no semantic meaning and providing this clientId
+for future transactions may result in failure.
 
 	// finally, the client opens up a tunnel by creating a new iframe whose
 	// initial contents were retreived from the following URL:
@@ -183,7 +214,64 @@ The client ID turns out to be very important to subsequent connection.
 		// , ...
 	]
 
-	// and the response looks almost identical to normal
+	// generally, the first message in the array of responded messages will
+	// begin with:
+	[
+		{
+			"channel":		"/meta/reconnect",
+			"connectionId":	"/meta/connections/26",
+			"successful":	true,
+			// optional
+			"authToken":	"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER"
+		}
+		// , ...
+	]
+
+	// if the server doesn't know anything about the client or is trying to
+	// signal to clients that they need to somehow try harder before
+	// reconnecting will work, it may respond with:
+	[
+		{
+			"channel":		"/meta/reconnect",
+			"successful":	false,
+			"advice": {
+				"reconnect": "recover", // one of "none", "retry", "handshake", "recover"
+			},
+			// optional
+			"authToken":	"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER"
+		}
+	]
+
+	// if, on the other hand, the reconnection succeeds, the client may not
+	// return immediately, but the first message in the response array may look
+	// like:
+	[
+		{
+			"channel":		"/meta/reconnect",
+			"successful":	true,
+			// optional
+			"authToken":	"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER"
+		}
+		// , ...
+	]
+
+	// the server might respond with advice advice noting some delay in
+	// reconnecting. This is particularly important to prevent "reconnect
+	// floods". The above message agumented with this advice might be:
+	[
+		{
+			"channel":		"/meta/reconnect",
+			"successful":	true,
+			// optional
+			"authToken":	"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER",
+			"advice": {
+				"interval": 4000 // ms, or 4 seconds between reconnect attempts
+			}
+		}
+		// , ...
+	]
+
+	// The rest of a conformant response looks almost identical to normal
 	// preamble/envelope/signoff event delivery except that queued messages may
 	// be delivered en-masse. We don't cover it here for the sake of brevity.
 
@@ -204,6 +292,11 @@ The client ID turns out to be very important to subsequent connection.
 			"channel":		"/meta/subscribe",
 			"subscription":	"/some/other/channel",
 			"successful":	true,
+			"advice":		{
+				"transport":	{
+					retry: true, // or false
+				}
+			},
 			"clientId":		"SOME_UNIQUE_CLIENT_ID",
 			"error":		"",
 			// optional
@@ -240,37 +333,115 @@ The client ID turns out to be very important to subsequent connection.
 	// you should expect to receive sub / unsub events _at any time_,
 	// an outside source could subscribe or unsubscribe you from channels
 
-	// FIXME: need to specify the "status" and "ping" message types!!
-
 	// NOTE: the "status" message type may be used for introspection and channel
 	// subscription queries
 
 	// NOTE: the "/meta/ping" channel may be safely ignored by servers and
 	// clients alike. It may be used as a keepalive mechanism.
 
-	// FIXME: need to build in a provision for batching of queued messages in
-	// the returned data structure
-
 	// FIXME: note which meta channel events require clientId
 
-NOTE: the 0.1 version of the protocol does NOT acknowledge passing messages
+Conformat clients SHOULD implement a backoff algorithm should reconnect
+attempts fail. While this algorithm is not specified here, an initial delay of
+one second (1000ms) with an exponential increase is recommended.
+
+The 0.1 version of the protocol does NOT acknowledge passing messages
 beyond a single router connected to multiple clients. Future protocol versions
 may include provisions for this.
 
-NOTE: servers SHOULD maintain event delivery queues for intermittently
-disconnected clients. The protocol does not currently specify a way for clients
-to specify their per-conection "age limit" nor does it specify a policy for
-server event expiration.
+Servers SHOULD maintain event delivery queues for intermittently disconnected
+clients. The protocol does not currently specify a way for clients to specify
+their per-conection "age limit" nor does it specify a policy for server event
+expiration, but server authors should be aware of the potential for resoruce
+exhaustion if limits are not placed. Clients should not be written in such a
+way as to expect significant backlogs of events will be available.
+
+Servers MUST support the following globbing semantics for channel subscription
+and publishing:
+
+	/foo/bar/baz
+
+		Matches:
+
+			/foo/bar/baz
+
+		Does Not Match:
+
+			/foo/bar/ba
+			/foo/bar/baz/
+			/foo/bar/baz/thud
+
+	/*/bar/baz
+
+		Matches:
+
+			/foo/bar/baz
+			/thud/bar/baz
+
+		Does Not Match:
+
+			/foo/thonk/bar/baz
+			/foo/bar/ba
+			/thud/bar/ba
+			/foo/bar/baz/
+			/foo/bar/baz/thud
+
+	/foo/bar/baz/*
+
+		Matches:
+
+			/foo/bar/baz/
+			/foo/bar/baz/thud
+
+		Does Not Match:
+
+			/foo/bar/baz
+			/foo/bar/baz/thud/thonk
+			/thud/bar/baz
+			/foo/thonk/bar/baz
+			/foo/bar/ba
+			/thud/bar/ba
+
+	/foo/bar/**
+
+		Matches:
+
+			/foo/bar/
+			/foo/bar/baz/
+			/foo/bar/baz/thud
+			/foo/bar/baz/thud/thonk
+
+		Does Not Match:
+
+			/foo/bar
+			/thud/bar/baz
+			/foo/thonk/bar/baz
+			/foo/bar/ba
+
+	/**/bar/baz
+
+		Matches:
+
+			/foo/bar/baz
+			/thud/bar/baz
+			/thud/thonk/bar/baz
+			/thud/thonk/xyzzy/bar/baz
+
+		Does Not Match:
+
+			/foo/bar/ba
+			/thud/bar/ba
+			/foo/bar/baz/
+			/foo/bar/baz/thud
 
 TODOC: when subscription happens, it's *clients* that are subscribed, not the
 acting tunnels or connections.
 
 FIXME: define globbing semantics
-FIXME: extend protocol with acking
 FIXME: outline server timeout strategies and why it's not part of the protocol
-FIXME: define event ordering
 FIXME: provide addendum for to define APIs of conformant JavaScript clients
 FIXME: define /meta/disconnect
+FIXME: need to specify the "status" and "ping" message types!!
 
 -------------------------------------------------------------------------------
 Authors:
