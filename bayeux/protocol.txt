@@ -1,5 +1,5 @@
 Bayeux: A JSON Protocol For Publish/Subscribe Event Delivery
-Protocol Version: 0.1draft2
+Protocol Version: 0.1draft3
 -------------------------------------------------------------------------------
 
 Initial connection setup specifies to the system a message envelope type for
@@ -359,11 +359,9 @@ way as to expect significant backlogs of events will be available.
 TODOC: when subscription happens, it's *clients* that are subscribed, not the
 acting tunnels or connections.
 
-FIXME: define globbing semantics
 FIXME: outline server timeout strategies and why it's not part of the protocol
-FIXME: provide addendum for to define APIs of conformant JavaScript clients
-FIXME: define /meta/disconnect
-FIXME: need to specify the "status" and "ping" message types!!
+FIXME: provide addendum for to define APIs of conformant clients
+FIXME: define /meta/disconnect, /meta/status, and /meta/ping
 
 -------------------------------------------------------------------------------
 Authors:
