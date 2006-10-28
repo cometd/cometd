@@ -5,6 +5,20 @@ cd /tmp
 mkdir cometd_deps
 cd cometd_deps
 
+echo "installing setuptools"
+wget "http://cheeseshop.python.org/packages/source/s/setuptools/setuptools-0.6c3.tar.gz#md5=76cb98b779d356c64323125490f88d17"
+tar -zxvf setuptools-0.6c3.tar.gz
+cd setuptools-0.6c3
+sudo python setup.py install
+cd ..
+
+echo "installing simplejson"
+wget "http://cheeseshop.python.org/packages/source/s/simplejson/simplejson-1.4.tar.gz#md5=5fbad786a4b151d44a9b1e1e157e5510"
+tar -zxvf simplejson-1.4.tar.gz
+cd simplejson-1.4
+sudo python setup.py install
+cd ..
+
 echo "installing path"
 wget http://www.jorendorff.com/articles/python/path/path-2.1.zip
 unzip path-2.1.zip
