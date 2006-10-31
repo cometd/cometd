@@ -41,6 +41,7 @@ connection setup process:
 			"version":			0.1,
 			// the oldest version of the protocol that this client will support
 			"minimumVersion":	0.1,
+			"supportedConnectionTypes":	["iframe", "flash", "http-polling"],
 			// the authScheme is outside the realm of this specification and
 			// provided here for illustration only. It's also optional.
 			"authScheme":		"SHA1",
