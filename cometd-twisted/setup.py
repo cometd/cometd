@@ -4,7 +4,7 @@ setup(
   name               = 'cometd-twisted',
   version            = '0.1',
   py_modules         = ['cometd'],
-  scripts            = ['comet-client.py'],
+  scripts            = ['twisted-cometd-client.py'],
   data_files         = [ ('/etc/cometd', ['cometd.tac']) ],
   author             = 'Alex Russell',
   author_email       = 'alex@dojotoolkit.org',
