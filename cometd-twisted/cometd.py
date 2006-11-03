@@ -15,6 +15,7 @@ import simplejson
 import string
 import base64
 import types
+import weakref
 
 """
 The cometd modules provides a twisted.web2.resource.Resource endpoint which
@@ -23,13 +24,16 @@ message format and protocol on the wire.
 """
 
 # constants and configuration
-clientTimeout = 30*60 # 30 minutes
 verbose = True
 
 # auto-generated configuration
 tmp = md5.new()
 tmp.update(str(time.ctime()))
 mimeBoundary = tmp.hexdigest()
+
+# FIXME: implement advices!
+# FIXME: need to implement resource constraints
+# FIXME: need to use weakrefs
 
 # FIXME: these should probably be pulled from a file or directory containing
 # files and read at server startup. Hard-coding them here is fine for
@@ -260,8 +264,8 @@ class Connection:
 		self.deliver(resp)
 
 	def deliver(self, message=None):
-		# should this be using twisted.internet.reactor.callLater() to actually
-		# preform the writes?
+		# should this be using twisted.internet.reactor.callLater(seconds,
+		# callback) to actually preform the writes?
 		delivered = False
 		if message is not None:
 			self.backlog.append(message)
@@ -312,6 +316,9 @@ class Client:
 	def setConnection(self, conn):
 		self.connection = conn
 
+	def __del__(self):
+		del self.connection
+
 def buildResponse(data, code=200, type="text/html", headers={}):
 	respStream = None
 	if isinstance(data, str):
@@ -331,10 +338,13 @@ class cometd(resource.PostableResource):
 	minimumVersion = 0.1
 
 	clients = {}
-	connections = {} # indexed by client ID
-	subscriptions = {
-		"__cometd_subscribers": {}
-	}
+	subscriptions = { }
+	#	"__cometd_subscribers": {}
+
+	# FIXME: we need to implement client culling. Choices are between keeping a
+	# list of update times and associated clients, but that requires a
+	# per-message, per-client update to the state to remove the clients from
+	# the "below the line" state.
 
 	############################################################################
 	# UTILITY METHODS
@@ -437,6 +447,9 @@ class cometd(resource.PostableResource):
 		# /meta/connect messages can talk to
 
 		# tell the client what we can and can't support:
+
+		# FIXME: is there a way to keep from re-defining/copying this data
+		# structure?
 		resp = {
 			"channel":	"/meta/handshake",
 			"version":	self.version,
@@ -566,6 +579,7 @@ class cometd(resource.PostableResource):
 
 		self._subscribe(client, message["subscription"])
 
+		# FIXME: hoist template object to top level to avoid redef
 		resp = {
 			"channel":		"/meta/subscribe",
 			"subscription":	message["channel"],
@@ -579,6 +593,35 @@ class cometd(resource.PostableResource):
 		return { "success": True }
 
 	def _subscribe(self, client, chan):
+		"set up a subscription"
+		# the channels data structure is a flat map, with each value being map of subsribed clients
+		# dictionary lookups to quickly return a list of interested clients.
+		# NOTE: we are not currently supporting the "*" glob operator in channels
+		cparts = chan.split("/")[1:]
+		if verbose: log.msg(cparts)
+		root = self.subscriptions
+		if not chan in root:
+			if verbose:
+				log.msg("creating channel: ", chan)
+			root[chan] = weakref.WeakValueDictionary()
+
+		root[chan][client.id] = client
+
+	def route(self, request, message):
+		"""
+		Event routing and delivery. The guts of cometd.
+		"""
+		if verbose: log.msg(message["channel"])
+		root = self.subscriptions
+		subs = root[message["channel"]]
+		for client in subs:
+			subs[client].connection.deliver(message)
+		return { "success": True }
+
+	############################################################################
+	# NOTE: _globbing_subscribe and _globbing_route are vestigial and are not
+	# currently in use
+	def _globbing_subscribe(self, client, chan):
 		"set up a subscription"
 		# the channels data structure is a tree, relying on the speed of Python
 		# dictionary lookups to quickly return a list of interested clients.
@@ -595,7 +638,7 @@ class cometd(resource.PostableResource):
 
 		root["__cometd_subscribers"][client.id] = client
 
-	def route(self, request, message):
+	def _globbing_route(self, request, message):
 		"""
 		Event routing and delivery. The guts of cometd.
 		"""
