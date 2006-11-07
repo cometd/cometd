@@ -30,7 +30,6 @@ sub get {
     my $ret = [];
 
     foreach my $json (@$lines) {
-        warn "json:$json\n";
         if ( my $obj = eval { $self->[ OBJ ]->jsonToObj( $json ) } ) {
             push( @$ret, $obj );
         } else {
@@ -51,7 +50,6 @@ sub get_one {
     my $ret = [];
 
     if ( my $line = shift ( @{ $self->[ BUFFER ] } ) ) {
-        warn "get one line:$line\n";
         if ( my $json = eval { $self->[ OBJ ]->jsonToObj( $line ) } ) {
             push( @$ret, $json );
         } else {
