@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use lib './lib';
+use lib 'lib';
 
 use POE;
 use POE::Component::Cometd::Client;
