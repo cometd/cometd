@@ -35,7 +35,7 @@ sub new {
     my $s_alias = $opts{ServerAlias};
     $s_alias = 'cometd_server' unless defined( $s_alias ) and length( $s_alias );
     $opts{ServerAlias} = $s_alias;
-    my $c_alias = $opts{ClieintAlias};
+    my $c_alias = $opts{ClientAlias};
     $c_alias = 'cometd_client' unless defined( $c_alias ) and length( $c_alias );
     $opts{ClientAlias} = $c_alias;
     $opts{ListenPort} = $opts{ListenPort} || 6000;
