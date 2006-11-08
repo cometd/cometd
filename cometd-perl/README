@@ -22,6 +22,9 @@ may make its way back into cometd
 
 
 * START COMET AND DO A SIMPLE TEST *
+* NOTE: This is broken now *
+* I'm focusing on dojo + cometd now, and this simple test is getting in the way *
+
 
 ./httpd.pl &
 ./perlbal.sh &
