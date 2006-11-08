@@ -72,12 +72,13 @@ sub handle {
     # message=%5B%7B%22version%22%3A0.1%2C%22minimumVersion%22%3A0.1%2C%22channel%22%3A%22/meta/handshake%22%7D%5D
     
     my %in;
-    foreach ( split ( /&/, $s->content ) ) {
+    my ( $uri ) = ( $s->content ) ? $s->content : ( $s->uri =~ m/(message=.*)/ );
+    foreach ( split ( /&/, $uri ) ) {
         my ($k, $v) = split(/=/);
         $in{$k} = uri_unescape($v);
     }
 
-    my @ch = qw( /pub/foo );
+    my @ch = qw( /magnets/move /magnets/moveStart /pub/foo );
 
     if ( $in{message} ) {
         # [{"version":0.1,"minimumVersion":0.1,"channel":"/meta/handshake"}]
@@ -92,6 +93,7 @@ sub handle {
                     next unless (ref($m) eq 'HASH');
                     if ($m->{clientId}) {
                         $guid = $m->{clientId};
+                        print "located client id $guid\n";
                     }
                     if ($m->{channel}) {
                         next if ($m->{channel} =~ m~/meta/~i);
