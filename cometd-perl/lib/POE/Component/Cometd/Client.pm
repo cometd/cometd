@@ -96,7 +96,7 @@ sub signals {
 sub reconnect_to_client {
     my ( $self, $cheap ) = @_;
 
-    $cheap->{connected}-- if ( $cheap->{connected} );
+    $cheap->{connections}-- if ( $cheap->{connected} );
     $cheap->{connected} = 0;
 
     delete $cheap->{sf};
