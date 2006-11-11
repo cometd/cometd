@@ -96,6 +96,7 @@ sub signals {
 sub reconnect_to_client {
     my ( $self, $cheap ) = @_;
 
+    $cheap->{connected}-- if ( $cheap->{connected} );
     $cheap->{connected} = 0;
 
     delete $cheap->{sf};
@@ -177,8 +178,6 @@ sub remote_connect_error {
     $kernel->alarm_remove( delete $cheap->{timeout_id} )
         if ( exists( $cheap->{timeout_id} ) );
 
-    $self->{connections}--;
-    
     $self->reconnect_to_client( $cheap );
 }
 
@@ -187,8 +186,6 @@ sub remote_connect_timeout {
     my $cheap = $self->{cheap};
 
     $self->_log(v => 2, msg => "Timeout connecting to $cheap->{addr}");
-
-    $self->{connections}--;
 
     $self->reconnect_to_client( $cheap );
 
@@ -204,8 +201,6 @@ sub remote_receive {
 sub remote_error {
     my $self = $_[OBJECT];
     $self->_log(v => 2, msg => "got error " . join( ' : ', @_[ARG1 .. ARG2] ) );
-    
-    $self->{connections}--;
     
     $self->reconnect_to_client( $self->{cheap} );
 }
