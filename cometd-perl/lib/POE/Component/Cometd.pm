@@ -17,6 +17,7 @@ use POE qw(
     Driver::SysRW
     Wheel::ReadWrite
     Filter::Line
+    Component::Cometd::Connection
 );
 
 sub spawn {
@@ -103,7 +104,7 @@ sub notify {
 }
 
 sub send {
-    my $c = $_[OBJECT]->{heaps}->{ $_[ARG0] }->{con};
+    my $c = $_[OBJECT]->{heaps}->{ $_[ARG0] }->{wheel};
     if ( $c ) {
         $c->put( $_[ARG1] );
     }
@@ -138,6 +139,8 @@ sub _log {
 sub cleanup_connection {
     my ( $self, $cheap ) = @_;
 
+    return unless( $cheap );
+
     $self->{connections}-- if delete $self->{heaps}->{ "$cheap" };
 
     undef;
@@ -170,7 +173,7 @@ sub _default {
 
             $self->{cheap} = undef;
         } else {
-            warn "NO HEAP FOR EVENT $2 WITH REF $1";
+#            warn "NO HEAP FOR EVENT $2 WITH REF $1";
         }
     }
     

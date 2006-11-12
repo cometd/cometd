@@ -93,14 +93,15 @@ sub signals {
     return 0;
 }
 
+# TODO inc backoff
 sub reconnect_to_client {
     my ( $self, $cheap ) = @_;
 
-    $cheap->{connections}-- if ( $cheap->{connected} );
-    $cheap->{connected} = 0;
+    $self->{connections}-- if ( $cheap->connected );
+    $cheap->connected( 0 );
 
     delete $cheap->{sf};
-    delete $cheap->{con};
+    delete $cheap->{wheel};
 
     if ( $self->{opts}->{ConnectTimeOut} ) {
         $cheap->{timeout_id} = $poe_kernel->alarm_set(
@@ -123,11 +124,11 @@ sub connect_to_client {
 
     my ( $address, $port ) = ( $addr =~ /^([^:]+):(\d+)$/ ) or return;
 
-    my $cheap = {
+    my $cheap = POE::Component::Cometd::Connection->new(
         peer_ip => $address,
         peer_port => $port,
         addr => $addr,
-    };
+    );
 
     $self->add_client_obj( $cheap );
    
@@ -145,7 +146,7 @@ sub remote_connect_success {
     $kernel->alarm_remove( delete $cheap->{timeout_id} )
         if ( exists( $cheap->{timeout_id} ) );
     
-    $cheap->{con} = POE::Wheel::ReadWrite->new(
+    $cheap->wheel( POE::Wheel::ReadWrite->new(
         Handle       => $socket,
         Driver       => POE::Driver::SysRW->new(),
         Filter       => POE::Filter::Stackable->new(
@@ -156,16 +157,16 @@ sub remote_connect_success {
         InputEvent   => $self->create_event( $cheap,'remote_receive' ),
         ErrorEvent   => $self->create_event( $cheap,'remote_error' ),
 #        FlushedEvent => $self->create_event( $cheap,'remote_flush' ),
-    );
+    ) );
     delete $cheap->{sf};
 
     $self->{connections}++;
 
-    $cheap->{connected} = 1;
+    $cheap->connected( 1 );
     
     warn "connected";
     
-    $self->{transport}->process_plugins( [ 'remote_connected', $cheap, $socket, $cheap->{con} ] );
+    $self->{transport}->process_plugins( [ 'remote_connected', $self, $cheap, $socket ] );
 }
 
 sub remote_connect_error {
@@ -195,7 +196,7 @@ sub remote_connect_timeout {
 sub remote_receive {
     my $self = $_[OBJECT];
     $self->_log(v => 4, msg => "got input ".$_[ARG0]);
-    $self->{transport}->process_plugins( [ 'remote_receive', $self->{cheap}, $_[ARG0] ] );
+    $self->{transport}->process_plugins( [ 'remote_receive', $self, $self->{cheap}, $_[ARG0] ] );
 }
 
 sub remote_error {
@@ -229,9 +230,9 @@ sub deliver_event {
                 warn "cheap passed in";
             }
         }
-        if ( $heap->{connected} && $heap->{con} ) {
+        if ( $heap->connected && $heap->wheel ) {
             warn "putting event $event to $heap->{addr}";
-            $heap->{con}->put( $event );
+            $heap->send( $event );
         }
     }
 }

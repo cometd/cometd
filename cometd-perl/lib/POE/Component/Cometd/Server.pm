@@ -94,23 +94,24 @@ sub local_accept {
     my ($port, $ip) = ( sockaddr_in( getsockname( $socket ) ) );
     $ip = inet_ntoa( $ip );
 
-    my $cheap = {
-        handle => $socket,
+    my $cheap = POE::Component::Cometd::Connection->new(
         local_ip => $ip,
         local_port => $port,
         peer_ip => $peer_addr,
         peer_port => $peer_port,
         addr => "$peer_addr:$peer_port",
-    };
+    );
     
     # XXX could do accept check ( plugin )
-
+    #$self->{transport}->process_plugins( [ 'local_accept', $self, $cheap, $socket ] );
+    # XXX then move this to an accept method/event the plugin can call
+    
     $self->add_client_obj( $self->{cheap} = $cheap );
     
     $self->_log(v => 4, msg => "Server received connection on $ip:$port from $peer_addr:$peer_port");
     
-    $cheap->{con} = POE::Wheel::ReadWrite->new(
-        Handle          => delete $cheap->{handle}, 
+    $cheap->{wheel} = POE::Wheel::ReadWrite->new(
+        Handle          => $socket,
         Driver          => POE::Driver::SysRW->new( BlockSize => 4096 ), 
         Filter          => POE::Filter::Stackable->new(
             Filters => [
@@ -119,7 +120,7 @@ sub local_accept {
         ),
         InputEvent      => $self->create_event( $cheap, 'local_receive' ),
         ErrorEvent      => $self->create_event( $cheap, 'local_error' ),
-#        FlushedEvent    => $self->create_event( $cheap, 'local_flushed' ),
+        FlushedEvent    => $self->create_event( $cheap, 'local_flushed' ),
     );
 
     if ( $self->{opts}->{TimeOut} ) {
@@ -134,37 +135,56 @@ sub local_accept {
 
     $self->{connections}++;
     
-    $self->{transport}->process_plugins( [ 'local_connected', $cheap, $socket, $cheap->{con} ] );
+    $self->{transport}->process_plugins( [ 'local_connected', $self, $cheap, $socket ] );
+    
+    return;
 }
 
 
 sub local_receive {
     my $self = $_[OBJECT];
-    $self->_log(v => 4, msg => "Receive $_[ARG0]");
+#    $self->_log(v => 4, msg => "Receive $_[ARG0]");
     #$_[KERNEL]->yield( send => "$self->{cheap}" => $_[ARG0] );
-    $self->{transport}->process_plugins( [ 'local_receive', $self->{cheap}, $_[ARG0] ] );
+    $_[KERNEL]->alarm_remove( $self->{cheap}->{time_out} )
+        if ( $self->{cheap}->{time_out} );
+    
+    $self->{transport}->process_plugins( [ 'local_receive', $self, $self->{cheap}, $_[ARG0] ] );
+    
+    return;
 }
 
 sub local_flushed {
+    my $self = $_[OBJECT];
 #    $_[OBJECT]->_log(v => 2, msg => "Flushed");
+    
+    if ( $self->{cheap} && $self->{cheap}->close_on_flush ) {
+        delete $self->{cheap}->{wheel};
+        $self->cleanup_connection( $self->{cheap} );
+    }
+    
+    return;
 }
 
 sub local_error {
     my ( $kernel, $self, $session, $operation, $errnum, $errstr ) = 
         @_[KERNEL, OBJECT, SESSION, ARG0, ARG1, ARG2];
-    $self->_log(v => 1, msg => "Server encountered $operation error $errnum: $errstr heap($self->{cheap})");
+    $self->_log(v => 1, msg => "Server encountered $operation error $errnum: $errstr");
 #    $kernel->call($session->ID => notify => tcp_error => { session => $session->ID, operation => $operation, error_num => $errnum, err_str => $errstr });
     
     $self->cleanup_connection( $self->{cheap} );
+    
+    return;
 }
 
 sub local_timeout {
     my $self = $_[OBJECT];
     $self->_log(v => 3, msg => "Timeout");
     
-    delete $self->{cheap}->{con};
+    delete $self->{cheap}->{wheel};
 
     $self->cleanup_connection( $self->{cheap} );
+    
+    return;
 }
 
 1;

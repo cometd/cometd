@@ -1,5 +1,7 @@
 package Cometd::Plugin::JSONTransport;
 
+use base 'Cometd::Plugin';
+
 use POE::Filter::Line;
 use POE::Filter::JSON;
 
@@ -8,6 +10,10 @@ use warnings;
 
 sub BAYEUX_VERSION() { '1.0' }
 
+sub as_string {
+    __PACKAGE__;
+}
+
 sub new {
     my $class = shift;
     bless({
@@ -15,16 +21,8 @@ sub new {
     }, $class);
 }
 
-sub handle {
-    my ( $self, $event ) = @_;
-    if ( defined( __PACKAGE__ . '::' . $event ) ) {
-        $self->$event( splice( @_, 2, $#_ ) );
-    }
-    return 1;
-}
-
 sub remote_connected {
-    my ( $self, $cheap, $socket, $wheel ) = @_;
+    my ( $self, $client, $cheap, $socket, $wheel ) = @_;
     $cheap->{transport} = 'JSON';
     if ( $wheel ) {
         # POE::Filter::Stackable object:
@@ -46,7 +44,7 @@ sub remote_connected {
 }
 
 sub local_connected {
-    my ( $self, $cheap, $socket, $wheel ) = @_;
+    my ( $self, $server, $cheap, $socket, $wheel ) = @_;
     $cheap->{transport} = 'JSON';
     if ( $wheel ) {
         # POE::Filter::Stackable object:
@@ -65,12 +63,12 @@ sub local_connected {
 }
 
 sub remote_receive {
-    my ($self, $cheap, $event) = @_;
+    my ($self, $client, $cheap, $event) = @_;
     $self->{chman}->deliver($cheap, $event);
 }
 
 sub local_receive {
-    my ($self, $cheap, $event) = @_;
+    my ($self, $server, $cheap, $event) = @_;
     $self->{chman}->deliver($cheap, $event);
 }
 
