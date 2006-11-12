@@ -7,6 +7,7 @@ use POE::Component::Cometd::Client;
 use POE::Component::Cometd::Server;
 use Cometd::Plugin::JSONTransport;
 use Cometd::Plugin::ChannelManager::InMemory;
+use Cometd::Plugin::HTTPD;
 
 my %opts = (
     LogLevel => 4,
@@ -29,11 +30,23 @@ my $server = POE::Component::Cometd::Server->spawn(
     ListenAddress => '0.0.0.0',
 );
 
+my $http_server = POE::Component::Cometd::Server->spawn(
+    %opts,
+    ListenPort => 8080,
+    ListenAddress => '0.0.0.0',
+    Transports => {
+        HTTPD => {
+            priority => 0,
+            plugin => Cometd::Plugin::HTTPD->new(),
+        },
+    },
+);
+
 # conencts to perlbal servers that handle client connections
 my $client = POE::Component::Cometd::Client->spawn(
     %opts,
     ClientList => [
-        '127.0.0.1:2022', # Perlbal Cometd manage port
+#        '127.0.0.1:2022', # Perlbal Cometd manage port
     ],
 );
 
