@@ -1,5 +1,6 @@
 package Cometd::Plugin::JSONTransport;
 
+use Cometd::Plugin;
 use base 'Cometd::Plugin';
 
 use POE::Filter::Line;
@@ -10,10 +11,6 @@ use warnings;
 
 sub BAYEUX_VERSION() { '1.0' }
 
-sub as_string {
-    __PACKAGE__;
-}
-
 sub new {
     my $class = shift;
     bless({
@@ -21,9 +18,16 @@ sub new {
     }, $class);
 }
 
+sub as_string {
+    __PACKAGE__;
+}
+
+# ---------------------------------------------------------
+# Client
+
 sub remote_connected {
     my ( $self, $client, $cheap, $socket, $wheel ) = @_;
-    $cheap->{transport} = 'JSON';
+    $cheap->transport( 'JSON' );
     if ( $wheel ) {
         # POE::Filter::Stackable object:
         my $filter = $wheel->[ POE::Wheel::ReadWrite::FILTER_INPUT ];
@@ -43,6 +47,15 @@ sub remote_connected {
     return;
 }
 
+sub remote_receive {
+    my ($self, $client, $cheap, $event) = @_;
+    $self->{chman}->deliver($cheap, $event);
+}
+
+
+# ---------------------------------------------------------
+# server
+
 sub local_connected {
     my ( $self, $server, $cheap, $socket, $wheel ) = @_;
     $cheap->{transport} = 'JSON';
@@ -60,11 +73,6 @@ sub local_connected {
         # XXX should we pop the stream filter off the top?
     }
     return;
-}
-
-sub remote_receive {
-    my ($self, $client, $cheap, $event) = @_;
-    $self->{chman}->deliver($cheap, $event);
 }
 
 sub local_receive {

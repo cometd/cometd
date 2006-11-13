@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 our $VERSION = '0.01';
-our $LogLevel = 0;
 
 use Carp;
 use BSD::Resource;
@@ -19,6 +18,16 @@ use POE qw(
     Filter::Line
     Component::Cometd::Connection
 );
+
+our @base_states = qw(
+    _default
+    register
+    unregister
+    notify
+    signals
+    send
+);
+
 
 sub spawn {
     my $package = shift;
@@ -39,10 +48,13 @@ sub new {
     my $c_alias = $opts{ClientAlias};
     $c_alias = 'cometd_client' unless defined( $c_alias ) and length( $c_alias );
     $opts{ClientAlias} = $c_alias;
-    $opts{ListenPort} = $opts{ListenPort} || 6000;
+    $opts{ListenPort} ||= 6000;
     $opts{TimeOut} = defined $opts{TimeOut} ? $opts{TimeOut} : 30;
-    $opts{ListenAddress} = $opts{ListenAddress} || '0.0.0.0';
-    $POE::Component::Cometd::LogLevel = delete $opts{LogLevel} || 0;
+    $opts{ListenAddress} ||= '0.0.0.0';
+    $opts{LogLevel} = 0
+        unless ( $opts{LogLevel} );
+
+    $opts{base_states} = \@base_states;
 
     if ($opts{MaxConnections}) {
         my $ret = setrlimit( RLIMIT_NOFILE, $opts{MaxConnections}, $opts{MaxConnections} );
@@ -78,7 +90,7 @@ sub register {
     my ( $kernel, $self, $sender ) = @_[KERNEL, OBJECT, SENDER];
     $kernel->refcount_increment( $sender->ID, __PACKAGE__ );
     $self->{listeners}->{ $sender->ID } = 1;
-    $kernel->post( $sender->ID => sb_registered => $_[SESSION]->ID );
+    $kernel->post( $sender->ID => cometd_registered => $_[SESSION]->ID );
     #$self->_log(v => 2, msg => "Listening to port $self->{opts}{ListenPort} on $self->{opts}{ListenAddress}");
     return $_[SESSION]->ID();
 }
@@ -110,23 +122,24 @@ sub send {
     }
 }
 
-sub add_client_obj {
+sub add_heap {
     my $self = shift;
-    my $cheap = shift;
-    $self->{heaps}->{ "$cheap" } = $cheap;
+    my $heap = shift;
+    
+    $self->{heaps}->{ "$heap" } = $heap;
     undef;
 }
 
 sub create_event {
-    my ( $self, $cheap, $event ) = @_;
-    "$cheap|$event";
+    my ( $self, $heap, $event ) = @_;
+    "$heap|$event";
 }
 
 sub _log {
     my ( $self, %o ) = @_;
-    if ( $o{v} <= $POE::Component::Cometd::LogLevel ) {
-        my $sender = ( defined $self->{cheap} && defined $self->{cheap}->{peer_ip} )
-            ? $self->{cheap}->{peer_ip} : "?";
+    if ( $o{v} <= $self->{opts}->{LogLevel} ) {
+        my $sender = ( defined $self->{heap} && defined $self->{heap}->{peer_ip} )
+            ? $self->{heap}->{peer_ip} : "?";
         my $type = ( defined $o{type} ) ? $o{type} : 'M';
 #        my $caller = (caller(1))[3] || '????';
 #        my $pk = __PACKAGE__.'::';
@@ -137,11 +150,13 @@ sub _log {
 }
 
 sub cleanup_connection {
-    my ( $self, $cheap ) = @_;
+    my ( $self, $heap ) = @_;
 
-    return unless( $cheap );
+    return unless( $heap );
 
-    $self->{connections}-- if delete $self->{heaps}->{ "$cheap" };
+    delete $heap->{wheel};
+    
+    $self->{connections}-- if delete $self->{heaps}->{ "$heap" };
 
     undef;
 }
@@ -164,19 +179,34 @@ sub _default {
         }
         
         if ( $self->{heaps}->{ $1 } ) {
-            $self->{cheap} = $self->{heaps}->{ $1 };
+            $self->{heap} = $self->{heaps}->{ $1 };
         
             splice( @_, ARG0, $#_, @$args );
+            # will this leak?
+            splice( @_, HEAP, 1, $self->{heap} );
        
             no strict 'refs';
             goto &$sub;
 
-            $self->{cheap} = undef;
+            $self->{heap} = undef;
         } else {
-#            warn "NO HEAP FOR EVENT $2 WITH REF $1";
+            warn "NO HEAP FOR EVENT $2 WITH REF $1";
         }
     }
     
+    return 0;
+}
+
+sub signals {
+    my ( $self, $signal_name ) = @_[OBJECT, ARG0];
+
+    $self->_log(v => 1, msg => "Client caught SIG$signal_name");
+
+    # to stop ctrl-c / INT
+    if ($signal_name eq 'INT') {
+        #$_[KERNEL]->sig_handled();
+    }
+
     return 0;
 }
 
