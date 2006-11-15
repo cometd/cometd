@@ -9,6 +9,8 @@ use HTTP::Response;
 use strict;
 use warnings;
 
+use constant NAME => 'HTTPD';
+
 sub new {
     my $class = shift;
     bless({
@@ -20,12 +22,17 @@ sub as_string {
     __PACKAGE__;
 }
 
+sub plugin_name {
+    NAME;
+}
+
+
 # ---------------------------------------------------------
 # server
 
 sub local_connected {
     my ( $self, $server, $con, $socket ) = @_;
-    $con->transport( 'HTTPD' );
+    $con->transport( NAME );
     if ( $con->wheel ) {
         # POE::Filter::Stackable object:
         my $filter = $con->wheel->[ POE::Wheel::ReadWrite::FILTER_INPUT ];
@@ -36,7 +43,7 @@ sub local_connected {
         
         # XXX should we pop the stream filter off the top?
     }
-    return;
+    return 1;
 }
 
 sub local_receive {
@@ -47,7 +54,7 @@ sub local_receive {
     $r->content( 'cometd test server' );
     $con->send( $r );
     $con->close_on_flush( 1 );
-    return;
+    return 1;
 }
 
 1;

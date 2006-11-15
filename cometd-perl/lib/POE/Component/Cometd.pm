@@ -69,11 +69,11 @@ sub new {
 
     my $trans = $opts{TransportPlugin} || Cometd::Transport->new();
     if ($opts{Transports}) {
-        foreach my $t ( keys %{ $opts{Transports} } ) {
+        # TODO convert this to an array
+        foreach my $t ( @{ $opts{Transports} } ) {
             $trans->add_transport(
-                $t,
-                $opts{Transports}->{ $t }->{priority},
-                $opts{Transports}->{ $t }->{plugin}
+                $t->{plugin},
+                $t->{priority} || 0
             );
         }
     }
@@ -174,7 +174,7 @@ sub _default {
         
         unless ( defined( &$sub ) ) {
             $self->_log(v => 1, msg => "subroutine $sub does not exist");
-            warn "subroutine $sub does not exist";
+            #warn "subroutine $sub does not exist";
             return 0;
         }
         

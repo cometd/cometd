@@ -14,14 +14,14 @@ my %opts = (
     LogLevel => 4,
     TimeOut => 0,
     MaxConnections => 32000,
-    Transports => {
-        JSON => {
-            priority => 0,
+    Transports => [
+        {
             plugin => Cometd::Plugin::JSONTransport->new(
                 chman => Cometd::Plugin::ChannelManager::InMemory->new(),
             ),
+            priority => 0,
         },
-    },
+    ],
 );
 
 # accepts connections and receives events
@@ -37,12 +37,12 @@ my $http_server = POE::Component::Cometd::Server->spawn(
     Name => 'HTTP Server',
     ListenPort => 8080,
     ListenAddress => '0.0.0.0',
-    Transports => {
-        HTTPD => {
-            priority => 0,
+    Transports => [
+        {
             plugin => Cometd::Plugin::HTTPD->new(),
+            priority => 0,
         },
-    },
+    ],
 );
 
 my $manager = POE::Component::Cometd::Server->spawn(
@@ -50,12 +50,12 @@ my $manager = POE::Component::Cometd::Server->spawn(
     Name => 'Manager',
     ListenPort => 5000,
     ListenAddress => '127.0.0.1',
-    Transports => {
-        Manager => {
-            priority => 0,
+    Transports => [
+        {
             plugin => Cometd::Plugin::Manager->new(),
+            priority => 0,
         },
-    },
+    ],
 );
 
 # conencts to perlbal servers that handle client connections

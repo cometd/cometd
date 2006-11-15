@@ -9,7 +9,8 @@ use POE::Filter::JSON;
 use strict;
 use warnings;
 
-sub BAYEUX_VERSION() { '1.0' }
+use constant BAYEUX_VERSION => '1.0';
+use constant NAME => 'JSON';
 
 sub new {
     my $class = shift;
@@ -22,12 +23,16 @@ sub as_string {
     __PACKAGE__;
 }
 
+sub plugin_name {
+    NAME;
+}
+
 # ---------------------------------------------------------
 # Client
 
 sub remote_connected {
     my ( $self, $client, $cheap, $socket, $wheel ) = @_;
-    $cheap->transport( 'JSON' );
+    $cheap->transport( NAME );
     if ( $wheel ) {
         # POE::Filter::Stackable object:
         my $filter = $wheel->[ POE::Wheel::ReadWrite::FILTER_INPUT ];
@@ -44,12 +49,13 @@ sub remote_connected {
         
         # XXX should we pop the stream filter off the top?
     }
-    return;
+    return 1;
 }
 
 sub remote_receive {
     my ($self, $client, $cheap, $event) = @_;
     $self->{chman}->deliver($cheap, $event);
+    return 1;
 }
 
 
@@ -58,7 +64,7 @@ sub remote_receive {
 
 sub local_connected {
     my ( $self, $server, $cheap, $socket, $wheel ) = @_;
-    $cheap->{transport} = 'JSON';
+    $cheap->transport( NAME );
     if ( $wheel ) {
         # POE::Filter::Stackable object:
         my $filter = $wheel->[ POE::Wheel::ReadWrite::FILTER_INPUT ];
@@ -72,12 +78,13 @@ sub local_connected {
         
         # XXX should we pop the stream filter off the top?
     }
-    return;
+    return 1;
 }
 
 sub local_receive {
     my ($self, $server, $cheap, $event) = @_;
     $self->{chman}->deliver($cheap, $event);
+    return 1;
 }
 
 1;
