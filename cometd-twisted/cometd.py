@@ -613,9 +613,10 @@ class cometd(resource.PostableResource):
 		"""
 		if verbose: log.msg(message["channel"])
 		root = self.subscriptions
-		subs = root[message["channel"]]
-		for client in subs:
-			subs[client].connection.deliver(message)
+		if root.has_key(message["channel"]):
+			subs = root[message["channel"]]
+			for client in subs:
+				subs[client].connection.deliver(message)
 		return { "success": True }
 
 	############################################################################
