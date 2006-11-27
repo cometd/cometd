@@ -63,7 +63,7 @@ my $client = POE::Component::Cometd::Client->spawn(
     %opts,
     Name => 'Perlbal Connector',
     ClientList => [
-#        '127.0.0.1:2022', # Perlbal Cometd manage port
+        '127.0.0.1:2022', # Perlbal Cometd manage port
     ],
 );
 
