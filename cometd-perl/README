@@ -1,10 +1,9 @@
 **README**
 
-Please note that the comet-perl code is under construction but
-IS in a working state.
+Please note that the comet-perl code is under heavy development
+and isn't in a working state.  I've been making large changes lately.
 
 See the TODO for a list of things that need to be completed.
-
 
 * Notes *
 
@@ -21,22 +20,8 @@ The lab/ directory is the old design for the cometd component.  This code
 may make its way back into cometd
 
 
-* START COMET AND DO A SIMPLE TEST *
-* NOTE: This is broken now *
-* I'm focusing on dojo + cometd now, and this simple test is getting in the way *
+* THE SIMPLE TEST IS BROKEN DUE TO HEAVY DEVELOPMENT *
 
-
-./httpd.pl &
-./perlbal.sh &
-./eventserver.pl
-
-Go to http://127.0.0.1:2021/cometd in IE and Firefox
-
-You will see a connect event, and some ping events ( every 15s )
-
-./tools/injectevent.pl "It works"
-
-You'll see the message on channel /pub/foo
 
 
 David Davis
