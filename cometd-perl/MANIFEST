@@ -15,9 +15,10 @@ Makefile.PL
 t/00_compile.t
 tools/injectevent.pl
 httpd.pl
-perlbal.sh
+perlbal
 MANIFEST
 README
 TODO
+PORTS
 eventserver.pl
 html/index.html
