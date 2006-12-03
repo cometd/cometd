@@ -72,9 +72,7 @@ connection setup process:
 			"authToken":				"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY",
 			// advice determines the client behavior on errors
 			"advice":	{
-
-				"reconnect": true, // or false 
-				"rehandshake": true, // or false
+				"reconnect": "retry", // one of "none", "retry", "handshake", "recover"
 
 				// transport specializations of the top-level generalized
 				// advice
@@ -256,9 +254,9 @@ The client ID turns out to be very important to subsequent connection.
 		// , ...
 	]
 
-	// the server might respond with advice advice noting some delay in
-	// reconnecting. This is particularly important to prevent "reconnect
-	// floods". The above message agumented with this advice might be:
+	// the server might respond with advice noting some delay in reconnecting.
+	// This is particularly important to prevent "reconnect floods". The above
+	// message agumented with this advice might be:
 	[
 		{
 			"channel":		"/meta/reconnect",
