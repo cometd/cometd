@@ -1,28 +1,34 @@
 #!/usr/bin/perl
 
-use POE::Loop::Glib;
-use Glib;
 use IO::AIO;
 use Fcntl;
 
 use POE qw( Wheel::ReadWrite Filter::Line Driver::SysRW );
-
-Glib::IO->add_watch( IO::AIO::poll_fileno, in => sub { IO::AIO::poll_cb; 1 } );
 
 POE::Session->create(
     inline_states => {
         _start => sub {
             $_[KERNEL]->alias_set('foo');
             my $session = $_[SESSION];
+
+            open my $fh, "<&=".IO::AIO::poll_fileno or die "$!";
+            
+            $_[KERNEL]->select_read($fh, "aio_event");
+            
             aio_open( "/etc/passwd", O_RDONLY, 0, $session->postback( 'opened', '/etc/passwd' ) );
+            
             return;
         },
+        aio_event => sub {
+            warn "aio event occurred";
+            $_[KERNEL]->select_read($_[ARG0]);
+            IO::AIO::poll_cb();
+        },
         opened => sub {
-            my $file = $_[ ARG0 ]->[0];
-            my $fh = $_[ ARG1 ]->[0];
-            warn "opened $file";
-            $_[HEAP]->{wheel} = POE::Wheel::ReadWrite-new(
-                InputHandle => $fh,
+            my ( $file, $fh ) = ( $_[ ARG0 ]->[0], $_[ ARG1 ]->[0] );
+            warn "opened file $file";
+            $_[HEAP]->{wheel} = POE::Wheel::ReadWrite->new(
+                Handle => $fh,
                 Driver => POE::Driver::SysRW->new(),
                 Filter => POE::Filter::Line->new(),
                 InputEvent => 'input',
@@ -34,7 +40,7 @@ POE::Session->create(
             warn "line: $_[ARG0]\n";
         },
         error => sub {
-            warn "error";
+            warn "error @_[ARG0,ARG1] ( 0 is eof )";
             delete $_[HEAP]->{wheel};
             return;
         },
