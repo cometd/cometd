@@ -24,6 +24,8 @@ POE::Session->create(
         },
         aio_event => sub {
             warn "aio event occurred";
+            # don't select_read here in a real world app (you want it to poll aio)
+            # this is here so the test will exit clean when everything is done
             $_[KERNEL]->select_read($_[ARG0]);
             IO::AIO::poll_cb();
         },
