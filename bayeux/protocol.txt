@@ -27,6 +27,10 @@ ID which is unique to the router. No randomness is required in these
 identifiers although routers are expected to drop messages which they have
 previously "seen".
 
+// FIXME: is message dropping enforceable? Are we asking routers to keep a
+// long-lived data structure of, potentially sparse, message IDs throught the
+// router lifetime?
+
 All cometd messages are encoded in JSON format. Individual message objects make
 up the elements of the top-level array that comprises the root object of all
 protocol transmissions. This is an example of the messages exchanged durring a
@@ -111,6 +115,10 @@ for future transactions may result in failure.
 	// be sent for most transports.
 	//
 	// here's what the client then POST's:
+
+	//-----------------
+	// CLIENT -> SERVER
+	//-----------------
 	[
 		{
 			"channel":	"/meta/connect",
@@ -128,6 +136,11 @@ for future transactions may result in failure.
 
 	// the server now replies with the preamble followed by any number of
 	// messages encoded in the tunnel-specific envelope:
+
+	//-----------------
+	// SERVER -> CLIENT
+	//-----------------
+
 	<!-- begin preamble -->
 	<html>
 		<head>
@@ -196,9 +209,15 @@ channel located at:
 
 	/meta/clients/[SOME_UNIQUE_CLIENT_ID]
 
-The client ID turns out to be very important to subsequent connection.
+The client ID is used in reconnection. The reconnect verb allows occasionally
+connected clients and the posting of messages for pre-authenticated systems.
 
 	// reconnection is very similar to initial connection:
+
+	//-----------------
+	// CLIENT -> SERVER
+	//-----------------
+
 	[
 		{
 			"channel":		"/meta/reconnect",
@@ -213,43 +232,58 @@ The client ID turns out to be very important to subsequent connection.
 		// , ...
 	]
 
+
 	// generally, the first message in the array of responded messages will
 	// begin with:
+
+	//-----------------
+	// SERVER -> CLIENT
+	//-----------------
+
 	[
 		{
 			"channel":		"/meta/reconnect",
 			"connectionId":	"/meta/connections/26",
 			"successful":	true,
 			// optional
-			"authToken":	"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER"
+			"authToken":	"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY"
 		}
 		// , ...
 	]
 
 	// if the server doesn't know anything about the client or is trying to
 	// signal to clients that they need to somehow try harder before
-	// reconnecting will work, it may respond with:
+	// reconnecting will work (e.g., in the case of server failover), it may
+	// respond with:
+
+	//-----------------
+	// SERVER -> CLIENT
+	//-----------------
+
 	[
 		{
 			"channel":		"/meta/reconnect",
 			"successful":	false,
 			"advice": {
 				"reconnect": "recover", // one of "none", "retry", "handshake", "recover"
-			},
-			// optional
-			"authToken":	"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER"
+			}
 		}
 	]
 
 	// if, on the other hand, the reconnection succeeds, the client may not
 	// return immediately, but the first message in the response array may look
 	// like:
+
+	//-----------------
+	// SERVER -> CLIENT
+	//-----------------
+
 	[
 		{
 			"channel":		"/meta/reconnect",
 			"successful":	true,
 			// optional
-			"authToken":	"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER"
+			"authToken":	"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY"
 		}
 		// , ...
 	]
@@ -257,12 +291,17 @@ The client ID turns out to be very important to subsequent connection.
 	// the server might respond with advice noting some delay in reconnecting.
 	// This is particularly important to prevent "reconnect floods". The above
 	// message agumented with this advice might be:
+
+	//-----------------
+	// SERVER -> CLIENT
+	//-----------------
+
 	[
 		{
 			"channel":		"/meta/reconnect",
 			"successful":	true,
 			// optional
-			"authToken":	"SOME_NONCE_PREVIOUSLY_PROVIDED_BY_SERVER",
+			"authToken":	"SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY",
 			"advice": {
 				"interval": 4000 // ms, or 4 seconds between reconnect attempts
 			}
@@ -275,6 +314,11 @@ The client ID turns out to be very important to subsequent connection.
 	// be delivered en-masse. We don't cover it here for the sake of brevity.
 
 	// Subscribing and unsubscribing to channel is straightforward. Subscribing:
+
+	//-----------------
+	// CLIENT -> SERVER
+	//-----------------
+
 	[
 		{
 			"channel":		"/meta/subscribe",
@@ -285,7 +329,12 @@ The client ID turns out to be very important to subsequent connection.
 		// , ...
 	]
 
-	// response to subscription
+	// response to subscription:
+
+	//-----------------
+	// SERVER -> CLIENT
+	//-----------------
+
 	[
 		{
 			"channel":		"/meta/subscribe",
@@ -305,6 +354,11 @@ The client ID turns out to be very important to subsequent connection.
 	]
 
 	// unsubscription for same:
+
+	//-----------------
+	// CLIENT -> SERVER
+	//-----------------
+
 	[
 		{
 			"channel":		"/meta/unsubscribe",
@@ -316,6 +370,11 @@ The client ID turns out to be very important to subsequent connection.
 	]
 
 	// and the server response:
+
+	//-----------------
+	// SERVER -> CLIENT
+	//-----------------
+
 	[
 		{
 			"channel":		"/meta/unsubscribe",
@@ -361,6 +420,49 @@ acting tunnels or connections.
 FIXME: outline server timeout strategies and why it's not part of the protocol
 FIXME: provide addendum for to define APIs of conformant clients
 FIXME: define /meta/disconnect, /meta/status, and /meta/ping
+
+-------------------------------------------------------------------------------
+Appendix 1: Advices
+
+The advice system provides a way for servers to inform clients of their
+preferred mode of client operation. In conjunction with server-enforced limits,
+Bayeux implementations can prevent resource exhaustion and inelegant failure in
+several important edge cases. Since transport evenlopes are "pluggable" in
+order to support differing "on the wire" behaviors, advice values may also vary
+by transport type, even for the same conditions. What follows is a breif
+description of the enumerations that are used in advices and their canonical
+meanings.
+
+	* reconnect
+		type: string
+		values: "none", "retry", "handshake", "recover"
+		description:
+			* none
+				hard failure for the reconnect attempt. Do not attempt to
+				reconnect at all. 
+			* retry
+				attempt to reconnect again later (as defined by "interval"
+				advice or client-default backoff) with the same credentials
+			* handshake
+				the server doesn't know anything about the client or connection
+				that were passed, so instead of attempting to reconnect, throw
+				away the client's authentication information and attempt to
+				reauthorize with a /meta/handshake
+			* recover
+				a superset of the "handshake" advice, this tells clients that
+				not only should they assume that they need to re-authentiate,
+				they also need to resubscribe to all the topics they are
+				interested in. This advice may be provided to servers who
+				completely fail to locate any matching authentication or
+				authorization data regarding the client, e.g. in the case of
+				hard failover between a bayeux server and a cold spare.
+	
+	* interval
+		type: integer
+		values: no default
+		description: 
+			a number, in milliseconds, for a client to delay subsequent
+			reconnect attempts
 
 -------------------------------------------------------------------------------
 Authors:
