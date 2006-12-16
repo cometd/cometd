@@ -1,0 +1,8 @@
+.count-down-ticker
+{
+	position: absolute;
+	top: 20px;
+	left: 1px;
+	color: red;
+	z-index: 100;
+}
