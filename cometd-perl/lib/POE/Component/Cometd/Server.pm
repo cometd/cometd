@@ -12,9 +12,10 @@ use overload '""' => \&as_string;
 sub spawn {
     my $self = shift->SUPER::new( @_ );
    
-    POE::Session->create(
+    Cometd::Session->create(
 #       options => { trace => 1 },
        object_states => [
+            # TODO use SUPER instead
             $self => [ @{$self->{opts}->{base_states}}, qw(
                 _start
                 _stop

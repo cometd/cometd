@@ -18,6 +18,7 @@ use POE qw(
     Filter::Line
     Component::Cometd::Connection
 );
+use Cometd::Session;
 
 our @base_states = qw(
     _default
@@ -162,6 +163,11 @@ sub cleanup_connection {
 }
 
 sub _default {
+    my ( $self, $cmd, $args ) = @_[OBJECT, ARG0, ARG1];
+    warn "default for $cmd called";
+}
+
+sub ______default {
     my ( $self, $cmd, $args ) = @_[OBJECT, ARG0, ARG1];
 
     if ( $cmd !~ /^_/ && $cmd =~ m/^([^\|]+)\|(.*)/ ) {

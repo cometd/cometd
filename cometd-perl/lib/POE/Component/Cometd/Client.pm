@@ -13,8 +13,8 @@ sub spawn {
     return $singleton if ( $singleton );
     my $self = $singleton = shift->SUPER::new( @_ );
     
-    POE::Session->create(
-#       options => { trace=>1 },
+    Cometd::Session->create(
+#       options => { trace => 1 },
        heap => $self,
        object_states => [
             $self => [ @{$self->{opts}->{base_states}}, qw(
