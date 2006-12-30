@@ -407,6 +407,11 @@ The 0.1 version of the protocol does NOT acknowledge passing messages
 beyond a single router connected to multiple clients. Future protocol versions
 may include provisions for this.
 
+Servers MAY deliver messages to a client in any successful response other than
+the response to a handshake. For efficiency servers SHOULD use responses to 
+send message requests in preference to a response to a Connect or Reconnect
+that may be pending.
+
 Servers SHOULD maintain event delivery queues for intermittently disconnected
 clients. The protocol does not currently specify a way for clients to specify
 their per-conection "age limit" nor does it specify a policy for server event
