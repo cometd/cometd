@@ -6,9 +6,13 @@
 		<script type="text/javascript">
 			var djConfig = { isDebug: true };
 		</script>
+		<!--
 		<script type="text/javascript" src="../../dojo/dojo.js"></script>
-		<script language="JavaScript" type="text/javascript">
-			dojo.setModulePrefix("dojofun","../tests/magnets/dojofun");
+		-->
+		<script type="text/javascript" src="../../d/dojo.js"></script>
+		<script type="text/javascript">
+			dojo.registerModulePath("dojofun","../tests/magnets/dojofun");
+			dojo.require("dojo.debug.console");
 			dojo.require("dojo.html.layout");
 			dojo.require("dojo.widget.*");
 			dojo.require("dojo.widget.ContentPane");
@@ -18,7 +22,7 @@
 			function addMagnets(type, data, e){
 				var tray = dojo.widget.byId("tray");
 				for(var x=0; x<data.phrases.length; x++){
-					var tmp = dojo.widget.createWidget("Magnet",
+					var tmp = dojo.widget.createWidget("dojofun:Magnet",
 						{	phrase: data.phrases[x], 
 							constrainTo: "layout"
 						}
@@ -53,6 +57,7 @@
 
 			function serverMagnetMoveStart(msg){
 				if(msg.data.source != cometd.clientId){
+					dojo.debug("serverMagnetMoveStart", dojo.widget.byId(msg.data.widgetId));
 					dojo.widget.byId(msg.data.widgetId).highlight();
 				}
 			}
@@ -71,8 +76,9 @@
 				dojo.io.bind({
 					url: "phrases.js",
 					load: addMagnets,
-					error: function(e){
+					error: function(type, e){
 						dojo.debug("error loading phrases: " + e);
+						dojo.debugShallow(e);
 					},
 					mimetype: "text/json"
 				});
