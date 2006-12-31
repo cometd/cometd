@@ -5,8 +5,8 @@ dojo.require("dojo.dnd.HtmlDragMove");
 
 
 dojo.widget.defineWidget("dojofun.widget.Magnet", dojo.widget.HtmlWidget, { 
-	templatePath: dojo.uri.dojoUri("../magnets/dojofun/widget/templates/Magnet.html"),
-	templateCssPath: dojo.uri.dojoUri("../magnets/dojofun/widget/templates/Magnet.css"),
+	templatePath: dojo.uri.dojoUri("../examples/magnets/dojofun/widget/templates/Magnet.html"),
+	templateCssPath: dojo.uri.dojoUri("../examples/magnets/dojofun/widget/templates/Magnet.css"),
 
 	initializer: function(){
 		this.phrase = "hello world";
