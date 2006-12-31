@@ -43,14 +43,14 @@ class CometdRunner(resource.Resource):
 	addSlash = True
 	if verboseLogging:
 		log.msg("cometd initialized")
-	child_tests = static.File(path("./tests").abspath())
+	child_examples = static.File(path("./examples").abspath())
 	child_dojo = static.File(path("./dojo").abspath())
 	child_cometd = cometd.cometd()
 
 	def render(self, ctx):
 		return http.Response(200,
-			{ "content-type": http_headers.MimeType('text', 'plain') },
-			stream=stream.FileStream(path("cometd.txt").abspath().open())
+			{ "content-type": http_headers.MimeType('text', 'html') },
+			stream=stream.FileStream(path("index.html").abspath().open())
 		)
 
 
