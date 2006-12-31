@@ -1,6 +1,11 @@
 
 dojo.require("dojo.io.cometd");
 
+function $() {
+  return document.getElementById(arguments[0]);
+}
+
+
 var EvUtil =
 {
     getKeyCode : function(ev)
@@ -127,7 +132,7 @@ var chatBehaviours =
         var keyc=EvUtil.getKeyCode(ev);
         if (keyc==13 || keyc==10)
         {
-          room.join($F('username'));
+          room.join($('username').value);
 	  return false;
 	}
 	return true;
@@ -138,7 +143,7 @@ var chatBehaviours =
   {
     element.onclick = function(event)
     {
-      room.join($F('username'));
+      room.join($('username').value);
       return false;
     }
   },
@@ -151,7 +156,7 @@ var chatBehaviours =
         var keyc=EvUtil.getKeyCode(ev);
         if (keyc==13 || keyc==10)
         {
-          room.chat($F('phrase'));
+          room.chat($('phrase').value);
           $('phrase').value='';
 	  return false;
 	}
@@ -163,7 +168,7 @@ var chatBehaviours =
   {
     element.onclick = function(event)
     {
-      room.chat($F('phrase'));
+      room.chat($('phrase').value);
       $('phrase').value='';
       return false;
     }
