@@ -31,7 +31,7 @@ dojo.widget.defineWidget(
 		this.readyButtonNode = null;
 	},
 	{
-		templatePath: dojo.uri.dojoUri("../dojopong/widget/templates/DojoPong.html"),
+		templatePath: dojo.uri.dojoUri("../examples/dojopong/widget/templates/DojoPong.html"),
 		//templateCssPath: dojo.uri.dojoUri("../dojopong/widget/templates/CountDown.css"),
 		
 		beginGame: function(data)
