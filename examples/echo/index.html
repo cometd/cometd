@@ -65,12 +65,18 @@
 			function setUp()
 			{
 				dojo.require("dojo.io.cometd");
+				dojo.require("dojo.event.*");
+
+				dojo.event.connect(cometd, "finishInit", 
+					function(type, data, evt, request){
+						cometd.subscribe(
+							"/rpc/echo/"+cometd.clientId,
+							true, 
+							"echoRpcReturn"
+						);
+					}
+				);
 				
-				var realFinishInit=cometd.finishInit;
-				cometd.finishInit=function(type, data, evt, request) { 
-				  dojo.lang.hitch(cometd,realFinishInit)(type, data, evt, request); 
-				  cometd.subscribe("/rpc/echo/"+dojo.io.cometd.clientId, true, "echoRpcReturn");
-				};
 				cometd.init({}, "/cometd");
 				
 				
