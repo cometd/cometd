@@ -15,8 +15,8 @@ dojo.widget.defineWidget(
 		this._tickInterval = null
 	},
 	{
-		templatePath: dojo.uri.dojoUri("../dojopong/widget/templates/CountDown.html"),
-		templateCssPath: dojo.uri.dojoUri("../dojopong/widget/templates/CountDown.css"),
+		templatePath: dojo.uri.dojoUri("/examples/dojopong/widget/templates/CountDown.html"),
+		templateCssPath: dojo.uri.dojoUri("/examples/dojopong/widget/templates/CountDown.css"),
 		
 		decrement: function()
 		{
