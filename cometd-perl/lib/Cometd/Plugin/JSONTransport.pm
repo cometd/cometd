@@ -31,18 +31,18 @@ sub plugin_name {
 # Client
 
 sub remote_connected {
-    my ( $self, $client, $cheap, $socket, $wheel ) = @_;
-    $cheap->transport( NAME );
-    if ( $wheel ) {
+    my ( $self, $client, $con, $socket ) = @_;
+    $con->transport( NAME );
+    if ( my $wheel = $con->wheel ) {
         # POE::Filter::Stackable object:
-        my $filter = $wheel->[ POE::Wheel::ReadWrite::FILTER_INPUT ];
+        my $filter = $wheel->get_input_filter;
         
         $filter->push(
             POE::Filter::Line->new()
         );
         
         $wheel->put( "bayeux " . BAYEUX_VERSION );
-            
+        
         $filter->push(
             POE::Filter::JSON->new()
         );
@@ -53,8 +53,8 @@ sub remote_connected {
 }
 
 sub remote_receive {
-    my ($self, $client, $cheap, $event) = @_;
-    $self->{chman}->deliver($cheap, $event);
+    my ($self, $client, $con, $event) = @_;
+    $self->{chman}->deliver($con, $event);
     return 1;
 }
 
@@ -63,27 +63,28 @@ sub remote_receive {
 # server
 
 sub local_connected {
-    my ( $self, $server, $cheap, $socket, $wheel ) = @_;
-    $cheap->transport( NAME );
-    if ( $wheel ) {
-        # POE::Filter::Stackable object:
-        my $filter = $wheel->[ POE::Wheel::ReadWrite::FILTER_INPUT ];
-        
-        $filter->push(
+    my ( $self, $server, $con, $socket ) = @_;
+
+    $con->transport( NAME );
+    
+    if ( my $wheel = $con->wheel ) {
+        # POE::Filter::Stackable object
+        $wheel->get_input_filter->push(
             POE::Filter::Line->new(),
             POE::Filter::JSON->new(),
         );
-        
+    
+        # XXX $con->send?
         $wheel->put({ bayeux => BAYEUX_VERSION });
-        
+    
         # XXX should we pop the stream filter off the top?
     }
     return 1;
 }
 
 sub local_receive {
-    my ($self, $server, $cheap, $event) = @_;
-    $self->{chman}->deliver($cheap, $event);
+    my ($self, $server, $con, $event) = @_;
+    $self->{chman}->deliver($con, $event);
     return 1;
 }
 

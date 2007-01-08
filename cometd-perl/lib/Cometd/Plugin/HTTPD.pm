@@ -3,6 +3,8 @@ package Cometd::Plugin::HTTPD;
 use Cometd::Plugin;
 use base 'Cometd::Plugin';
 
+use Cometd::Service::HTTPD;
+
 use POE::Filter::HTTPD;
 use HTTP::Response;
 
@@ -14,6 +16,7 @@ use constant NAME => 'HTTPD';
 sub new {
     my $class = shift;
     bless({
+        service => Cometd::Service::HTTPD->new(),
         @_
     }, $class);
 }
@@ -33,12 +36,10 @@ sub plugin_name {
 sub local_connected {
     my ( $self, $server, $con, $socket ) = @_;
     $con->transport( NAME );
-    if ( $con->wheel ) {
+    if ( my $wheel = $con->wheel ) {
         # POE::Filter::Stackable object:
-        my $filter = $con->wheel->[ POE::Wheel::ReadWrite::FILTER_INPUT ];
-        
-        $filter->push(
-            POE::Filter::HTTPD->new(),
+        $wheel->get_input_filter->push(
+            POE::Filter::HTTPD->new()
         );
         
         # XXX should we pop the stream filter off the top?
@@ -47,7 +48,9 @@ sub local_connected {
 }
 
 sub local_receive {
-    my ($self, $server, $con, $data) = @_;
+    my ( $self, $server, $con, $data ) = @_;
+#    $self->{service}->handle_request( $self, $con, $data );
+#    return;
 #    warn Data::Dumper->Dump([$data]);
     my $r = HTTP::Response->new( 200 );
     $r->content_type( 'text/plain' );

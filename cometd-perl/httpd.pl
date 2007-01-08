@@ -78,7 +78,7 @@ sub handle {
         $in{$k} = uri_unescape($v);
     }
 
-    my @ch = qw( /magnets/move /magnets/moveStart /pub/foo );
+    my @ch = qw( /pub/foo );
 
     if ( $in{message} ) {
         # [{"version":0.1,"minimumVersion":0.1,"channel":"/meta/handshake"}]

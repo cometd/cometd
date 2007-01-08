@@ -3,34 +3,31 @@ package POE::Component::Cometd::Client;
 use strict;
 use warnings;
 
-use POE qw( Component::Cometd Filter::Stackable Filter::Stream );
+use POE qw(
+    Component::Cometd
+    Filter::Stackable
+    Filter::Stream
+);
 use base qw( POE::Component::Cometd );
-use overload '""' => \&as_string;
-
-our $singleton;
 
 sub spawn {
-    return $singleton if ( $singleton );
-    my $self = $singleton = shift->SUPER::new( @_ );
+    my $class = shift;
     
-    Cometd::Session->create(
-#       options => { trace => 1 },
-       heap => $self,
-       object_states => [
-            $self => [ @{$self->{opts}->{base_states}}, qw(
-                _start
-                _stop
+    my $self = $class->SUPER::spawn(
+        $class->SUPER::new( @_ ),
+        qw(
+            _start
+            _stop
 
-                _status_clients
-                connect_to_client
-                remote_connect_success
-                remote_connect_timeout
-                remote_connect_error
-                remote_error
-                remote_receive
-                remote_flush
-            )]
-        ],
+            _status_clients
+            connect_to_client
+            remote_connect_success
+            remote_connect_timeout
+            remote_connect_error
+            remote_error
+            remote_receive
+            remote_flush
+        )
     );
 
     return $self;
@@ -72,7 +69,7 @@ sub _stop {
 
 sub _status_clients {
     my $self = $_[OBJECT];
-#    $_[KERNEL]->delay_set( _status_clients => 5 );
+    $_[KERNEL]->delay_set( _status_clients => 30 );
     $self->_log(v => 2, msg => $self->{opts}->{Name}." : in + out connections: $self->{connections}");
 }
 
@@ -109,6 +106,7 @@ sub connect_to_client {
     my ( $address, $port ) = ( $addr =~ /^([^:]+):(\d+)$/ ) or return;
     
     # TODO resolve this addr that isn't an ip, non blocking
+    # PoCo DNS
     my $heap = POE::Component::Cometd::Connection->new(
         peer_ip => $address,
         peer_port => $port,
@@ -193,11 +191,11 @@ sub remote_flush {
 }
 
 sub deliver_event {
-    my ( $event, $heap, $to_source ) = @_;
+    my ( $self, $event, $heap, $to_source ) = @_;
     
-    foreach my $heap (keys %{$singleton->{heaps}}) {
+    foreach my $heap (keys %{$self->{heaps}}) {
         # $heap is a stringified version
-        my $heap = $singleton->{heaps}->{$heap};
+        my $heap = $self->{heaps}->{$heap};
         warn "$heap is on $heap->{addr}";
         if ( $heap ) {
             if ( $to_source ) {

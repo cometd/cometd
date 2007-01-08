@@ -10,8 +10,13 @@ sub new {
     bless({
         ch => {},
         cid => {},
+        client => undef,
         @_
     }, $class);
+}
+
+sub set_client {
+    shift->{client} = shift;
 }
 
 sub deliver {
@@ -54,7 +59,7 @@ sub deliver {
         }
         return;
     }
-    
+   
 
     
     if ( $c eq '/meta/connect' || $c eq '/meta/reconnect' ) {
@@ -97,11 +102,11 @@ sub deliver {
         }
 
         # send an internal event to give perlbal the list of channels
-        POE::Component::Cometd::Client::deliver_event( {
+        $self->{client}->deliver_event( {
             channel => '/meta/internal/reconnect',
             clientId => $cid,
             channels => $self->{cid}{ $cid }->{ch} || [],
-        }, $cheap, 1 );
+        }, $cheap, 1 ) if ($self->{client});
         
         return;
     }
@@ -128,7 +133,8 @@ sub deliver {
     }
 
     # XXX check if this is client is allowed to send events
-    POE::Component::Cometd::Client::deliver_event( $event, $cheap );
+
+    $self->{client}->deliver_event( $event, $cheap ) if ($self->{client});
     
     return;
 }

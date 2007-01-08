@@ -31,11 +31,12 @@ sub new {
     # save the session id
     $self->[ SESSIONID ] = $session->ID;
 
-    $self;
+    return $self;
 }
 
 sub _start {
-    $_[KERNEL]->alias_set( "$_[OBJECT]" );
+    my $self = $_[OBJECT];
+    $_[KERNEL]->alias_set( "$self" );
 }
 
 
@@ -47,6 +48,9 @@ sub add_transport {
     my ( $plugin, $pri ) = @_;
     my $name = $plugin->plugin_name();
     
+    warn "WARNING : Overwriting existing plugin '$name' (You have two plugins with the same name)"
+        if ( exists( $t->{ $name } ) );
+
     $t->{ $name } = {
         plugin => $plugin,
         priority => $pri || 0,

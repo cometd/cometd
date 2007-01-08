@@ -31,24 +31,29 @@ sub plugin_name {
 
 sub local_connected {
     my ( $self, $server, $con, $socket ) = @_;
+    
     $con->transport( NAME );
-    if ( $con->wheel ) {
+
+    if ( my $wheel = $con->wheel ) {
+        # input_filter and output_filter are the same
         # POE::Filter::Stackable object:
-        my $filter = $con->wheel->[ POE::Wheel::ReadWrite::FILTER_INPUT ];
-        
-        $filter->push(
-            POE::Filter::Line->new(),
+        $wheel->get_input_filter->push(
+            POE::Filter::Line->new()
         );
-        
+    
         $con->send( "Cometd Manager - commands: dump, quit" );
+    
         # XXX should we pop the stream filter off the top?
     }
+
     return 1;
 }
 
 sub local_receive {
-    my ($self, $server, $con, $data) = @_;
+    my ( $self, $server, $con, $data ) = @_;
+    
     warn "manager:".Data::Dumper->Dump([ $data ]);
+    
     if ( $data =~ m/^help/i ) {
         $con->send( "commands: dump, quit" );
     } elsif ( $data =~ m/^dump/i ) {
@@ -57,6 +62,7 @@ sub local_receive {
         $con->send( "goodbye." );
         $con->close_on_flush( 1 );
     }
+    
     return 1;
 }
 

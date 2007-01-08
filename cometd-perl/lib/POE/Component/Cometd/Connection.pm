@@ -21,6 +21,22 @@ sub send {
     }
 }
 
+sub write {
+    &send;
+}
+
+sub tcp_cork {
+    # XXX
+}
+
+sub watch_write {
+    # XXX
+}
+
+sub close {
+    # TODO check out bytes and then
+    $self->close_on_flush( 1 );
+}
 
 
 1;

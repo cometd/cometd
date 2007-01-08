@@ -7,26 +7,22 @@ use POE qw( Component::Cometd );
 use base qw( POE::Component::Cometd );
 use Errno qw( EADDRINUSE );
 use Socket;
-use overload '""' => \&as_string;
 
 sub spawn {
-    my $self = shift->SUPER::new( @_ );
+    my $class = shift;
    
-    Cometd::Session->create(
-#       options => { trace => 1 },
-       object_states => [
-            # TODO use SUPER instead
-            $self => [ @{$self->{opts}->{base_states}}, qw(
-                _start
-                _stop
-                
-                local_accept
-                local_receive
-                local_flushed
-                local_error
-                local_timeout
-            )]
-        ],
+    my $self = $class->SUPER::spawn(
+        $class->SUPER::new( @_ ),
+        qw(
+            _start
+            _stop
+        
+            local_accept
+            local_receive
+            local_flushed
+            local_error
+            local_timeout
+        )
     );
 
     return $self;
@@ -154,7 +150,7 @@ sub local_error {
     # TODO use constant
     if ( $errnum == 0 ) {
         # normal disconnect
-        $self->{transport}->process_plugins( [ 'local_disconnect', $self, $heap ] );
+        $self->{transport}->process_plugins( [ 'local_disconnected', $self, $heap ] );
         $self->_log(v => 1, msg => $self->{opts}->{Name}." - client disconnected : $heap->{addr}");
         return;
     } else {
@@ -162,7 +158,7 @@ sub local_error {
     }
     
     if ( $errnum == EADDRINUSE ) {
-            
+        # TODO 
     }
     
     $self->cleanup_connection( $heap );

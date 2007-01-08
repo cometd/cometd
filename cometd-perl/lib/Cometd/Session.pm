@@ -3,12 +3,12 @@ package Cometd::Session;
 use warnings;
 use strict;
 
-use vars qw($VERSION);
-$VERSION = '0.01';
 
 use POE;
 use base qw(POE::Session);
 use Errno qw(ENOSYS);
+
+our $VERSION = '0.01';
 
 sub _invoke_state {
   my ($self, $source_session, $state, $etc, $file, $line, $fromstate) = @_;
@@ -74,7 +74,6 @@ sub _invoke_state {
       
        my ( $heap, $nstate ) = ( $1, $2 );
        my ( $object, $method ) = @{$self->[POE::Session::SE_STATES]->{ $nstate }};
-       warn "heap: $heap nstate: $nstate object: $object method: $method";
 
        last SWITCH unless ( $object->can( $method ) );
        last SWITCH unless ( $object->{heaps}->{ $heap } );

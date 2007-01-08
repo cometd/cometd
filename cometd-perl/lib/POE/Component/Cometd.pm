@@ -9,7 +9,7 @@ use Carp;
 use BSD::Resource;
 use Cometd::Transport;
 
-use overload '""' => \&as_string;
+use overload '""' => sub { shift->as_string(); };
 
 use POE qw(
     Wheel::SocketFactory
@@ -31,8 +31,17 @@ our @base_states = qw(
 
 
 sub spawn {
-    my $package = shift;
-    croak "Do not call the spawn method in $package";
+    my ( $package, $self, @states ) = @_;
+    
+    Cometd::Session->create(
+#       options => { trace => 1 },
+        heap => $self,
+        object_states => [
+            $self => [ @base_states, @states ]
+        ],
+    );
+
+    return $self;
 }
 
 sub as_string {
@@ -55,20 +64,26 @@ sub new {
     $opts{LogLevel} = 0
         unless ( $opts{LogLevel} );
 
-    $opts{base_states} = \@base_states;
+    my $self = bless( { 
+        opts => \%opts, 
+        heaps => {},
+        connections => 0,
+    }, $package );
 
     if ($opts{MaxConnections}) {
         my $ret = setrlimit( RLIMIT_NOFILE, $opts{MaxConnections}, $opts{MaxConnections} );
         unless ( defined $ret && $ret ) {
             if ( $> == 0 ) {
-                warn "Unable to set max connections limit";
+                #warn "Unable to set max connections limit";
+                $self->_log(v => 1, msg => "Unable to set max connections limit");
             } else {
-                warn "Need to be root to increase max connections";
+                #warn "Need to be root to increase max connections";
+                $self->_log(v => 1, msg => "Need to be root to increase max connections");
             }
         }
     }
 
-    my $trans = $opts{TransportPlugin} || Cometd::Transport->new();
+    my $trans = $self->{transport} = $opts{TransportPlugin} || Cometd::Transport->new();
     if ($opts{Transports}) {
         # TODO convert this to an array
         foreach my $t ( @{ $opts{Transports} } ) {
@@ -79,12 +94,7 @@ sub new {
         }
     }
 
-    bless( { 
-        opts => \%opts, 
-        heaps => {},
-        connections => 0,
-        transport => $trans,
-    }, $package );
+    return $self;
 }
 
 sub register {
@@ -118,9 +128,8 @@ sub notify {
 
 sub send {
     my $c = $_[OBJECT]->{heaps}->{ $_[ARG0] }->{wheel};
-    if ( $c ) {
-        $c->put( $_[ARG1] );
-    }
+    $c->put( $_[ARG1] )
+        if ( $c );
 }
 
 sub add_heap {
@@ -132,20 +141,18 @@ sub add_heap {
 }
 
 sub create_event {
-    my ( $self, $heap, $event ) = @_;
-    "$heap|$event";
+    # XXX call Cometd::Session to return this?
+    "$_[1]|$_[2]"; # heap|event
 }
 
 sub _log {
     my ( $self, %o ) = @_;
     if ( $o{v} <= $self->{opts}->{LogLevel} ) {
-        my $sender = ( defined $self->{heap} && defined $self->{heap}->{peer_ip} )
-            ? $self->{heap}->{peer_ip} : "?";
+        my $sender = ( defined $self->{heap} && defined $self->{heap}->{addr} )
+            ? $self->{heap}->{addr} : "?";
         my $type = ( defined $o{type} ) ? $o{type} : 'M';
-#        my $caller = (caller(1))[3] || '????';
-#        my $pk = __PACKAGE__.'::';
-#        $caller =~ s/$pk//;
-        my $caller = '';
+        my $caller = (caller(1))[3] || '????';
+        $caller =~ s/POE::Component:://;
         print STDERR '['.localtime()."][$type][$caller][$sender] $o{msg}\n";
     }
 }
@@ -163,45 +170,10 @@ sub cleanup_connection {
 }
 
 sub _default {
-    my ( $self, $cmd, $args ) = @_[OBJECT, ARG0, ARG1];
-    warn "default for $cmd called";
+    my ( $self, $cmd ) = @_[OBJECT, ARG0];
+    $self->_log(v => 1, msg => "_default called, no handler for $cmd");
 }
 
-sub ______default {
-    my ( $self, $cmd, $args ) = @_[OBJECT, ARG0, ARG1];
-
-    if ( $cmd !~ /^_/ && $cmd =~ m/^([^\|]+)\|(.*)/ ) {
-        
-        return unless ($1 && $2);
-
-#        $self->_log(v => 5, msg => "dispatching $2 for $1");
-
-        my $sub = $self."::$2";
-        
-        unless ( defined( &$sub ) ) {
-            $self->_log(v => 1, msg => "subroutine $sub does not exist");
-            #warn "subroutine $sub does not exist";
-            return 0;
-        }
-        
-        if ( $self->{heaps}->{ $1 } ) {
-            $self->{heap} = $self->{heaps}->{ $1 };
-        
-            splice( @_, ARG0, $#_, @$args );
-            # will this leak?
-            splice( @_, HEAP, 1, $self->{heap} );
-       
-            no strict 'refs';
-            goto &$sub;
-
-            $self->{heap} = undef;
-        } else {
-            warn "NO HEAP FOR EVENT $2 WITH REF $1";
-        }
-    }
-    
-    return 0;
-}
 
 sub signals {
     my ( $self, $signal_name ) = @_[OBJECT, ARG0];
