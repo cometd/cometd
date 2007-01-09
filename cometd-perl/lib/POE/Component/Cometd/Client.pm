@@ -19,7 +19,8 @@ sub spawn {
             _start
             _stop
 
-            _status_clients
+            _conn_status
+
             connect_to_client
             remote_connect_success
             remote_connect_timeout
@@ -59,7 +60,7 @@ sub _start {
         }
     }
 
-    $kernel->yield( '_status_clients' );
+    $kernel->yield( '_conn_status' );
 }
 
 sub _stop {
@@ -67,10 +68,10 @@ sub _stop {
     $self->_log(v => 2, msg => $self->{opts}->{Name}." stopped.");
 }
 
-sub _status_clients {
+sub _conn_status {
     my $self = $_[OBJECT];
-    $_[KERNEL]->delay_set( _status_clients => 30 );
-    $self->_log(v => 2, msg => $self->{opts}->{Name}." : in + out connections: $self->{connections}");
+    $_[KERNEL]->delay_set( _conn_status => 30 );
+    $self->_log(v => 2, msg => $self->{opts}->{Name}." : REMOTE connections: $self->{connections}");
 }
 
 
@@ -78,7 +79,6 @@ sub _status_clients {
 sub reconnect_to_client {
     my ( $self, $heap ) = @_;
 
-    $self->{connections}-- if ( $heap->connected );
     $heap->connected( 0 );
 
     delete $heap->{sf};
@@ -107,13 +107,12 @@ sub connect_to_client {
     
     # TODO resolve this addr that isn't an ip, non blocking
     # PoCo DNS
-    my $heap = POE::Component::Cometd::Connection->new(
+
+    my $heap = $self->new_connection(
         peer_ip => $address,
         peer_port => $port,
         addr => $addr,
     );
-
-    $self->add_heap( $heap );
    
     $self->reconnect_to_client( $heap );
     
@@ -141,8 +140,6 @@ sub remote_connect_success {
 #        FlushedEvent => $self->create_event( $heap,'remote_flush' ),
     ) );
     delete $heap->{sf};
-
-    $self->{connections}++;
 
     $heap->connected( 1 );
     

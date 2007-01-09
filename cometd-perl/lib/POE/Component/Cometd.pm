@@ -18,6 +18,7 @@ use POE qw(
     Filter::Line
     Component::Cometd::Connection
 );
+use Scalar::Util qw( weaken );
 use Cometd::Session;
 
 our @base_states = qw(
@@ -35,7 +36,6 @@ sub spawn {
     
     Cometd::Session->create(
 #       options => { trace => 1 },
-        heap => $self,
         object_states => [
             $self => [ @base_states, @states ]
         ],
@@ -132,12 +132,16 @@ sub send {
         if ( $c );
 }
 
-sub add_heap {
+sub new_connection {
     my $self = shift;
-    my $heap = shift;
+   
+    my $con = POE::Component::Cometd::Connection->new( @_ );
+
+    $self->{heaps}->{ "$con" } = $con;
+
+    $self->{connections}++;
     
-    $self->{heaps}->{ "$heap" } = $heap;
-    undef;
+    return $con;
 }
 
 sub create_event {
@@ -150,21 +154,35 @@ sub _log {
     if ( $o{v} <= $self->{opts}->{LogLevel} ) {
         my $sender = ( defined $self->{heap} && defined $self->{heap}->{addr} )
             ? $self->{heap}->{addr} : "?";
-        my $type = ( defined $o{type} ) ? $o{type} : 'M';
-        my $caller = (caller(1))[3] || '????';
+        my $caller = (caller(1))[3] || '?';
         $caller =~ s/POE::Component:://;
-        print STDERR '['.localtime()."][$type][$caller][$sender] $o{msg}\n";
+        print STDERR '['.localtime()."][$self->{connections}][$caller][$sender] $o{msg}\n";
     }
 }
 
 sub cleanup_connection {
-    my ( $self, $heap ) = @_;
+    my ( $self, $con ) = @_;
 
-    return unless( $heap );
-
-    delete $heap->{wheel};
+    return unless( $con );
     
-    $self->{connections}-- if delete $self->{heaps}->{ "$heap" };
+    my $wheel = $con->{wheel};
+    if ( $wheel ) {
+        $wheel->shutdown_input();
+        $wheel->shutdown_output();
+#        weaken( $wheel );
+    }
+    
+    $poe_kernel->alarm_remove( $con->{time_out} )
+        if ( $con->{time_out} );
+
+    delete $con->{wheel};
+    
+    $self->{connections}--;
+    delete $self->{cons}->{ "$con" };
+    
+#    $self->_log(v => 1, msg => "wheel: ".( $wheel ? $wheel : "NONE" ));
+
+    weaken( $con );
 
     undef;
 }

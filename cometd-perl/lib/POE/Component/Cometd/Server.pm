@@ -16,6 +16,8 @@ sub spawn {
         qw(
             _start
             _stop
+
+            _conn_status
         
             local_accept
             local_receive
@@ -56,11 +58,18 @@ sub _start {
 
     $self->_log(v => 2, msg => "Listening to port $self->{opts}->{ListenPort} on $self->{opts}->{ListenAddress}");
 
+    $kernel->yield( '_conn_status' );
 }
 
 sub _stop {
     my $self = shift;
     $self->_log(v => 2, msg => $self->{opts}->{Name}." stopped.");
+}
+
+sub _conn_status {
+    my $self = $_[OBJECT];
+    $_[KERNEL]->delay_set( _conn_status => 10 );
+    $self->_log(v => 2, msg => $self->{opts}->{Name}." : LOCAL connections: $self->{connections}");
 }
 
 # Accept a new connection
@@ -73,19 +82,17 @@ sub local_accept {
     my ($port, $ip) = ( sockaddr_in( getsockname( $socket ) ) );
     $ip = inet_ntoa( $ip );
 
-    my $heap = POE::Component::Cometd::Connection->new(
+    # XXX could do accept check ( plugin )
+    #$self->{transport}->process_plugins( [ 'local_accept', $self, $heap, $socket ] );
+    # XXX then move this to an accept method/event the plugin can call
+    
+    my $heap = $self->new_connection(
         local_ip => $ip,
         local_port => $port,
         peer_ip => $peer_addr,
         peer_port => $peer_port,
         addr => "$peer_addr:$peer_port",
     );
-    
-    # XXX could do accept check ( plugin )
-    #$self->{transport}->process_plugins( [ 'local_accept', $self, $heap, $socket ] );
-    # XXX then move this to an accept method/event the plugin can call
-    
-    $self->add_heap( $heap );
     
     $self->_log(v => 4, msg => $self->{opts}->{Name}." received connection on $ip:$port from $peer_addr:$peer_port");
     
@@ -109,8 +116,6 @@ sub local_accept {
         );
         $self->_log(v => 4, msg => "Timeout set: id ".$heap->{time_out});
     }
-    
-    $self->{connections}++;
     
     $self->{transport}->process_plugins( [ 'local_connected', $self, $heap, $socket ] );
     
@@ -152,7 +157,6 @@ sub local_error {
         # normal disconnect
         $self->{transport}->process_plugins( [ 'local_disconnected', $self, $heap ] );
         $self->_log(v => 1, msg => $self->{opts}->{Name}." - client disconnected : $heap->{addr}");
-        return;
     } else {
         $self->_log(v => 1, msg => $self->{opts}->{Name}." encountered $operation error $errnum: $errstr");
     }
