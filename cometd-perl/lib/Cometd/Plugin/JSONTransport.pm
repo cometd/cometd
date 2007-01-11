@@ -10,21 +10,17 @@ use strict;
 use warnings;
 
 use constant BAYEUX_VERSION => '1.0';
-use constant NAME => 'JSON';
 
 sub new {
     my $class = shift;
-    bless({
+    $class->SUPER::new(
+        plugin_name => 'JSON',
         @_
-    }, $class);
+    );
 }
 
 sub as_string {
     __PACKAGE__;
-}
-
-sub plugin_name {
-    NAME;
 }
 
 # ---------------------------------------------------------
@@ -32,7 +28,7 @@ sub plugin_name {
 
 sub remote_connected {
     my ( $self, $client, $con, $socket ) = @_;
-    $con->transport( NAME );
+    $con->transport( $self->plugin_name );
     if ( my $wheel = $con->wheel ) {
         # POE::Filter::Stackable object:
         my $filter = $wheel->get_input_filter;
@@ -65,7 +61,7 @@ sub remote_receive {
 sub local_connected {
     my ( $self, $server, $con, $socket ) = @_;
 
-    $con->transport( NAME );
+    $con->transport( $self->{pluigin_name} );
     
     if ( my $wheel = $con->wheel ) {
         # POE::Filter::Stackable object

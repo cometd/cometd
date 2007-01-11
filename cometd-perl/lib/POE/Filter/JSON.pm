@@ -15,14 +15,14 @@ sub BUFFER () { 1 }
 sub PARAMS () { 2 }
 
 sub new {
-    my $type = shift;
-    croak "$type requires an even number of parameters" if @_ % 2;
+    my $class = shift;
+    croak "$class requires an even number of parameters" if @_ % 2;
 
-    bless [
+    bless( [
         JSON->new(), # OBJ
         [],          # BUFFER
         { @_ },      # PARAMS
-    ], $type;
+    ], ref $class || $class );
 }
 
 sub get {

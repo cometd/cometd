@@ -9,21 +9,16 @@ use Data::Dumper;
 use strict;
 use warnings;
 
-use constant NAME => 'Manager';
-
 sub new {
     my $class = shift;
-    bless({
+    $class->SUPER::new(
+        plugin_name => 'Manager',
         @_
-    }, $class);
+    );
 }
 
 sub as_string {
     __PACKAGE__;
-}
-
-sub plugin_name {
-    NAME;
 }
 
 # ---------------------------------------------------------
@@ -32,7 +27,7 @@ sub plugin_name {
 sub local_connected {
     my ( $self, $server, $con, $socket ) = @_;
     
-    $con->transport( NAME );
+    $con->transport( $self->plugin_name );
 
     if ( my $wheel = $con->wheel ) {
         # input_filter and output_filter are the same

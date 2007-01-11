@@ -77,25 +77,25 @@ sub _conn_status {
 
 # TODO inc backoff
 sub reconnect_to_client {
-    my ( $self, $heap ) = @_;
+    my ( $self, $con ) = @_;
 
-    $heap->connected( 0 );
+    $con->connected( 0 );
 
-    delete $heap->{sf};
-    delete $heap->{wheel};
+    delete $con->{sf};
+    delete $con->{wheel};
 
     if ( $self->{opts}->{ConnectTimeOut} ) {
-        $heap->{timeout_id} = $poe_kernel->alarm_set(
-            $self->create_event( $heap,'remote_connect_timeout' )
+        $con->{timeout_id} = $poe_kernel->alarm_set(
+            $self->create_event( $con,'remote_connect_timeout' )
                 => time() + $self->{opts}->{ConnectTimeOut}
         );
     }
 
-    $heap->{sf} = POE::Wheel::SocketFactory->new(
-        RemoteAddress => $heap->{peer_ip},
-        RemotePort    => $heap->{peer_port},
-        SuccessEvent  => $self->create_event( $heap,'remote_connect_success' ),
-        FailureEvent  => $self->create_event( $heap,'remote_connect_error' ),
+    $con->{sf} = POE::Wheel::SocketFactory->new(
+        RemoteAddress => $con->{peer_ip},
+        RemotePort    => $con->{peer_port},
+        SuccessEvent  => $self->create_event( $con,'remote_connect_success' ),
+        FailureEvent  => $self->create_event( $con,'remote_connect_error' ),
     );
     
 }
@@ -108,26 +108,26 @@ sub connect_to_client {
     # TODO resolve this addr that isn't an ip, non blocking
     # PoCo DNS
 
-    my $heap = $self->new_connection(
+    my $con = $self->new_connection(
         peer_ip => $address,
         peer_port => $port,
         addr => $addr,
     );
    
-    $self->reconnect_to_client( $heap );
+    $self->reconnect_to_client( $con );
     
     undef;
 }
 
 sub remote_connect_success {
-    my ( $kernel, $self, $heap, $socket ) = @_[KERNEL, OBJECT, HEAP, ARG0];
-    my $addr = $heap->{addr} = join( ':', @$heap{qw( peer_ip peer_port )} ); 
+    my ( $kernel, $self, $con, $socket ) = @_[KERNEL, OBJECT, HEAP, ARG0];
+    my $addr = $con->{addr} = join( ':', @$con{qw( peer_ip peer_port )} ); 
     $self->_log(v => 3, msg => $self->{opts}->{Name}." connected to $addr");
 
-    $kernel->alarm_remove( delete $heap->{timeout_id} )
-        if ( exists( $heap->{timeout_id} ) );
+    $kernel->alarm_remove( delete $con->{timeout_id} )
+        if ( exists( $con->{timeout_id} ) );
     
-    $heap->wheel( POE::Wheel::ReadWrite->new(
+    $con->wheel( POE::Wheel::ReadWrite->new(
         Handle       => $socket,
         Driver       => POE::Driver::SysRW->new(),
         Filter       => POE::Filter::Stackable->new(
@@ -135,36 +135,36 @@ sub remote_connect_success {
                 POE::Filter::Stream->new(),
             ]
         ),
-        InputEvent   => $self->create_event( $heap,'remote_receive' ),
-        ErrorEvent   => $self->create_event( $heap,'remote_error' ),
-#        FlushedEvent => $self->create_event( $heap,'remote_flush' ),
+        InputEvent   => $self->create_event( $con,'remote_receive' ),
+        ErrorEvent   => $self->create_event( $con,'remote_error' ),
+#        FlushedEvent => $self->create_event( $con,'remote_flush' ),
     ) );
-    delete $heap->{sf};
+    delete $con->{sf};
 
-    $heap->connected( 1 );
+    $con->connected( 1 );
     
     warn "connected";
     
-    $self->{transport}->process_plugins( [ 'remote_connected', $self, $heap, $socket ] );
+    $self->{transport}->process_plugins( [ 'remote_connected', $self, $con, $socket ] );
 }
 
 sub remote_connect_error {
-    my ( $kernel, $self, $heap ) = @_[KERNEL, OBJECT, HEAP];
+    my ( $kernel, $self, $con ) = @_[KERNEL, OBJECT, HEAP];
 
-    $self->_log(v => 2, msg => $self->{opts}->{Name}." : Error connecting to $heap->{addr} : $_[ARG0] error $_[ARG1] ($_[ARG2])");
+    $self->_log(v => 2, msg => $self->{opts}->{Name}." : Error connecting to $con->{addr} : $_[ARG0] error $_[ARG1] ($_[ARG2])");
 
-    $kernel->alarm_remove( delete $heap->{timeout_id} )
-        if ( exists( $heap->{timeout_id} ) );
+    $kernel->alarm_remove( delete $con->{timeout_id} )
+        if ( exists( $con->{timeout_id} ) );
 
-    $self->reconnect_to_client( $heap );
+    $self->reconnect_to_client( $con );
 }
 
 sub remote_connect_timeout {
-    my ( $kernel, $self, $heap ) = @_[KERNEL, OBJECT, HEAP];
+    my ( $kernel, $self, $con ) = @_[KERNEL, OBJECT, HEAP];
     
-    $self->_log(v => 2, msg => $self->{opts}->{Name}." : timeout connecting to $heap->{addr}");
+    $self->_log(v => 2, msg => $self->{opts}->{Name}." : timeout connecting to $con->{addr}");
 
-    $self->reconnect_to_client( $heap );
+    $self->reconnect_to_client( $con );
 
     undef;
 }
@@ -188,27 +188,27 @@ sub remote_flush {
 }
 
 sub deliver_event {
-    my ( $self, $event, $heap, $to_source ) = @_;
+    my ( $self, $event, $con, $to_source ) = @_;
     
-    foreach my $heap (keys %{$self->{heaps}}) {
-        # $heap is a stringified version
-        my $heap = $self->{heaps}->{$heap};
-        warn "$heap is on $heap->{addr}";
-        if ( $heap ) {
+    foreach my $con (keys %{$self->{cons}}) {
+        # $con is a stringified version
+        my $con = $self->{cons}->{$con};
+        warn "$con is on $con->{addr}";
+        if ( $con ) {
             if ( $to_source ) {
                 warn "to source";
                 # send only back to the source if requested
-                next if ( $heap ne "$heap" );
+                next if ( $con ne "$con" );
                 warn "sending only to the source";
             } else {
                 # don't send back to the source
-                #next if ( $heap eq "$heap" );
-                warn "heap passed in";
+                #next if ( $con eq "$con" );
+                warn "con passed in";
             }
         }
-        if ( $heap->connected && $heap->wheel ) {
-            warn "putting event $event to $heap->{addr}";
-            $heap->send( $event );
+        if ( $con->connected && $con->wheel ) {
+            warn "putting event $event to $con->{addr}";
+            $con->send( $event );
         }
     }
 }

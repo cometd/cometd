@@ -83,10 +83,10 @@ sub local_accept {
     $ip = inet_ntoa( $ip );
 
     # XXX could do accept check ( plugin )
-    #$self->{transport}->process_plugins( [ 'local_accept', $self, $heap, $socket ] );
+    #$self->{transport}->process_plugins( [ 'local_accept', $self, $con, $socket ] );
     # XXX then move this to an accept method/event the plugin can call
     
-    my $heap = $self->new_connection(
+    my $con = $self->new_connection(
         local_ip => $ip,
         local_port => $port,
         peer_ip => $peer_addr,
@@ -96,7 +96,7 @@ sub local_accept {
     
     $self->_log(v => 4, msg => $self->{opts}->{Name}." received connection on $ip:$port from $peer_addr:$peer_port");
     
-    $heap->{wheel} = POE::Wheel::ReadWrite->new(
+    $con->{wheel} = POE::Wheel::ReadWrite->new(
         Handle          => $socket,
         Driver          => POE::Driver::SysRW->new( BlockSize => 4096 ), 
         Filter          => POE::Filter::Stackable->new(
@@ -104,59 +104,59 @@ sub local_accept {
                 POE::Filter::Stream->new(),
             ]
         ),
-        InputEvent      => $self->create_event( $heap, 'local_receive' ),
-        ErrorEvent      => $self->create_event( $heap, 'local_error' ),
-        FlushedEvent    => $self->create_event( $heap, 'local_flushed' ),
+        InputEvent      => $self->create_event( $con, 'local_receive' ),
+        ErrorEvent      => $self->create_event( $con, 'local_error' ),
+        FlushedEvent    => $self->create_event( $con, 'local_flushed' ),
     );
 
     if ( $self->{opts}->{TimeOut} ) {
-        $heap->{time_out} = $kernel->delay_set(
-            $self->create_event( $heap, 'local_timeout' )
+        $con->{time_out} = $kernel->delay_set(
+            $self->create_event( $con, 'local_timeout' )
                 => $self->{opts}->{TimeOut}
         );
-        $self->_log(v => 4, msg => "Timeout set: id ".$heap->{time_out});
+        $self->_log(v => 4, msg => "Timeout set: id ".$con->{time_out});
     }
     
-    $self->{transport}->process_plugins( [ 'local_connected', $self, $heap, $socket ] );
+    $self->{transport}->process_plugins( [ 'local_connected', $self, $con, $socket ] );
     
     return;
 }
 
 
 sub local_receive {
-    my ( $self, $heap ) = @_[OBJECT, HEAP];
+    my ( $self, $con ) = @_[OBJECT, HEAP];
 #    $self->_log(v => 4, msg => "Receive $_[ARG0]");
-    $_[KERNEL]->alarm_remove( $heap->{time_out} )
-        if ( $heap->{time_out} );
+    $_[KERNEL]->alarm_remove( $con->{time_out} )
+        if ( $con->{time_out} );
     
-    $self->{transport}->process_plugins( [ 'local_receive', $self, $heap, $_[ARG0] ] );
+    $self->{transport}->process_plugins( [ 'local_receive', $self, $con, $_[ARG0] ] );
     
     return;
 }
 
 sub local_flushed {
-    my ( $self, $heap ) = @_[OBJECT, HEAP];
+    my ( $self, $con ) = @_[OBJECT, HEAP];
 #    $self->_log(v => 2, msg => "Flushed");
 
-    if ( $heap && $heap->close_on_flush
-        && $heap->wheel && not $heap->wheel->get_driver_out_octets() ) {
-        $self->cleanup_connection( $heap );
+    if ( $con && $con->close_on_flush
+        && $con->wheel && not $con->wheel->get_driver_out_octets() ) {
+        $self->cleanup_connection( $con );
     }
     
     return;
 }
 
 sub local_error {
-    my ( $kernel, $self, $heap, $operation, $errnum, $errstr ) = 
+    my ( $kernel, $self, $con, $operation, $errnum, $errstr ) = 
         @_[KERNEL, OBJECT, HEAP, ARG0, ARG1, ARG2];
     
-    $heap->{dis_reason} = "$operation error - $errnum: $errstr";
+    $con->{dis_reason} = "$operation error - $errnum: $errstr";
     
     # TODO use constant
     if ( $errnum == 0 ) {
         # normal disconnect
-        $self->{transport}->process_plugins( [ 'local_disconnected', $self, $heap ] );
-        $self->_log(v => 1, msg => $self->{opts}->{Name}." - client disconnected : $heap->{addr}");
+        $self->{transport}->process_plugins( [ 'local_disconnected', $self, $con ] );
+        $self->_log(v => 1, msg => $self->{opts}->{Name}." - client disconnected : $con->{addr}");
     } else {
         $self->_log(v => 1, msg => $self->{opts}->{Name}." encountered $operation error $errnum: $errstr");
     }
@@ -165,16 +165,17 @@ sub local_error {
         # TODO 
     }
     
-    $self->cleanup_connection( $heap );
+    $self->cleanup_connection( $con );
     
     return;
 }
 
 sub local_timeout {
-    my ( $self, $heap ) = @_[OBJECT, HEAP];
+    my ( $self, $con ) = @_[OBJECT, HEAP];
     $self->_log(v => 3, msg => "Timeout");
     
-    $self->cleanup_connection( $heap );
+    # TODO test me
+    $self->cleanup_connection( $con );
     
     return;
 }

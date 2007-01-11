@@ -9,7 +9,7 @@ sub new {
     my $class = shift;
     bless({
         @_
-    }, $class );
+    }, ref $class || $class );
 }
 
 sub send {

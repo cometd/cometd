@@ -50,10 +50,10 @@ sub import {
 
 sub new {
     my $class = shift;
-    bless({ @_ },$class);
+    bless( { @_ }, ref $class || $class );
 }
 
-sub handle_request {
+sub handle_request_reproxy {
     my ($self, $client, $hd) = @_;
     
     my $opts;
@@ -128,7 +128,22 @@ sub handle_request {
         $client->_simple_response(500, 'No client id returned from backend');
         return 1;
     }
+    return $self->handle_request($client, $hd, $op);
+}
+
+sub handle_request_event {
+    my ($self, $client, $hd, $obj) = @_;
+
+    my $op = {};
+    # TODO setup from $obj
+
+    return $self->handle_request($client, $hd, $op);
+}
+
+sub handle_request {
+    my ($self, $client, $hd, $op) = @_;
     
+    my $event;
     # pull action, domain and id from backend request
     $op->{action} ||= 'handshake';
     $op->{tunnelType} ||= 'long-polling';

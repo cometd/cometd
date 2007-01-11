@@ -3,7 +3,8 @@ package Cometd::Filter::JSON;
 use JSON;
 
 sub new {
-    bless( [],shift );
+    my $class = shift;
+    bless( [], ref $class || $class );
 }
 
 # FIXME JSON.pm throws errors with invalid json

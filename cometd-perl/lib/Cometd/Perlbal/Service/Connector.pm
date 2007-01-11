@@ -40,7 +40,7 @@ sub new {
         ]
     );
     
-    bless $self, ref $class || $class;
+    bless( $self, ref $class || $class );
     
     $self->watch_read( 1 );
     

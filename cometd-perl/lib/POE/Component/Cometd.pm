@@ -32,7 +32,7 @@ our @base_states = qw(
 
 
 sub spawn {
-    my ( $package, $self, @states ) = @_;
+    my ( $class, $self, @states ) = @_;
     
     Cometd::Session->create(
 #       options => { trace => 1 },
@@ -49,8 +49,8 @@ sub as_string {
 }
 
 sub new {
-    my $package = shift;
-    croak "$package requires an even number of parameters" if @_ % 2;
+    my $class = shift;
+    croak "$class requires an even number of parameters" if @_ % 2;
     my %opts = @_;
     my $s_alias = $opts{ServerAlias};
     $s_alias = 'cometd_server' unless defined( $s_alias ) and length( $s_alias );
@@ -68,7 +68,7 @@ sub new {
         opts => \%opts, 
         heaps => {},
         connections => 0,
-    }, $package );
+    }, $class );
 
     if ($opts{MaxConnections}) {
         my $ret = setrlimit( RLIMIT_NOFILE, $opts{MaxConnections}, $opts{MaxConnections} );
@@ -83,11 +83,17 @@ sub new {
         }
     }
 
-    my $trans = $self->{transport} = $opts{TransportPlugin} || Cometd::Transport->new();
+    my $trans = $self->{transport} = $opts{TransportPlugin} || 'Cometd::Transport';
+
+    eval "use $trans";
+    
+    $trans = $trans->new();
+    
     if ($opts{Transports}) {
-        # TODO convert this to an array
         foreach my $t ( @{ $opts{Transports} } ) {
+            # it MUST weaken the self ref
             $trans->add_transport(
+                $self,
                 $t->{plugin},
                 $t->{priority} || 0
             );
@@ -102,7 +108,6 @@ sub register {
     $kernel->refcount_increment( $sender->ID, __PACKAGE__ );
     $self->{listeners}->{ $sender->ID } = 1;
     $kernel->post( $sender->ID => cometd_registered => $_[SESSION]->ID );
-    #$self->_log(v => 2, msg => "Listening to port $self->{opts}{ListenPort} on $self->{opts}{ListenAddress}");
     return $_[SESSION]->ID();
 }
 
@@ -151,13 +156,13 @@ sub create_event {
 
 sub _log {
     my ( $self, %o ) = @_;
-    if ( $o{v} <= $self->{opts}->{LogLevel} ) {
-        my $sender = ( defined $self->{heap} && defined $self->{heap}->{addr} )
-            ? $self->{heap}->{addr} : "?";
-        my $caller = (caller(1))[3] || '?';
-        $caller =~ s/POE::Component:://;
-        print STDERR '['.localtime()."][$self->{connections}][$caller][$sender] $o{msg}\n";
-    }
+    return unless ( $o{v} <= $self->{opts}->{LogLevel} );
+    my $sender = ( defined $self->{heap} && defined $self->{heap}->{addr} )
+        ? $self->{heap}->{addr} : "?";
+    my $l = $o{l} ? $o{l}+1 : 1;
+    my $caller = (caller($l))[3] || '?';
+    $caller =~ s/POE::Component/PoCo/;
+    print STDERR '['.localtime()."][$self->{connections}][$caller][$sender] $o{msg}\n";
 }
 
 sub cleanup_connection {
@@ -169,7 +174,6 @@ sub cleanup_connection {
     if ( $wheel ) {
         $wheel->shutdown_input();
         $wheel->shutdown_output();
-#        weaken( $wheel );
     }
     
     $poe_kernel->alarm_remove( $con->{time_out} )
@@ -180,8 +184,6 @@ sub cleanup_connection {
     $self->{connections}--;
     delete $self->{cons}->{ "$con" };
     
-#    $self->_log(v => 1, msg => "wheel: ".( $wheel ? $wheel : "NONE" ));
-
     weaken( $con );
 
     undef;

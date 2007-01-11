@@ -12,7 +12,7 @@ sub new {
         cid => {},
         client => undef,
         @_
-    }, $class);
+    }, ref $class || $class );
 }
 
 sub set_client {
