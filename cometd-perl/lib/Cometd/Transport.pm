@@ -18,32 +18,25 @@ sub new {
     my $class = shift;
     my %opts = @_;
     
-    bless([
+    my $self = bless([
         { }, # transports
         [ ], # priorities
         undef, # session
         undef, # parent
     ], ref $class || $class );
-}
-
-sub add_plugin {
-    my $self = shift;
     
-    return if ( $self->[ SESSIONID ] );
-    
-    my $session = POE::Session->create(
+    # save the session id
+    $self->[ SESSIONID ] =
+    POE::Session->create(
         object_states =>  [
             $self => {
                 _start          =>  '_start',
                 process_plugins =>  '_process_plugins',
             },
         ],
-    ) or die 'Unable to create a new session!';
+    )->ID();
 
-    # save the session id
-    $self->[ SESSIONID ] = $session->ID;
-
-    return undef;
+    return $self;
 }
 
 sub _start {

@@ -83,11 +83,11 @@ sub new {
         }
     }
 
-    my $trans = $self->{transport} = $opts{TransportPlugin} || 'Cometd::Transport';
+    my $trans = $opts{TransportPlugin} || 'Cometd::Transport';
 
     eval "use $trans";
     
-    $trans = $trans->new();
+    $trans = $self->{transport} = $trans->new();
     
     if ($opts{Transports}) {
         foreach my $t ( @{ $opts{Transports} } ) {

@@ -47,7 +47,7 @@ sub local_connected {
 sub local_receive {
     my ( $self, $server, $con, $data ) = @_;
     
-    warn "manager:".Data::Dumper->Dump([ $data ]);
+    $self->_log( v => 4, msg => "manager:".Data::Dumper->Dump([ $data ]));
     
     if ( $data =~ m/^help/i ) {
         $con->send( "commands: dump, quit" );

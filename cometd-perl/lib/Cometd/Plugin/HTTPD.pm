@@ -20,18 +20,27 @@ sub new {
         @_
     );
 
-    $self->{session_id} =
-    POE::Session->create(
-#       options => { trace => 1 },
-        object_states => [
+    return $self;
+}
+
+sub add_plugin {
+    my $self = shift;
+    
+    return if ( $self->{_session_id} );
+    
+    my $session = POE::Session->create(
+        object_states =>  [
             $self => [qw(
                 _start
                 _stop
             )]
         ],
-    )->ID();
+    ) or die 'Unable to create a new session!';
 
-    return $self;
+    # save the session id
+    $self->{_session_id} = $session->ID;
+
+    return undef;
 }
 
 sub as_string {
