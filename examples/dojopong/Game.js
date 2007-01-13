@@ -143,6 +143,7 @@ dojo.extend(dojopong.Game, {
 		
 		onJoin: function(message)
 		{
+            dojo.debug("onJoin");
 			if (message.data.source == cometd.clientId)
 			{
 				this.player.isConnected = true;

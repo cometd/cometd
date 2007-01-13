@@ -22,7 +22,7 @@ dojo.widget.defineWidget(
 	dojo.widget.HtmlWidget,
 	function(){
 		// Must instantiate cometd here because including it within the widget yield unexpected results.
-		cometd.init({ }, "/cometd");
+		cometd.init({ }, "http://localhost:8080/cometd");
 		this.countDown = null;
 		this.countDownNode = null;
 		this.game = new dojopong.Game();
@@ -31,7 +31,7 @@ dojo.widget.defineWidget(
 		this.readyButtonNode = null;
 	},
 	{
-		templatePath: dojo.uri.dojoUri("../examples/dojopong/widget/templates/DojoPong.html"),
+		templatePath: dojo.uri.dojoUri("../dojopong/widget/templates/DojoPong.html"),
 		//templateCssPath: dojo.uri.dojoUri("../dojopong/widget/templates/CountDown.css"),
 		
 		beginGame: function(data)
@@ -57,7 +57,7 @@ dojo.widget.defineWidget(
 			
 			this.game.init(this);
 			this.setUpConnection();
-			dojo.debug("this.game.player: " + this.game.player.setReady);
+			//dojo.debug("this.game.player: " + this.game.player.setReady);
 			dojo.event.connect(this.readyButtonNode, "onclick", this.game.player, "setReady");
 		},
 		
@@ -81,11 +81,12 @@ dojo.widget.defineWidget(
 
 		setUpEvents: function()
 		{
-			
+            dojo.debug("setUpEvents");
 			cometd.subscribe("/dojopong/frame", false, "serverFrame");
 			
 			var fakePlayerNames = new Array("bob", "alex", "dylan", "bill", "jeanine", "ann", "dave", "steve", "elb", "andre", "jeff");
 			
+            dojo.debug("cometd: " + cometd);
 			cometd.publish("/dojopong/join", { nickname: fakePlayerNames[randRange(0, fakePlayerNames.length-1)], source: cometd.clientId });
 			dojo.event.topic.subscribe("/dojopong/game/ready", this, "beginGame");
 			dojo.event.topic.subscribe("/dojopong/countdown/finish", this, "startGame");
@@ -94,6 +95,7 @@ dojo.widget.defineWidget(
 		// @TODO: Finish this method... it gets called at the end of the countdown
 		startGame: function()
 		{
+            dojo.debug("startGame");
 			this.game.start();
 		},
 
