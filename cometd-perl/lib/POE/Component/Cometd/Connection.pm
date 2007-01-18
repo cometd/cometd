@@ -12,12 +12,23 @@ sub new {
     }, ref $class || $class );
 }
 
+sub event {
+    my ( $self, $event ) = @_;
+    return "$self|$event";
+}
+
+sub ID {
+    my $self = shift;
+    return "$self";
+}
+
 sub send {
     my $self = shift;
-    if ( $self->wheel ) {
-        $self->wheel->put(@_);
+    if ( my $wheel = $self->wheel ) {
+        $wheel->put(@_);
     } else {
-        warn "cannot send data, where did my wheel go?! : $self->{dis_reason}";
+        warn "cannot send data, where did my wheel go?!".
+            ( $self->{dis_reason} ? $self->{dis_reason} : '' );
     }
 }
 
@@ -26,17 +37,43 @@ sub write {
 }
 
 sub tcp_cork {
-    # XXX
+    # XXX is this the same as watch_read(0)?
 }
 
 sub watch_write {
-    # XXX
+    my ( $self, $watch ) = @_;
+    if ( my $wheel = $self->wheel ) {
+        if ( $watch ) {
+            $wheel->resume_output();
+        } else {
+            $wheel->pause_output();
+        }
+    }
+}
+
+sub watch_read {
+    my ( $self, $watch ) = @_;
+    if ( my $wheel = $self->wheel ) {
+        if ( $watch ) {
+            $wheel->resume_input();
+        } else {
+            $wheel->pause_input();
+        }
+    }
 }
 
 sub close {
-    # TODO check out bytes and then
-    $self->close_on_flush( 1 );
+    my $self = shift;
+    my $out = $self->wheel->get_driver_out_octets;
+    if ( $out ) {
+        $self->close_on_flush( 1 );
+    } else {
+        if ( my $wheel = $self->wheel ) {
+            $wheel->shutdown_input();
+            $wheel->shutdown_output();
+        }
+        # XXX else
+    }
 }
-
 
 1;

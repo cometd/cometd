@@ -27,7 +27,6 @@ our @base_states = qw(
     unregister
     notify
     signals
-    send
 );
 
 
@@ -131,27 +130,16 @@ sub notify {
     return ( $ret > 0 ) ? 1 : 0;
 }
 
-sub send {
-    my $c = $_[OBJECT]->{heaps}->{ $_[ARG0] }->{wheel};
-    $c->put( $_[ARG1] )
-        if ( $c );
-}
-
 sub new_connection {
     my $self = shift;
    
     my $con = POE::Component::Cometd::Connection->new( @_ );
 
-    $self->{heaps}->{ "$con" } = $con;
+    $self->{heaps}->{ $con->ID } = $con;
 
     $self->{connections}++;
     
     return $con;
-}
-
-sub create_event {
-    # XXX call Cometd::Session to return this?
-    "$_[1]|$_[2]"; # heap|event
 }
 
 sub _log {
@@ -186,7 +174,7 @@ sub cleanup_connection {
     
     weaken( $con );
 
-    undef;
+    return undef;
 }
 
 sub _default {

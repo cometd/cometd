@@ -28,17 +28,16 @@ sub add_plugin {
     
     return if ( $self->{_session_id} );
     
-    my $session = POE::Session->create(
+    # save the session id
+    $self->{_session_id} =
+    POE::Session->create(
         object_states =>  [
             $self => [qw(
                 _start
                 _stop
             )]
         ],
-    ) or die 'Unable to create a new session!';
-
-    # save the session id
-    $self->{_session_id} = $session->ID;
+    )->ID();
 
     return undef;
 }
@@ -77,31 +76,20 @@ sub local_connected {
 
 sub local_receive {
     my ( $self, $server, $con, $req ) = @_;
+
+    $con->wheel->pause_input();
+
 #    warn Data::Dumper->Dump([$req]);
-    my $r;
-    my $c = $req->content;
-    SWITCH: {
-        if ( $c && $c =~ m/^\[/ ) {
-            my $obj = eval { jsonToObj( $c ) };
-            if ( $@ ) {
-                $server->_log(v => 1, msg => "error parsing json: $@");
-            } else {
-                $self->{service}->handle_request_event( $self, $con, $req, $obj );
-                last SWITCH;
-            }
-        }
-        $r = HTTP::Response->new( 500 );
-        $r->content( 'Server Error -  Incorrect JSON format' );
-    }
-    
-    $r = HTTP::Response->new( 200 )
-        unless($r);
-    $r->content_type( 'text/plain' )
-        unless($r->content_type);
-    $r->content( 'cometd test server' )
-        unless($r->content);
+
+    my $r = HTTP::Response->new( 200 );
+    $r->content_type( 'text/plain' );
+    $r->content( 'cometd test server' );
     $con->send( $r );
-    $con->close_on_flush( 1 );
+    $con->close();
+    return 1;
+
+    $self->{service}->handle_request_json( $con, $req, $req );
+    
     return 1;
 }
 

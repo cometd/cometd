@@ -44,6 +44,7 @@ sub cometd_component {
 sub _log {
     my $self = shift;
     if ( my $comp = $self->cometd_component ) {
+        # add one level to caller()
         $comp->_log(@_, l => 1);
     } else {
         my %o = @_;

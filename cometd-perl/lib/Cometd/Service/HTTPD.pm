@@ -53,6 +53,52 @@ sub new {
     bless( { @_ }, ref $class || $class );
 }
 
+sub parse_event {
+    my ( $client, $op, $msg ) = @_;
+    my $event = {};
+    if ( $msg !~ m/^\[/ ) {
+        $client->_simple_response(500, 'Invalid data');
+        return 1;
+    }
+    
+    my $o = eval { jsonToObj( $msg ); };
+    if ( $@ ) {
+        warn $@;
+        $client->_simple_response(500, 'Invalid data');
+        return 1;
+    }
+    
+    # double check
+    if ( ref($o) ne 'ARRAY' ) {
+        $client->_simple_response(500, 'Invalid data');
+        return 1;
+    }
+    
+    # TODO handle multiple messages
+    foreach my $m ( @$o ) {
+        next unless ( ref( $m ) eq 'HASH' );
+        if ( $m->{channel} ) {
+            if ( my ($act) = ( $m->{channel} =~ m!/meta/([^/]+)! ) ) {
+                if ( $act eq 'handshake' || $act eq 'subscribe'
+                || $act eq 'unsubscribe' || $act eq 'connect'
+                || $act eq 'reconnect' ) {
+                    $op->{action} = $act;
+                    $event = $m;
+                } else {
+                    warn "invalid action $act";
+                }
+                last;
+            } else {
+                $op->{action} = 'deliver';
+                $event = $m;
+                last;
+            }
+        }
+    }
+    
+    return $event;
+}
+
 sub handle_request_reproxy {
     my ($self, $client, $hd) = @_;
     
@@ -77,45 +123,8 @@ sub handle_request_reproxy {
     if ( my $msg = $hd->header('x-cometd-data') ) {
         $msg = uri_unescape( $msg );
         warn "X-COMETD-DATA: $msg\n";
-        if ( $msg !~ m/^\[/ ) {
-            $client->_simple_response(500, 'Invalid data');
-            return 1;
-        }
-        
-        my $o = eval { jsonToObj( $msg ); };
-        if ( $@ ) {
-            warn $@;
-            $client->_simple_response(500, 'Invalid data');
-            return 1;
-        }
-        
-        # double check
-        if ( ref($o) ne 'ARRAY' ) {
-            $client->_simple_response(500, 'Invalid data');
-            return 1;
-        }
-        
-        # TODO handle multiple messages
-        foreach my $m ( @$o ) {
-            next unless ( ref( $m ) eq 'HASH' );
-            if ( $m->{channel} ) {
-                if ( my ($act) = ( $m->{channel} =~ m!/meta/([^/]+)! ) ) {
-                    if ( $act eq 'handshake' || $act eq 'subscribe'
-                    || $act eq 'unsubscribe' || $act eq 'connect'
-                    || $act eq 'reconnect' ) {
-                        $op->{action} = $act;
-                        $event = $m;
-                    } else {
-                        warn "invalid action $act";
-                    }
-                    last;
-                } else {
-                    $op->{action} = 'deliver';
-                    $event = $m;
-                    last;
-                }
-            }
-        }
+        $event = $self->parse_event( $client, $op, $msg );
+        return 1 unless ($event);
     }
     
     if ( !$event ) {
@@ -128,22 +137,43 @@ sub handle_request_reproxy {
         $client->_simple_response(500, 'No client id returned from backend');
         return 1;
     }
-    return $self->handle_request($client, $hd, $op);
+    return $self->handle_request( $client, $hd, $op, $event );
 }
 
-sub handle_request_event {
-    my ($self, $client, $hd, $obj) = @_;
+sub handle_request_json {
+    my ($self, $client, $req, $json) = @_;
 
-    my $op = {};
-    # TODO setup from $obj
+    my $op = {
+        # TODO?
+    };
 
-    return $self->handle_request($client, $hd, $op);
+    my $r;
+    if ( $json && $json =~ m/^\[/ ) {
+        my $event = eval { jsonToObj( $json ) };
+        if ( $@ ) {
+            warn "error parsing json: $@";
+        } else {
+            return $self->handle_request( $client, $req, $op, $event );
+        }
+    }
+    $r = HTTP::Response->new( 500 );
+    $r->content( 'Server Error - Incorrect JSON format' );
+    
+    $r = HTTP::Response->new( 200 )
+        unless($r);
+    $r->content_type( 'text/plain' )
+        unless($r->content_type);
+    $r->content( 'cometd test server' )
+        unless($r->content);
+    $client->write( $r );
+    $client->close();
+
+    return 1;
 }
 
 sub handle_request {
-    my ($self, $client, $hd, $op) = @_;
+    my ($self, $client, $hd, $op, $event) = @_;
     
-    my $event;
     # pull action, domain and id from backend request
     $op->{action} ||= 'handshake';
     $op->{tunnelType} ||= 'long-polling';

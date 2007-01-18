@@ -104,14 +104,14 @@ sub local_accept {
                 POE::Filter::Stream->new(),
             ]
         ),
-        InputEvent      => $self->create_event( $con, 'local_receive' ),
-        ErrorEvent      => $self->create_event( $con, 'local_error' ),
-        FlushedEvent    => $self->create_event( $con, 'local_flushed' ),
+        InputEvent      => $con->event( 'local_receive' ),
+        ErrorEvent      => $con->event( 'local_error' ),
+        FlushedEvent    => $con->event( 'local_flushed' ),
     );
 
     if ( $self->{opts}->{TimeOut} ) {
         $con->{time_out} = $kernel->delay_set(
-            $self->create_event( $con, 'local_timeout' )
+            $con->event( 'local_timeout' )
                 => $self->{opts}->{TimeOut}
         );
         $self->_log(v => 4, msg => "Timeout set: id ".$con->{time_out});
@@ -138,7 +138,7 @@ sub local_flushed {
     my ( $self, $con ) = @_[OBJECT, HEAP];
 #    $self->_log(v => 2, msg => "Flushed");
 
-    if ( $con && $con->close_on_flush
+    if ( $con->close_on_flush
         && $con->wheel && not $con->wheel->get_driver_out_octets() ) {
         $self->cleanup_connection( $con );
     }

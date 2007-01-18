@@ -86,7 +86,7 @@ sub reconnect_to_client {
 
     if ( $self->{opts}->{ConnectTimeOut} ) {
         $con->{timeout_id} = $poe_kernel->alarm_set(
-            $self->create_event( $con,'remote_connect_timeout' )
+            $con->event( 'remote_connect_timeout' )
                 => time() + $self->{opts}->{ConnectTimeOut}
         );
     }
@@ -94,8 +94,8 @@ sub reconnect_to_client {
     $con->{sf} = POE::Wheel::SocketFactory->new(
         RemoteAddress => $con->{peer_ip},
         RemotePort    => $con->{peer_port},
-        SuccessEvent  => $self->create_event( $con,'remote_connect_success' ),
-        FailureEvent  => $self->create_event( $con,'remote_connect_error' ),
+        SuccessEvent  => $con->event( 'remote_connect_success' ),
+        FailureEvent  => $con->event( 'remote_connect_error' ),
     );
     
 }
@@ -135,9 +135,9 @@ sub remote_connect_success {
                 POE::Filter::Stream->new(),
             ]
         ),
-        InputEvent   => $self->create_event( $con,'remote_receive' ),
-        ErrorEvent   => $self->create_event( $con,'remote_error' ),
-#        FlushedEvent => $self->create_event( $con,'remote_flush' ),
+        InputEvent   => $con->event( 'remote_receive' ),
+        ErrorEvent   => $con->event( 'remote_error' ),
+#        FlushedEvent => $con->event( 'remote_flush' ),
     ) );
     delete $con->{sf};
 
