@@ -11,6 +11,14 @@ use Cometd::Transport;
 
 use overload '""' => sub { shift->as_string(); };
 
+BEGIN {
+    eval "use POE::Loop::Epoll"; # use Event instead?
+    if ( $@ ) {
+        # XXX
+        #warn "Epoll not found, using default";
+    }
+}
+
 use POE qw(
     Wheel::SocketFactory
     Driver::SysRW
@@ -20,6 +28,28 @@ use POE qw(
 );
 use Scalar::Util qw( weaken );
 use Cometd::Session;
+
+sub import {
+    my $self = shift;
+
+    my @modules = @_;
+
+#    push(@modules, 'Connection');
+
+    my $package = caller();
+    my @failed;
+
+    foreach my $module (@modules) {
+        my $code = "package $package; use POE::Component::Cometd::$module;";
+        eval($code);
+        if ($@) {
+            warn $@;
+            push(@failed, $module);
+        }
+    }
+
+    @failed and croak "could not import qw(" . join(' ', @failed) . ")";
+}
 
 our @base_states = qw(
     _default

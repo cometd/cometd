@@ -2,14 +2,15 @@
 
 use lib 'lib';
 
+# use this before POE, so Cometd loads the Epoll loop if we have it
+use POE::Component::Cometd qw( Client Server );
 use POE;
-use POE::Component::Cometd::Client;
-use POE::Component::Cometd::Server;
-use Cometd::Plugin::JSONTransport;
-use Cometd::Plugin::ChannelManager::InMemory;
-use Cometd::Plugin::HTTPD;
-use Cometd::Plugin::Manager;
-
+use Cometd qw(
+    Plugin::JSONTransport
+    Plugin::ChannelManager::InMemory
+    Plugin::HTTPD
+    Plugin::Manager
+);
 
 my %opts = (
     LogLevel => 4,
