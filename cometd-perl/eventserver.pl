@@ -29,6 +29,8 @@ my $client = POE::Component::Cometd::Client->spawn(
     Transports => [
         {
             plugin => Cometd::Plugin::JSONTransport->new(
+                # TODO move this to the $client, since plugins have access to $client
+                # in events
                 chman => $chanman = Cometd::Plugin::ChannelManager::InMemory->new()
             ),
             priority => 0,

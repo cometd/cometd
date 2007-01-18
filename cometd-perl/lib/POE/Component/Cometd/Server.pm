@@ -22,6 +22,7 @@ sub spawn {
             local_accept
             local_receive
             local_flushed
+            local_wheel_error
             local_error
             local_timeout
         )
@@ -52,7 +53,7 @@ sub _start {
         BindAddress    => $self->{opts}->{ListenAddress},
         Reuse          => 'yes',
         SuccessEvent   => 'local_accept',
-        FailureEvent   => 'local_error',
+        FailureEvent   => 'local_wheel_error',
         ListenQueue    => $self->{opts}->{ListenQueue} || 10000,
     );
 
@@ -62,12 +63,12 @@ sub _start {
 }
 
 sub _stop {
-    my $self = shift;
+    my $self = $_[ OBJECT ];
     $self->_log(v => 2, msg => $self->{opts}->{Name}." stopped.");
 }
 
 sub _conn_status {
-    my $self = $_[OBJECT];
+    my $self = $_[ OBJECT ];
     $_[KERNEL]->delay_set( _conn_status => 10 );
     $self->_log(v => 2, msg => $self->{opts}->{Name}." : LOCAL connections: $self->{connections}");
 }
@@ -76,7 +77,7 @@ sub _conn_status {
 
 sub local_accept {
     my ( $kernel, $self, $socket, $peer_addr, $peer_port ) =
-        @_[KERNEL, OBJECT, ARG0, ARG1, ARG2];
+        @_[ KERNEL, OBJECT, ARG0, ARG1, ARG2 ];
 
     $peer_addr = inet_ntoa( $peer_addr );
     my ($port, $ip) = ( sockaddr_in( getsockname( $socket ) ) );
@@ -96,7 +97,7 @@ sub local_accept {
     
     $self->_log(v => 4, msg => $self->{opts}->{Name}." received connection on $ip:$port from $peer_addr:$peer_port");
     
-    $con->{wheel} = POE::Wheel::ReadWrite->new(
+    $con->wheel( POE::Wheel::ReadWrite->new(
         Handle          => $socket,
         Driver          => POE::Driver::SysRW->new( BlockSize => 4096 ), 
         Filter          => POE::Filter::Stackable->new(
@@ -107,7 +108,7 @@ sub local_accept {
         InputEvent      => $con->event( 'local_receive' ),
         ErrorEvent      => $con->event( 'local_error' ),
         FlushedEvent    => $con->event( 'local_flushed' ),
-    );
+    ) );
 
     if ( $self->{opts}->{TimeOut} ) {
         $con->{time_out} = $kernel->delay_set(
@@ -124,7 +125,7 @@ sub local_accept {
 
 
 sub local_receive {
-    my ( $self, $con ) = @_[OBJECT, HEAP];
+    my ( $self, $con ) = @_[ OBJECT, HEAP ];
 #    $self->_log(v => 4, msg => "Receive $_[ARG0]");
     $_[KERNEL]->alarm_remove( $con->{time_out} )
         if ( $con->{time_out} );
@@ -135,8 +136,7 @@ sub local_receive {
 }
 
 sub local_flushed {
-    my ( $self, $con ) = @_[OBJECT, HEAP];
-#    $self->_log(v => 2, msg => "Flushed");
+    my ( $self, $con ) = @_[ OBJECT, HEAP ];
 
     if ( $con->close_on_flush
         && $con->wheel && not $con->wheel->get_driver_out_octets() ) {
@@ -146,36 +146,50 @@ sub local_flushed {
     return;
 }
 
+sub local_wheel_error {
+    my ( $self, $operation, $errnum, $errstr ) = 
+        @_[ OBJECT, ARG0, ARG1, ARG2 ];
+    
+    $self->_log(v => 1, msg => $self->{opts}->{Name}." encountered $operation error $errnum: $errstr (WHEEL)");
+}
+
 sub local_error {
     my ( $kernel, $self, $con, $operation, $errnum, $errstr ) = 
-        @_[KERNEL, OBJECT, HEAP, ARG0, ARG1, ARG2];
+        @_[ KERNEL, OBJECT, HEAP, ARG0, ARG1, ARG2 ];
     
     $con->{dis_reason} = "$operation error - $errnum: $errstr";
+    
+    $kernel->alarm_remove( $con->{time_out} )
+        if ( $con->{time_out} );
     
     # TODO use constant
     if ( $errnum == 0 ) {
         # normal disconnect
-        $self->{transport}->process_plugins( [ 'local_disconnected', $self, $con ] );
+    #    $self->{transport}->process_plugins( [ 'local_disconnected', $self, $con ] );
         $self->_log(v => 1, msg => $self->{opts}->{Name}." - client disconnected : $con->{addr}");
     } else {
         $self->_log(v => 1, msg => $self->{opts}->{Name}." encountered $operation error $errnum: $errstr");
     }
-    
-    if ( $errnum == EADDRINUSE ) {
-        # TODO 
-    }
+    $self->{transport}->process_plugins( [ 'local_disconnected', $self, $con ] );
     
     $self->cleanup_connection( $con );
+    
+    if ( $errnum == EADDRINUSE ) {
+        $self->shutdown();
+        # TODO more?
+    }
     
     return;
 }
 
 sub local_timeout {
-    my ( $self, $con ) = @_[OBJECT, HEAP];
+    my ( $self, $con ) = @_[ OBJECT, HEAP ];
     $self->_log(v => 3, msg => "Timeout");
     
-    # TODO test me
     $self->cleanup_connection( $con );
+
+    # TODO accessor
+    delete $con->{time_out};
     
     return;
 }

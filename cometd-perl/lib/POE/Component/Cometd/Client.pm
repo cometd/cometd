@@ -81,8 +81,8 @@ sub reconnect_to_client {
 
     $con->connected( 0 );
 
-    delete $con->{sf};
-    delete $con->{wheel};
+    $con->sf( undef );
+    $con->wheel( undef );
 
     if ( $self->{opts}->{ConnectTimeOut} ) {
         $con->{timeout_id} = $poe_kernel->alarm_set(
@@ -91,7 +91,7 @@ sub reconnect_to_client {
         );
     }
 
-    $con->{sf} = POE::Wheel::SocketFactory->new(
+    $con->socket_factory(
         RemoteAddress => $con->{peer_ip},
         RemotePort    => $con->{peer_port},
         SuccessEvent  => $con->event( 'remote_connect_success' ),
@@ -127,6 +127,7 @@ sub remote_connect_success {
     $kernel->alarm_remove( delete $con->{timeout_id} )
         if ( exists( $con->{timeout_id} ) );
     
+    # XXX change this to assume wheel::readwrite in the connection object?
     $con->wheel( POE::Wheel::ReadWrite->new(
         Handle       => $socket,
         Driver       => POE::Driver::SysRW->new(),
@@ -139,11 +140,10 @@ sub remote_connect_success {
         ErrorEvent   => $con->event( 'remote_error' ),
 #        FlushedEvent => $con->event( 'remote_flush' ),
     ) );
-    delete $con->{sf};
+    
+    $con->sf( undef );
 
     $con->connected( 1 );
-    
-    warn "connected";
     
     $self->{transport}->process_plugins( [ 'remote_connected', $self, $con, $socket ] );
 }
@@ -156,7 +156,10 @@ sub remote_connect_error {
     $kernel->alarm_remove( delete $con->{timeout_id} )
         if ( exists( $con->{timeout_id} ) );
 
-    $self->reconnect_to_client( $con );
+    $self->{transport}->process_plugins( [ 'remote_connect_error', $self, $con, @_[ ARG0 .. ARG2 ] ] );
+
+    $self->cleanup_connection( $con );
+#    $self->reconnect_to_client( $con );
 }
 
 sub remote_connect_timeout {
@@ -164,7 +167,8 @@ sub remote_connect_timeout {
     
     $self->_log(v => 2, msg => $self->{opts}->{Name}." : timeout connecting to $con->{addr}");
 
-    $self->reconnect_to_client( $con );
+    $self->{transport}->process_plugins( [ 'remote_connect_timeout', $self, $con ] );
+#    $self->reconnect_to_client( $con );
 
     undef;
 }
@@ -172,27 +176,34 @@ sub remote_connect_timeout {
 sub remote_receive {
     my $self = $_[OBJECT];
     $self->_log(v => 4, msg => $self->{opts}->{Name}." got input ".$_[ARG0]);
-    $self->{transport}->process_plugins( [ 'remote_receive', $self, $_[HEAP], $_[ARG0] ] );
+    $self->{transport}->process_plugins( [ 'remote_receive', $self, @_[ HEAP, ARG0 ] ] );
 }
 
 sub remote_error {
-    my $self = $_[OBJECT];
+    my ($self, $con) = @_[OBJECT, HEAP];
     $self->_log(v => 2, msg => $self->{opts}->{Name}." got error " . join( ' : ', @_[ARG1 .. ARG2] ) );
     
-    $self->reconnect_to_client( $_[HEAP] );
+    if ( $_[ARG1] == 0 ) {
+        $self->{transport}->process_plugins( [ 'remote_disconnected', $self, @_[ HEAP, ARG0 ] ] );
+    } else {
+        $self->{transport}->process_plugins( [ 'remote_error', $self, @_[ HEAP, ARG0 .. ARG2 ] ] );
+    }
+    # TODO reconnect in plugins
+    
+    $self->cleanup_connection( $con );
+#    $self->reconnect_to_client( $_[HEAP] );
 }
 
 sub remote_flush {
 #    $_[OBJECT]->_log(v => 2, msg => "got flush");
-
 }
 
 sub deliver_event {
     my ( $self, $event, $con, $to_source ) = @_;
     
-    foreach my $con (keys %{$self->{cons}}) {
+    # XXX this is crap
+    foreach my $con (values %{$self->{heaps}}) {
         # $con is a stringified version
-        my $con = $self->{cons}->{$con};
         warn "$con is on $con->{addr}";
         if ( $con ) {
             if ( $to_source ) {

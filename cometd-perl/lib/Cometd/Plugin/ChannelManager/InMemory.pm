@@ -4,19 +4,28 @@ package Cometd::Plugin::ChannelManager::InMemory;
 use strict;
 use warnings;
 use Data::Dumper;
+use Scalar::Util qw( weaken );
 
 sub new {
     my $class = shift;
-    bless({
+    my $self = bless({
         ch => {},
         cid => {},
         client => undef,
         @_
     }, ref $class || $class );
+    
+    weaken( $self->{client} )
+        if ( $self->{client} );
+
+    return $self;
 }
 
 sub set_client {
-    shift->{client} = shift;
+    my $self = shift;
+    $self->{client} = shift;
+
+    weaken( $self->{client} );
 }
 
 sub deliver {

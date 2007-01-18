@@ -27,18 +27,19 @@ our @base_states = qw(
     unregister
     notify
     signals
+    _shutdown
 );
 
 
 sub spawn {
     my ( $class, $self, @states ) = @_;
     
-    Cometd::Session->create(
+    $self->{session_id} = Cometd::Session->create(
 #       options => { trace => 1 },
         object_states => [
             $self => [ @base_states, @states ]
         ],
-    );
+    )->ID();
 
     return $self;
 }
@@ -116,6 +117,7 @@ sub unregister {
     delete $self->{listeners}->{ $sender->ID };
 }
 
+# XXX keep this around?
 sub notify {
     my ( $kernel, $self, $name, $data ) = @_[KERNEL, OBJECT, ARG0, ARG1];
     
@@ -130,6 +132,25 @@ sub notify {
     return ( $ret > 0 ) ? 1 : 0;
 }
 
+sub _default {
+    my ( $self, $cmd ) = @_[OBJECT, ARG0];
+    $self->_log(v => 1, msg => "_default called, no handler for $cmd");
+}
+
+sub signals {
+    my ( $self, $signal_name ) = @_[OBJECT, ARG0];
+
+    $self->_log(v => 1, msg => "Client caught SIG$signal_name");
+
+    # to stop ctrl-c / INT
+    if ($signal_name eq 'INT') {
+        #$_[KERNEL]->sig_handled();
+    }
+
+    return 0;
+}
+
+
 sub new_connection {
     my $self = shift;
    
@@ -142,6 +163,7 @@ sub new_connection {
     return $con;
 }
 
+
 sub _log {
     my ( $self, %o ) = @_;
     return unless ( $o{v} <= $self->{opts}->{LogLevel} );
@@ -149,7 +171,7 @@ sub _log {
         ? $self->{heap}->{addr} : "?";
     my $l = $o{l} ? $o{l}+1 : 1;
     my $caller = (caller($l))[3] || '?';
-    $caller =~ s/POE::Component/PoCo/;
+    $caller =~ s/^POE::Component/PoCo/o;
     print STDERR '['.localtime()."][$self->{connections}][$caller][$sender] $o{msg}\n";
 }
 
@@ -170,30 +192,34 @@ sub cleanup_connection {
     delete $con->{wheel};
     
     $self->{connections}--;
-    delete $self->{cons}->{ "$con" };
+    delete $self->{heaps}->{ "$con" };
     
-    weaken( $con );
+#    weaken( $con );
 
     return undef;
 }
 
-sub _default {
-    my ( $self, $cmd ) = @_[OBJECT, ARG0];
-    $self->_log(v => 1, msg => "_default called, no handler for $cmd");
+sub shutdown {
+    my $self = shift;
+    $poe_kernel->call( $self->{session_id} => '_shutdown' );
 }
 
-
-sub signals {
-    my ( $self, $signal_name ) = @_[OBJECT, ARG0];
-
-    $self->_log(v => 1, msg => "Client caught SIG$signal_name");
-
-    # to stop ctrl-c / INT
-    if ($signal_name eq 'INT') {
-        #$_[KERNEL]->sig_handled();
+sub _shutdown {
+    my ( $self, $kernel ) = @_[ OBJECT, KERNEL ];
+    foreach my $con ( values %{$self->{heaps}} ) {
+        $con->close( 1 ); # force
+        $self->cleanup_connection( $con );
+        warn "cleaning connection";
     }
-
-    return 0;
+    $self->{heaps} = {};
+    foreach my $id ( keys %{$self->{listeners}} ) {
+        $kernel->refcount_decrement( $id, __PACKAGE__ );
+    }
+    $kernel->sig( INT => undef );
+    $kernel->alarm_remove_all();
+    delete $self->{wheel};
+    delete $self->{sf};
+    return undef;
 }
 
 1;

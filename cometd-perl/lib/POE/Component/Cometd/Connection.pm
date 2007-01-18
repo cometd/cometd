@@ -1,9 +1,10 @@
 package POE::Component::Cometd::Connection;
 
+use POE qw( Wheel::SocketFactory );
 use Class::Accessor;
 use base qw(Class::Accessor);
 
-__PACKAGE__->mk_accessors( qw( wheel connected close_on_flush transport ) );
+__PACKAGE__->mk_accessors( qw( sf wheel connected close_on_flush transport ) );
 
 sub new {
     my $class = shift;
@@ -20,6 +21,13 @@ sub event {
 sub ID {
     my $self = shift;
     return "$self";
+}
+
+sub socket_factory {
+    my $self = shift;
+    $self->sf( 
+        POE::Wheel::SocketFactory->new( @_ )
+    );
 }
 
 sub send {
@@ -48,7 +56,7 @@ sub watch_write {
         } else {
             $wheel->pause_output();
         }
-    }
+    } # XXX else
 }
 
 sub watch_read {
@@ -59,11 +67,25 @@ sub watch_read {
         } else {
             $wheel->pause_input();
         }
-    }
+    } # XXX else
 }
 
 sub close {
-    my $self = shift;
+    my ( $self, $force ) = @_;
+    
+    if ( $force ) {
+        if ( my $wheel = $self->wheel ) {
+            $wheel->shutdown_input();
+            $wheel->shutdown_output();
+        }
+        # kill the wheel
+        $self->wheel( undef );
+        $self->connected( 0 );
+        # kill the socket factory if any
+        $self->sf( undef );
+        return;
+    }
+    
     my $out = $self->wheel->get_driver_out_octets;
     if ( $out ) {
         $self->close_on_flush( 1 );
@@ -71,8 +93,8 @@ sub close {
         if ( my $wheel = $self->wheel ) {
             $wheel->shutdown_input();
             $wheel->shutdown_output();
-        }
-        # XXX else
+        } # XXX else
+        $self->connected( 0 );
     }
 }
 
