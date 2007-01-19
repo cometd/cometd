@@ -166,10 +166,11 @@ sub local_error {
     if ( $errnum == 0 ) {
         # normal disconnect
     #    $self->{transport}->process_plugins( [ 'local_disconnected', $self, $con ] );
-        $self->_log(v => 1, msg => $self->{opts}->{Name}." - client disconnected : $con->{addr}");
+        $self->_log(v => 4, msg => $self->{opts}->{Name}." - client disconnected : $con->{addr}");
     } else {
-        $self->_log(v => 1, msg => $self->{opts}->{Name}." encountered $operation error $errnum: $errstr");
+        $self->_log(v => 3, msg => $self->{opts}->{Name}." encountered $operation error $errnum: $errstr");
     }
+    
     $self->{transport}->process_plugins( [ 'local_disconnected', $self, $con ] );
     
     $self->cleanup_connection( $con );
