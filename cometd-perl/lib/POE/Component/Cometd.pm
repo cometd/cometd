@@ -26,7 +26,6 @@ use POE qw(
     Filter::Line
     Component::Cometd::Connection
 );
-use Scalar::Util qw( weaken );
 use Cometd::Session;
 
 sub import {
@@ -224,8 +223,6 @@ sub cleanup_connection {
     $self->{connections}--;
     delete $self->{heaps}->{ "$con" };
     
-#    weaken( $con );
-
     return undef;
 }
 
