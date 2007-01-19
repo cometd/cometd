@@ -12,7 +12,7 @@ use Cometd::Transport;
 use overload '""' => sub { shift->as_string(); };
 
 BEGIN {
-    eval "use POE::Loop::Epoll"; # use Event instead?
+#    eval "use POE::Loop::Epoll"; # use Event instead?
     if ( $@ ) {
         # XXX
         #warn "Epoll not found, using default";
