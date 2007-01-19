@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 
-use Test::More tests => 10;
+use Test::More 'no_plan';
 
 BEGIN {
     use_ok 'POE';
