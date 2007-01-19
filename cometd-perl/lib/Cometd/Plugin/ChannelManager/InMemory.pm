@@ -8,17 +8,12 @@ use Scalar::Util qw( weaken );
 
 sub new {
     my $class = shift;
-    my $self = bless({
+    bless({
         ch => {},
         cid => {},
         client => undef,
         @_
     }, ref $class || $class );
-    
-    weaken( $self->{client} )
-        if ( $self->{client} );
-
-    return $self;
 }
 
 sub set_client {
@@ -26,6 +21,16 @@ sub set_client {
     $self->{client} = shift;
 
     weaken( $self->{client} );
+
+    $self->_log(v => 4, msg => "Channel Mangaer Initialized");
+}
+
+sub _log {
+    my $self = shift;
+    if ( my $comp = $self->{client} ) {
+        # add one level to caller()
+        $comp->_log(@_, l => 1);
+    } # XXX else
 }
 
 sub deliver {

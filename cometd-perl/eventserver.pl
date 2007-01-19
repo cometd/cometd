@@ -27,20 +27,14 @@ my $client = POE::Component::Cometd::Client->spawn(
     ClientList => [
 #        '127.0.0.1:2022', # Perlbal Cometd manage port
     ],
+    ChannelManager => Cometd::Plugin::ChannelManager::InMemory->new(),
     Transports => [
         {
-            plugin => Cometd::Plugin::JSONTransport->new(
-                # TODO move this to the $client, since plugins have access to $client
-                # in events
-                chman => $chanman = Cometd::Plugin::ChannelManager::InMemory->new()
-            ),
+            plugin => Cometd::Plugin::JSONTransport->new(),
             priority => 0,
         },
     ],
 );
-
-# the channel manager needs a perlbal connector to deliver events to
-$chanman->set_client( $client );
 
 # backend server accepts connections and receives events
 my $server = POE::Component::Cometd::Server->spawn(

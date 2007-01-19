@@ -129,6 +129,18 @@ sub new {
         }
     }
 
+    # XXX check if we are a client?
+    if (my $ch = delete $opts{ChannelManager}) {
+        if ( $self->can( "deliver_event" ) ) {
+            # keeps a weak ref
+            $ch->set_client( $self )
+                if ( $ch->can( "set_client" ) );
+            $self->{chman} = $ch;
+        } else {
+            die "you can't use a channel manager with a server, read the docs";
+        }
+    }
+
     return $self;
 }
 
