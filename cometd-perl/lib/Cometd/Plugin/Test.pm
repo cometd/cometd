@@ -12,14 +12,29 @@ use warnings;
 
 sub new {
     my $class = shift;
-    $class->SUPER::new(
+    my $self = $class->SUPER::new(
         plugin_name => 'Test',
         @_
     );
+
+    my $tpl = $self->{template};
+    $self->{template} = [ (<$tpl>) ]
+        if ( $tpl && ref $tpl eq 'GLOB' );
+    
+    die "must specify template for tests"
+        unless( $self->{template} );
+
+    return $self;
 }
 
 sub as_string {
     __PACKAGE__;
+}
+
+sub next_item {
+    my $self = shift;
+    
+    shift @{$self->{template}};
 }
 
 # ---------------------------------------------------------
@@ -35,9 +50,17 @@ sub local_connected {
         $wheel->get_input_filter->push(
             POE::Filter::Line->new()
         );
-        Test::More::pass("connected, sending test");
+        Test::More::pass("connected, starting test");
     
-        $con->send( "Test!" );
+        my $n = $self->next_item();
+        if ( $n ) {
+            Test::More::pass("sent '$n'");
+            $con->send( $n );
+        } else {
+            Test::More::fail("no test data in the template");
+            kill(INT => $$);
+            return;
+        }
     }
 
     return 1;
@@ -46,13 +69,28 @@ sub local_connected {
 sub local_receive {
     my ( $self, $server, $con, $data ) = @_;
     
-    if ( $data =~ m/^Test!/i ) {
-        $con->send( "quit" );
-        Test::More::pass("received test, sending quit");
-    } elsif ( $data =~ m/^quit/i ) {
-        $con->send( "goodbye." );
-        Test::More::pass("received quit, closing connection");
-        $con->close();
+    my $n = $self->next_item();
+
+    unless ( $n ) {
+        Test::More::fail("data received '$data' but no matching item");
+        kill(INT => $$);
+        return;
+    }
+
+    if ( $data =~ m/^$n$/ ) {
+        my $send = $self->next_item();
+        Test::More::pass("received valid result for '$n'");
+        if ( $send ) {
+            Test::More::pass("sending '$send'");
+            $con->send( $send );
+        } else {
+            Test::More::pass("last item in template, end of test");
+            $con->close();
+        }
+    } else {
+        Test::More::fail("received INVALID result for '$n' : '$data'");
+        kill(INT => $$);
+        return;
     }
     
     return 1;
@@ -85,14 +123,31 @@ sub remote_connected {
 sub remote_receive {
     my ( $self, $client, $con, $data ) = @_;
     
-    if ( $data =~ m/^Test!/i ) {
-        Test::More::pass("received test, sending test");
-        $con->send( "Test!" );
-    } elsif ( $data =~ m/^quit/i ) {
-        Test::More::pass("received quit, closing connection");
-        #$con->send( "quit" );
-        $con->close();
+    my $n = $self->next_item();
+
+    unless ( $n ) {
+        Test::More::fail("data received '$data' but no matching item");
+        kill(INT => $$);
+        return;
     }
+
+    if ( $data =~ m/^$n$/ ) {
+        Test::More::pass("received valid result for '$n'");
+        my $send = $self->next_item();
+        if ( $send ) {
+            Test::More::pass("sending '$send'");
+            $con->send( $send );
+        } else {
+            Test::More::pass("east item in template, end of test");
+            $con->close();
+        }
+    } else {
+        Test::More::fail("received INVALID result for '$n' : '$data'");
+        kill(INT => $$);
+        return;
+    }
+    
+    return 1;
 }
 
 sub remote_disconnected {
