@@ -51,11 +51,13 @@ sub local_receive {
     
     if ( $data =~ m/^help/i ) {
         $con->send( "commands: dump, quit" );
-    } elsif ( $data =~ m/^dump/i ) {
-        $con->send( Data::Dumper->Dump([ $server ]) );
+    } elsif ( $data =~ m/^dump (.*)/i ) {
+        $con->send( eval "Data::Dumper->Dump([$1])" );
+    } elsif ( $data =~ m/^x (.*)/i ) {
+        $con->send( eval "$1" );
     } elsif ( $data =~ m/^quit/i ) {
         $con->send( "goodbye." );
-        $con->close_on_flush( 1 );
+        $con->close();
     }
     
     return 1;
