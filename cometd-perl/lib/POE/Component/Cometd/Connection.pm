@@ -1,8 +1,8 @@
 package POE::Component::Cometd::Connection;
 
 use POE qw( Wheel::SocketFactory );
-use Class::Accessor;
-use base qw(Class::Accessor);
+use Class::Accessor::Fast;
+use base qw(Class::Accessor::Fast);
 
 __PACKAGE__->mk_accessors( qw( sf wheel connected close_on_flush transport ) );
 
@@ -15,12 +15,12 @@ sub new {
 
 sub event {
     my ( $self, $event ) = @_;
-    return "$self|$event";
+    return $self->ID."|$event";
 }
 
 sub ID {
     my $self = shift;
-    return "$self";
+    return ( "$self" =~ m/\((0x[^\)]+)\)/o )[ 0 ];
 }
 
 sub socket_factory {
@@ -28,6 +28,10 @@ sub socket_factory {
     $self->sf( 
         POE::Wheel::SocketFactory->new( @_ )
     );
+}
+
+sub filter {
+    return shift->wheel->get_input_filter;
 }
 
 sub send {
