@@ -1,7 +1,7 @@
 package Cometd::Plugin;
 
-use Class::Accessor;
-use base qw(Class::Accessor);
+use Class::Accessor::Fast;
+use base qw(Class::Accessor::Fast);
 
 __PACKAGE__->mk_accessors( qw( plugin_name ) );
 
@@ -18,7 +18,7 @@ sub new {
 }
 
 sub as_string {
-    warn "This cometd plugin should of been subclassed!";
+    warn "This cometd plugin should have been subclassed!";
     __PACKAGE__;
 }
 

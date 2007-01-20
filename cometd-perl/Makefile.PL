@@ -13,7 +13,7 @@ WriteMakefile(
         # includes my filter fix for the basic test http server
         'POE'       => '0.3502',
         'BSD::Resource' => undef,
-        'Class::Accessor' => undef,
+        'Class::Accessor::Fast' => undef,
     },
 	'dist'         => {
 		'SUFFIX'       => ".gz",
