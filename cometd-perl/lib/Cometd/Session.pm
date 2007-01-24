@@ -69,35 +69,34 @@ sub _invoke_state {
   # Package and object states are invoked this way.
   SWITCH: {
     if ( $state eq POE::Session::EN_DEFAULT
-       && ( $etc->[0] !~ /^_/ && $etc->[0] =~ m/^([^\|]+)\|(.*)/ ) ) {
+       && ( $etc->[0] =~ m/^([^\|]+)\|(.*)/ ) ) {
        last SWITCH unless ( $1 && $2 );
       
        my ( $heap, $nstate ) = ( $1, $2 );
        my ( $object, $method ) = @{$self->[POE::Session::SE_STATES]->{ $nstate }};
 
        last SWITCH unless ( $object->can( $method ) );
-       last SWITCH unless ( $object->{heaps}->{ $heap } );
-
-       $object->{heap} = $object->{heaps}->{ $heap };
        
-       my $ret =
-         $object->$method                    # package/object (implied)
-           ( $self,                          # session
-             $POE::Kernel::poe_kernel,       # kernel
-             $object->{heap},                # heap
-             $nstate,                        # state
-             $source_session,                # sender
-             undef,                          # unused #6
-             $file,                          # caller file name
-             $line,                          # caller file line
-             $fromstate,                     # caller state
-             @{$etc->[1]}                    # args
-          );
+       if ( $object->{heap} = $object->{heaps}->{ $heap } ) {
+         my $ret =
+           $object->$method                    # package/object (implied)
+             ( $self,                          # session
+               $POE::Kernel::poe_kernel,       # kernel
+               $object->{heap},                # heap
+               $nstate,                        # state
+               $source_session,                # sender
+               undef,                          # unused #6
+               $file,                          # caller file name
+               $line,                          # caller file line
+               $fromstate,                     # caller state
+               @{$etc->[1]}                    # args
+            );
 
-       $object->{heap} = undef;
+         $object->{heap} = undef;
 
-       return $ret;
-     }
+         return $ret;
+       }
+    }
   }
   
   # Inline states are invoked this way.
