@@ -11,7 +11,7 @@ BEGIN {
 }
 
 my %opts = (
-    LogLevel => 1,
+    LogLevel => 4,
     TimeOut => 0,
 );
 
@@ -56,7 +56,7 @@ use warnings;
 sub new {
     my $class = shift;
     $class->SUPER::new(
-        plugin_name => 'Test',
+        name => 'Test',
         @_
     );
 }
@@ -71,17 +71,12 @@ sub as_string {
 sub local_connected {
     my ( $self, $server, $con, $socket ) = @_;
     
-    if ( my $wheel = $con->wheel ) {
-        $con->transport( $self->plugin_name );
-        # input_filter and output_filter are the same
-        # POE::Filter::Stackable object:
-        $wheel->get_input_filter->push(
-            POE::Filter::Line->new()
-        );
-        Test::More::pass("connected, sending test");
+    $self->take_connection( $con );
+    # POE::Filter::Stackable object:
+    $con->filter->push( POE::Filter::Line->new() );
+    Test::More::pass("connected, sending test");
     
-        $con->send( "Test!" );
-    }
+    $con->send( "Test!" );
 
     return 1;
 }
@@ -113,15 +108,10 @@ sub local_disconnected {
 sub remote_connected {
     my ( $self, $client, $con, $socket ) = @_;
 
-    if ( my $wheel = $con->wheel ) {
-        $con->transport( $self->plugin_name );
-        # input_filter and output_filter are the same
-        # POE::Filter::Stackable object:
-        $wheel->get_input_filter->push(
-            POE::Filter::Line->new()
-        );
-    }
-
+    $self->take_connection( $con );
+    # POE::Filter::Stackable object:
+    $con->filter->push( POE::Filter::Line->new() );
+    
     return 1;
 }
 

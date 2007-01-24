@@ -8,6 +8,8 @@ use Cometd::Service::HTTPD;
 use POE qw( Filter::HTTPD );
 use HTTP::Response;
 
+use Data::Dumper;
+
 use strict;
 use warnings;
 
@@ -15,7 +17,7 @@ sub new {
     my $class = shift;
     
     my $self = $class->SUPER::new(
-        plugin_name => 'HTTPD',
+        name => 'HTTPD',
         service => Cometd::Service::HTTPD->new(),
         @_
     );
@@ -62,15 +64,11 @@ sub _stop {
 
 sub local_connected {
     my ( $self, $server, $con, $socket ) = @_;
-    $con->transport( $self->plugin_name );
-    if ( my $wheel = $con->wheel ) {
-        # POE::Filter::Stackable object:
-        $wheel->get_input_filter->push(
-            POE::Filter::HTTPD->new()
-        );
-        
-        # XXX should we pop the stream filter off the top?
-    }
+    $self->take_connection( $con );
+    # POE::Filter::Stackable object:
+    $con->filter->push( POE::Filter::HTTPD->new() );
+    # XXX should we pop the stream filter off the top?
+    # XXX note: I can't until the HTTPD filter supports get_pending
     return 1;
 }
 
@@ -88,7 +86,23 @@ sub local_receive {
     $con->close();
     return 1;
 
-    $self->{service}->handle_request_json( $con, $req, $req );
+    # /cometd?message=%5B%7B%22version%22%3A0.1%2C%22minimumVersion%22%3A0.1%2C%22channel%22%3A%22/meta/handshake%22%7D%5D&jsonp=dojo.io.ScriptSrcTransport._state.id1.jsonpCall
+    $self->_log(v => 4, msg => Data::Dumper->Dump([$req]));
+    
+    if ( my $uri = $req->uri ) {
+        my %ops = map {
+            my ( $k, $v ) = split( '=' );
+            $self->_log(v => 4, msg => "$k:$v" );
+            $k => URI::Escape::uri_unescape( $v )
+        } split( '&', ( $uri =~ m/\?(.*)/ )[ 0 ] );
+
+        $self->_log(v => 4, msg => Data::Dumper->Dump([\%ops]));
+        
+        $self->{service}->handle_request_json( $con, $req, $ops{message} );
+    } else {
+        $self->{service}->handle_request_json( $con, $req, $req->content );
+    }
+
     
     return 1;
 }

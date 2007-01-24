@@ -13,7 +13,7 @@ use warnings;
 sub new {
     my $class = shift;
     my $self = $class->SUPER::new(
-        plugin_name => 'Test',
+        name => 'Test',
         @_
     );
 
@@ -43,24 +43,20 @@ sub next_item {
 sub local_connected {
     my ( $self, $server, $con, $socket ) = @_;
     
-    if ( my $wheel = $con->wheel ) {
-        $con->transport( $self->plugin_name );
-        # input_filter and output_filter are the same
-        # POE::Filter::Stackable object:
-        $wheel->get_input_filter->push(
-            POE::Filter::Line->new()
-        );
-        Test::More::pass("connected, starting test");
+    $self->take_connection( $con );
+    # POE::Filter::Stackable object:
+    $con->filter->push( POE::Filter::Line->new() );
+
+    Test::More::pass("connected, starting test");
     
-        my $n = $self->next_item();
-        if ( $n ) {
-            Test::More::pass("sent '$n'");
-            $con->send( $n );
-        } else {
-            Test::More::fail("no test data in the template");
-            kill(INT => $$);
-            return;
-        }
+    my $n = $self->next_item();
+    if ( $n ) {
+        Test::More::pass("sent '$n'");
+        $con->send( $n );
+    } else {
+        Test::More::fail("no test data in the template");
+        kill(INT => $$);
+        return;
     }
 
     return 1;
@@ -108,14 +104,10 @@ sub local_disconnected {
 sub remote_connected {
     my ( $self, $client, $con, $socket ) = @_;
 
-    if ( my $wheel = $con->wheel ) {
-        $con->transport( $self->plugin_name );
-        # input_filter and output_filter are the same
-        # POE::Filter::Stackable object:
-        $wheel->get_input_filter->push(
-            POE::Filter::Line->new()
-        );
-    }
+    $self->take_connection( $con );
+
+    # POE::Filter::Stackable object:
+    $con->filter->push( POE::Filter::Line->new() );
 
     return 1;
 }

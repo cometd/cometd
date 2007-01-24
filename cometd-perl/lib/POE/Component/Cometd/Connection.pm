@@ -1,10 +1,10 @@
 package POE::Component::Cometd::Connection;
 
-use POE qw( Wheel::SocketFactory );
+use POE qw( Wheel::SocketFactory Wheel::ReadWrite );
 use Class::Accessor::Fast;
 use base qw(Class::Accessor::Fast);
 
-__PACKAGE__->mk_accessors( qw( sf wheel connected close_on_flush transport ) );
+__PACKAGE__->mk_accessors( qw( sf wheel connected close_on_flush plugin active_time parent_id ) );
 
 sub new {
     my $class = shift;
@@ -20,13 +20,20 @@ sub event {
 
 sub ID {
     my $self = shift;
-    return ( "$self" =~ m/\((0x[^\)]+)\)/o )[ 0 ];
+    return ( "$self" =~ m/\(0x([^\)]+)\)/o )[ 0 ];
 }
 
 sub socket_factory {
     my $self = shift;
     $self->sf( 
         POE::Wheel::SocketFactory->new( @_ )
+    );
+}
+
+sub wheel_readwrite {
+    my $self = shift;
+    $self->wheel(
+        POE::Wheel::ReadWrite->new( @_ )
     );
 }
 
@@ -37,10 +44,11 @@ sub filter {
 sub send {
     my $self = shift;
     if ( my $wheel = $self->wheel ) {
+        $self->active();
         $wheel->put(@_);
     } else {
-        warn "cannot send data, where did my wheel go?!".
-            ( $self->{dis_reason} ? $self->{dis_reason} : '' );
+        $self->_log( v => 1, msg => "cannot send data, where did my wheel go?!".
+            ( $self->{dis_reason} ? $self->{dis_reason} : '' ) );
     }
 }
 
@@ -72,11 +80,6 @@ sub watch_read {
             $wheel->pause_input();
         }
     } # XXX else
-}
-
-sub close {
-    my ( $self, $force ) = @_;
-    
     if ( $force ) {
         if ( my $wheel = $self->wheel ) {
             $wheel->shutdown_input();
@@ -90,16 +93,33 @@ sub close {
         return;
     }
     
-    my $out = $self->wheel->get_driver_out_octets;
-    if ( $out ) {
-        $self->close_on_flush( 1 );
-    } else {
-        if ( my $wheel = $self->wheel ) {
+}
+
+sub close {
+    my ( $self, $force ) = @_;
+    
+    if ( my $wheel = $self->wheel ) {
+        my $out = $wheel->get_driver_out_octets;
+        if ( !$force && $out ) {
+            $self->close_on_flush( 1 );
+        } else {
             $wheel->shutdown_input();
             $wheel->shutdown_output();
-        } # XXX else
-        $self->connected( 0 );
+            $self->wheel( undef )
+                if ( $force );
+            $self->connected( 0 );
+            # kill the socket factory if any
+            $self->sf( undef );
+        }
     }
+}
+
+sub active {
+    shift->active_time( time() );
+}
+
+sub _log {
+    $poe_kernel->call( $self->parent_id => _log => ( l => 1, @_ ) );
 }
 
 1;

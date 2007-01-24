@@ -3,7 +3,7 @@ package POE::Component::Cometd::Server;
 use strict;
 use warnings;
 
-use POE qw( Component::Cometd );
+use POE qw( Component::Cometd Wheel::SocketFactory );
 use base qw( POE::Component::Cometd );
 use Errno qw( EADDRINUSE );
 use Socket;
@@ -14,7 +14,7 @@ sub spawn {
     my $self = $class->SUPER::spawn(
         $class->SUPER::new( @_ ),
         qw(
-            _start
+            _startup
             _stop
 
             _conn_status
@@ -35,7 +35,7 @@ sub as_string {
     __PACKAGE__;
 }
 
-sub _start {
+sub _startup {
     my ( $kernel, $session, $self ) = @_[KERNEL, SESSION, OBJECT];
 
     $session->option( @{$self->{opts}->{ServerSessionOptions}} )
@@ -45,7 +45,7 @@ sub _start {
 
     $kernel->sig( INT => 'signals' );
 
-    $self->{opts}{Name} ||= "Server";
+    $self->{name} ||= "Server";
 
     # create a socket factory
     $self->{wheel} = POE::Wheel::SocketFactory->new(
@@ -59,18 +59,18 @@ sub _start {
 
     $self->_log(v => 2, msg => "Listening to port $self->{opts}->{ListenPort} on $self->{opts}->{ListenAddress}");
 
-    $kernel->yield( '_conn_status' );
+    $kernel->yield( '_conn_status' );    
 }
 
 sub _stop {
     my $self = $_[ OBJECT ];
-    $self->_log(v => 2, msg => $self->{opts}->{Name}." stopped.");
+    $self->_log(v => 2, msg => $self->{name}." stopped.");
 }
 
 sub _conn_status {
     my $self = $_[ OBJECT ];
     $_[KERNEL]->delay_set( _conn_status => 10 );
-    $self->_log(v => 2, msg => $self->{opts}->{Name}." : LOCAL connections: $self->{connections}");
+    $self->_log(v => 2, msg => $self->{name}." : LOCAL connections: $self->{connections}");
 }
 
 # Accept a new connection
@@ -95,9 +95,9 @@ sub local_accept {
         addr => "$peer_addr:$peer_port",
     );
     
-    $self->_log(v => 4, msg => $self->{opts}->{Name}." received connection on $ip:$port from $peer_addr:$peer_port");
+    #$self->_log(v => 4, msg => $self->{name}." received connection on $ip:$port from $peer_addr:$peer_port");
     
-    $con->wheel( POE::Wheel::ReadWrite->new(
+    $con->wheel_readwrite(
         Handle          => $socket,
         Driver          => POE::Driver::SysRW->new( BlockSize => 4096 ), 
         Filter          => POE::Filter::Stackable->new(
@@ -108,7 +108,7 @@ sub local_accept {
         InputEvent      => $con->event( 'local_receive' ),
         ErrorEvent      => $con->event( 'local_error' ),
         FlushedEvent    => $con->event( 'local_flushed' ),
-    ) );
+    );
 
     if ( $self->{opts}->{TimeOut} ) {
         $con->{time_out} = $kernel->delay_set(
@@ -150,7 +150,7 @@ sub local_wheel_error {
     my ( $self, $operation, $errnum, $errstr ) = 
         @_[ OBJECT, ARG0, ARG1, ARG2 ];
     
-    $self->_log(v => 1, msg => $self->{opts}->{Name}." encountered $operation error $errnum: $errstr (WHEEL)");
+    $self->_log(v => 1, msg => $self->{name}." encountered $operation error $errnum: $errstr (WHEEL)");
 }
 
 sub local_error {
@@ -166,9 +166,9 @@ sub local_error {
     if ( $errnum == 0 ) {
         # normal disconnect
     #    $self->{transport}->process_plugins( [ 'local_disconnected', $self, $con ] );
-        $self->_log(v => 4, msg => $self->{opts}->{Name}." - client disconnected : $con->{addr}");
+        $self->_log(v => 4, msg => $self->{name}." - client disconnected : $con->{addr}");
     } else {
-        $self->_log(v => 3, msg => $self->{opts}->{Name}." encountered $operation error $errnum: $errstr");
+        $self->_log(v => 3, msg => $self->{name}." encountered $operation error $errnum: $errstr");
     }
     
     $self->{transport}->process_plugins( [ 'local_disconnected', $self, $con ] );
@@ -176,8 +176,7 @@ sub local_error {
     $self->cleanup_connection( $con );
     
     if ( $errnum == EADDRINUSE ) {
-        $self->shutdown();
-        # TODO more?
+        $self->shutdown_all();
     }
     
     return;

@@ -8,6 +8,7 @@ use POE;
 use Cometd qw(
     Plugin::JSONTransport
     Plugin::ChannelManager::InMemory
+    Plugin::ChannelManager::Memcached
     Plugin::HTTPD
     Plugin::Manager
 );
@@ -21,13 +22,13 @@ my %opts = (
 my $chanman;
 
 # conencts to perlbal servers that handle client connections
-my $client = POE::Component::Cometd::Client->spawn(
+POE::Component::Cometd::Client->spawn(
     %opts,
     Name => 'Perlbal Connector',
     ClientList => [
 #        '127.0.0.1:2022', # Perlbal Cometd manage port
     ],
-    ChannelManager => Cometd::Plugin::ChannelManager::InMemory->new(),
+    ChannelManager => $chanman = Cometd::Plugin::ChannelManager::InMemory->new(),
     Transports => [
         {
             plugin => Cometd::Plugin::JSONTransport->new(),
@@ -36,8 +37,9 @@ my $client = POE::Component::Cometd::Client->spawn(
     ],
 );
 
+# FIXME $chanman
 # backend server accepts connections and receives events
-my $server = POE::Component::Cometd::Server->spawn(
+POE::Component::Cometd::Server->spawn(
     %opts,
     Name => 'Cometd Backend Server',
     ListenPort => 6000,
@@ -53,7 +55,7 @@ my $server = POE::Component::Cometd::Server->spawn(
 );
 
 # comet http server
-my $http_server = POE::Component::Cometd::Server->spawn(
+POE::Component::Cometd::Server->spawn(
     %opts,
     Name => 'HTTP Server',
     ListenPort => 8080,
@@ -64,10 +66,11 @@ my $http_server = POE::Component::Cometd::Server->spawn(
             priority => 0,
         },
     ],
+    ChannelManager => Cometd::Plugin::ChannelManager::Memcached->new(),
 );
 
 # backend server
-my $manager = POE::Component::Cometd::Server->spawn(
+POE::Component::Cometd::Server->spawn(
     %opts,
     Name => 'Manager',
     ListenPort => 5000,

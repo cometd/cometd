@@ -17,7 +17,7 @@ my %opts = (
 );
 
 # conencts to perlbal servers that handle client connections
-my $c1 = POE::Component::Cometd::Client->spawn(
+POE::Component::Cometd::Client->spawn(
     %opts,
     Name => 'Memcached 1',
     ClientList => [
@@ -32,7 +32,7 @@ my $c1 = POE::Component::Cometd::Client->spawn(
 );
 
 # backend server
-my $manager = POE::Component::Cometd::Server->spawn(
+POE::Component::Cometd::Server->spawn(
     %opts,
     Name => 'Manager',
     ListenPort => 5000,

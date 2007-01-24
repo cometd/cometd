@@ -16,7 +16,7 @@ sub spawn {
     my $self = $class->SUPER::spawn(
         $class->SUPER::new( @_ ),
         qw(
-            _start
+            _startup
             _stop
 
             _conn_status
@@ -38,7 +38,7 @@ sub as_string {
     __PACKAGE__;
 }
 
-sub _start {
+sub _startup {
     my ( $kernel, $session, $self ) = @_[KERNEL, SESSION, OBJECT];
 
     $session->option( @{$self->{opts}->{ClientSessionOptions}} )
@@ -46,7 +46,7 @@ sub _start {
     $kernel->alias_set( $self->{opts}->{ClientAlias} )
         if ( $self->{opts}->{ClientAlias} );
     
-    $self->{opts}{Name} ||= "Client";
+    $self->{name} ||= "Client";
 
     $kernel->sig( INT => 'signals' );
     
@@ -65,13 +65,13 @@ sub _start {
 
 sub _stop {
     my $self = $_[OBJECT];
-    $self->_log(v => 2, msg => $self->{opts}->{Name}." stopped.");
+    $self->_log(v => 2, msg => $self->{name}." stopped.");
 }
 
 sub _conn_status {
     my $self = $_[OBJECT];
     $_[KERNEL]->delay_set( _conn_status => 30 );
-    $self->_log(v => 2, msg => $self->{opts}->{Name}." : REMOTE connections: $self->{connections}");
+    $self->_log(v => 2, msg => $self->{name}." : REMOTE connections: $self->{connections}");
 }
 
 
@@ -122,7 +122,7 @@ sub connect_to_client {
 sub remote_connect_success {
     my ( $kernel, $self, $con, $socket ) = @_[KERNEL, OBJECT, HEAP, ARG0];
     my $addr = $con->{addr} = join( ':', @$con{qw( peer_ip peer_port )} ); 
-    $self->_log(v => 3, msg => $self->{opts}->{Name}." connected to $addr");
+    $self->_log(v => 3, msg => $self->{name}." connected to $addr");
 
     $kernel->alarm_remove( delete $con->{timeout_id} )
         if ( exists( $con->{timeout_id} ) );
@@ -151,7 +151,7 @@ sub remote_connect_success {
 sub remote_connect_error {
     my ( $kernel, $self, $con ) = @_[KERNEL, OBJECT, HEAP];
 
-    $self->_log(v => 2, msg => $self->{opts}->{Name}." : Error connecting to $con->{addr} : $_[ARG0] error $_[ARG1] ($_[ARG2])");
+    $self->_log(v => 2, msg => $self->{name}." : Error connecting to $con->{addr} : $_[ARG0] error $_[ARG1] ($_[ARG2])");
 
     $kernel->alarm_remove( delete $con->{timeout_id} )
         if ( exists( $con->{timeout_id} ) );
@@ -165,7 +165,7 @@ sub remote_connect_error {
 sub remote_connect_timeout {
     my ( $kernel, $self, $con ) = @_[KERNEL, OBJECT, HEAP];
     
-    $self->_log(v => 2, msg => $self->{opts}->{Name}." : timeout connecting to $con->{addr}");
+    $self->_log(v => 2, msg => $self->{name}." : timeout connecting to $con->{addr}");
 
     $self->{transport}->process_plugins( [ 'remote_connect_timeout', $self, $con ] );
 #    $self->reconnect_to_client( $con );
@@ -175,13 +175,13 @@ sub remote_connect_timeout {
 
 sub remote_receive {
     my $self = $_[OBJECT];
-    $self->_log(v => 4, msg => $self->{opts}->{Name}." got input ".$_[ARG0]);
+    $self->_log(v => 4, msg => $self->{name}." got input ".$_[ARG0]);
     $self->{transport}->process_plugins( [ 'remote_receive', $self, @_[ HEAP, ARG0 ] ] );
 }
 
 sub remote_error {
     my ($self, $con) = @_[OBJECT, HEAP];
-    $self->_log(v => 2, msg => $self->{opts}->{Name}." got error " . join( ' : ', @_[ARG1 .. ARG2] ) );
+    $self->_log(v => 2, msg => $self->{name}." got error " . join( ' : ', @_[ARG1 .. ARG2] ) );
     
     if ( $_[ARG1] == 0 ) {
         $self->{transport}->process_plugins( [ 'remote_disconnected', $self, @_[ HEAP, ARG0 ] ] );

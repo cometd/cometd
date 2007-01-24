@@ -14,7 +14,7 @@ use constant BAYEUX_VERSION => '1.0';
 sub new {
     my $class = shift;
     $class->SUPER::new(
-        plugin_name => 'JSON',
+        name => 'JSON',
         @_
     );
 }
@@ -28,23 +28,17 @@ sub as_string {
 
 sub remote_connected {
     my ( $self, $client, $con, $socket ) = @_;
-    $con->transport( $self->plugin_name );
-    if ( my $wheel = $con->wheel ) {
-        # POE::Filter::Stackable object:
-        my $filter = $wheel->get_input_filter;
+    $self->take_connection( $con );
+    # POE::Filter::Stackable object:
+    my $filter = $con->filter;
+
+    $filter->push( POE::Filter::Line->new() );
+
+    $con->send( "bayeux " . BAYEUX_VERSION );
         
-        $filter->push(
-            POE::Filter::Line->new()
-        );
+    $filter->push( POE::Filter::JSON->new() );
         
-        $wheel->put( "bayeux " . BAYEUX_VERSION );
-        
-        $filter->push(
-            POE::Filter::JSON->new()
-        );
-        
-        # XXX should we pop the stream filter off the top?
-    }
+    # XXX should we pop the stream filter off the top?
     return 1;
 }
 
@@ -61,20 +55,17 @@ sub remote_receive {
 sub local_connected {
     my ( $self, $server, $con, $socket ) = @_;
 
-    $con->transport( $self->{pluigin_name} );
+    $self->take_connection( $con );
     
-    if ( my $wheel = $con->wheel ) {
-        # POE::Filter::Stackable object
-        $wheel->get_input_filter->push(
-            POE::Filter::Line->new(),
-            POE::Filter::JSON->new(),
-        );
+    # POE::Filter::Stackable object
+    $con->filter->push(
+        POE::Filter::Line->new(),
+        POE::Filter::JSON->new(),
+    );
+    # XXX should we pop the stream filter off the top?
     
-        # XXX $con->send?
-        $wheel->put({ bayeux => BAYEUX_VERSION });
-    
-        # XXX should we pop the stream filter off the top?
-    }
+    $con->send({ bayeux => BAYEUX_VERSION });
+ 
     return 1;
 }
 

@@ -2,10 +2,10 @@ package Cometd::Plugin;
 
 use Class::Accessor::Fast;
 use base qw(Class::Accessor::Fast);
-
-__PACKAGE__->mk_accessors( qw( plugin_name ) );
-
 use Scalar::Util qw( weaken );
+use POE;
+
+__PACKAGE__->mk_accessors( qw( name parent_id ) );
 
 use overload '""' => sub { shift->as_string(); };
 
@@ -32,30 +32,14 @@ sub handle_event {
     return undef;
 }
 
-sub cometd_component {
-    my $self = shift;
-    if ( my $comp = shift ) {
-        $self->{_comp} = $comp;
-        weaken( $self->{_comp} );
-    }
-    return $self->{_comp};
+sub _log {
+    $poe_kernel->call( shift->parent_id => _log => @_ );
 }
 
-sub _log {
-    my $self = shift;
-    if ( my $comp = $self->cometd_component ) {
-        # add one level to caller()
-        $comp->_log(@_, l => 1);
-    } else {
-        my %o = @_;
-    #    return unless ( $o{v} <= ( $self->{LogLevel} || 10 ) );
-        my $sender = ( defined $self->{heap} && defined $self->{heap}->{addr} )
-            ? $self->{heap}->{addr} : "?";
-        my $l = $o{l} ? $o{l}+1 : 1;
-        my $caller = (caller($l))[3] || '?';
-        $caller =~ s/POE::Component/PoCo/;
-        print STDERR '['.localtime()."][?][$caller][$sender] $o{msg}\n";
-    }
+sub take_connection {
+    my ($self, $con) = @_;
+    $con->plugin( $self->name );
+    return 1;
 }
 
 # Plugins can define the following methods

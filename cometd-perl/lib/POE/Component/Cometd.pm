@@ -8,8 +8,12 @@ our $VERSION = '0.01';
 use Carp;
 use BSD::Resource;
 use Cometd::Transport;
+use Scalar::Util qw( weaken );
 
 use overload '""' => sub { shift->as_string(); };
+
+# weak list of all cometd components
+our @COMPONENTS;
 
 BEGIN {
 #    eval "use POE::Loop::Epoll"; # use Event instead?
@@ -51,24 +55,26 @@ sub import {
 }
 
 our @base_states = qw(
+    _start
     _default
     register
     unregister
     notify
     signals
     _shutdown
+    _log
 );
 
 
 sub spawn {
     my ( $class, $self, @states ) = @_;
     
-    $self->{session_id} = Cometd::Session->create(
+    Cometd::Session->create(
 #       options => { trace => 1 },
         object_states => [
             $self => [ @base_states, @states ]
         ],
-    )->ID();
+    );
 
     return $self;
 }
@@ -81,19 +87,17 @@ sub new {
     my $class = shift;
     croak "$class requires an even number of parameters" if @_ % 2;
     my %opts = @_;
-    my $s_alias = $opts{ServerAlias};
-    $s_alias = 'cometd_server' unless defined( $s_alias ) and length( $s_alias );
-    $opts{ServerAlias} = $s_alias;
-    my $c_alias = $opts{ClientAlias};
-    $c_alias = 'cometd_client' unless defined( $c_alias ) and length( $c_alias );
-    $opts{ClientAlias} = $c_alias;
+    my $s_alias = $opts{Alias};
+    $s_alias = 'cometd' unless defined( $s_alias ) and length( $s_alias );
+    $opts{Alias} = $s_alias;
     $opts{ListenPort} ||= 6000;
     $opts{TimeOut} = defined $opts{TimeOut} ? $opts{TimeOut} : 30;
     $opts{ListenAddress} ||= '0.0.0.0';
     $opts{LogLevel} = 0
         unless ( $opts{LogLevel} );
 
-    my $self = bless( { 
+    my $self = bless( {
+        name => $opts{Name},
         opts => \%opts, 
         heaps => {},
         connections => 0,
@@ -112,34 +116,8 @@ sub new {
         }
     }
 
-    my $trans = $opts{TransportPlugin} || 'Cometd::Transport';
-
-    eval "use $trans";
-    
-    $trans = $self->{transport} = $trans->new();
-    
-    if ($opts{Transports}) {
-        foreach my $t ( @{ $opts{Transports} } ) {
-            # it MUST weaken the self ref
-            $trans->add_transport(
-                $self,
-                $t->{plugin},
-                $t->{priority} || 0
-            );
-        }
-    }
-
-    # XXX check if we are a client?
-    if (my $ch = delete $opts{ChannelManager}) {
-        if ( $self->can( "deliver_event" ) ) {
-            # keeps a weak ref
-            $ch->set_client( $self )
-                if ( $ch->can( "set_client" ) );
-            $self->{chman} = $ch;
-        } else {
-            die "you can't use a channel manager with a server, read the docs";
-        }
-    }
+    push(@COMPONENTS, $self);
+    weaken( $COMPONENTS[ -1 ] );
 
     return $self;
 }
@@ -173,8 +151,42 @@ sub notify {
     return ( $ret > 0 ) ? 1 : 0;
 }
 
+sub _start {
+    my $self = $_[OBJECT];
+
+    $self->{session_id} = $_[SESSION]->ID();
+
+    if ($self->{opts}->{Transports}) {
+        my $trans = $self->{opts}->{TransportPlugin} || 'Cometd::Transport';
+
+        eval "use $trans";
+    
+        $trans = $self->{transport} = $trans->new( parent_id => $self->{session_id} );
+     
+        foreach my $t ( @{ $self->{opts}->{Transports} } ) {
+            $trans->add_transport(
+                $self->{session_id},
+                $t->{plugin},
+                $t->{priority} || 0
+            );
+        }
+    }
+    
+    # XXX check if we are a client?
+    if (my $ch = delete $self->{opts}->{ChannelManager}) {
+        # keeps a weak ref
+        $ch->set_comp( $self )
+            if ( $ch->can( "set_comp" ) );
+        $self->{chman} = $ch;
+    }
+
+
+    $_[KERNEL]->yield('_startup');
+}
+
 sub _default {
     my ( $self, $cmd ) = @_[OBJECT, ARG0];
+    return if ( $cmd =~ m/^_/ );
     $self->_log(v => 1, msg => "_default called, no handler for $cmd");
 }
 
@@ -195,7 +207,10 @@ sub signals {
 sub new_connection {
     my $self = shift;
    
-    my $con = POE::Component::Cometd::Connection->new( @_ );
+    my $con = POE::Component::Cometd::Connection->new(
+        parent_id => $self->{session_id},
+        @_
+    );
 
     $self->{heaps}->{ $con->ID } = $con;
 
@@ -206,7 +221,13 @@ sub new_connection {
 
 
 sub _log {
-    my ( $self, %o ) = @_;
+    my ( $self, %o );
+    if (ref $_[KERNEL]) {
+        ($self, %o ) = @_[ OBJECT, ARG0 .. $#_ ];
+#        $o{l}++;
+    } else {
+        ($self, %o ) = @_;
+    }
     return unless ( $o{v} <= $self->{opts}->{LogLevel} );
     my $sender = ( defined $self->{heap} && defined $self->{heap}->{addr} )
         ? $self->{heap}->{addr} : "?";
@@ -233,9 +254,15 @@ sub cleanup_connection {
     delete $con->{wheel};
     
     $self->{connections}--;
-    delete $self->{heaps}->{ "$con" };
+    delete $self->{heaps}->{ $con->ID };
     
     return undef;
+}
+      
+sub shutdown_all {
+    foreach my $comp (@COMPONENTS) {
+        $comp->shutdown();
+    }
 }
 
 sub shutdown {
@@ -248,7 +275,6 @@ sub _shutdown {
     foreach my $con ( values %{$self->{heaps}} ) {
         $con->close( 1 ); # force
         $self->cleanup_connection( $con );
-        warn "cleaning connection";
     }
     $self->{heaps} = {};
     foreach my $id ( keys %{$self->{listeners}} ) {
@@ -261,5 +287,9 @@ sub _shutdown {
     return undef;
 }
 
+# TODO class:accessor::fast
+sub name {
+    shift->{name};
+}
 1;
 

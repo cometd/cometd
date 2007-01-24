@@ -205,13 +205,17 @@ sub action_handshake {
 
     # $event = [{"version":0.1,"minimumVersion":0.1,"channel":"/meta/handshake"}]
     
-    my $res = $self->new_request( $client, 200 );
+    my $res = $self->new_response( $client, 200 );
     $res->header( 'Content-Type', 'text/html' );
 
     $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
         if ( $hd->header( 'set-cookie' ) );
 
-    $client->write( $res->to_string_ref );
+    if ( $res->can( "to_string_ref" ) ) {
+        $client->write( $res->to_string_ref );
+    } else {
+        $client->write( $res );
+    }
     $client->tcp_cork( 1 );
     $client->watch_write( 0 ) if $client->write( objToJson({
         channel => '/meta/handshake',
@@ -246,14 +250,18 @@ sub action_subscribe {
     # TODO have the event server do this response
     $ev->{successful} = 'true';
     
-    my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
+    my $res = $client->{res_headers} = $self->new_response( 200 );
     $res->header( 'Content-Type', 'text/html' );
     #$res->header( 'Connection', 'close' );
 
     $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
         if ( $hd->header( 'set-cookie' ) );
  
-    $client->write( $res->to_string_ref );
+    if ( $res->can( "to_string_ref" ) ) {
+        $client->write( $res->to_string_ref );
+    } else {
+        $client->write( $res );
+    }
     $client->tcp_cork( 1 );
     $client->watch_write( 0 ) if $client->write( objToJson($ev) );
     $client->close();
@@ -294,13 +302,19 @@ sub action_deliver {
    
     multiplex_send($ev);
     
-    my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
+    my $res = $client->{res_headers} = $self->new_response( 200 );
     $res->header( 'Content-Type', 'text/html' );
 
     $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
         if ( $hd->header( 'set-cookie' ) );
  
-    $client->watch_write( 0 ) if $client->write( $res->to_string_ref );
+    if ( $res->can( "to_string_ref" ) ) {
+        $client->watch_write( 0 )
+            if $client->write( $res->to_string_ref );
+    } else {
+        $client->watch_write( 0 )
+            if $client->write( $res );
+    }
     $client->tcp_cork( 1 );
 
     # XXX perhaps the client should deceide if this is a long-polling event delivery post
@@ -319,7 +333,7 @@ sub action_connect {
         return 1;
     }
 
-    my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
+    my $res = $client->{res_headers} = $self->new_response( 200 );
     $res->header( 'Content-Type', 'text/html' );
     #$res->header( 'Connection', 'close' );
 
@@ -391,14 +405,20 @@ sub action_connect {
         }
     
         # $event = [{"version":0.1,"minimumVersion":0.1,"channel":"/meta/handshake"}]
-        my $res = $client->{res_headers} = Perlbal::HTTPHeaders->new_response( 200 );
+        my $res = $client->{res_headers} = $self->new_response( 200 );
         $res->header( 'Content-Type', 'text/html' );
         #$res->header( 'Connection', 'close' );
 
         $res->header( 'Set-Cookie', $hd->header( 'set-cookie' ) )
             if ( $hd->header( 'set-cookie' ) );
  
-        $client->watch_write( 0 ) if $client->write( $res->to_string_ref );
+        if ( $res->can( "to_string_ref" ) ) {
+            $client->watch_write( 0 )
+                if $client->write( $res->to_string_ref );
+        } else {
+            $client->watch_write( 0 )
+                if $client->write( $res );
+        }
         $client->tcp_cork( 1 );
 
         # XXX set timer or let client drop connection?
@@ -409,7 +429,11 @@ sub action_connect {
                 
     } elsif ( $op->{tunnelType} eq 'iframe' ) {
         
-        $client->write( $res->to_string_ref );
+        if ( $res->can( "to_string_ref" ) ) {
+            $client->write( $res->to_string_ref );
+        } else {
+            $client->write( $res );
+        }
         $client->tcp_cork( 1 );
     
         $op->{domain} =~ s/'/\\'/g;
@@ -480,8 +504,10 @@ sub action_connect {
     }
 }
 
-sub new_request {
-    warn "TODO";
+sub new_response {
+    my $self = shift;
+    #Perlbal::HTTPHeaders->new_response(@_);
+    HTTP::Response->new(@_);
 }
 
 sub multiplex_send {
