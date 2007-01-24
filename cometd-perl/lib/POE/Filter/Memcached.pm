@@ -93,15 +93,16 @@ sub get_one {
                     if ( $self->[DATA] ) {
                         $self->[DATA]->{$1} = $2;
                     } else {
-                        $self->[DATA] = {
-                            cmd => 'stats',
-                            $1 => $2,
-                        };
+                        $self->[DATA] = { $1 => $2 };
                     }
                     next STATE;
                 } elsif ( $data eq 'END' ) {
-                    push(@out, { data => $self->[DATA] });
-                    $self->[DATA] = undef;
+                    if ( ref( $self->[DATA] ) eq 'ARRAY' || !defined( $self->[DATA] ) ) {
+                        push(@out, { data => $self->[DATA], cmd => 'get' });
+                    } else {
+                        push(@out, { data => $self->[DATA], cmd => 'stats' });
+                    }
+                    delete $self->[DATA];
                 } elsif ( $data =~ m/^(OK|NOT_STORED|STORED|DELETED|NOT_FOUND|ERROR)/ ) {
                     push(@out, { status => $1 });
                 } elsif ( $data =~ m/^((:?CLIENT|SERVER)_ERROR) (.*)/ ) {
