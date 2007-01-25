@@ -21,7 +21,7 @@ sub set_comp {
 
     weaken( $self->{comp} );
 
-    $self->_log(v => 4, msg => "Channel Mangaer Initialized");
+    $self->_log(v => 4, msg => "Subscription Mangaer Initialized");
 }
 
 sub _log {

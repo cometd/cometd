@@ -26,7 +26,7 @@ sub new {
         comp => POE::Component::Cometd::Client->spawn(
             LogLevel => 4,
             TimeOut => 0,
-            Name => 'SubMan Memcached',
+            Name => 'Subscription Manager - Memcached',
             ClientList => [
                 '127.0.0.1:11211',
             ],
@@ -47,7 +47,6 @@ sub new {
 sub event_connected {
     my $self = shift;
    
-    warn "connected";
     # ok to start
     $self->{cli}->set( { key => 'foo2', obj => 'it worked', callback => sub { my ($r,$s) = @_; warn "$s"; } } );
     $self->{cli}->get( { key => 'foo2', callback => sub { my ($r,$s) = @_; warn "$s"; } } );

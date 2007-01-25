@@ -173,7 +173,7 @@ sub _start {
     }
     
     # XXX check if we are a client?
-    if (my $ch = delete $self->{opts}->{ChannelManager}) {
+    if (my $ch = delete $self->{opts}->{SubManager}) {
         # keeps a weak ref
         $ch->set_comp( $self )
             if ( $ch->can( "set_comp" ) );

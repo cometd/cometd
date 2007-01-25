@@ -7,8 +7,8 @@ use POE::Component::Cometd qw( Client Server );
 use POE;
 use Cometd qw(
     Plugin::JSONTransport
-    Plugin::ChannelManager::InMemory
-    Plugin::ChannelManager::Memcached
+    Plugin::SubManager::InMemory
+    Plugin::SubManager::Memcached
     Plugin::HTTPD
     Plugin::Manager
 );
@@ -28,7 +28,7 @@ POE::Component::Cometd::Client->spawn(
     ClientList => [
 #        '127.0.0.1:2022', # Perlbal Cometd manage port
     ],
-    ChannelManager => $chanman = Cometd::Plugin::ChannelManager::InMemory->new(),
+    SubManager => $chanman = Cometd::Plugin::SubManager::InMemory->new(),
     Transports => [
         {
             plugin => Cometd::Plugin::JSONTransport->new(),
@@ -66,7 +66,7 @@ POE::Component::Cometd::Server->spawn(
             priority => 0,
         },
     ],
-    ChannelManager => Cometd::Plugin::ChannelManager::Memcached->new(),
+    SubManager => Cometd::Plugin::SubManager::Memcached->new(),
 );
 
 # backend server
