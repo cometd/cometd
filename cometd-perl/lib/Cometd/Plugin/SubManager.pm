@@ -1,4 +1,4 @@
-package Cometd::Plugin::ChannelManager;
+package Cometd::Plugin::SubManager;
 
 use strict;
 use warnings;

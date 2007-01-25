@@ -1,12 +1,12 @@
-package Cometd::Plugin::ChannelManager::Memcached;
+package Cometd::Plugin::SubManager::Memcached;
 
 use strict;
 use warnings;
 
-use Cometd qw( Plugin::ChannelManager Plugin::Memcached );
+use Cometd qw( Plugin::SubManager Plugin::Memcached );
 use POE qw( Component::Cometd::Client );
 
-use base qw( Cometd::Plugin::ChannelManager );
+use base qw( Cometd::Plugin::SubManager );
 
 sub new {
     my $class = shift;
@@ -26,7 +26,7 @@ sub new {
         comp => POE::Component::Cometd::Client->spawn(
             LogLevel => 4,
             TimeOut => 0,
-            Name => 'ChannelMan Memcached',
+            Name => 'SubMan Memcached',
             ClientList => [
                 '127.0.0.1:11211',
             ],
