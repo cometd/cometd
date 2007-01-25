@@ -1,6 +1,6 @@
 package POE::Filter::Memcached;
 # Copyright 2007 (c) David Davis - All Rights Reserved
-# Artistic License / BSD
+# see LICENSE
 
 use strict;
 use warnings;
@@ -108,7 +108,7 @@ sub get_one {
                 } elsif ( $data =~ m/^((:?CLIENT|SERVER)_ERROR) (.*)/ ) {
                     push(@out, { status => $1, error => $2 });
                 } elsif ( $data =~ m/^VERSION (.*)/ ) {
-                    push(@out, { version => $1 });
+                    push(@out, { cmd => 'version', version => $1 });
                 } else {
                     push(@out, { result => $data });
                 }
@@ -146,12 +146,12 @@ sub put {
                 "$cmd ".join(' ',@{$_->{keys}}).$self->[OUTPUT_LITERAL]
             );
         } elsif ( $cmd eq 'delete' ) {
-            my $time = exists( $_->{time} ) ? $_->{time} : 0;
+            my $time = defined( $_->{time} ) ? $_->{time} : 0;
             push( @raw,
                 "$cmd $_->{key} $time".$self->[OUTPUT_LITERAL]
             );
         } elsif ( $cmd eq 'incr' || $cmd eq 'decr' ) {
-            my $val = exists( $_->{by} ) ? $_->{by} : 1;
+            my $val = defined( $_->{by} ) ? $_->{by} : 1;
             push( @raw,
                 "$cmd $_->{key} $val".$self->[OUTPUT_LITERAL]
             );
@@ -160,10 +160,10 @@ sub put {
         } elsif ( $cmd eq 'stats' ) {
             # stats\r\n
             # stats <args>\r\n (not documented)
-            push( @raw, $cmd.( exists( $_->{args} ) ? ' '.$_->{args} : '' ).$self->[OUTPUT_LITERAL] );
+            push( @raw, $cmd.( defined( $_->{args} ) ? ' '.$_->{args} : '' ).$self->[OUTPUT_LITERAL] );
         } else {
-            my $flags = exists( $_->{flags} ) ? $_->{flags} : 0;
-            my $exptime = exists( $_->{exp} ) ? $_->{exp} : 0;
+            my $flags = defined( $_->{flags} ) ? $_->{flags} : 0;
+            my $exptime = defined( $_->{exp} ) ? $_->{exp} : 0;
             my $len = length( $_->{obj} );
             if ( $cmd =~ m/^(set|add|replace)$/ ) {
                 # set <key> <flags> <exptime> <bytes>\r\n
@@ -171,7 +171,6 @@ sub put {
                     "$cmd $_->{key} $flags $exptime $len".$self->[OUTPUT_LITERAL].
                     "$_->{obj}".$self->[OUTPUT_LITERAL]
                 );
-                warn "sending: $raw[-1]";
             } else {
                 warn "invalid command used in memcached filter: $cmd";
             }
