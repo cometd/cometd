@@ -22,6 +22,11 @@ may make its way back into cometd
 
 * THE SIMPLE TEST IS BROKEN DUE TO HEAVY DEVELOPMENT *
 
+There are some tests that can be run:
+
+perl Makefile.PL
+(satisfy deps)
+make test
 
 
 David Davis

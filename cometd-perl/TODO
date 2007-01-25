@@ -15,13 +15,13 @@ Legend:
 [*] Client and Server, PoCo::Cometd::Server PoCo::Cometd::Client
 [?] Rename poco cometd * to poco server/client cometd
 [*] Perlbal service
-[*] Simple Channel system
+[+] Subscription system
+[ ] Event system
 [*] Transport plugin system
 [+] Manager plugin
 [+] HTTPD plugin
-[ ] Tests
+[+] Tests
 [ ] Apache::Backend::Cometd ( see Apache::Backend::POE )
-[?] Data::ObjectDriver integration into Channel system
 [ ] Config file in conf/ for eventserver.pl
 [ ] update PoCo::Filter::JSON to use JSON::Syck or create PoCo::Filter::JSON::Syck
 [?] add perlbal to the manifest?
