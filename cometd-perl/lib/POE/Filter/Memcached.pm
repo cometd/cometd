@@ -98,7 +98,10 @@ sub get_one {
                     next STATE;
                 } elsif ( $data eq 'END' ) {
                     if ( ref( $self->[DATA] ) eq 'ARRAY' || !defined( $self->[DATA] ) ) {
-                        push(@out, { data => $self->[DATA], cmd => 'get' });
+                        # XXX delete len?
+                        my $data = { map { delete $_->{len}; delete $_->{key} => $_ } @{$self->[DATA]} };
+                        #my $data = $self->[DATA];
+                        push(@out, { data => $data, cmd => 'get' });
                     } else {
                         push(@out, { data => $self->[DATA], cmd => 'stats' });
                     }
