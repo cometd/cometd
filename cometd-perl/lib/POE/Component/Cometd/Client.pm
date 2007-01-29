@@ -41,20 +41,20 @@ sub as_string {
 sub _startup {
     my ( $kernel, $session, $self ) = @_[KERNEL, SESSION, OBJECT];
 
-    $session->option( @{$self->{opts}->{ClientSessionOptions}} )
-        if ( $self->{opts}->{ClientSessionOptions} ); 
-    $kernel->alias_set( $self->{opts}->{ClientAlias} )
-        if ( $self->{opts}->{ClientAlias} );
+    $session->option( @{$self->{opts}->{client_session_options}} )
+        if ( $self->{opts}->{client_session_options} ); 
+    $kernel->alias_set( $self->{opts}->{client_alias} )
+        if ( $self->{opts}->{client_alias} );
     
     $self->{name} ||= "Client";
 
     $kernel->sig( INT => 'signals' );
     
     # connect to our client list
-    if ( $self->{opts}->{ClientList} 
-        && ref( $self->{opts}->{ClientList} ) eq 'ARRAY' ) {
+    if ( $self->{opts}->{client_list} 
+        && ref( $self->{opts}->{client_list} ) eq 'ARRAY' ) {
         my $d = .1;
-        foreach ( @{$self->{opts}->{ClientList}} ) {
+        foreach ( @{$self->{opts}->{client_list}} ) {
             $kernel->delay_set( connect_to_client => $d => $_ );
             $d += .05;
         }
@@ -84,10 +84,10 @@ sub reconnect_to_client {
     $con->sf( undef );
     $con->wheel( undef );
 
-    if ( $self->{opts}->{ConnectTimeOut} ) {
+    if ( $self->{opts}->{connect_time_out} ) {
         $con->{timeout_id} = $poe_kernel->alarm_set(
             $con->event( 'remote_connect_timeout' )
-                => time() + $self->{opts}->{ConnectTimeOut}
+                => time() + $self->{opts}->{connect_time_out}
         );
     }
 

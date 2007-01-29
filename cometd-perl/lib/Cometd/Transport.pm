@@ -1,6 +1,7 @@
 package Cometd::Transport;
 
 use POE;
+use Cometd;
 
 use strict;
 use warnings;
@@ -16,8 +17,9 @@ sub CONNECTION() { 2 }
 
 sub new {
     my $class = shift;
-    my %opts = @_;
-    
+    my %opts = &adjust_params;
+    require Data::Dumper;
+    print Data::Dumper->Dump([\%opts]);
     my $self = bless([
         { },              # transports
         [ ],              # priorities

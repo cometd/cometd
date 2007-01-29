@@ -7,6 +7,7 @@ our $VERSION = '0.01';
 
 use Carp;
 use BSD::Resource;
+use Cometd;
 use Cometd::Transport;
 use Scalar::Util qw( weaken );
 
@@ -86,25 +87,25 @@ sub as_string {
 sub new {
     my $class = shift;
     croak "$class requires an even number of parameters" if @_ % 2;
-    my %opts = @_;
-    my $s_alias = $opts{Alias};
+    my %opts = &adjust_params;
+    my $s_alias = $opts{alias};
     $s_alias = 'cometd' unless defined( $s_alias ) and length( $s_alias );
-    $opts{Alias} = $s_alias;
-    $opts{ListenPort} ||= 6000;
-    $opts{TimeOut} = defined $opts{TimeOut} ? $opts{TimeOut} : 30;
-    $opts{ListenAddress} ||= '0.0.0.0';
-    $opts{LogLevel} = 0
-        unless ( $opts{LogLevel} );
+    $opts{alias} = $s_alias;
+    $opts{listen_port} ||= 6000;
+    $opts{time_out} = defined $opts{time_out} ? $opts{time_out} : 30;
+    $opts{listen_address} ||= '0.0.0.0';
+    $opts{log_level} = 0
+        unless ( $opts{log_level} );
 
     my $self = bless( {
-        name => $opts{Name},
+        name => $opts{name},
         opts => \%opts, 
         heaps => {},
         connections => 0,
     }, $class );
 
-    if ($opts{MaxConnections}) {
-        my $ret = setrlimit( RLIMIT_NOFILE, $opts{MaxConnections}, $opts{MaxConnections} );
+    if ($opts{max_connections}) {
+        my $ret = setrlimit( RLIMIT_NOFILE, $opts{max_connections}, $opts{max_connections} );
         unless ( defined $ret && $ret ) {
             if ( $> == 0 ) {
                 #warn "Unable to set max connections limit";
@@ -156,14 +157,15 @@ sub _start {
 
     $self->{session_id} = $_[SESSION]->ID();
 
-    if ($self->{opts}->{Transports}) {
-        my $trans = $self->{opts}->{TransportPlugin} || 'Cometd::Transport';
+    if ($self->{opts}->{transports}) {
+        my $trans = $self->{opts}->{transport_plugin} || 'Cometd::Transport';
 
         eval "use $trans";
     
         $trans = $self->{transport} = $trans->new( parent_id => $self->{session_id} );
      
-        foreach my $t ( @{ $self->{opts}->{Transports} } ) {
+        foreach my $t ( @{ $self->{opts}->{transports} } ) {
+            $t = adjust_params($t);
             $trans->add_transport(
                 $self->{session_id},
                 $t->{plugin},
@@ -173,11 +175,11 @@ sub _start {
     }
     
     # XXX check if we are a client?
-    if (my $ch = delete $self->{opts}->{SubManager}) {
+    if (my $ch = delete $self->{opts}->{sub_manager}) {
         # keeps a weak ref
         $ch->set_comp( $self )
             if ( $ch->can( "set_comp" ) );
-        $self->{chman} = $ch;
+        $self->{sub_manager} = $ch;
     }
 
 
@@ -228,7 +230,7 @@ sub _log {
     } else {
         ($self, %o ) = @_;
     }
-    return unless ( $o{v} <= $self->{opts}->{LogLevel} );
+    return unless ( $o{v} <= $self->{opts}->{log_level} );
     my $sender = ( defined $self->{heap} && defined $self->{heap}->{addr} )
         ? $self->{heap}->{addr} : "?";
     my $l = $o{l} ? $o{l}+1 : 1;
@@ -291,5 +293,6 @@ sub _shutdown {
 sub name {
     shift->{name};
 }
+
 1;
 

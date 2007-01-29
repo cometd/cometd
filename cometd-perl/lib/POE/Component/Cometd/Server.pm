@@ -38,10 +38,10 @@ sub as_string {
 sub _startup {
     my ( $kernel, $session, $self ) = @_[KERNEL, SESSION, OBJECT];
 
-    $session->option( @{$self->{opts}->{ServerSessionOptions}} )
-        if ( $self->{opts}->{ServerSessionOptions} );
-    $kernel->alias_set( $self->{opts}->{ServerAlias} )
-        if ( $self->{opts}->{ServerAlias} );
+    $session->option( @{$self->{opts}->{server_session_options}} )
+        if ( $self->{opts}->{server_session_options} );
+    $kernel->alias_set( $self->{opts}->{server_alias} )
+        if ( $self->{opts}->{server_alias} );
 
     $kernel->sig( INT => 'signals' );
 
@@ -49,15 +49,15 @@ sub _startup {
 
     # create a socket factory
     $self->{wheel} = POE::Wheel::SocketFactory->new(
-        BindPort       => $self->{opts}->{ListenPort},
-        BindAddress    => $self->{opts}->{ListenAddress},
+        BindPort       => $self->{opts}->{listen_port},
+        BindAddress    => $self->{opts}->{listen_address},
         Reuse          => 'yes',
         SuccessEvent   => 'local_accept',
         FailureEvent   => 'local_wheel_error',
-        ListenQueue    => $self->{opts}->{ListenQueue} || 10000,
+        ListenQueue    => $self->{opts}->{listen_queue} || 10000,
     );
 
-    $self->_log(v => 2, msg => "Listening to port $self->{opts}->{ListenPort} on $self->{opts}->{ListenAddress}");
+    $self->_log(v => 2, msg => "Listening to port $self->{opts}->{listen_port} on $self->{opts}->{listen_address}");
 
     $kernel->yield( '_conn_status' );    
 }
@@ -110,10 +110,10 @@ sub local_accept {
         FlushedEvent    => $con->event( 'local_flushed' ),
     );
 
-    if ( $self->{opts}->{TimeOut} ) {
+    if ( $self->{opts}->{time_out} ) {
         $con->{time_out} = $kernel->delay_set(
             $con->event( 'local_timeout' )
-                => $self->{opts}->{TimeOut}
+                => $self->{opts}->{time_out}
         );
         $self->_log(v => 4, msg => "Timeout set: id ".$con->{time_out});
     }

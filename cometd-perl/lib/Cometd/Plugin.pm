@@ -4,6 +4,7 @@ use Class::Accessor::Fast;
 use base qw(Class::Accessor::Fast);
 use Scalar::Util qw( weaken );
 use POE;
+use Cometd;
 
 __PACKAGE__->mk_accessors( qw( name parent_id ) );
 
@@ -14,7 +15,9 @@ use warnings;
 
 sub new {
     my $class = shift;
-    bless( { @_ }, ref $class || $class );
+    bless( {
+        &adjust_params
+    }, ref $class || $class );
 }
 
 sub as_string {

@@ -44,7 +44,7 @@ sub remote_connected {
 
 sub remote_receive {
     my ($self, $client, $con, $event) = @_;
-    $self->{chman}->deliver($con, $event);
+    $self->{sub_manager}->deliver($con, $event);
     return 1;
 }
 
@@ -71,7 +71,7 @@ sub local_connected {
 
 sub local_receive {
     my ($self, $server, $con, $event) = @_;
-    $self->{chman}->deliver($con, $event);
+    $self->{sub_manager}->deliver($con, $event);
     return 1;
 }
 

@@ -9,6 +9,7 @@ use Cometd qw(
     Plugin::JSONTransport
     Plugin::SubManager::InMemory
     Plugin::SubManager::Memcached
+    Plugin::EventManager::Memcached
     Plugin::HTTPD
     Plugin::Manager
 );
@@ -19,25 +20,30 @@ my %opts = (
     MaxConnections => 32000,
 );
 
-my $chanman;
-
 # conencts to perlbal servers that handle client connections
+{
+last;
 POE::Component::Cometd::Client->spawn(
     %opts,
     Name => 'Perlbal Connector',
     ClientList => [
 #        '127.0.0.1:2022', # Perlbal Cometd manage port
     ],
-    SubManager => $chanman = Cometd::Plugin::SubManager::InMemory->new(),
+    SubManager => Cometd::Plugin::SubManager::InMemory->new(
+        Alias => 'subman-inmemory',
+    ),
+    EventManager => Cometd::Plugin::SubManager::InMemory->new(
+        Alias => 'subman-inmemory'
+    ),
     Transports => [
         {
-            plugin => Cometd::Plugin::JSONTransport->new(),
-            priority => 0,
+            Plugin => Cometd::Plugin::JSONTransport->new(),
+            Priority => 0,
         },
     ],
 );
+}
 
-# FIXME $chanman
 # backend server accepts connections and receives events
 POE::Component::Cometd::Server->spawn(
     %opts,
@@ -46,10 +52,10 @@ POE::Component::Cometd::Server->spawn(
     ListenAddress => '127.0.0.1',
     Transports => [
         {
-            plugin => Cometd::Plugin::JSONTransport->new(
-                chman => $chanman
+            Plugin => Cometd::Plugin::JSONTransport->new(
+                SubManager => 'subman'
             ),
-            priority => 0,
+            Priority => 0,
         },
     ],
 );
@@ -62,11 +68,18 @@ POE::Component::Cometd::Server->spawn(
     ListenAddress => '0.0.0.0',
     Transports => [
         {
-            plugin => Cometd::Plugin::HTTPD->new(),
-            priority => 0,
+            Plugin => Cometd::Plugin::HTTPD->new(),
+            Priority => 0,
         },
     ],
-    SubManager => Cometd::Plugin::SubManager::Memcached->new(),
+    EventManager => Cometd::Plugin::EventManager::Memcached->new(
+        Alias => 'subman',
+        SubManager => 'subman',
+    ),
+    SubManager => Cometd::Plugin::SubManager::Memcached->new(
+        Alias => 'subman',
+        EventManager => 'eventman',
+    ),
 );
 
 # backend server
@@ -77,8 +90,8 @@ POE::Component::Cometd::Server->spawn(
     ListenAddress => '127.0.0.1',
     Transports => [
         {
-            plugin => Cometd::Plugin::Manager->new(),
-            priority => 0,
+            Plugin => Cometd::Plugin::Manager->new(),
+            Priority => 0,
         },
     ],
 );
