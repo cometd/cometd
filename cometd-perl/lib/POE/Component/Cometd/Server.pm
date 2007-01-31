@@ -3,7 +3,12 @@ package POE::Component::Cometd::Server;
 use strict;
 use warnings;
 
-use POE qw( Component::Cometd Wheel::SocketFactory );
+use POE qw(
+    Component::Cometd
+    Wheel::SocketFactory
+    Filter::Stackable
+    Filter::Stream
+);
 use base qw( POE::Component::Cometd );
 use Errno qw( EADDRINUSE );
 use Socket;
