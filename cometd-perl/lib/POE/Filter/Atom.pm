@@ -94,28 +94,27 @@ __END__
 
 =head1 NAME
 
-POE::Filter::JSON - A POE filter using JSON
+POE::Filter::Atom - A POE filter using XML::Atom
 
 =head1 SYNOPSIS
 
-    use POE::Filter::JSON;
+    use POE::Filter::Atom;
 
-    my $filter = POE::Filter::JSON->new();
-    my $obj = { foo => 1, bar => 2 };
-    my $json_array = $filter->put( [ $obj ] );
-    my $obj_array = $filter->get( $json_array );
+    my $filter = POE::Filter::Atom->new();
+    my $feed_array = $filter->put( [ $xml_atom_obj ] );
+    my $obj_array = $filter->get( $feed_array );
 
-    use POE qw( Filter::Stackable Filter::Line Filter::JSON );
+    use POE qw( Filter::Stackable Filter::Line Filter::Atom );
 
     my $filter = POE::Filter::Stackable->new();
     $filter->push(
-        POE::Filter::JSON->new( delimiter => 0 ),
         POE::Filter::Line->new(),
+        POE::Filter::Atom->new(),
     );
 
 =head1 DESCRIPTION
 
-POE::Filter::JSON provides a POE filter for performing object conversion using L<JSON>. It is
+POE::Filter::Atom provides a POE filter for parsing an XML::Atom stream. It is
 suitable for use with L<POE::Filter::Stackable>.  Preferably with L<POE::Filter::Line>.
 
 =head1 METHODS
@@ -126,19 +125,19 @@ suitable for use with L<POE::Filter::Stackable>.  Preferably with L<POE::Filter:
 
 new
 
-Creates a new POE::Filter::JSON object. It takes arguments that are passed to objToJson() (as the 2nd argument). See L<JSON> for details.
+Creates a new POE::Filter::Atom object.
 
 =item *
 
 get
 
-Takes an arrayref which is contains json lines. Returns an arrayref of objects.
+Takes an arrayref which is contains XML Atom lines. Returns an arrayref of objects.
 
 =item *
 
 put
 
-Takes an arrayref containing objects, returns an arrayref of json linee.
+Takes an arrayref containing objects, returns an arrayref of XML Atom lines.
 
 =back
 
@@ -148,12 +147,12 @@ David Davis <xantus@cpan.org>
 
 =head1 LICENSE
 
-New BSD
+Artistic
 
 =head1 SEE ALSO
 
 L<POE>
-L<JSON>
+L<XML::Atom>
 L<POE::Filter::Stackable>
 L<POE::Filter::Line>
 
