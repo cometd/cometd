@@ -10,8 +10,8 @@ use base qw( POE::Filter );
 
 our $VERSION = '0.02';
 
-sub OBJ    () { 0 }
-sub BUFFER () { 1 }
+sub BUFFER () { 0 }
+sub OBJ    () { 1 }
 sub PARAMS () { 2 }
 
 sub new {
@@ -19,8 +19,8 @@ sub new {
     croak "$class requires an even number of parameters" if @_ % 2;
 
     bless( [
-        JSON->new(), # OBJ
         [],          # BUFFER
+        JSON->new(), # OBJ
         { @_ },      # PARAMS
     ], ref $class || $class );
 }
