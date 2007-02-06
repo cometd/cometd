@@ -175,7 +175,7 @@ sub remote_connect_timeout {
 
 sub remote_receive {
     my $self = $_[OBJECT];
-    $self->_log(v => 4, msg => $self->{name}." got input ".$_[ARG0]);
+    #$self->_log(v => 4, msg => $self->{name}." got input ".$_[ARG0]);
     $self->{transport}->process_plugins( [ 'remote_receive', $self, @_[ HEAP, ARG0 ] ] );
 }
 
