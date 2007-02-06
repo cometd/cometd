@@ -24,6 +24,8 @@ sub as_string {
 # ---------------------------------------------------------
 # Client
 
+# TODO reconnect with resume code
+
 sub remote_connected {
     my ( $self, $client, $con, $socket ) = @_;
     $self->take_connection( $con );
@@ -35,7 +37,13 @@ sub remote_connected {
     # look for the atom stream header first
     $self->{_header} = 1;
 
-    $con->send( "GET /atom-stream.xml HTTP/1.0", "Host: updates.sixapart.com", "" );
+    # TODO http::request?
+    $con->send(
+        "GET /atom-stream.xml HTTP/1.0",
+        "Host: updates.sixapart.com",
+        "Connection: close",
+        ""
+    );
     
     return 1;
 }
