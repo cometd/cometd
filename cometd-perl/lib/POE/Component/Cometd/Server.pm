@@ -144,7 +144,8 @@ sub local_flushed {
     my ( $self, $con ) = @_[ OBJECT, HEAP ];
 
     if ( $con->close_on_flush
-        && $con->wheel && not $con->wheel->get_driver_out_octets() ) {
+        && not $con->get_driver_out_octets() ) {
+        
         $self->cleanup_connection( $con );
     }
     

@@ -1,8 +1,10 @@
 package Cometd::Plugin::Manager;
 
-use Cometd::Plugin;
+use Cometd qw( Plugin Event );
 use base 'Cometd::Plugin';
 
+use POE;
+use JSON;
 use POE::Filter::Line;
 use Data::Dumper;
 
@@ -99,6 +101,28 @@ sub local_receive {
             }
         }
         $con->send( "done." );
+    } elsif ( $data =~ m/^devent (\S+) (.*)/i ) {
+        my ($ch, $data) = ($1,$2);
+        eval {
+            $data = ( $data =~ m/^\{/ ) ? jsonToObj( $data ) : { text => $data };
+        };
+        if ($@) {
+            $con->send( "error (event not sent): $@" );
+            return;
+        }
+        my $event = new Cometd::Event( channel => $ch, data => $data );
+        $poe_kernel->call( $self->{alias} => deliver_event => $event );
+        $con->send( "sent ".$event->as_string );
+    } elsif ( $data =~ m/^sql (.*)/i ) {
+        $poe_kernel->call( $self->{alias} => db_do => $1 => sub {
+            $con->send( "response: ".objToJson( shift ) );
+        } );
+        $con->send( "sent $1 to $self->{alias}" );
+    } elsif ( $data =~ m/^(select .*)/i ) {
+        $poe_kernel->call( $self->{alias} => db_select => $1 => sub {
+            $con->send( "response: ".objToJson( shift ) );
+        } );
+        $con->send( "sent $1 to $self->{alias}" );
     } elsif ( $data =~ m/^quit/i ) {
         $con->send( "goodbye." );
         $con->close();

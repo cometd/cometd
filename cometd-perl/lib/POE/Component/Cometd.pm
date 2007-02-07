@@ -28,7 +28,6 @@ use POE qw(
     Wheel::SocketFactory
     Driver::SysRW
     Wheel::ReadWrite
-    Filter::Line
     Component::Cometd::Connection
 );
 use Cometd::Session;
@@ -174,12 +173,20 @@ sub _start {
         }
     }
     
-    # XXX check if we are a client?
-    if (my $ch = delete $self->{opts}->{sub_manager}) {
-        # keeps a weak ref
-        $ch->set_comp( $self )
-            if ( $ch->can( "set_comp" ) );
-        $self->{sub_manager} = $ch;
+    if (my $ev = delete $self->{opts}->{event_manager}) {
+        eval "use $ev->{module}";
+        if ($@) {
+            $self->_log(v => 1, msg => "Error loading $ev->{module} : $@");
+            $self->shutdown_all();
+            return;
+        }
+        unless ( $ev->{options} && ref( $ev->{options} ) eq 'ARRAY' ) {
+            $ev->{options} = [];
+        }
+        $self->{event_manager} = "$ev->{module}"->new(
+            @{$ev->{options}},
+            parent_id => $self->{session_id}
+        );
     }
 
 

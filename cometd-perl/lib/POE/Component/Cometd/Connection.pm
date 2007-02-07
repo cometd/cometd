@@ -101,8 +101,10 @@ sub close {
     if ( my $wheel = $self->wheel ) {
         my $out = $wheel->get_driver_out_octets;
         if ( !$force && $out ) {
+            $self->_log(v => 4, msg => 'closing on flush');
             $self->close_on_flush( 1 );
         } else {
+            $self->_log(v => 4, msg => 'shutdown hard');
             $wheel->shutdown_input();
             $wheel->shutdown_output();
             $self->wheel( undef )
@@ -114,11 +116,20 @@ sub close {
     }
 }
 
+sub get_driver_out_octets {
+    my $self = shift;
+    if ( my $wheel = $self->{wheel} ) {
+        return $wheel->get_driver_out_octets();
+    }
+    return undef;
+}
+
 sub active {
     shift->active_time( time() );
 }
 
 sub _log {
+    my $self = shift;
     $poe_kernel->call( $self->parent_id => _log => ( l => 1, @_ ) );
 }
 
