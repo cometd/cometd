@@ -7,9 +7,7 @@ use POE::Component::Cometd qw( Client Server );
 use POE;
 use Cometd qw(
     Plugin::JSONTransport
-    Plugin::SubManager::InMemory
-    Plugin::SubManager::Memcached
-    Plugin::EventManager::Memcached
+    Plugin::EventManager::EasyDBI
     Plugin::HTTPD
     Plugin::Manager
 );
@@ -29,12 +27,9 @@ POE::Component::Cometd::Client->spawn(
     ClientList => [
 #        '127.0.0.1:2022', # Perlbal Cometd manage port
     ],
-    SubManager => Cometd::Plugin::SubManager::InMemory->new(
-        Alias => 'subman-inmemory',
-    ),
-    EventManager => Cometd::Plugin::SubManager::InMemory->new(
-        Alias => 'subman-inmemory'
-    ),
+#    EventManager => Cometd::Plugin::EventManager::InMemory->new(
+#        Alias => 'eventman-inmemory'
+#    ),
     Transports => [
         {
             Plugin => Cometd::Plugin::JSONTransport->new(),
@@ -53,7 +48,7 @@ POE::Component::Cometd::Server->spawn(
     Transports => [
         {
             Plugin => Cometd::Plugin::JSONTransport->new(
-                SubManager => 'subman'
+                EventManager => 'eventman'
             ),
             Priority => 0,
         },
@@ -72,14 +67,13 @@ POE::Component::Cometd::Server->spawn(
             Priority => 0,
         },
     ],
-    EventManager => Cometd::Plugin::EventManager::Memcached->new(
-        Alias => 'subman',
-        SubManager => 'subman',
-    ),
-    SubManager => Cometd::Plugin::SubManager::Memcached->new(
-        Alias => 'subman',
-        EventManager => 'eventman',
-    ),
+    EventManager => {
+        module => 'Cometd::Plugin::EventManager::EasyDBI',
+        options => [
+            Alias => 'eventman',
+#            SqliteFile => 'cometd.com',
+        ]
+    },
 );
 
 # backend server
@@ -90,7 +84,7 @@ POE::Component::Cometd::Server->spawn(
     ListenAddress => '127.0.0.1',
     Transports => [
         {
-            Plugin => Cometd::Plugin::Manager->new(),
+            Plugin => Cometd::Plugin::Manager->new( Alias => 'eventman' ),
             Priority => 0,
         },
     ],
