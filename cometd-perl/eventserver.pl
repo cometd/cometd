@@ -7,7 +7,7 @@ use POE::Component::Cometd qw( Client Server );
 use POE;
 use Cometd qw(
     Plugin::JSONTransport
-    Plugin::EventManager::EasyDBI
+    Plugin::EventManager::SQLite
     Plugin::HTTPD
     Plugin::Manager
 );
@@ -18,26 +18,6 @@ my %opts = (
     MaxConnections => 32000,
 );
 
-# conencts to perlbal servers that handle client connections
-{
-last;
-POE::Component::Cometd::Client->spawn(
-    %opts,
-    Name => 'Perlbal Connector',
-    ClientList => [
-#        '127.0.0.1:2022', # Perlbal Cometd manage port
-    ],
-#    EventManager => Cometd::Plugin::EventManager::InMemory->new(
-#        Alias => 'eventman-inmemory'
-#    ),
-    Transports => [
-        {
-            Plugin => Cometd::Plugin::JSONTransport->new(),
-            Priority => 0,
-        },
-    ],
-);
-}
 
 # backend server accepts connections and receives events
 POE::Component::Cometd::Server->spawn(
@@ -68,10 +48,10 @@ POE::Component::Cometd::Server->spawn(
         },
     ],
     EventManager => {
-        module => 'Cometd::Plugin::EventManager::EasyDBI',
+        module => 'Cometd::Plugin::EventManager::SQLite',
         options => [
             Alias => 'eventman',
-#            SqliteFile => 'cometd.com',
+            SqliteFile => 'pubsub.db',
         ]
     },
 );
