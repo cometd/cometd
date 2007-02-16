@@ -119,18 +119,17 @@ sub local_receive {
         $con->send( "sent adding $ch to $clid" );
     } elsif ( $data =~ m/^sql (.*)/i ) {
         $poe_kernel->call( $self->{alias} => db_do => $1 => sub {
-            $con->send( "response: ".objToJson( shift ) );
+            $con->send( "response: ".Data::Dumper->Dump([ shift ]) );
         } );
         $con->send( "sent $1 to $self->{alias}" );
     } elsif ( $data =~ m/^(select .*)/i ) {
         $poe_kernel->call( $self->{alias} => db_select => $1 => sub {
-            $con->send( "response: ".objToJson( shift ) );
+            $con->send( "response: ".Data::Dumper->Dump([ shift ]) );
         } );
         $con->send( "sent $1 to $self->{alias}" );
     } elsif ( $data =~ m/^events (\S+)/i ) {
         $poe_kernel->call( $self->{alias} => get_events => $1 => sub {
-            require Data::Dumper;
-            $con->send( "response: ".Data::Dumper->Dump([$_[0]]) );
+            $con->send( "response: ".Data::Dumper->Dump([ shift ]) );
         } );
         $con->send( "requesting events for $1" );
     } elsif ( $data =~ m/^quit/i ) {
