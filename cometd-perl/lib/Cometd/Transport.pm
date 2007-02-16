@@ -18,8 +18,6 @@ sub CONNECTION() { 2 }
 sub new {
     my $class = shift;
     my %opts = &adjust_params;
-    require Data::Dumper;
-    print Data::Dumper->Dump([\%opts]);
     my $self = bless([
         { },              # transports
         [ ],              # priorities
@@ -33,7 +31,7 @@ sub new {
         object_states =>  [
             $self => {
                 _start          =>  '_start',
-                process_plugins =>  '_process_plugins',
+                process_plugins =>  'process_plugins',
                 _stop           =>  '_stop',
                 sig_die         =>  '_exception',
             },
@@ -112,32 +110,27 @@ sub remove_transport {
     } keys %{ $t };
 }
 
-sub _process_plugins {
-    my ( $kernel, $self, $i ) = @_[ KERNEL, OBJECT, ARG1 ];
+sub process_plugins {
+    my ( $self, $args, $i ) = $_[ KERNEL ] ? @_[ OBJECT, ARG0, ARG1 ] : @_;
 
     return unless ( @{ $self->[ PRIORITIES ] } );
    
-    if ( my $t = $_[ ARG0 ]->[ CONNECTION ]->plugin() ) {
-        return $self->[ TRANSPORTS ]->{ $t }->{plugin}->handle_event( @{ $_[ ARG0 ] } );
+    if ( my $t = $args->[ CONNECTION ]->plugin() ) {
+        return $self->[ TRANSPORTS ]->{ $t }->{plugin}->handle_event( @$args );
     } else {
         if ( defined $i && $#{ $self->[ PRIORITIES ] } >= $i ) {
             return if ( $self->[ TRANSPORTS ]->{
                     $self->[ PRIORITIES ]->[ $i ]
-                }->{plugin}->handle_event( @{ $_[ ARG0 ] } ) );
+                }->{plugin}->handle_event( @$args ) );
             $i++;
-            # avoid a yield
+            # avoid a post
             return if ( $#{ $self->[ PRIORITIES ] } < $i );
         } else {
             $i = 0;
         }
     }
     
-    $kernel->yield( process_plugins => $_[ ARG0 ] => $i );
-}
-
-sub process_plugins {
-    my $self = shift;
-    $poe_kernel->call( $self->[ SESSIONID ] => process_plugins => @_ );
+    $poe_kernel->post( $self->[ SESSIONID ] => process_plugins => $args => $i );
 }
 
 sub yield {
@@ -147,11 +140,8 @@ sub yield {
 
 sub name {
     my $self = shift;
-    my @list;
-    foreach my $t (keys %{ $self->[ TRANSPORTS ] }) {
-        push(@list, $self->[ TRANSPORTS ]->{ $t }->{plugin}->name() );
-    }
-    return "Transport for plugins: ".join(',',@list);
+    my @list = map { $_->{plugin}->name() } values %{ $self->[ TRANSPORTS ] };
+    return "Transport for plugins: ".join(',', @list);
 }
 
 1;
