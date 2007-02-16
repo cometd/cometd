@@ -73,8 +73,13 @@ sub _invoke_state {
        last SWITCH unless ( $1 && $2 );
       
        my ( $heap, $nstate ) = ( $1, $2 );
-       my ( $object, $method ) = @{$self->[POE::Session::SE_STATES]->{ $nstate }};
-
+       
+       # does this state exist in this session?
+       my $om = $self->[POE::Session::SE_STATES]->{ $nstate };
+       last SWITCH unless( $om );
+       
+       # does this object have this method?
+       my ( $object, $method ) = @$om;
        last SWITCH unless ( $object->can( $method ) );
        
        if ( $object->{heap} = $object->{heaps}->{ $heap } ) {
