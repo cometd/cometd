@@ -60,7 +60,7 @@ sub _startup {
         }
     }
 
-    $kernel->yield( '_conn_status' );
+#    $kernel->yield( '_conn_status' );
 }
 
 sub _stop {

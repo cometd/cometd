@@ -12,6 +12,7 @@ use XML::Atom::Entry;
 our $VERSION = '0.01';
 
 sub BUFFER () { 0 }
+sub CDATA  () { 1 }
 
 sub new {
     my $class = shift;
@@ -19,22 +20,8 @@ sub new {
 
     bless( [
         [],          # BUFFER
+        0,           # CDATA
     ], ref $class || $class );
-}
-
-sub _get {
-    my ($self, $lines) = @_;
-    my $ret = [];
-
-#    foreach my $json (@$lines) {
-#        if ( my $obj = eval { $self->[ OBJ ]->jsonToObj( $json ) } ) {
-#            push( @$ret, $obj );
-#        } else {
-#            warn "Couldn't convert json to an object: $@\n";
-#        }
-#    }
-
-    return $ret;
 }
 
 sub get_one_start {
@@ -43,49 +30,61 @@ sub get_one_start {
     push( @{ $self->[ BUFFER ] }, @{ $lines } );
 }
 
+# sub get ?
+
 sub get_one {
     my $self = shift;
     my $ret = [];
 
-    return $ret unless ( $self->[ BUFFER ]->[ -1 ] );
+    my $l = $self->[ BUFFER ]->[ -1 ];
+    
+    return $ret unless ( $l );
 
-    # TODO don't skip, but return the time instead of a feed?
-    if ( $self->[ BUFFER ]->[ -1 ] =~ m~^<time>~io ) {
-        # XXX is delete or splice faster?
+    # XXX don't skip, but return the time instead of a feed?
+    if ( $l =~ m~^<time>~io ) {
+        # XXX is splice faster?
         shift @{$self->[ BUFFER ]};
         return $ret;
     }
     
-    # TODO pass this back too?
-    if ( $self->[ BUFFER ]->[ -1 ] =~ m~^<sorryTooSlow~io ) {
+    # XXX pass this back too?
+    if ( $l =~ m~^<sorryTooSlow~io ) {
         shift @{$self->[ BUFFER ]};
         return $ret;
     }
 
-    return $ret unless ( $self->[ BUFFER ]->[ -1 ] =~ m~</feed>~io );
+    # CDATA
+    $self->[ CDATA ] = 1 if ( $l =~ m/<!\[CDATA\[/ );
+    
+    # the CDATA block could end on the same line 
+    $self->[ CDATA ] = 0 if ( $self->[ CDATA ] && $l =~ m/\]\]>/ );
 
-    my $data = join ( "\n", @{ $self->[ BUFFER ] } );
+    return $ret if ( $self->[ CDATA ] );
+
+    return $ret unless ( $l =~ m~</feed>~io );
+
+    my $data = join( "\n", @{ $self->[ BUFFER ] } );
     $self->[ BUFFER ] = [];
+    
+    open(FH,">>debug.txt");
+    print FH "$data\n";
+    print FH "--------\n";
+    close(FH);
 
     eval {
         if ( my $feed = XML::Atom::Feed->new( \$data ) ) {
             push( @$ret, $feed );
         }
     };
-    warn "$@  : $data" if ($@);
+    warn "$@ when parsing atom stream: $data" if ( $@ );
 
     return $ret;
 }
 
 sub put {
     my ($self, $objects) = @_;
-    my $ret = [];
 
-    foreach my $obj (@$objects) {
-        push( @$ret, $obj->as_xml );
-    }
-    
-    return $ret;
+    return [ map { $_->as_xml } @$objects ];
 }
 
 1;
@@ -106,16 +105,17 @@ POE::Filter::Atom - A POE filter using XML::Atom
 
     use POE qw( Filter::Stackable Filter::Line Filter::Atom );
 
-    my $filter = POE::Filter::Stackable->new();
-    $filter->push(
-        POE::Filter::Line->new(),
-        POE::Filter::Atom->new(),
+    my $filter = POE::Filter::Stackable->new(
+        Filters => [
+            POE::Filter::Line->new(),
+            POE::Filter::Atom->new(),
+        ]
     );
 
 =head1 DESCRIPTION
 
-POE::Filter::Atom provides a POE filter for parsing an XML::Atom stream. It is
-suitable for use with L<POE::Filter::Stackable>.  Preferably with L<POE::Filter::Line>.
+POE::Filter::Atom provides a POE filter for parsing an XML::Atom stream. It
+should be used with L<POE::Filter::Stackable> and L<POE::Filter::Line>.
 
 =head1 METHODS
 
@@ -131,7 +131,8 @@ Creates a new POE::Filter::Atom object.
 
 get
 
-Takes an arrayref which is contains XML Atom lines. Returns an arrayref of objects.
+Takes an arrayref which is contains XML Atom lines from L<POE::Filter::line>.
+Returns an arrayref of objects.
 
 =item *
 
@@ -147,7 +148,7 @@ David Davis <xantus@cpan.org>
 
 =head1 LICENSE
 
-Artistic
+Artistic License (AL)
 
 =head1 SEE ALSO
 

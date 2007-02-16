@@ -39,6 +39,8 @@ sub local_connected {
     # POE::Filter::Stackable object:
     $con->filter->push( POE::Filter::Line->new() );
     
+    $con->filter->shift(); # POE::Filter::Stream
+    
     $con->send( "Cometd Manager - commands: dump [val], list conn, con dump [val], find leaks, find refs, quit" );
     
     # XXX should we pop the stream filter off the top?

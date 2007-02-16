@@ -10,6 +10,7 @@ use Cometd qw(
     Plugin::EventManager::SQLite
     Plugin::HTTPD
     Plugin::Manager
+    Plugin::Simple
 );
 
 my %opts = (
@@ -47,6 +48,19 @@ POE::Component::Cometd::Server->spawn(
             Priority => 0,
         },
     ],
+);
+
+POE::Component::Cometd::Server->spawn(
+    %opts,
+    Name => 'Simple Server',
+    ListenPort => 8000,
+    ListenAddress => '0.0.0.0',
+    Transports => [
+        {
+            Plugin => Cometd::Plugin::Simple->new(),
+            Priority => 0,
+        },
+    ],
     EventManager => {
         module => 'Cometd::Plugin::EventManager::SQLite',
         options => [
@@ -64,7 +78,7 @@ POE::Component::Cometd::Server->spawn(
     ListenAddress => '127.0.0.1',
     Transports => [
         {
-            Plugin => Cometd::Plugin::Manager->new( Alias => 'eventman' ),
+            Plugin => Cometd::Plugin::Manager->new( EventManager => 'eventman' ),
             Priority => 0,
         },
     ],

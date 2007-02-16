@@ -1,14 +1,26 @@
 package POE::Component::Cometd::Connection;
 
 use POE qw( Wheel::SocketFactory Wheel::ReadWrite );
+use Cometd::Event;
 use Class::Accessor::Fast;
 use base qw(Class::Accessor::Fast);
 
-__PACKAGE__->mk_accessors( qw( sf wheel connected close_on_flush plugin active_time parent_id ) );
+__PACKAGE__->mk_accessors( qw(
+    sf
+    wheel
+    connected
+    close_on_flush
+    plugin
+    active_time
+    parent_id
+    event_manager
+) );
 
 sub new {
     my $class = shift;
     bless({
+        channels => {},
+        clid => undef,
         @_
     }, ref $class || $class );
 }
@@ -101,10 +113,10 @@ sub close {
     if ( my $wheel = $self->wheel ) {
         my $out = $wheel->get_driver_out_octets;
         if ( !$force && $out ) {
-            $self->_log(v => 4, msg => 'closing on flush');
+#            $self->_log(v => 4, msg => 'closing on flush');
             $self->close_on_flush( 1 );
         } else {
-            $self->_log(v => 4, msg => 'shutdown hard');
+            $self->_log(v => 4, msg => 'forced socket shutdown');
             $wheel->shutdown_input();
             $wheel->shutdown_output();
             $self->wheel( undef )
@@ -126,6 +138,66 @@ sub get_driver_out_octets {
 
 sub active {
     shift->active_time( time() );
+}
+
+sub add_client {
+    my $self = shift;
+    $poe_kernel->call( $self->event_manager => add_client => $self->clid => $self->ID )
+        if ( $self->clid && $self->event_manager );
+}
+
+sub remove_client {
+    my $self = shift;
+    $poe_kernel->call( $self->event_manager => remove_client => $self->clid )
+        if ( $self->clid && $self->event_manager );
+}
+
+sub add_channels {
+    my $self = shift;
+    if ( my ( $channels ) = @_ ) {
+        foreach ( @$channels ) {
+            $self->{channels}->{$_} = 1;
+        }
+        $poe_kernel->call( $self->event_manager => add_channels => $self->clid => $channels )
+            if ( $self->clid && $self->event_manager );
+    }
+        
+    return (keys %{$self->{channels}});
+}
+
+sub remove_channels {
+    my $self = shift;
+    if ( my ( $channels ) = @_ ) {
+        foreach (@$channels) {
+            delete $self->{channels}->{$_};
+        }
+        $poe_kernel->call( $self->event_manager => remove_channels => $self->clid => $channels )
+            if ( $self->clid && $self->event_manager );
+    }
+    
+    return (keys %{$self->{channels}});
+}
+
+sub clid {
+    my ( $self, $clid ) = @_;
+    if ( $clid ) {
+        $self->{clid} = $clid;
+        $self->add_client();
+    }
+    return $self->{clid};
+}
+
+sub send_event {
+    my $self = shift;
+    warn "manager:".$self->event_manager;
+    $poe_kernel->call( $self->event_manager => deliver_event => Cometd::Event->new( clientId => $self->clid, @_ ) );
+}
+
+sub get_events {
+    my $self = shift;
+    $poe_kernel->call( $self->event_manager => get_events => $self->clid => [
+        $self->parent_id, $self->event( 'events_received' )
+    ] );
 }
 
 sub _log {

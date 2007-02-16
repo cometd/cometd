@@ -63,6 +63,8 @@ our @base_states = qw(
     signals
     _shutdown
     _log
+    events_received
+    events_ready
 );
 
 
@@ -220,6 +222,9 @@ sub new_connection {
         parent_id => $self->{session_id},
         @_
     );
+    
+    $con->event_manager( $self->{event_manager}->{alias} )
+        if ( $self->{event_manager} );
 
     $self->{heaps}->{ $con->ID } = $con;
 
@@ -238,8 +243,9 @@ sub _log {
         ($self, %o ) = @_;
     }
     return unless ( $o{v} <= $self->{opts}->{log_level} );
-    my $sender = ( defined $self->{heap} && defined $self->{heap}->{addr} )
-        ? $self->{heap}->{addr} : "?";
+    my $con = $self->{heap};
+    my $sender = ( $con )
+        ? $con->{addr}."(".$con->ID.")" : "?";
     my $l = $o{l} ? $o{l}+1 : 1;
     my $caller = (caller($l))[3] || '?';
     $caller =~ s/^POE::Component/PoCo/o;
@@ -299,6 +305,16 @@ sub _shutdown {
 # TODO class:accessor::fast
 sub name {
     shift->{name};
+}
+
+sub events_received {
+    my ( $kernel, $self ) = @_[ KERNEL, OBJECT ];
+    $self->{transport}->process_plugins( [ 'events_received', $self, @_[ HEAP, ARG0 .. $#_ ] ] );
+}
+
+sub events_ready {
+    my ( $kernel, $self ) = @_[ KERNEL, OBJECT ];
+    $self->{transport}->process_plugins( [ 'events_ready', $self, @_[ HEAP, ARG0 .. $#_ ] ] );
 }
 
 1;

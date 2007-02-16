@@ -870,6 +870,8 @@ sub child_STDOUT {
 #   foreach (keys %$data) { $query_copy->{$_} = $data->{$_}; }
 
     my $query_copy = { %$query, %$data };
+    
+#    $poe_kernel->call( debug_logger => _log => $query_copy );
 
 #    my ($ses,$evt) = ("$query_copy->{session}", "$query_copy->{event}");
     

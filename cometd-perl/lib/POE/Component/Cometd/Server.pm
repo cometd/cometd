@@ -64,7 +64,7 @@ sub _startup {
 
     $self->_log(v => 2, msg => "Listening to port $self->{opts}->{listen_port} on $self->{opts}->{listen_address}");
 
-    $kernel->yield( '_conn_status' );    
+#    $kernel->yield( '_conn_status' );    
 }
 
 sub _stop {
@@ -104,7 +104,7 @@ sub local_accept {
     
     $con->wheel_readwrite(
         Handle          => $socket,
-        Driver          => POE::Driver::SysRW->new( BlockSize => 4096 ), 
+        Driver          => POE::Driver::SysRW->new( BlockSize => 2048 ), 
         Filter          => POE::Filter::Stackable->new(
             Filters => [
                 POE::Filter::Stream->new(),
@@ -171,8 +171,7 @@ sub local_error {
     # TODO use constant
     if ( $errnum == 0 ) {
         # normal disconnect
-    #    $self->{transport}->process_plugins( [ 'local_disconnected', $self, $con ] );
-        $self->_log(v => 4, msg => $self->{name}." - client disconnected : $con->{addr}");
+#        $self->_log(v => 4, msg => $self->{name}." - client disconnected : $con->{addr}");
     } else {
         $self->_log(v => 3, msg => $self->{name}." encountered $operation error $errnum: $errstr");
     }

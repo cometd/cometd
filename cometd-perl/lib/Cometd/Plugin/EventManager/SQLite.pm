@@ -19,27 +19,38 @@ sub new {
     
     my $self = $class->SUPER::new( @_ );
 
+    # channels receive events and update this
+    # the watchog checks this to notify anything
+    # of channel activity
+    $self->{channels} = {};
+
     $self->{sqlite_file} = 'pubsub.db'
         unless( defined ( $self->{sqlite_file} ) );
 
-    POE::Session->create(
+    $self->{session_id} = POE::Session->create(
         object_states => [
             $self => [qw(
                 _start
 
                 _connected
+                set_watchdog
+                watchdog
+                
                 check_error
                 update_eid
 
-                deliver_event
+                deliver_events
                 get_events
+                add_client
+                remove_client
                 add_channels
+                remove_channels
 
                 db_do
                 db_select
             )],
         ]
-    );
+    )->ID();
 
     return $self;
 }
@@ -49,6 +60,10 @@ sub _start {
 
     $kernel->alias_set( $self->{alias} )
         if ( $self->{alias} );
+
+    $self->{watchdog_time} ||= .2;
+
+    $kernel->delay_set( watchdog => $self->{watchdog_time} );
 
     $self->_log(v => 4, msg => 'connecting to the database');
 
@@ -61,7 +76,45 @@ sub _start {
             AutoCommit => 1,
         },
         connected => [ $_[SESSION]->ID, '_connected' ],
-    ); 
+    );
+}
+
+sub set_watchdog {
+    my ($self, $kernel) = @_[OBJECT, KERNEL];
+    $kernel->delay_set( watchdog => $self->{watchdog_time} );
+}
+
+sub watchdog {
+    my ($self, $kernel) = @_[OBJECT, KERNEL];
+    
+    my @chans = keys %{$self->{channels}};
+    
+    $kernel->delay_set( watchdog => $self->{watchdog_time} ) unless ( @chans );
+    
+    return unless ( @chans );
+    
+    $self->{db}->keyvalhash(
+        sql =>   qq|SELECT c.cid, c.clid
+                    FROM cid_clid_map AS c
+                    LEFT JOIN clid_ch_map AS cm
+                        ON c.clid=cm.clid
+                    WHERE cm.channel IN (|
+                .join(',', map { '?' } @chans).')',
+        placeholders => \@chans,
+        primary_key => 'cid',
+        event => sub {
+            my $r = shift;
+#            require Data::Dumper;
+#            warn "".Data::Dumper->Dump([$r]);
+            foreach my $cid (keys %{$r->{result}}) {
+                # XXX ugly!!
+                $poe_kernel->post( $self->{parent_id} => $cid.'|events_ready' => $r->{result}->{$cid} );
+            }
+            $kernel->call( $self->{session_id} => 'set_watchdog' );
+        }
+    );
+    
+    $self->{channels} = {};
 }
 
 # XXX temp
@@ -87,13 +140,17 @@ sub db_select {
     );
 }
 
+# XXX not used
 sub update_eid {
     my ( $self, $kernel, $r ) = @_[ OBJECT, KERNEL, ARG0 ];
     
     if ( $r->{error} ) {
-        warn "$r->{error}";
+#        warn "$r->{error}";
         return;
     }
+    
+    $self->{channels}->{$r->{_channel}} = $r->{insert_id}
+        #if ( exists( $r->{insert_id} ) )
     
 #    require Data::Dumper;
 #    warn "result from event update: ".Data::Dumper->Dump([$r]);
@@ -126,15 +183,19 @@ sub _connected {
     );
 
     $self->{db}->do(
-        sql => 'CREATE TABLE cli_ch_map (clid VaRCHAR(50), channel VARCHAR(255), eid INTEGER)',
+        sql => 'CREATE TABLE clid_ch_map (clid VARCHAR(50), channel VARCHAR(255), eid INTEGER)',
         event => 'check_error'
     );
     
     $self->{db}->do(
-        sql => 'DELETE FROM cli_ch_map',
+        sql => 'CREATE UNIQUE INDEX unique_clid_ch_map ON clid_ch_map (clid, channel)',
+        event => 'check_error',
+    );
+    
+    $self->{db}->do(
+        sql => 'DELETE FROM clid_ch_map',
         event => 'check_error'
     );
-    # need UNIQUE on clid and channel
     
     $self->{db}->do(
         sql => 'CREATE TABLE channels (channel VARCHAR(255) PRIMARY KEY, eid INTEGER)',
@@ -154,8 +215,18 @@ sub _connected {
      END;),
         event => 'check_error'
     );
+    
+    $self->{db}->do(
+        sql => 'CREATE TABLE cid_clid_map (cid VARCHAR(10), clid VARCHAR(50) UNIQUE)',
+        event => 'check_error'
+    );
 
-    $self->add_client( "test", [ "/foo", "/bar" ] );
+    $self->{db}->do(
+        sql => 'DELETE FROM cid_clid_map',
+        event => 'check_error'
+    );
+    
+    #$self->add_client( "test", [ "/foo", "/bar" ] );
     
     # TODO clean out clients
 }
@@ -163,12 +234,18 @@ sub _connected {
 # methods
 
 sub add_client {
-    my ( $self, $clid, $channel ) = @_;
+    my ( $self, $clid, $cid, $channel ) = $_[ KERNEL ] ? @_[ OBJECT, ARG0 .. $#_ ] : @_;
     
     return unless ( $clid );
     
     $self->add_channels( $clid, $channel )
-        if ( $channel );
+        if ( defined $channel );
+    
+    $self->{db}->do(
+        sql => 'REPLACE INTO cid_clid_map (cid,clid) VALUES (?,?)',
+        placeholders => [ $cid, $clid ],
+        event => 'check_error'
+    ) if ( $cid );
 
     $self->{db}->do(
         sql => 'REPLACE INTO clients (clid) VALUES (?)',
@@ -178,12 +255,18 @@ sub add_client {
 }
 
 sub remove_client {
-    my ( $self, $clid ) = @_;
+    my ( $self, $clid ) = $_[ KERNEL ] ? @_[ OBJECT, ARG0 .. $#_ ] : @_;
     
     return unless ( $clid );
     
     $self->{db}->do(
-        sql => 'DELETE FROM cli_ch_map WHERE clid=?',
+        sql => 'DELETE FROM clid_ch_map WHERE clid=?',
+        placeholders => [ $clid ],
+        event => 'check_error'
+    );
+    
+    $self->{db}->do(
+        sql => 'DELETE FROM cid_clid_map WHERE clid=?',
         placeholders => [ $clid ],
         event => 'check_error'
     );
@@ -214,7 +297,7 @@ sub add_channels {
 #                return;
                 $r->{result} = {};
             }
-            warn "result from get events: ".Data::Dumper->Dump([$r]);
+            #warn "result from get events: ".Data::Dumper->Dump([$r]);
             
             foreach my $ch ( grep { !exists( $r->{result}->{ $_ } ) } @$channels ) {
                 # XXX We may need to get the eid from the events table!
@@ -226,9 +309,10 @@ sub add_channels {
             }
 
             foreach my $ch ( @$channels ) {
-                warn "inserting $ch $clid ".($r->{result}->{$ch} || 0);
+                #warn "inserting $ch $clid ".($r->{result}->{$ch} || 0);
+                
                 $self->{db}->do(
-                    sql => 'INSERT INTO cli_ch_map (channel, clid, eid) VALUES (?, ?, ?)',
+                    sql => 'INSERT INTO clid_ch_map (channel, clid, eid) VALUES (?, ?, ?)',
                     placeholders => [ $ch, $clid, $r->{result}->{$ch} || 0 ],
                     event => 'check_error'
                 );
@@ -238,36 +322,37 @@ sub add_channels {
 }
 
 sub remove_channels {
-    my ( $self, $clid, $channels ) = @_;
+    my ( $self, $clid, $channels ) = $_[ KERNEL ] ? @_[ OBJECT, ARG0 .. $#_ ] : @_;
     
     return unless ( $clid && $channels );
     
     $channels = [ $channels ] unless ( ref $channels );
 
-    unshift ( @$channels, $clid );    
-
     $self->{db}->do(
-        sql => 'DELETE FROM cli_ch_map WHERE clid=? AND channel IN ('
+        sql => 'DELETE FROM clid_ch_map WHERE clid=? AND channel IN ('
             .join(',', map { '?' } @$channels).')',
-        placeholders => $channels,
+        placeholders => [ $clid, @$channels ],
         event => 'check_error'
     );
 }
 
-sub deliver_event {
-    # XXX hm, ugly
-    my ( $self, $ev ) = $_[ KERNEL ] ? @_[ OBJECT, ARG0 ] : @_;
+sub deliver_events {
+    my ( $self, $ev ) = $_[ KERNEL ] ? @_[ OBJECT, ARG0 .. $#_ ] : @_;
     
-    $self->{db}->insert(
-        hash => {
-            event => $ev->as_string, # XXX in json
-            channel => $ev->channel,
-        },
-        table => 'events',
-        last_insert_id => {},
-        event => 'update_eid',
-        _channel => $ev->channel
-    );
+    $ev = [ $ev ] unless ( ref( $ev ) eq 'ARRAY' );
+    
+    foreach ( @$ev ) {
+        my $ch = $_->channel;
+        $self->{db}->insert(
+            hash => {
+                event => $_->as_string,
+                channel => $ch,
+            },
+            table => 'events',
+            event => sub { $self->{channels}->{ $_[0]->{_channel} } = 1; },
+            _channel => $ch
+        );
+    }
 }
 
 sub get_events {
@@ -276,16 +361,16 @@ sub get_events {
     $self->{db}->hashhash(
         sql =>   qq|SELECT cm.channel,cm.eid,c.eid as leid
                     FROM channels AS c
-                    JOIN cli_ch_map AS cm
+                    JOIN clid_ch_map AS cm
                         ON c.channel=cm.channel
                     WHERE cm.clid=?
                     AND cm.eid < c.eid|,
-#        _sql2 => qq|SELECT cm.channel,cm.eid FROM channels AS c JOIN cli_ch_map AS cm ON c.channel=cm.channel WHERE cm.clid="test" AND cm.eid < c.eid|,
+#        _sql2 => qq|SELECT cm.channel,cm.eid FROM channels AS c JOIN clid_ch_map AS cm ON c.channel=cm.channel WHERE cm.clid="test" AND cm.eid < c.eid|,
         placeholders => [ $clid ],
         primary_key => 'channel',
         event => sub {
             my $r = shift;
-            warn "result from get events: ".Data::Dumper->Dump([$r]);
+            #warn "result from get events: ".Data::Dumper->Dump([$r]);
             if ( $r->{error} ) {
                 $self->_log(v => 3, msg => "db error: $r->{error}");
                 return;
@@ -293,29 +378,39 @@ sub get_events {
 
             my @channels = keys %{$r->{result}};
             unless ( @channels ) {
-                $callback->([]);
+                if ( ref( $callback ) eq 'CODE' ) {
+                    $callback->( [] );
+                } else {
+                    $poe_kernel->call( @$callback => [] );
+                }
                 return;
             }
 
             my $events = [];
-            foreach my $i ( 0 .. $#channels ) {
+            my $lastchan = $#channels;
+            foreach my $i ( 0 .. $lastchan ) {
                 my $ch = $channels[ $i ];
                 $self->{db}->do(
-                    sql => 'UPDATE cli_ch_map SET channel=?,eid=? WHERE clid=?',
-                    placeholders => [ $ch, $r->{result}->{$ch}->{leid}, $clid ],
+                    sql => 'UPDATE clid_ch_map SET eid=? WHERE clid=? AND channel=?',
+                    placeholders => [ $r->{result}->{$ch}->{leid}, $clid, $ch ],
                     event => 'check_error',
                 );
                 
-                $self->{db}->array(
-                    sql => 'SELECT event FROM events WHERE channel=? AND eid > ? AND eid <= ?',
+                $self->{db}->arrayhash(
+                    sql => 'SELECT eid,event FROM events WHERE channel=? AND eid > ? AND eid <= ? ORDER BY eid ASC',
                     placeholders => [ $ch, @{$r->{result}->{$ch}}{qw( eid leid )} ],
                     primary_key => 'channel',
+                    #chunked => 50,
                     event => sub {
                         my $s = shift;
-                        warn "result from get events: ".Data::Dumper->Dump([$s]);
+                        #warn "result from get events: ".Data::Dumper->Dump([$s]);
                         if ( $s->{error} ) {
                             $self->_log(v => 3, msg => "db error: $s->{error}");
-                            $callback->($s->{_events});
+                            if ( ref( $callback ) eq 'CODE' ) {
+                                $callback->( $s->{_events} );
+                            } else {
+                                $poe_kernel->call( @$callback => $s->{_events} );
+                            }
                             return;
                         }
 
@@ -323,9 +418,12 @@ sub get_events {
                         push(@{$s->{_events}}, @{$s->{result}})
                             if (@{$s->{result}});
 
-                        if ( $i == $#channels ) {
-                            warn "calling callback";
-                            $callback->($s->{_events});
+                        if ( $i == $lastchan ) {
+                            if ( ref( $callback ) eq 'CODE' ) {
+                                $callback->( $s->{_events} );
+                            } else {
+                                $poe_kernel->call( @$callback => $s->{_events} );
+                            }
                         }
                     },
                     _events => $events,

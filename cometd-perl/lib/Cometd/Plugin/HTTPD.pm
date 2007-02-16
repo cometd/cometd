@@ -67,23 +67,52 @@ sub local_connected {
     $self->take_connection( $con );
     # POE::Filter::Stackable object:
     $con->filter->push( POE::Filter::HTTPD->new() );
-    # XXX should we pop the stream filter off the top?
-    # XXX note: I can't until the HTTPD filter supports get_pending
+    $con->filter->shift(); # pull off Filter::Stream
     return 1;
 }
 
 sub local_receive {
     my ( $self, $server, $con, $req ) = @_;
 
-    $con->wheel->pause_input();
-
-#    warn Data::Dumper->Dump([$req]);
-
-    my $r = HTTP::Response->new( 200 );
-    $r->content_type( 'text/plain' );
-    $r->content( 'cometd test server' );
-    $con->send( $r );
-    $con->close();
+    my ( $out, $r );
+    
+#    open(FH,">>debug.txt");
+#    print FH "connection: ".$con->ID."\n";
+    my $close = 1;
+    
+    if ( $req->isa( 'HTTP::Response' ) ) {
+        $r = $req; # a prebuilt response
+        $close = 1; # default anyway
+    } else {
+        $r = HTTP::Response->new( 200 );
+        $r->content_type( 'text/plain' );
+        $r->content( ( 'x' x 2048 ) );
+        $r->header( 'content-length' => 2048 );
+        
+        my $connection = $req->header( 'connection' );
+        $close = 0 if ( $connection && $connection =~ m/^keep-alive$/i );
+    }
+    
+#    print FH Data::Dumper->Dump([$req])."\n";
+#    print FH "-------\n";
+   
+#   $close = 1 if ( $con->{__requests} && $con->{__requests} > 100 );
+   
+    if ( $close ) {
+        $r->header( 'connection' => 'close' );
+        $con->wheel->pause_input(); # no more requests
+        $con->send( $r );
+        $con->close();
+    } else {
+        # TODO set timeout
+        $r->header( 'connection' => 'keep-alive' );
+        $con->send( $r );
+        $con->{__requests}++;
+    }    
+    
+#    print FH Data::Dumper->Dump([$r])."\n";
+#    close(FH);
+    
     return 1;
 
     # /cometd?message=%5B%7B%22version%22%3A0.1%2C%22minimumVersion%22%3A0.1%2C%22channel%22%3A%22/meta/handshake%22%7D%5D&jsonp=dojo.io.ScriptSrcTransport._state.id1.jsonpCall

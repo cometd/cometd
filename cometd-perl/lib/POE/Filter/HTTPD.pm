@@ -55,7 +55,7 @@ sub new {
 
 sub get_one_start {
     my ($self, $stream) = @_;
-    return if ( $self->[FINISH] );
+#    return if ( $self->[FINISH] ); # XXX check this for correctness!
     $stream = [ $stream ] unless ( ref( $stream ) );
     $self->[BUFFER] .= join( '', @$stream );
 }

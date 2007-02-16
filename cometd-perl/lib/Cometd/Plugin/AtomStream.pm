@@ -1,8 +1,9 @@
 package Cometd::Plugin::AtomStream;
 
-use Cometd::Plugin;
+use Cometd qw( Plugin Event );
 use base 'Cometd::Plugin';
 
+use POE;
 use POE::Filter::Atom;
 use POE::Filter::Line;
 
@@ -28,11 +29,12 @@ sub as_string {
 
 sub remote_connected {
     my ( $self, $client, $con, $socket ) = @_;
+    
     $self->take_connection( $con );
     # POE::Filter::Stackable object:
-    my $filter = $con->filter;
+    $con->filter->push( POE::Filter::Line->new() );
 
-    $filter->push( POE::Filter::Line->new() );
+    $con->filter->shift(); # pull off Filter::Stream
 
     # look for the atom stream header first
     $self->{_header} = 1;
@@ -52,19 +54,28 @@ sub remote_receive {
     my ($self, $client, $con, $d) = @_;
     
     if ( $self->{_header} ) {
-        #warn "received [$d]";
-        if ( $d =~ m/^<atomStream/io ) {
-            delete $self->{_header};
-            $con->filter->push( POE::Filter::Atom->new() );
-        }
-    } else {
-        return unless ( $d->can( "entries" ) );
+        return unless ( $d && $d =~ m/^<atomStream/io );
 
-        my @entries = $d->entries;
-        foreach ( @entries ) {
-            my $link = $_->link->href;
-            $self->_log( v => 4, msg => "Title:[ ".$_->title." ] Link:[ $link ]");
-        }
+        delete $self->{_header};
+        $con->filter->push( POE::Filter::Atom->new() );
+    
+        $con->filter->shift(); # POE::Filter::Stream
+        
+    } else {
+        return unless ( $d->can( "entries" ) && $self->{event_manager} && $self->{feed_channel} );
+
+        my @events = map {
+            $self->_log(v => 4, msg => 'Title:[ '.$_->title.' ] Link:[ '.$_->link->href.' ]');
+            new Cometd::Event(
+                channel => $self->{feed_channel},
+                data => 'Title:[ '.$_->title.' ] Link:[ '.$_->link->href.' ]'
+            );
+        } $d->entries;
+        
+        return unless ( @events );
+        
+        
+        $poe_kernel->call( $self->{event_manager} => deliver_events => \@events );
     }
     
     return 1;

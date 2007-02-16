@@ -46,6 +46,8 @@ sub local_connected {
     $self->take_connection( $con );
     # POE::Filter::Stackable object:
     $con->filter->push( POE::Filter::Line->new() );
+    
+    $con->filter->shift(); # POE::Filter::Stream
 
     Test::More::pass("connected, starting test");
     
@@ -108,6 +110,8 @@ sub remote_connected {
 
     # POE::Filter::Stackable object:
     $con->filter->push( POE::Filter::Line->new() );
+    
+    $con->filter->shift(); # POE::Filter::Stream
 
     return 1;
 }

@@ -37,6 +37,8 @@ sub remote_connected {
     
     # POE::Filter::Stackable object:
     $con->filter->push( POE::Filter::Memcached->new() );
+    
+    $con->filter->shift(); # POE::Filter::Stream
    
     # FIXME
     $self->{con} = $con;

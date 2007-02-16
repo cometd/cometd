@@ -29,5 +29,9 @@ perl Makefile.PL
 make test
 
 
+./eventserver.pl
+
+visit http://<ip>:8080/  or http://127.0.0.1:8080/
+
 David Davis
 aka Xantus

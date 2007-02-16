@@ -5,4 +5,5 @@
 8065 - Perlbal manager ( telnet to and issue commands )
 8021 - httpd.pl ( simple web server, can be replaced by cometd http server soon )
 8080 - Cometd http server ( test server to use apache benchmark against )
-5000 - Cometd manager ( telnet to and issue commands )
+5000 - Cometd manager ( telnet to and issue commands ), use telnet
+8000 - Simple test server for the event system, use telnet

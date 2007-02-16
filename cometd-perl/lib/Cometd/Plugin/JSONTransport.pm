@@ -33,6 +33,8 @@ sub remote_connected {
     my $filter = $con->filter;
 
     $filter->push( POE::Filter::Line->new() );
+    
+    $filter->shift(); # POE::Filter::Stream
 
     $con->send( "bayeux " . BAYEUX_VERSION );
         
