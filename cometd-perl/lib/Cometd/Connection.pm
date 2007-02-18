@@ -1,4 +1,4 @@
-package POE::Component::Cometd::Connection;
+package Cometd::Connection;
 
 use POE qw( Wheel::SocketFactory Wheel::ReadWrite );
 use Cometd::Event;
