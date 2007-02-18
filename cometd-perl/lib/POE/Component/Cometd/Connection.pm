@@ -5,6 +5,8 @@ use Cometd::Event;
 use Class::Accessor::Fast;
 use base qw(Class::Accessor::Fast);
 
+use Scalar::Util qw( weaken );
+
 __PACKAGE__->mk_accessors( qw(
     sf
     wheel
@@ -14,6 +16,7 @@ __PACKAGE__->mk_accessors( qw(
     active_time
     parent_id
     event_manager
+    fused
 ) );
 
 sub new {
@@ -66,6 +69,18 @@ sub send {
 
 sub write {
     &send;
+}
+
+sub fuse {
+    my ( $self, $con ) = @_;
+
+    $self->fused( $con );
+    weaken( $self->{fused} );
+    $con->fused( $self );
+    weaken( $con->{fused} );
+    
+    # TODO some code to fuse the socket or other method
+    return;
 }
 
 sub tcp_cork {
