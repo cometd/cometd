@@ -233,7 +233,7 @@ sub get {
         )
       ];
     }
-    elsif ($method eq 'OPTIONS') {
+    elsif ($method eq 'OPTIONS' || $method eq 'CONNECT') {
       $self->[FINISH]++;
       # OPTIONS requests can have an optional content length
       # See http://www.faqs.org/rfcs/rfc2616.html, section 9.2
@@ -311,8 +311,8 @@ sub put {
 
 sub get_pending {
   my $self = shift;
-  croak ref($self)." does not support the get_pending() method\n";
-  return;
+  # XXX does this do the right thing?
+  return $self->[BUFFER];
 }
 
 #------------------------------------------------------------------------------
