@@ -21,7 +21,7 @@ sub spawn {
 
             _conn_status
 
-            connect_to_client
+            connect
             remote_connect_success
             remote_connect_timeout
             remote_connect_error
@@ -51,12 +51,13 @@ sub _startup {
     $kernel->sig( INT => 'signals' );
     
     # connect to our client list
-    if ( $self->{opts}->{client_list} 
-        && ref( $self->{opts}->{client_list} ) eq 'ARRAY' ) {
-        my $d = .1;
-        foreach ( @{$self->{opts}->{client_list}} ) {
-            $kernel->delay_set( connect_to_client => $d => $_ );
-            $d += .05;
+    if ( $self->{opts}->{client_list} ) {
+        if ( ref( $self->{opts}->{client_list} ) eq 'ARRAY' ) {
+            foreach ( @{$self->{opts}->{client_list}} ) {
+                ( ref( $_ ) eq 'ARRAY' ) ? $self->connect( @$_ ) : $self->connect( $_ );
+            }
+        } else {
+            warn "client list must be an array if defined at all";
         }
     }
 
@@ -74,51 +75,6 @@ sub _conn_status {
     $self->_log(v => 2, msg => $self->{name}." : REMOTE connections: $self->{connections}");
 }
 
-
-# TODO inc backoff
-sub reconnect_to_client {
-    my ( $self, $con ) = @_;
-
-    $con->connected( 0 );
-
-    $con->sf( undef );
-    $con->wheel( undef );
-
-    if ( $self->{opts}->{connect_time_out} ) {
-        $con->{timeout_id} = $poe_kernel->alarm_set(
-            $con->event( 'remote_connect_timeout' )
-                => time() + $self->{opts}->{connect_time_out}
-        );
-    }
-
-    $con->socket_factory(
-        RemoteAddress => $con->{peer_ip},
-        RemotePort    => $con->{peer_port},
-        SuccessEvent  => $con->event( 'remote_connect_success' ),
-        FailureEvent  => $con->event( 'remote_connect_error' ),
-    );
-    
-}
-
-sub connect_to_client {
-    my ( $kernel, $self, $addr ) = @_[KERNEL, OBJECT, ARG0];
-
-    my ( $address, $port ) = ( $addr =~ /^([^:]+):(\d+)$/ ) or return;
-    
-    # TODO resolve this addr that isn't an ip, non blocking
-    # PoCo DNS
-
-    my $con = $self->new_connection(
-        peer_ip => $address,
-        peer_port => $port,
-        addr => $addr,
-    );
-   
-    $self->reconnect_to_client( $con );
-    
-    undef;
-}
-
 sub remote_connect_success {
     my ( $kernel, $self, $con, $socket ) = @_[KERNEL, OBJECT, HEAP, ARG0];
     my $addr = $con->{addr} = join( ':', @$con{qw( peer_ip peer_port )} ); 
@@ -130,7 +86,7 @@ sub remote_connect_success {
     # XXX change this to assume wheel::readwrite in the connection object?
     $con->wheel( POE::Wheel::ReadWrite->new(
         Handle       => $socket,
-        Driver       => POE::Driver::SysRW->new(),
+        Driver       => POE::Driver::SysRW->new( BlockSize => 2048 ),
         Filter       => POE::Filter::Stackable->new(
             Filters => [
                 POE::Filter::Stream->new(),
@@ -138,7 +94,7 @@ sub remote_connect_success {
         ),
         InputEvent   => $con->event( 'remote_receive' ),
         ErrorEvent   => $con->event( 'remote_error' ),
-#        FlushedEvent => $con->event( 'remote_flush' ),
+        FlushedEvent => $con->event( 'remote_flush' ),
     ) );
     
     $con->sf( undef );
@@ -183,19 +139,80 @@ sub remote_error {
     my ($self, $con) = @_[OBJECT, HEAP];
     $self->_log(v => 2, msg => $self->{name}." got error " . join( ' : ', @_[ARG1 .. ARG2] ) );
     
-    if ( $_[ARG1] == 0 ) {
-        $self->{transport}->process_plugins( [ 'remote_disconnected', $self, @_[ HEAP, ARG0 ] ] );
-    } else {
-        $self->{transport}->process_plugins( [ 'remote_error', $self, @_[ HEAP, ARG0 .. ARG2 ] ] );
+    if ( $_[ARG1] != 0 ) {
+        # XXX con disconnect reason
+        #$self->{transport}->process_plugins( [ 'remote_error', $self, @_[ HEAP, ARG0 .. ARG2 ] ] );
     }
+    
     # TODO reconnect in plugins
+    $self->{transport}->process_plugins( [ 'remote_disconnected', $self, @_[ HEAP, ARG0, ARG1 ] ] );
     
     $self->cleanup_connection( $con );
 #    $self->reconnect_to_client( $_[HEAP] );
 }
 
 sub remote_flush {
-#    $_[OBJECT]->_log(v => 2, msg => "got flush");
+    my ( $self, $con ) = @_[ OBJECT, HEAP ];
+
+    # we'll get called again if there are octets out
+    if ( $con->close_on_flush
+        && not $con->get_driver_out_octets() ) {
+        
+        $self->cleanup_connection( $con );
+    }
+    
+    return;
+}
+
+sub connect {
+    # must call in this in our session's context
+    unless ( $_[KERNEL] && ref $_[KERNEL] ) {
+        return $poe_kernel->call( shift->{session_id} => connect => @_ );
+    }
+    
+    my ( $self, $address, $port ) = @_[ OBJECT, ARG0, ARG1 ];
+    
+    unless( defined $port ) {
+       ( $address, $port ) = ( $address =~ /^([^:]+):(\d+)$/ );
+    }
+    
+    # TODO resolve this addr that isn't an ip, non blocking
+    # PoCo DNS
+
+    return $self->reconnect_to_client(
+        $self->new_connection(
+            peer_ip => $address,
+            peer_port => $port,
+            addr => "$address:$port",
+        )
+    );
+}
+
+sub reconnect_to_client {
+    my ( $self, $con ) = @_;
+
+    # TODO include backoff
+
+    $con->connected( 0 );
+
+    $con->sf( undef );
+    $con->wheel( undef );
+
+    if ( $self->{opts}->{connect_time_out} ) {
+        $con->{timeout_id} = $poe_kernel->alarm_set(
+            $con->event( 'remote_connect_timeout' ),
+            time() + $self->{opts}->{connect_time_out}
+        );
+    }
+
+    $con->socket_factory(
+        RemoteAddress => $con->{peer_ip},
+        RemotePort    => $con->{peer_port},
+        SuccessEvent  => $con->event( 'remote_connect_success' ),
+        FailureEvent  => $con->event( 'remote_connect_error' ),
+    );
+    
+    return $con;
 }
 
 sub deliver_event {

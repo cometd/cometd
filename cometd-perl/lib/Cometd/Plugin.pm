@@ -60,6 +60,6 @@ sub take_connection {
 # ---------------------------------------------------------
 # remote_connected
 # remote_receive
-# remote_disconnected (TODO not setup yet)
+# remote_disconnected
 
 1;

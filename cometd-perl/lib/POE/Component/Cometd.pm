@@ -7,8 +7,7 @@ our $VERSION = '0.01';
 
 use Carp;
 use BSD::Resource;
-use Cometd;
-use Cometd::Transport;
+use Cometd qw( Transport Connection );
 use Scalar::Util qw( weaken );
 
 use overload '""' => sub { shift->as_string(); };
@@ -28,7 +27,6 @@ use POE qw(
     Wheel::SocketFactory
     Driver::SysRW
     Wheel::ReadWrite
-    Component::Cometd::Connection
 );
 use Cometd::Session;
 
@@ -196,9 +194,13 @@ sub _start {
 }
 
 sub _default {
-    my ( $self, $cmd ) = @_[OBJECT, ARG0];
-    return if ( $cmd =~ m/^_/ );
-    $self->_log(v => 1, msg => "_default called, no handler for $cmd");
+    my ( $self, $con, $cmd ) = @_[OBJECT, HEAP, ARG0];
+    return if ( $cmd =~ m/^_(child|parent)/ );
+
+    return $self->{transport}->process_plugins( [ $cmd, $self, $con, @_[ ARG1 .. $#_ ] ] )
+        if ( ref $con &&  $con->isa( 'Cometd::Connection' ) );
+    
+    $self->_log(v => 1, msg => "_default called, no handler for event $cmd [$con] (the connection for this event may be gone)");
 }
 
 sub signals {
@@ -218,7 +220,7 @@ sub signals {
 sub new_connection {
     my $self = shift;
    
-    my $con = POE::Component::Cometd::Connection->new(
+    my $con = Cometd::Connection->new(
         parent_id => $self->{session_id},
         @_
     );

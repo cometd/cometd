@@ -69,38 +69,58 @@ sub _invoke_state {
   # Package and object states are invoked this way.
   SWITCH: {
     if ( $state eq POE::Session::EN_DEFAULT
-       && ( $etc->[0] =~ m/^([^\|]+)\|(.*)/ ) ) {
-       last SWITCH unless ( $1 && $2 );
+      && ( $etc->[0] =~ m/^([^\|]+)\|(.*)/ ) ) {
+      last SWITCH unless ( $1 && $2 );
       
-       my ( $heap, $nstate ) = ( $1, $2 );
+      my ( $heap, $nstate ) = ( $1, $2 );
        
-       # does this state exist in this session?
-       my $om = $self->[POE::Session::SE_STATES]->{ $nstate };
-       last SWITCH unless( $om );
+      # does this state exist in this session?
+      my $om = $self->[POE::Session::SE_STATES]->{ $nstate };
+      unless( $om ) {
+        $om = $self->[POE::Session::SE_STATES]->{ POE::Session::EN_DEFAULT };
+      }
+      last SWITCH unless( $om );
        
-       # does this object have this method?
-       my ( $object, $method ) = @$om;
-       last SWITCH unless ( $object->can( $method ) );
-       
-       if ( $object->{heap} = $object->{heaps}->{ $heap } ) {
-         my $ret =
-           $object->$method                    # package/object (implied)
-             ( $self,                          # session
-               $POE::Kernel::poe_kernel,       # kernel
-               $object->{heap},                # heap
-               $nstate,                        # state
-               $source_session,                # sender
-               undef,                          # unused #6
-               $file,                          # caller file name
-               $line,                          # caller file line
-               $fromstate,                     # caller state
-               @{$etc->[1]}                    # args
-            );
-
-         $object->{heap} = undef;
-
-         return $ret;
-       }
+      # does this object have this method?
+      my ( $object, $method ) = @$om;
+      #last SWITCH unless ( $object->can( $method ) );
+      if ( $object->{heap} = $object->{heaps}->{ $heap } ) {
+        my $ret;
+        if ( $method eq POE::Session::EN_DEFAULT ) {
+          $method = POE::Session::EN_DEFAULT;
+          $ret =
+          $object->$method(                 # package/object (implied)
+            $self,                          # session
+            $POE::Kernel::poe_kernel,       # kernel
+            $object->{heap},                # heap
+            $nstate,                        # state
+            $source_session,                # sender
+            undef,                          # unused #6
+            $file,                          # caller file name
+            $line,                          # caller file line
+            $fromstate,                     # caller state
+            $nstate,                           # original event
+            @{$etc->[1]}                    # args
+          );
+        } else {
+          $ret =
+          $object->$method(                 # package/object (implied)
+            $self,                          # session
+            $POE::Kernel::poe_kernel,       # kernel
+            $object->{heap},                # heap
+            $nstate,                        # state
+            $source_session,                # sender
+            undef,                          # unused #6
+            $file,                          # caller file name
+            $line,                          # caller file line
+            $fromstate,                     # caller state
+            @{$etc->[1]}                    # args
+          );
+        }
+        $object->{heap} = undef;
+    
+        return $ret;
+      }
     }
   }
   

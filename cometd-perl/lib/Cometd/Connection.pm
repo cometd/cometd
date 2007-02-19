@@ -17,6 +17,8 @@ __PACKAGE__->mk_accessors( qw(
     parent_id
     event_manager
     fused
+    peer_ip
+    peer_port
 ) );
 
 sub new {
@@ -139,6 +141,8 @@ sub close {
             $self->connected( 0 );
             # kill the socket factory if any
             $self->sf( undef );
+            # XXX close the fused connection?
+            $self->fused( undef );
         }
     }
 }
