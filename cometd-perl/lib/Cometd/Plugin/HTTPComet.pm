@@ -1,4 +1,4 @@
-package Cometd::Plugin::HTTPD;
+package Cometd::Plugin::HTTPComet;
 
 use Cometd::Plugin;
 use base 'Cometd::Plugin';

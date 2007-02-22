@@ -8,7 +8,7 @@ use POE;
 use Cometd qw(
     Plugin::JSONTransport
     Plugin::EventManager::SQLite
-    Plugin::HTTPD
+    Plugin::HTTPComet
     Plugin::Manager
     Plugin::Simple
 );
@@ -39,16 +39,17 @@ POE::Component::Cometd::Server->spawn(
 # comet http server
 POE::Component::Cometd::Server->spawn(
     %opts,
-    Name => 'HTTP Server',
-    ListenPort => 8080,
+    Name => 'HTTP Comet Server',
+    ListenPort => 8001,
     ListenAddress => '0.0.0.0',
     Transports => [
         {
-            Plugin => Cometd::Plugin::HTTPD->new(),
+            Plugin => Cometd::Plugin::HTTPComet->new( EventManager => 'eventman' ),
             Priority => 0,
         },
     ],
 );
+            
 
 POE::Component::Cometd::Server->spawn(
     %opts,
