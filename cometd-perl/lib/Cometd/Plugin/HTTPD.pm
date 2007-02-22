@@ -84,11 +84,10 @@ sub local_receive {
         $r = $req; # a prebuilt response
         $close = 1; # default anyway
     } else {
-        $r = HTTP::Response->new( 200 );
-        $r->content_type( 'text/plain' );
-        $r->content( ( 'x' x 2048 ) );
-        $r->header( 'content-length' => 2048 );
-        
+#        $r = HTTP::Response->new( 200 );
+#        $r->content_type( 'text/plain' );
+#        $r->content( ( 'x' x 2048 ) );
+#        $r->header( 'content-length' => 2048 );
         my $connection = $req->header( 'connection' );
         $close = 0 if ( $connection && $connection =~ m/^keep-alive$/i );
     }
@@ -98,22 +97,23 @@ sub local_receive {
    
 #   $close = 1 if ( $con->{__requests} && $con->{__requests} > 100 );
    
-    if ( $close ) {
-        $r->header( 'connection' => 'close' );
-        $con->wheel->pause_input(); # no more requests
-        $con->send( $r );
-        $con->close();
-    } else {
-        # TODO set timeout
-        $r->header( 'connection' => 'keep-alive' );
-        $con->send( $r );
-        $con->{__requests}++;
-    }    
+    if ( $r ) {
+        if ( $close ) {
+            $r->header( 'connection' => 'close' );
+            $con->wheel->pause_input(); # no more requests
+            $con->send( $r );
+            $con->close();
+        } else {
+            # TODO set timeout
+            $r->header( 'connection' => 'keep-alive' );
+            $con->send( $r );
+            $con->{__requests}++;
+        }
+        return;
+    }
     
 #    print FH Data::Dumper->Dump([$r])."\n";
 #    close(FH);
-    
-    return 1;
 
     # /cometd?message=%5B%7B%22version%22%3A0.1%2C%22minimumVersion%22%3A0.1%2C%22channel%22%3A%22/meta/handshake%22%7D%5D&jsonp=dojo.io.ScriptSrcTransport._state.id1.jsonpCall
     $self->_log(v => 4, msg => Data::Dumper->Dump([$req]));
@@ -122,9 +122,11 @@ sub local_receive {
         my %ops = map {
             my ( $k, $v ) = split( '=' );
             $self->_log(v => 4, msg => "$k:$v" );
+            
             $k => URI::Escape::uri_unescape( $v )
+            
         } split( '&', ( $uri =~ m/\?(.*)/ )[ 0 ] );
-
+        
         $self->_log(v => 4, msg => Data::Dumper->Dump([\%ops]));
         
         $self->{service}->handle_request_json( $con, $req, $ops{message} );
@@ -132,7 +134,6 @@ sub local_receive {
         $self->{service}->handle_request_json( $con, $req, $req->content );
     }
 
-    
     return 1;
 }
 
