@@ -105,8 +105,6 @@ sub local_receive {
         my $connection = $req->header( 'connection' );
         $con->{_close} = 0 if ( $connection && $connection =~ m/^keep-alive$/i );
         
-        $self->_log( v=> 4, msg => "uri: ".$req->uri );
-        
         my $file = $self->{document_root}.$self->resolve_path( $req->uri );
         
         $file .= $self->{index_file}
@@ -155,17 +153,8 @@ sub stat_file {
     unless ( -e _ ) {
         my $r = HTTP::Response->new( 200 );
         $r->content_type( 'text/plain' );
-        my $out = '';
-
-#        if ( delete $con->{_orig} ) {
-#            delete $con->{_content_type};
-#            $self->_log( v=> 4, msg => "200 [directory] $file" );
-#            $out = 'directory browsing denied';
-#        } else {
-            $self->_log( v=> 4, msg => "404 $file" );
-            $out = 'file not found';
-#        }
-
+        $self->_log( v=> 4, msg => "404 $file" );
+        my $out = 'file not found';
         $r->header( 'content-length' => length($out) );
         $r->header( 'connection' => 'keep-alive' )
             if ( !$con->{_close} );
@@ -279,7 +268,8 @@ sub resolve_path {
     }
     
     $path_out = ( $path_out =~ m!^/! ) ? $path_out : '/'.$path_out;
-    $path_out .= ( $path_out =~ m!/$! ) ? '' : '/';
+    $path_out .= ( $path_out =~ m!/$! ) ? '' : '/'
+        if ( $path =~ m!/$! );
 
     return $path_out;
 }
