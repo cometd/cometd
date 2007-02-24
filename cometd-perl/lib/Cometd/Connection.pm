@@ -22,6 +22,8 @@ __PACKAGE__->mk_accessors( qw(
     ID
 ) );
 
+our %callback_ids;
+
 sub new {
     my $class = shift;
     my $self = bless({
@@ -160,6 +162,41 @@ sub active {
     shift->active_time( time() );
 }
 
+sub callback {
+    my ($self, $event, @etc) = @_;
+
+    my $id = $self->parent_id;
+    $event = $self->event( $event );
+
+    my $callback = Cometd::Connection::AnonCallback->new(sub {
+        $poe_kernel->call( $id, $event, @etc, @_ );
+    });
+    
+    $callback_ids{"$callback"} = $id;
+ 
+    $poe_kernel->refcount_increment( $self->{parent_id}, 'anon_event' );
+
+    return $callback;
+}
+
+sub postback {
+    my ($self, $event, @etc) = @_;
+
+    my $id = $self->parent_id;
+    $event = $self->event( $event );
+
+    my $postback = Cometd::Connection::AnonCallback->new(sub {
+        $poe_kernel->post( $id, $event, @etc, @_ );
+        return 0;
+    });
+
+    $callback_ids{"$postback"} = $id;
+    
+    $poe_kernel->refcount_increment( $self->{parent_id}, 'anon_event' );
+
+    return $postback;
+}
+
 sub add_client {
     my $self = shift;
     $poe_kernel->call( $self->event_manager => add_client => $self->clid => $self->ID )
@@ -224,5 +261,35 @@ sub _log {
     my $self = shift;
     $poe_kernel->call( $self->parent_id => _log => ( l => 1, @_ ) );
 }
+
+sub DESTROY {
+    my $self = shift;
+    warn "destroy in connection: $self";
+}
+
+1;
+
+package Cometd::Connection::AnonCallback;
+
+use POE;
+
+sub new {
+    my $class = shift;
+    bless( shift, $class );
+}
+
+sub DESTROY {
+    my $self = shift;
+    my $parent_id = delete $Cometd::Connection::callback_ids{"$self"};
+
+    if ( defined $parent_id ) {
+        $poe_kernel->refcount_decrement( $parent_id, 'anon_event' )
+    } else {
+        warn "anon event destroy without session_id to refcount_decrement"
+    }
+    return;
+}
+
+
 
 1;
