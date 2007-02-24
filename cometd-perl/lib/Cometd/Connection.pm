@@ -19,25 +19,26 @@ __PACKAGE__->mk_accessors( qw(
     fused
     peer_ip
     peer_port
+    ID
 ) );
 
 sub new {
     my $class = shift;
-    bless({
+    my $self = bless({
         channels => {},
         clid => undef,
         @_
     }, ref $class || $class );
+    
+    # generate the connection ID
+    $self->ID( ( "$self" =~ m/\(0x([^\)]+)\)/o )[ 0 ] );
+    
+    return $self;    
 }
 
 sub event {
     my ( $self, $event ) = @_;
     return $self->ID."|$event";
-}
-
-sub ID {
-    my $self = shift;
-    return ( "$self" =~ m/\(0x([^\)]+)\)/o )[ 0 ];
 }
 
 sub socket_factory {
