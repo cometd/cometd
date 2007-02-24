@@ -24,7 +24,9 @@ POE::Component::Cometd::Server->spawn(
     ListenAddress => '0.0.0.0',
     Transports => [
         {
-            Plugin => Cometd::Plugin::HTTP->new(),
+            Plugin => Cometd::Plugin::HTTP->new(
+                DocumentRoot => $ENV{PWD}.'/html'
+            ),
             Priority => 0,
         },
     ],
