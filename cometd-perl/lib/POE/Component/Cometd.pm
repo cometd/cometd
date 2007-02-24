@@ -16,10 +16,10 @@ use overload '""' => sub { shift->as_string(); };
 our @COMPONENTS;
 
 BEGIN {
-#    eval "use POE::Loop::Epoll"; # use Event instead?
+    eval "use POE::Loop::Epoll"; # use Event instead?
     if ( $@ ) {
         # XXX
-        #warn "Epoll not found, using default";
+        warn "Epoll not found, using default";
     }
 }
 

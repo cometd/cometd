@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use lib 'lib';
+use lib qw( lib easydbi-lib );
 
 # use this before POE, so Cometd loads the Epoll loop if we have it
 use POE::Component::Cometd qw( Server Client );

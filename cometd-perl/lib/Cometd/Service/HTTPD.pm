@@ -143,6 +143,7 @@ sub handle_request_reproxy {
 sub handle_request_json {
     my ($self, $client, $req, $json) = @_;
 
+    my $close = 1;
     my $op = {
         # TODO?
     };
@@ -165,8 +166,13 @@ sub handle_request_json {
         unless($r->content_type);
     $r->content( 'cometd test server' )
         unless($r->content);
+
+    my $connection = $req->header( 'connection' );
+    $close = 0 if ( $connection && $connection =~ m/^keep-alive$/i );
+    
     $client->write( $r );
-    $client->close();
+    
+    $client->close() unless ( $close );
 
     return 1;
 }
@@ -228,7 +234,12 @@ sub action_handshake {
         authSuccessful => 'true',
         #authToken => "SOME_NONCE_THAT_NEEDS_TO_BE_PROVIDED_SUBSEQUENTLY",
     }) );
-    $client->close();
+    
+    my $connection = $hd->header( 'connection' );
+    my $close = ( $connection && $connection =~ m/^keep-alive$/i ) ? 0 : 1;
+    
+    $client->write( $res );
+    $client->close() unless ( $close );
 
     warn "sent handshake to $op->{id}";
     return 1;

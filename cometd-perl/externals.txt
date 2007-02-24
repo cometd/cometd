@@ -1,1 +1,2 @@
 perlbal-lib http://code.sixapart.com/svn/perlbal/trunk/lib
+easydbi-lib http://svn.xantus.org/poco-easydbi/trunk/POE-Component-EasyDBI/lib
