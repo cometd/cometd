@@ -431,7 +431,7 @@ sub forward_plugin {
     my $self = shift;
     my $plug_name = shift;
     return 0 unless( exists( $self->{transports}->{ $plug_name } ) );
-    my ( $server, $con ) = @_;
+    my $con = @_[ 1 ];
     $con->plugin( $plug_name );
     return $self->process_plugins( [ $con->state, @_ ] );
 }
