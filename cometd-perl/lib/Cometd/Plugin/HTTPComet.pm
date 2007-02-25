@@ -108,7 +108,7 @@ sub local_receive {
             $con->send( $r );
             $con->{__requests}++;
         }
-        return;
+        return 1;
     }
     
 #    print FH Data::Dumper->Dump([$r])."\n";
