@@ -280,17 +280,13 @@ sub directory_listing {
     my $uri = $con->{_uri};
     my $r = delete $con->{_r};
     my $out = qq|<html><head><title>Index of $uri</title><head><body>
-    <h2>Index of $uri</h2>|;
-    if ( ref $entries ) {
-        $out .= qq|<ul>\n|;
-        foreach ( @$entries ) {
-            $out .= qq|<li><a href="$_">$_</a></li>\n|;
-        }
-        $out .= qq|</ul>\n|
-    } else {
-        $out .= 'no files';
+    <h2>Index of $uri</h2>\n<ul>\n|;
+    $entries = [] unless ( ref $entries );
+    unshift( @$entries, '..' );
+    foreach ( @$entries ) {
+        $out .= qq|<li><a href="$_">$_</a></li>\n|;
     }
-    $out .= qq|</body></html>|;
+    $out .= qq|</ul>\n</body></html>|;
     
     $r->content_type( 'text/html' );
     $r->header( 'content-length' => length($out) );

@@ -7,6 +7,7 @@ use POE::Component::Cometd qw( Client Server );
 use POE;
 use Cometd qw(
     Plugin::HTTP
+    Plugin::HTTP::Deny
     Plugin::Manager
 );
 
@@ -25,9 +26,16 @@ POE::Component::Cometd::Server->spawn(
     Transports => [
         {
             Plugin => Cometd::Plugin::HTTP->new(
-                DocumentRoot => $ENV{PWD}.'/html'
+                DocumentRoot => $ENV{PWD}.'/html',
+                ForwardList => {
+                    qr|/\.| => 'HTTP::Deny',
+                }
             ),
             Priority => 0,
+        },
+        {
+            Plugin => Cometd::Plugin::HTTP::Deny->new(),
+            Priority => 1,
         },
     ],
 );
