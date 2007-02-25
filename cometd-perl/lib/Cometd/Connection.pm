@@ -3,6 +3,7 @@ package Cometd::Connection;
 use POE qw( Wheel::SocketFactory Wheel::ReadWrite );
 use Cometd::Event;
 use Class::Accessor::Fast;
+use Time::HiRes;
 use base qw(Class::Accessor::Fast);
 
 use Scalar::Util qw( weaken );
@@ -14,11 +15,13 @@ __PACKAGE__->mk_accessors( qw(
     close_on_flush
     plugin
     active_time
+    create_time
     parent_id
     event_manager
     fused
     peer_ip
     peer_port
+    state
     ID
 ) );
 
@@ -26,16 +29,31 @@ our %callback_ids;
 
 sub new {
     my $class = shift;
+    my $time = time();
+
     my $self = bless({
+        sf => undef,
+        wheel => undef,
+        connected => 0,
+        close_on_flush => 0,
+        plugin => undef,
+        active_time => $time,
+        create_time => $time,
+        parent_id => undef,
+        event_manager => undef,
+        fused => undef,
+        peer_ip => undef,
+        peer_port => undef,
+        state => undef,
         channels => {},
         clid => undef,
         @_
     }, ref $class || $class );
-    
+
     # generate the connection ID
     $self->ID( ( "$self" =~ m/\(0x([^\)]+)\)/o )[ 0 ] );
-    
-    return $self;    
+
+    return $self;
 }
 
 sub event {
@@ -45,7 +63,7 @@ sub event {
 
 sub socket_factory {
     my $self = shift;
-    $self->sf( 
+    $self->sf(
         POE::Wheel::SocketFactory->new( @_ )
     );
 }
@@ -79,11 +97,13 @@ sub write {
 sub fuse {
     my ( $self, $con ) = @_;
 
+    $self->active();
+    
     $self->fused( $con );
     weaken( $self->{fused} );
     $con->fused( $self );
     weaken( $con->{fused} );
-    
+
     # TODO some code to fuse the socket or other method
     return;
 }
@@ -94,6 +114,7 @@ sub tcp_cork {
 
 sub watch_write {
     my ( $self, $watch ) = @_;
+    $self->active();
     if ( my $wheel = $self->wheel ) {
         if ( $watch ) {
             $wheel->resume_output();
@@ -105,6 +126,7 @@ sub watch_write {
 
 sub watch_read {
     my ( $self, $watch ) = @_;
+    $self->active();
     if ( my $wheel = $self->wheel ) {
         if ( $watch ) {
             $wheel->resume_input();
@@ -124,12 +146,13 @@ sub watch_read {
         $self->sf( undef );
         return;
     }
-    
+
 }
 
 sub close {
     my ( $self, $force ) = @_;
-    
+
+    $self->active();
     if ( my $wheel = $self->wheel ) {
         my $out = $wheel->get_driver_out_octets;
         if ( !$force && $out ) {
@@ -171,9 +194,9 @@ sub callback {
     my $callback = Cometd::Connection::AnonCallback->new(sub {
         $poe_kernel->call( $id, $event, @etc, @_ );
     });
-    
+
     $callback_ids{"$callback"} = $id;
- 
+
     $poe_kernel->refcount_increment( $self->{parent_id}, 'anon_event' );
 
     return $callback;
@@ -191,7 +214,7 @@ sub postback {
     });
 
     $callback_ids{"$postback"} = $id;
-    
+
     $poe_kernel->refcount_increment( $self->{parent_id}, 'anon_event' );
 
     return $postback;
@@ -218,7 +241,7 @@ sub add_channels {
         $poe_kernel->call( $self->event_manager => add_channels => $self->clid => $channels )
             if ( $self->clid && $self->event_manager );
     }
-        
+
     return (keys %{$self->{channels}});
 }
 
@@ -231,7 +254,7 @@ sub remove_channels {
         $poe_kernel->call( $self->event_manager => remove_channels => $self->clid => $channels )
             if ( $self->clid && $self->event_manager );
     }
-    
+
     return (keys %{$self->{channels}});
 }
 
@@ -263,8 +286,7 @@ sub _log {
 }
 
 sub DESTROY {
-    my $self = shift;
-    warn "destroy in connection: $self";
+    # hook?
 }
 
 1;
@@ -285,7 +307,7 @@ sub DESTROY {
     if ( defined $parent_id ) {
         $poe_kernel->refcount_decrement( $parent_id, 'anon_event' )
     } else {
-        warn "anon event destroy without session_id to refcount_decrement"
+        warn "connection callback DESTROY without session_id to refcount_decrement"
     }
     return;
 }

@@ -89,7 +89,7 @@ sub local_accept {
     $ip = inet_ntoa( $ip );
 
     # XXX could do accept check ( plugin )
-    #$self->{transport}->process_plugins( [ 'local_accept', $self, $con, $socket ] );
+    #$self->process_plugins( [ 'local_accept', $self, $con, $socket ] );
     # XXX then move this to an accept method/event the plugin can call
     
     my $con = $self->new_connection(
@@ -123,7 +123,7 @@ sub local_accept {
         $self->_log(v => 4, msg => "Timeout set: id ".$con->{time_out});
     }
     
-    $self->{transport}->process_plugins( [ 'local_connected', $self, $con, $socket ] );
+    $self->process_plugins( [ 'local_connected', $self, $con, $socket ] );
     
     return;
 }
@@ -135,7 +135,7 @@ sub local_receive {
     $_[KERNEL]->alarm_remove( $con->{time_out} )
         if ( $con->{time_out} );
     
-    $self->{transport}->process_plugins( [ 'local_receive', $self, $con, $_[ARG0] ] );
+    $self->process_plugins( [ 'local_receive', $self, $con, $_[ARG0] ] );
     
     return;
 }
@@ -176,7 +176,7 @@ sub local_error {
         $self->_log(v => 3, msg => $self->{name}." encountered $operation error $errnum: $errstr");
     }
     
-    $self->{transport}->process_plugins( [ 'local_disconnected', $self, $con ] );
+    $self->process_plugins( [ 'local_disconnected', $self, $con ] );
     
     $self->cleanup_connection( $con );
     

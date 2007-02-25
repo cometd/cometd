@@ -101,7 +101,7 @@ sub remote_connect_success {
 
     $con->connected( 1 );
     
-    $self->{transport}->process_plugins( [ 'remote_connected', $self, $con, $socket ] );
+    $self->process_plugins( [ 'remote_connected', $self, $con, $socket ] );
 }
 
 sub remote_connect_error {
@@ -112,7 +112,7 @@ sub remote_connect_error {
     $kernel->alarm_remove( delete $con->{timeout_id} )
         if ( exists( $con->{timeout_id} ) );
 
-    $self->{transport}->process_plugins( [ 'remote_connect_error', $self, $con, @_[ ARG0 .. ARG2 ] ] );
+    $self->process_plugins( [ 'remote_connect_error', $self, $con, @_[ ARG0 .. ARG2 ] ] );
 
     $self->cleanup_connection( $con );
 #    $self->reconnect_to_client( $con );
@@ -123,7 +123,7 @@ sub remote_connect_timeout {
     
     $self->_log(v => 2, msg => $self->{name}." : timeout connecting to $con->{addr}");
 
-    $self->{transport}->process_plugins( [ 'remote_connect_timeout', $self, $con ] );
+    $self->process_plugins( [ 'remote_connect_timeout', $self, $con ] );
 #    $self->reconnect_to_client( $con );
 
     undef;
@@ -132,7 +132,7 @@ sub remote_connect_timeout {
 sub remote_receive {
     my $self = $_[OBJECT];
     #$self->_log(v => 4, msg => $self->{name}." got input ".$_[ARG0]);
-    $self->{transport}->process_plugins( [ 'remote_receive', $self, @_[ HEAP, ARG0 ] ] );
+    $self->process_plugins( [ 'remote_receive', $self, @_[ HEAP, ARG0 ] ] );
 }
 
 sub remote_error {
@@ -141,11 +141,11 @@ sub remote_error {
     
     if ( $_[ARG1] != 0 ) {
         # XXX con disconnect reason
-        #$self->{transport}->process_plugins( [ 'remote_error', $self, @_[ HEAP, ARG0 .. ARG2 ] ] );
+        #$self->process_plugins( [ 'remote_error', $self, @_[ HEAP, ARG0 .. ARG2 ] ] );
     }
     
     # TODO reconnect in plugins
-    $self->{transport}->process_plugins( [ 'remote_disconnected', $self, @_[ HEAP, ARG0, ARG1 ] ] );
+    $self->process_plugins( [ 'remote_disconnected', $self, @_[ HEAP, ARG0, ARG1 ] ] );
     
     $self->cleanup_connection( $con );
 #    $self->reconnect_to_client( $_[HEAP] );

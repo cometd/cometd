@@ -8,18 +8,28 @@ our $VERSION = '0.01';
 use Carp;
 use BSD::Resource;
 use Cometd qw( Transport Connection );
-use Scalar::Util qw( weaken );
+use Scalar::Util qw( weaken blessed );
 
 use overload '""' => sub { shift->as_string(); };
 
 # weak list of all cometd components
 our @COMPONENTS;
 
+sub EVENT_NAME() { 0 }
+sub SERVER()     { 1 }
+sub CONNECTION() { 2 }
+
 BEGIN {
-    eval "use POE::Loop::Epoll"; # use Event instead?
+#    eval "use POE::Loop::Epoll"; # use Event instead?
     if ( $@ ) {
         # XXX
         warn "Epoll not found, using default";
+    }
+    eval "use IO::AIO";
+    if ($@) {
+        eval 'sub CAN_AIO () { 0 }';
+    } else {
+        eval 'sub CAN_AIO () { 1 }';
     }
 }
 
@@ -63,6 +73,9 @@ our @base_states = qw(
     _log
     events_received
     events_ready
+    aio_event
+    exception
+    process_plugins
 );
 
 
@@ -101,6 +114,8 @@ sub new {
         opts => \%opts, 
         heaps => {},
         connections => 0,
+        transports => {},
+        priorities => [],
     }, $class );
 
     if ($opts{max_connections}) {
@@ -152,20 +167,14 @@ sub notify {
 }
 
 sub _start {
-    my $self = $_[OBJECT];
+    my ( $self, $kernel ) = @_[OBJECT, KERNEL];
 
     $self->{session_id} = $_[SESSION]->ID();
 
     if ($self->{opts}->{transports}) {
-        my $trans = $self->{opts}->{transport_plugin} || 'Cometd::Transport';
-
-        eval "use $trans";
-    
-        $trans = $self->{transport} = $trans->new( parent_id => $self->{session_id} );
-     
         foreach my $t ( @{ $self->{opts}->{transports} } ) {
             $t = adjust_params($t);
-            $trans->add_transport(
+            $self->add_transport(
                 $self->{session_id},
                 $t->{plugin},
                 $t->{priority} || 0
@@ -189,16 +198,31 @@ sub _start {
         );
     }
 
+    if ( CAN_AIO ) {
+        # XXX future use
+#        open my $fh, "<&=".IO::AIO::poll_fileno or die "$!";    
+#        $kernel->select_read($fh, 'aio_event');
 
-    $_[KERNEL]->yield('_startup');
+        $self->{aio} = 1;
+    } else {
+        $self->{aio} = 0;
+    }
+
+#    $kernel->sig( DIE => 'exception' );
+
+    $kernel->yield('_startup');
+}
+
+sub aio_event {
+#    IO::AIO::poll_cb();
 }
 
 sub _default {
     my ( $self, $con, $cmd ) = @_[OBJECT, HEAP, ARG0];
     return if ( $cmd =~ m/^_(child|parent)/ );
 
-    return $self->{transport}->process_plugins( [ $cmd, $self, $con, @_[ ARG1 .. $#_ ] ] )
-        if ( ref $con &&  $con->isa( 'Cometd::Connection' ) );
+    return $self->process_plugins( [ $cmd, $self, $con, @_[ ARG1 .. $#_ ] ] )
+        if ( blessed( $con ) && $con->isa( 'Cometd::Connection' ) );
     
     $self->_log(v => 1, msg => "_default called, no handler for event $cmd [$con] (the connection for this event may be gone)");
 }
@@ -234,7 +258,6 @@ sub new_connection {
     
     return $con;
 }
-
 
 sub _log {
     my ( $self, %o );
@@ -311,13 +334,108 @@ sub name {
 
 sub events_received {
     my ( $kernel, $self ) = @_[ KERNEL, OBJECT ];
-    $self->{transport}->process_plugins( [ 'events_received', $self, @_[ HEAP, ARG0 .. $#_ ] ] );
+    $self->process_plugins( [ 'events_received', $self, @_[ HEAP, ARG0 .. $#_ ] ] );
 }
 
 sub events_ready {
     my ( $kernel, $self ) = @_[ KERNEL, OBJECT ];
-    $self->{transport}->process_plugins( [ 'events_ready', $self, @_[ HEAP, ARG0 .. $#_ ] ] );
+    $self->process_plugins( [ 'events_ready', $self, @_[ HEAP, ARG0 .. $#_ ] ] );
 }
+
+sub exception {
+    my ($kernel, $self, $con, $sig, $error) = @_[KERNEL, OBJECT, HEAP, ARG0, ARG1];
+    $self->_log(v => 1, l => 1, msg => "plugin exception handled: ($sig) : "
+        .join(' | ',map { $_.':'.$error->{$_} } keys %$error ) );
+    # doesn't work?
+    if ( blessed( $con ) && $con->isa( 'Cometd::Connection' ) ) {
+        $con->close(1);
+        $self->cleanup_connection ( $con );
+    }
+    $kernel->sig_handled();
+}
+
+sub add_transport {
+    my $self = shift;
+    
+    my $t = $self->{transports};
+   
+    my ( $parent_id, $plugin, $pri ) = @_;
+    my $name = $plugin->name();
+    
+    warn "WARNING : Overwriting existing plugin '$name' (You have two plugins with the same name)"
+        if ( exists( $t->{ $name } ) );
+
+    $t->{ $name } = {
+        plugin => $plugin,
+        priority => $pri || 0,
+    };
+    
+    $plugin->parent_id( $parent_id );
+    
+    $plugin->add_plugin( $self )
+        if ( $plugin->can( 'add_plugin' ) );
+    
+    # recalc priorities
+    @{ $self->{priorities} } = sort {
+        $t->{ $a }->{priority} <=> $t->{ $b }->{priority}
+    } keys %{ $t };
+
+    return 1;
+}
+
+sub remove_transport {
+    my $self = shift;
+    my $tr = shift;
+    
+    # TODO delete by name or obj
+    
+    my $t = $self->{transports};
+    
+    my $plugin = delete $t->{ $tr };
+    
+    $plugin->remove_plugin( $self )
+        if ( $plugin->can( 'remove_plugin' ) );
+    
+    # recalc priorities
+    @{ $self->{priorities} } = sort {
+        $t->{ $a }->{priority} <=> $t->{ $b }->{priority}
+    } keys %{ $t };
+}
+
+sub process_plugins {
+    my ( $self, $args, $i ) = $_[ KERNEL ] ? @_[ OBJECT, ARG0, ARG1 ] : @_;
+
+    return unless ( @{ $self->{priorities} } );
+    
+    my $con = $args->[ CONNECTION ];
+    $con->state( $args->[ EVENT_NAME ] );
+   
+    if ( my $t = $con->plugin() ) {
+        return $self->{transports}->{ $t }->{plugin}->handle_event( @$args );
+    } else {
+        $i ||= 0;
+        if ( $#{ $self->{priorities} } >= $i ) {
+            return if ( $self->{transports}->{
+                $self->{priorities}->[ $i ]
+            }->{plugin}->handle_event( @$args ) );
+        }
+        $i++;
+        # avoid a post
+        return if ( $#{ $self->{priorities} } < $i );
+    }
+    
+    $poe_kernel->yield( process_plugins => $args => $i );
+}
+
+sub forward_plugin {
+    my $self = shift;
+    my $plug_name = shift;
+    return 0 unless( exists( $self->{transports}->{ $plug_name } ) );
+    my ( $server, $con ) = @_;
+    $con->plugin( $plug_name );
+    return $self->process_plugins( [ $con->state, @_ ] );
+}
+
 
 1;
 

@@ -3,7 +3,7 @@ package Cometd::Plugin::HTTPComet;
 use Cometd::Plugin;
 use base 'Cometd::Plugin';
 
-use Cometd::Service::HTTPD;
+#use Cometd::Service::HTTPD;
 
 use POE qw( Filter::HTTPD );
 use HTTP::Response;
@@ -17,8 +17,8 @@ sub new {
     my $class = shift;
     
     my $self = $class->SUPER::new(
-        name => 'HTTPD',
-        service => Cometd::Service::HTTPD->new(),
+        name => 'HTTPComet',
+#        service => Cometd::Service::HTTPD->new(),
         @_
     );
 
@@ -64,6 +64,7 @@ sub _stop {
 
 sub local_connected {
     my ( $self, $server, $con, $socket ) = @_;
+    return 0;
     $self->take_connection( $con );
     # POE::Filter::Stackable object:
     $con->filter->push( POE::Filter::HTTPD->new() );
@@ -84,13 +85,11 @@ sub local_receive {
         $r = $req; # a prebuilt response
         $close = 1; # default anyway
     } else {
-#        $r = HTTP::Response->new( 200 );
-#        $r->content_type( 'text/plain' );
-#        $r->content( ( 'x' x 2048 ) );
-#        $r->header( 'content-length' => 2048 );
         my $connection = $req->header( 'connection' );
         $close = 0 if ( $connection && $connection =~ m/^keep-alive$/i );
+        $r = HTTP::Response->new( 200 );
     }
+    warn Data::Dumper->Dump([$req])."\n";
     
 #    print FH Data::Dumper->Dump([$req])."\n";
 #    print FH "-------\n";
@@ -119,20 +118,26 @@ sub local_receive {
     $self->_log(v => 4, msg => Data::Dumper->Dump([$req]));
     
     if ( my $uri = $req->uri ) {
-        my %ops = map {
-            my ( $k, $v ) = split( '=' );
-            $self->_log(v => 4, msg => "$k:$v" );
+        my $params = ( $uri =~ m/\?(.*)/ )[ 0 ];
+        my %ops;
+        if ( $params ) {
+            %ops = map {
+                my ( $k, $v ) = split( '=' );
+                $self->_log(v => 4, msg => "$k:$v" );
             
-            $k => URI::Escape::uri_unescape( $v )
+                $k => URI::Escape::uri_unescape( $v )
             
-        } split( '&', ( $uri =~ m/\?(.*)/ )[ 0 ] );
+            } split( '&', $params );
+        }
         
         $self->_log(v => 4, msg => Data::Dumper->Dump([\%ops]));
         
-        $self->{service}->handle_request_json( $con, $req, $ops{message} );
+#        $self->{service}->handle_request_json( $con, $req, $ops{message} );
     } else {
-        $self->{service}->handle_request_json( $con, $req, $req->content );
+#        $self->{service}->handle_request_json( $con, $req, $req->content );
     }
+    
+    $con->close(1);
 
     return 1;
 }
