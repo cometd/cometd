@@ -40,8 +40,14 @@ sub _log {
 }
 
 sub take_connection {
-    my ($self, $con) = @_;
+    my ( $self, $con ) = @_;
     $con->plugin( $self->name );
+    return 1;
+}
+
+sub release_connection {
+    my ( $self, $con ) = @_;
+    $con->plugin( undef );
     return 1;
 }
 

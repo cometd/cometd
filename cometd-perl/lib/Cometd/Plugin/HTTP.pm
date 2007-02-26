@@ -25,6 +25,7 @@ sub new {
     die "a DocumentRoot is required for plugin $self"
         unless( $self->{document_root} );
     
+    # remove trailing slash
     $self->{document_root} =~ s!/$!!;
 
     die "DocumentRoot $self->{document_root} doesn't exist, please create it"
@@ -123,7 +124,7 @@ sub local_receive {
                     if ( my $ret = $server->forward_plugin( $name, $server, $con, $req ) ) {
                         return $ret;
                     } else {
-                        $self->_log( v => 4, msg => 'skipped plugin forward to '.$name );
+                        $server->_log( v => 4, msg => 'skipped plugin forward to '.$name );
                         next;
                     }
                 } 
@@ -164,7 +165,7 @@ sub stat_file {
     unless ( -e _ ) {
         my $r = delete $con->{_r};
         $r->content_type( 'text/plain' );
-        $self->_log( v=> 4, msg => "404 $file" );
+        $server->_log( v=> 4, msg => "404 $file" );
         my $out = 'file not found';
         $r->header( 'content-length' => length($out) );
         $r->content( $out );
@@ -178,7 +179,7 @@ sub stat_file {
         my $r;
         if ( $con->{_uri} !~ m!/$! ) {
             my $uri = $con->{_uri};
-            $self->_log( v=> 4, msg => "302 [directory] $uri => $uri/" );
+            $server->_log( v=> 4, msg => "302 [directory] $uri => $uri/" );
             $r = delete $con->{_r};
             $r->code( 302 );
             $r->header( 'Location' => $uri."/" );
@@ -190,7 +191,7 @@ sub stat_file {
         }
         
         if ( $self->{no_directory_browsing} ) {
-            $self->_log( v=> 4, msg => "200 [directory] $file" );
+            $server->_log( v=> 4, msg => "200 [directory] $file" );
             $r = delete $con->{_r};
             $r->content_type( 'text/plain' );
             my $out = 'directory browsing denied';
@@ -200,7 +201,7 @@ sub stat_file {
             $con->wheel->resume_input();
             $con->close() if ( $con->{_close} );
         } else {
-            aio_lstat( $file.$self->{index_file}, $con->callback( 'stat_file_index', $file ) );
+            aio_lstat( $file.$self->{index_file}, $con->callback( 'stat_index_file', $file ) );
         }
         return;
     }
@@ -209,12 +210,12 @@ sub stat_file {
     my $mtime = ( stat( _ ) )[ 9 ];
     $con->{_r}->header( 'Last-Modified' => time2str( $mtime ) );
 
-    $self->serve_file( $server, $con, $file, $size, $mtime );
+    $self->open_file( $server, $con, $file, $size, $mtime );
     return;
 }
 
 
-sub stat_file_index {
+sub stat_index_file {
     my ( $self, $server, $con, $file ) = @_;
     
     if ( -e _ ) {
@@ -223,7 +224,7 @@ sub stat_file_index {
         my $mtime = ( stat( _ ) )[ 9 ];
         $con->{_r}->header( 'Last-Modified' => time2str( $mtime ) );
 
-        $self->serve_file( $server, $con, $file, $size, $mtime );
+        $self->open_file( $server, $con, $file, $size, $mtime );
     } else {
         if ( $con->{_req}->method eq 'HEAD' ) {
             my $r = delete $con->{_r};
@@ -241,14 +242,14 @@ sub stat_file_index {
 }
 
 
-sub serve_file {
+sub open_file {
     my ( $self, $server, $con, $file, $size, $mtime ) = @_;
 
     # 304 check
     if ( my $since = $con->{_req}->header( 'if-modified-since' ) ) {
         $since = str2time( $since );
         if ( $since >= $mtime ) {
-            $self->_log( v=> 4, msg => "304 [not modified] $file" );
+            $server->_log( v=> 4, msg => "304 [not modified] $file" );
             my $r = delete $con->{_r};
             $r->code( 304 );
             $r->header( 'content-length' => 0 );
@@ -297,36 +298,39 @@ sub directory_listing {
     return;
 }
 
-
 sub opened_file {
     my ( $self, $server, $con, $file, $size, $fh ) = @_;
 
     my $out = '';
-    aio_read( $fh, 0, $size, $out, 0, sub {
-        my $r = delete $con->{_r};
+    aio_read( $fh, 0, $size, $out, 0, $con->callback( "send_file", $file, $size, $fh, \$out ) );
 
-        if ( $size == $_[0] ) {
-            $self->_log( v=> 4, msg => "200 [$size] $file" );
-            $r->content_type( $self->lookup_content_type( $file ) );
-            $r->header( 'content-length' => $size );
-        } else {
-            $self->_log( v=> 4, msg => "500 [$size] [short read:$!] $file" );
-            warn "short read: $!";
-            $r->code( 500 );
-            $r->content_type( 'text/plain' );
-            $out = 'ERROR: short read';
-            $r->header( 'content-length' => length( $out ) );
-        }
+    return;
+}
 
-        $r->content( $out );
-        $con->send( $r );
+sub send_file {
+    my ( $self, $server, $con, $file, $size, $fh, $out, $size_out ) = @_;
 
-        close $fh if ($fh);
-        $con->wheel->resume_input();
-        $con->close() if ( $con->{_close} );
-        return;
-    });
+    my $r = delete $con->{_r};
 
+    if ( $size == $size_out ) {
+        $server->_log( v=> 4, msg => "200 [$size] $file" );
+        $r->content_type( $self->lookup_content_type( $file ) );
+        $r->header( 'content-length' => $size );
+        $r->content( $$out );
+    } else {
+        $server->_log( v=> 4, msg => "500 [$size != $size_out] [short read:$!] $file" );
+        warn "short read: $!";
+        $r->code( 500 );
+        $r->content_type( 'text/plain' );
+        my $err = 'ERROR: short read';
+        $r->header( 'content-length' => length( $err ) );
+        $r->content( $err );
+    }
+
+    $con->send( $r );
+    close $fh if ($fh);
+    $con->wheel->resume_input();
+    $con->close() if ( $con->{_close} );
     return;
 }
 
