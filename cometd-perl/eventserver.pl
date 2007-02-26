@@ -9,8 +9,10 @@ use Cometd qw(
     Plugin::JSONTransport
     Plugin::EventManager::SQLite
     Plugin::HTTP
+    Plugin::HTTP::Deny
     Plugin::HTTPComet
     Plugin::Manager
+    Plugin::AtomStream
     Plugin::Simple
 );
 
@@ -48,6 +50,9 @@ POE::Component::Cometd::Server->spawn(
             Plugin => Cometd::Plugin::HTTP->new(
                 DocumentRoot => $ENV{PWD}.'/html',
                 ForwardList => {
+                    # deny any files or dirs access beginning with .
+                    qr|/\.| => 'HTTP::Deny',
+                    # forward /cometd to the Comet plugin
                     qr|^/cometd/?| => 'HTTPComet',
                 }
             ),
@@ -59,19 +64,9 @@ POE::Component::Cometd::Server->spawn(
             ),
             Priority => 1,
         },
-    ],
-);
-
-
-POE::Component::Cometd::Server->spawn(
-    %opts,
-    Name => 'Simple Server',
-    ListenPort => 8000,
-    ListenAddress => '0.0.0.0',
-    Transports => [
         {
-            Plugin => Cometd::Plugin::Simple->new(),
-            Priority => 0,
+            Plugin => Cometd::Plugin::HTTP::Deny->new(),
+            Priority => 2,
         },
     ],
     EventManager => {
@@ -83,8 +78,25 @@ POE::Component::Cometd::Server->spawn(
     },
 );
 
-# backend server
+
 POE::Component::Cometd::Server->spawn(
+    %opts,
+    Name => 'Simple Server',
+    ListenPort => 8000,
+    ListenAddress => '0.0.0.0',
+    Transports => [
+        {
+            Plugin => Cometd::Plugin::Simple->new(
+                DefaultChannel => '/sixapart/atom',
+                EventManager => 'eventman',
+            ),
+            Priority => 0,
+        },
+    ],
+);
+
+# backend server
+my $svr = POE::Component::Cometd::Server->spawn(
     %opts,
     Name => 'Manager',
     ListenPort => 5000,
@@ -92,6 +104,35 @@ POE::Component::Cometd::Server->spawn(
     Transports => [
         {
             Plugin => Cometd::Plugin::Manager->new( EventManager => 'eventman' ),
+            Priority => 0,
+        },
+    ],
+);
+
+use Data::Dumper;
+POE::Session->create(
+    inline_states => {
+        _start => sub {
+            $_[KERNEL]->alias_set( "debug_logger" );
+        },
+        _log => sub {
+            $svr->_log( v => 4, msg => Data::Dumper->Dump([ $_[ ARG0 ] ]) );
+        }
+    }
+);
+
+POE::Component::Cometd::Client->spawn(
+    %opts,
+    Name => 'Updates SixApart',
+    ClientList => [
+#        'updates.sixapart.com:80',
+    ],
+    Transports => [
+        {
+            Plugin => Cometd::Plugin::AtomStream->new(
+                FeedChannel => '/sixapart/atom',
+                EventManager => 'eventman',
+            ),
             Priority => 0,
         },
     ],
