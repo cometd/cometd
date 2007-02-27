@@ -112,7 +112,7 @@ sub local_receive {
         $con->{_close} = 0 if ( $connection && $connection =~ m/^keep-alive$/i );
 
         my $uri = $req->uri;
-        $con->{_params} = ( $uri =~ m!\?! ) ? ( $uri =~ s/\?(.*)// )[ 0 ] : '';
+        $con->{_params} = ( $uri =~ m!\?! ) ? ( $uri =~ s/\?(.*)//o )[ 0 ] : '';
         $con->{_uri} = $self->resolve_path( $uri );
         $con->{_req} = $req;
         $con->{_start_time} = time();
@@ -149,6 +149,9 @@ sub local_receive {
 #    $con->{_close} = 1 if ( $con->{__requests} && $con->{__requests} > 100 );
    
     $self->finish( $con );
+
+    # release control to other plugins
+#    $self->release_connection( $con );
 
     return 1;
 }
@@ -324,8 +327,6 @@ sub finish {
         $con->send( $r );
         $con->{__requests}++;
         $con->wheel->resume_input();
-        # release control to other plugins
-        $self->release_connection( $con );
     }
 }
 
