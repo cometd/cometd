@@ -40,7 +40,7 @@ sub new {
         active_time => $time,
         create_time => $time,
         parent_id => undef,
-        event_manager => undef,
+        event_manager => 'eventman',
         fused => undef,
         peer_ip => undef,
         peer_port => undef,
@@ -269,8 +269,7 @@ sub clid {
 
 sub send_event {
     my $self = shift;
-    warn "manager:".$self->event_manager;
-    $poe_kernel->call( $self->event_manager => deliver_event => Cometd::Event->new( clientId => $self->clid, @_ ) );
+    $poe_kernel->call( $self->event_manager => deliver_events => Cometd::Event->new( clientId => $self->clid, @_ ) );
 }
 
 sub get_events {
