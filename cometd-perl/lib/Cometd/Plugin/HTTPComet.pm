@@ -12,6 +12,7 @@ use JSON;
 use HTTP::Date;
 use Data::UUID;
 use Time::HiRes qw( time );
+use Digest::SHA1 qw( sha1_hex );
 use bytes;
 
 use Data::Dumper;
@@ -25,6 +26,7 @@ sub new {
     my $self = $class->SUPER::new(
         name => 'HTTPComet',
         uuid => Data::UUID->new(),
+        hash_key => 's34l4b2021',
 #        service => Cometd::Service::HTTPD->new(),
         @_
     );
@@ -85,17 +87,15 @@ sub local_receive {
     my $r;
     $con->{_need_events} = 0;
 
-    SWITCH: {    
-
     if ( ref $req && $req->isa( 'HTTP::Response' ) ) {
         $r = $con->{_r} || $req; # a prebuilt response
         $con->{_close} = 1; # default anyway
     } elsif ( ref $req && $req->isa( 'HTTP::Request' ) ) {
-        if ( !defined( $con->{_close} ) ) {
-            my $connection = $req->header( 'connection' );
-            $con->{_close} = 0 if ( $connection && $connection =~ m/^keep-alive$/i );
-        }
-    
+        $con->wheel->pause_input(); # no more requests
+
+        $con->{_start_time} = time()
+            unless ( $con->{_start_time} );
+        
         $con->{_uri} ||= $req->uri;
 
 #        open(FH,">>debug.txt");
@@ -108,12 +108,6 @@ sub local_receive {
 
    
         $r = $con->{_r} || HTTP::Response->new();
-        $r->header( Date => time2str( time() ) ) unless ( $r->header( 'Date' ) );
-        $r->header( Server => 'Cometd (http://cometd.com/)' );
-        # no cache
-        $r->header( Expires => time2str( 0 ) );
-        $r->header( Pragma => 'no-cache' );
-        $r->header( 'Cache-Control' => 'no-cache' );
     
 #        print FH Data::Dumper->Dump([$r])."\n";
 #        close(FH);
@@ -138,19 +132,14 @@ sub local_receive {
         
         unless ( $ops{message} ) {
             $r->code( 200 );
-            my $out = objToJson( { error => "incorrect bayeux format" } );
-            $r->content( $out );
-            $r->header( 'Content-Length' => length( $out ) );
-            last SWITCH;
+            $self->finish( $con, objToJson( { successful => 'false', error => "incorrect bayeux format" } ) );
+            return 1;
         }
 
-#            $self->{service}->handle_request_json( $con, $req, $ops{message} );
         my $obj = eval { jsonToObj( $ops{message} ) };
         if ( $@ ) {
-            $out = objToJson( [ { error => "$@" } ] );
-            $r->content( $out );
-            $r->header( 'Content-Length' => length( $out ) );
-            last SWITCH;
+            $self->finish( $con, objToJson( [ { successful => 'false', error => "$@" } ] ) );
+            return 1;
         }
         $server->_log(v => 4, msg => "ops/obj:".Data::Dumper->Dump([\%ops, $obj]));
 
@@ -160,16 +149,13 @@ sub local_receive {
 
         unless ( ref $obj eq 'HASH' ) {
             $r->code( 200 );
-            my $out = objToJson( { error => "incorrect bayeux format" } );
-            $r->content( $out );
-            $r->header( 'Content-Length' => length( $out ) );
-            last SWITCH;
+            $self->finish( $con, objToJson( { successful => 'false', error => "incorrect bayeux format" } ) );
+            return 1;
         }
 
         
         if ( $obj->{channel} eq '/meta/handshake' ) {
             my $clid = $self->{uuid}->create_str();
-            $r->header( 'X-Client-ID' => $clid );
             $out = {
                 channel        => "/meta/handshake",
                 version        => 0.1,
@@ -194,42 +180,47 @@ sub local_receive {
             $con->{_events} = [{
                 channel      => '/meta/connect',
                 clientId     => $clid,
-                error        => '',
+                #error        => '',
                 successful   => 'true',
                 connectionId => '/meta/connections/'.$con->ID,
-                timestamp    => $r->header( 'Date' ),
-                authToken    => 'auth token',
+                timestamp    => time2str( time() ),
+                authToken    => sha1_hex( $clid.'|'.$self->{hash_key} ),
             }];
             $con->add_channels( [ '/sixapart/atom', '/chat' ] );
             $con->send_event( channel => '/chat', data => "joined" );
             return 1;
         } elsif ( $obj->{channel} eq '/meta/reconnect' ) {
-            my $clid = $con->clid( $obj->{clientId} ); # this contacts event manager
-            $con->{_need_events} = 1;
-#            $con->{_events} = [{
-#                channel      => '/meta/reconnect',
-#                successful   => 'true',
-#                clientId     => $obj->{clientId},
-#                authToken    => "auth token",
-#            }];
-            return 1;
+            if ( $obj->{clientId} && $obj->{authToken}
+                && sha1_hex( $obj->{clientId}.'|'.$self->{hash_key} ) eq $obj->{authToken} ) {
+                my $clid = $con->clid( $obj->{clientId} ); # this contacts event manager
+                $con->{_need_events} = 1;
+                return 1;
+#                $con->{_events} = [{
+#                    channel      => '/meta/reconnect',
+#                    successful   => 'true',
+#                    clientId     => $obj->{clientId},
+#                    authToken    => "auth token",
+#                }];
+            } else {
+                $out = {
+                    channel      => '/meta/reconnect',
+                    successful   => 'false',
+                    error        => 'invalid auth token',
+                };
+            }
         }
         
         $out = eval { objToJson( [ $out ] ) };
         if ( $@ ) {
-            $out = objToJson( [ { error => "$@" } ] );
+            $out = objToJson( [ { successful => 'false', error => "$@" } ] );
         }
-        $r->content( $out );
-        $r->header( 'Content-Length' => length( $out ) );
-        last SWITCH;
+        $self->finish( $con, $out );
+        return 1;
         
         #$con->add_channels( $channels );
         #$con->send_event( channel => $con->{chan}, data => "joined" );
-        
     }
 
-    }; # SWITCH
-    
 #   $close = 1 if ( $con->{__requests} && $con->{__requests} > 100 );
 
     $self->finish( $con );   
@@ -262,19 +253,47 @@ sub events_received {
     my $r = $con->{_r};
     my $out = eval { objToJson( delete $con->{_events} ) };
     if ( $@ ) {
-        $out = objToJson( [ { error => "$@" } ] );
+        $out = objToJson( [ { successful => 'false', error => "$@" } ] );
     }
-    $r->content( $out );
-    $r->header( 'Content-Length' => length( $out ) );
-    
-    $self->finish( $con );
+    $self->finish( $con, $out );
 }
 
 
 sub finish {
-    my ( $self, $con ) = @_;
+    my ( $self, $con, $out, $size ) = @_;
+
+    my $time = time();
 
     my $r = $con->{_r};
+    $r->header( Server => 'Cometd (http://cometd.com/)' );
+    $r->header( 'X-Time-To-Serve' => ( $time - $con->{_start_time} ) );
+        
+    if ( !defined( $con->{_close} ) ) {
+        my $connection = $r->{_req}->header( 'connection' );
+        $con->{_close} = 0 if ( $connection && $connection =~ m/^keep-alive$/i );
+    }
+
+    if ( defined( $out ) ) {
+        if ( ref( $out ) ) {
+            # must pass size if passing scalar ref
+            $r->content( $$out );
+        } else {
+            $size = length( $out ) unless ( $size );
+            $r->content( $out );
+        }
+        $r->header( 'Content-Length' => $size );
+    }
+    
+    if ( my $clid = $con->clid ) {
+        $r->header( 'X-Client-ID' => $clid );
+    }
+
+    $r->header( Date => time2str( $time ) ) unless ( $r->header( 'Date' ) );
+    # no cache
+    $r->header( Expires => time2str( 0 ) );
+    $r->header( Pragma => 'no-cache' );
+    $r->header( 'Cache-Control' => 'no-cache' );
+
     if ( $con->{_close} ) {
         $r->header( 'connection' => 'close' );
         $con->wheel->pause_input(); # no more requests
@@ -289,6 +308,7 @@ sub finish {
         # release control to other plugins
         $self->release_connection( $con );
     }
+    return;
 }
 
 1;
