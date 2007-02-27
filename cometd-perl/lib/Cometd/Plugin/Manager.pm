@@ -113,24 +113,24 @@ sub local_receive {
             return;
         }
         my $event = new Cometd::Event( channel => $ch, data => $data );
-        $poe_kernel->call( $self->{alias} => deliver_event => $event );
+        $poe_kernel->call( $self->{event_manager} => deliver_event => $event );
         $con->send( "sent ".$event->as_string );
     } elsif ( $data =~ m/^add channel (\S+) (.*)/i ) {
         my ($clid, $ch) = ($1, $2);
-        $poe_kernel->call( $self->{alias} => add_channels => $clid => $ch );
+        $poe_kernel->call( $self->{event_manager} => add_channels => $clid => $ch );
         $con->send( "sent adding $ch to $clid" );
     } elsif ( $data =~ m/^sql (.*)/i ) {
-        $poe_kernel->call( $self->{alias} => db_do => $1 => sub {
+        $poe_kernel->call( $self->{event_manager} => db_do => $1 => sub {
             $con->send( "response: ".Data::Dumper->Dump([ shift ]) );
         } );
-        $con->send( "sent $1 to $self->{alias}" );
+        $con->send( "sent $1 to $self->{event_manager}" );
     } elsif ( $data =~ m/^(select .*)/i ) {
-        $poe_kernel->call( $self->{alias} => db_select => $1 => sub {
+        $poe_kernel->call( $self->{event_manager} => db_select => $1 => sub {
             $con->send( "response: ".Data::Dumper->Dump([ shift ]) );
         } );
-        $con->send( "sent $1 to $self->{alias}" );
+        $con->send( "sent $1 to $self->{event_manager}" );
     } elsif ( $data =~ m/^events (\S+)/i ) {
-        $poe_kernel->call( $self->{alias} => get_events => $1 => sub {
+        $poe_kernel->call( $self->{event_manager} => get_events => $1 => sub {
             $con->send( "response: ".Data::Dumper->Dump([ shift ]) );
         } );
         $con->send( "requesting events for $1" );
