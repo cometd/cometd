@@ -39,7 +39,6 @@ POE::Component::Cometd::Server->spawn(
         },
     ],
 );
-            
 
 # backend server
 POE::Component::Cometd::Server->spawn(

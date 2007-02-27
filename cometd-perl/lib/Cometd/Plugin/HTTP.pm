@@ -8,6 +8,8 @@ use HTTP::Response;
 use IO::AIO;
 use Fcntl;
 use HTTP::Date;
+use Time::HiRes qw( time );
+
 use Data::Dumper;
 
 use strict;
@@ -96,7 +98,7 @@ sub local_receive {
 
     my ( $out, $r );
     
-    delete @{$con}{qw( _req _r _uri )};
+    delete @{$con}{qw( _req _r _uri _params _start_time )};
     
     $con->{_close} = 1;
 
@@ -104,14 +106,16 @@ sub local_receive {
         $r = $req; # a prebuilt response
         $con->{_close} = 1; # default anyway
     } elsif ( ref $req && $req->isa( 'HTTP::Request' ) ) {
-        my $connection = $req->header( 'connection' );
-        $con->{_close} = 0 if ( $connection && $connection =~ m/^keep-alive$/i );
-        
-        $con->{_uri} = $self->resolve_path( $req->uri );
-        
         $con->wheel->pause_input(); # no more requests until ready
         
+        my $connection = $req->header( 'connection' );
+        $con->{_close} = 0 if ( $connection && $connection =~ m/^keep-alive$/i );
+
+        my $uri = $req->uri;
+        $con->{_params} = ( $uri =~ m!\?! ) ? ( $uri =~ s/\?(.*)// )[ 0 ] : '';
+        $con->{_uri} = $self->resolve_path( $uri );
         $con->{_req} = $req;
+        $con->{_start_time} = time();
         $r = $con->{_r} = HTTP::Response->new( 200 );
         $r->header( Date => time2str( time() ) );
         $r->header( Server => 'Cometd (http://cometd.com/)' );
@@ -144,17 +148,7 @@ sub local_receive {
     # XXX max requests
 #    $con->{_close} = 1 if ( $con->{__requests} && $con->{__requests} > 100 );
    
-    if ( $con->{_close} ) {
-        $r->header( 'connection' => 'close' );
-        $con->send( $r );
-        $con->wheel->pause_input(); # no more requests
-        $con->close();
-    } else {
-        # TODO set timeout based on keepalive: header
-        $r->header( 'connection' => 'keep-alive' );
-        $con->send( $r );
-        $con->{__requests}++;
-    }
+    $self->finish( $con );
 
     return 1;
 }
@@ -163,15 +157,10 @@ sub stat_file {
     my ( $self, $server, $con, $file ) = @_;
     
     unless ( -e _ ) {
-        my $r = delete $con->{_r};
-        $r->content_type( 'text/plain' );
+        $con->{_r}->content_type( 'text/plain' );
         $server->_log( v=> 4, msg => "404 $file" );
-        my $out = 'file not found';
-        $r->header( 'content-length' => length($out) );
-        $r->content( $out );
-        $con->send( $r );
-        $con->wheel->resume_input();
-        $con->close() if ( $con->{_close} );
+
+        $self->finish( $con, 'file not found' );
         return;
     }
 
@@ -180,26 +169,17 @@ sub stat_file {
         if ( $con->{_uri} !~ m!/$! ) {
             my $uri = $con->{_uri};
             $server->_log( v=> 4, msg => "302 [directory] $uri => $uri/" );
-            $r = delete $con->{_r};
+            $r = $con->{_r};
             $r->code( 302 );
             $r->header( 'Location' => $uri."/" );
-            $r->header( 'content-length' => 0 );
-            $con->send( $r );
-            $con->wheel->resume_input();
-            $con->close() if ( $con->{_close} );
+            $self->finish( $con, '' );
             return;
         }
         
         if ( $self->{no_directory_browsing} ) {
             $server->_log( v=> 4, msg => "200 [directory] $file" );
-            $r = delete $con->{_r};
-            $r->content_type( 'text/plain' );
-            my $out = 'directory browsing denied';
-            $r->header( 'content-length' => length($out) );
-            $r->content( $out );
-            $con->send( $r );
-            $con->wheel->resume_input();
-            $con->close() if ( $con->{_close} );
+            $con->{_r}->content_type( 'text/plain' );
+            $self->finish( $con, 'directory browsing denied' );
         } else {
             aio_lstat( $file.$self->{index_file}, $con->callback( 'stat_index_file', $file ) );
         }
@@ -227,12 +207,9 @@ sub stat_index_file {
         $self->open_file( $server, $con, $file, $size, $mtime );
     } else {
         if ( $con->{_req}->method eq 'HEAD' ) {
-            my $r = delete $con->{_r};
-            $r->content_type( 'text/html' );
+            $con->{_r}->content_type( 'text/html' );
             # content length? 
-            $con->send( $r );
-            $con->wheel->resume_input();
-            $con->close() if ( $con->{_close} );
+            $self->finish( $con );
         } else {
             aio_readdir( $file, $con->callback( 'directory_listing' ) );
         }
@@ -248,26 +225,20 @@ sub open_file {
     # 304 check
     if ( my $since = $con->{_req}->header( 'if-modified-since' ) ) {
         $since = str2time( $since );
-        if ( $since >= $mtime ) {
+        if ( $mtime && $since && $since >= $mtime ) {
             $server->_log( v=> 4, msg => "304 [not modified] $file" );
-            my $r = delete $con->{_r};
-            $r->code( 304 );
-            $r->header( 'content-length' => 0 );
-            $con->send( $r );
-            $con->wheel->resume_input();
-            $con->close() if ( $con->{_close} );
+            $con->{_r}->code( 304 );
+            $self->finish( $con, '' );
             return;
         }
     }
     
     # bail if HEAD request
     if ( $con->{_req}->method eq 'HEAD' ) {
-        my $r = delete $con->{_r};
+        my $r = $con->{_r};
         $r->content_type( 'text/html' );
-        $r->header( 'content-length' => $size );
-        $con->send( $r );
-        $con->wheel->resume_input();
-        $con->close() if ( $con->{_close} );
+        $r->header( 'Content-Length' => $size );
+        $self->finish( $con );
         return;
     }
 
@@ -279,7 +250,7 @@ sub directory_listing {
     my ( $self, $server, $con, $entries ) = @_;
 
     my $uri = $con->{_uri};
-    my $r = delete $con->{_r};
+    $con->{_r}->content_type( 'text/html' );
     my $out = qq|<html><head><title>Index of $uri</title><head><body>
     <h2>Index of $uri</h2>\n<ul>\n|;
     $entries = [] unless ( ref $entries );
@@ -288,13 +259,9 @@ sub directory_listing {
         $out .= qq|<li><a href="$_">$_</a></li>\n|;
     }
     $out .= qq|</ul>\n</body></html>|;
+
+    $self->finish( $con, $out );
     
-    $r->content_type( 'text/html' );
-    $r->header( 'content-length' => length($out) );
-    $r->content( $out );
-    $con->send( $r );
-    $con->wheel->resume_input();
-    $con->close() if ( $con->{_close} );
     return;
 }
 
@@ -310,28 +277,56 @@ sub opened_file {
 sub send_file {
     my ( $self, $server, $con, $file, $size, $fh, $out, $size_out ) = @_;
 
-    my $r = delete $con->{_r};
+    my $r = $con->{_r};
 
     if ( $size == $size_out ) {
         $server->_log( v=> 4, msg => "200 [$size] $file" );
         $r->content_type( $self->lookup_content_type( $file ) );
-        $r->header( 'content-length' => $size );
-        $r->content( $$out );
+        $self->finish( $con, $out, $size );
     } else {
         $server->_log( v=> 4, msg => "500 [$size != $size_out] [short read:$!] $file" );
         warn "short read: $!";
         $r->code( 500 );
         $r->content_type( 'text/plain' );
-        my $err = 'ERROR: short read';
-        $r->header( 'content-length' => length( $err ) );
-        $r->content( $err );
+        $self->finish( $con, 'ERROR: short read' );
+    }
+    close $fh if ($fh);
+
+    
+    return;
+}
+
+sub finish {
+    my ( $self, $con, $out, $size ) = @_;
+
+    my $r = $con->{_r};
+    $r->header( 'X-Time-To-Serve' => ( time() - $con->{_start_time} ) );
+
+    if ( defined( $out ) ) {
+        if ( ref( $out ) ) {
+            # must pass size if passing scalar ref
+            $r->content( $$out );
+        } else {
+            $size = length( $out ) unless ( $size );
+            $r->content( $out );
+        }
+        $r->header( 'Content-Length' => $size );
     }
 
-    $con->send( $r );
-    close $fh if ($fh);
-    $con->wheel->resume_input();
-    $con->close() if ( $con->{_close} );
-    return;
+    if ( $con->{_close} ) {
+        $r->header( 'connection' => 'close' );
+        $con->wheel->pause_input(); # no more requests
+        $con->send( $r );
+        $con->close();
+    } else {
+        # TODO set timeout
+        $r->header( 'connection' => 'keep-alive' );
+        $con->send( $r );
+        $con->{__requests}++;
+        $con->wheel->resume_input();
+        # release control to other plugins
+        $self->release_connection( $con );
+    }
 }
 
 # private methods

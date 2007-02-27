@@ -17,7 +17,7 @@ my %opts = (
     MaxConnections => 32000,
 );
 
-# backend server
+# atom client
 POE::Component::Cometd::Client->spawn(
     %opts,
     Name => 'Updates SixApart',

@@ -76,6 +76,7 @@ sub _start {
             AutoCommit => 1,
         },
         connected => [ $_[SESSION]->ID, '_connected' ],
+#        query_logger => 'debug_logger',
     );
 }
 
