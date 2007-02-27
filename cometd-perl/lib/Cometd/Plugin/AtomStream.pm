@@ -65,7 +65,8 @@ sub remote_receive {
         return unless ( $d->can( "entries" ) && $self->{event_manager} && $self->{feed_channel} );
 
         my @events = map {
-            $self->_log(v => 4, msg => 'Title:[ '.$_->title.' ] Link:[ '.$_->link->href.' ]');
+#            $self->_log(v => 4, msg => 'Title:[ '.$_->title.' ] Link:[ '.$_->link->href.' ]');
+           next unless ( $_ && $_->link );
             new Cometd::Event(
                 channel => $self->{feed_channel},
                 data => 'Title:[ '.$_->title.' ] Link:[ '.$_->link->href.' ]'
