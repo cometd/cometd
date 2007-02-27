@@ -102,8 +102,6 @@ sub local_disconnected {
 
 sub events_received {
     my ( $self, $server, $con, $events ) = @_;
-    # 'eid' => 25047,
-    # 'event' => '{"clientId":"06218EF6-B96C-11DB-BEE8-E8271468007A","channel":"/chat","data":"fart"}'
     foreach ( @$events ) {
 #        my $foo = jsonToObj( $_->{event} );
 #        next if ($foo->{clientId} eq $con->clid);
@@ -115,7 +113,7 @@ sub events_received {
 
 sub events_ready {
     my ( $self, $server, $con, $cid ) = @_;
-#    $con->send('(events ready) '.$cid);
+    $con->send('(events ready) '.$cid);
     #warn "cid: $cid";
     $con->get_events();
 }
