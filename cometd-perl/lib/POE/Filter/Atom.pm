@@ -66,17 +66,19 @@ sub get_one {
     my $data = join( "\n", @{ $self->[ BUFFER ] } );
     $self->[ BUFFER ] = [];
     
-    open(FH,">>debug.txt");
-    print FH "$data\n";
-    print FH "--------\n";
-    close(FH);
-
     eval {
         if ( my $feed = XML::Atom::Feed->new( \$data ) ) {
             push( @$ret, $feed );
         }
     };
-    warn "$@ when parsing atom stream: $data" if ( $@ );
+    if ( $@ ) {
+        warn "$@ when parsing atom stream";
+        open(FH,">>debug.txt");
+        print FH "$@ when parsing atom stream\n";
+        print FH "$data\n";
+        print FH "--------\n";
+        close(FH);    
+    }
 
     return $ret;
 }
