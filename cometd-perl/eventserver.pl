@@ -8,7 +8,7 @@ use POE;
 use Cometd qw(
     Plugin::JSONTransport
     Plugin::EventManager::SQLite
-    Plugin::HTTP
+    Plugin::HTTP::Server
     Plugin::HTTP::Deny
     Plugin::HTTPComet
     Plugin::Manager
@@ -43,11 +43,11 @@ POE::Component::Cometd::Server->spawn(
 POE::Component::Cometd::Server->spawn(
     %opts,
     Name => 'HTTP Comet Server',
-    ListenPort => 8001,
+    ListenPort => ( $ENV{USER} eq 'root' ? 80 : 8001 ),
     ListenAddress => '0.0.0.0',
     Transports => [
         {
-            Plugin => Cometd::Plugin::HTTP->new(
+            Plugin => Cometd::Plugin::HTTP::Server->new(
                 DocumentRoot => $ENV{PWD}.'/html',
                 ForwardList => {
                     # deny any files or dirs access beginning with .
