@@ -1,13 +1,12 @@
 package Cometd::Plugin::HTTPComet;
 
-use Cometd::Plugin;
-use base 'Cometd::Plugin';
+use Cometd qw( Plugin::HTTP );
+use base 'Cometd::Plugin::HTTP';
 
 #use Cometd::Service::HTTPD;
 
 use POE qw( Filter::HTTPD );
 use HTTP::Response;
-use URI::Escape;
 use JSON;
 use HTTP::Date;
 use Data::UUID;
@@ -20,6 +19,7 @@ use Data::Dumper;
 use strict;
 use warnings;
 
+
 sub new {
     my $class = shift;
     
@@ -27,6 +27,8 @@ sub new {
         name => 'HTTPComet',
         uuid => Data::UUID->new(),
         hash_key => 's34l4b2021',
+        protocol_version => .2,
+        minimum_protocol_version => .1,
 #        service => Cometd::Service::HTTPD->new(),
         @_
     );
@@ -34,46 +36,17 @@ sub new {
     return $self;
 }
 
-sub add_plugin {
-    my $self = shift;
-    
-    return if ( $self->{_session_id} );
-    
-    # save the session id
-    $self->{_session_id} =
-    POE::Session->create(
-        object_states =>  [
-            $self => [qw(
-                _start
-                _stop
-            )]
-        ],
-    )->ID();
-
-    return undef;
-}
 
 sub as_string {
     __PACKAGE__;
 }
 
-sub _start {
-    my $self = $_[OBJECT];
-    $_[KERNEL]->alias_set( "$self" );
-    $self->_log(v => 1, msg => 'started');
-}
-
-sub _stop {
-    my $self = $_[OBJECT];
-    $self->_log(v => 1, msg => 'stopped');
-}
 
 # ---------------------------------------------------------
 # server
 
 sub local_connected {
     my ( $self, $server, $con, $socket ) = @_;
-    return 0;
     $self->take_connection( $con );
     # POE::Filter::Stackable object:
     $con->filter->push( POE::Filter::HTTPD->new() );
@@ -81,152 +54,190 @@ sub local_connected {
     return 1;
 }
 
-sub local_receive {
-    my ( $self, $server, $con, $req ) = @_;
 
-    my $r;
+sub local_receive {
+    my $self = shift;
+    my ( $server, $con, $req ) = @_;
+
     $con->{_need_events} = 0;
 
-    if ( ref $req && $req->isa( 'HTTP::Response' ) ) {
-        $r = $con->{_r} || $req; # a prebuilt response
-        $con->{_close} = 1; # default anyway
-    } elsif ( ref $req && $req->isa( 'HTTP::Request' ) ) {
-        $con->wheel->pause_input(); # no more requests
-
-        $con->{_start_time} = time()
-            unless ( $con->{_start_time} );
+    $self->start_http_request( @_ ) or return 1;
+    
+    # XXX
+    # message=%5B%7B%22version%22%3A0.1%2C%22minimumVersion%22%3A0.1%2C%22channel%22%3A%22/meta/handshake%22%7D%5D&jsonp=dojo.io.ScriptSrcTransport._state.id1.jsonpCall
         
-        $con->{_uri} ||= $req->uri;
+    $con->{_uri} ||= $req->uri;
+    $con->{_r} = HTTP::Response->new( 200 )
+        unless ( $con->{_r} );
 
-#        open(FH,">>debug.txt");
-#        print FH "connection: ".$con->ID."\n";
+    my $r = $con->{_r};
 
-        warn Data::Dumper->Dump([$req])."\n";
+    my ( $params, %ops );
+    my $ct = $req->content_type;
+    if ( $ct eq 'text/javascript+json' ) {
+        # POST
+        if ( my $content = $req->content ) {
+            $ops{message} = $content;
+        }
+    } elsif ( $ct eq 'application/x-www-form-urlencoded' ) {
+        # POST or GET
+        if ( my $content = $req->content ) {
+            $params = $content;
+        } elsif ( $con->{_params} ) {
+            $params = $con->{_params};
+        } elsif ( $req->uri =~ m!\?message=! ) {
+            $params = ( $req->uri =~ m/\?(.*)/ )[ 0 ];
+        }
+    }
     
-#        print FH Data::Dumper->Dump([$req])."\n";
-#        print FH "-------\n";
-
-   
-        $r = $con->{_r} || HTTP::Response->new();
-    
-#        print FH Data::Dumper->Dump([$r])."\n";
-#        close(FH);
-    
-        # /cometd?message=%5B%7B%22version%22%3A0.1%2C%22minimumVersion%22%3A0.1%2C%22channel%22%3A%22/meta/handshake%22%7D%5D&jsonp=dojo.io.ScriptSrcTransport._state.id1.jsonpCall
-        $server->_log(v => 4, msg => Data::Dumper->Dump([$req]));
-    
-        my $params = ( $req->uri =~ m!\?message=! )
-            ? ( $req->uri =~ m/\?(.*)/ )[ 0 ] : $req->content();
-            
-        my %ops;
+    if ( $params && $params =~ m/=/ ) {
+        # uri param ?message=[json]
         %ops = map {
             my ( $k, $v ) = split( '=' );
-            $server->_log(v => 4, msg => "$k:$v" );
-        
-            $k => URI::Escape::uri_unescape( $v )
-        
-        } split( '&', $params )
-            if ( $params );
-        
-        my $out = '';
-        
-        unless ( $ops{message} ) {
-            $r->code( 200 );
-            $self->finish( $con, objToJson( { successful => 'false', error => "incorrect bayeux format" } ) );
-            return 1;
-        }
+            # imported from Cometd::Common
+            uri_unescape( $k ) => uri_unescape( $v )
+        } split( '&', $params );
+    } else {
+        # uri param ?[json]
+        $ops{message} = $params;
+    }
+    
+    unless ( $ops{message} ) {
+        $r->code( 200 );
+        $self->finish( $con, [ { successful => 'false', error => 'incorrect bayeux format' } ] );
+        return 1;
+    }
 
-        my $obj = eval { jsonToObj( $ops{message} ) };
-        if ( $@ ) {
-            $self->finish( $con, objToJson( [ { successful => 'false', error => "$@" } ] ) );
-            return 1;
-        }
-        $server->_log(v => 4, msg => "ops/obj:".Data::Dumper->Dump([\%ops, $obj]));
+    my $objs = eval { jsonToObj( $ops{message} ) };
+    if ( $@ ) {
+        $self->finish( $con, [ { successful => 'false', error => "$@" } ] );
+        return 1;
+    }
 
-        if ( ref $obj eq 'ARRAY' ) {
-              $obj = shift @$obj;
-        }
+    unless ( ref $objs eq 'ARRAY' ) {
+        $self->finish( $con, [ { successful => 'false', error => 'incorrect bayeux format' } ] );
+        return 1;
+    }
+    
+    $server->_log(v => 4, msg => "ops/obj:".Data::Dumper->Dump([\%ops, $objs]));
+    
+    my $clid;
+    $con->{_events} = [];
+    my @errors;
 
+    foreach my $obj ( @$objs ) {        
         unless ( ref $obj eq 'HASH' ) {
-            $r->code( 200 );
-            $self->finish( $con, objToJson( { successful => 'false', error => "incorrect bayeux format" } ) );
+            $self->finish( $con, [ { successful => 'false', error => 'incorrect bayeux format' } ] );
             return 1;
         }
+        
+        # TODO protocol version
+        unless ( $clid ) {
+            # specified clientId and authToken
+            if ( $obj->{clientId} && $obj->{authToken}
+                && sha1_hex( $obj->{clientId}.'|'.$self->{hash_key} ) eq $obj->{authToken} ) {
+                # auth ok
+                $clid = $con->clid( $obj->{clientId} ); # this contacts event manager
+            } elsif ( $obj->{clientId} && $obj->{authToken} ) {
+                push( @errors, 'invalid authToken' );
+            } elsif ( $obj->{clientId} && !$obj->{authToken} ) {
+                push( @errors, 'clientId cannot be specified without an authToken' );
+            } elsif ( $obj->{authToken} ) {
+                push( @errors, 'invalid authToken, no clientId to match it to' );
+            } elsif ( $obj->{channel} eq '/meta/handshake' ) {
+                $clid = $self->{uuid}->create_str();
+            }
+        }
+
+        push( @errors, 'nice try. keep your clientId consistent - buddy' )
+            if ( $clid && $clid ne $obj->{clientId} );
+
+        push( @errors, 'clientId not specified' )
+            unless ( $obj->{clientId} );
+    
+        last if ( @errors );
 
         
         if ( $obj->{channel} eq '/meta/handshake' ) {
-            my $clid = $self->{uuid}->create_str();
-            $out = {
+
+            push(@{$con->{_events}}, {
                 channel        => "/meta/handshake",
-                version        => 0.1,
-                minimumVersion => 0.1,
+                version        => $self->{protocol_version},
+                minimumVersion => $self->{minimum_protocol_version},
                 supportedConnectionTypes => [ 'http-polling' ],
                 clientId       => $clid,
-                authSuccessful => 'true',
+                # XXX not in spec
+                connectionId => '/meta/connections/'.$con->ID,
+                authSuccessful => $obj->{authToken} ? 'true' : 'false',
                 advice => {
-                    reconnect  => "retry", # one of "none", "retry", "handshake", "recover"
+                    reconnect  => 'retry', # one of "none", "retry", "handshake", "recover"
                     transport  => {
                         iframe => { },
                         flash  => { },
-                        "http-polling" => {
+                        'http-polling' => {
                             interval => 5000, # reconnect delay in ms
                         },
                     },
                 },
-            };
+            });
+
         } elsif ( $obj->{channel} eq '/meta/connect' ) {
-            my $clid = $con->clid( $obj->{clientId} ); # this contacts event manager
-            $con->{_need_events} = 1;
-            $con->{_events} = [{
+        
+            push(@{$con->{_events}}, {
                 channel      => '/meta/connect',
                 clientId     => $clid,
                 #error        => '',
-                successful   => 'true',
+                successful   => $obj->{authToken} ? 'true' : 'false',
                 connectionId => '/meta/connections/'.$con->ID,
                 timestamp    => time2str( time() ),
                 authToken    => sha1_hex( $clid.'|'.$self->{hash_key} ),
-            }];
-            $con->add_channels( [ '/sixapart/atom', '/chat' ] );
-            $con->send_event( channel => '/chat', data => "joined" );
-            return 1;
+            });
+
+#            $con->add_channels( [ '/sixapart/atom', '/chat' ] );
+#            $con->send_event( channel => '/chat', data => "joined" );
+
         } elsif ( $obj->{channel} eq '/meta/reconnect' ) {
-            if ( $obj->{clientId} && $obj->{authToken}
-                && sha1_hex( $obj->{clientId}.'|'.$self->{hash_key} ) eq $obj->{authToken} ) {
-                my $clid = $con->clid( $obj->{clientId} ); # this contacts event manager
-                $con->{_need_events} = 1;
-                return 1;
-#                $con->{_events} = [{
-#                    channel      => '/meta/reconnect',
-#                    successful   => 'true',
-#                    clientId     => $obj->{clientId},
-#                    authToken    => "auth token",
-#                }];
-            } else {
-                $out = {
-                    channel      => '/meta/reconnect',
-                    successful   => 'false',
-                    error        => 'invalid auth token',
-                };
-            }
+
+            push(@{$con->{_events}}, {
+                channel      => '/meta/reconnect',
+                successful   => 'true',
+                clientId     => $obj->{clientId},
+                authToken    => "auth token",
+            });
+
+        } elsif( $obj->{channel} =~ m!^/meta/! ) {
+            # XXX 
+        } else {
+            $con->{_need_events} = 1;
+#            $con->add_channels( [ '/sixapart/atom', '/chat' ] );
+#            $con->send_event( channel => '/chat', data => "joined" );
+            $con->send_event( @{$obj}{qw( channel data clientId )} );
         }
+    }
         
-        $out = eval { objToJson( [ $out ] ) };
-        if ( $@ ) {
-            $out = objToJson( [ { successful => 'false', error => "$@" } ] );
-        }
-        $self->finish( $con, $out );
+
+    if ( @errors ) {
+        $self->finish( $con, {
+            channel      => '/meta/reconnect',
+            successful   => 'false',
+            error        => join( ', ', @errors )
+        });
         return 1;
+    }
         
-        #$con->add_channels( $channels );
-        #$con->send_event( channel => $con->{chan}, data => "joined" );
+
+    if ( @{$con->{_events}} ) {
+        $con->{_need_events} = 1;
+    } else {
+        $self->finish( $con, [ { successful => 'false', error => 'incorrect bayeux format' } ] );
     }
 
-#   $close = 1 if ( $con->{__requests} && $con->{__requests} > 100 );
+    return 1;
 
-    $self->finish( $con );   
-
-    return 1;    
+    #$con->add_channels( $channels );
+    #$con->send_event( channel => $con->{chan}, data => "joined" );
 }
+
 
 sub events_ready {
     my ( $self, $server, $con, $cid ) = @_;
@@ -236,79 +247,52 @@ sub events_ready {
     }
 }
 
+
 sub events_received {
     my ( $self, $server, $con, $events ) = @_;
+
     $con->{_events} = []
         unless ( $con->{_events} );
 
-    my $newlist = [];
-    foreach ( @$events ) {
-        push( @$newlist, jsonToObj( $_->{event} ) );
-    }    
+    my $clid = $con->clid();
 
-    push( @{$con->{_events}}, @$newlist );
+    $con->{_events} = [ map {
+        $_->{event}->{clientId} eq $clid
+        ? () : jsonToObj( $_->{event} )
+    } @{$con->{_events}}, @$events ];
 
     $server->_log( v=>4, msg => Data::Dumper->Dump([ $events ]) );
 
-    my $r = $con->{_r};
-    my $out = eval { objToJson( delete $con->{_events} ) };
-    if ( $@ ) {
-        $out = objToJson( [ { successful => 'false', error => "$@" } ] );
-    }
-    $self->finish( $con, $out );
+    $self->finish( $con, delete $con->{_events} );
 }
 
 
 sub finish {
-    my ( $self, $con, $out, $size ) = @_;
-
-    my $time = time();
+    my $self = shift;
+    my ( $con, $out ) = @_;
 
     my $r = $con->{_r};
-    $r->header( Server => 'Cometd (http://cometd.com/)' );
-    $r->header( 'X-Time-To-Serve' => ( $time - $con->{_start_time} ) );
-        
-    if ( !defined( $con->{_close} ) ) {
-        my $connection = $r->{_req}->header( 'connection' );
-        $con->{_close} = 0 if ( $connection && $connection =~ m/^keep-alive$/i );
-    }
-
-    if ( defined( $out ) ) {
-        if ( ref( $out ) ) {
-            # must pass size if passing scalar ref
-            $r->content( $$out );
-        } else {
-            $size = length( $out ) unless ( $size );
-            $r->content( $out );
-        }
-        $r->header( 'Content-Length' => $size );
-    }
-    
-    if ( my $clid = $con->clid ) {
-        $r->header( 'X-Client-ID' => $clid );
-    }
-
-    $r->header( Date => time2str( $time ) ) unless ( $r->header( 'Date' ) );
-    # no cache
-    $r->header( Expires => time2str( 0 ) );
+    $r->header( Expires => '-1' );
     $r->header( Pragma => 'no-cache' );
     $r->header( 'Cache-Control' => 'no-cache' );
+    
+    $out = eval { objToJson( [ $out ] ) };
+    $out = objToJson( [ { successful => 'false', error => "$@" } ] )
+        if ( $@ );
+    
+    $self->SUPER::finish( splice( @_, 1, 1, $out ) );
 
-    if ( $con->{_close} ) {
-        $r->header( 'connection' => 'close' );
-        $con->wheel->pause_input(); # no more requests
-        $con->send( $r );
-        $con->close();
-    } else {
-        # TODO set timeout
-        $r->header( 'connection' => 'keep-alive' );
-        $con->send( $r );
-        $con->{__requests}++;
-        $con->wheel->resume_input();
+    unless ( $con->{_close} ) {
         # release control to other plugins
+        if ( my $ff = delete $con->{_forwarded_from} ) {
+            $con->plugin( $ff );
+            return;
+        }
         $self->release_connection( $con );
     }
+
     return;
 }
+
 
 1;
