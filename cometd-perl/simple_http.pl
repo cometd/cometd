@@ -6,7 +6,7 @@ use lib qw( lib easydbi-lib );
 use POE::Component::Cometd qw( Client Server );
 use POE;
 use Cometd qw(
-    Plugin::HTTP
+    Plugin::HTTP::Server
     Plugin::HTTP::Deny
     Plugin::Manager
 );
@@ -25,7 +25,7 @@ POE::Component::Cometd::Server->spawn(
     ListenAddress => '0.0.0.0',
     Transports => [
         {
-            Plugin => Cometd::Plugin::HTTP->new(
+            Plugin => Cometd::Plugin::HTTP::Server->new(
                 DocumentRoot => $ENV{PWD}.'/html',
                 ForwardList => {
                     qr|/\.| => 'HTTP::Deny',
