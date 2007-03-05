@@ -10,6 +10,7 @@ use Cometd qw(
     Plugin::EventManager::SQLite
     Plugin::HTTP::Server
     Plugin::HTTP::Deny
+    Plugin::HTTP::CGI
     Plugin::HTTPComet
     Plugin::Manager
     Plugin::AtomStream
@@ -52,6 +53,7 @@ POE::Component::Cometd::Server->spawn(
                 ForwardList => {
                     # deny any files or dirs access beginning with .
                     qr|/\.| => 'HTTP::Deny',
+                    qr/\.(pl|cgi)$/ => 'HTTP::CGI',
                     # forward /cometd to the Comet plugin
                     qr|^/cometd/?| => 'HTTPComet',
                 }
@@ -67,6 +69,10 @@ POE::Component::Cometd::Server->spawn(
         {
             Plugin => Cometd::Plugin::HTTP::Deny->new(),
             Priority => 2,
+        },
+        {
+            Plugin => Cometd::Plugin::HTTP::CGI->new(),
+            Priority => 3,
         },
     ],
     EventManager => {

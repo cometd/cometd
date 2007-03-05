@@ -106,7 +106,7 @@ sub local_receive {
     my ( $server, $con, $req ) = @_;
     
     # XXX delete _forwarded_from?
-    delete @{$con}{qw( _req _r _uri _params _stat _start_time _forwarded_from )};
+    delete @{$con}{qw( _docroot _req _r _uri _params _stat _start_time _forwarded_from )};
     
     # XXX debug check for keys that begin with _
  
@@ -116,6 +116,8 @@ sub local_receive {
 
     my $uri = $req->uri;
     $con->{_params} = ( $uri =~ m!\?! ) ? ( $uri =~ s/\?(.*)//o )[ 0 ] : '';
+    # TODO better way of passing this sort of stuff to a forwarded plugin
+    $con->{_docroot} = $self->{document_root};
     $con->{_uri} = $self->resolve_path( $uri );
     $con->{_req} = $req;
     $r = $con->{_r} = HTTP::Response->new( 200 );
@@ -130,7 +132,7 @@ sub local_receive {
                 if ( my $ret = $server->forward_plugin( $name, $server, $con, $req ) ) {
                     return $ret;
                 } else {
-                    $server->_log( v => 4, msg => 'skipped plugin forward to '.$name.' on uri '.$con->{_uri} );
+                    $server->_log( v => 4, msg => 'skipped plugin forward to '.$name.' on uri '.$con->{_uri}." (return value:$ret)");
                     next;
                 }
             } 

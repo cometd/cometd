@@ -57,7 +57,7 @@ sub start_http_request {
     delete $con->{_close};
 
     $con->{_start_time} = time()
-        unless ( $con->{_start_time} );
+        unless ( defined $con->{_start_time} );
 
     if ( blessed( $req ) ) {
         if ( $req->isa( 'HTTP::Response' ) ) {
@@ -163,7 +163,8 @@ sub finish {
         sprintf( '%.5g', $r->header( 'X-Time-To-Serve' ) ),
         ( defined $size ? $size : '-' ),
         $con->{_req}->uri,
-        "[$con->{_uri}]"
+        "[$con->{_uri}]",
+        ( $r->code == 302 ? $r->header( 'Location' ) : '' )
     ));
 
     return 1;
