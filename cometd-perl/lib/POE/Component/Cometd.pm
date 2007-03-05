@@ -76,6 +76,7 @@ our @base_states = qw(
     aio_event
     exception
     process_plugins
+    sig_child
 );
 
 
@@ -240,6 +241,9 @@ sub signals {
     return 0;
 }
 
+sub sig_child {
+    $_[KERNEL]->sig_handled();
+}
 
 sub new_connection {
     my $self = shift;

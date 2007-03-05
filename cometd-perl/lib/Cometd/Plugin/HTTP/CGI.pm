@@ -27,6 +27,10 @@ sub as_string {
 }
 
 
+sub plugin_add {
+    
+}
+
 # ---------------------------------------------------------
 # server
 
@@ -98,6 +102,13 @@ sub local_receive {
         StdoutFilter => POE::Filter::Stream->new(),
         StderrFilter => POE::Filter::Line->new(),
     );
+    
+    if ( $poe_kernel->can( "sig_child" ) ) {
+        # handler already in Cometd
+        $poe_kernel->sig_child( $wheel->PID() => 'sig_child' );
+    } else {
+        # XXX uuuuh
+    }
 
     # TODO test POST compat
     if ( my $content = $req->content ) {
@@ -106,7 +117,6 @@ sub local_receive {
 
     return 1;
 }
-
 
 sub scrub_env {
     my ( $file, $env ) = @_;
@@ -130,8 +140,6 @@ sub mychild_stdout {
     my ( $self, $server, $con, $in ) = @_;
 
     # TODO better handling of STDOUT, nph perhaps
-    $self->_log( v => 4, msg => "Stdout:$in" );
-    
     $con->{_content} .= $in;
     
     return;
@@ -152,8 +160,10 @@ sub mychild_error {
     
     if ( $errnum != 0 ) {
         $r->code( 500 );
-        $r->content( 'error:'.$errstr );
         delete $con->{_content};
+        $self->finish( $con, 'cgi error:'.$errstr );
+        
+        return;
     } else {
         my $no_content = 0;
         if ( my $content = delete $con->{_content} ) {
@@ -173,17 +183,15 @@ sub mychild_error {
             $r->code( 200 );
         }
 
-        if ( $r->header( 'Location' ) ) {
-            $r->code( 302 );
-        }
+        # fix common mistake in cgis
+        $r->code( 302 )
+            if ( $r->header( 'Location' ) );
         
         # TODO better handling of no content from cgi
         if ( $r->code == 200 && !$r->content ) {
             $r->code( 500 );
-#            my $out = 'ERROR no content from cgi';
-#            $r->header( 'Content-Length' => length( $out ) );
-#            $r->content( $out );
             $self->finish( $con, 'ERROR no content from cgi' );
+            
             return;
         }
     }
