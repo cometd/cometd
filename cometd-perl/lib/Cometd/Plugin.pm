@@ -36,7 +36,7 @@ sub handle_event {
 }
 
 sub _log {
-    $poe_kernel->call( shift->parent_id => _log => @_ );
+    $poe_kernel->call( shift->parent_id => _log => ( call =>  ( caller(1) )[ 3 ], @_ ) );
 }
 
 sub take_connection {

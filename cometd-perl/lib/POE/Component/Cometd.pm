@@ -7,7 +7,7 @@ our $VERSION = '0.01';
 
 use Carp;
 use BSD::Resource;
-use Cometd qw( Transport Connection );
+use Cometd qw( Transport Connection Session );
 use Scalar::Util qw( weaken blessed );
 
 use overload '""' => sub { shift->as_string(); };
@@ -38,7 +38,6 @@ use POE qw(
     Driver::SysRW
     Wheel::ReadWrite
 );
-use Cometd::Session;
 
 sub import {
     my $self = shift;
@@ -276,7 +275,7 @@ sub _log {
     my $sender = ( $con )
         ? $con->{addr}."(".$con->ID.")" : "?";
     my $l = $o{l} ? $o{l}+1 : 1;
-    my $caller = (caller($l))[3] || '?';
+    my $caller = $o{call} ? $o{call} : ( caller($l) )[3] || '?';
     $caller =~ s/^POE::Component/PoCo/o;
     print STDERR '['.localtime()."][$self->{connections}][$caller][$sender] $o{msg}\n";
 }
