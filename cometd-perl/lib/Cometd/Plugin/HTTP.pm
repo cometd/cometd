@@ -18,6 +18,7 @@ use warnings;
 
 sub new {
     shift->SUPER::new(
+        mime => MIME::Types->new(),
         @_
     );
 }

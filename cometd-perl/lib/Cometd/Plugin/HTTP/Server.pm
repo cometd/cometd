@@ -21,7 +21,6 @@ sub new {
         index_file => 'index.html',
         home_path => 'home',
         hide_dotfiles => 1,
-        mime => MIME::Types->new(),
         @_
     );
 
@@ -123,10 +122,10 @@ sub local_receive {
     $r = $con->{_r} = HTTP::Response->new( 200 );
     
     if ( $self->{forward_list} ) {
-        foreach my $qr ( keys %{ $self->{forward_list} } ) {
-            my $name = $self->{forward_list}->{ $qr };
+        foreach my $regex ( keys %{ $self->{forward_list} } ) {
+            my $name = $self->{forward_list}->{ $regex };
             # XXX should I use the resolved_path uri or request uri
-            if ( $con->{_uri} =~ $qr ) {
+            if ( $con->{_uri} =~ /$regex/ ) {
                 $con->{_forwarded_from} = $con->plugin(); # XXX or $self->as_string()?
 
                 if ( my $ret = $server->forward_plugin( $name, $server, $con, $req ) ) {
