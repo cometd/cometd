@@ -3,7 +3,7 @@ package Cometd::Connection;
 use POE qw( Wheel::SocketFactory Wheel::ReadWrite );
 use Cometd::Event;
 use Class::Accessor::Fast;
-use Time::HiRes;
+use Time::HiRes qw( time );
 use base qw(Class::Accessor::Fast);
 
 use Scalar::Util qw( weaken );
