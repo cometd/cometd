@@ -178,7 +178,7 @@ sub connect {
     
     # TODO resolve this addr that isn't an ip, non blocking
     # PoCo DNS
-
+    warn "connecting to $address $port";
     return $self->reconnect_to_client(
         $self->new_connection(
             peer_ip => $address,
@@ -211,7 +211,8 @@ sub reconnect_to_client {
         SuccessEvent  => $con->event( 'remote_connect_success' ),
         FailureEvent  => $con->event( 'remote_connect_error' ),
     );
-    
+
+    warn "connecting to $con";
     return $con;
 }
 
