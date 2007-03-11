@@ -55,7 +55,7 @@ POE::Component::Cometd::Server->spawn(
                     qr|/\.| => 'HTTP::Deny',
                     qr/\.(pl|cgi)$/ => 'HTTP::CGI',
                     # forward /cometd to the Comet plugin
-                    qr|^/cometd/?| => 'HTTPComet',
+                    qr|^/cometd/?$| => 'HTTPComet',
                 }
             ),
             Priority => 0,
