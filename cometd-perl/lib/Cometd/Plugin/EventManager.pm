@@ -9,20 +9,16 @@ use warnings;
 
 sub new {
     my $class = shift;
-    # TODO use adjust_params in all super-classes?
-    $class->SUPER::new( &adjust_params );
+    $class->SUPER::new( @_ );
 }
 
 sub as_string {
+    warn __PACKAGE__.' was not subclassed correctly';
     __PACKAGE__;
 }
 
-sub _log {
-    $poe_kernel->call( shift->parent_id => _log => @_ );
-}
-
 sub deliver_event {
-    warn __PACKAGE__.' was not subclassed';
+    warn __PACKAGE__.' was not subclassed correctly';
 }
 
 1;
