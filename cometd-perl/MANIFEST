@@ -53,7 +53,7 @@ t/02_template.t
 tools/httpd.pl
 tools/injectevent.pl
 tools/setup_dependencies.sh
-tools/simpletest.pl
+tools/simple_test.pl
 tools/mc.pl
 tools/noop_http.pl
 tools/atomstream.pl
