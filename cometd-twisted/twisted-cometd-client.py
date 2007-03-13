@@ -178,7 +178,7 @@ class CometdClient:
 
 			proto.submitRequest(
 				self._getMessageRequest(content)
-			) #.addCallback(_readResponse) 
+			).addCallback(_readResponse)  # important to read from the stream!
 
 		d.addCallback(_tcpInit)
 
