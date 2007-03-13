@@ -22,6 +22,7 @@ __PACKAGE__->mk_accessors( qw(
     peer_ip
     peer_port
     state
+    time_out
     ID
 ) );
 
@@ -46,6 +47,7 @@ sub new {
         peer_port => undef,
         state => undef,
         channels => {},
+        alarms => {},
         clid => undef,
         @_
     }, ref $class || $class );
@@ -79,6 +81,14 @@ sub filter {
     return shift->wheel->get_input_filter;
 }
 
+sub filter_in {
+    return shift->wheel->get_input_filter;
+}
+
+sub filter_out {
+    return shift->wheel->get_output_filter;
+}
+
 sub send {
     my $self = shift;
     if ( my $wheel = $self->wheel ) {
@@ -92,6 +102,64 @@ sub send {
 
 sub write {
     &send;
+}
+
+sub set_time_out {
+    my $self = shift;
+    $self->time_out( shift );
+    $self->active();
+}
+
+sub alarm_remove {
+    my $self = shift;
+    $poe_kernel->alarm_remove( @_ );
+}
+
+sub alarm_set {
+    my $self = shift;
+    my $event = $self->event( shift );
+    my $id = $poe_kernel->alarm_set( $event, @_ );
+    $self->{alarms}->{ $id } = $event;
+    return $id;
+}
+
+sub alarm_adjust {
+    my $self = shift;
+    $poe_kernel->alarm_adjust( @_ );
+}
+
+sub alarm_remove {
+    my $self = shift;
+    my $id = shift;
+    delete $self->{alarms}{ $id };
+    $poe_kernel->alarm_remove( $id, @_ );
+}
+
+# XXX alarm_remove_all
+
+sub delay_set {
+    my $self = shift;
+    $poe_kernel->delay_set( $self->event( shift ), @_ );
+}
+
+sub delay_adjust {
+    my $self = shift;
+    $poe_kernel->delay_adjust( @_ );
+}
+
+sub yield {
+    my $self = shift;
+    $poe_kernel->post( $self->event( shift ), @_ );
+}
+
+sub call {
+    my $self = shift;
+    $poe_kernel->call( $self->event( shift ), @_ );
+}
+
+sub post {
+    shift;
+    $poe_kernel->post( @_ );
 }
 
 sub fuse {
@@ -167,8 +235,11 @@ sub close {
             $self->connected( 0 );
             # kill the socket factory if any
             $self->sf( undef );
-            # XXX close the fused connection?
-            $self->fused( undef );
+            if ( my $con = $self->fused() ) {
+                $con->close($force);
+                $self->fused( undef );
+            }
+            $poe_kernel->call( $self->parent_id => cleanup => $self->ID );
         }
     }
 }
@@ -285,7 +356,15 @@ sub _log {
 }
 
 sub DESTROY {
-    # hook?
+    my $self = shift;
+
+    # remove alarms for this connection
+    foreach ( keys %{$self->{alarms}} ) {
+        $self->_log( v => 4, 'removed alarm '.$_ );
+        $poe_kernel->alarm_remove( $_ );
+    }
+    
+    return;
 }
 
 1;
@@ -304,10 +383,11 @@ sub DESTROY {
     my $parent_id = delete $Cometd::Connection::callback_ids{"$self"};
 
     if ( defined $parent_id ) {
-        $poe_kernel->refcount_decrement( $parent_id, 'anon_event' )
+        $poe_kernel->refcount_decrement( $parent_id, 'anon_event' );
     } else {
         warn "connection callback DESTROY without session_id to refcount_decrement"
     }
+
     return;
 }
 

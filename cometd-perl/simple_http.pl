@@ -23,7 +23,7 @@ POE::Component::Cometd::Server->spawn(
     Name => 'HTTP Server',
     ListenPort => 8001,
     ListenAddress => '0.0.0.0',
-    Transports => [
+    Plugins => [
         {
             Plugin => Cometd::Plugin::HTTP::Server->new(
                 DocumentRoot => $ENV{PWD}.'/html',
@@ -46,7 +46,7 @@ POE::Component::Cometd::Server->spawn(
     Name => 'Manager',
     ListenPort => 5000,
     ListenAddress => '127.0.0.1',
-    Transports => [
+    Plugins => [
         {
             Plugin => Cometd::Plugin::Manager->new(),
             Priority => 0,

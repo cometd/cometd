@@ -96,6 +96,8 @@ sub local_connected {
     # POE::Filter::Stackable object:
     $con->filter->push( POE::Filter::HTTPD->new() );
     $con->filter->shift(); # pull off Filter::Stream
+    # cut laggers off
+    $con->set_time_out( 5 );
     return 1;
 }
 
@@ -139,6 +141,8 @@ sub local_receive {
         # didn't forward request
         delete $con->{_forwarded_from};
     }
+
+    $con->set_time_out( 300 );
 
     my $file = $self->{document_root}.$con->{_uri};
     aio_stat( $file, $con->callback( 'stat_file', $file ) );
@@ -284,6 +288,5 @@ sub opened_file {
 
     return;
 }
-
 
 1;

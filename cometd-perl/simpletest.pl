@@ -21,7 +21,7 @@ POE::Component::Cometd::Server->spawn(
     Name => 'Manager',
     ListenPort => 5000,
     ListenAddress => '127.0.0.1',
-    Transports => [
+    Plugins => [
         {
             Plugin => Cometd::Plugin::Manager->new(),
             Priority => 0,

@@ -76,6 +76,8 @@ our @base_states = qw(
     exception
     process_plugins
     sig_child
+    time_out_check
+    cleanup
 );
 
 
@@ -114,8 +116,9 @@ sub new {
         opts => \%opts, 
         heaps => {},
         connections => 0,
-        transports => {},
-        priorities => [],
+        plugins => {},
+        plugin_pri => [],
+        time_out => 10, # time_out checker
     }, $class );
 
     if ($opts{max_connections}) {
@@ -133,7 +136,7 @@ sub new {
 
     push(@COMPONENTS, $self);
     weaken( $COMPONENTS[ -1 ] );
-
+    
     return $self;
 }
 
@@ -171,10 +174,10 @@ sub _start {
 
     $self->{session_id} = $_[SESSION]->ID();
 
-    if ($self->{opts}->{transports}) {
-        foreach my $t ( @{ $self->{opts}->{transports} } ) {
+    if ($self->{opts}->{plugins}) {
+        foreach my $t ( @{ $self->{opts}->{plugins} } ) {
             $t = adjust_params($t);
-            $self->add_transport(
+            $self->add_plugin(
                 $self->{session_id},
                 $t->{plugin},
                 $t->{priority} || 0
@@ -207,6 +210,9 @@ sub _start {
     } else {
         $self->{aio} = 0;
     }
+
+    $self->{time_out_id} = $kernel->alarm_set( time_out_check => time() + $self->{time_out} )
+        if ( $self->{time_out} );
 
 #    $kernel->sig( DIE => 'exception' );
 
@@ -265,10 +271,10 @@ sub new_connection {
 sub _log {
     my ( $self, %o );
     if (ref $_[KERNEL]) {
-        ($self, %o ) = @_[ OBJECT, ARG0 .. $#_ ];
+        ( $self, %o ) = @_[ OBJECT, ARG0 .. $#_ ];
 #        $o{l}++;
     } else {
-        ($self, %o ) = @_;
+        ( $self, %o ) = @_;
     }
     return unless ( $o{v} <= $self->{opts}->{log_level} );
     my $con = $self->{heap};
@@ -278,6 +284,11 @@ sub _log {
     my $caller = $o{call} ? $o{call} : ( caller($l) )[3] || '?';
     $caller =~ s/^POE::Component/PoCo/o;
     print STDERR '['.localtime()."][$self->{connections}][$caller][$sender] $o{msg}\n";
+}
+
+sub cleanup {
+    my ( $self, $con ) = @_[ OBJECT, ARG0 ];
+    $self->cleanup_connection( $self->{heaps}->{$con} );
 }
 
 sub cleanup_connection {
@@ -291,9 +302,6 @@ sub cleanup_connection {
         $wheel->shutdown_output();
     }
     
-    $poe_kernel->alarm_remove( $con->{time_out} )
-        if ( $con->{time_out} );
-
     delete $con->{wheel};
     
     $self->{connections}--;
@@ -317,7 +325,7 @@ sub _shutdown {
     my ( $self, $kernel ) = @_[ OBJECT, KERNEL ];
     foreach my $con ( values %{$self->{heaps}} ) {
         $con->close( 1 ); # force
-        $self->cleanup_connection( $con );
+#        $self->cleanup_connection( $con );
     }
     $self->{heaps} = {};
     foreach my $id ( keys %{$self->{listeners}} ) {
@@ -351,16 +359,32 @@ sub exception {
         .join(' | ',map { $_.':'.$error->{$_} } keys %$error ) );
     # doesn't work?
     if ( blessed( $con ) && $con->isa( 'Cometd::Connection' ) ) {
-        $con->close(1);
-        $self->cleanup_connection ( $con );
+        $con->close( 1 );
+#        $self->cleanup_connection ( $con );
     }
     $kernel->sig_handled();
 }
 
-sub add_transport {
+sub time_out_check {
+    my ($kernel, $self) = @_[KERNEL, OBJECT];
+
+    my $time = time();
+    $self->{time_out_id} = $kernel->alarm_set( time_out_check => $time + $self->{time_out} );
+
+    foreach my $con ( values %{$self->{heaps}} ) {
+        if ( my $timeout = $con->time_out() ) {
+#            warn "$con timeout is $con->{time_out} ".( $con->active_time() + $timeout ). " < $time";
+            if ( ( $con->active_time() + $timeout ) <  $time ) {
+                $self->process_plugins( [ 'time_out', $self, $con, $time ] );
+            }
+        }
+    }
+}
+
+sub add_plugin {
     my $self = shift;
     
-    my $t = $self->{transports};
+    my $t = $self->{plugins};
    
     my ( $parent_id, $plugin, $pri ) = @_;
     my $name = $plugin->name();
@@ -378,29 +402,29 @@ sub add_transport {
     $plugin->add_plugin( $self )
         if ( $plugin->can( 'add_plugin' ) );
     
-    # recalc priorities
-    @{ $self->{priorities} } = sort {
+    # recalc plugin_pri
+    @{ $self->{plugin_pri} } = sort {
         $t->{ $a }->{priority} <=> $t->{ $b }->{priority}
     } keys %{ $t };
 
     return 1;
 }
 
-sub remove_transport {
+sub remove_plugin {
     my $self = shift;
     my $tr = shift;
     
     # TODO delete by name or obj
     
-    my $t = $self->{transports};
+    my $t = $self->{plugins};
     
     my $plugin = delete $t->{ $tr };
     
     $plugin->remove_plugin( $self )
         if ( $plugin->can( 'remove_plugin' ) );
     
-    # recalc priorities
-    @{ $self->{priorities} } = sort {
+    # recalc plugin_pri
+    @{ $self->{plugin_pri} } = sort {
         $t->{ $a }->{priority} <=> $t->{ $b }->{priority}
     } keys %{ $t };
 }
@@ -408,23 +432,23 @@ sub remove_transport {
 sub process_plugins {
     my ( $self, $args, $i ) = $_[ KERNEL ] ? @_[ OBJECT, ARG0, ARG1 ] : @_;
 
-    return unless ( @{ $self->{priorities} } );
+    return unless ( @{ $self->{plugin_pri} } );
     
     my $con = $args->[ CONNECTION ];
     $con->state( $args->[ EVENT_NAME ] );
    
     if ( my $t = $con->plugin() ) {
-        return $self->{transports}->{ $t }->{plugin}->handle_event( @$args );
+        return $self->{plugins}->{ $t }->{plugin}->handle_event( @$args );
     } else {
         $i ||= 0;
-        if ( $#{ $self->{priorities} } >= $i ) {
-            return if ( $self->{transports}->{
-                $self->{priorities}->[ $i ]
+        if ( $#{ $self->{plugin_pri} } >= $i ) {
+            return if ( $self->{plugins}->{
+                $self->{plugin_pri}->[ $i ]
             }->{plugin}->handle_event( @$args ) );
         }
         $i++;
         # avoid a post
-        return if ( $#{ $self->{priorities} } < $i );
+        return if ( $#{ $self->{plugin_pri} } < $i );
     }
     
     $poe_kernel->yield( process_plugins => $args => $i );
@@ -433,7 +457,7 @@ sub process_plugins {
 sub forward_plugin {
     my $self = shift;
     my $plug_name = shift;
-    return 0 unless( exists( $self->{transports}->{ $plug_name } ) );
+    return 0 unless( exists( $self->{plugins}->{ $plug_name } ) );
     my $con = $_[ 1 ];
     $con->plugin( $plug_name );
     return $self->process_plugins( [ $con->state, @_ ] );

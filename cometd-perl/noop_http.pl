@@ -19,7 +19,7 @@ POE::Component::Cometd::Server->spawn(
     Name => 'Noop Server',
     ListenPort => 8002,
     ListenAddress => '0.0.0.0',
-    Transports => [
+    Plugins => [
         {
             Plugin => Cometd::Plugin::Noop->new(),
             Priority => 0,

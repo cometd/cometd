@@ -114,7 +114,8 @@ sub remote_connect_error {
 
     $self->process_plugins( [ 'remote_connect_error', $self, $con, @_[ ARG0 .. ARG2 ] ] );
 
-    $self->cleanup_connection( $con );
+    $con->close();
+#    $self->cleanup_connection( $con );
 #    $self->reconnect_to_client( $con );
 }
 
@@ -146,8 +147,9 @@ sub remote_error {
     
     # TODO reconnect in plugins
     $self->process_plugins( [ 'remote_disconnected', $self, @_[ HEAP, ARG0, ARG1 ] ] );
-    
-    $self->cleanup_connection( $con );
+ 
+    $con->close();
+#    $self->cleanup_connection( $con );
 #    $self->reconnect_to_client( $_[HEAP] );
 }
 
@@ -158,7 +160,8 @@ sub remote_flush {
     if ( $con->close_on_flush
         && not $con->get_driver_out_octets() ) {
         
-        $self->cleanup_connection( $con );
+        $con->close();
+        #$self->cleanup_connection( $con );
     }
     
     return;

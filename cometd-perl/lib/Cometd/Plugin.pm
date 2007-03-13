@@ -51,6 +51,13 @@ sub release_connection {
     return 1;
 }
 
+sub time_out {
+    my ( $self, $server, $con, $time ) = @_;
+    $server->_log( v => 4, msg => "Timeout for connection $con" );
+    $con->close();
+    return 1;
+}
+
 # Plugins can define the following methods
 # all are optional
 

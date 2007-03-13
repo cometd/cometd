@@ -159,13 +159,13 @@ sub finish {
     
     # TODO log full request`
     $self->_log(v => 1, msg => join( ' ',
-        $con->{_req}->protocol,
+        ( $con->{_req} ? $con->{_req}->protocol : '?' ),
         $r->code,
-        sprintf( '%.5g', $r->header( 'X-Time-To-Serve' ) ),
+        ( $r->header( 'X-Time-To-Serve' ) ? sprintf( '%.5g', $r->header( 'X-Time-To-Serve' ) ) : '?' ),
         ( defined $size ? $size : '-' ),
-        $con->{_req}->uri,
-        "[$con->{_uri}]",
-        ( $r->code == 302 ? $r->header( 'Location' ) : '' )
+        ( $con->{_req} ? $con->{_req}->uri : '?' ),
+        ( $con->{_uri} ? "[$con->{_uri}]" : "" ),
+        ( $r->code && $r->code == 302 ? $r->header( 'Location' ) : '' )
     ));
 
     return 1;

@@ -30,7 +30,7 @@ POE::Component::Cometd::Server->spawn(
     Name => 'Cometd Backend Server',
     ListenPort => 6000,
     ListenAddress => '127.0.0.1',
-    Transports => [
+    Plugins => [
         {
             Plugin => Cometd::Plugin::JSONTransport->new(
                 EventManager => 'eventman'
@@ -46,7 +46,7 @@ POE::Component::Cometd::Server->spawn(
     Name => 'HTTP Comet Server',
     ListenPort => ( $ENV{USER} eq 'root' ? 80 : 8001 ),
     ListenAddress => '0.0.0.0',
-    Transports => [
+    Plugins => [
         {
             Plugin => Cometd::Plugin::HTTP::Server->new(
                 DocumentRoot => $ENV{PWD}.'/html',
@@ -90,7 +90,7 @@ POE::Component::Cometd::Server->spawn(
     Name => 'Simple Server',
     ListenPort => 8000,
     ListenAddress => '0.0.0.0',
-    Transports => [
+    Plugins => [
         {
             Plugin => Cometd::Plugin::Simple->new(
                 DefaultChannel => '/sixapart/atom',
@@ -107,7 +107,7 @@ my $svr = POE::Component::Cometd::Server->spawn(
     Name => 'Manager',
     ListenPort => 5000,
     ListenAddress => '127.0.0.1',
-    Transports => [
+    Plugins => [
         {
             Plugin => Cometd::Plugin::Manager->new( EventManager => 'eventman' ),
             Priority => 0,
@@ -133,7 +133,7 @@ POE::Component::Cometd::Client->spawn(
     ClientList => [
 #        'updates.sixapart.com:80',
     ],
-    Transports => [
+    Plugins => [
         {
             Plugin => Cometd::Plugin::AtomStream->new(
                 FeedChannel => '/sixapart/atom',

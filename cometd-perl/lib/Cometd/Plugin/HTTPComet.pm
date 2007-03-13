@@ -60,6 +60,8 @@ sub local_receive {
     my ( $server, $con, $req ) = @_;
 
     $con->{_need_events} = 0;
+    
+    $con->{_r} ||= HTTP::Response->new( 200 );
 
     $self->start_http_request( @_ ) or return 1;
     
@@ -67,9 +69,6 @@ sub local_receive {
     # message=%5B%7B%22version%22%3A0.1%2C%22minimumVersion%22%3A0.1%2C%22channel%22%3A%22/meta/handshake%22%7D%5D&jsonp=dojo.io.ScriptSrcTransport._state.id1.jsonpCall
         
     $con->{_uri} ||= $req->uri;
-    $con->{_r} = HTTP::Response->new( 200 )
-        unless ( $con->{_r} );
-
     my $r = $con->{_r};
 
     my ( $params, %ops );
@@ -261,7 +260,7 @@ sub events_received {
         ? () : jsonToObj( $_->{event} )
     } @{$con->{_events}}, @$events ];
 
-    $server->_log( v=>4, msg => Data::Dumper->Dump([ $events ]) );
+    $server->_log(v => 4, msg => Data::Dumper->Dump([ $events ]) );
 
     $self->finish( $con, delete $con->{_events} );
 }
@@ -280,7 +279,7 @@ sub finish {
     $out = objToJson( [ { successful => 'false', error => "$@" } ] )
         if ( $@ );
     
-    $self->SUPER::finish( splice( @_, 1, 1, $out ) );
+    $self->SUPER::finish( splice( @_, 2, 1, $out ) );
 
     unless ( $con->{_close} ) {
         # release control to other plugins

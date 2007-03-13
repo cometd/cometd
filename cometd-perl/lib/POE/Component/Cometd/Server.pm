@@ -145,8 +145,9 @@ sub local_flushed {
 
     if ( $con->close_on_flush
         && not $con->get_driver_out_octets() ) {
-        
-        $self->cleanup_connection( $con );
+
+        $con->close();
+#        $self->cleanup_connection( $con );
     }
     
     return;
@@ -177,8 +178,9 @@ sub local_error {
     }
     
     $self->process_plugins( [ 'local_disconnected', $self, $con ] );
-    
-    $self->cleanup_connection( $con );
+ 
+    $con->close();
+#    $self->cleanup_connection( $con );
     
     if ( $errnum == EADDRINUSE ) {
         $self->shutdown_all();
@@ -191,7 +193,8 @@ sub local_timeout {
     my ( $self, $con ) = @_[ OBJECT, HEAP ];
     $self->_log(v => 3, msg => "Timeout");
     
-    $self->cleanup_connection( $con );
+    $con->close();
+#    $self->cleanup_connection( $con );
 
     # TODO accessor
     delete $con->{time_out};

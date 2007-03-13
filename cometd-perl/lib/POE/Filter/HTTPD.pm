@@ -282,6 +282,9 @@ sub put {
   # browsers like lynx get what they expect.
 
   foreach (@$responses) {
+    # XXX stream the non response data?
+    next unless ( ref( $_ ) );
+
     my $code           = $_->code;
     my $status_message = status_message($code) || "Unknown Error";
     my $message        = $_->message  || "";
