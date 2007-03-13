@@ -7,7 +7,7 @@ our $VERSION = '0.01';
 
 use Carp;
 use BSD::Resource;
-use Cometd qw( Transport Connection Session );
+use Cometd qw( Connection Session );
 use Scalar::Util qw( weaken blessed );
 
 use overload '""' => sub { shift->as_string(); };
