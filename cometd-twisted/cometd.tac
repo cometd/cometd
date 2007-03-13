@@ -15,7 +15,7 @@ connectionTimeout = 15
 
 # logFile: string, path
 #	where should we log cometd activity to?
-logFile = "/var/log/cometd" 
+logFile = "./cometd" 
 
 # port: integer
 #	where should we log cometd activity to?
