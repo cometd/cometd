@@ -1,7 +1,7 @@
-package Cometd::Plugin::HTTP::Server;
+package Sprocket::Plugin::HTTP::Server;
 
-use Cometd qw( Plugin::HTTP );
-use base 'Cometd::Plugin::HTTP';
+use Sprocket qw( Plugin::HTTP );
+use base 'Sprocket::Plugin::HTTP';
 use POE;
 use HTTP::Response;
 use IO::AIO;

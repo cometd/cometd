@@ -1,7 +1,7 @@
-package Cometd::Plugin::HTTP::CGI;
+package Sprocket::Plugin::HTTP::CGI;
 
-use Cometd qw( Plugin::HTTP );
-use base 'Cometd::Plugin::HTTP';
+use Sprocket qw( Plugin::HTTP );
+use base 'Sprocket::Plugin::HTTP';
 
 use POE qw( Filter::Line Filter::Stream );
 use HTTP::Response;
@@ -70,7 +70,7 @@ sub local_receive {
         # XXX https when we support it
         SCRIPT_URI => "http://$host".$uri,
         SCRIPT_FILENAME => $con->{_file},
-        SERVER_SOFTWARE => 'Cometd',
+        SERVER_SOFTWARE => 'Sprocket; Cometd',
         QUERY_STRING => $con->{_params} || '',
         REMOTE_PORT => $con->peer_port,
         SERVER_PORT => $server->{opts}->{listen_port},
@@ -104,7 +104,7 @@ sub local_receive {
     );
     
     if ( $poe_kernel->can( "sig_child" ) ) {
-        # handler already in Cometd
+        # handler already in Sprocket
         $poe_kernel->sig_child( $wheel->PID() => 'sig_child' );
     } else {
         # XXX uuuuh

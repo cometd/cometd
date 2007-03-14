@@ -1,3 +1,3 @@
-package Cometd::Perlbal::Service;
+package Sprocket::Perlbal::Service;
 
 1;

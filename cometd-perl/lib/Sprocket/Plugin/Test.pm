@@ -1,9 +1,9 @@
-package Cometd::Plugin::Test;
+package Sprocket::Plugin::Test;
 
 # used for tests in t/
 
-use Cometd qw( Plugin );
-use base 'Cometd::Plugin';
+use Sprocket qw( Plugin );
+use base 'Sprocket::Plugin';
 
 use POE::Filter::Line;
 

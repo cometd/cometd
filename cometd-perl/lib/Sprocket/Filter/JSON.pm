@@ -1,4 +1,4 @@
-package Cometd::Filter::JSON;
+package Sprocket::Filter::JSON;
 
 use JSON;
 

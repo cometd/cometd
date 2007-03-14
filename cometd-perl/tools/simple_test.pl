@@ -1,13 +1,13 @@
 #!/usr/bin/perl
 
-use lib 'lib';
+use lib qw( lib easydbi-lib );
 
-# use this before POE, so Cometd loads the Epoll loop if we have it
-use POE::Component::Cometd qw( Server );
-use POE;
-use Cometd qw(
+# use this before POE, so Sprocket loads the Epoll loop if we have it
+use Sprocket qw(
+    Server
     Plugin::Manager
 );
+use POE;
 
 my %opts = (
     LogLevel => 4,
@@ -16,14 +16,14 @@ my %opts = (
 );
 
 # backend server
-POE::Component::Cometd::Server->spawn(
+POE::Component::Sprocket::Server->spawn(
     %opts,
     Name => 'Manager',
     ListenPort => 5000,
     ListenAddress => '127.0.0.1',
     Plugins => [
         {
-            Plugin => Cometd::Plugin::Manager->new(),
+            Plugin => Sprocket::Plugin::Manager->new(),
             Priority => 0,
         },
     ],

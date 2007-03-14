@@ -1,4 +1,4 @@
-package Cometd::Perlbal::Service::Connector;
+package Sprocket::Perlbal::Service::Connector;
 
 use strict;
 use warnings;
@@ -51,7 +51,7 @@ sub new {
 }
 
 sub event_read {
-    my Cometd::Perlbal::Service::Connector $self = shift;
+    my Sprocket::Perlbal::Service::Connector $self = shift;
 
     my $ref;
     if ( $self->{mode} == MODE_NA ) {
@@ -89,7 +89,7 @@ sub event_read {
             # $line in this mode is a json event obj
             #require Data::Dumper;
             #$self->write( "cometd:bayeux> ".Data::Dumper->Dump( [ $line ] )."\r\n" );
-            Cometd::Perlbal::Service::handle_event( $line ); # 
+            Sprocket::Perlbal::Service::handle_event( $line ); # 
             next;
         }
         
@@ -165,21 +165,21 @@ sub event_hup {
 }
 
 sub handle_http_req {
-    my Cometd::Perlbal::Service::Connector $self = shift;
+    my Sprocket::Perlbal::Service::Connector $self = shift;
     my $uri = $self->{req_headers}->request_uri;
     my $code = '200 OK';
     my $body;
 
     # TODO commands, status, list connected clients and channels
     if ($uri eq '/') {
-        $body .= '<h1>Cometd Perlbal Service</h1>';
+        $body .= '<h1>Sprocket / Cometd Perlbal Service</h1>';
         $body .= 'Visit the <a href="http://cometd.com/">Cometd</a> website for details';
     } else {
         $code = '404 Not found';
         $body .= "<h1>$code</h1>";
     }
 
-    #$body .= '<hr style='margin-top: 10px' /><a href='/'>Cometd Perlbal Service</a>.\n';
+    #$body .= '<hr style='margin-top: 10px' /><a href='/'>Sprocket / Cometd Perlbal Service</a>.\n';
     $self->write( "HTTP/1.0 $code\r\nContent-type: text/html\r\nContent-Length: "
                   .length($body)."\r\n\r\n$body" );
     $self->write( sub { $self->close; } );

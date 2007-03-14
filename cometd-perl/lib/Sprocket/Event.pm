@@ -1,4 +1,4 @@
-package Cometd::Event;
+package Sprocket::Event;
 
 use JSON;
 

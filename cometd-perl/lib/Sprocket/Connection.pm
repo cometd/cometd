@@ -1,10 +1,10 @@
-package Cometd::Connection;
+package Sprocket::Connection;
 
 use POE qw( Wheel::SocketFactory Wheel::ReadWrite );
-use Cometd::Event;
+use Sprocket qw( Event );
 use Class::Accessor::Fast;
 use Time::HiRes qw( time );
-use base qw(Class::Accessor::Fast);
+use base qw( Class::Accessor::Fast );
 
 use Scalar::Util qw( weaken );
 
@@ -262,7 +262,7 @@ sub callback {
     my $id = $self->parent_id;
     $event = $self->event( $event );
 
-    my $callback = Cometd::Connection::AnonCallback->new(sub {
+    my $callback = Sprocket::Connection::AnonCallback->new(sub {
         $poe_kernel->call( $id, $event, @etc, @_ );
     });
 
@@ -279,7 +279,7 @@ sub postback {
     my $id = $self->parent_id;
     $event = $self->event( $event );
 
-    my $postback = Cometd::Connection::AnonCallback->new(sub {
+    my $postback = Sprocket::Connection::AnonCallback->new(sub {
         $poe_kernel->post( $id, $event, @etc, @_ );
         return 0;
     });
@@ -340,7 +340,7 @@ sub clid {
 
 sub send_event {
     my $self = shift;
-    $poe_kernel->call( $self->event_manager => deliver_events => Cometd::Event->new( clientId => $self->clid, @_ ) );
+    $poe_kernel->call( $self->event_manager => deliver_events => Sprocket::Event->new( clientId => $self->clid, @_ ) );
 }
 
 sub get_events {
@@ -369,7 +369,7 @@ sub DESTROY {
 
 1;
 
-package Cometd::Connection::AnonCallback;
+package Sprocket::Connection::AnonCallback;
 
 use POE;
 
@@ -380,7 +380,7 @@ sub new {
 
 sub DESTROY {
     my $self = shift;
-    my $parent_id = delete $Cometd::Connection::callback_ids{"$self"};
+    my $parent_id = delete $Sprocket::Connection::callback_ids{"$self"};
 
     if ( defined $parent_id ) {
         $poe_kernel->refcount_decrement( $parent_id, 'anon_event' );

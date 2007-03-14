@@ -1,7 +1,7 @@
-package Cometd::Plugin::Simple;
+package Sprocket::Plugin::Simple;
 
-use Cometd qw( Plugin Event );
-use base 'Cometd::Plugin';
+use Sprocket qw( Plugin Event );
+use base 'Sprocket::Plugin';
 
 use POE;
 use POE::Filter::Line;
@@ -142,7 +142,7 @@ sub remote_receive {
 #        $self->_log(v => 4, msg => 'event to client count '.$self->{count});
 #    }
     return;
-    $poe_kernel->post( $self->{event_manager} => deliver_events => new Cometd::Event(
+    $poe_kernel->post( $self->{event_manager} => deliver_events => new Sprocket::Event(
             channel => '/chat',
             data => ( "." x 1024 )
         )

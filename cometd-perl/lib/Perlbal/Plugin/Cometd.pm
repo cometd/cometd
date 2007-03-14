@@ -3,12 +3,12 @@ package Perlbal::Plugin::Cometd;
 use strict;
 use warnings;
 
-use Cometd;
-
-use Cometd::Service::HTTPD;
-use base 'Cometd::Service::HTTPD';
-use Cometd::Filter::JSON;
-use Cometd::Perlbal::Service::Connector;
+use Sprocket qw(
+    Service::HTTPD
+    Filter::JSON
+    Perlbal::Service::Connector
+);
+use base 'Sprocket::Service::HTTPD';
 use Carp qw( croak );
 
 use constant KEEPALIVE_TIMER => 1;
@@ -20,7 +20,7 @@ sub new {
     
     $objects{$self} = 1;
 
-    $self->{filter} = Cometd::Filter::JSON->new();
+    $self->{filter} = Sprocket::Filter::JSON->new();
 
     $self;
 }
@@ -31,7 +31,7 @@ sub register {
  
 #   Danga::Socket->AddTimer( KEEPALIVE_TIMER, sub { $self->time_keepalive(); } );
     $service->register_hook(
-        "Cometd|$self" => start_proxy_request => sub {
+        "Sprocket|$self" => start_proxy_request => sub {
             $self->start_proxy_request(@_);
         }
     );
@@ -39,7 +39,7 @@ sub register {
     # once?
     Perlbal::Service::add_role(
         cometd => sub {
-            Cometd::Perlbal::Service::Connector->new( @_ );
+            Sprocket::Perlbal::Service::Connector->new( @_ );
         }
     );
 
@@ -50,7 +50,7 @@ sub unregister {
     my $service = $_[ 1 ];
     
     foreach my $self (keys %objects) {
-        $service->uregister_hook( "Cometd|$self" => 'start_proxy_request' );
+        $service->uregister_hook( "Sprocket|$self" => 'start_proxy_request' );
         delete $objects{$self};
     }
 
@@ -89,7 +89,7 @@ sub start_proxy_request {
     return $self->handle_request( $client, $hd );
 }
 
-# called from Cometd::Perlbal::Service::Connector
+# called from Sprocket::Perlbal::Service::Connector
 
 sub handle_event {
     my $self = shift;
@@ -396,7 +396,7 @@ sub new_request {
     
 sub multiplex_send {
     shift;
-    return &Cometd::Perlbal::Service::Connector::multiplex_send;
+    return &Sprocket::Perlbal::Service::Connector::multiplex_send;
 }
 
 
@@ -451,36 +451,29 @@ This plugin allows Perlbal to put clients into a push type connection state.
 
 This Plugin works by keeping a conneciton open after an external webserver has
 authorized the client.  That way, your valuable http processes can continue
-servicing other clients.
+serving other clients.
 
-The easiest way to use this module is to setup apache on port 81, and Perlbal
-on port 80 as in the synopsis.  Start perbal and use a supported javascript
-library.  You can find supported libraries at L<http://cometd.com/>
+The easiest way to use this module is to setup apache on a port other than 80,
+and Perlbal on port 80 as in the synopsis.  Start perbal and use a supported javascript
+library.  You can find supported libraries and more info at L<http://cometd.com/>
 
-=head2 Cometd Notes
-
-=head2 EXPORT
+=head1 EXPORT
 
 Nothing.
 
 =head1 SEE ALSO
 
-L<Perlbal>
+L<Sprocket>, L<POE>, L<Perlbal>
 
 =head1 AUTHOR
 
 David Davis E<lt>xantus@cometd.comE<gt>
 
-=head1 RATING
-
-Please rate this module. L<http://cpanratings.perl.org/rate/?distribution=Cometd>
-
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2006 by David Davis
+Copyright 2006-2007 by David Davis
 
-This library is free software; you can redistribute it and/or modify
-it under the terms of the [TODO LICENSE HERE] license.
+See the LICENSE file
 
 =cut
 

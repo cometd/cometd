@@ -1,12 +1,10 @@
-package Cometd::Plugin::HTTPProxy;
+package Sprocket::Plugin::HTTPProxy;
 
-use Cometd::Plugin;
-use base 'Cometd::Plugin';
+use Sprocket::Plugin;
+use base 'Sprocket::Plugin';
 
 use POE qw( Filter::HTTPD Component::Client::HTTP );
 use HTTP::Response;
-
-use Data::Dumper;
 
 use strict;
 use warnings;
@@ -203,7 +201,7 @@ sub remote_connected {
     } else {
         $con->fused->filter->pop(); # Filter::HTTP
         # we are left with a stream filter on the stack
-        $con->fused->send( "200 Connection Established\r\nX-HTTP-Server: Cometd\r\n"
+        $con->fused->send( "200 Connection Established\r\nServer: Sprocket\r\n"
             ."X-Connection-ID: ".$con->ID."-".$con->fused->ID."\r\n\r\n" );
         $con->fused->wheel->resume_input();
     }

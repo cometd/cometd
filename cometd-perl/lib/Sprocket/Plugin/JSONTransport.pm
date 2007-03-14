@@ -1,7 +1,7 @@
-package Cometd::Plugin::JSONTransport;
+package Sprocket::Plugin::JSONTransport;
 
-use Cometd::Plugin;
-use base 'Cometd::Plugin';
+use Sprocket::Plugin;
+use base 'Sprocket::Plugin';
 
 use POE::Filter::Line;
 use POE::Filter::JSON;

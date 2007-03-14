@@ -1,15 +1,15 @@
-package POE::Component::Cometd::Server;
+package Sprocket::Server;
 
 use strict;
 use warnings;
 
 use POE qw(
-    Component::Cometd
     Wheel::SocketFactory
     Filter::Stackable
     Filter::Stream
 );
-use base qw( POE::Component::Cometd );
+use Sprocket;
+use base qw( Sprocket );
 use Errno qw( EADDRINUSE );
 use Socket;
 

@@ -1,7 +1,7 @@
-package Cometd::Plugin::HTTP;
+package Sprocket::Plugin::HTTP;
 
-use Cometd qw( Plugin );
-use base 'Cometd::Plugin';
+use Sprocket qw( Plugin );
+use base 'Sprocket::Plugin';
 
 use POE qw( Filter::HTTPD Filter::Stream Wheel::ReadWrite Driver::SysRW );
 use HTTP::Response;
@@ -93,8 +93,8 @@ sub finish {
     my $r = $con->{_r};
 
     # TODO version here
-    $r->header( Server => 'Cometd' );
-    $r->header( 'X-Powered-By' => 'Cometd (http://cometd.com/); POE (http://poe.perl.org/); Perl (http://perl.org/)' );
+    $r->header( Server => 'Sprocket' );
+    $r->header( 'X-Powered-By' => 'Cometd (http://cometd.com/); Sprocket (http://sprocket.xantus.org/); POE (http://poe.perl.org/); Perl (http://perl.org/)' );
     $r->header( 'X-Time-To-Serve' => ( $time - $con->{_start_time} ) );
     $r->header( Date => time2str( $time ) );
 

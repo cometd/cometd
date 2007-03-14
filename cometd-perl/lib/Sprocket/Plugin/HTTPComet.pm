@@ -1,9 +1,9 @@
-package Cometd::Plugin::HTTPComet;
+package Sprocket::Plugin::HTTPComet;
 
-use Cometd qw( Plugin::HTTP );
-use base 'Cometd::Plugin::HTTP';
+use Sprocket qw( Plugin::HTTP );
+use base 'Sprocket::Plugin::HTTP';
 
-#use Cometd::Service::HTTPD;
+#use Sprocket::Service::HTTPD;
 
 use POE qw( Filter::HTTPD );
 use HTTP::Response;
@@ -29,7 +29,7 @@ sub new {
         hash_key => 's34l4b2021',
         protocol_version => .2,
         minimum_protocol_version => .1,
-#        service => Cometd::Service::HTTPD->new(),
+#        service => Sprocket::Service::HTTPD->new(),
         @_
     );
 
@@ -93,7 +93,7 @@ sub local_receive {
         # uri param ?message=[json]
         %ops = map {
             my ( $k, $v ) = split( '=' );
-            # imported from Cometd::Common
+            # imported from Sprocket::Common
             uri_unescape( $k ) => uri_unescape( $v )
         } split( '&', $params );
     } else {

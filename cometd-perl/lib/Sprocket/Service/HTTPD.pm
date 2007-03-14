@@ -1,4 +1,4 @@
-package Cometd::Service::HTTPD;
+package Sprocket::Service::HTTPD;
 
 use strict;
 use Scalar::Util qw( weaken );
@@ -29,7 +29,7 @@ sub import {
     my ($class, $args) = @_;
     my $package = caller();
 
-    croak 'Cometd requires args as a hash ref'
+    croak 'Sprocket requires args as a hash ref'
         if ($args && ref($args) ne 'HASH');
 
     # XXX may not need to export the top 3, test this

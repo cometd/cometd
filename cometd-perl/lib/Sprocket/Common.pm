@@ -1,4 +1,4 @@
-package Cometd::Common;
+package Sprocket::Common;
 
 our %hex_chr;
 

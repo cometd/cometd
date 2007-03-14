@@ -1,7 +1,7 @@
-package Cometd::Plugin::Manager;
+package Sprocket::Plugin::Manager;
 
-use Cometd qw( Plugin Event );
-use base 'Cometd::Plugin';
+use Sprocket qw( Plugin Event );
+use base 'Sprocket::Plugin';
 
 use POE;
 use JSON;
@@ -41,7 +41,7 @@ sub local_connected {
     
     $con->filter->shift(); # POE::Filter::Stream
     
-    $con->send( "Cometd Manager - commands: dump [val], list conn, con dump [val], find leaks, find refs, quit" );
+    $con->send( "Sprocket Manager - commands: dump [val], list conn, con dump [val], find leaks, find refs, quit" );
     
     # XXX should we pop the stream filter off the top?
 
@@ -60,7 +60,7 @@ sub local_receive {
     } elsif ( $data =~ m/^x (.*)/i ) {
         $con->send( eval "$1" );
     } elsif ( $data =~ m/^list conn/i ) {
-        foreach my $p (@POE::Component::Cometd::COMPONENTS) {
+        foreach my $p (@Sprocket::COMPONENTS) {
             next unless ($p);
             foreach my $c (values %{$p->{heaps}}) {
                 $con->send( $p->name." - $c - ".$c->{addr} );
@@ -70,7 +70,7 @@ sub local_receive {
     } elsif ( $data =~ m/^con dump (\S+)/i ) {
         my $id = $1;
         $con->send('looking for '.$id);
-        LOOP: foreach my $p (@POE::Component::Cometd::COMPONENTS) {
+        LOOP: foreach my $p (@Sprocket::COMPONENTS) {
             next unless ($p);
             foreach my $c (values %{$p->{heaps}}) {
                 next unless ( lc( $c->ID ) eq $id );
@@ -81,9 +81,9 @@ sub local_receive {
     } elsif ( $data =~ m/^find leaks/i ) {
         my $array = Devel::Gladiator::walk_arena();
         foreach my $value (@$array) {
-            next unless ( ref($value) =~ m/Cometd\:\:Connection/ );
+            next unless ( ref($value) =~ m/Sprocket\:\:Connection/ );
             my $found = undef;
-            foreach my $c (@POE::Component::Cometd::COMPONENTS) {
+            foreach my $c (@Sprocket::COMPONENTS) {
                 next unless ($c);
                 $found = $c
                     if (exists( $c->{heaps}->{$value->ID} ));
@@ -98,7 +98,7 @@ sub local_receive {
     } elsif ( $data =~ m/^find refs/i ) {
         my $array = Devel::Gladiator::walk_arena();
         foreach my $value (@$array) {
-            if ( ref($value) =~ m/Cometd/ && ref($value) !~ m/Cometd::Session/ ) {
+            if ( ref($value) =~ m/Sprocket/ && ref($value) !~ m/Sprocket::Session/ ) {
                 $con->send( "obj: $value ".( $value->can( "name" ) ? $value->name : '' ));
             }
         }
@@ -112,7 +112,7 @@ sub local_receive {
             $con->send( "error (event not sent): $@" );
             return;
         }
-        my $event = new Cometd::Event( channel => $ch, data => $data );
+        my $event = new Sprocket::Event( channel => $ch, data => $data );
         $poe_kernel->call( $self->{event_manager} => deliver_event => $event );
         $con->send( "sent ".$event->as_string );
     } elsif ( $data =~ m/^add channel (\S+) (.*)/i ) {

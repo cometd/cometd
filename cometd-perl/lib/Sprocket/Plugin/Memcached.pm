@@ -1,11 +1,10 @@
-package Cometd::Plugin::Memcached;
+package Sprocket::Plugin::Memcached;
 
-use Cometd::Plugin;
-use base 'Cometd::Plugin';
+use Sprocket::Plugin;
+use base 'Sprocket::Plugin';
 
 use POE qw( Filter::Memcached );
 use Scalar::Util qw( weaken );
-use Data::Dumper;
 
 use strict;
 use warnings;

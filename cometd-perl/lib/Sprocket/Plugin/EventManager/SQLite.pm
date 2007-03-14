@@ -1,9 +1,9 @@
-package Cometd::Plugin::EventManager::SQLite;
+package Sprocket::Plugin::EventManager::SQLite;
 
-use Cometd qw( Plugin::EventManager );
+use Sprocket qw( Plugin::EventManager );
 use POE qw( Component::EasyDBI );
 
-use base qw( Cometd::Plugin::EventManager );
+use base qw( Sprocket::Plugin::EventManager );
 
 use DBD::SQLite;
 

@@ -1,7 +1,7 @@
-package Cometd::Plugin::AtomStream;
+package Sprocket::Plugin::AtomStream;
 
-use Cometd qw( Plugin Event );
-use base 'Cometd::Plugin';
+use Sprocket qw( Plugin Event );
+use base 'Sprocket::Plugin';
 
 use POE;
 use POE::Filter::Atom;
@@ -67,7 +67,7 @@ sub remote_receive {
         my @events = map {
 #            $self->_log(v => 4, msg => 'Title:[ '.$_->title.' ] Link:[ '.$_->link->href.' ]');
            next unless ( $_ && $_->link );
-            new Cometd::Event(
+            new Sprocket::Event(
                 channel => $self->{feed_channel},
                 data => 'Title:[ '.$_->title.' ] Link:[ '.$_->link->href.' ]'
             );

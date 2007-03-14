@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+die "don't use this for now, ask xantus";
+
 use lib qw( ./lib );
 
 use POE qw(

@@ -9,19 +9,16 @@ Legend:
 
 [+] Get dojo js working with the whole system
 [+] http-polling
-[+] forever iframe
+[ ] forever iframe
 [ ] Fix event server reconnect code, with incremental backoff
-[*] Connect the json transport plugin into the json filter and channel system
-[*] Client and Server, PoCo::Cometd::Server PoCo::Cometd::Client
-[?] Rename poco cometd * to poco server/client cometd
+[*] Client and Server
+[*] Rename poco cometd * to Sprocket
 [*] Perlbal service
 [+] Subscription system
-[ ] Event system
-[*] Transport plugin system
-[+] Manager plugin
+[*] Event system
+[*] Manager plugin
 [+] HTTPD plugin
 [+] Tests
 [ ] Apache::Backend::Cometd ( see Apache::Backend::POE )
 [ ] Config file in conf/ for eventserver.pl
-[ ] update PoCo::Filter::JSON to use JSON::Syck or create PoCo::Filter::JSON::Syck
-[?] add perlbal to the manifest?
+[ ] update POE::Filter::JSON to use JSON::Syck or create POE::Filter::JSON::Syck

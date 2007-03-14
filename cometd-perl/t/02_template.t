@@ -5,10 +5,10 @@ use Test::More 'no_plan';
 
 BEGIN {
     use_ok 'POE';
-    use_ok 'Cometd';
-    use_ok 'POE::Component::Cometd::Client';
-    use_ok 'POE::Component::Cometd::Server';
-    use_ok 'Cometd::Plugin::Test';
+    use_ok 'Sprocket';
+    use_ok 'Sprocket::Client';
+    use_ok 'Sprocket::Server';
+    use_ok 'Sprocket::Plugin::Test';
 }
 
 my %opts = (
@@ -16,14 +16,14 @@ my %opts = (
     TimeOut => 0,
 );
 
-my $test_server = POE::Component::Cometd::Server->spawn(
+Sprocket::Server->spawn(
     %opts,
     Name => 'Test Server',
     ListenPort => 9979,
     ListenAddress => '127.0.0.1',
     Transports => [
         {
-            plugin => Cometd::Plugin::Test->new(
+            plugin => Sprocket::Plugin::Test->new(
                 template => [
                     'test1',
                     'test2',
@@ -35,15 +35,15 @@ my $test_server = POE::Component::Cometd::Server->spawn(
     ],
 );
 
-my $test_client = POE::Component::Cometd::Client->spawn(
+Sprocket::Client->spawn(
     %opts,
     Name => 'Test Client',
     ClientList => [
-        '127.0.0.1:9979', # Perlbal Cometd manage port
+        '127.0.0.1:9979',
     ],
     Transports => [
         {
-            plugin => Cometd::Plugin::Test->new(
+            plugin => Sprocket::Plugin::Test->new(
                 template => [
                     'test1',
                     'test2',

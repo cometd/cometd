@@ -2,13 +2,14 @@
 
 use lib 'lib';
 
-# use this before POE, so Cometd loads the Epoll loop if we have it
-use POE::Component::Cometd qw( Client Server );
-use POE;
-use Cometd qw(
+# use this before POE, so Sprocket loads the Epoll loop if we have it
+use Sprocket qw(
+    Client
+    Server
     Plugin::Manager
     Plugin::Memcached
 );
+use POE;
 
 my %opts = (
     LogLevel => 4,
@@ -30,14 +31,14 @@ POE::Session->create(
 
 sub _start {
 
-    my $m = $_[HEAP] = Cometd::Plugin::Memcached->new(
+    my $m = $_[HEAP] = Sprocket::Plugin::Memcached->new(
         listener => $_[SESSION]->ID(),
         event_connected => 'memcached_connected',
         event_receive => 'memcached_receive',
     );
     
     # conencts to perlbal servers that handle client connections
-    POE::Component::Cometd::Client->spawn(
+    Sprocket::Client->spawn(
         %opts,
         Name => 'Memcached 1',
         ClientList => [
@@ -52,14 +53,14 @@ sub _start {
     );
     
     # backend server
-    POE::Component::Cometd::Server->spawn(
+    Sprocket::Server->spawn(
         %opts,
         Name => 'Manager',
         ListenPort => 5000,
         ListenAddress => '127.0.0.1',
         Transports => [
             {
-                plugin => Cometd::Plugin::Manager->new(),
+                plugin => Sprocket::Plugin::Manager->new(),
                 priority => 0,
             },
         ],

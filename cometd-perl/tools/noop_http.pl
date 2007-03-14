@@ -2,10 +2,9 @@
 
 use lib qw( lib );
 
-# use this before POE, so Cometd loads the Epoll loop if we have it
-use POE::Component::Cometd qw( Client Server );
+# use this before POE, so Sprocket loads the Epoll loop if we have it
+use Sprocket qw( Client Server );
 use POE;
-use Cometd;
 
 my %opts = (
     LogLevel => 4,
@@ -14,14 +13,14 @@ my %opts = (
 );
 
 # comet http server
-POE::Component::Cometd::Server->spawn(
+Sprocket::Server->spawn(
     %opts,
     Name => 'Noop Server',
     ListenPort => 8002,
     ListenAddress => '0.0.0.0',
     Plugins => [
         {
-            Plugin => Cometd::Plugin::Noop->new(),
+            Plugin => Sprocket::Plugin::Noop->new(),
             Priority => 0,
         },
     ],
@@ -33,10 +32,10 @@ $poe_kernel->run();
 1;
 
 
-package Cometd::Plugin::Noop;
+package Sprocket::Plugin::Noop;
 
-use Cometd qw( Plugin );
-use base 'Cometd::Plugin';
+use Sprocket qw( Plugin );
+use base 'Sprocket::Plugin';
 
 use POE;
 use POE::Filter::HTTPD;
@@ -71,7 +70,8 @@ sub local_connected {
 
 sub local_receive {
     my ( $self, $server, $con, $req ) = @_;
-   
+    
+    # TODO $req can be a HTTP::Response
     my $r = HTTP::Response->new( 200 );
     $r->content( 'OK' );
     $r->header( 'content-length' => 2 );
@@ -83,7 +83,6 @@ sub local_receive {
         }
     }
     $con->send( $r );
-    
     
     $con->close() if ( $close );
     

@@ -2,10 +2,10 @@
 
 use lib qw( lib easydbi-lib );
 
-# use this before POE, so Cometd loads the Epoll loop if we have it
-use POE::Component::Cometd qw( Client Server );
-use POE;
-use Cometd qw(
+# use this before POE, so Sprocket loads the Epoll loop if we have it
+use Sprocket qw(
+    Client
+    Server
     Plugin::JSONTransport
     Plugin::EventManager::SQLite
     Plugin::HTTP::Server
@@ -16,6 +16,7 @@ use Cometd qw(
     Plugin::AtomStream
     Plugin::Simple
 );
+use POE;
 
 my %opts = (
     LogLevel => 4,
@@ -25,14 +26,14 @@ my %opts = (
 
 
 # backend server accepts connections and receives events
-POE::Component::Cometd::Server->spawn(
+Sprocket::Server->spawn(
     %opts,
-    Name => 'Cometd Backend Server',
+    Name => 'Sprocket Backend Server',
     ListenPort => 6000,
     ListenAddress => '127.0.0.1',
     Plugins => [
         {
-            Plugin => Cometd::Plugin::JSONTransport->new(
+            Plugin => Sprocket::Plugin::JSONTransport->new(
                 EventManager => 'eventman'
             ),
             Priority => 0,
@@ -41,14 +42,14 @@ POE::Component::Cometd::Server->spawn(
 );
 
 # comet http server
-POE::Component::Cometd::Server->spawn(
+Sprocket::Server->spawn(
     %opts,
     Name => 'HTTP Comet Server',
     ListenPort => ( $ENV{USER} eq 'root' ? 80 : 8001 ),
     ListenAddress => '0.0.0.0',
     Plugins => [
         {
-            Plugin => Cometd::Plugin::HTTP::Server->new(
+            Plugin => Sprocket::Plugin::HTTP::Server->new(
                 DocumentRoot => $ENV{PWD}.'/html',
                 ForwardList => {
                     # deny any files or dirs access beginning with .
@@ -61,22 +62,22 @@ POE::Component::Cometd::Server->spawn(
             Priority => 0,
         },
         {
-            Plugin => Cometd::Plugin::HTTPComet->new(
+            Plugin => Sprocket::Plugin::HTTPComet->new(
                 EventManager => 'eventman'
             ),
             Priority => 1,
         },
         {
-            Plugin => Cometd::Plugin::HTTP::Deny->new(),
+            Plugin => Sprocket::Plugin::HTTP::Deny->new(),
             Priority => 2,
         },
         {
-            Plugin => Cometd::Plugin::HTTP::CGI->new(),
+            Plugin => Sprocket::Plugin::HTTP::CGI->new(),
             Priority => 3,
         },
     ],
     EventManager => {
-        module => 'Cometd::Plugin::EventManager::SQLite',
+        module => 'Sprocket::Plugin::EventManager::SQLite',
         options => [
             Alias => 'eventman',
             SqliteFile => 'pubsub.db',
@@ -85,14 +86,14 @@ POE::Component::Cometd::Server->spawn(
 );
 
 
-POE::Component::Cometd::Server->spawn(
+Sprocket::Server->spawn(
     %opts,
     Name => 'Simple Server',
     ListenPort => 8000,
     ListenAddress => '0.0.0.0',
     Plugins => [
         {
-            Plugin => Cometd::Plugin::Simple->new(
+            Plugin => Sprocket::Plugin::Simple->new(
                 DefaultChannel => '/sixapart/atom',
                 EventManager => 'eventman',
             ),
@@ -102,14 +103,14 @@ POE::Component::Cometd::Server->spawn(
 );
 
 # backend server
-my $svr = POE::Component::Cometd::Server->spawn(
+my $svr = Sprocket::Server->spawn(
     %opts,
     Name => 'Manager',
     ListenPort => 5000,
     ListenAddress => '127.0.0.1',
     Plugins => [
         {
-            Plugin => Cometd::Plugin::Manager->new( EventManager => 'eventman' ),
+            Plugin => Sprocket::Plugin::Manager->new( EventManager => 'eventman' ),
             Priority => 0,
         },
     ],
@@ -127,7 +128,7 @@ POE::Session->create(
     }
 );
 
-POE::Component::Cometd::Client->spawn(
+Sprocket::Client->spawn(
     %opts,
     Name => 'Updates SixApart',
     ClientList => [
@@ -135,7 +136,7 @@ POE::Component::Cometd::Client->spawn(
     ],
     Plugins => [
         {
-            Plugin => Cometd::Plugin::AtomStream->new(
+            Plugin => Sprocket::Plugin::AtomStream->new(
                 FeedChannel => '/sixapart/atom',
                 EventManager => 'eventman',
             ),

@@ -1,4 +1,4 @@
-package Cometd::Session;
+package Sprocket::Session;
 
 use warnings;
 use strict;

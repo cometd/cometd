@@ -1,14 +1,14 @@
-package POE::Component::Cometd::Client;
+package Sprocket::Client;
 
 use strict;
 use warnings;
 
 use POE qw(
-    Component::Cometd
     Filter::Stackable
     Filter::Stream
 );
-use base qw( POE::Component::Cometd );
+use Sprocket;
+use base qw( Sprocket );
 
 sub spawn {
     my $class = shift;

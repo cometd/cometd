@@ -1,18 +1,26 @@
-package POE::Component::Cometd;
+package Sprocket;
 
 use strict;
 use warnings;
 
 our $VERSION = '0.01';
 
-use Carp;
+use Carp qw(croak);
 use BSD::Resource;
-use Cometd qw( Connection Session );
+use Sprocket::Common;
+use Sprocket::Connection;
+use Sprocket::Session;
 use Scalar::Util qw( weaken blessed );
+
+use POE qw(
+    Wheel::SocketFactory
+    Driver::SysRW
+    Wheel::ReadWrite
+);
 
 use overload '""' => sub { shift->as_string(); };
 
-# weak list of all cometd components
+# weak list of all sprocket components
 our @COMPONENTS;
 
 sub EVENT_NAME() { 0 }
@@ -33,40 +41,31 @@ BEGIN {
     }
 }
 
-use POE qw(
-    Wheel::SocketFactory
-    Driver::SysRW
-    Wheel::ReadWrite
-);
-
 sub import {
     my $self = shift;
 
     my @modules = @_;
 
-#    push(@modules, 'Connection');
+    unshift( @modules, 'Common' );
 
     my $package = caller();
     my @failed;
 
-    foreach my $module (@modules) {
-        my $code = "package $package; use POE::Component::Cometd::$module;";
-        eval($code);
-        if ($@) {
+    foreach my $module ( @modules ) {
+        my $code = "package $package; use Sprocket::$module;";
+        eval( $code );
+        if ( $@ ) {
             warn $@;
-            push(@failed, $module);
+            push( @failed, $module );
         }
     }
 
-    @failed and croak "could not import qw(" . join(' ', @failed) . ")";
+    @failed and croak "could not import (" . join( ' ', @failed ) . ")";
 }
 
 our @base_states = qw(
     _start
     _default
-    register
-    unregister
-    notify
     signals
     _shutdown
     _log
@@ -84,7 +83,7 @@ our @base_states = qw(
 sub spawn {
     my ( $class, $self, @states ) = @_;
     
-    Cometd::Session->create(
+    Sprocket::Session->create(
 #       options => { trace => 1 },
         object_states => [
             $self => [ @base_states, @states ]
@@ -103,7 +102,7 @@ sub new {
     croak "$class requires an even number of parameters" if @_ % 2;
     my %opts = &adjust_params;
     my $s_alias = $opts{alias};
-    $s_alias = 'cometd' unless defined( $s_alias ) and length( $s_alias );
+    $s_alias = 'sprocket' unless defined( $s_alias ) and length( $s_alias );
     $opts{alias} = $s_alias;
     $opts{listen_port} ||= 6000;
     $opts{time_out} = defined $opts{time_out} ? $opts{time_out} : 30;
@@ -138,35 +137,6 @@ sub new {
     weaken( $COMPONENTS[ -1 ] );
     
     return $self;
-}
-
-sub register {
-    my ( $kernel, $self, $sender ) = @_[KERNEL, OBJECT, SENDER];
-    $kernel->refcount_increment( $sender->ID, __PACKAGE__ );
-    $self->{listeners}->{ $sender->ID } = 1;
-    $kernel->post( $sender->ID => cometd_registered => $_[SESSION]->ID );
-    return $_[SESSION]->ID();
-}
-
-sub unregister {
-    my ( $kernel, $self, $sender ) = @_[KERNEL, OBJECT, SENDER];
-    $kernel->refcount_decrement( $sender->ID, __PACKAGE__ );
-    delete $self->{listeners}->{ $sender->ID };
-}
-
-# XXX keep this around?
-sub notify {
-    my ( $kernel, $self, $name, $data ) = @_[KERNEL, OBJECT, ARG0, ARG1];
-    
-    my $ret = 0;
-    foreach ( keys %{$self->{listeners}} ) {
-        my $tmp = $kernel->call( $_ => $name => $data );
-        if ( defined( $tmp ) ) {
-            $ret += $tmp;
-        }
-    }
-    
-    return ( $ret > 0 ) ? 1 : 0;
 }
 
 sub _start {
@@ -228,7 +198,7 @@ sub _default {
     return if ( $cmd =~ m/^_(child|parent)/ );
 
     return $self->process_plugins( [ $cmd, $self, $con, @_[ ARG1 .. $#_ ] ] )
-        if ( blessed( $con ) && $con->isa( 'Cometd::Connection' ) );
+        if ( blessed( $con ) && $con->isa( 'Sprocket::Connection' ) );
     
     $self->_log(v => 1, msg => "_default called, no handler for event $cmd [$con] (the connection for this event may be gone)");
 }
@@ -253,7 +223,7 @@ sub sig_child {
 sub new_connection {
     my $self = shift;
    
-    my $con = Cometd::Connection->new(
+    my $con = Sprocket::Connection->new(
         parent_id => $self->{session_id},
         @_
     );
@@ -358,7 +328,7 @@ sub exception {
     $self->_log(v => 1, l => 1, msg => "plugin exception handled: ($sig) : "
         .join(' | ',map { $_.':'.$error->{$_} } keys %$error ) );
     # doesn't work?
-    if ( blessed( $con ) && $con->isa( 'Cometd::Connection' ) ) {
+    if ( blessed( $con ) && $con->isa( 'Sprocket::Connection' ) ) {
         $con->close( 1 );
 #        $self->cleanup_connection ( $con );
     }
@@ -402,7 +372,7 @@ sub add_plugin {
     $plugin->add_plugin( $self )
         if ( $plugin->can( 'add_plugin' ) );
     
-    # recalc plugin_pri
+    # recalc plugin order
     @{ $self->{plugin_pri} } = sort {
         $t->{ $a }->{priority} <=> $t->{ $b }->{priority}
     } keys %{ $t };
@@ -465,4 +435,53 @@ sub forward_plugin {
 
 
 1;
+
+__END__
+
+=pod
+
+=head1 NAME
+
+Sprocket - A pluggable POE based Client / Server Library
+
+=head1 SYNOPSIS
+
+See examples
+
+=head1 ABSTRACT
+
+Sprocket is an POE based client server library that uses plugins similar to POE
+Components.
+
+=head1 DESCRIPTION
+
+Sprocket uses a single session for each object/component created to increase speed
+and reduce the memory footprint of your apps.  Sprocket is used in the Perl version
+of Cometd L<http://cometd.com/>
+
+=head1 NOTES
+
+Sprocket is fully compatable with other POE Compoents.  Apps are normally written as
+Sprocket plugins and paired with a L<Sprocket::Server> or L<Sprocket::Client>.
+
+=head1 SEE ALSO
+
+L<Perlbal>, L<POE>
+
+=head1 AUTHOR
+
+David Davis E<lt>xantus@cometd.comE<gt>
+
+=head1 RATING
+
+Please rate this module.
+L<http://cpanratings.perl.org/rate/?distribution=Sprocket>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2006-2007 by David Davis
+
+See the LICENSE file that came with this distrobution.
+
+=cut
 

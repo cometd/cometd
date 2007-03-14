@@ -2,14 +2,15 @@
 
 use lib qw( lib easydbi-lib );
 
-# use this before POE, so Cometd loads the Epoll loop if we have it
-use POE::Component::Cometd qw( Client Server );
-use POE;
-use Cometd qw(
+# use this before POE, so Sprocket loads the Epoll loop if we have it
+use Sprocket qw(
+    Client
+    Server
     Plugin::HTTP::Server
     Plugin::HTTP::Deny
     Plugin::Manager
 );
+use POE;
 
 my %opts = (
     LogLevel => 4,
@@ -18,14 +19,14 @@ my %opts = (
 );
 
 # comet http server
-POE::Component::Cometd::Server->spawn(
+Sprocket::Server->spawn(
     %opts,
     Name => 'HTTP Server',
     ListenPort => 8001,
     ListenAddress => '0.0.0.0',
     Plugins => [
         {
-            Plugin => Cometd::Plugin::HTTP::Server->new(
+            Plugin => Sprocket::Plugin::HTTP::Server->new(
                 DocumentRoot => $ENV{PWD}.'/html',
                 ForwardList => {
                     qr|/\.| => 'HTTP::Deny',
@@ -34,21 +35,21 @@ POE::Component::Cometd::Server->spawn(
             Priority => 0,
         },
         {
-            Plugin => Cometd::Plugin::HTTP::Deny->new(),
+            Plugin => Sprocket::Plugin::HTTP::Deny->new(),
             Priority => 1,
         },
     ],
 );
 
 # backend server
-POE::Component::Cometd::Server->spawn(
+Sprocket::Server->spawn(
     %opts,
     Name => 'Manager',
     ListenPort => 5000,
     ListenAddress => '127.0.0.1',
     Plugins => [
         {
-            Plugin => Cometd::Plugin::Manager->new(),
+            Plugin => Sprocket::Plugin::Manager->new(),
             Priority => 0,
         },
     ],

@@ -1,10 +1,10 @@
-package Cometd::Plugin;
+package Sprocket::Plugin;
 
 use Class::Accessor::Fast;
 use base qw(Class::Accessor::Fast);
 use Scalar::Util qw( weaken );
 use POE;
-use Cometd;
+use Sprocket;
 
 __PACKAGE__->mk_accessors( qw( name parent_id ) );
 
@@ -21,7 +21,7 @@ sub new {
 }
 
 sub as_string {
-    warn "This cometd plugin should have been subclassed!";
+    warn "This Sprocket plugin should have been subclassed!";
     __PACKAGE__;
 }
 

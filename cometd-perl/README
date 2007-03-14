@@ -1,26 +1,21 @@
 **README**
 
 Please note that the comet-perl code is under heavy development
-and isn't in a working state.  I've been making large changes lately.
+and isn't in a totally working state.  I've been making huge changes lately.
 
-See the TODO for a list of things that need to be completed.
+See the TODO for a list of things that need to be completed. Please
+note that it isn't a complete list.
 
 * Notes *
 
 perlbal.sh is for running perlbal with the right lib directories
 see conf/perlbal.conf
 
-httpd.pl is a simple http server used for testing, perlbal connects to this
-the doc root needs to be pointed at the dojo sources
-this hasn't been tested with dojo yet
-
 eventserver.pl loads the components that combine into the cometd event server
+it has a built in http server, it's document root is html/
 
-The lab/ directory is the old design for the cometd component.  This code
-may make its way back into cometd
+The lab/ directory is for old stuff and developers.
 
-
-* THE SIMPLE TEST IS BROKEN DUE TO HEAVY DEVELOPMENT *
 
 There are some tests that can be run:
 
@@ -29,9 +24,11 @@ perl Makefile.PL
 make test
 
 
+* THESE TESTS ARE BROKEN DUE TO HEAVY DEVELOPMENT *
+
 ./eventserver.pl
 
-visit http://<ip>:8080/  or http://127.0.0.1:8080/
+visit http://<ip>:8001/  or http://127.0.0.1:8001/
 
 David Davis
 aka Xantus
