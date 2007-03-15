@@ -18,6 +18,7 @@ WriteMakefile(
         'HTTP::Status' => undef,
         'HTTP::Response' => undef,
         'HTTP::Date' => undef,
+        'Data::UUID' => undef,
         'URI' => undef,
     },
 	'dist'         => {
