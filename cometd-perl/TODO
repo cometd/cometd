@@ -19,6 +19,7 @@ Legend:
 [*] Manager plugin
 [+] HTTPD plugin
 [+] Tests
+[+] ArcheType compatable js lib
 [ ] Apache::Backend::Cometd ( see Apache::Backend::POE )
 [ ] Config file in conf/ for eventserver.pl
 [ ] update POE::Filter::JSON to use JSON::Syck or create POE::Filter::JSON::Syck
