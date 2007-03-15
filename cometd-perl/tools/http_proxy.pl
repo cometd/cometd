@@ -6,7 +6,7 @@ use lib qw( lib easydbi-lib );
 use Sprocket qw(
     Client
     Server
-    Plugin::HTTPProxy
+    Plugin::HTTP::Proxy
 );
 use POE;
 
@@ -24,7 +24,7 @@ Sprocket::Server->spawn(
     ListenAddress => '0.0.0.0',
     Plugins => [
         {
-            Plugin => Sprocket::Plugin::HTTPProxy->new(
+            Plugin => Sprocket::Plugin::HTTP::Proxy->new(
                 AllowList => {
                     '127.0.0.1' => 1,
                 },
@@ -35,7 +35,7 @@ Sprocket::Server->spawn(
                     Name => 'HTTP Proxy Client',
                     Plugins => [
                         {
-                            Plugin => Sprocket::Plugin::HTTPProxy->new(),
+                            Plugin => Sprocket::Plugin::HTTP::Proxy->new(),
                             Priority => 0,
                         },
                     ],

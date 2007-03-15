@@ -1,4 +1,4 @@
-package Sprocket::Plugin::HTTPComet;
+package Sprocket::Plugin::HTTP::Comet;
 
 use Sprocket qw( Plugin::HTTP );
 use base 'Sprocket::Plugin::HTTP';

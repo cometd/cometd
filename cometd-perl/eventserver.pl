@@ -11,7 +11,7 @@ use Sprocket qw(
     Plugin::HTTP::Server
     Plugin::HTTP::Deny
     Plugin::HTTP::CGI
-    Plugin::HTTPComet
+    Plugin::HTTP::Comet
     Plugin::Manager
     Plugin::AtomStream
     Plugin::Simple
@@ -56,13 +56,13 @@ Sprocket::Server->spawn(
                     qr|/\.| => 'HTTP::Deny',
                     qr/\.(pl|cgi)$/ => 'HTTP::CGI',
                     # forward /cometd to the Comet plugin
-                    qr|^/cometd/?$| => 'HTTPComet',
+                    qr|^/cometd/?$| => 'HTTP::Comet',
                 }
             ),
             Priority => 0,
         },
         {
-            Plugin => Sprocket::Plugin::HTTPComet->new(
+            Plugin => Sprocket::Plugin::HTTP::Comet->new(
                 EventManager => 'eventman'
             ),
             Priority => 1,

@@ -1,4 +1,4 @@
-package Sprocket::Plugin::HTTPProxy;
+package Sprocket::Plugin::HTTP::Proxy;
 
 use Sprocket::Plugin;
 use base 'Sprocket::Plugin';
@@ -34,9 +34,6 @@ sub new {
     # TODO verify client
 
     return $self;
-}
-
-sub add_plugin {
 }
 
 sub as_string {
