@@ -18,8 +18,14 @@ WriteMakefile(
         'HTTP::Status' => undef,
         'HTTP::Response' => undef,
         'HTTP::Date' => undef,
-        'Data::UUID' => undef,
         'URI' => undef,
+        'Data::UUID' => undef,
+        'Digest::SHA1' => undef,
+#        'IO::AIO' => undef,
+        'MIME::Types' => undef,
+        'Scalar::Util' => undef,
+        'Time::HiRes' => undef,
+
     },
 	'dist'         => {
 		'SUFFIX'       => ".gz",

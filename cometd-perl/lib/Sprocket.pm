@@ -47,12 +47,15 @@ sub import {
     my @modules = @_;
 
     unshift( @modules, 'Common' );
+    @modules = map { 'Sprocket::'.$_  } @modules;
+    
+    push( @modules, 'POE' );
 
     my $package = caller();
     my @failed;
 
     foreach my $module ( @modules ) {
-        my $code = "package $package; use Sprocket::$module;";
+        my $code = "package $package; use $module;";
         eval( $code );
         if ( $@ ) {
             warn $@;
@@ -185,6 +188,8 @@ sub _start {
         if ( $self->{time_out} );
 
 #    $kernel->sig( DIE => 'exception' );
+    $kernel->sig( TSTP => 'signals' );
+    
 
     $kernel->yield('_startup');
 }
@@ -211,6 +216,10 @@ sub signals {
     # to stop ctrl-c / INT
     if ($signal_name eq 'INT') {
         #$_[KERNEL]->sig_handled();
+    } elsif ( $signal_name eq 'TSTP' ) {
+        local $SIG{TSTP} = 'DEFAULT';
+        kill( TSTP => $$ );
+        $_[KERNEL]->sig_handled();
     }
 
     return 0;
@@ -302,6 +311,7 @@ sub _shutdown {
         $kernel->refcount_decrement( $id, __PACKAGE__ );
     }
     $kernel->sig( INT => undef );
+    $kernel->sig( TSTP => undef );
     $kernel->alarm_remove_all();
     delete $self->{wheel};
     delete $self->{sf};
@@ -427,7 +437,10 @@ sub process_plugins {
 sub forward_plugin {
     my $self = shift;
     my $plug_name = shift;
-    return 0 unless( exists( $self->{plugins}->{ $plug_name } ) );
+    unless( exists( $self->{plugins}->{ $plug_name } ) ) {
+        $self->_log( v => 4, msg => 'plugin not loaded: '.$plug_name );
+        return 0;
+    }
     my $con = $_[ 1 ];
     $con->plugin( $plug_name );
     return $self->process_plugins( [ $con->state, @_ ] );

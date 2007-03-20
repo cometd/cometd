@@ -5,7 +5,10 @@ use POE qw( Component::EasyDBI );
 
 use base qw( Sprocket::Plugin::EventManager );
 
+# just checking
 use DBD::SQLite;
+
+use HTTP::Date qw( str2time );
 
 use strict;
 use warnings;
@@ -46,6 +49,8 @@ sub new {
                 add_channels
                 remove_channels
 
+                remove_cid
+
                 db_do
                 db_select
             )],
@@ -75,6 +80,8 @@ sub _start {
         options     => {
             AutoCommit => 1,
         },
+        max_retries => -1,
+        reconnect_wait => 1,
         connected => [ $_[SESSION]->ID, '_connected' ],
 #        query_logger => 'debug_logger',
     );
@@ -94,10 +101,12 @@ sub watchdog {
     
     return unless ( @chans );
     
-    $self->{db}->keyvalhash(
-        sql =>   qq|SELECT c.cid, c.clid
+    $self->{db}->hashhash(
+        sql =>   qq|SELECT c.cid, c.clid, cl.acttime
                     FROM cid_clid_map AS c
-                    LEFT JOIN clid_ch_map AS cm
+                    JOIN clients AS cl
+                        ON c.clid=cl.clid
+                    JOIN clid_ch_map AS cm
                         ON c.clid=cm.clid
                     WHERE cm.channel IN (|
                 .join(',', map { '?' } @chans).')',
@@ -105,11 +114,24 @@ sub watchdog {
         primary_key => 'cid',
         event => sub {
             my $r = shift;
+            my @del;
 #            require Data::Dumper;
 #            warn "".Data::Dumper->Dump([$r]);
             foreach my $cid (keys %{$r->{result}}) {
-                # XXX ugly!!
-                $poe_kernel->post( $self->{parent_id} => $cid.'|events_ready' => $r->{result}->{$cid} );
+                my $acttime = str2time( $r->{result}->{$cid}->{acttime} );
+                $self->_log( v => 4, msg => sprintf( 'cid: %s, clid: %s last act: %s = %s ( - %s )', $cid, $r->{result}->{$cid}->{clid}, $r->{result}->{$cid}->{acttime}, $acttime, ( time() - ( 5 * 60 ) ) ) );
+                
+                if ( $acttime < ( time() - ( 5 * 60 ) ) ) {
+                    push( @del, $r->{result}->{$cid}->{clid} );
+                } else {
+                    # XXX ugly!!
+                    $poe_kernel->post( $self->{parent_id} => $cid.'|events_ready' => $r->{result}->{$cid}->{clid} );
+                }
+            }
+            
+            foreach ( @del ) {
+                $self->_log( v => 4, msg => sprintf( 'cid: %s scheduled for deletion', $_ ) );
+                $self->remove_client( $_ );
             }
             $kernel->call( $self->{session_id} => 'set_watchdog' );
         }
@@ -165,71 +187,77 @@ sub _connected {
 
     return if ( $self->{first_connect}++ );
 
-    $self->{db}->do(
-        sql => 'CREATE TABLE clients (clid VARCHAR(50) PRIMARY KEY, acttime DATE)',
-        event => 'check_error'
-    );
+    $self->{db}->single(
+        sql => 'SELECT 1 FROM clients',
+        event => sub {
+            return unless ( $_[0]->{error} );
+            
+            $self->{db}->do(
+                sql => 'CREATE TABLE clients (clid VARCHAR(50) PRIMARY KEY, acttime DATE)',
+                event => 'check_error'
+            );
+            
+            $self->{db}->do(
+                sql => qq(CREATE TRIGGER update_clients AFTER INSERT ON clients
+             BEGIN
+              UPDATE clients SET acttime = DATETIME('NOW') WHERE clid=new.clid;
+             END;),
+                event => 'check_error'
+            );
+            
+            #$self->{db}->do(
+            #    sql => 'DELETE FROM clients',
+            #    event => 'check_error'
+            #);
+        
+            $self->{db}->do(
+                sql => 'CREATE TABLE clid_ch_map (clid VARCHAR(50), channel VARCHAR(255), eid INTEGER)',
+                event => 'check_error'
+            );
+            
+            $self->{db}->do(
+                sql => 'CREATE UNIQUE INDEX unique_clid_ch_map ON clid_ch_map (clid, channel)',
+                event => 'check_error',
+            );
+            
+            #$self->{db}->do(
+            #    sql => 'DELETE FROM clid_ch_map',
+            #    event => 'check_error'
+            #);
+            
+            $self->{db}->do(
+                sql => 'CREATE TABLE channels (channel VARCHAR(255) PRIMARY KEY, eid INTEGER)',
+                event => 'check_error'
+            );
+            
+            # XXX blob?
+            $self->{db}->do(
+                sql => 'CREATE TABLE events (eid INTEGER PRIMARY KEY, channel VARCHAR(255), event TEXT)',
+                event => 'check_error'
+            );
+            
+            $self->{db}->do(
+                sql => qq(CREATE TRIGGER insert_events AFTER INSERT ON events
+             BEGIN
+              UPDATE channels SET eid=new.eid WHERE channel=new.channel;
+             END;),
+                event => 'check_error'
+            );
+            
+            $self->{db}->do(
+                sql => 'CREATE TABLE cid_clid_map (cid VARCHAR(10), clid VARCHAR(50) UNIQUE)',
+                event => 'check_error'
+            );
     
-    $self->{db}->do(
-        sql => qq(CREATE TRIGGER update_clients AFTER INSERT ON clients
-     BEGIN
-      UPDATE clients SET acttime = DATETIME('NOW') WHERE clid=new.clid;
-     END;),
-        event => 'check_error'
-    );
-    
-    $self->{db}->do(
-        sql => 'DELETE FROM clients',
-        event => 'check_error'
+            $self->_log( v => 4, msg => 'tables created' ); 
+        }
     );
 
-    $self->{db}->do(
-        sql => 'CREATE TABLE clid_ch_map (clid VARCHAR(50), channel VARCHAR(255), eid INTEGER)',
-        event => 'check_error'
-    );
-    
-    $self->{db}->do(
-        sql => 'CREATE UNIQUE INDEX unique_clid_ch_map ON clid_ch_map (clid, channel)',
-        event => 'check_error',
-    );
-    
-    $self->{db}->do(
-        sql => 'DELETE FROM clid_ch_map',
-        event => 'check_error'
-    );
-    
-    $self->{db}->do(
-        sql => 'CREATE TABLE channels (channel VARCHAR(255) PRIMARY KEY, eid INTEGER)',
-        event => 'check_error'
-    );
-    
-    # XXX blob?
-    $self->{db}->do(
-        sql => 'CREATE TABLE events (eid INTEGER PRIMARY KEY, channel VARCHAR(255), event TEXT)',
-        event => 'check_error'
-    );
-    
-    $self->{db}->do(
-        sql => qq(CREATE TRIGGER insert_events AFTER INSERT ON events
-     BEGIN
-      UPDATE channels SET eid=new.eid WHERE channel=new.channel;
-     END;),
-        event => 'check_error'
-    );
-    
-    $self->{db}->do(
-        sql => 'CREATE TABLE cid_clid_map (cid VARCHAR(10), clid VARCHAR(50) UNIQUE)',
-        event => 'check_error'
-    );
-
+    # connection ids are nolonger valid, delete them
     $self->{db}->do(
         sql => 'DELETE FROM cid_clid_map',
         event => 'check_error'
     );
-    
-    #$self->add_client( "test", [ "/foo", "/bar" ] );
-    
-    # TODO clean out clients
 }
 
 # methods
@@ -251,6 +279,21 @@ sub add_client {
     $self->{db}->do(
         sql => 'REPLACE INTO clients (clid) VALUES (?)',
         placeholders => [ $clid ],
+        event => 'check_error'
+    );
+
+    # post style
+    return [ $self->{session_id} => remove_cid => $cid ];
+}
+
+sub remove_cid {
+    my ( $self, $cid ) = $_[ KERNEL ] ? @_[ OBJECT, ARG0 ] : @_;
+
+    $self->_log(v => 4, msg => "cleanup of con id: ".$cid );
+    
+    $self->{db}->do(
+        sql => 'DELETE FROM cid_clid_map WHERE cid=?',
+        placeholders => [ $cid ],
         event => 'check_error'
     );
 }
@@ -277,6 +320,8 @@ sub remove_client {
         placeholders => [ $clid ],
         event => 'check_error'
     );
+    
+    warn "remove client $clid";
 }
 
 sub add_channels {

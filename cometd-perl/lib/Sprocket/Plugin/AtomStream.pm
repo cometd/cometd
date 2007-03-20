@@ -37,7 +37,7 @@ sub remote_connected {
     $con->filter->shift(); # pull off Filter::Stream
 
     # look for the atom stream header first
-    $self->{_header} = 1;
+    $con->{_header} = 1;
 
     # TODO http::request?
     $con->send(
@@ -53,10 +53,10 @@ sub remote_connected {
 sub remote_receive {
     my ($self, $client, $con, $d) = @_;
     
-    if ( $self->{_header} ) {
+    if ( $con->{_header} ) {
         return unless ( $d && $d =~ m/^<atomStream/io );
 
-        delete $self->{_header};
+        delete $con->{_header};
         $con->filter->push( POE::Filter::Atom->new() );
     
         $con->filter->shift(); # POE::Filter::Stream
@@ -66,11 +66,11 @@ sub remote_receive {
 
         my @events = map {
 #            $self->_log(v => 4, msg => 'Title:[ '.$_->title.' ] Link:[ '.$_->link->href.' ]');
-           next unless ( $_ && $_->link );
-            new Sprocket::Event(
+            ( $_ && $_->link )
+            ? new Sprocket::Event(
                 channel => $self->{feed_channel},
                 data => 'Title:[ '.$_->title.' ] Link:[ '.$_->link->href.' ]'
-            );
+            ) : ();
         } $d->entries;
         
         return unless ( @events );

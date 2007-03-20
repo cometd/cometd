@@ -186,7 +186,7 @@ sub connect {
         $self->new_connection(
             peer_ip => $address,
             peer_port => $port,
-            addr => "$address:$port",
+            peer_addr => "$address:$port",
         )
     );
 }

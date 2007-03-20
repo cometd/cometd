@@ -21,11 +21,9 @@ sub import {
 
     push( @exports, @_ ) if ( @_ );
     
-    {
-        no strict 'refs';
-        foreach my $sub ( @exports ) {
-            *{ $package . '::' . $sub } = \&$sub;
-        }
+    no strict 'refs';
+    foreach my $sub ( @exports ) {
+        *{ $package . '::' . $sub } = \&$sub;
     }
 }
 

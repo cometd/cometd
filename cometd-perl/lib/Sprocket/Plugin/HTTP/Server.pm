@@ -123,6 +123,8 @@ sub local_receive {
     $con->{_req} = $req;
     $r = $con->{_r} = HTTP::Response->new( 200 );
     
+    $con->set_time_out( 300 );
+
     if ( $self->{forward_list} ) {
         foreach my $regex ( keys %{ $self->{forward_list} } ) {
             my $name = $self->{forward_list}->{ $regex };
@@ -141,9 +143,7 @@ sub local_receive {
         # didn't forward request
         delete $con->{_forwarded_from};
     }
-
-    $con->set_time_out( 300 );
-
+ 
     my $file = $self->{document_root}.$con->{_uri};
     aio_stat( $file, $con->callback( 'stat_file', $file ) );
 

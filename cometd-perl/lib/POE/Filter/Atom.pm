@@ -72,12 +72,12 @@ sub get_one {
         }
     };
     if ( $@ ) {
-        warn "$@ when parsing atom stream";
+        #warn "$@ when parsing atom stream";
         open(FH,">>debug.txt");
         print FH "$@ when parsing atom stream\n";
         print FH "$data\n";
         print FH "--------\n";
-        close(FH);    
+        close(FH);
     }
 
     return $ret;
@@ -85,8 +85,8 @@ sub get_one {
 
 sub put {
     my ($self, $objects) = @_;
-
-    return [ map { $_->as_xml } @$objects ];
+    
+    return [ map { $_ ? $_->as_xml : () } @$objects ];
 }
 
 1;

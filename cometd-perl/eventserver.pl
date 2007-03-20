@@ -132,7 +132,7 @@ Sprocket::Client->spawn(
     %opts,
     Name => 'Updates SixApart',
     ClientList => [
-#        'updates.sixapart.com:80',
+        'updates.sixapart.com:80',
     ],
     Plugins => [
         {

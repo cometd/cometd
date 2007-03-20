@@ -15,12 +15,34 @@ use bytes;
 use strict;
 use warnings;
 
+sub OK()    { 1 }
+sub DEFER() { 0 }
+sub BAD()   { undef }
 
 sub new {
     shift->SUPER::new(
         mime => MIME::Types->new(),
         @_
     );
+}
+
+
+sub import {
+    my $self = shift;
+
+    my $package = caller();
+    my @exports = qw(
+        OK
+        DEFER
+        BAD
+    );
+
+    push( @exports, @_ ) if ( @_ );
+    
+    no strict 'refs';
+    foreach my $sub ( @exports ) {
+        *{ $package . '::' . $sub } = \&$sub;
+    }
 }
 
 
@@ -48,7 +70,7 @@ sub send_file {
     }
     close $fh if ($fh);
     
-    return;
+    return OK;
 }
 
 
@@ -58,7 +80,7 @@ sub start_http_request {
     delete $con->{_close};
 
     $con->{_start_time} = time()
-        unless ( defined $con->{_start_time} );
+        unless ( $con->{_start_time} );
 
     if ( blessed( $req ) ) {
         if ( $req->isa( 'HTTP::Response' ) ) {
@@ -66,12 +88,12 @@ sub start_http_request {
             $con->{_req} ||= HTTP::Request->new();
 #            $con->{_close} = 1;
             $self->finish( $con );
-            return 0;
+            return DEFER;
         } elsif ( $req->isa( 'HTTP::Request' ) ) {
             $con->wheel->pause_input(); # no more requests
-
+            $con->{_req} ||= $req;
             # can continue request handling
-            return 1;
+            return OK;
         }
     }
 
@@ -81,7 +103,7 @@ sub start_http_request {
     $self->finish( $con, 'invalid request' );
 
     # do not continue
-    return undef;
+    return BAD;
 }
 
 
@@ -90,7 +112,7 @@ sub finish {
 
     my $time = time();
 
-    my $r = $con->{_r};
+    my $r = $con->{_r} || HTTP::Response->new( 500 );
 
     # TODO version here
     $r->header( Server => 'Sprocket' );
@@ -156,6 +178,7 @@ sub finish {
         $con->{__requests}++;
         $con->wheel->resume_input();
     }
+    return OK;
     
     # TODO log full request`
     $self->_log(v => 1, msg => join( ' ',
@@ -168,7 +191,7 @@ sub finish {
         ( $r->code && $r->code == 302 ? $r->header( 'Location' ) : '' )
     ));
 
-    return 1;
+    return OK;
 }
 
 

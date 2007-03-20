@@ -26,10 +26,9 @@ sub as_string {
 }
 
 sub handle_event {
-    my ( $self, $event ) = @_;
+    my ( $self, $event ) = ( shift, shift );
     
-    #$self->$event( @_[ 2, $#_ ] )
-    return $self->$event( splice( @_, 2, $#_ ) )
+    return $self->$event( @_ )
         if ( $self->can( $event ) );
     
     return undef;

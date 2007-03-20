@@ -21,6 +21,7 @@ __PACKAGE__->mk_accessors( qw(
     fused
     peer_ip
     peer_port
+    peer_addr
     state
     time_out
     ID
@@ -49,6 +50,7 @@ sub new {
         channels => {},
         alarms => {},
         clid => undef,
+        destroy_events => {},
         @_
     }, ref $class || $class );
 
@@ -226,22 +228,26 @@ sub close {
         if ( !$force && $out ) {
 #            $self->_log(v => 4, msg => 'closing on flush');
             $self->close_on_flush( 1 );
+            return;
         } else {
             $self->_log(v => 4, msg => 'forced socket shutdown');
             $wheel->shutdown_input();
             $wheel->shutdown_output();
-            $self->wheel( undef )
-                if ( $force );
-            $self->connected( 0 );
-            # kill the socket factory if any
-            $self->sf( undef );
-            if ( my $con = $self->fused() ) {
-                $con->close($force);
-                $self->fused( undef );
-            }
-            $poe_kernel->call( $self->parent_id => cleanup => $self->ID );
         }
     }
+
+    $self->wheel( undef )
+        if ( $force );
+    $self->connected( 0 );
+    # kill the socket factory if any
+    $self->sf( undef );
+    if ( my $con = $self->fused() ) {
+        $con->close($force);
+        $self->fused( undef );
+    }
+    $poe_kernel->call( $self->parent_id => cleanup => $self->ID );
+
+    return;
 }
 
 sub get_driver_out_octets {
@@ -293,8 +299,9 @@ sub postback {
 
 sub add_client {
     my $self = shift;
-    $poe_kernel->call( $self->event_manager => add_client => $self->clid => $self->ID )
-        if ( $self->clid && $self->event_manager );
+    if ( $self->clid && $self->event_manager ) {
+        $self->{destroy_events}->{remove_client} = $poe_kernel->call( $self->event_manager => add_client => $self->clid => $self->ID );
+    }
 }
 
 sub remove_client {
@@ -358,6 +365,15 @@ sub _log {
 sub DESTROY {
     my $self = shift;
 
+    warn "destruction of ".$self->ID;
+    if ( keys %{$self->{destroy_events}} ) {
+        require Data::Dumper;
+        foreach my $type ( keys %{$self->{destroy_events}} ) {
+            warn "events firing for $type:".Data::Dumper->Dump([$self->{destroy_events}->{$type}]);
+            $poe_kernel->post( @{$self->{destroy_events}->{$type}} );
+        }
+    }
+
     # remove alarms for this connection
     foreach ( keys %{$self->{alarms}} ) {
         $self->_log( v => 4, 'removed alarm '.$_ );
@@ -385,7 +401,7 @@ sub DESTROY {
     if ( defined $parent_id ) {
         $poe_kernel->refcount_decrement( $parent_id, 'anon_event' );
     } else {
-        warn "connection callback DESTROY without session_id to refcount_decrement"
+        warn "connection callback DESTROY without session_id to refcount_decrement";
     }
 
     return;

@@ -81,11 +81,11 @@ sub _conn_status {
 # Accept a new connection
 
 sub local_accept {
-    my ( $kernel, $self, $socket, $peer_addr, $peer_port ) =
+    my ( $kernel, $self, $socket, $peer_ip, $peer_port ) =
         @_[ KERNEL, OBJECT, ARG0, ARG1, ARG2 ];
 
-    $peer_addr = inet_ntoa( $peer_addr );
-    my ($port, $ip) = ( sockaddr_in( getsockname( $socket ) ) );
+    $peer_ip = inet_ntoa( $peer_ip );
+    my ( $port, $ip ) = ( sockaddr_in( getsockname( $socket ) ) );
     $ip = inet_ntoa( $ip );
 
     # XXX could do accept check ( plugin )
@@ -95,12 +95,12 @@ sub local_accept {
     my $con = $self->new_connection(
         local_ip => $ip,
         local_port => $port,
-        peer_ip => $peer_addr,
+        peer_ip => $peer_ip,
         peer_port => $peer_port,
-        addr => "$peer_addr:$peer_port",
+        peer_addr => "$peer_ip:$peer_port",
     );
     
-    #$self->_log(v => 4, msg => $self->{name}." received connection on $ip:$port from $peer_addr:$peer_port");
+    #$self->_log(v => 4, msg => $self->{name}." received connection on $ip:$port from $peer_ip:$peer_port");
     
     $con->wheel_readwrite(
         Handle          => $socket,
@@ -172,7 +172,7 @@ sub local_error {
     # TODO use constant
     if ( $errnum == 0 ) {
         # normal disconnect
-#        $self->_log(v => 4, msg => $self->{name}." - client disconnected : $con->{addr}");
+#        $self->_log(v => 4, msg => $self->{name}." - client disconnected : $con->{peer_addr}");
     } else {
         $self->_log(v => 3, msg => $self->{name}." encountered $operation error $errnum: $errstr");
     }
