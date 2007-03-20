@@ -2,6 +2,7 @@ Cometd = { };
 
 Cometd.Client = new Class( Client, {
     "clientId": null,
+    "authToken": null,
 
     "minimumProtocolVersion": .1,
     "protocolVersion": .2,
@@ -21,6 +22,11 @@ Cometd.Client = new Class( Client, {
             obj.request[ 0 ].authScheme = obj.authScheme;
         if ( obj.authUser )
             obj.request[ 0 ].authUser = obj.authUser;
+        if ( obj.clientId )
+            this.clientId = obj.clientId;
+        if ( this.clientId )
+            obj.request[ 0 ].clientId = this.clientId;
+        
         if ( obj.authToken )
             this.authToken = obj.authToken;
         if ( this.authToken )
@@ -111,7 +117,7 @@ Cometd.Client.Request = new Class( Client.Request, {
         this.transport.setRequestHeader( "content-type", this.contentType );
    
         var json = this.request.toJSON();
-        log.debug( "sent:" + json ); 
+        log.debug( "request:" + json ); 
         this.transport.send( "message=" + encodeURI( json ) );
     },
     
@@ -145,7 +151,8 @@ Cometd.Client.Request = new Class( Client.Request, {
                 e = e.message;
             this.response.error = e;
         }
-        this.response.status = this.transport.status;
+        if ( this.response && this.response.status )
+           this.response.status = this.transport.status;
 
         if ( this.response.result && this.response.result[ 0 ] ) {
 
@@ -154,37 +161,34 @@ Cometd.Client.Request = new Class( Client.Request, {
                 
                 if ( res.hasOwnProperty( "clientId" ) ) {
                     this.client.clientId = res.clientId;
-                    log.debug('found client id in response: '+this.client.clientId);
+//                    log.debug('found client id in response: ' + this.client.clientId);
                 }
                         
 
                 if ( res.hasOwnProperty( "authToken" ) ) {
                     this.client.authToken = res.authToken;
-                    log.debug('found auth token: '+this.client.authToken);
+//                    log.debug('found auth token: ' + this.client.authToken);
                 }
                 
                 if ( res.channel.match( /^\/meta\/handshake/ ) ) {
-                    if ( res.hasOwnProperty( "authSuccessful" ) && res.authSuccessful ) {
-                        /* ? */
-                    } else {
+                    if ( !( res.hasOwnProperty( "authSuccessful" ) && res.authSuccessful ) ) {
                         this.response.error = res.error;
-                        log.error('error: '+this.response.error);
+                        log.error('error: ' + this.response.error);
                     }
                 }
             
                 if ( res.hasOwnProperty( "successful" ) && !res.successful ) {
                     this.response.error = res.error;
-                    log.error('error: '+this.response.error);
+                    log.error('error: ' + this.response.error);
                 }
             }
         }
         
-        log.debug( 'response:'+this.response.result.toJSON() );
+        log.debug( 'response:' + this.response.toJSON() );
 
-        if( this.heap && this.heap.callback ) {
+        if( this.heap && this.heap.callback )
             if ( this.processCallbacks( this.heap.callback ) )
                 return;
-        }
 
         this.heap = null;
         this.client = null;
