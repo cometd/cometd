@@ -31,8 +31,8 @@ lib/Sprocket/Plugin/HTTP.pm
 lib/Sprocket/Plugin/HTTP/CGI.pm
 lib/Sprocket/Plugin/HTTP/Deny.pm
 lib/Sprocket/Plugin/HTTP/Server.pm
-lib/Sprocket/Plugin/HTTPComet.pm
-lib/Sprocket/Plugin/HTTPProxy.pm
+lib/Sprocket/Plugin/HTTP/Comet.pm
+lib/Sprocket/Plugin/HTTP/Proxy.pm
 lib/Sprocket/Plugin/JSONTransport.pm
 lib/Sprocket/Plugin/Manager.pm
 lib/Sprocket/Plugin/Memcached.pm
@@ -50,7 +50,7 @@ t/01_plugin.t
 t/02_template.t
 tools/atomstream.pl
 tools/httpd.pl
-tools/httpproxy.pl
+tools/http_proxy.pl
 tools/injectevent.pl
 tools/manifest.pl
 tools/mc.pl
