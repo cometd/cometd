@@ -20,7 +20,7 @@ my $test_server = Sprocket::Server->spawn(
     Name => 'Test Server',
     ListenPort => 9979,
     ListenAddress => '127.0.0.1',
-    Transports => [
+    Plugins => [
         {
             plugin => Sprocket::Plugin::Test->new(),
         },
@@ -33,7 +33,7 @@ my $test_client = Sprocket::Client->spawn(
     ClientList => [
         '127.0.0.1:9979',
     ],
-    Transports => [
+    Plugins => [
         {
             plugin => Sprocket::Plugin::Test->new(),
         },
@@ -98,8 +98,8 @@ sub local_receive {
 
 sub local_disconnected {
     my ( $self, $server, $con ) = @_;
-    $server->shutdown();
     Test::More::pass("local disconnected");
+    $server->shutdown();
 }
 
 # ---------------------------------------------------------
