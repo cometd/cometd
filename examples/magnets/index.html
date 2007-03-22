@@ -28,6 +28,15 @@
 				}	
 				dojo.lang.forEach(tray.children, function(ttmp){
 					dojo.event.connect(ttmp.drag, "onDragStart", function(){
+						var tn = ttmp.drag.domNode;
+						if(tn.style.position != "absolute"){
+							var abs = dojo.html.getAbsolutePosition(tn);
+							with(tn.style){
+								position = "absolute";
+								left = abs.x+"px";
+								top = abs.y+"px";
+							}
+						}
 						cometd.publish("/magnets/moveStart", {
 							source: cometd.clientId,
 							widgetId: ttmp.widgetId
