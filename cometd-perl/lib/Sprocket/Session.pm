@@ -69,7 +69,7 @@ sub _invoke_state {
   # Package and object states are invoked this way.
   SWITCH: {
     if ( $state eq POE::Session::EN_DEFAULT
-      && ( $etc->[0] =~ m/^([^\|]+)\|(.*)/ ) ) {
+      && ( $etc->[0] =~ m/^([^\|]+)\/(.*)/ ) ) {
       last SWITCH unless ( $1 && $2 );
       
       my ( $heap, $nstate ) = ( $1, $2 );

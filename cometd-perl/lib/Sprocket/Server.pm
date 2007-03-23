@@ -22,8 +22,6 @@ sub spawn {
             _startup
             _stop
 
-            _conn_status
-        
             local_accept
             local_receive
             local_flushed
@@ -63,19 +61,11 @@ sub _startup {
     );
 
     $self->_log(v => 2, msg => "Listening to port $self->{opts}->{listen_port} on $self->{opts}->{listen_address}");
-
-#    $kernel->yield( '_conn_status' );    
 }
 
 sub _stop {
     my $self = $_[ OBJECT ];
     $self->_log(v => 2, msg => $self->{name}." stopped.");
-}
-
-sub _conn_status {
-    my $self = $_[ OBJECT ];
-    $_[KERNEL]->delay_set( _conn_status => 10 );
-    $self->_log(v => 2, msg => $self->{name}." : LOCAL connections: $self->{connections}");
 }
 
 # Accept a new connection
@@ -96,6 +86,8 @@ sub local_accept {
         local_ip => $ip,
         local_port => $port,
         peer_ip => $peer_ip,
+        # TODO resolve these?
+        peer_hostname => $peer_ip,
         peer_port => $peer_port,
         peer_addr => "$peer_ip:$peer_port",
     );
@@ -130,9 +122,9 @@ sub local_accept {
 
 
 sub local_receive {
-    my ( $self, $con ) = @_[ OBJECT, HEAP ];
-#    $self->_log(v => 4, msg => "Receive $_[ARG0]");
-    $_[KERNEL]->alarm_remove( $con->{time_out} )
+    my ( $self, $kernel, $con ) = @_[ OBJECT, KERNEL, HEAP ];
+    
+    $kernel->alarm_remove( $con->{time_out} )
         if ( $con->{time_out} );
     
     $self->process_plugins( [ 'local_receive', $self, $con, $_[ARG0] ] );
@@ -143,12 +135,8 @@ sub local_receive {
 sub local_flushed {
     my ( $self, $con ) = @_[ OBJECT, HEAP ];
 
-    if ( $con->close_on_flush
-        && not $con->get_driver_out_octets() ) {
-
-        $con->close();
-#        $self->cleanup_connection( $con );
-    }
+    $con->close()
+        if ( $con->close_on_flush && not $con->get_driver_out_octets() );
     
     return;
 }
@@ -180,7 +168,6 @@ sub local_error {
     $self->process_plugins( [ 'local_disconnected', $self, $con ] );
  
     $con->close();
-#    $self->cleanup_connection( $con );
     
     if ( $errnum == EADDRINUSE ) {
         $self->shutdown_all();
@@ -194,10 +181,7 @@ sub local_timeout {
     $self->_log(v => 3, msg => "Timeout");
     
     $con->close();
-#    $self->cleanup_connection( $con );
-
-    # TODO accessor
-    delete $con->{time_out};
+    $con->time_out( undef );
     
     return;
 }

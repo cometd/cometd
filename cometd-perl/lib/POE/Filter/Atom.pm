@@ -73,11 +73,11 @@ sub get_one {
     };
     if ( $@ ) {
         #warn "$@ when parsing atom stream";
-        open(FH,">>debug.txt");
-        print FH "$@ when parsing atom stream\n";
-        print FH "$data\n";
-        print FH "--------\n";
-        close(FH);
+#        open(FH,">>debug.txt");
+#        print FH "$@ when parsing atom stream\n";
+#        print FH "$data\n";
+#        print FH "--------\n";
+#        close(FH);
     }
 
     return $ret;

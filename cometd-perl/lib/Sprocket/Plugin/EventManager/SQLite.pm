@@ -119,18 +119,18 @@ sub watchdog {
 #            warn "".Data::Dumper->Dump([$r]);
             foreach my $cid (keys %{$r->{result}}) {
                 my $acttime = str2time( $r->{result}->{$cid}->{acttime} );
-                $self->_log( v => 4, msg => sprintf( 'cid: %s, clid: %s last act: %s = %s ( - %s )', $cid, $r->{result}->{$cid}->{clid}, $r->{result}->{$cid}->{acttime}, $acttime, ( time() - ( 5 * 60 ) ) ) );
+#                $self->_log( v => 4, msg => sprintf( 'cid: %s, clid: %s last act: %s = %s ( - %s )', $cid, $r->{result}->{$cid}->{clid}, $r->{result}->{$cid}->{acttime}, $acttime, ( time() - ( 5 * 60 ) ) ) );
                 
                 if ( $acttime < ( time() - ( 5 * 60 ) ) ) {
                     push( @del, $r->{result}->{$cid}->{clid} );
                 } else {
                     # XXX ugly!!
-                    $poe_kernel->post( $self->{parent_id} => $cid.'|events_ready' => $r->{result}->{$cid}->{clid} );
+                    $poe_kernel->post( $self->{parent_id} => "$cid/events_ready" => $r->{result}->{$cid}->{clid} );
                 }
             }
             
             foreach ( @del ) {
-                $self->_log( v => 4, msg => sprintf( 'cid: %s scheduled for deletion', $_ ) );
+                $self->_log( v => 4, msg => sprintf( 'clid: %s scheduled for deletion', $_ ) );
                 $self->remove_client( $_ );
             }
             $kernel->call( $self->{session_id} => 'set_watchdog' );
@@ -289,7 +289,7 @@ sub add_client {
 sub remove_cid {
     my ( $self, $cid ) = $_[ KERNEL ] ? @_[ OBJECT, ARG0 ] : @_;
 
-    $self->_log(v => 4, msg => "cleanup of con id: ".$cid );
+#    $self->_log(v => 4, msg => "cleanup of con id: ".$cid );
     
     $self->{db}->do(
         sql => 'DELETE FROM cid_clid_map WHERE cid=?',

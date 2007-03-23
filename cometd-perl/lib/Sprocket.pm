@@ -31,7 +31,7 @@ BEGIN {
 #    eval "use POE::Loop::Epoll"; # use Event instead?
     if ( $@ ) {
         # XXX
-        warn "Epoll not found, using default";
+        warn "POE::Loop::Epoll not found, using default";
     }
     eval "use IO::AIO";
     if ($@) {
@@ -258,7 +258,7 @@ sub _log {
     return unless ( $o{v} <= $self->{opts}->{log_level} );
     my $con = $self->{heap};
     my $sender = ( $con )
-        ? $con->{addr}."(".$con->ID.")" : "?";
+        ? ( $con->peer_addr ? $con->peer_addr : '' )."(".$con->ID.")" : "?";
     my $l = $o{l} ? $o{l}+1 : 1;
     my $caller = $o{call} ? $o{call} : ( caller($l) )[3] || '?';
     $caller =~ s/^POE::Component/PoCo/o;
@@ -304,7 +304,6 @@ sub _shutdown {
     my ( $self, $kernel ) = @_[ OBJECT, KERNEL ];
     foreach my $con ( values %{$self->{heaps}} ) {
         $con->close( 1 ); # force
-#        $self->cleanup_connection( $con );
     }
     $self->{heaps} = {};
     foreach my $id ( keys %{$self->{listeners}} ) {
@@ -340,7 +339,6 @@ sub exception {
     # doesn't work?
     if ( blessed( $con ) && $con->isa( 'Sprocket::Connection' ) ) {
         $con->close( 1 );
-#        $self->cleanup_connection ( $con );
     }
     $kernel->sig_handled();
 }
@@ -407,6 +405,8 @@ sub remove_plugin {
     @{ $self->{plugin_pri} } = sort {
         $t->{ $a }->{priority} <=> $t->{ $b }->{priority}
     } keys %{ $t };
+    
+    return;
 }
 
 sub process_plugins {
@@ -437,12 +437,14 @@ sub process_plugins {
 sub forward_plugin {
     my $self = shift;
     my $plug_name = shift;
+
     unless( exists( $self->{plugins}->{ $plug_name } ) ) {
         $self->_log( v => 4, msg => 'plugin not loaded: '.$plug_name );
         return 0;
     }
     my $con = $_[ 1 ];
     $con->plugin( $plug_name );
+
     return $self->process_plugins( [ $con->state, @_ ] );
 }
 

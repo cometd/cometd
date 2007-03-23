@@ -6,6 +6,7 @@ use warnings;
 use POE qw(
     Filter::Stackable
     Filter::Stream
+    Component::Client::DNS
 );
 use Sprocket;
 use base qw( Sprocket );
@@ -28,6 +29,8 @@ sub spawn {
             remote_error
             remote_receive
             remote_flush
+
+            resolved_address
         )
     );
 
@@ -60,6 +63,8 @@ sub _startup {
             warn "client list must be an array if defined at all";
         }
     }
+
+#    $kernel->refcount_increment( $self->{session_id} => "$self" );
 
 #    $kernel->yield( '_conn_status' );
 }
@@ -115,8 +120,7 @@ sub remote_connect_error {
     $self->process_plugins( [ 'remote_connect_error', $self, $con, @_[ ARG0 .. ARG2 ] ] );
 
     $con->close();
-#    $self->cleanup_connection( $con );
-#    $self->reconnect_to_client( $con );
+#    $self->reconnect( $con );
 }
 
 sub remote_connect_timeout {
@@ -125,7 +129,7 @@ sub remote_connect_timeout {
     $self->_log(v => 2, msg => $self->{name}." : timeout connecting to $con->{addr}");
 
     $self->process_plugins( [ 'remote_connect_timeout', $self, $con ] );
-#    $self->reconnect_to_client( $con );
+#    $self->reconnect( $con );
 
     undef;
 }
@@ -149,8 +153,7 @@ sub remote_error {
     $self->process_plugins( [ 'remote_disconnected', $self, @_[ HEAP, ARG0, ARG1 ] ] );
  
     $con->close();
-#    $self->cleanup_connection( $con );
-#    $self->reconnect_to_client( $_[HEAP] );
+#    $self->reconnect( $_[HEAP] );
 }
 
 sub remote_flush {
@@ -161,7 +164,6 @@ sub remote_flush {
         && not $con->get_driver_out_octets() ) {
         
         $con->close();
-        #$self->cleanup_connection( $con );
     }
     
     return;
@@ -173,25 +175,83 @@ sub connect {
         return $poe_kernel->call( shift->{session_id} => connect => @_ );
     }
     
-    my ( $self, $address, $port ) = @_[ OBJECT, ARG0, ARG1 ];
+    my ( $self, $kernel, $address, $port ) = @_[ OBJECT, KERNEL, ARG0, ARG1 ];
     
     unless( defined $port ) {
        ( $address, $port ) = ( $address =~ /^([^:]+):(\d+)$/ );
     }
     
-    # TODO resolve this addr that isn't an ip, non blocking
+    my $con;
+
     # PoCo DNS
-    warn "connecting to $address $port";
-    return $self->reconnect_to_client(
-        $self->new_connection(
+    if ( $address !~ m/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/ ) {
+        my $named_ses = $kernel->alias_resolve( 'named' );
+
+        # no DNS resolver found, load one instead
+        unless ( $named_ses ) {
+            # could use the object here, but I don't want
+            # duplicated code, so just use the session reference
+            POE::Component::Client::DNS->spawn( Alias => 'named' );
+            $named_ses = $kernel->alias_resolve( 'named' );
+            # release ownership of this session
+            #$kernel->detach_child( $named_ses );
+        }
+
+        # a new unconnected connection
+        $con = $self->new_connection(
+            peer_port => $port,
+            peer_hostname => $address,
+        );
+
+        $kernel->call( $named_ses => 'resolve' => {
+            host => $address,
+            context => 1,
+            event => $con->event( 'resolved_address' )
+        });
+
+        # we will connect after resolving the address
+        return $con;
+    } else {
+        $con = $self->new_connection(
             peer_ip => $address,
             peer_port => $port,
             peer_addr => "$address:$port",
-        )
-    );
+        );
+    }
+
+    return $self->reconnect( $con );
 }
 
-sub reconnect_to_client {
+sub resolved_address {
+    my ( $self, $con, $response ) = @_[ OBJECT, HEAP, ARG0 ];
+    
+    my $response_obj = $response->{response};
+    my $response_err = $response->{error};
+
+    unless ( defined $response_obj ) {
+        $self->_log( v => 4, msg => 'resolution of '.$con->peer_hostname.' failed: '.$response_err  );
+        $self->process_plugins( [ 'hostname_resolve_failed', $self, $con, $response_err ] );
+        $con->close();
+        return;
+    }
+
+    my @addr = map { $_->rdatastr } ( $response_obj->answer );
+
+    # pick a random ip
+    my $peer_ip = $addr[ int rand( @addr ) ];
+    $self->_log( v => 4, msg => 'resolved '.$con->peer_hostname.' to '.join(',',@addr).' using: '.$peer_ip );
+
+    $con->peer_ips( \@addr );
+
+    $con->peer_ip( $peer_ip );
+    $con->peer_addr( $peer_ip.':'.$con->peer_port );
+
+    $self->reconnect( $con );
+
+    return;
+}
+
+sub reconnect {
     my ( $self, $con ) = @_;
 
     # TODO include backoff
