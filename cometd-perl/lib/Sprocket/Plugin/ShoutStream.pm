@@ -26,6 +26,23 @@ sub as_string {
     __PACKAGE__;
 }
 
+sub add_plugin {
+    my ( $self, $cli_srv ) = @_;
+    warn "add_plugin: $cli_srv ".$cli_srv->isa( 'Sprocket::Client' );
+    if ( $cli_srv->isa( 'Sprocket::Client' ) ) {
+        foreach ( @{$self->{stream_list}} ) {
+            my ( $secure, $host, $path ) = ( m{http(s)?://([^/]+)(/.*)} );
+            my $port;
+            ( $host, $port ) = ( $host =~ m{([^:]+)(?::(\d+))?} );
+            $port = $port ? $port : ( $secure ? 443 : 80 );
+            $cli_srv->_log( v => 4, msg => "Stream $_ is [$host] [$port] [$path]" );
+            # Sprocket resolves hosts for us
+            my $con = $cli_srv->connect( $host, $port );
+            $con->{_uri} = $path;
+        }
+    }
+}
+
 # ---------------------------------------------------------
 # Client
 
@@ -39,24 +56,18 @@ sub remote_connected {
 
     $client->_log( v => 4, msg => 'connected:'.$con->peer_addr ); 
 
-    #$con->filter->push( POE::Filter::Line->new() );
+    # POE::Filter::Stackable object:
     $con->filter->push( $con->{_filter} = POE::Filter::Shoutcast->new() );
 
-    my $req = $self->{stream_list}->{$con->peer_addr};
-
     $con->send(
-#        "GET / HTTP/1.0",
-        "GET $req HTTP/1.0",
-        sprintf( "Host: %s", $con->{peer_ip} ),
+        sprintf( "GET %s HTTP/1.0", $con->{_uri} ),
+        "Host: ".$con->peer_hostname,
         "User-Agent: Sprocket",
         "Icy-MetaData: 1",
         "Accept: */*",
         "Connection: close",
         ""
     );
-    
-    
-    # POE::Filter::Stackable object:
     
     return 1;
 }
@@ -65,7 +76,8 @@ sub remote_receive {
     my ($self, $client, $con, $data) = @_;
     
     if ( $con->{_header} ) {
-        warn "full data: $data";
+        warn "full header: $data";
+
         foreach my $d ( split( /\n/, $data ) ) {
             $con->{_header_len} += length( "$d\n" );
             $client->_log( v => 4, msg => "data: $d" );
@@ -76,27 +88,21 @@ sub remote_receive {
             if ( $d =~ m/icy-br:\s*(\d+)/ ) {
                 $con->{_bitrate} = $1;
             }
-#            return unless ( $d eq '' );
         }
         delete $con->{_header};
 
         $con->{_filter}->set_metaint( $con->{_metaint} );
+        #$con->{_filter}->set_metaint( -1 );
 
-#        $con->filter->push( POE::Filter::Shoutcast->new(
-#            in_metaint => $con->{_metaint},
-#            header_len => $con->{_header_len},
-#            blocksize => ( $con->{_metaint} ? $con->{_metaint} * 2 : 4096 ),
-#        ) );
-#        $con->filter->shift(); # POE::Filter::Line
-
-        
     } else {
         $client->_log( v => 4, msg => "data: ".length( $data ) );
         if ( ref( $data ) ) {
+            $data->{meta} =~ s/\0//g;
+
             open(FH,">>dump.txt");
             print FH "---\\\n".Data::Dumper->Dump([$data])."\n---/\n";
             close(FH);
-            #$client->_log( v => 4, msg => "data: ".Data::Dumper->Dump([$d]) );
+            $client->_log( v => 4, msg => "data: $data->{meta}" );
         }
     }
     

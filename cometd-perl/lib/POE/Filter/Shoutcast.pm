@@ -64,6 +64,11 @@ sub new {
 sub set_metaint {
     my $self = shift;
     my $metaint = shift;
+    if ( $metaint == -1 ) {
+        $self->[ OUT_METAINT ] = $self->[ IN_METAINT ] = 0;
+        $self->[ MODE ] = 2;
+        return;
+    }
     $self->[ OUT_METAINT ] = $self->[ IN_METAINT ] = $metaint;
 }
 
@@ -94,6 +99,7 @@ sub get_one_start {
 
 # sub get ?
 
+# XXX temporary
 sub get_one {
     my $self = shift;
 
@@ -131,11 +137,11 @@ sub _get_one {
 
         @$ret = substr( $self->[ BUFFER ], 0, ( index( $self->[ BUFFER ], "\x0d\x0a\x0d\x0a" ) + 4 ), '' );
 #        warn "header: @$ret";
-        my $line = substr( $self->[ BUFFER ], 0, 4 ); 
-        my $hexdump  = unpack 'H*', $line;
-        $hexdump =~ s/(..)/$1 /g;
-        $line =~ tr[ -~][.]c;
-        warn "hex of data after header: $hexdump : $line";
+#        my $line = substr( $self->[ BUFFER ], 0, 4 ); 
+#        my $hexdump  = unpack 'H*', $line;
+#        $hexdump =~ s/(..)/$1 /g;
+#        $line =~ tr[ -~][.]c;
+#        warn "hex of data after header: $hexdump : $line";
         $self->[ MODE ] = 1;
         $self->[ IN_BYTES ] = $self->[ BUFFIN_BYTES ] = length( $self->[ BUFFER ] );
         open(FH,">>sc.txt");
@@ -144,6 +150,19 @@ sub _get_one {
         return $ret;
     } elsif ( $self->[ MODE ] == 1 ) {
         return $ret unless ( $self->[ IN_METAINT ] );
+    } elsif ( $self->[ MODE ] == 2 ) {
+        my $loc = index( $self->[ BUFFER ], "StreamTitle" );
+        if( $loc > 0 ) {
+            $loc--;
+            push( @$ret, substr( $self->[ BUFFER ], 0, $loc, '' ) );
+            $self->[ BUFFIN_BYTES ] = length( $self->[ BUFFER ] );
+            my $len = ord( substr( $self->[ BUFFER ], 0, 1 ) );
+            $self->[ GET_METALEN ] = $len * 16;
+            $self->[ IN_METAINT ] = 8192;
+            warn "found meta at loc: $loc, length: $len *16= ".$self->[ GET_METALEN ];
+            $self->[ MODE ] = 1;
+            #return $ret;
+        }
     }
 
     return $ret unless ( $self->[ BUFFIN_BYTES ] >= $self->[ IN_METAINT ] );
@@ -154,28 +173,44 @@ sub _get_one {
             
             my $slen = $self->[ IN_METAINT ];
             if ( $self->[ BUFFIN_BYTES ] >= $slen ) {
-                warn "buff_outbytes: ".$self->[BUFFIN_BYTES]." is greater than in_metaint: ".$self->[ IN_METAINT ]." slen: $slen";
+#                warn "buff_outbytes: ".$self->[BUFFIN_BYTES]." >= than in_metaint: ".$self->[ IN_METAINT ]." slen: $slen";
                 # splice out the data
-                my $line = substr( $self->[ BUFFER ], $slen - 5, 10 );
-                my $hexdump  = unpack 'H*', $line;
-                $hexdump =~ s/(..)/$1 /g;
-                $line =~ tr[ -~][.]c;
-                warn "around $slen : $hexdump : $line";
+                #my $line = substr( $self->[ BUFFER ], $slen - 5, 10 );
+                #my $hexdump  = unpack 'H*', $line;
+                #$hexdump =~ s/(..)/$1 /g;
+                #$line =~ tr[ -~][.]c;
+                #warn "around $slen : $hexdump : $line";
                 push( @$ret, substr( $self->[ BUFFER ], 0, $slen, '' ) );
-                my $len = ord( substr( $self->[ BUFFER ], 0, 1, '' ) ) * 16;
+                my $len = ord( substr( $self->[ BUFFER ], 0, 1 ) ) * 16;
                 $self->[ IN_BYTES ] = $self->[ BUFFIN_BYTES ] = length( $self->[ BUFFER ] );
                 
-                warn "startlen $slen  len of data: $len buffer length left: ".$self->[ BUFFIN_BYTES ]."\n";
-                $self->[ GET_METALEN ] = $len;
+                if ( $len > 254 ) { # XXX arbitrary limit
+#                    warn "startlen $slen  len of data: $len TOO MUCH, SKIPPING\n";
+                    $self->[ GET_METALEN ] = 0;
+                    $self->[ MODE ] = 2; # find meta
+                } else {
+#                    warn "startlen $slen  len of data: $len buffer length left: ".$self->[ BUFFIN_BYTES ]."\n";
+                    $self->[ GET_METALEN ] = $len;
+                }
+
                 return $ret;
             }
         }
 
         if ( $self->[ GET_METALEN ] ) {
-
-            if ( $self->[ BUFFIN_BYTES ] >= $self->[ GET_METALEN ] ) { 
-                my $meta = substr( $self->[ BUFFER ], 0, $self->[ GET_METALEN ], '' );
-                push( @$ret, { meta => $meta } );
+            if ( $self->[ BUFFIN_BYTES ] >= $self->[ GET_METALEN ] ) {
+                my $meta = substr( $self->[ BUFFER ], 1, $self->[ GET_METALEN ], '' );
+                if ( $meta !~ m/^.tream.itle/ ) {
+                    # @$!!@% shoutcast servers can't follow the damn metaint they advertise
+                    $self->[ MODE ] = 2; # find meta
+                    $self->[ BUFFER ] = join( '', @$ret ).$meta;
+                    $self->[ GET_METALEN ] = 0;
+                    $ret = [];
+                } else {
+                    # remove length prefix
+                    substr( $self->[ BUFFER ], 0, 1, '' );
+                    push( @$ret, { meta => $meta } );
+                }
                 $self->[ BUFFIN_BYTES ] = length( $self->[ BUFFER ] );
                 $self->[ GET_METALEN ] = 0;
             }
