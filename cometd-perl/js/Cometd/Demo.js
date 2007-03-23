@@ -1,7 +1,7 @@
 
 
-Template.templates.Foo = '[# for ( var i = 0; i < data.length; i++ ) { #]<div style="margin: 0px; font-family: Courier New; font-size: 12px ">[#= data[ i ].toJSON().replace( /",/g, \'", \' ) #]</div>[# } #]';
-Template.templates.Atom = '<div><b>[#|h site #]</b> - (<a href="[#= link #]" target="_blank">link</a>) [#|h title #]</div>';
+Template.templates.Foo = '[# for ( var i = 0; i < data.length; i++ ) { #]<div class="darklink">[#= data[ i ].toJSON().replace( /",/g, \'", \' ) #]</div>[# } #]';
+Template.templates.Atom = '<div class="storylink"><b>[#|h site #]</b> - (<a href="[#= link #]" target="_blank">link</a>) [#|h title #]</div>';
 
 
 
@@ -55,11 +55,43 @@ Cometd.Demo = new Class( App, {
 
         //this.chat = new Cometd.Chat( "chat-area" );
         //this.addComponent( this.chat );
+        if ( $( "skipcometd" ) ) {
+//                this.window = new JSWindow( 'Logger', { disableClose: true, x: 15, y: 42 } );
+//        		this.addComponent( this.win );
+                //log = this.log;
+                //log.error = this.log;
+                //log.warn = this.log;
+                //log.debug = this.log;
+    
+                
+                this.demowindow = new Cometd.Demo.Window('Cometd Demo', { disableClose: true, x: 15, y: 42, w: 780 } );
+	        	this.demowindow.content_el.style.background = '#ffffff';
+                this.addComponent( this.demowindow );
+                this.logHTML = this.logDemo;
+        }
+            
+/*            
+        if ( window.CanvasSystem )
+            this.canvas = CanvasSystem.initSingleton();
+*/
+
+        /* windowing */
+	    window.allwindows = DOM.getElement( 'allwindows' );
+        
+		/* global zIndex for focus */
+		window.globalZ = 0;
+		/* new window offset, when no x,y is defined, this is incremented in window.js */
+		window.window_start_x = 10;
+		window.window_start_y = 10;
+		/* current focused window, by id, not element */
+		window.focused_window = null;
     },
 
 
     exec: function() {
 
+        //if ( $( "skipcometd" ) )
+        //    return;
         
         /* use the event system to start it off */
         this.deliverEvents( [
@@ -98,9 +130,10 @@ Cometd.Demo = new Class( App, {
         var div = document.createElement( "div" );
         div.innerHTML = Template.process( "Foo", { data: [ ev ], div: div } );
         this.content.insertBefore( div, this.content.firstChild );
+        
+        this.content.appendChild( div );
+        this.content.scrollTop = this.content.scrollHeight;
         */
-        //this.content.appendChild( div );
-        //this.content.scrollTop = this.content.scrollHeight;
         
         if ( defined( this.client.clientId ) )
             this.idCookie.bake( this.client.clientId );
@@ -120,10 +153,10 @@ Cometd.Demo = new Class( App, {
             
 
     "/meta/connect": function() {
-        this.content.removeChild( this.content.lastChild );
-        var div = document.createElement( "div" );
-        div.innerHTML = '<b>Connected!</b>';
-        this.content.insertBefore( div, this.content.firstChild );
+        //this.content.removeChild( this.content.lastChild );
+        this.logHTML( '<b>Connected!</b>' );
+        if ( this.demowindow )
+            this.demowindow.setStatus( 'Connected' );
         
         this[ "/meta/reconnect" ].apply( this, arguments );
     },
@@ -156,11 +189,10 @@ Cometd.Demo = new Class( App, {
 
 
     "/chat": function( ev ) {
-        var div = document.createElement( "div" );
-        div.innerHTML = Template.process( "Foo", { data: [ ev ], div: div } );
-        this.content.insertBefore( div, this.content.firstChild );
-        //this.content.appendChild( div );
-        //this.content.scrollTop = this.content.scrollHeight;
+        /*
+        this.content.appendChild( div );
+        this.content.scrollTop = this.content.scrollHeight;
+        */
     },
 
     
@@ -168,22 +200,42 @@ Cometd.Demo = new Class( App, {
         /* todo fix on the server */
         var m = ev.data.match( /Title:\[\s(.+)\s\] Link:\[\s([^\s+]+)\s/ );
         if ( m && m[ 2 ] ) {
-            var div = document.createElement( "div" );
             var s = m[ 2 ].match( /\.([^.]+\..{2,3})\// );
             if ( !s )
                 s = [ '', '?' ];
-            div.innerHTML = Template.process( "Atom", { site: s[ 1 ], title: m[ 1 ], link: m[ 2 ], div: div } );
-            this.content.insertBefore( div, this.content.firstChild );
-            var el = this.content.childNodes.length;
-            if ( el > 20 ) {
-                el -= 20;
-                for ( var i = 0; i < el; i++ )
-                    this.content.removeChild( this.content.lastChild );
-            }
             //this.content.scrollTop = this.content.scrollHeight;
+            this.logHTML( Template.process( "Atom", { site: s[ 1 ], title: m[ 1 ], link: m[ 2 ] } ) );
+        }
+    },
+
+
+    logHTML: function( html ) {
+        var div = document.createElement( "div" );
+        div.innerHTML = html;
+        this.content.insertBefore( div, this.content.firstChild );
+        var el = this.content.childNodes.length;
+        if ( el > 20 ) {
+            el -= 20;
+            for ( var i = 0; i < el; i++ )
+                this.content.removeChild( this.content.lastChild );
+        }
+    },
+    
+
+    logDemo: function( html ) {
+        var c = this.demowindow.content_el;
+        var div = document.createElement( "div" );
+        div.innerHTML = html;
+	    c.appendChild( div );
+	    c.scrollTop = c.scrollHeight;
+        var el = c.childNodes.length;
+        if ( el > 150 ) {
+            el -= 150;
+            for ( var i = 0; i < el; i++ )
+                c.removeChild( c.firstChild );
         }
     }
-
+    
 } );
 
 
