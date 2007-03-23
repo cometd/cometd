@@ -10,6 +10,7 @@ use BSD::Resource;
 use Sprocket::Common;
 use Sprocket::Connection;
 use Sprocket::Session;
+use Sprocket::AIO;
 use Scalar::Util qw( weaken blessed );
 
 use POE qw(
@@ -28,16 +29,11 @@ sub SERVER()     { 1 }
 sub CONNECTION() { 2 }
 
 BEGIN {
+    # XXX causes wierdness
 #    eval "use POE::Loop::Epoll"; # use Event instead?
     if ( $@ ) {
         # XXX
         warn "POE::Loop::Epoll not found, using default";
-    }
-    eval "use IO::AIO";
-    if ($@) {
-        eval 'sub CAN_AIO () { 0 }';
-    } else {
-        eval 'sub CAN_AIO () { 1 }';
     }
 }
 
@@ -74,7 +70,6 @@ our @base_states = qw(
     _log
     events_received
     events_ready
-    aio_event
     exception
     process_plugins
     sig_child
@@ -86,12 +81,15 @@ our @base_states = qw(
 sub spawn {
     my ( $class, $self, @states ) = @_;
     
+    $self->{session_id} =
     Sprocket::Session->create(
 #       options => { trace => 1 },
         object_states => [
             $self => [ @base_states, @states ]
         ],
-    );
+    )->ID();
+
+    Sprocket::AIO->new( parent_id => $self->{session_id} );
 
     return $self;
 }
@@ -121,7 +119,7 @@ sub new {
         plugins => {},
         plugin_pri => [],
         time_out => 10, # time_out checker
-    }, $class );
+    }, ref $class || $class );
 
     if ($opts{max_connections}) {
         my $ret = setrlimit( RLIMIT_NOFILE, $opts{max_connections}, $opts{max_connections} );
@@ -144,8 +142,6 @@ sub new {
 
 sub _start {
     my ( $self, $kernel ) = @_[OBJECT, KERNEL];
-
-    $self->{session_id} = $_[SESSION]->ID();
 
     if ($self->{opts}->{plugins}) {
         foreach my $t ( @{ $self->{opts}->{plugins} } ) {
@@ -174,11 +170,7 @@ sub _start {
         );
     }
 
-    if ( CAN_AIO ) {
-        # XXX future use
-#        open my $fh, "<&=".IO::AIO::poll_fileno or die "$!";    
-#        $kernel->select_read($fh, 'aio_event');
-
+    if ( Sprocket::AIO::HAS_AIO() ) {
         $self->{aio} = 1;
     } else {
         $self->{aio} = 0;
@@ -192,10 +184,6 @@ sub _start {
     
 
     $kernel->yield('_startup');
-}
-
-sub aio_event {
-#    IO::AIO::poll_cb();
 }
 
 sub _default {
@@ -245,6 +233,24 @@ sub new_connection {
     $self->{connections}++;
     
     return $con;
+}
+
+# gets a connection obj from any component
+sub get_connection {
+    my ( $self, $id ) = @_;
+    
+    if ( my $con = $self->{heaps}->{$id} ) {
+        return $con;
+    }
+    
+    foreach ( @COMPONENTS ) {
+        next if ( "$_" eq "$self" );
+        if ( my $con = $_->{heaps}->{$id} ) {
+            return $con;
+        }
+    }
+
+    return undef;
 }
 
 sub _log {
@@ -377,7 +383,7 @@ sub add_plugin {
     
     $plugin->parent_id( $parent_id );
     
-    $plugin->add_plugin( $self )
+    $plugin->add_plugin( $self, $pri || 0 )
         if ( $plugin->can( 'add_plugin' ) );
     
     # recalc plugin order
@@ -392,21 +398,22 @@ sub remove_plugin {
     my $self = shift;
     my $tr = shift;
     
-    # TODO delete by name or obj
+    # TODO remove by name or obj
     
     my $t = $self->{plugins};
     
     my $plugin = delete $t->{ $tr };
+    return 0 unless ( $plugin );
     
-    $plugin->remove_plugin( $self )
-        if ( $plugin->can( 'remove_plugin' ) );
+    $plugin->{plugin}->remove_plugin( $self, $plugin->{priority} )
+        if ( $plugin->{plugin}->can( 'remove_plugin' ) );
     
     # recalc plugin_pri
     @{ $self->{plugin_pri} } = sort {
         $t->{ $a }->{priority} <=> $t->{ $b }->{priority}
     } keys %{ $t };
     
-    return;
+    return 1;
 }
 
 sub process_plugins {

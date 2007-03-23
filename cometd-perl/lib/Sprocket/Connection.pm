@@ -11,6 +11,7 @@ use Scalar::Util qw( weaken );
 __PACKAGE__->mk_accessors( qw(
     sf
     wheel
+    socket
     connected
     close_on_flush
     plugin
@@ -54,6 +55,7 @@ sub new {
         clid => undef,
         destroy_events => {},
         peer_ips => [],
+        socket => undef,
         @_
     }, ref $class || $class );
 
@@ -154,7 +156,7 @@ sub alarm_set {
     my $self = shift;
     my $event = $self->event( shift );
 
-    my $id = $poe_kernel->alarm_set( $event, @_ );
+    my $id = $poe_kernel->alarm_set( $event => @_ );
     $self->{alarms}->{ $id } = $event;
 
     return $id;
@@ -171,7 +173,7 @@ sub alarm_remove {
     my $id = shift;
 
     delete $self->{alarms}{ $id };
-    $poe_kernel->alarm_remove( $id, @_ );
+    $poe_kernel->alarm_remove( $id => @_ );
 }
 
 sub alarm_remove_all {
@@ -188,7 +190,7 @@ sub alarm_remove_all {
 sub delay_set {
     my $self = shift;
 
-    $poe_kernel->delay_set( $self->event( shift ), @_ );
+    $poe_kernel->delay_set( $self->event( shift ) => @_ );
 }
 
 sub delay_adjust {
@@ -200,13 +202,13 @@ sub delay_adjust {
 sub yield {
     my $self = shift;
 
-    $poe_kernel->post( $self->event( shift ), @_ );
+    $poe_kernel->post( $self->parent_id => $self->event( shift ) => @_ );
 }
 
 sub call {
     my $self = shift;
 
-    $poe_kernel->call( $self->event( shift ), @_ );
+    $poe_kernel->call( $self->parent_id => $self->event( shift ) => @_ );
 }
 
 sub post {
@@ -230,6 +232,19 @@ sub fuse {
     return;
 }
 
+
+sub accept {
+    my $self = shift;
+
+    $poe_kernel->call( $self->parent_id => $self->event( 'accept' ) => @_ );
+}
+
+sub reject {
+    my $self = shift;
+    $self->close( 1 );
+#    $poe_kernel->call( $self->parent_id => $self->event( 'reject' ) => @_ );
+}
+
 sub close {
     my ( $self, $force ) = @_;
 
@@ -246,7 +261,7 @@ sub close {
             $wheel->shutdown_output();
         }
     }
-
+    
     $self->wheel( undef )
         if ( $force );
 
@@ -255,6 +270,11 @@ sub close {
 
     # kill the socket factory if any
     $self->sf( undef );
+    
+    if ( my $socket = $self->socket ) {
+        close( $socket );
+    }
+    $self->socket( undef );
 
     if ( my $con = $self->fused() ) {
         $con->close( $force );
@@ -287,7 +307,7 @@ sub callback {
     $event = $self->event( $event );
 
     my $callback = Sprocket::Connection::AnonCallback->new(sub {
-        $poe_kernel->call( $id, $event, @etc, @_ );
+        $poe_kernel->call( $id =>$event => @etc => @_ );
     });
 
     $callback_ids{$callback} = $id;
@@ -304,7 +324,7 @@ sub postback {
     $event = $self->event( $event );
 
     my $postback = Sprocket::Connection::AnonCallback->new(sub {
-        $poe_kernel->post( $id, $event, @etc, @_ );
+        $poe_kernel->post( $id => $event => @etc => @_ );
         return 0;
     });
 
@@ -376,7 +396,7 @@ sub clid {
 sub send_event {
     my $self = shift;
 
-    $poe_kernel->call( $self->event_manager => deliver_events => Sprocket::Event->new( clientId => $self->clid, @_ ) );
+    $poe_kernel->call( $self->event_manager => deliver_events => Sprocket::Event->new( clientId => $self->clid => @_ ) );
 }
 
 sub get_events {
@@ -437,11 +457,11 @@ sub watch_read {
 sub DESTROY {
     my $self = shift;
 
-    warn "destruction of connection ".$self->ID;
+#    warn "destruction of connection ".$self->ID;
 
     if ( keys %{$self->{destroy_events}} ) {
         foreach my $type ( keys %{$self->{destroy_events}} ) {
-            warn "events firing for $type:".Data::Dumper->Dump([ $self->{destroy_events}->{$type} ]);
+#            warn "events firing for $type:".Data::Dumper->Dump([ $self->{destroy_events}->{$type} ]);
             $poe_kernel->post( @{$self->{destroy_events}->{$type}} );
         }
     }

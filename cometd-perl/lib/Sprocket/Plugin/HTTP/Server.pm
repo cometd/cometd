@@ -38,22 +38,8 @@ sub new {
 
 
 sub add_plugin {
-    my $self = shift;
-    
-    return if ( $self->{_session_id} );
-    
-    # save the session id
-    $self->{_session_id} =
-    POE::Session->create(
-        object_states =>  [
-            $self => [qw(
-                _start
-                _stop
-                aio_event
-            )]
-        ],
-    )->ID();
-
+    my ( $self, $server ) = @_;
+   
     return undef;
 }
 
@@ -62,36 +48,26 @@ sub as_string {
     __PACKAGE__;
 }
 
-
-sub _start {
-    my ( $self, $kernel ) = @_[OBJECT, KERNEL];
-    
-    $kernel->alias_set( "$self" );
-
-    $self->_log(v => 1, msg => 'started');
-    
-    open my $fh, "<&=".IO::AIO::poll_fileno or die "$!";
-
-    $kernel->select_read($fh, 'aio_event');
-}
-
-
-sub aio_event {
-    IO::AIO::poll_cb();
-}
-
-
-sub _stop {
-    my $self = $_[OBJECT];
-    $self->_log(v => 1, msg => 'stopped');
-}
-
 # ---------------------------------------------------------
 # server
 
+sub local_accept {
+    my ( $self, $server, $con, $socket ) = @_;
+    
+    unless ( $server->{aio} ) {
+        warn "IO::AIO is unavailable!, please install it to use the HTTP Server plugin";
+        $con->reject();
+        return 1;
+    }
+
+    $con->accept();
+
+    return 1;
+}
 
 sub local_connected {
     my ( $self, $server, $con, $socket ) = @_;
+    
     $self->take_connection( $con );
     # POE::Filter::Stackable object:
     $con->filter->push( POE::Filter::HTTPD->new() );

@@ -28,6 +28,9 @@ sub spawn {
             local_wheel_error
             local_error
             local_timeout
+
+            accept
+            reject
         )
     );
 
@@ -78,10 +81,6 @@ sub local_accept {
     my ( $port, $ip ) = ( sockaddr_in( getsockname( $socket ) ) );
     $ip = inet_ntoa( $ip );
 
-    # XXX could do accept check ( plugin )
-    #$self->process_plugins( [ 'local_accept', $self, $con, $socket ] );
-    # XXX then move this to an accept method/event the plugin can call
-    
     my $con = $self->new_connection(
         local_ip => $ip,
         local_port => $port,
@@ -90,36 +89,55 @@ sub local_accept {
         peer_hostname => $peer_ip,
         peer_port => $peer_port,
         peer_addr => "$peer_ip:$peer_port",
+        socket => $socket,
     );
+
+    $self->process_plugins( [ 'local_accept', $self, $con, $socket ] );
     
-    #$self->_log(v => 4, msg => $self->{name}." received connection on $ip:$port from $peer_ip:$peer_port");
+    return;
+}
+
+# XXX
+sub reject {
+    my ( $self, $kernel, $con ) = @_[ OBJECT, KERNEL, HEAP ];
     
+    $con->close( 1 );
+
+    return;
+}
+
+sub accept {
+    my ( $self, $kernel, $con, $opts ) = @_[ OBJECT, KERNEL, HEAP, ARG0 ];
+    
+    my $socket = $con->socket;
+    $con->socket( undef );
+    
+    $opts = {} unless ( $opts );
+
+    $opts->{block_size} ||= 2048;
+    $opts->{filter} ||= POE::Filter::Stackable->new(
+        Filters => [
+            POE::Filter::Stream->new(),
+        ]
+    );
+    $opts->{time_out} ||= $self->{opts}->{time_out};
+
     $con->wheel_readwrite(
         Handle          => $socket,
-        Driver          => POE::Driver::SysRW->new( BlockSize => 2048 ), 
-        Filter          => POE::Filter::Stackable->new(
-            Filters => [
-                POE::Filter::Stream->new(),
-            ]
-        ),
+        Driver          => POE::Driver::SysRW->new( BlockSize => $opts->{block_size} ), 
+        Filter          => $opts->{filter},
         InputEvent      => $con->event( 'local_receive' ),
         ErrorEvent      => $con->event( 'local_error' ),
         FlushedEvent    => $con->event( 'local_flushed' ),
     );
 
-    if ( $self->{opts}->{time_out} ) {
-        $con->{time_out} = $kernel->delay_set(
-            $con->event( 'local_timeout' )
-                => $self->{opts}->{time_out}
-        );
-        $self->_log(v => 4, msg => "Timeout set: id ".$con->{time_out});
-    }
+    $con->set_time_out( $opts->{time_out} )
+        if ( $opts->{time_out} );
     
     $self->process_plugins( [ 'local_connected', $self, $con, $socket ] );
     
     return;
 }
-
 
 sub local_receive {
     my ( $self, $kernel, $con ) = @_[ OBJECT, KERNEL, HEAP ];
@@ -165,7 +183,7 @@ sub local_error {
         $self->_log(v => 3, msg => $self->{name}." encountered $operation error $errnum: $errstr");
     }
     
-    $self->process_plugins( [ 'local_disconnected', $self, $con ] );
+    $self->process_plugins( [ 'local_disconnected', $self, $con, $operation, $errnum, $errstr ] );
  
     $con->close();
     

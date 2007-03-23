@@ -35,7 +35,7 @@ sub handle_event {
 }
 
 sub _log {
-    $poe_kernel->call( shift->parent_id => _log => ( call =>  ( caller(1) )[ 3 ], @_ ) );
+    $poe_kernel->call( shift->parent_id => _log => ( call => ( caller(1) )[ 3 ], @_ ) );
 }
 
 sub take_connection {
@@ -57,12 +57,19 @@ sub time_out {
     return 1;
 }
 
+sub local_accept {
+    my ( $self, $server, $con, $socket ) = @_;
+    $con->accept();
+    return 1;
+}
+
 # Plugins can define the following methods
 # all are optional
 
 # ---------------------------------------------------------
 # server
 # ---------------------------------------------------------
+# local_accept
 # local_connected
 # local_receive
 # local_disconnected
