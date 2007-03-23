@@ -21,17 +21,13 @@ my %opts = (
 Sprocket::Client->spawn(
     %opts,
     Name => 'Shoutcast',
-    ClientList => [
-#        '216.66.69.246:8070',
-        '64.236.34.97:80',
-    ],
     Plugins => [
         {
             Plugin => Sprocket::Plugin::ShoutStream->new(
-                StreamList => {
-                    '64.236.34.97:80' => '/stream/1013',
-                    '216.66.69.246:8070' => '/',
-                },
+                StreamList => [
+                    'http://uvox1-ntc-slot3l.stream.aol.com/stream/1013',
+#                    'http://216.66.69.246:8070/',
+                ],
             ),
             Priority => 0,
         },
@@ -41,7 +37,7 @@ Sprocket::Client->spawn(
 Sprocket::Server->spawn(
     %opts,
     Name => 'Manager',
-    ListenPort => 5000,
+    ListenPort => 5001,
     ListenAddress => '127.0.0.1',
     Plugins => [
         {
