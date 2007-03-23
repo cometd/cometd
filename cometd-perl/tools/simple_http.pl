@@ -22,7 +22,7 @@ my %opts = (
 Sprocket::Server->spawn(
     %opts,
     Name => 'HTTP Server',
-    ListenPort => 8001,
+    ListenPort => 8002,
     ListenAddress => '0.0.0.0',
     Plugins => [
         {
