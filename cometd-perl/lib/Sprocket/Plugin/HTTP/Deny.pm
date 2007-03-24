@@ -48,7 +48,7 @@ sub local_receive {
     my $r = $con->{_r} || HTTP::Response->new();
     $r->code( 403 );
     $r->content_type( 'text/html' );
-    $self->finish( $con, qq|<html><head><title>403 Forbidden</title></head><body><h2>403 Forbidden</h2></body></html>\n| );
+    $con->call( finish => qq|<html><head><title>403 Forbidden</title></head><body><h2>403 Forbidden</h2></body></html>\n| );
     
     $self->release_connection( $con );
 

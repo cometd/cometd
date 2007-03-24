@@ -80,16 +80,13 @@ our @base_states = qw(
 
 sub spawn {
     my ( $class, $self, @states ) = @_;
-    
-    $self->{session_id} =
+
     Sprocket::Session->create(
 #       options => { trace => 1 },
         object_states => [
             $self => [ @base_states, @states ]
         ],
-    )->ID();
-
-    Sprocket::AIO->new( parent_id => $self->{session_id} );
+    );
 
     return $self;
 }
@@ -142,6 +139,8 @@ sub new {
 
 sub _start {
     my ( $self, $kernel ) = @_[OBJECT, KERNEL];
+
+    Sprocket::AIO->new( parent_id => $self->{session_id} = $_[ SESSION ]->ID() );
 
     if ($self->{opts}->{plugins}) {
         foreach my $t ( @{ $self->{opts}->{plugins} } ) {

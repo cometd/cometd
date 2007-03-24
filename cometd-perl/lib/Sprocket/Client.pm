@@ -20,8 +20,6 @@ sub spawn {
             _startup
             _stop
 
-            _conn_status
-
             connect
             remote_connect_success
             remote_connect_timeout
@@ -65,19 +63,11 @@ sub _startup {
     }
 
 #    $kernel->refcount_increment( $self->{session_id} => "$self" );
-
-#    $kernel->yield( '_conn_status' );
 }
 
 sub _stop {
     my $self = $_[OBJECT];
     $self->_log(v => 2, msg => $self->{name}." stopped.");
-}
-
-sub _conn_status {
-    my $self = $_[OBJECT];
-    $_[KERNEL]->delay_set( _conn_status => 30 );
-    $self->_log(v => 2, msg => $self->{name}." : REMOTE connections: $self->{connections}");
 }
 
 sub remote_connect_success {
@@ -136,7 +126,6 @@ sub remote_connect_timeout {
 
 sub remote_receive {
     my $self = $_[OBJECT];
-    #$self->_log(v => 4, msg => $self->{name}." got input ".$_[ARG0]);
     $self->process_plugins( [ 'remote_receive', $self, @_[ HEAP, ARG0 ] ] );
 }
 
@@ -275,10 +264,10 @@ sub reconnect {
         FailureEvent  => $con->event( 'remote_connect_error' ),
     );
 
-    warn "connecting to $con";
     return $con;
 }
 
+# XXX FIXME
 sub deliver_event {
     my ( $self, $event, $con, $to_source ) = @_;
     

@@ -147,7 +147,7 @@ sub stat_file {
     
     unless ( -e _ ) {
         $con->{_r}->content_type( 'text/plain' );
-        $self->finish( $con, 'file not found' );
+        $con->call( finish => 'file not found' );
         return;
     }
 
@@ -157,13 +157,13 @@ sub stat_file {
             my $r = $con->{_r};
             $r->code( 301 );
             $r->header( 'Location' => $uri."/" );
-            $self->finish( $con, '' );
+            $con->call( finish => '' );
             return;
         }
         
         if ( $self->{no_directory_listing} ) {
             $con->{_r}->content_type( 'text/plain' );
-            $self->finish( $con, 'Directory Listing Denied' );
+            $con->call( finish => 'Directory Listing Denied' );
         } else {
             aio_stat( $file.$self->{index_file}, $con->callback( 'stat_index_file', $file ) );
         }
@@ -195,7 +195,7 @@ sub stat_index_file {
         if ( $con->{_req}->method eq 'HEAD' ) {
             $con->{_r}->content_type( 'text/html' );
             # content length? 
-            $self->finish( $con );
+            $con->call( 'finish' );
         } else {
             aio_readdir( $file, $con->callback( 'directory_listing' ) );
         }
@@ -220,7 +220,7 @@ sub directory_listing {
     }
     $out .= qq|</ul>\n</body></html>|;
 
-    $self->finish( $con, $out );
+    $con->call( finish => $out );
     
     return;
 }
@@ -235,7 +235,7 @@ sub open_file {
         my $mtime = $con->{_stat}->[ 9 ];
         if ( $mtime && $since && $since >= $mtime ) {
             $con->{_r}->code( 304 );
-            $self->finish( $con, '' );
+            $con->call( finish => '' );
             return;
         }
     }
@@ -245,7 +245,7 @@ sub open_file {
         my $r = $con->{_r};
         $r->content_type( 'text/html' );
         $r->header( 'Content-Length' => $con->{_stat}->[ 7 ] );
-        $self->finish( $con );
+        $con->call( 'finish' );
         return;
     }
 

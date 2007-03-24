@@ -161,7 +161,7 @@ sub mychild_error {
     if ( $errnum != 0 ) {
         $r->code( 500 );
         delete $con->{_content};
-        $self->finish( $con, 'cgi error:'.$errstr );
+        $con->call( finish => 'cgi error:'.$errstr );
         
         return;
     } else {
@@ -190,13 +190,13 @@ sub mychild_error {
         # TODO better handling of no content from cgi
         if ( $r->code == 200 && !$r->content ) {
             $r->code( 500 );
-            $self->finish( $con, 'ERROR no content from cgi' );
+            $con->call( finish => 'ERROR no content from cgi' );
             
             return;
         }
     }
     
-    $self->finish( $con );
+    $con->call( 'finish' );
 
     return;
 }
@@ -211,7 +211,7 @@ sub mychild_closed {
 
 sub finish {
     my $self = shift;
-    my ( $con ) = @_;
+    my ( $server, $con ) = @_;
 
     $self->SUPER::finish( @_ );
 

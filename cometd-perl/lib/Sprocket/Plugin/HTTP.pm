@@ -61,12 +61,12 @@ sub send_file {
 
     if ( $size == $size_out ) {
         $r->content_type( $self->{mime}->type( $file ) );
-        $self->finish( $con, $out, $size );
+        $con->call( finish => $out => $size );
     } else {
         $server->_log( v=> 4, msg => "500 [$size != $size_out] [short read:$!] $file" );
         $r->code( 500 );
         $r->content_type( 'text/plain' );
-        $self->finish( $con, 'ERROR: short read' );
+        $con->call( finish => 'ERROR: short read' );
     }
     close $fh if ($fh);
     
@@ -87,7 +87,7 @@ sub start_http_request {
             $con->{_r} ||= $req; # a prebuilt http::response
             $con->{_req} ||= HTTP::Request->new();
 #            $con->{_close} = 1;
-            $self->finish( $con );
+            $con->call( 'finish' );
             return DEFER;
         } elsif ( $req->isa( 'HTTP::Request' ) ) {
             $con->wheel->pause_input(); # no more requests
@@ -100,7 +100,7 @@ sub start_http_request {
     $server->_log( v => 2, msg => "request isn't an HTTP object: $req" );
     $con->{_r} = HTTP::Response->new( 500 );
     $con->{_close} = 1;
-    $self->finish( $con, 'invalid request' );
+    $con->call( finish => 'invalid request' );
 
     # do not continue
     return BAD;
@@ -108,7 +108,7 @@ sub start_http_request {
 
 
 sub finish {
-    my ( $self, $con, $out, $size ) = @_;
+    my ( $self, $server, $con, $out, $size ) = @_;
 
     my $time = time();
 
@@ -178,10 +178,10 @@ sub finish {
         $con->{__requests}++;
         $con->wheel->resume_input();
     }
-    return OK;
+    #return OK;
     
     # TODO log full request`
-    $self->_log(v => 1, msg => join( ' ',
+    $server->_log(v => 1, msg => join( ' ',
         ( $con->{_req} ? $con->{_req}->protocol : '?' ),
         $r->code,
         ( $r->header( 'X-Time-To-Serve' ) ? sprintf( '%.5g', $r->header( 'X-Time-To-Serve' ) ) : '?' ),

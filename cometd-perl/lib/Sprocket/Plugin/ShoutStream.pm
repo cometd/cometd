@@ -37,6 +37,7 @@ sub add_plugin {
             $port = $port ? $port : ( $secure ? 443 : 80 );
             $cli_srv->_log( v => 4, msg => "Stream $_ is [$host] [$port] [$path]" );
             # Sprocket resolves hosts for us
+            warn "connect to $host $port";
             my $con = $cli_srv->connect( $host, $port );
             $con->{_uri} = $path;
         }

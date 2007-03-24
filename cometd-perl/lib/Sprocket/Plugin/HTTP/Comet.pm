@@ -104,18 +104,18 @@ sub local_receive {
     
     unless ( $ops{message} ) {
         $r->code( 200 );
-        $self->finish( $con, [ { successful => 'false', error => 'incorrect bayeux format' } ] );
+        $con->call( finish => [ { successful => 'false', error => 'incorrect bayeux format' } ] );
         return OK;
     }
 
     my $objs = eval { $self->{json}->jsonToObj( $ops{message} ) };
     if ( $@ ) {
-        $self->finish( $con, [ { successful => 'false', error => "$@" } ] );
+        $con->call( finish =>  [ { successful => 'false', error => "$@" } ] );
         return OK;
     }
 
     unless ( ref $objs eq 'ARRAY' ) {
-        $self->finish( $con, [ { successful => 'false', error => 'incorrect bayeux format' } ] );
+        $con->call( finish => [ { successful => 'false', error => 'incorrect bayeux format' } ] );
         return OK;
     }
     
@@ -127,7 +127,7 @@ sub local_receive {
 
     foreach my $obj ( @$objs ) {        
         unless ( ref $obj eq 'HASH' ) {
-            $self->finish( $con, [ { successful => 'false', error => 'incorrect bayeux format' } ] );
+            $con->call( finish => [ { successful => 'false', error => 'incorrect bayeux format' } ] );
             return OK;
         }
         
@@ -185,7 +185,7 @@ sub local_receive {
             });
     
             # XXX can a handshake block the client?
-            $self->finish( $con, delete $con->{_events} );
+            $con->call( finish => delete $con->{_events} );
             
             return OK;
 
@@ -230,7 +230,7 @@ sub local_receive {
         
 
     if ( @errors ) {
-        $self->finish( $con, [ {
+        $con->call( finish => [ {
             channel      => '/meta/reconnect',
             successful   => 'false',
             error        => join( ', ', @errors )
@@ -242,7 +242,7 @@ sub local_receive {
     if ( @{$con->{_events}} ) {
         $con->{_need_events} = 1;
     } else {
-        $self->finish( $con, [ { successful => 'false', error => 'incorrect bayeux format' } ] );
+        $con->call( finish => [ { successful => 'false', error => 'incorrect bayeux format' } ] );
     }
 
     return OK;
@@ -290,13 +290,13 @@ sub events_received {
 
 #    $server->_log(v => 4, msg => Data::Dumper->Dump([ $events ]) );
 
-    $self->finish( $con, delete $con->{_events} );
+    $con->call( finish => delete $con->{_events} );
 }
 
 
 sub finish {
     my $self = shift;
-    my ( $con, $out ) = @_;
+    my ( $server, $con, $out ) = @_;
 
     my $r = $con->{_r};
     $r->header( Expires => '-1' );
@@ -307,7 +307,7 @@ sub finish {
     $out = $self->{json}->objToJson( [ { successful => 'false', error => "$@" } ] )
         if ( $@ );
     
-    splice( @_, 1, 1, $out );
+    splice( @_, 2, 1, $out );
     $self->SUPER::finish( @_ );
 
     unless ( $con->{_close} ) {
