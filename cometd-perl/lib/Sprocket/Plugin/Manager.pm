@@ -63,7 +63,7 @@ sub local_receive {
         foreach my $p (@Sprocket::COMPONENTS) {
             next unless ($p);
             foreach my $c (values %{$p->{heaps}}) {
-                $con->send( $p->name." - $c - ".$c->{addr} );
+                $con->send( $p->name." - $c - ".$c->peer_addr );
             }
         }
         $con->send('done.');

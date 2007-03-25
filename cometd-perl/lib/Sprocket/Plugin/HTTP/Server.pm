@@ -99,7 +99,8 @@ sub local_receive {
     $con->{_req} = $req;
     $r = $con->{_r} = HTTP::Response->new( 200 );
     
-    $con->set_time_out( 300 );
+#    $con->set_time_out( 300 );
+    $con->set_time_out( undef );
 
     if ( $self->{forward_list} ) {
         foreach my $regex ( keys %{ $self->{forward_list} } ) {

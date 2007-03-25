@@ -6,7 +6,6 @@ use warnings;
 our $VERSION = '0.01';
 
 use Carp qw(croak);
-use BSD::Resource;
 use Sprocket::Common;
 use Sprocket::Connection;
 use Sprocket::Session;
@@ -24,17 +23,28 @@ use overload '""' => sub { shift->as_string(); };
 # weak list of all sprocket components
 our @COMPONENTS;
 
+# events sent to process_plugins
 sub EVENT_NAME() { 0 }
 sub SERVER()     { 1 }
 sub CONNECTION() { 2 }
 
 BEGIN {
-    # XXX causes wierdness
-#    eval "use POE::Loop::Epoll"; # use Event instead?
+    # use Event instead?
+    # XXX why does this cause wierdness?
+#    eval "use POE::Loop::Epoll";
+
     if ( $@ ) {
-        # XXX
-        warn "POE::Loop::Epoll not found, using default";
+        eval "sub HAS_ELOOP() { 0 }";
+    } else {
+        eval "sub HAS_ELOOP() { 1 }";
     }
+
+    eval "use BSD::Resource";
+    if ( $@ ) {
+        eval "sub HAS_BSD_RESOURCE() { 0 }";
+    } else {
+        eval "sub HAS_BSD_RESOURCE() { 1 }";
+    } 
 }
 
 sub import {
@@ -44,7 +54,8 @@ sub import {
 
     unshift( @modules, 'Common' );
     @modules = map { 'Sprocket::'.$_  } @modules;
-    
+   
+    # XXX does this work right, TESTME
     push( @modules, 'POE' );
 
     my $package = caller();
@@ -99,14 +110,11 @@ sub new {
     my $class = shift;
     croak "$class requires an even number of parameters" if @_ % 2;
     my %opts = &adjust_params;
-    my $s_alias = $opts{alias};
-    $s_alias = 'sprocket' unless defined( $s_alias ) and length( $s_alias );
-    $opts{alias} = $s_alias;
-    $opts{listen_port} ||= 6000;
+    
+    $opts{aliss} = 'sprocket' unless defined( $opts{alias} ) and length( $opts{alias} );
     $opts{time_out} = defined $opts{time_out} ? $opts{time_out} : 30;
     $opts{listen_address} ||= '0.0.0.0';
-    $opts{log_level} = 0
-        unless ( $opts{log_level} );
+    $opts{log_level} ||= 4;
 
     my $self = bless( {
         name => $opts{name},
@@ -117,21 +125,27 @@ sub new {
         plugin_pri => [],
         time_out => 10, # time_out checker
     }, ref $class || $class );
+    
+    die 'ListenPort not set, please a port to listen to' if ( $self->isa( 'Sprocket::Server' ) && !defined( $opts{listen_port} ) );
 
-    if ($opts{max_connections}) {
-        my $ret = setrlimit( RLIMIT_NOFILE, $opts{max_connections}, $opts{max_connections} );
-        unless ( defined $ret && $ret ) {
-            if ( $> == 0 ) {
-                #warn "Unable to set max connections limit";
-                $self->_log(v => 1, msg => "Unable to set max connections limit");
-            } else {
-                #warn "Need to be root to increase max connections";
-                $self->_log(v => 1, msg => "Need to be root to increase max connections");
+    if ( $opts{max_connections} ) {
+        if ( HAS_BSD_RESOURCE ) {
+            my $ret = setrlimit( RLIMIT_NOFILE, $opts{max_connections}, $opts{max_connections} );
+            unless ( defined $ret && $ret ) {
+                if ( $> == 0 ) {
+                    #warn "Unable to set max connections limit";
+                    $self->_log(v => 1, msg => 'Unable to set max connections limit');
+                } else {
+                    #warn "Need to be root to increase max connections";
+                    $self->_log(v => 1, msg => 'Need to be root to increase max connections');
+                }
             }
+        } else {
+            $self->_log(v => 1, msg => 'Need BSD::Resource installed to increase max connections');
         }
     }
 
-    push(@COMPONENTS, $self);
+    push( @COMPONENTS, $self );
     weaken( $COMPONENTS[ -1 ] );
     
     return $self;
@@ -153,7 +167,7 @@ sub _start {
         }
     }
     
-    if (my $ev = delete $self->{opts}->{event_manager}) {
+    if ( my $ev = delete $self->{opts}->{event_manager} ) {
         eval "use $ev->{module}";
         if ($@) {
             $self->_log(v => 1, msg => "Error loading $ev->{module} : $@");
@@ -169,18 +183,16 @@ sub _start {
         );
     }
 
-    if ( Sprocket::AIO::HAS_AIO() ) {
-        $self->{aio} = 1;
-    } else {
-        $self->{aio} = 0;
-    }
+    $self->{aio} = Sprocket::AIO::HAS_AIO();
+    $self->{epoll} = Sprocket::AIO::HAS_EPOLL();
 
     $self->{time_out_id} = $kernel->alarm_set( time_out_check => time() + $self->{time_out} )
         if ( $self->{time_out} );
 
-#    $kernel->sig( DIE => 'exception' );
+    $kernel->sig( DIE => 'exception' )
+       if ( $self->{opts}->{use_exception_handler} );
+
     $kernel->sig( TSTP => 'signals' );
-    
 
     $kernel->yield('_startup');
 }
@@ -254,7 +266,7 @@ sub get_connection {
 
 sub _log {
     my ( $self, %o );
-    if (ref $_[KERNEL]) {
+    if ( ref $_[ KERNEL ] ) {
         ( $self, %o ) = @_[ OBJECT, ARG0 .. $#_ ];
 #        $o{l}++;
     } else {

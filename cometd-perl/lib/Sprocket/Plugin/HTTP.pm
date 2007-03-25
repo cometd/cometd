@@ -114,9 +114,10 @@ sub finish {
 
     my $r = $con->{_r} || HTTP::Response->new( 500 );
 
-    # TODO version here
-    $r->header( Server => 'Sprocket' );
-    $r->header( 'X-Powered-By' => 'Cometd (http://cometd.com/); Sprocket (http://sprocket.xantus.org/); POE (http://poe.perl.org/); Perl (http://perl.org/)' );
+    # TODO real version here
+    $r->header( Server => 'Sprocket/1.0' );
+    $r->header( 'X-Powered-By' => 'Sprocket (http://sprocket.xantus.org/); '
+        . 'Cometd (http://cometd.com/); POE (http://poe.perl.org/); Perl (http://perl.org/)' );
     $r->header( 'X-Time-To-Serve' => ( $time - $con->{_start_time} ) );
     $r->header( Date => time2str( $time ) );
 
@@ -127,7 +128,7 @@ sub finish {
 
     my $proto;
     $r->protocol( $proto = $con->{_req}->protocol );
-    if ( $proto eq 'HTTP/1.0' ) {
+    if ( $proto && $proto eq 'HTTP/1.0' ) {
         unless ( defined( $con->{_close} ) ) {
             my $connection = $con->{_req}->header( 'connection' );
             if ( $connection && $connection =~ m/^keep-alive$/i ) {
@@ -137,7 +138,7 @@ sub finish {
                 $con->{_close} = 1;
             }
         }
-    } elsif ( $proto eq 'HTTP/1.1' ) {
+    } elsif ( $proto && $proto eq 'HTTP/1.1' ) {
         # in 1.1, keep-alive is assumed
         $con->{_close} = 0
             unless ( defined( $con->{_close} ) );
@@ -168,6 +169,7 @@ sub finish {
     }
     
     if ( $con->{_close} ) {
+        warn "closing $con";
         $r->header( 'Connection' => 'close' );
         $con->wheel->pause_input(); # no more requests
         $con->send( $r );
