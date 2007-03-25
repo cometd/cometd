@@ -34,9 +34,9 @@ BEGIN {
 #    eval "use POE::Loop::Epoll";
 
     if ( $@ ) {
-        eval "sub HAS_ELOOP() { 0 }";
+        eval "sub HAS_EPOLL() { 0 }";
     } else {
-        eval "sub HAS_ELOOP() { 1 }";
+        eval "sub HAS_EPOLL() { 1 }";
     }
 
     eval "use BSD::Resource";
@@ -184,7 +184,7 @@ sub _start {
     }
 
     $self->{aio} = Sprocket::AIO::HAS_AIO();
-    $self->{epoll} = Sprocket::AIO::HAS_EPOLL();
+    $self->{epoll} = HAS_EPOLL();
 
     $self->{time_out_id} = $kernel->alarm_set( time_out_check => time() + $self->{time_out} )
         if ( $self->{time_out} );
