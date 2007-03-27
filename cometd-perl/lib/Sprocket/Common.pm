@@ -1,11 +1,17 @@
 package Sprocket::Common;
 
+use strict;
+use warnings;
+
 our %hex_chr;
+our %chr_hex;
 
 BEGIN {
     for ( 0 .. 255 ) {
         my $h = sprintf( "%%%02X", $_ );
-        $hex_chr{lc($h)} = $hex_chr{uc($h)} = chr($_);
+        my $c = chr($_);
+        $chr_hex{$c} = $h;
+        $hex_chr{lc($h)} = $hex_chr{uc($h)} = $c;
     }
 }
 
@@ -16,6 +22,7 @@ sub import {
 
     my @exports = qw(
         uri_unescape
+        uri_escape
         adjust_params
     );
 
@@ -25,6 +32,22 @@ sub import {
     foreach my $sub ( @exports ) {
         *{ $package . '::' . $sub } = \&$sub;
     }
+}
+
+sub uri_escape {
+    my $es = shift or return;
+    $es =~ s/([^A-Za-z0-9\-_.!~*'()])/$chr_hex{$1}||_try_utf8($1)/ge;
+    return $es;
+}
+
+sub _try_utf8 {
+    my $c = shift;
+    $c = eval { utf8::encode($c); };
+    if ( $@ ) {
+        warn $@;
+        return '';
+    }
+    return $c
 }
 
 sub uri_unescape {

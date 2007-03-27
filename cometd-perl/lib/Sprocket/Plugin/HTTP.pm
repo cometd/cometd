@@ -7,6 +7,7 @@ use POE qw( Filter::HTTPD Filter::Stream Wheel::ReadWrite Driver::SysRW );
 use HTTP::Response;
 use IO::AIO;
 use HTTP::Date;
+use HTTP::Status qw( status_message RC_BAD_REQUEST );
 use Time::HiRes qw( time );
 use MIME::Types;
 use Scalar::Util qw( blessed );
@@ -18,6 +19,12 @@ use warnings;
 sub OK()    { 1 }
 sub DEFER() { 0 }
 sub BAD()   { undef }
+
+our %simple_responses = (
+    403 => 'Forbidden',
+    404 => 'The requested URL was not found on this server.',
+    500 => 'A server error occurred',
+);
 
 sub new {
     shift->SUPER::new(
@@ -71,6 +78,44 @@ sub send_file {
     close $fh if ($fh);
     
     return OK;
+}
+
+sub simple_response {
+    my ( $self, $server, $con, $code, $extra ) = @_;
+
+    $code ||= 500;
+
+    # XXX do something else with status?
+    my $status = status_message( $code ) || 'Unknown Error';
+    my $r = $con->{_r} ||= HTTP::Response->new();
+    $r->code( $code );
+
+    if ( $code == 301 || $code == 302 ) {
+        $r->header( Location => $extra || '/' );
+        $con->call( finish => '' );
+        return;
+    } elsif ( $code == 304 ) {
+        $con->call( finish => '' );
+        return;
+    }
+
+    my $body = $simple_responses{ $code } || $status;
+
+    if ( defined $extra ) {
+        $body .= '<p>'.$extra;
+    }
+
+    $r->content_type( 'text/html' );
+    $con->call( finish => qq|<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html>
+    <head>
+        <title>$code $status</title>
+    </head>
+    <body>
+        <h1>$status</h1>
+        $body
+    </body>
+</html>| );
 }
 
 
@@ -151,7 +196,7 @@ sub finish {
 #    $con->{_close} = 1 if ( $con->{__requests} && $con->{__requests} > 100 );
    
     if ( defined( $out ) ) {
-        if ( ref( $out ) ) {
+        if ( ref( $out ) && ref( $out ) eq 'SCALAR' ) {
             # must pass size if passing scalar ref
             $r->content( $$out );
         } else {

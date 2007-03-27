@@ -64,22 +64,22 @@ sub local_receive {
     
     $self->start_http_request( @_ ) or return OK;
     
-    $con->{_r} ||= HTTP::Response->new( 200 );
+    my $r = $con->{_r} ||= HTTP::Response->new( 200 );
     
     # XXX
     # message=%5B%7B%22version%22%3A0.1%2C%22minimumVersion%22%3A0.1%2C%22channel%22%3A%22/meta/handshake%22%7D%5D&jsonp=dojo.io.ScriptSrcTransport._state.id1.jsonpCall
         
     $con->{_uri} ||= $req->uri;
-    my $r = $con->{_r};
 
     my ( $params, %ops );
     my $ct = $req->content_type;
-    if ( $ct eq 'text/javascript+json' ) {
+    
+    if ( $ct && $ct eq 'text/javascript+json' ) {
         # POST
         if ( my $content = $req->content ) {
             $ops{message} = $content;
         }
-    } elsif ( $ct eq 'application/x-www-form-urlencoded' ) {
+    } elsif ( $ct && $ct eq 'application/x-www-form-urlencoded' ) {
         # POST or GET
         if ( my $content = $req->content ) {
             $params = $content;
@@ -119,7 +119,7 @@ sub local_receive {
         return OK;
     }
     
-    $server->_log(v => 4, msg => "ops/obj:".Data::Dumper->Dump([\%ops, $objs]));
+#    $server->_log(v => 4, msg => "ops/obj:".Data::Dumper->Dump([\%ops, $objs]));
     
     my $clid;
     $con->{_events} = [];

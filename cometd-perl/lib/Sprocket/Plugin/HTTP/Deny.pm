@@ -35,24 +35,21 @@ sub local_connected {
     # POE::Filter::Stackable object:
     $con->filter->push( POE::Filter::HTTPD->new() );
     $con->filter->shift(); # pull off Filter::Stream
-    return 1;
+    return OK;
 }
 
 sub local_receive {
     my $self = shift;
     my ( $server, $con, $req ) = @_;
 
-    $self->start_http_request( @_ ) or return 1;
+    $self->start_http_request( @_ ) or return OK;
     
-    $con->{_req} = $req;
-    my $r = $con->{_r} || HTTP::Response->new();
-    $r->code( 403 );
-    $r->content_type( 'text/html' );
-    $con->call( finish => qq|<html><head><title>403 Forbidden</title></head><body><h2>403 Forbidden</h2></body></html>\n| );
+    $con->{_req} ||= $req;
+    $con->call( simple_response => 403 );
     
     $self->release_connection( $con );
 
-    return 1;
+    return OK;
 }
 
 1;

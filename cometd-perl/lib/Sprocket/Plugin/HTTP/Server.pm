@@ -7,6 +7,7 @@ use HTTP::Response;
 use IO::AIO;
 use Fcntl;
 use HTTP::Date;
+use HTML::Entities qw( encode_entities );
 use Time::HiRes qw( time );
 use bytes;
 
@@ -24,6 +25,8 @@ sub new {
         @_
     );
 
+    $self->{time_out} ||= 300;
+
     die "a DocumentRoot is required for plugin $self"
         unless( $self->{document_root} );
     
@@ -37,13 +40,6 @@ sub new {
 }
 
 
-sub add_plugin {
-    my ( $self, $server ) = @_;
-   
-    return undef;
-}
-
-
 sub as_string {
     __PACKAGE__;
 }
@@ -51,19 +47,17 @@ sub as_string {
 # ---------------------------------------------------------
 # server
 
+# the default local_accept behavior is to accept
+# an allow/deny plugin could be added here, for instance
 sub local_accept {
     my ( $self, $server, $con, $socket ) = @_;
     
-    unless ( $server->{aio} ) {
-        warn "IO::AIO is unavailable!, please install it to use the HTTP Server plugin";
-        $con->reject();
-        return 1;
-    }
-
+    #$con->reject();
     $con->accept();
 
     return 1;
 }
+
 
 sub local_connected {
     my ( $self, $server, $con, $socket ) = @_;
@@ -99,8 +93,8 @@ sub local_receive {
     $con->{_req} = $req;
     $r = $con->{_r} = HTTP::Response->new( 200 );
     
-#    $con->set_time_out( 300 );
-    $con->set_time_out( undef );
+    $con->set_time_out( $self->{time_out} );
+#    $con->set_time_out( undef );
 
     if ( $self->{forward_list} ) {
         foreach my $regex ( keys %{ $self->{forward_list} } ) {
@@ -120,13 +114,24 @@ sub local_receive {
         # didn't forward request
         delete $con->{_forwarded_from};
     }
- 
+    
+    unless ( $server->{aio} ) {
+        warn "IO::AIO is unavailable!, please install it to use the HTTP Server plugin";
+        $con->call( simple_response => 403 => 'IO::AIO is unavailable, files cannot be served without it being installed' );
+        return 1;
+    }
+
     my $file = $self->{document_root}.$con->{_uri};
     aio_stat( $file, $con->callback( 'stat_file', $file ) );
 
     return 1;
 }
 
+
+# define this or other plugins in this chain will get this 
+sub local_disconnected {
+    return 1;
+}
 
 # 0 dev      device number of filesystem
 # 1 ino      inode number
@@ -147,24 +152,20 @@ sub stat_file {
     my ( $self, $server, $con, $file ) = @_;
     
     unless ( -e _ ) {
-        $con->{_r}->content_type( 'text/plain' );
-        $con->call( finish => 'file not found' );
+        $con->call( simple_response => 404 );
         return;
     }
 
     if ( -d _ ) {
         if ( $con->{_uri} !~ m!/$! ) {
             my $uri = $con->{_uri};
-            my $r = $con->{_r};
-            $r->code( 301 );
-            $r->header( 'Location' => $uri."/" );
-            $con->call( finish => '' );
+            $con->call( simple_response => 301 => $uri."/" );
             return;
         }
         
         if ( $self->{no_directory_listing} ) {
-            $con->{_r}->content_type( 'text/plain' );
-            $con->call( finish => 'Directory Listing Denied' );
+            $con->call( simple_response => 403 => 'Directory Listing Denied' );
+            return;
         } else {
             aio_stat( $file.$self->{index_file}, $con->callback( 'stat_index_file', $file ) );
         }
@@ -198,7 +199,8 @@ sub stat_index_file {
             # content length? 
             $con->call( 'finish' );
         } else {
-            aio_readdir( $file, $con->callback( 'directory_listing' ) );
+            #aio_readdir( $file, $con->callback( 'directory_listing' ) );
+            aio_scandir( $file, 0, $con->callback( 'scanned_directory_listing' ) );
         }
     }
 
@@ -206,19 +208,27 @@ sub stat_index_file {
 }
 
 
+# XXX remove
 sub directory_listing {
     my ( $self, $server, $con, $entries ) = @_;
 
     my $uri = $con->{_uri};
     $con->{_r}->content_type( 'text/html' );
-    my $out = qq|<html><head><title>Index of $uri</title><head><body>
-    <h2>Index of $uri</h2>\n<ul>\n|;
+    my $out = qq|<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head><title>Index of |.encode_entities($uri).qq|</title><head><body>
+    <h2>Index of |.encode_entities($uri).qq|</h2>\n<ul>\n|;
     $entries = [] unless ( ref $entries );
     unshift( @$entries, '..' );
+
     foreach ( @$entries ) {
         next if ( $self->{hide_dotfiles} && m/^\./ && $_ ne '..' );
-        $out .= qq|<li><a href="$_">$_</a></li>\n|;
+        $out .= '<li>';
+        if ( m/\.(jpg|gif|png|jpeg|bmp|ico|tiff?)$/ ) {
+            $out .= '<img src="'.uri_escape($_).'" border="0"/>';
+        }
+        $out .= '<a href="'.uri_escape($_).'">'.encode_entities($_)."</a></li>\n";
     }
+
     $out .= qq|</ul>\n</body></html>|;
 
     $con->call( finish => $out );
@@ -226,6 +236,38 @@ sub directory_listing {
     return;
 }
 
+sub scanned_directory_listing {
+    my ( $self, $server, $con, $dirs, $files ) = @_;
+
+    my $uri = $con->{_uri};
+    $con->{_r}->content_type( 'text/html' );
+    my $out = qq|<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head><title>Index of |.encode_entities($uri).qq|</title><head><body>
+    <h2>Index of |.encode_entities($uri).qq|</h2>\n<ul>\n|;
+    $dirs ||= [];
+    $files ||= [];
+    unshift( @$dirs, '..' );
+
+    foreach ( @$dirs ) {
+        next if ( $self->{hide_dotfiles} && m/^\./ && $_ ne '..' );
+        $out .= '<li>[dir] ';
+        $out .= '<a href="'.uri_escape($_).'/">'.encode_entities($_)."/</a></li>\n";
+    }
+    foreach ( @$files ) {
+        next if ( $self->{hide_dotfiles} && m/^\./ && $_ ne '..' );
+        $out .= '<li>';
+        if ( m/\.(jpg|gif|png|jpeg|bmp|ico|tiff?)$/ ) {
+            $out .= '<img src="'.uri_escape($_).'" border="0"/> ';
+        }
+        $out .= '<a href="'.uri_escape($_).'">'.encode_entities($_)."</a></li>\n";
+    }
+
+    $out .= qq|</ul>\n</body></html>|;
+
+    $con->call( finish => $out );
+    
+    return;
+}
 
 sub open_file {
     my ( $self, $server, $con, $file ) = @_;
@@ -235,8 +277,7 @@ sub open_file {
         $since = str2time( $since );
         my $mtime = $con->{_stat}->[ 9 ];
         if ( $mtime && $since && $since >= $mtime ) {
-            $con->{_r}->code( 304 );
-            $con->call( finish => '' );
+            $con->call( simple_response => 304 );
             return;
         }
     }

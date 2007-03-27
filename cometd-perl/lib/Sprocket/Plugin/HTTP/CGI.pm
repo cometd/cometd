@@ -27,10 +27,6 @@ sub as_string {
 }
 
 
-sub plugin_add {
-    
-}
-
 # ---------------------------------------------------------
 # server
 
@@ -40,7 +36,7 @@ sub local_connected {
     # POE::Filter::Stackable object:
     $con->filter->push( POE::Filter::HTTPD->new() );
     $con->filter->shift(); # pull off Filter::Stream
-    return 1;
+    return OK;
 }
 
 
@@ -48,7 +44,7 @@ sub local_receive {
     my $self = shift;
     my ( $server, $con, $req ) = @_;
     
-    $self->start_http_request( @_ ) or return 1;
+    $self->start_http_request( @_ ) or return OK;
     
     $con->{_req} = $req;
     $con->{_r} ||= HTTP::Response->new( 200 );
@@ -115,7 +111,7 @@ sub local_receive {
         $wheel->put( $req->content );
     }
 
-    return 1;
+    return OK;
 }
 
 sub scrub_env {
@@ -128,11 +124,6 @@ sub scrub_env {
     }
 
     exec($file);
-}
-
-
-sub mychild_stdin {
-    my ( $self, $server, $con, $in ) = @_;
 }
 
 
@@ -206,6 +197,8 @@ sub mychild_closed {
     my ( $self, $server, $con ) = @_;
     
     delete @{$con}{qw( _cgi_wheel _content )};
+
+    return;
 }
 
 
