@@ -255,7 +255,6 @@ sub get_connection {
     }
     
     foreach ( @COMPONENTS ) {
-        next if ( "$_" eq "$self" );
         if ( my $con = $_->{heaps}->{$id} ) {
             return $con;
         }

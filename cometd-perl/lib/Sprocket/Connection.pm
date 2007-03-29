@@ -122,6 +122,8 @@ sub filter_out {
     return $self->wheel->get_output_filter;
 }
 
+*write = *send;
+
 sub send {
     my $self = shift;
 
@@ -133,10 +135,6 @@ sub send {
         $self->_log( v => 1, msg => "cannot send data, where did my wheel go?!".
             ( $self->{dis_reason} ? $self->{dis_reason} : '' ) );
     }
-}
-
-sub write {
-    &send;
 }
 
 sub set_time_out {
