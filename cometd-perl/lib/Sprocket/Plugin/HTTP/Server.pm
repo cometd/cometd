@@ -55,7 +55,7 @@ sub local_accept {
     #$con->reject();
     $con->accept();
 
-    return 1;
+    return OK;
 }
 
 
@@ -68,7 +68,8 @@ sub local_connected {
     $con->filter->shift(); # pull off Filter::Stream
     # cut laggers off
     $con->set_time_out( 5 );
-    return 1;
+
+    return OK;
 }
 
 
@@ -77,11 +78,14 @@ sub local_receive {
     my ( $server, $con, $req ) = @_;
     
     # XXX delete _forwarded_from?
-    delete @{$con}{qw( _docroot _req _r _uri _params _stat _start_time _forwarded_from )};
-    
-    # XXX debug check for keys that begin with _
+    delete @{$con}{qw( _docroot _req _r _uri _params _start_time _forwarded_from )};
+
+    # XXX change _ keys to __? or move them to $con->{x}
+    foreach ( keys %$con ) {
+        delete $con->{$_} if ( m/^__/ );
+    }
  
-    $self->start_http_request( @_ ) or return 1;
+    $self->start_http_request( @_ ) or return OK;
     
     my ( $out, $r );
 
@@ -118,19 +122,26 @@ sub local_receive {
     unless ( $server->{aio} ) {
         warn "IO::AIO is unavailable!, please install it to use the HTTP Server plugin";
         $con->call( simple_response => 403 => 'IO::AIO is unavailable, files cannot be served without it being installed' );
-        return 1;
+        return OK;
     }
 
-    my $file = $self->{document_root}.$con->{_uri};
-    aio_stat( $file, $con->callback( 'stat_file', $file ) );
+    $con->call( serve_request => $self->{document_root}.$con->{_uri} );
 
-    return 1;
+    return OK;
 }
 
 
+sub serve_request {
+    my ( $self, $server, $con, $file ) = @_;
+
+    aio_stat( $file, $con->callback( 'stat_file', $file ) );
+
+    return OK;
+}
+
 # define this or other plugins in this chain will get this 
 sub local_disconnected {
-    return 1;
+    return OK;
 }
 
 # 0 dev      device number of filesystem
@@ -172,8 +183,8 @@ sub stat_file {
         return;
     }
 
-    $con->{_stat} = [ stat( _ ) ];
-    $con->{_r}->header( 'Last-Modified' => time2str( $con->{_stat}->[ 9 ] ) );
+    $con->{__stat} = [ stat( _ ) ];
+    $con->{_r}->header( 'Last-Modified' => time2str( $con->{__stat}->[ 9 ] ) );
     # XXX
 #    $con->{_r}->header( 'Expires' => time2str( time() + ( 24*60*60 ) ) );
 
@@ -188,8 +199,8 @@ sub stat_index_file {
     
     if ( -e _ ) {
         $file .= $self->{index_file};
-        $con->{_stat} = [ stat( _ ) ];
-        $con->{_r}->header( 'Last-Modified' => time2str( $con->{_stat}->[ 9 ] ) );
+        $con->{__stat} = [ stat( _ ) ];
+        $con->{_r}->header( 'Last-Modified' => time2str( $con->{__stat}->[ 9 ] ) );
         # XXX
 #        $con->{_r}->header( 'Expires' => time2str( time() + ( 24*60*60 ) ) );
         $self->open_file( $server, $con, $file );
@@ -199,8 +210,8 @@ sub stat_index_file {
             # content length? 
             $con->call( 'finish' );
         } else {
-            #aio_readdir( $file, $con->callback( 'directory_listing' ) );
             aio_scandir( $file, 0, $con->callback( 'scanned_directory_listing' ) );
+            #aio_readdir( $file, $con->callback( 'directory_listing' ) );
         }
     }
 
@@ -272,23 +283,23 @@ sub scanned_directory_listing {
 sub open_file {
     my ( $self, $server, $con, $file ) = @_;
 
-    # 304 check
-    if ( my $since = $con->{_req}->header( 'If-Modified-Since' ) ) {
-        $since = str2time( $since );
-        my $mtime = $con->{_stat}->[ 9 ];
-        if ( $mtime && $since && $since >= $mtime ) {
-            $con->call( simple_response => 304 );
-            return;
-        }
-    }
-    
     # bail if HEAD request
     if ( $con->{_req}->method eq 'HEAD' ) {
         my $r = $con->{_r};
         $r->content_type( 'text/html' );
-        $r->header( 'Content-Length' => $con->{_stat}->[ 7 ] );
+        $r->header( 'Content-Length' => $con->{__stat}->[ 7 ] );
         $con->call( 'finish' );
         return;
+    }
+
+    # 304 check
+    if ( my $since = $con->{_req}->header( 'If-Modified-Since' ) ) {
+        $since = str2time( $since );
+        my $mtime = $con->{__stat}->[ 9 ];
+        if ( $mtime && $since && $since >= $mtime ) {
+            $con->call( simple_response => 304 );
+            return;
+        }
     }
 
     aio_open( $file, O_RDONLY, 0, $con->callback( 'opened_file', $file ) );
@@ -302,7 +313,7 @@ sub opened_file {
 
     # call the send_file event in the superclass
     my $out = '';
-    aio_read( $fh, 0, $con->{_stat}->[ 7 ], $out, 0, $con->callback( "send_file", $file, $fh, \$out ) );
+    aio_read( $fh, 0, $con->{__stat}->[ 7 ], $out, 0, $con->callback( "send_file", $file, $fh, \$out ) );
 
     return;
 }

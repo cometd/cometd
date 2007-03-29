@@ -57,8 +57,15 @@ sub local_receive {
         $con->send( "commands: dump [val], list conn, con dump [val], find leaks, find refs, quit" );
     } elsif ( $data =~ m/^dump (.*)/i ) {
         $con->send( eval "Data::Dumper->Dump([$1])" );
+    } elsif ( $data =~ m/^x 0x(\S+) (.*)/i ) {
+        my $c = $server->get_connection( $1 );
+        my $res = eval "$2";
+        $con->send( $res );
+        $con->send( $@ ) if ( $@ );
     } elsif ( $data =~ m/^x (.*)/i ) {
-        $con->send( eval "$1" );
+        my $res = eval "$1";
+        $con->send( $res );
+        $con->send( $@ ) if ( $@ );
     } elsif ( $data =~ m/^list conn/i ) {
         foreach my $p (@Sprocket::COMPONENTS) {
             next unless ($p);

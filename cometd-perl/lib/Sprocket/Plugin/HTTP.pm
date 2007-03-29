@@ -64,7 +64,7 @@ sub send_file {
     my ( $self, $server, $con, $file, $fh, $out, $size_out ) = @_;
 
     my $r = $con->{_r};
-    my $size = $con->{_stat}->[ 7 ];
+    my $size = $con->{__stat}->[ 7 ];
 
     if ( $size == $size_out ) {
         $r->content_type( $self->{mime}->type( $file ) );
@@ -212,6 +212,8 @@ sub finish {
     if ( my $clid = $con->clid ) {
         $r->header( 'X-Client-ID' => $clid );
     }
+    
+    $r->header( 'X-Sprocket-CID' => $con->ID );
     
     if ( $con->{_close} ) {
         warn "closing $con";
