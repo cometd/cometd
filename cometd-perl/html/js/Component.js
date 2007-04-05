@@ -263,7 +263,7 @@ Component = new Class( Observer, Autolayout, {
         if( !this.modal )
             return;
         
-        this.sentinels.extend( {
+        extend( this.sentinels, {
             puntStart: DOM.createInvisibleInput(), 
             captureEnd: DOM.createInvisibleInput(),
             puntEnd: DOM.createInvisibleInput()

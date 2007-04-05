@@ -266,7 +266,6 @@ App = new Class( Component, Component.Delegator, {
             parts[ 0 ] = locationBase;
             this.monitorTimer.stop();
         }
-        //parts[ 1 ] = encodeURI( locationArg.toJSON() );
         if( locationArg )
             parts[ 1 ] = encodeURI( this.encodeLocation( locationArg ) );
         else
@@ -345,7 +344,6 @@ App = new Class( Component, Component.Delegator, {
         try {
             var parts = this.location.split( "#" );
             var arg = decodeURI( parts[ 1 ] || "" );
-            //this.locationArg = JSON.parse( arg );
             this.locationArg = this.decodeLocation( arg );
         } catch( e ) {}
         return this.locationArg;

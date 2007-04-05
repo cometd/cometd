@@ -36,6 +36,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 Observer = new Class( EventDispatcher, {
+    init: function() {
+        this.observers = [];
+    },
+    
+    
     destroy: function() {
         if( this.observers )
             this.observers.length = 0;
@@ -70,6 +75,7 @@ Observer = new Class( EventDispatcher, {
                 observer[ methodName ].apply( observer, args );
         }
     },
+   
     
     /* non blocking broadcast. used in event chains where speed is key */
     broadcastToObserversNB: function() {
@@ -87,7 +93,4 @@ Observer = new Class( EventDispatcher, {
             }
         }
     }
-    
 });
-
-

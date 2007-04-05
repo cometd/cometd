@@ -93,6 +93,36 @@ min = function() {
 }
 
 
+extend = function( o ) {
+    var a = arguments;
+    for( var i = 1; i < a.length; i++ ) {
+        var s = a[ i ];
+        for( var p in s ) {
+            try {
+                if( !o[ p ] && (!s.hasOwnProperty || s.hasOwnProperty( p )) )
+                    o[ p ] = s[ p ];
+            } catch( e ) {}
+        }
+    }
+    return o;
+}
+
+
+override = function( o ) {
+    var a = arguments;
+    for( var i = 1; i < a.length; i++ ) {
+        var s = a[ i ];
+        for( var p in s ) {
+            try {
+                if( !s.hasOwnProperty || s.hasOwnProperty( p ) )
+                    o[ p ] = s[ p ];
+            } catch( e ) {}
+        }
+    }
+    return o;
+}
+
+
 /* try block */  
  
 Try = {
@@ -179,65 +209,9 @@ catch( e ) {}
 Function.stub = function() {};
 
 
-if( !Object.prototype.hasOwnProperty ) {
-    Object.prototype.hasOwnProperty = function( p ) {
-        if( !(p in this) )
-            return false;
-        try {
-            var pr = this.constructor.prototype;
-            while( pr ) {
-                if( pr[ p ] === this[ p ] )
-                    return false;
-                if( pr === pr.constructor.prototype )
-                    break;
-                pr = pr.constructor.prototype;
-            }
-        } catch( e ) {}
-        return true;
-    }
-}
-
-
-Object.prototype.extend = function() {
-    var a = arguments;
-    for( var i = 0; i < a.length; i++ ) {
-        var o = a[ i ];
-        for( var p in o ) {
-            try {
-                if( !this[ p ] &&
-                    (!o.hasOwnProperty || o.hasOwnProperty( p )) )
-                    this[ p ] = o[ p ];
-            } catch( e ) {}
-        }
-    }
-    return this;
-}
-
-
-Object.prototype.override = function() {
-    var a = arguments;
-    for( var i = 0; i < a.length; i++ ) {
-        var o = a[ i ];
-        for( var p in o ) {
-            try {
-                if( !o.hasOwnProperty || o.hasOwnProperty( p ) )
-                    this[ p ] = o[ p ];
-            } catch( e ) {}
-        }
-    }
-    return this;
-}
-
-
-Object.prototype.extend( {
-    init: function() {},
-    destroy: function() {}
-} );
-
-
 /* function extensions */
 
-Function.prototype.extend( {
+extend( Function.prototype, {
     bind: function( o ) {
         var m = this;
         return function() {
@@ -285,17 +259,17 @@ Class = function( sc ) {
         this.init.apply( this, arguments );
     };
     
-    c.override( Class );
+    override( c, Class );
     sc = sc || Object;
-    c.override( sc );
+    override( c, sc );
     c.__super = sc;
     c.superClass = sc.prototype;
     
     c.prototype = sc === Object ? new sc() : new sc( __SUBCLASS__ );
-    c.prototype.extend( Class.prototype );
+    extend( c.prototype, Class.prototype );
     var a = arguments;
     for( var i = 1; i < a.length; i++ )
-        c.prototype.override( a[ i ] );
+        override( c.prototype, a[ i ] );
     c.prototype.constructor = sc; /* the above override could blow this away */
     
     for( var p in c.prototype ) {
@@ -318,7 +292,7 @@ Class = function( sc ) {
 }
 
 
-Class.extend( {
+extend( Class, {
     initSingleton: function() {
         if( this.singleton )
             return this.singleton;
@@ -330,6 +304,9 @@ Class.extend( {
 
 
 Class.prototype = {
+    init: function() {},
+    
+    
     destroy: function() {
         try {
             if( this.indirectIndex )
@@ -403,7 +380,7 @@ Class.prototype = {
 
 /* string extensions */
 
-String.extend( {
+extend( String, {
     escapeJSChar: function( c ) {
         // try simple escaping
         switch( c ) {
@@ -466,7 +443,7 @@ String.extend( {
 } );
 
 
-String.prototype.extend( {
+extend( String.prototype, {
     escapeJS: function() {
         return this.replace( /([^ -!#-\[\]-~])/g, function( m, c ) { return String.escapeJSChar( c ); } )
     },
@@ -559,7 +536,7 @@ String.prototype.extend( {
 
 /* extend array object */
 
-Array.extend( { 
+extend( Array, { 
     fromPseudo: function () {
         var out = [];
         for ( var j = 0; j < arguments.length; j++ )
@@ -572,7 +549,7 @@ Array.extend( {
 
 /* extend array object */
 
-Array.prototype.extend( {
+extend( Array.prototype, {
     copy: function() {
         var out = [];
         for( var i = 0; i < this.length; i++ )
@@ -750,7 +727,7 @@ Array.prototype.extend( {
 
 /* date extensions */
 
-Date.extend( {
+extend( Date, {
     strings: {
         localeWeekdays: {},
         localeShortWeekdays: {},
@@ -808,7 +785,7 @@ Date.extend( {
 } );
 
 
-Date.prototype.extend( {
+extend( Date.prototype, {
     clone: function () {
         return new Date( this.getTime() );
     },

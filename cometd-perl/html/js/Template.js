@@ -65,7 +65,7 @@ Template = new Class( Object, {
             if( start < 0 )
                 start = source.length;
             if( start > end )
-                statements.push( "context.write( ", source.substring( end, start ).toJSON(), " );" );
+                statements.push( "context.write( ", '"' + source.substring( end, start ).escapeJS() + '"', " );" );
             
             start += this.beginToken.length;
             
@@ -192,7 +192,7 @@ Template = new Class( Object, {
 
 /* static members */
 
-Template.extend( {
+extend( Template, {
     templates: {},
     
     
@@ -217,7 +217,7 @@ Template.Context = new Class( Object, {
     
     include: function( name ) {
         if ( !this.templates.hasOwnProperty( name ) ) {
-            log.error( "template name " + name + " does not exist!" );
+            log.error( "Template name " + name + " does not exist!" );
             return;
         }
         
@@ -226,7 +226,7 @@ Template.Context = new Class( Object, {
         try {
             return this.templates[ name ].process( this );
         } catch( e ) {
-            var error = "error while processing template:" + name + " - " + e.message;
+            var error = "Error while processing template:" + name + " - " + e.message;
             log.error( error );
             throw error;
         }

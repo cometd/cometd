@@ -41,7 +41,7 @@ if( !defined( window.Node ) )
     Node = {};
 
 try {
-    Node.extend( {
+    extend( Node, {
         ELEMENT_NODE: 1,
         ATTRIBUTE_NODE: 2,
         TEXT_NODE: 3,
@@ -59,7 +59,7 @@ if( !defined( window.DOM ) )
     DOM = {};
 
 
-DOM.extend( {
+extend( DOM, {
     getElement: function( e ) {
         return (typeof e == "string" || typeof e == "number") ? document.getElementById( e ) : e;
     },

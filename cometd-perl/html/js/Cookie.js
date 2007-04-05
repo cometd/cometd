@@ -2,7 +2,7 @@
 Cookie JavaScript Library
 $Id$
 
-Copyright (c) 2006, Six Apart, Ltd.
+Copyright (c) 2007, Six Apart, Ltd.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -114,39 +114,21 @@ Cookie = new Class ( Object, {
 
 /* - -  Static methods  - - */
 
-Cookie.override( { 
-    /** 
-     * Get a cookie from the web browser's native collection of cookies.
-     * @param name <code>string</code>  The name of the cookie.
-     * @return <code>Cookie</code> The fetched cookie.
-     */ 
+override( Cookie, { 
     fetch: function( name ) {
-        var cookie = new Cookie( name );
+        var cookie = new this( name );
         return cookie.fetch();        
     },
 
-
-    /** 
-     * Create and store a cookie in the the web browser's native collection of cookies. Escaping is 
-     * not needed for any properties.   
-     * @param <code>name</codde>   <code>string</code> The name of the cookie.
-     * @param <code>value</code>   <code>string</code>  OPTIONAL The value of the cookie. 
-     * @param <code>domain</code>  <code>string</code>  OPTIONAL The domain to which the cookie belongs.
-     * @param <code>path</code>    <code>string</code>  OPTIONAL The web pages associated with this 
-     *                             cookie (controls visibility across pages).
-     * @param <code>expires</code> <code>Date</code>    OPTIONAL The date that this cookie expires.
-     * @param <code>secure</code>  <code>boolean</code> OPTIONAL Whether or not this cookie is to only be 
-     *                             transmitted over a secure connection.                                          
-     * @return <code>Cookie</code> The fetched cookie.
-     */ 
+    
     bake: function( name, value, domain, path, expires, secure ) {
-        var cookie = new Cookie( name, value, domain, path, expires, secure );
+        var cookie = new this( name, value, domain, path, expires, secure );
         cookie.bake();
         return cookie;
     },
 
 
     remove: function( name ) {
-        Cookie.fetch( name ).remove();
+        this.fetch( name ).remove();
     }  
 } );

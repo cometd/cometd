@@ -108,7 +108,7 @@ Client.Request = new Class( Observer, {
         this.transport.open( "POST", this.client.url, this.asynchronous, this.client.user, this.client.password );
         this.transport.setRequestHeader( "content-type", this.contentType );
     
-        this.transport.send( this.request.toJSON() );
+        this.transport.send( Object.toJSON( this.request ) );
     },
     
     
@@ -138,7 +138,7 @@ Client.Request = new Class( Observer, {
         try {
             if ( this.transport.responseText.charAt(0) == "{" ) {
                 try {
-                    //this.response = JSON.parse( this.transport.responseText );
+                    //this.response = Object.fromJSON( this.transport.responseText );
                     /*
                     if ( ( /^(\s+|[{}\[\]:,]|"(\\["\\\/bfnrtu]|[^\x00-\x1f"\\]+)*"|-?\d+(\.\d*)?([Ee][+-]?\d+)?|null|true|false)+$/.test(
                         this.transport.responseText
