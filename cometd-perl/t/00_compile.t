@@ -1,10 +1,9 @@
 use warnings;
 use strict;
 
-use Test::More tests => 3;
+use Test::More tests => 2;
 
 BEGIN {
     use_ok 'POE';
     use_ok 'Sprocket';
-    use_ok 'Perlbal';
 }
