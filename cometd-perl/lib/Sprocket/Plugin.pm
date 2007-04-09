@@ -36,6 +36,7 @@ sub handle_event {
 
 sub _log {
     $poe_kernel->call( shift->parent_id => _log => ( call => ( caller(1) )[ 3 ], @_ ) );
+    return undef;
 }
 
 sub take_connection {
@@ -54,7 +55,7 @@ sub time_out {
     my ( $self, $server, $con, $time ) = @_;
     $server->_log( v => 4, msg => "Timeout for connection $con" );
     $con->close();
-    return 1;
+    return undef;
 }
 
 sub local_accept {

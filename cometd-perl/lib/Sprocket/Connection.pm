@@ -287,7 +287,7 @@ sub close {
 sub get_driver_out_octets {
     my $self = shift;
 
-    if ( my $wheel = $self->{wheel} ) {
+    if ( my $wheel = $self->wheel ) {
         return $wheel->get_driver_out_octets();
     }
 
@@ -310,7 +310,7 @@ sub callback {
 
     $callback_ids{$callback} = $id;
 
-    $poe_kernel->refcount_increment( $self->{parent_id}, 'anon_event' );
+    $poe_kernel->refcount_increment( $id, 'anon_event' );
 
     return $callback;
 }
@@ -328,7 +328,7 @@ sub postback {
 
     $callback_ids{$postback} = $id;
 
-    $poe_kernel->refcount_increment( $self->{parent_id}, 'anon_event' );
+    $poe_kernel->refcount_increment( $id, 'anon_event' );
 
     return $postback;
 }

@@ -7,6 +7,7 @@ use IO::AIO;
 use XML::LibXML;
 use HTTP::Date qw(time2str time2isoz);
 use Encode;
+use URI;
 
 use bytes;
 
@@ -55,7 +56,12 @@ sub serve_request {
     $con->{__file} = $file;
 
     my $req = $con->{_req};
+    my $r = $con->{_r};
     my $method = lc $req->method;
+    
+    $r->header( 'DAV' => '1,2,<http://apache.org/dav/propset/fs/1>' );
+    # XXX
+    $r->header( 'Vary' => 'Accept-Encoding' );
 
     if ( $method && $self->{impl}->{ $method } && $self->can( "cmd_$method" ) ) {
        return $con->call( "cmd_$method" );
@@ -68,11 +74,9 @@ sub serve_request {
 }
 
 *cmd_put = *denied;
-*cmd_delete = *denied;
 *cmd_copy = *denied;
 *cmd_lock = *denied;
 *cmd_unlock = *denied;
-*cmd_move = *denied;
 
 *cmd_post = *denied;
 *cmd_trace = *denied;
@@ -83,8 +87,122 @@ sub denied {
     
     $con->call( simple_response => 403 => 'Permission Denied' );
 
+    return OK;
+}
+
+# MOVE /nuvola/nuvola-1.0.tar.gz
+# Overwrite: F
+# Destination: http://cometd.net:4242/tmp/nuvola/nuvola-1.0.tar.gz
+
+sub cmd_move {
+    my ( $self, $server, $con ) = @_;
+
+    my $dest = $con->{_req}->header( 'Destination' );
+    
+    unless ( $dest ) {
+        $con->call( simple_resonse => 403 => 'No destination specified' );
+        return OK;
+    }
+
+    my $uri = URI->new( $dest );
+    
+    $dest = $self->resolve_path( $uri->path );
+    
+    my @files = ( $con->{__file}, $con->{_docroot}.$dest );
+    $con->{__files} = [ @files ]; # copy
+    warn "stating ".join(',',@files);
+    
+    my $st = $con->{__stats} = {};
+    my $grp = aio_group( $con->callback( 'move_stat' ) );
+    limit $grp 4;
+    feed $grp sub {
+       my $file = pop @files
+         or return;
+       add $grp aio_stat $file, sub { $st->{$file} = [ ( -e _ ), ( -d _ ) ] };
+    };
+
+    return OK;
+}
+
+sub move_stat {
+    my ( $self, $server, $con ) = @_;
+
+    my ( $files, $stats ) = @{$con}{qw( __files __stats )};
+    
+    unless ( $stats->{ $files->[ 0 ] }->[ 0 ] ) {
+        $con->call( simple_response => 404 );
+        return;
+    }
+    
+    # TODO -d check
+    # TODO overwrite check
+    if ( $stats->{ $files->[ 1 ] }->[ 0 ] ) {
+        $con->call( simple_response => 403 => 'Destination Exists' );
+        return;
+    }
+
+    warn "moving ".join(',',@$files);
+    
+    aio_move( @$files[ 0, 1 ], $con->callback( 'moved_file' ) );
+}
+
+sub moved_file {
+    my ( $self, $server, $con, $status ) = @_;
+
+    warn "moved $status";
+    
+    if ( $status == -1 ) {
+        # no content, move success
+        $con->call( simple_response => 204 );
+    } else {
+        $con->call( simple_response => 403 => 'Permission Denied' );
+    }
+    
     return;
 }
+
+sub cmd_delete {
+    my ( $self, $server, $con ) = @_;
+
+    # XXX check headers?
+    # TODO permissions
+    aio_stat( $con->{__file}, $con->callback( 'delete_stat' ) );
+
+    return OK;
+}
+    
+sub delete_stat {
+    my ( $self, $server, $con ) = @_;
+
+    if ( !-e _ ) {
+        $con->call( simple_response => 404 );
+        return;
+    }
+    
+    if ( -d _ ) {
+        aio_rmtree( $con->{__file} => $con->callback( 'unlinked_file' ) );
+    } else {
+        aio_unlink( $con->{__file} => $con->callback( 'unlinked_file' ) );
+    }
+
+    return;
+}
+
+sub unlinked_file {
+    my ( $self, $server, $con, $status ) = @_;
+
+    # XXX is this -1 on success?
+    warn "unlink status: $status";
+    if ( $status ) {
+        $con->call( simple_response => 403 => 'Permission Denied' );
+    } else {
+        # no content, delete success
+        $con->call( simple_response => 204 );
+    }
+    
+    return;
+}
+
 
 sub cmd_options {
     my ( $self, $server, $con ) = @_;
@@ -94,7 +212,6 @@ sub cmd_options {
     $r->header( 'MS-Author-Via' => 'DAV' );
     $r->header( 'Allow'         => join( ',', map { $self->{impl} ? uc $_ : () } keys %{$self->{impl}} ) );
     $r->header( 'Content-Type'  => 'httpd/unix-directory' );
-    $r->header( 'Keep-Alive'    => 'timeout=15, max=96' );
 
     $con->call( 'finish' => '' );
 
@@ -147,8 +264,10 @@ sub cmd_propfind {
             return;
         }
 
-        #$con->{_reqinfo} = doc->find('/DAV:propfind/*')->localname;
+        #$con->{__prop}->{reqinfo} = $doc->find('/DAV:propfind/*')->localname;
         $con->{__prop}->{reqinfo} = $doc->find('/*/*')->shift->localname;
+
+        warn "reqinfo: $con->{__prop}->{reqinfo}";
 
         if ( $con->{__prop}->{reqinfo} eq 'prop' ) {
             #foreach my $node ($doc->find('/DAV:propfind/DAV:prop/*')) {
@@ -240,7 +359,8 @@ sub stat_paths_done {
         $multistat->addChild($resp);
         my $href = $doc->createElement('D:href');
         $href->appendText(
-            File::Spec->catdir( map { uri_escape encode_utf8 $_ } File::Spec->splitdir( $path ) )
+            ( $path !~ m!^/! ? '/' : '' )
+            . File::Spec->catdir( map { uri_escape encode_utf8 $_ } File::Spec->splitdir( $path ) )
         );
         $resp->addChild($href);
         $href->appendText( '/' ) if $isdir;
@@ -254,23 +374,26 @@ sub stat_paths_done {
             $ok->addChild( $tmp );
         };
 
+        #$add_ok->( 'D:lockdiscovery' );
+
         if ( $con->{__prop}->{reqinfo} eq 'prop' ) {
             my %prefixes = ( 'DAV:' => 'D' );
-            my $i = 0;
+            my $i = 1;
+            $resp->setAttribute( "xmlns:lp1", 'DAV:' );
 
             for my $reqprop ( @{$con->{__prop}->{reqprops}} ) {
                 my ( $ns, $name ) = @$reqprop;
 
                 if ( $ns eq 'DAV:' && $name eq 'creationdate' ) {
-                    $add_ok->( 'D:creationdate', $ctime );
+                    $add_ok->( 'lp1:creationdate', $ctime );
                 } elsif ( $ns eq 'DAV:' && $name eq 'getcontentlength' ) {
-                    $add_ok->( 'D:getcontentlength', $size );
+                    $add_ok->( 'lp1:getcontentlength', $size );
                 } elsif ( $ns eq 'DAV:' && $name eq 'getcontenttype' ) {
-                    $add_ok->( 'D:getcontenttype', ( $isdir ) ? 'httpd/unix-directory' : 'httpd/unix-file' );
+                    $add_ok->( 'lp1:getcontenttype', ( $isdir ) ? 'httpd/unix-directory' : 'httpd/unix-file' );
                 } elsif ($ns eq 'DAV:' && $name eq 'getlastmodified') {
-                    $add_ok->( 'D:getlastmodified', $ctime );
+                    $add_ok->( 'lp1:getlastmodified', $ctime );
                 } elsif ($ns eq 'DAV:' && $name eq 'resourcetype') {
-                    $prop = $doc->createElement('D:resourcetype');
+                    $prop = $doc->createElement('lp1:resourcetype');
                     if ( $isdir ) {
                         $prop->addChild( $doc->createElement('D:collection') );
                     }
@@ -278,7 +401,7 @@ sub stat_paths_done {
                 } else {
                     my $prefix = $prefixes{$ns};
                     if (!defined $prefix) {
-                        $prefix = 'i'.$i++;
+                        $prefix = 'lp'.++$i;
                         $resp->setAttribute( "xmlns:$prefix", $ns );
                         $prefixes{$ns} = $prefix;
                     }
@@ -328,14 +451,14 @@ sub stat_paths_done {
             $resp->addChild($propstat);
         }
 
-        if ( $nf->hasChildNodes ) {
-            my $propstat = $doc->createElement('D:propstat');
-            $propstat->addChild($nf);
-            my $stat = $doc->createElement('D:status');
-            $stat->appendText('HTTP/1.1 404 Not Found');
-            $propstat->addChild($stat);
-            $resp->addChild($propstat);
-        }
+#        if ( $nf->hasChildNodes ) {
+#            my $propstat = $doc->createElement('D:propstat');
+#            $propstat->addChild($nf);
+#            my $stat = $doc->createElement('D:status');
+#            $stat->appendText('HTTP/1.1 404 Not Found');
+#            $propstat->addChild($stat);
+#            $resp->addChild($propstat);
+#        }
     }
 
     $con->call( finish => $doc->toString( 1 ) );

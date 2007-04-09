@@ -1,8 +1,6 @@
 package Sprocket::AIO;
 
-use IO::AIO;
 use Fcntl;
-
 use POE;
 
 use strict;
@@ -11,11 +9,12 @@ use warnings;
 use overload '""' => sub { shift->as_string(); };
 
 BEGIN {
-    eval "use IO::AIO";
+    eval "use IO::AIO qw( poll_fileno poll_cb 2 )";
     if ( $@ ) {
         eval 'sub HAS_AIO () { 0 }';
     } else {
         eval 'sub HAS_AIO () { 1 }';
+        eval 'IO::AIO::min_parallel 16';
     }
 }
 
@@ -24,24 +23,22 @@ our $singleton;
 sub new {
     my $class = shift;
     return $singleton if ( $singleton );
+    return unless ( HAS_AIO );
 
     my $self = $singleton = bless({
         session_id => undef,
         @_
     }, ref $class || $class );
 
-    return $self unless ( HAS_AIO );
-    
-    $self->{session_id} =
     POE::Session->create(
         object_states =>  [
             $self => [qw(
                 _start
                 _stop
-                aio_event
+                poll_cb
             )]
         ],
-    )->ID();
+    );
 
     return $self;
 }
@@ -51,25 +48,23 @@ sub as_string {
 }
 
 sub _start {
-    my ( $self, $kernel ) = @_[OBJECT, KERNEL];
+    my ( $self, $kernel ) = @_[ OBJECT, KERNEL ];
+    
+    $self->{session_id} = $_[ SESSION ]->ID();
     
     $kernel->alias_set( "$self" );
-    $self->_log(v => 1, msg => 'started');
     
-    open( my $fh, "<&=".IO::AIO::poll_fileno ) or die "$!";
-    $kernel->select_read( $fh => 'aio_event' );
-    
+    # eval here because poll_fileno isn't imported when IO::AIO isn't installed
+    open( my $fh, "<&=".eval "poll_fileno()" ) or die "$!";
+    $kernel->select_read( $fh, 'poll_cb' );
+   
+    $self->_log( v => 1, msg => 'AIO support module started' );
+   
     return;
 }
 
-sub aio_event {
-    IO::AIO::poll_cb();
-}
-    
 sub _stop {
-    my ( $self, $kernel ) = @_[OBJECT, KERNEL];
-    
-    $self->_log(v => 1, msg => 'stopped');
+    $_[ OBJECT ]->_log(v => 1, msg => 'stopped');
 }
 
 sub _log {

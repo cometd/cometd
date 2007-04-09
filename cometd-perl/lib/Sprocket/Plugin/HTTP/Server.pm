@@ -93,12 +93,12 @@ sub local_receive {
     $con->{_params} = ( $uri =~ m!\?! ) ? ( $uri =~ s/\?(.*)//o )[ 0 ] : '';
     # TODO better way of passing this sort of stuff to a forwarded plugin
     $con->{_docroot} = $self->{document_root};
-    $con->{_uri} = $self->resolve_path( $uri );
+    $con->{_uri} = $self->resolve_path( uri_unescape( $uri ) );
     $con->{_req} = $req;
     $r = $con->{_r} = HTTP::Response->new( 200 );
     
-    $con->set_time_out( $self->{time_out} );
-#    $con->set_time_out( undef );
+#    $con->set_time_out( $self->{time_out} );
+    $con->set_time_out( undef );
 
     if ( $self->{forward_list} ) {
         foreach my $regex ( keys %{ $self->{forward_list} } ) {
@@ -110,7 +110,7 @@ sub local_receive {
                 if ( my $ret = $server->forward_plugin( $name, $server, $con, $req ) ) {
                     return $ret;
                 } else {
-                    $server->_log( v => 4, msg => 'skipped plugin forward to '.$name.' on uri '.$con->{_uri}." (return value:$ret)");
+#                    $server->_log( v => 4, msg => 'skipped plugin forward to '.$name.' on uri '.$con->{_uri}." (return value:$ret)");
                     next;
                 }
             } 
@@ -226,7 +226,7 @@ sub directory_listing {
     my $uri = $con->{_uri};
     $con->{_r}->content_type( 'text/html' );
     my $out = qq|<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
-<html><head><title>Index of |.encode_entities($uri).qq|</title><head><body>
+<html><head><title>Index of |.encode_entities($uri).qq|</title></head><body>
     <h2>Index of |.encode_entities($uri).qq|</h2>\n<ul>\n|;
     $entries = [] unless ( ref $entries );
     unshift( @$entries, '..' );
@@ -253,7 +253,7 @@ sub scanned_directory_listing {
     my $uri = $con->{_uri};
     $con->{_r}->content_type( 'text/html' );
     my $out = qq|<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
-<html><head><title>Index of |.encode_entities($uri).qq|</title><head><body>
+<html><head><title>Index of |.encode_entities($uri).qq|</title></head><body>
     <h2>Index of |.encode_entities($uri).qq|</h2>\n<ul>\n|;
     $dirs ||= [];
     $files ||= [];
@@ -311,6 +311,11 @@ sub open_file {
 sub opened_file {
     my ( $self, $server, $con, $file, $fh ) = @_;
 
+    unless( $fh ) {
+       $con->call( simple_response => 403 );
+       return;
+    }
+    
     # call the send_file event in the superclass
     my $out = '';
     aio_read( $fh, 0, $con->{__stat}->[ 7 ], $out, 0, $con->callback( "send_file", $file, $fh, \$out ) );

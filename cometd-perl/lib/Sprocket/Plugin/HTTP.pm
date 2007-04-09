@@ -7,7 +7,7 @@ use POE qw( Filter::HTTPD Filter::Stream Wheel::ReadWrite Driver::SysRW );
 use HTTP::Response;
 use IO::AIO;
 use HTTP::Date;
-use HTTP::Status qw( status_message RC_BAD_REQUEST );
+use HTTP::Status qw( status_message is_info RC_BAD_REQUEST );
 use Time::HiRes qw( time );
 use MIME::Types;
 use Scalar::Util qw( blessed );
@@ -94,7 +94,7 @@ sub simple_response {
         $r->header( Location => $extra || '/' );
         $con->call( finish => '' );
         return;
-    } elsif ( $code == 304 ) {
+    } elsif ( is_info( $code ) ) {
         $con->call( finish => '' );
         return;
     }
@@ -249,6 +249,8 @@ sub finish {
 sub resolve_path {
     my $self = shift;
     my $path = shift || '';
+
+    $path =~ s/\0//g;
 
     my $cwd = '/';
     my $path_out = '';

@@ -142,8 +142,8 @@ sub accept {
 sub local_receive {
     my ( $self, $kernel, $con ) = @_[ OBJECT, KERNEL, HEAP ];
     
-    $kernel->alarm_remove( $con->{time_out} )
-        if ( $con->{time_out} );
+#    $kernel->alarm_remove( $con->{time_out_id} )
+#        if ( $con->{time_out_id} );
     
     $self->process_plugins( [ 'local_receive', $self, $con, $_[ARG0] ] );
     
@@ -172,8 +172,8 @@ sub local_error {
     
     $con->{dis_reason} = "$operation error - $errnum: $errstr";
     
-    $kernel->alarm_remove( $con->{time_out} )
-        if ( $con->{time_out} );
+#    $kernel->alarm_remove( $con->{time_out_id} )
+#        if ( $con->{time_out_id} );
     
     # TODO use constant
     if ( $errnum == 0 ) {
@@ -199,7 +199,7 @@ sub local_timeout {
     $self->_log(v => 3, msg => "Timeout");
     
     $con->close();
-    $con->time_out( undef );
+#    $con->time_out_id( undef );
     
     return;
 }
