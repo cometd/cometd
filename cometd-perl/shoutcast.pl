@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use lib qw( lib easydbi-lib );
+use lib qw( lib sprocket-lib easydbi-lib );
 
 # use this before POE, so Sprocket loads the Epoll loop if we have it
 use Sprocket qw(

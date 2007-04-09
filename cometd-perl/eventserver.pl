@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use lib qw( lib easydbi-lib );
+use lib qw( lib sprocket-lib easydbi-lib );
 
 # use this before POE, so Sprocket loads the Epoll loop if we have it
 use Sprocket qw(
@@ -11,6 +11,7 @@ use Sprocket qw(
     Plugin::HTTP::Server
     Plugin::HTTP::Deny
     Plugin::HTTP::CGI
+    Plugin::HTTP::AlwaysModified
     Plugin::HTTP::Comet
     Plugin::Manager
     Plugin::AtomStream
@@ -55,6 +56,7 @@ Sprocket::Server->spawn(
                     # deny any files or dirs access beginning with .
                     qr|/\.| => 'HTTP::Deny',
                     qr/\.(pl|cgi)$/ => 'HTTP::CGI',
+                    qr|voxersidebar-dev\.js$| => 'HTTP::AlwaysModified',
                     # forward /cometd to the Comet plugin
                     qr|^/cometd/?$| => 'HTTP::Comet',
                 }
@@ -74,6 +76,10 @@ Sprocket::Server->spawn(
         {
             Plugin => Sprocket::Plugin::HTTP::CGI->new(),
             Priority => 3,
+        },
+        {
+            Plugin => Sprocket::Plugin::HTTP::AlwaysModified->new(),
+            Priority => 4,
         },
     ],
     EventManager => {
