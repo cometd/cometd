@@ -860,6 +860,29 @@ Messages are sent to the client as unencapsulated body content of a POST respons
 <h1 class="clause">8. Security</h1>
 <span class="note">Need examples of how auth tokens and credentials can be used.</span>
 <span class="note">Need examples of how authSuccess=false and advice in handshake can be used to do challenge response stuff</span>
+
+<h2 class="clause">8.1. Ajax Hijacking</h2>
+<p>
+The Ajax hijacking vulnerability is when an attacking web site uses a script tag to execute JSON content obtained from an Ajax server. The Bayeux protocol is 
+not vulnerable to this style of attack as cookies are not used for authentication and a valid client ID is needed before private client data is returned.  The use of POST requests
+further protects against this style of attack.  
+</p>
+<p>
+To futher protect against this class of attack, it is RECOMMEDED that Bayeux clients and servers support json comment filtered format, where the outer JSON array is enclosed in
+a comment that will prevent execution of the JSON without explicit handling of the comment characters. An example of a commented message is:</p>
+<pre class="example">
+/*[
+  {
+     "channel": "/some/channel",
+     "data": "some application string or JSON object",
+     "id": "some unique message id"
+  }
+]*/
+</pre>
+<p>An extension field of json-comment-filtered should be sent by client and server to indicate that comment-filtering is supported. 
+If it is, the content-type should be text/json-comment-filtered.
+</p>
+
 <h1 class="clause">9. Multi frame operation</h1>
 <p>Current HTTP client implementations are RECOMMENDED to allow only two connections between a client and a server.  This presents a problem when multiple instances of the bayeux client are operating
 in multiple tabs or windows of the same browser instance.   The two connection limit can be consumed by outstanding reconnect meta messages from each tab or window and thus prevent 
