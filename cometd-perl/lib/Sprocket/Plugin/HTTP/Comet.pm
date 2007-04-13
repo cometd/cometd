@@ -50,7 +50,6 @@ sub as_string {
 sub local_connected {
     my ( $self, $server, $con, $socket ) = @_;
     $self->take_connection( $con );
-    $con = bless( $con, 'Cometd::Connection' );
     # POE::Filter::Stackable object:
     $con->filter->push( POE::Filter::HTTPD->new() );
     $con->filter->shift(); # pull off Filter::Stream
