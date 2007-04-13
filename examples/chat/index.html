@@ -4,7 +4,7 @@
     <script type="text/javascript" src="../../dojo/dojo.js"></script>
     <script type="text/javascript" src="behaviour.js"></script>
     <script type="text/javascript" src="chat.js"></script>
-    <script type="text/javascript"> cometd.init({}, "/cometd"); </script>
+    <script type="text/javascript">cometd.init({}, new String(document.location).replace(/http:\/\/[^\/]*/,'').replace(/\/examples\/.*$/,'')+"/cometd"); </script>
     <link rel="stylesheet" type="text/css" href="chat.css"></link>
 </head>
 <body>

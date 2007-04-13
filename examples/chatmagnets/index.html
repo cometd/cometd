@@ -64,7 +64,7 @@
 
 			function setUpConnection(){
 				dojo.require("dojo.io.cometd");
-				cometd.init({}, "/cometd");
+                cometd.init({}, new String(document.location).replace(/http:\/\/[^\/]*/,'').replace(/\/examples\/.*$/,'')+"/cometd");
 
 				cometd.subscribe("/magnets/move", true, "serverMagnetMove");
 				cometd.subscribe("/magnets/moveStart", true, "serverMagnetMoveStart");
