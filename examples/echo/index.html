@@ -77,7 +77,7 @@
 					}
 				);
 				
-				cometd.init({}, "/cometd");
+				cometd.init({}, new String(document.location).replace(/http:\/\/[^\/]*/,'').replace(/\/examples\/.*$/,'')+"/cometd");
 				
 				
 				Behaviour.register(echoBehaviours); 
