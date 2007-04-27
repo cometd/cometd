@@ -180,7 +180,11 @@ BC ---------- U ---------- P ------------ O ---------- BS
 </pre>
 HTTP requests req0 and req1 are sent on different TCP/IP connections, so that the response to req1 may be sent before the response to req0.   Implementations MUST control HTTP pipelining so that req1 does not get queued behind req0 and thus enforce an ordering of responses.
 <h3 class="clause">1.4.7. Connection Negotiation</h3>
-<span class="note">blah blah blah</span>
+<p>
+Bayeux connections are negotiated between client and server with handshake messages that allow
+the connection type, authentication and other parameters to be agreed between the client and the
+server.
+</p>
 <pre class="example">
 BC ----------------------------------------- BS
  | ------------------ handshake request ---> |
@@ -189,10 +193,41 @@ BC ----------------------------------------- BS
  | <---- connect response ------------------ |
  | ------------------ reconnect request ---> |
  ~                                           ~ wait
- | ------------------- message request ----> |
- | <---- message response ------------------ |
  | <---- reconnect response ---------------- |
  </pre>
+<p>
+Connection negotiation may be iterative and several
+handshake messages may be exchanged before a successful
+connection is obtained.   Servers may also request
+that connections is renegotiated by sending an
+unsuccessful reconnect response with advice to reconnect
+with a handshake message.
+</p>
+<pre class="example">
+BC ----------------------------------------- BS
+ | ------------------ handshake request ---> |
+ | <-- unsuccessful handshake response ----- |
+ | ------------------ handshake request ---> |
+ | <-- successful handshake response ------- |
+ | -------------------- connect request ---> |
+ | <---- connect response ------------------ |
+ | ------------------ reconnect request ---> |
+ ~                                           ~ wait
+ | <---- reconnect response ---------------- |
+ | ------------------ reconnect request ---> |
+ | <---- unsucessful reconnect response ---- |
+ | ------------------ handshake request ---> |
+ | <-- successful handshake response ------- |
+ | -------------------- connect request ---> |
+ | <---- connect response ------------------ |
+ | ------------------ reconnect request ---> |
+ ~                                           ~ wait
+ | <---- reconnect response ---------------- |
+ </pre>
+
+
+
+
 <h3 class="clause">1.4.8. Unconnected operation</h3>
 messages can be sent without a prior handshake....<span class="note">blah blah blah</span>
 <pre class="example">
@@ -337,9 +372,11 @@ Bayeux implementations can prevent resource exhaustion and inelegant failure mod
 <p>
 The advice field is a JSON map containing general and transport specific values that
 indicate modes of operation, timeouts and other potentially transport specific parameters.
-Defined advice fields are reconnect, interval and multiple-clients.  The reconnect and interval
-fields may occur either in the
-top level of an advice or within a transport specific section.
+Fields may occur either in the top level of an advice or within a transport specific section.
+</p>
+<p>
+Unless otherwise specified in sections 5 and 6, any Bayeux response message may contain an advice
+field.  Advice received always superceeds any previous received advice.
 </p>
 An example advice field is
 <pre class="example">
@@ -347,7 +384,7 @@ An example advice field is
      "advice": { 
         "reconnect": "retry",
         "interval": 1000,
-        "iframe" : {
+        "callback-polling" : {
             "reconnect": handshake
          }
      }
@@ -381,9 +418,15 @@ the case of a failure to connect or reconnect.  Defined reconnect values are:
 An integer representing the period in milliseconds for a client to delay subsequent
 attempts of the unsuccessful message. A negative period indicates that the message should
 not be retried. 
-<h3 class="clause">4.10.2. multiple-clients</h3>
+<h3 class="clause">4.10.3. multiple-clients</h3>
 This is a boolean field, which if true indicates that the server has detected multiple bayeux client 
 instances running within the same HTTP client.
+<h3 class="clause">4.10.4. hosts</h3>
+This is an array of strings field, which if present indicates a list of host names or IP addresses
+that MAY be used as alternate servers with which the client may connect.  If a client receives
+advice to re handshake an the current server is not included in a supplied hosts list, then the
+client SHOULD try the hosts in order until a successful connection is establish. Advice received
+during handshakes with hosts in the list supercedes any previously received advice.
 
 <h2 class="clause">4.11. connectionType</h2>
 <h2 class="clause">4.12. id</h2>
@@ -498,6 +541,14 @@ An example unsuccessful handshake response is:
 ]
 </pre>
 
+<p>
+For complex connection negotiations, multiple handshake messages may be exchanged between the
+bayeux client and server.  The handshake response will be unsuccessful until the handshake processs
+is complete. The advice and ext fields may be used to communicate additional information needed to
+complete the handshake process. An unsuccessful handshake response with reconnect advice of
+"handshake" is used to continue the connection negotiation.  An unsuccessful handshake response
+with reconnect advice of "none" is used to terminate connection negotiations.
+</p>
 
 
 
@@ -858,10 +909,37 @@ Messages are sent to the client as unencapsulated body content of a POST respons
 <h2 class="clause">7.2. callback-polling</h2>
 <h2 class="clause">7.3. iframe</h2>
 <h1 class="clause">8. Security</h1>
-<span class="note">Need examples of how auth tokens and credentials can be used.</span>
-<span class="note">Need examples of how authSuccess=false and advice in handshake can be used to do challenge response stuff</span>
 
-<h2 class="clause">8.1. Ajax Hijacking</h2>
+<span class="note">Need examples of how auth tokens and credentials can be used.</span>
+<span class="note">Need examples of how authSuccessful=false and advice in handshake can be used to do challenge response stuff</span>
+
+<h2 class="clause">8.1. Authentication</h2>
+Bayeux may be used with:
+<ul>
+<li>No authentication</li>
+<li>Container supplied authentication (eg BASIC auth or cookie managed session based
+authentication)</li>
+<li>Bayeux extension authentication that exchanges authentication credentials and tokens within
+Bayeux messages</li>
+</ul>
+<p>
+For Bayeux authentication, no algorithm is specified for generating or validating security
+credentials or token. This version of the protocol only defines the messages fields over which
+this security information may be exchanged:
+</p>
+<pre class="example">
+  authScheme
+  authUser
+  authToken
+  authSuccessful
+  clientId
+</pre>
+<p>
+The connection negotiation mechanism may be used to negotiate authentication or request
+re-authentication.
+</p>
+
+<h2 class="clause">8.2. Ajax Hijacking</h2>
 <p>
 The Ajax hijacking vulnerability is when an attacking web site uses a script tag to execute JSON content obtained from an Ajax server. The Bayeux protocol is 
 not vulnerable to this style of attack as cookies are not used for authentication and a valid client ID is needed before private client data is returned.  The use of POST requests
