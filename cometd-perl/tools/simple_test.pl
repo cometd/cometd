@@ -2,7 +2,6 @@
 
 use lib qw( lib easydbi-lib );
 
-# use this before POE, so Sprocket loads the Epoll loop if we have it
 use Sprocket qw(
     Server
     Plugin::Manager
@@ -16,7 +15,7 @@ my %opts = (
 );
 
 # backend server
-POE::Component::Sprocket::Server->spawn(
+Sprocket::Server->spawn(
     %opts,
     Name => 'Manager',
     ListenPort => 5000,
