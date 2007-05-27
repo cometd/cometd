@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+	"http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>Fun With Magnets</title>
+		<script type="text/javascript">
+			var djConfig = { isDebug: true };
+		</script>
+		<script type="text/javascript" src="../../dojo/dojo.js"></script>
+		<script type="text/javascript">
+			dojo.registerModulePath("dojofun","../examples/magnets/dojofun");
+			dojo.require("dojo.debug.console");
+			dojo.require("dojo.html.layout");
+			dojo.require("dojo.widget.*");
+			dojo.require("dojo.widget.ContentPane");
+			dojo.require("dojo.widget.Dialog");
+			dojo.require("dojofun.widget.Magnet");
+
+			function addMagnets(type, data, e){
+				var tray = dojo.widget.byId("tray");
+				for(var x=0; x<data.phrases.length; x++){
+					var tmp = dojo.widget.createWidget("dojofun:Magnet",
+						{	phrase: data.phrases[x], 
+							constrainTo: "layout"
+						}
+					);	
+					tray.addChild(tmp);
+				}	
+				dojo.lang.forEach(tray.children, function(ttmp){
+					dojo.event.connect(ttmp.drag, "onDragStart", function(){
+						var tn = ttmp.drag.domNode;
+						if(tn.style.position != "absolute"){
+							var abs = dojo.html.getAbsolutePosition(tn);
+							with(tn.style){
+								position = "absolute";
+								left = abs.x+"px";
+								top = abs.y+"px";
+							}
+						}
+						cometd.publish("/magnets/moveStart", {
+							source: cometd.clientId,
+							widgetId: ttmp.widgetId
+						});
+					});
+
+					dojo.event.connect(ttmp.drag, "onDragEnd", function(){
+						cometd.publish("/magnets/move", {
+							source: cometd.clientId,
+							widgetId: ttmp.widgetId,
+							pos: dojo.html.abs(ttmp.domNode)
+						});
+					});
+				});
+			}
+
+			function serverMagnetMove(msg){
+				if(msg.data.source != cometd.clientId){
+					var tmp = dojo.widget.byId(msg.data.widgetId);
+					tmp.unhighlight();
+					tmp.moveTo(msg.data.pos);
+				}
+			}
+
+			function serverMagnetMoveStart(msg){
+				if(msg.data.source != cometd.clientId){
+					dojo.debug("serverMagnetMoveStart", dojo.widget.byId(msg.data.widgetId));
+					dojo.widget.byId(msg.data.widgetId).highlight();
+				}
+			}
+
+			function setUpConnection(){
+				dojo.require("dojo.io.cometd");
+				cometd.init({}, new String(document.location).replace(/http:\/\/[^\/]*/,'').replace(/\/examples\/.*$/,'')+"/cometd");
+
+				cometd.subscribe("/magnets/move", true, "serverMagnetMove");
+				cometd.subscribe("/magnets/moveStart", true, "serverMagnetMoveStart");
+			}
+
+
+			dojo.addOnLoad(function(){
+				dojo.dnd.dragManager.threshold = 1;		
+				dojo.io.bind({
+					url: "phrases.js",
+					load: addMagnets,
+					error: function(type, e){
+						dojo.debug("error loading phrases: " + e);
+						dojo.debugShallow(e);
+					},
+					mimetype: "text/json"
+				});
+				setUpConnection();
+			});
+		</script>
+		<style type="text/css">
+			html,body {
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+				padding: 0px;
+				margin: 0px;
+			}
+
+			#tray {
+				width: 200px;
+				background: #ababab;
+				overflow: visible;
+			}
+
+			#layout {
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+				margin: 0px;
+				padding: 0px;
+				background: #f5f0bf;
+			}
+		</style>
+	</head>
+	<body>
+		<!--
+		<div id="dojoDebug"
+			style="position: absolute; width: 300px; height: 300px; overflow: auto; border: 1px solid black; top: 20px; left: 20px;"> blah blah blah </div>
+		-->
+		<div dojoType="LayoutContainer" id="layout">
+			<div dojoType="ContentPane" id="tray" layoutAlign="left"></div>
+		</div>
+	</body>
+</html>
