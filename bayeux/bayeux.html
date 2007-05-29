@@ -1,4 +1,3 @@
-﻿
 <html>
 <head>
 <style>
@@ -340,11 +339,11 @@ The version message field SHOULD be included in messages to/from the "/meta/hand
 <h2 class="clause">4.3. minimumVersion</h2>
 The minimumVersion message field MAY be included in messages from to/from the "/meta/handshake" channel to indicate the oldest protocol version that can be handled by the client/server.
 <h2 class="clause">4.4. authScheme</h2>
-The authScheme allows the name of an authentication mechanism to be named in a message to the "/meta/handshake" channel. No schemes are currently defined to be supported.
+Deprecated field no longer supported.
 <h2 class="clause">4.5. authUser</h2>
-The authUser allows the name of a user to be passed to the authentication mechanism in message to the "/meta/handshake" channel. The format  and validity of the username depends on the authScheme.
+Deprecated field no longer supported.
 <h2 class="clause">4.6. authToken</h2>
-The authUser field allows the authentication credentials to be passed to the authentication mechanism in message to the "/meta/handshake" channel. The format  and validity of the username depends on the authScheme.
+Deprecated field no longer supported.
 <h2 class="clause">4.7. supportedConnectionTypes</h2>
 
 The supportedConnectionTypes field is included in messages to and from the "/meta/handshake" channel to allow clients and servers to reveal the transports that are supported. The value is an array of strings, with each string representing a transport name.  Defined connection types include: 
@@ -366,10 +365,7 @@ All server and client implementations MUST support the "long-polling" connection
 The clientId message field uniquely identifies a client to a Bayeux server.   The clientId message field MUST be 
 included in every message sent to the server except for a message sent to the "/meta/handshake" channel.   The clientId field will be returned in every message
  response except for a failed handshake request and is OPTIONAL in a message delivery message.    
-<h2 class="clause">4.9. authSuccessful</h2>
-The authSuccessful boolean message field can be used in a Bayeux security extension mechanism to indicate authentication success of failure.
-  The authSuccessful field MUST be included in a response to the "/meta/handshake" channel.
-<h2 class="clause">4.10. advice</h2>
+<h2 class="clause">4.9. advice</h2>
 <p>
 The advice field provides a way for servers to inform clients of their
 preferred mode of client operation so that in conjunction with server-enforced limits,
@@ -396,7 +392,7 @@ An example advice field is
      }
 </pre>
 
-<h3 class="clause">4.10.1. reconnect</h3>
+<h3 class="clause">4.9.1. reconnect</h3>
 The reconnection advice field is a string that indicates how the client should act in
 the case of a failure to connect or reconnect.  Defined reconnect values are:
 <dl>
@@ -420,28 +416,28 @@ the case of a failure to connect or reconnect.  Defined reconnect values are:
 				authorization data regarding the client, e.g. in the case of
 				hard failover between a bayeux server and a cold spare.</dd>
 </dl>
-<h3 class="clause">4.10.2. interval</h3>
+<h3 class="clause">4.9.2. interval</h3>
 An integer representing the period in milliseconds for a client to delay subsequent
 attempts of the unsuccessful message. A negative period indicates that the message should
 not be retried. 
-<h3 class="clause">4.10.3. multiple-clients</h3>
+<h3 class="clause">4.9.3. multiple-clients</h3>
 This is a boolean field, which if true indicates that the server has detected multiple bayeux client 
 instances running within the same HTTP client.
-<h3 class="clause">4.10.4. hosts</h3>
+<h3 class="clause">4.9.4. hosts</h3>
 This is an array of strings field, which if present indicates a list of host names or IP addresses
 that MAY be used as alternate servers with which the client may connect.  If a client receives
 advice to re handshake an the current server is not included in a supplied hosts list, then the
 client SHOULD try the hosts in order until a successful connection is establish. Advice received
 during handshakes with hosts in the list supercedes any previously received advice.
 
-<h2 class="clause">4.11. connectionType</h2>
+<h2 class="clause">4.10. connectionType</h2>
 The connectionType message field specifies the type of transport the client requires for communication.   The connectionType message
  field MUST be included in requests to the "/meta/connect" channel and is OPTIONAL in requests to the "/meta/reconnect" channel.
   Connection types are defined in section 4.7.   
-<h2 class="clause">4.12. id</h2>
+<h2 class="clause">4.11. id</h2>
 The id message is field used to identify event messages.   An id message MAY be included in publish requests or in a requests to the "meta/reconnect" channel.  The id message field
 MAY be included in a response to a publish request and in an event delivery message.
-<h2 class="clause">4.13. timestamp</h2>
+<h2 class="clause">4.12. timestamp</h2>
 The timestamp message field SHOULD be specified in the following ISO 8601 profile:  All times SHOULD be sent in GMT time.
 <pre class="example">
    YYYY-MM-DDThh:mm:ss.ss
@@ -449,22 +445,22 @@ The timestamp message field SHOULD be specified in the following ISO 8601 profil
 A timestamp message is OPTIONAL in a bayeux server response to the "/meta/connect", "/meta/reconnect", "/meta/subscribe", "/meta/unsubscribe", publish, and event delivery channels.
  A timestamp message is OPTIONAL  in a bayeux reconnect request.
 
-<h2 class="clause">4.14. data</h2>
+<h2 class="clause">4.13. data</h2>
 The data message field is an arbitrary JSON object that contains event information.  The data field MUST be included in publish requests, and a Bayeux server MUST include
 the data field in an event delivery message. 
-<h2 class="clause">4.15. connectionId</h2>
+<h2 class="clause">4.14. connectionId</h2>
 The connectionId field was used during development of the bayeux protocol and it's use is now deprecated.
-<h2 class="clause">4.16. successful</h2>
+<h2 class="clause">4.15. successful</h2>
 The successful boolean message field is used indicate success or failure and MUST be included in responses to the "/meta/handshake", "/meta/connect",
  "/meta/reconnect", "/meta/subscribe","/meta/unsubscribe", "/meta/disconnect", and publish channels.  
-<h2 class="clause">4.17. subscription</h2>
+<h2 class="clause">4.16. subscription</h2>
 The subscription message field specific the channels the client wishes to subscribe to or unsubscribe from. The subscription message field MUST
  be included in requests and responses to/from the "/meta/subscribe" or "/meta/unsubscribe" channels. 
-<h2 class="clause">4.18. error</h2>
+<h2 class="clause">4.17. error</h2>
 The error message field is OPTIONAL on any bayeux response.  The error message field MAY indicate the type of error that occurred when a request returns with a false successful message. The error message field should be sent in string format.
    This version of the protocol does not define any standard messages.  It is up to the server implementation to define error messages and provide 
 support for message localization on the client.
-<h2 class="clause">4.19. ext</h2>
+<h2 class="clause">4.17. ext</h2>
 An ext field MAY be included in any bayeux message.  It's value SHOULD be a JSON map with top level names distinguished by implementation names (eg. "org.dojo.bayeux.field").
 The contents of ext may be arbitrary values that allow extensions to be negotiated and implemented between implementations.  
 <h1 class="clause">5. Meta Message Definitions</h1>
@@ -483,9 +479,7 @@ A handshake request MUST contain the message fields:
 A handshake request MAY contain the message fields:
 <dl>
 <dt>minimumVersion</dt>
-<dt>authScheme</dt>
-<dt>authUser</dt>
-<dt>authToken</dt>
+<dt>ext</dt>
 </dl>
 A client SHOULD NOT send any other message in the request with a handshake message. A server MUST ignore any other message sent in the same request as a handshake message.
  An example handshake request is:
@@ -496,9 +490,6 @@ A client SHOULD NOT send any other message in the request with a handshake messa
      "version": 0.1,
      "minimumVersion": 0.1,
      "supportedConnectionTypes": ["long-polling", "callback-polling", "iframe"],
-     "authScheme": "SHA1",
-     "authUser": "alex",
-     "authToken": "HASHJIBBERISH"
    }
 ]
 </pre>
@@ -512,16 +503,17 @@ A successful handshake responses MUST contain the message fields:
 <dt>version</dt><dd></dd>
 <dt>supportedConnectionTypes</dt><dd>The connection types supported by the server for the purposes of the connection being negotiated.  This list MAY be a subset of the connection types actually supported if the client wishes to negotiate a specific connection type. This list MUST contain at list one element in common with the supportedConnectionType provided in the handshake request. If there are no connectionTypes in common, the handshake response MUST be unsuccessful.</dd>
 <dt>clientId</dt><dd>A newly generated clientId.</dd>
-<dt>authSuccessful</dt><dd>value true</dd>
+<dt>successful</dt><dd>value true</dd>
 </dl>
 
 A successful handshake responses MAY contain the message fields:
 <dl>
 <dt>minimumVersion</dt>
-<dt>authToken</dt>
 <dt>advise</dt>
 <dt>ext</dt>
-</dl>
+<dt>authSuccessful</dt><dd>Value true, this field may be included to support
+prototype client implementations that required the authSuccessful field</dd>
+</dl>    
 An example successful handshake response is:
 <pre class="example">
 [
@@ -531,8 +523,8 @@ An example successful handshake response is:
      "minimumVersion": 0.1,
      "supportedConnectionTypes": ["long-polling","callback-polling"],
      "clientId": "Un1q31d3nt1f13r",
+     "successful": true,
      "authSuccessful": true,
-     "authToken": "UPDATEDHASHJIBBERISH",
      "advice": { "reconnect": "retry" }
    }
 ]
@@ -541,14 +533,13 @@ An example successful handshake response is:
 An unsuccessful handshake response MUST contain the message fields:
 <dl>
 <dt>channel</dt><dd>value "/meta/handshake"</dd>
-<dt>authSuccessful</dt><dd>value false</dd>
+<dt>successful</dt><dd>value false</dd>
 <dt>error</dt><dd>a description of the reason for the failure.</dd>
 </dl>
 An unsuccessful handshake  response MAY contain the message fields:
 <dl>
 <dt>supportedConnectionTypes</dt><dd>The connection types supported by the server for the purposes of the connection being negotiated.  This list MAY be a subset of the connection types actually supported if the client wishes to negotiate a specific connection type. </dd>
 <dt>advice</dt>
-<dt>authToken</dt>
 <dt>version</dt>
 <dt>minimumVersion</dt>
 <dt>ext</dt>
@@ -561,7 +552,7 @@ An example unsuccessful handshake response is:
      "version": 0.1,
      "minimumVersion": 0.1,
      "supportedConnectionTypes": ["long-polling","callback-polling"],
-     "authSuccessful": false,
+     "successful": false,
      "error": "Authentication failed",
      "advice": { "reconnect": "none" }
    }
@@ -596,7 +587,6 @@ A connect request MUST contain the message fields:
 </dl>
 A connect request MAY contain the message fields:
 <dl>
-<dt>authToken</dt>
 <dt>ext</dt>
 </dl>
 A client MAY send other messages in the same http request with a connection message. A server MUST handle any other message sent in the same request as a connect message after the handling of the connect message is complete.
@@ -671,7 +661,6 @@ A reconnect requests MUST contain the message fields:
 </dl>
 reconnect requests MAY contain the message fields:
 <dl>
-<dt>authToken</dt>
 <dt>ext</dt>
 <dt>connectionType</dt>
 </dl>
@@ -743,7 +732,6 @@ A disconnect request MUST contain the message fields:
 </dl>
 A disconnect request MAY contain the message fields:
 <dl>
-<dt>authToken</dt>
 <dt>ext</dt>
 </dl>
 An example disconnect request is:
@@ -800,7 +788,6 @@ An example disconnect response is:
 A status request MAY contain the message fields:
 <dl>
 <dt>ext</dt><dd>This field is server dependent indicator typically used to indicate type of status requested.
-<dt>authToken</dt>
 </dl>
 An example status request is:
 <pre class="example">
@@ -825,7 +812,6 @@ Server implementation of the "/meta/status" channel is OPTIONAL.  If a bayeux se
 A status response MAY contain the message fields:
 <dl>
 <dt>ext</dt><dd>This field is server dependent and typically returns status data.
-<dt>authToken</dt>
 </dl>
 An example status response is:
 <pre class="example">
@@ -854,7 +840,6 @@ A subscribe request MUST contain the message fields:
 </dl>
 A connect request MAY contain the message fields:
 <dl>
-<dt>authToken</dt>
 <dt>ext</dt>
 </dl>
 An example subscribe request is:
@@ -885,7 +870,6 @@ A connect response MAY contain the message fields:
 <dt>advice</dt>
 <dt>ext</dt>
 <dt>timestamp</dt>
-<dt>authToken</dt>
 </dl>
 An example subscribe response is:
 <pre class="example">
@@ -913,7 +897,6 @@ A unsubscribe request MUST contain the message fields:
 </dl>
 A connect request MAY contain the message fields:
 <dl>
-<dt>authToken</dt>
 <dt>ext</dt>
 </dl>
 An example unsubscribe request is:
@@ -945,7 +928,6 @@ A connect response MAY contain the message fields:
 <dt>advice</dt>
 <dt>ext</dt>
 <dt>timestamp</dt>
-<dt>authToken</dt>
 </dl>
 An example unsubscribe response is:
 <pre class="example">
@@ -973,7 +955,7 @@ An example unsubscribe response is:
 <h3 class="clause">5.8.2. ping Response</h3>
 
 
-<h1 class="clause">6. Event Message Definitions</h2>
+<h1 class="clause">6. Event Message Definitions</h1>
 Application events are published in event messages sent from a bayeux client to a bayeux server and are delivered in event messages sent from a bayeux server to a bayeux client.
 
 
@@ -997,7 +979,6 @@ A connect response MAY contain the message fields:
 <dl>
 <dt>id</dt><dd>A unique ID for the message generated by the client</dd>
 <dt>ext</dt>
-<dt>authToken</dt>
 </dl>
 An example event message is:
 <pre class="example">
@@ -1028,7 +1009,6 @@ A publish event response MAY contain the message fields:
 <dt>id</dt>
 <dt>error</dt>
 <dt>ext</dt>
-<dt>authToken</dt>
 </dl>
 An example event message is:
 <pre class="example">
@@ -1066,7 +1046,6 @@ A deliver event response MAY contain the message fields:
 <dt>id</dt><dd>Unique message ID from the publisher</dd>
 <dt>clientId</dt><dd>The client ID of the publisher</dd>
 <dt>ext</dt>
-<dt>authToken</dt>
 <dt>advice</dt>
 </dl>
 An example event deliver message is:
@@ -1091,9 +1070,6 @@ Messages are sent to the client as unencapsulated body content of a POST respons
 <h2 class="clause">7.3. iframe</h2>
 <h1 class="clause">8. Security</h1>
 
-<span class="note">Need examples of how auth tokens and credentials can be used.</span>
-<span class="note">Need examples of how authSuccessful=false and advice in handshake can be used to do challenge response stuff</span>
-
 <h2 class="clause">8.1. Authentication</h2>
 Bayeux may be used with:
 <ul>
@@ -1101,20 +1077,14 @@ Bayeux may be used with:
 <li>Container supplied authentication (eg BASIC auth or cookie managed session based
 authentication)</li>
 <li>Bayeux extension authentication that exchanges authentication credentials and tokens within
-Bayeux messages</li>
+Bayeux messages ext fields</li>
 </ul>
 <p>
 For Bayeux authentication, no algorithm is specified for generating or validating security
-credentials or token. This version of the protocol only defines the messages fields over which
-this security information may be exchanged:
+credentials or token. This version of the protocol only defines that the ext field may be used
+to exchange authentication challenges, credentials and tokens and that the advice field may be
+used to control multiple iterations of the exchange.
 </p>
-<pre class="example">
-  authScheme
-  authUser
-  authToken
-  authSuccessful
-  clientId
-</pre>
 <p>
 The connection negotiation mechanism may be used to negotiate authentication or request
 re-authentication.
