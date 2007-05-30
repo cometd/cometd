@@ -1,5 +1,5 @@
 
-dojo.require("dojox.io.cometd");
+dojo.require("dojox.cometd");
 
 function $() {
   return document.getElementById(arguments[0]);
@@ -40,8 +40,8 @@ var room =
        
        
        // Really need to batch to avoid ordering issues
-       dojox.io.cometd.subscribe("/chat/demo", false, room, "_chat");
-       dojox.io.cometd.publish("/chat/demo", { user: room._username, join: true, chat : room._username+" has joined"});
+       dojox.cometd.subscribe("/chat/demo", false, room, "_chat");
+       dojox.cometd.publish("/chat/demo", { user: room._username, join: true, chat : room._username+" has joined"});
 	   
        // XXX ajax.sendMessage('join', room._username);
     }
@@ -49,8 +49,8 @@ var room =
   
   leave: function()
   {
-       dojox.io.cometd.unsubscribe("/chat/demo", false, room, "_chat");
-       dojox.io.cometd.publish("/chat/demo", { user: room._username, leave: true, chat : room._username+" has left"});
+       dojox.cometd.unsubscribe("/chat/demo", false, room, "_chat");
+       dojox.cometd.publish("/chat/demo", { user: room._username, leave: true, chat : room._username+" has left"});
 	   
        // switch the input form
        $('join').className='';
@@ -70,7 +70,7 @@ var room =
     	text=text.replace(/>/g,'&gt;');
     	
         // XXX ajax.sendMessage('chat',text);
-        dojox.io.cometd.publish("/chat/demo", { user: room._username, chat: text});
+        dojox.cometd.publish("/chat/demo", { user: room._username, chat: text});
     }
   },
   
