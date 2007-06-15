@@ -70,13 +70,12 @@
 					function(type, data, evt, request){
 						dojox.cometd.subscribe(
 							"/rpc/echo/"+dojox.cometd.clientId,
-							true, 
 							"echoRpcReturn"
 						);
 					}
 				);
 				
-				dojox.cometd.init({}, new String(document.location).replace(/http:\/\/[^\/]*/,'').replace(/\/examples\/.*$/,'')+"/cometd");
+				dojox.cometd.init(new String(document.location).replace(/http:\/\/[^\/]*/,'').replace(/\/examples\/.*$/,'')+"/cometd");
 				
 				
 				Behaviour.register(echoBehaviours); 

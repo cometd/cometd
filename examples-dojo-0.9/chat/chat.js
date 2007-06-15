@@ -40,7 +40,7 @@ var room =
        
        
        // Really need to batch to avoid ordering issues
-       dojox.cometd.subscribe("/chat/demo", false, room, "_chat");
+       dojox.cometd.subscribe("/chat/demo", room, "_chat");
        dojox.cometd.publish("/chat/demo", { user: room._username, join: true, chat : room._username+" has joined"});
 	   
        // XXX ajax.sendMessage('join', room._username);
