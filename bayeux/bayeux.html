@@ -71,7 +71,7 @@ An implementation is not compliant if it fails to satisfy one or more of the MUS
 This specification uses a number of terms to refer to the roles played by participants in, and objects of, the Bayeux communication:
 <dl>
 <dt>client</dt>
-<dd>program that establishes connections for the purpose of sending HTTP requests.</dd>
+<dd>A program that establishes connections for the purpose of sending HTTP requests.</dd>
 <dt>server</dt>
 <dd>An application program that accepts TCP/IP connections in order to service HTTP requests by sending back HTTP responses. </dd>
 <dt>request</dt>
@@ -91,7 +91,7 @@ defined by sections 3, 4 and 5. </dd>
 <dd>A connection is a communication link that is established either permanently or transiently, for the purposes of messages
 exchange. A client is connected if a link is established with the server, over which asynchronous events can be received.</dd>
 <dt>JSON</dt>
-<dd>JavaScript Object Notation is a lightweight data-interchange format. It is easy for humans to read and write. It is easy for machines to parse and generate. It is based on a subset of the JavaScript Programming Language, Standard ECMA-262 3rd Edition - December 1999. JSON is described at http://www.json.org/ </dd>
+<dd>JavaScript Object Notation(JSON) is a lightweight data-interchange format. It is easy for humans to read and write. It is easy for machines to parse and generate. It is based on a subset of the JavaScript Programming Language, Standard ECMA-262 3rd Edition - December 1999. JSON is described at http://www.json.org/ </dd>
 </dl>
 
 
@@ -103,8 +103,8 @@ exchange. A client is connected if a link is established with the server, over w
 The HTTP protocol is a request/response protocol. A client sends a request to the server in the form of a request method, URI, and protocol version, followed by a MIME-like message containing request modifiers, client information, and optional body content over a connection with a server. The server responds with a status line, including the message's protocol version and a success or error code, followed by a MIME-like message containing server information, entity metainformation, and possible entity-body content. 
 The server may not initiate a connection with a client nor send an unrequested response to the client, thus asynchronous events cannot be delivered from server to client unless a previously issued request exists. In order to allow two way asynchronous communication, bayeux supports the use of multiple HTTP connections between a client and server, so that previously issued requests are available to transport server to client messages.
 The recommendation of section 8.1.4 of RFC 2616 is that a single user client SHOULD NOT maintain more than 2 connection with any server, so XXX
-<h3 class="clause">1.4.2. Javascipt</h3>
-The majority of Bayeux clients will be implemented in javascript and will be running within the security framework of a client browser.
+<h3 class="clause">1.4.2. Javascript</h3>
+The majority of Bayeux clients will be implemented in JavaScript and will be running within the security framework of a client browser.
 Say something about x-domain scripting.
 <h3 class="clause">1.4.3. Client to Server Event exchange</h3>
 A bayeux message is sent from the client to the server via a HTTP request initiated by a user agent and transmitted to an origin server via a chain of zero or more intermediaries (proxy, gateway or tunnel):
@@ -117,7 +117,7 @@ BC ---------- U ---------- P ------------ O ---------- BS
  |            | <---HTTP response(M1)---- |            |
  | <---M1---  |            |              |            |
 </pre>
-The figure above represents a bayeux event E encapsulted in a bayeux message M0 being sent from a bayeux client BC to a bayeux server BS via HTTP request transmitted from a User Agent U to to an Origin server O via a proxy P. The HTTP response contains another bayeux message M1 that will at  contain the protocol response to M0, but may contain other bayeux events initiated on the server or on other clients.
+The figure above represents a bayeux event E encapsulted in a bayeux message M0 being sent from a bayeux client BC to a bayeux server BS via HTTP request transmitted from a User Agent U to to an Origin server O via a proxy P. The HTTP response contains another bayeux message M1 that will at least contain the protocol response to M0, but may contain other bayeux events initiated on the server or on other clients.
 <h3 class="clause">1.4.4. Server to Client Message exchange</h3>
 A bayeux message is sent from the server to the client via a HTTP response to a HTTP request  sent in anticipation by a user agent and transmitted to an origin server via a chain of zero or more intermediaries (proxy, gateway or tunnel):
 <pre class="example">
@@ -134,7 +134,7 @@ BC ---------- U ---------- P ------------ O ---------- BS
  |            |            |              | ----M2---> |
  ~            ~            ~              ~            ~ wait
 </pre>
-The figure above represents a bayeux message M0 being sent from a bayeux client BC to a bayeux server BS via HTTP request transmitted from a User Agent U to to an Origin server O via a proxy P. The message M0 is sent in anticipation of an bayeux event to be delivered from server to client and the bayeux server waits for such an event before sending a response.  A bayeux event E is shown being delivered via bayeux message M1 in the HTTP response. M1 may contain other bayeux events or an indication that no events were available after a configured timeout. 
+The figure above represents a bayeux message M0 being sent from a bayeux client BC to a bayeux server BS via a HTTP request transmitted from a User Agent U to to an Origin server O via a proxy P. The message M0 is sent in anticipation of a bayeux event to be delivered from server to client and the bayeux server waits for such an event before sending a response.  A bayeux event E is shown being delivered via bayeux message M1 in the HTTP response. M1 may contain other bayeux events or an indication that no events were available after a configured timeout. 
 On receipt of the HTTP response cotaining M1, the bayeux client issues a new bayeux message M2 in anticipation of more events to be delivered from server to client.
 This techique is called long polling.
 <h3 class="clause">1.4.5. Streaming transports</h3>
@@ -157,7 +157,7 @@ BC ---------- U ---------- P ------------ O ---------- BS
 </pre>
 These techiques avoid the latency and extra messaging of anticipatory requests, but is subject to the implementation of user agents and proxies as it requires non complete HTTP responses to be delivered to the bayeux client.
 <h3 class="clause">1.4.6. Two connection operation</h3>
-In order to operation by-direction communications, a bayeux client will use two HTTP connections to a bayeux server so that both server to client and client to server messaging may occur asynchronously:
+In order to achieve by-directional communications, a bayeux client will use two HTTP connections to a bayeux server so that both server to client and client to server messaging may occur asynchronously:
 <pre class="example">
 BC ---------- U ---------- P ------------ O ---------- BS
  | ---M0--->  |            |              |            |
@@ -183,7 +183,7 @@ HTTP requests req0 and req1 are sent on different TCP/IP connections, so that th
 <h3 class="clause">1.4.7. Connection Negotiation</h3>
 <p>
 Bayeux connections are negotiated between client and server with handshake messages that allow
-the connection type, authentication and other parameters to be agreed between the client and the
+the connection type, authentication, and other parameters to be agreed upon between the client and the
 server.
 </p>
 <pre class="example">
@@ -200,7 +200,7 @@ BC ----------------------------------------- BS
 Connection negotiation may be iterative and several
 handshake messages may be exchanged before a successful
 connection is obtained.   Servers may also request
-that connections is renegotiated by sending an
+connection renegotiation by sending an
 unsuccessful reconnect response with advice to reconnect
 with a handshake message.
 </p>
@@ -230,7 +230,7 @@ BC ----------------------------------------- BS
 
 
 <h3 class="clause">1.4.8. Unconnected operation</h3>
-OPTIONALLY, messages can be sent without a prior handshake (see 6.1 Publish event messages).
+OPTIONALLY, messages can be sent without a prior handshake (see 5.1 Publish event messages).
 <pre class="example">
  | ------------------- message request ----> |
  | <---- message response ------------------ |
@@ -280,8 +280,8 @@ channel_name     = "/"  channel_segments
 channel_segments = channel_segment *( "/" channel_segment )
 channel_segment  = token 
 </pre>
-The channel name consists of an initial “/” followed by an optional sequence of path segments separated by a single slash "/" character. Within a path segment, the characters "/", is reserved.
-Channel names commencing with "/meta/" are reserved for the use of the protocol. Example channel names are:
+The channel name consists of an initial "/" followed by an optional sequence of path segments separated by a single slash "/" character. Within a path segment, the character "/" is reserved.
+Channel names commencing with "/meta/" are reserved protocol use.  Example channel names are:
 <dl>
 <dt>/foo</dt>
 <dt>/foo/bar</dt>
@@ -309,7 +309,7 @@ A protocol version is a integer followed by an optional "." separated sequence o
 version         = integer *( "." version_element )
 version_element = alphanum *( alphanum | "-" | "_" )
 </pre>
-versions are compared element by element, applying normal alphanumeric comparison to each element.
+Versions are compared element by element, applying normal alphanumeric comparison to each element.
 
 
 <h2 class="clause">2.4. Client ID</h2>
@@ -322,11 +322,11 @@ Client IDs are generated by the server and SHOULD be created with a strong rando
 
 <h2 class="clause">2.5 Messages</h2>
 Bayeux messages are JSON encoded objects that contain an unordered sequence of name value pairs representing fields and
-values. Values may be simple string or numbers or complex JSON encoded objects.
+values. Values may be a simple strings, numbers, boolean values, or complex JSON encoded objects.
 A bayeux message MUST contain one and only one channel field which determines the type of the message and the allowable
 fields.
-All bayeux messages SHOULD be encapsulated in a JSON array, so that multiple messages may be transported together. A bayeux client or server MUST accept either an array of messages or a single message. The JSON message or array of messages is itself often encapsulated in transport specific formatting and encodings.
-Below is an example bayeux message in a JSON array, representing an event sent from a client to a server:
+All bayeux messages SHOULD be encapsulated in a JSON array so that multiple messages may be transported together. A bayeux client or server MUST accept either an array of messages or a single message. The JSON message or array of messages is itself often encapsulated in transport specific formatting and encodings.
+Below is an example bayeux message in a JSON array representing an event sent from a client to a server:
 <pre class="example">
 [
   {
@@ -343,14 +343,14 @@ Below is an example bayeux message in a JSON array, representing an event sent f
 
 <h1 class="clause">3. Message Field Definitions</h1>
 <h2 class="clause">3.1. channel</h2>
-The channel message field MUST be included in every Bayeux message to specify source or destination of the message.  In a request, the channel specifies the destination of the message, and in a response it specifies the source of the message.
+The channel message field MUST be included in every Bayeux message to specify the source or destination of the message.  In a request, the channel specifies the destination of the message, and in a response it specifies the source of the message.
 <h2 class="clause">3.2. version</h2>
 The version message field SHOULD be included in messages to/from the "/meta/handshake" channel to indicate the protocol version expected by the client/server.
 <h2 class="clause">3.3. minimumVersion</h2>
-The minimumVersion message field MAY be included in messages from to/from the "/meta/handshake" channel to indicate the oldest protocol version that can be handled by the client/server.
+The minimumVersion message field MAY be included in messages to/from the "/meta/handshake" channel to indicate the oldest protocol version that can be handled by the client/server.
 <h2 class="clause">3.4. supportedConnectionTypes</h2>
 
-The supportedConnectionTypes field is included in messages to and from the "/meta/handshake" channel to allow clients and servers to reveal the transports that are supported. The value is an array of strings, with each string representing a transport name.  Defined connection types include: 
+The supportedConnectionTypes field is included in messages to/from the "/meta/handshake" channel to allow clients and servers to reveal the transports that are supported. The value is an array of strings, with each string representing a transport name.  Defined connection types include: 
 <dl>
 <dt>long-polling</dt>
 <dd>messages are sent to the server as the message parameter of a application/x-www-form-urlencoded encoded POST request. Messages are sent to the client as unencapsulated body content of a POST response. This transport is defined in section [XXX] of this memo.</dd>
@@ -365,8 +365,8 @@ The supportedConnectionTypes field is included in messages to and from the "/met
 All server and client implementations MUST support the "long-polling" connection type and SHOULD support "callback-polling". All other connection types are OPTIONAL.
 <h2 class="clause">3.5. clientId</h2>
 The clientId message field uniquely identifies a client to a Bayeux server.   The clientId message field MUST be 
-included in every message sent to the server except for a message sent to the "/meta/handshake" channel.   The clientId field will be returned in every message
- response except for a failed handshake request and is OPTIONAL in a message delivery message.    
+included in every message sent to the server except for a messages sent to the "/meta/handshake" channel and a publish message(see 5.1 Publish event messages).   The clientId 
+field will be returned in every message response except for a failed handshake request and is OPTIONAL in a message delivery message.    
 <h2 class="clause">3.6. advice</h2>
 <p>
 The advice field provides a way for servers to inform clients of their
@@ -484,7 +484,7 @@ An example error strings are:
 
 <h2 class="clause">3.15. ext</h2>
 An ext field MAY be included in any bayeux message.  It's value SHOULD be a JSON map with top level names distinguished by implementation names (eg. "org.dojo.bayeux.field").
-The contents of ext may be arbitrary values that allow extensions to be negotiated and implemented between implementations.  
+The contents of ext may be arbitrary values that allow extensions to be negotiated and implemented between server and client implementations.  
 <h1 class="clause">4. Meta Message Definitions</h1>
 <h2 class="clause">4.1. handshake</h2>
 <h3 class="clause">4.1.1. handshake Request</h3>
@@ -509,8 +509,8 @@ A client SHOULD NOT send any other message in the request with a handshake messa
 [
   {
      "channel": "/meta/handshake",
-     "version": 0.1,
-     "minimumVersion": 0.1,
+     "version": 1.0,
+     "minimumVersion": 1.0,
      "supportedConnectionTypes": ["long-polling", "callback-polling", "iframe"],
    }
 ]
@@ -531,7 +531,7 @@ A successful handshake responses MUST contain the message fields:
 A successful handshake responses MAY contain the message fields:
 <dl>
 <dt>minimumVersion</dt>
-<dt>advise</dt>
+<dt>advice</dt>
 <dt>ext</dt>
 <dt>authSuccessful</dt><dd>Value true, this field may be included to support
 prototype client implementations that required the authSuccessful field</dd>
@@ -541,8 +541,8 @@ An example successful handshake response is:
 [
   {
      "channel": "/meta/handshake",
-     "version": 0.1,
-     "minimumVersion": 0.1,
+     "version": 1.0,
+     "minimumVersion": 1.0,
      "supportedConnectionTypes": ["long-polling","callback-polling"],
      "clientId": "Un1q31d3nt1f13r",
      "successful": true,
@@ -571,8 +571,8 @@ An example unsuccessful handshake response is:
 [
   {
      "channel": "/meta/handshake",
-     "version": 0.1,
-     "minimumVersion": 0.1,
+     "version": 1.0,
+     "minimumVersion": 1.0,
      "supportedConnectionTypes": ["long-polling","callback-polling"],
      "successful": false,
      "error": "Authentication failed",
@@ -595,8 +595,8 @@ with reconnect advice of "none" is used to terminate connection negotiations.
 
 <h2 class="clause">4.2. connect</h2>
 <h3 class="clause">4.2.1. connect Request</h3>
-<p>After a bayeux client has discovered the servers capabilities with a handshake exchange, a connection is established by sending a message to the "/meta/connect" channel. 
-This message may be transported over any of the transported indicated as supported by the server in the handshake response.
+<p>After a bayeux client has discovered the server's capabilities with a handshake exchange, a connection is established by sending a message to the "/meta/connect" channel. 
+This message may be transported over any of the transports indicated as supported by the server in the handshake response.
 </p>
 A connect request MUST contain the message fields:
 <dl>
@@ -604,8 +604,8 @@ A connect request MUST contain the message fields:
 <dd>value "/meta/connect"</dd>
 <dt>clientId</dt>
 <dd>The client ID returned in the handshake response</dd>
-<dt>connectionTypes</dt>
-<dd>The connection types used by the client for the purposes of this connection.</dd>
+<dt>connectionType</dt>
+<dd>The connection type used by the client for the purposes of this connection.</dd>
 </dl>
 A connect request MAY contain the message fields:
 <dl>
@@ -668,15 +668,15 @@ Once successfully connected, a client is implicitly subscribed to the channel "/
 <h2 class="clause">4.3. reconnect</h2>
 <h3 class="clause">4.3.1. reconnect Request</h3>
 <p>
-In order to maintain a connection established by a connect message exchange, a beyeux client MUST send a message to the "/meta/reconnect" channel
+In order to maintain a connection established by a connect message exchange, a bayeux client MUST send a message to the "/meta/reconnect" channel
 within the timeouts specificied in the advice received in the handshake or connect response.
 
 The client MUST maintain only a single outstanding reconnect message. If the server does not have a current outstanding reconnect and a reconnect is not 
 received within a configured timeout, then the server SHOULD act as if a disconnect message has been received.
 
-The reconnect message MUST be transported over the same transport indicated indicated in the connect request.
+The reconnect message MUST be transported over the same transport indicated in the connect request.
 </p>
-A reconnect requests MUST contain the message fields:
+A reconnect request MUST contain the message fields:
 <dl>
 <dt>channel</dt><dd>value "/meta/reconnect"</dd>
 <dt>clientId</dt><dd>The client ID returned in the handshake response</dd>
@@ -687,7 +687,7 @@ reconnect requests MAY contain the message fields:
 <dt>connectionType</dt>
 </dl>
 A client MAY send other messages in the same http request with a reconnect message. A server MUST handle any other message sent in the same request as a reconnect message and 
-handling of these messages MUST NOT be defered until a response to the reconnect message is available.
+handling of these messages MUST NOT be deferred until a response to the reconnect message is available.
 An example reconnect request with an event message is:
 <pre class="example">
 [
@@ -709,9 +709,9 @@ An example reconnect request with an event message is:
 <p>
 A bayeux server MUST respond to a reconnect request with a reconnect response message over the same transport as used for the request.
 A bayeux server MAY wait to respond until there are event messages available in the subscribed channels for the client that need to be 
-delivered to the client. A bayeux server MAY send event messages for the client in the same http response as the connect response.
+delivered to the client. A bayeux server MAY send event messages for the client in the same http response as the reconnect response.
  </p>
-A reconnect responses MUST contain the message fields:
+A reconnect response MUST contain the message fields:
 <dl>
 <dt>channel</dt><dd>value "/meta/reconnect"</dd>
 <dt>successful</dt><dd>boolean indicating the success or failure of the connection</dd>
@@ -785,7 +785,7 @@ An example disconnect response is:
   {
      "channel": "/meta/disconnect",
      "clientId": "Un1q31d3nt1f13r",
-     "subscription": true 
+     "successful": true 
    }
 ]
 </pre>
@@ -936,7 +936,7 @@ should apply server specific authentication and authourization before doing so.
 A publish event message MUST contain the message fields:
 <dl>
 <dt>channel</dt><dd></dd>
-<dt>data</dt><dd>The message as arbitrary JSON object</dd>
+<dt>data</dt><dd>The message as an arbitrary JSON object</dd>
 </dl>
 A connect response MAY contain the message fields:
 <dl>
@@ -1003,7 +1003,7 @@ A deliver event message MUST contain the message fields:
 </p>
 <dl>
 <dt>channel</dt><dd></dd>
-<dt>data</dt><dd>The message as arbitrary JSON object</dd>
+<dt>data</dt><dd>The message as an arbitrary JSON object</dd>
 </dl>
 A deliver event response MAY contain the message fields:
 <dl>
@@ -1050,7 +1050,7 @@ or "text/json-comment-filtered".
 <p>Messages are sent to the server either using POST requests as per long-polling transport or as the "message" URL
 parameter of a GET request.</p>
 <h3 class="clause">6.2.2 callback-polling response messages</h3>
-<p>Messages are sent to the client as javascript function call returned for script source GET requests. 
+<p>Messages are sent to the client as JavaScript function call returned for script source GET requests. 
 The function called will be determined by the "jsonp" field of any associated request messages, or "jsonpcallback" 
 if not specified. The called function will be passed a JSON array of bayeux messages.
 </p>
@@ -1069,7 +1069,7 @@ Bayeux messages ext fields</li>
 <p>
 For Bayeux authentication, no algorithm is specified for generating or validating security
 credentials or token. This version of the protocol only defines that the ext field may be used
-to exchange authentication challenges, credentials and tokens and that the advice field may be
+to exchange authentication challenges, credentials, and tokens and that the advice field may be
 used to control multiple iterations of the exchange.
 </p>
 <p>
@@ -1084,7 +1084,7 @@ not vulnerable to this style of attack as cookies are not used for authenticatio
 further protects against this style of attack.  
 </p>
 <p>
-To futher protect against this class of attack, it is RECOMMEDED that Bayeux clients and servers support json comment filtered format, where the outer JSON array is enclosed in
+To futher protect against this class of attack, it is RECOMMENDED that Bayeux clients and servers support JSON comment filtered format, where the outer JSON array is enclosed in
 a comment that will prevent execution of the JSON without explicit handling of the comment characters. An example of a commented message is:</p>
 <pre class="example">
 /*[
