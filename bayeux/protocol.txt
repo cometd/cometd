@@ -2,6 +2,11 @@ Bayeux: A JSON Protocol For Publish/Subscribe Event Delivery
 Protocol Version: 0.1draft3
 -------------------------------------------------------------------------------
 
+THIS DOCUMENT IS NOW OUT OF DATE AND WILL SOON BE DELETED.
+PLEASE SEE bayeux.html 
+
+-------------------------------------------------------------------------------
+
 Initial connection setup specifies to the system a message envelope type for
 all communications on a particular channel, but inside this envelope a
 normalized JSON structure is used to communicate with all endpoints.
