@@ -260,11 +260,9 @@ digit    = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" |
 
 alphanum = alpha | digit
 
-mark     = "-" | "_" | "." | "!" | "~" | "*" | "(" | ")" | "$" | "@" 
+mark     = "-" | "_" | "!" | "~" | "(" | ")" | "$" | "@" 
 
-space    = " "
-
-string   = *( alphanum | mark | space | "/" )
+string   = *( alphanum | mark | " " | "/" | "*" | "." )
 
 token    = ( alphanum | mark ) *( alphanum | mark )
 
@@ -1029,8 +1027,8 @@ An example event deliver message is:
 <h2 class="clause">6.1. long-polling</h2>
 <h3 class="clause">6.1.1 long-polling request messages</h3>
 <p>
-Messages are sent to the server as the "message" parameter of a application/x-www-form-urlencoded encoded POST request. 
-The "message" parameter may be:<ul>
+Messages are sent to the server as the body of a POST, encoded either as "application/x-www-form-urlencoded"
+or as "text/json".  If sent as form encoded, the bayeux messages are sent as the "message" parameter in one of the following forms as:<ul>
 <li>Single valued and contain a single bayeux message</li>
 <li>Single valued and contain an array of bayeux message</li>
 <li>Multi valued and contain a several individual bayeux message</li>
@@ -1046,7 +1044,7 @@ or "text/json-comment-filtered".
 </p>
 
 <h2 class="clause">6.2. callback-polling</h2>
-<h3 class="clause">6.2.1 callback-polling response messages</h3>
+<h3 class="clause">6.2.1 callback-polling request messages</h3>
 <p>Messages are sent to the server either using POST requests as per long-polling transport or as the "message" URL
 parameter of a GET request.</p>
 <h3 class="clause">6.2.2 callback-polling response messages</h3>
