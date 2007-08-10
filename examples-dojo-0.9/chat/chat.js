@@ -49,7 +49,7 @@ var room =
   
   leave: function()
   {
-       dojox.cometd.unsubscribe("/chat/demo", false, room, "_chat");
+       dojox.cometd.unsubscribe("/chat/demo", room, "_chat");
        dojox.cometd.publish("/chat/demo", { user: room._username, leave: true, chat : room._username+" has left"});
 	   
        // switch the input form
