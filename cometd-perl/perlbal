@@ -40,14 +40,14 @@ my $opt_daemonize;
 my $opt_config;
 my $opt_help;
 my $opt_version;
-my $opt_drop_privs;
+my $opt_drop_privs = [];
 usage(1) unless
     Getopt::Long::GetOptions(
                              'daemon'   => \$opt_daemonize,
                              'config=s' => \$opt_config,
                              'help'     => \$opt_help,
                              'version'  => \$opt_version,
-                             'drop-privs=s' => \$opt_drop_privs,
+                             'drop-privs=s' => $opt_drop_privs,
                );
 
 my $default_config = "/etc/perlbal/perlbal.conf";
@@ -58,12 +58,13 @@ sub usage {
     my $rv = shift;
     print STDERR <<USAGE;
 Usage: perlbal [OPTS]
-  --help           This usage info
-  --version        Print perlbal release version
-  --config=[file]  Specify Perlbal config file
-                   (default: $default_config)
-  --daemon         Daemonize
-  --drop-privs     Drop privileges if root. Specify: uid,gid
+  --help                                This usage info
+  --version                             Print perlbal release version
+  --config=[file]                       Specify Perlbal config file
+                                        (default: $default_config)
+  --daemon                              Daemonize
+  --drop-privs=<uid|user>[,gid|group]   Drop effective privileges.
+                                        (gid is optional)
 USAGE
 
     exit($rv);
@@ -76,7 +77,7 @@ if ($opt_version) {
     exit 0;
 }
 
-if (defined( $opt_drop_privs ) && $< != 0) {
+if ( @$opt_drop_privs && $< != 0 ) {
     # real uid isn't root
     print STDERR "Can't drop privileges if not ran with root privileges first!\n\n";
     usage(1);
@@ -106,8 +107,8 @@ if ($opt_daemonize) {
     print "Running.\n";
 }
 
-if ( defined( $opt_drop_privs ) ) {
-    my ( $uid, $gid ) = split( ',', $opt_drop_privs );
+if ( @$opt_drop_privs ) {
+    my ( $uid, $gid ) = split( ',', join( ',', @$opt_drop_privs ) );
     # not a number, resolve by user name
     if ( $uid !~ m/^\d+$/ ) {
         my $u = getpwnam( $uid );
