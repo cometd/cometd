@@ -20,9 +20,9 @@ sudo python setup.py install
 cd ..
 
 echo "installing path"
-wget http://www.jorendorff.com/articles/python/path/path-2.1.zip
-unzip path-2.1.zip
-cd path-2.1
+wget http://cheeseshop.python.org/packages/source/p/path.py/path-2.2.zip
+unzip path-2.2.zip
+cd path-2.2
 sudo python setup.py install
 cd ..
 
