@@ -186,5 +186,5 @@ var chatBehaviours =
 };
 
 Behaviour.register(chatBehaviours); 
-
+dojo.addOnUnload(dojox.cometd.disconnect);
 
