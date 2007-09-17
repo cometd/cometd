@@ -46,7 +46,7 @@ Copyright &copy; The Dojo Foundation (2007). All Rights Reserved
 <h2 class="intro">Abstract</h2>
 <p>
 Bayeux is a HTTP based protocol for routing events between clients and servers in a publish subscribe model. The protocol is
-designed to overcome the client/server nature of HTTP to allow asynchronous messaging between all participants.
+designed to overcome the client/server nature of the internet and of HTTP to allow asynchronous messaging between all participants.
 </p>
 <h1 class="contents">Table of Contents</h1>
 TBD
@@ -55,7 +55,6 @@ TBD
 <h2 class="clause">1.1. Purpose</h2>
 
 Bayeux is a protocol for transporting asynchronous messages over HTTP. The messages are routed via named channels and can be delivered: server to client, client to server and client to client (via the server). The primary purpose of Bayeux is to implement Web 2.0 solutions using Ajax and the Ajax push technique called cometd.
-Not sure how this differs from the Abstract above... but eitherway some more blurbage should be here.
 
 
 
@@ -71,9 +70,9 @@ An implementation is not compliant if it fails to satisfy one or more of the MUS
 This specification uses a number of terms to refer to the roles played by participants in, and objects of, the Bayeux communication:
 <dl>
 <dt>client</dt>
-<dd>A program that establishes connections for the purpose of sending HTTP requests.</dd>
+<dd>A program that initiates communications. A HTTP client is a client that initiates TCP/IP connections for the purpose of sending HTTP requests. A bayeux client initiates the bayeux message exchange and will typically execute within a HTTP client, but it is likely to have bayeux clients that executes within HTTP servers.</dd>
 <dt>server</dt>
-<dd>An application program that accepts TCP/IP connections in order to service HTTP requests by sending back HTTP responses. </dd>
+<dd>An application program that accepts communications from clients. A HTTP server accepts TCP/IP connections in order to service HTTP requests by sending back HTTP responses. A bayeux server accepts and responds to the message exchanges initiated by a bayeux client.</dd>
 <dt>request</dt>
 <dd>An HTTP request message as defined by section 5 of RFC 2616</dd>
 <dt>response</dt>
@@ -102,12 +101,14 @@ exchange. A client is connected if a link is established with the server, over w
 <h3 class="clause">1.4.1. HTTP </h3>
 The HTTP protocol is a request/response protocol. A client sends a request to the server in the form of a request method, URI, and protocol version, followed by a MIME-like message containing request modifiers, client information, and optional body content over a connection with a server. The server responds with a status line, including the message's protocol version and a success or error code, followed by a MIME-like message containing server information, entity metainformation, and possible entity-body content. 
 The server may not initiate a connection with a client nor send an unrequested response to the client, thus asynchronous events cannot be delivered from server to client unless a previously issued request exists. In order to allow two way asynchronous communication, bayeux supports the use of multiple HTTP connections between a client and server, so that previously issued requests are available to transport server to client messages.
-The recommendation of section 8.1.4 of RFC 2616 is that a single user client SHOULD NOT maintain more than 2 connection with any server, so XXX
+The recommendation of section 8.1.4 of RFC 2616 is that a single user client SHOULD NOT maintain more than 2 connection with any server, thus the bayeux protocol MUST NOT require any more than two HTTP requests to be simultaneously handled by a server in order to handle all application (bayeux based or otherwise) running within a client. 
+<h3 class="clause">1.4.X. Non HTTP Transports</h3>
+While HTTP is the predominant transport protocol used on the internet, it is not intended that it will be the only transport for bayeux. Other transports that support a request/response paradym may be used. However this document is written in assuming HTTP for reasons of clarity. 
 <h3 class="clause">1.4.2. Javascript</h3>
-The majority of Bayeux clients will be implemented in JavaScript and will be running within the security framework of a client browser.
-Say something about x-domain scripting.
-<h3 class="clause">1.4.3. Client to Server Event exchange</h3>
-A bayeux message is sent from the client to the server via a HTTP request initiated by a user agent and transmitted to an origin server via a chain of zero or more intermediaries (proxy, gateway or tunnel):
+The majority of Bayeux clients will be implemented in JavaScript and will be running within the security framework of a client browser. For applications that need to commicate with multiple servers, the client implementation MUST adhere to the single origin policy for security.
+
+<h3 class="clause">1.4.3. Client to Server event delivery</h3>
+A bayeux event is sent from the client to the server via a HTTP request initiated by a user agent and transmitted to an origin server via a chain of zero or more intermediaries (proxy, gateway or tunnel):
 <pre class="example">
 BC ---------- U ---------- P ------------ O ---------- BS
  | --M0(E)--> |            |              |            |
@@ -116,10 +117,30 @@ BC ---------- U ---------- P ------------ O ---------- BS
  |            |            |              | <---M1---- |
  |            | <---HTTP response(M1)---- |            |
  | <---M1---  |            |              |            |
+ |            |            |              |            |
 </pre>
 The figure above represents a bayeux event E encapsulted in a bayeux message M0 being sent from a bayeux client BC to a bayeux server BS via HTTP request transmitted from a User Agent U to to an Origin server O via a proxy P. The HTTP response contains another bayeux message M1 that will at least contain the protocol response to M0, but may contain other bayeux events initiated on the server or on other clients.
-<h3 class="clause">1.4.4. Server to Client Message exchange</h3>
-A bayeux message is sent from the server to the client via a HTTP response to a HTTP request  sent in anticipation by a user agent and transmitted to an origin server via a chain of zero or more intermediaries (proxy, gateway or tunnel):
+
+<h3 class="clause">1.4.4. Server to Client event delivery </h3>
+A bayeux event is sent from the server to the client via a HTTP response to a HTTP request  sent in anticipation by a user agent and transmitted to an origin server via a chain of zero or more intermediaries (proxy, gateway or tunnel):
+<pre class="example">
+BC ---------- U ---------- P ------------ O ---------- BS
+ | ---M0--->  |            |              |            |
+ |            | --- HTTP request(M0) ---> |            |
+ |            |            |              | ----M0---> |
+ ~            ~            ~              ~            ~ wait
+ |            |            |              | <--M1(E)-- |
+ |            | <--HTTP response(M1(E))-- |            |
+ | <--M1(E)-- |            |              |            |
+ ~            ~            ~              ~            ~ 
+</pre>
+The figure above represents a bayeux message M0 being sent from a bayeux client BC to a bayeux server BS via a HTTP request transmitted from a User Agent U to to an Origin server O via a proxy P. The message M0 is sent in anticipation of a bayeux event to be delivered from server to client and the bayeux server waits for such an event before sending a response.  A bayeux event E is shown being delivered via bayeux message M1 in the HTTP response. M1 may contain other bayeux events or an indication that no events were available after a configured timeout. 
+<p>
+The transport used may terminate the HTTP response after delivery of M1 or use techniques to leave the response open and stream additional messages to the client.
+
+<h4 class="clause">1.4.5.i Long Polling transports</h4>
+Long Polling transports will always terminate the HTTP response after sending all availabe bayeux messages.
+
 <pre class="example">
 BC ---------- U ---------- P ------------ O ---------- BS
  | ---M0--->  |            |              |            |
@@ -134,10 +155,10 @@ BC ---------- U ---------- P ------------ O ---------- BS
  |            |            |              | ----M2---> |
  ~            ~            ~              ~            ~ wait
 </pre>
-The figure above represents a bayeux message M0 being sent from a bayeux client BC to a bayeux server BS via a HTTP request transmitted from a User Agent U to to an Origin server O via a proxy P. The message M0 is sent in anticipation of a bayeux event to be delivered from server to client and the bayeux server waits for such an event before sending a response.  A bayeux event E is shown being delivered via bayeux message M1 in the HTTP response. M1 may contain other bayeux events or an indication that no events were available after a configured timeout. 
 On receipt of the HTTP response cotaining M1, the bayeux client issues a new bayeux message M2 in anticipation of more events to be delivered from server to client.
-This techique is called long polling.
-<h3 class="clause">1.4.5. Streaming transports</h3>
+
+
+<h4 class="clause">1.4.5.ii Streaming transports</h4>
 Some bayeux transports use a streaming technique (also called a forever response) that allows multiple messages to be sent over the same HTTP response:
 
 <pre class="example">
@@ -155,7 +176,8 @@ BC ---------- U ---------- P ------------ O ---------- BS
  | <--M1(E1)- |            |              |            |
  ~            ~            ~              ~            ~ wait
 </pre>
-These techiques avoid the latency and extra messaging of anticipatory requests, but is subject to the implementation of user agents and proxies as it requires non complete HTTP responses to be delivered to the bayeux client.
+Streaming techiques avoid the latency and extra messaging of anticipatory requests, but is subject to the implementation of user agents and proxies as it requires non complete HTTP responses to be delivered to the bayeux client.
+
 <h3 class="clause">1.4.6. Two connection operation</h3>
 In order to achieve by-directional communications, a bayeux client will use two HTTP connections to a bayeux server so that both server to client and client to server messaging may occur asynchronously:
 <pre class="example">
@@ -180,10 +202,10 @@ BC ---------- U ---------- P ------------ O ---------- BS
  ~            ~            ~              ~            ~ wait
 </pre>
 HTTP requests req0 and req1 are sent on different TCP/IP connections, so that the response to req1 may be sent before the response to req0.   Implementations MUST control HTTP pipelining so that req1 does not get queued behind req0 and thus enforce an ordering of responses.
+
 <h3 class="clause">1.4.7. Connection Negotiation</h3>
 <p>
-Bayeux connections are negotiated between client and server with handshake messages that allow
-the connection type, authentication, and other parameters to be agreed upon between the client and the
+Bayeux connections are negotiated between client and server with handshake messages that allow the connection type, authentication, and other parameters to be agreed upon between the client and the
 server.
 </p>
 <pre class="example">
@@ -192,16 +214,16 @@ BC ----------------------------------------- BS
  | <---- handshake response ---------------- |
  | -------------------- connect request ---> |
  | <---- connect response ------------------ |
- | ------------------ reconnect request ---> |
+ | -------------------- connect request ---> |
  ~                                           ~ wait
- | <---- reconnect response ---------------- |
+ | <------ connect response ---------------- |
  </pre>
 <p>
 Connection negotiation may be iterative and several
 handshake messages may be exchanged before a successful
 connection is obtained.   Servers may also request
 connection renegotiation by sending an
-unsuccessful reconnect response with advice to reconnect
+unsuccessful connect response with advice to reconnect
 with a handshake message.
 </p>
 <pre class="example">
@@ -212,18 +234,18 @@ BC ----------------------------------------- BS
  | <-- successful handshake response ------- |
  | -------------------- connect request ---> |
  | <---- connect response ------------------ |
- | ------------------ reconnect request ---> |
+ | -------------------- connect request ---> |
  ~                                           ~ wait
- | <---- reconnect response ---------------- |
- | ------------------ reconnect request ---> |
- | <---- unsucessful reconnect response ---- |
+ | <------ connect response ---------------- |
+ | -------------------- connect request ---> |
+ | <---- unsucessful connect response ------ |
  | ------------------ handshake request ---> |
  | <-- successful handshake response ------- |
  | -------------------- connect request ---> |
  | <---- connect response ------------------ |
- | ------------------ reconnect request ---> |
+ | -------------------- connect request ---> |
  ~                                           ~ wait
- | <---- reconnect response ---------------- |
+ | <------ connect response ---------------- |
  </pre>
 
 
@@ -394,35 +416,31 @@ An example advice field is
 
 <h3 class="clause">3.6.1. reconnect</h3>
 The reconnection advice field is a string that indicates how the client should act in
-the case of a failure to connect or reconnect.  Defined reconnect values are:
+the case of a failure to connect.  Defined reconnect values are:
 <dl>
-			<dt>none</dt>
-				<dd>hard failure for the connect/reconnect attempt. Do not attempt to
-				reconnect at all. </dd>
-			<dt>retry</dt>
-				<dd>attempt to reconnect again later (as defined by "interval"
-				advice or client-default backoff) with the same credentials</dd>
-			<dt>handshake</dt>
-				<dd>the server doesn't know anything about the client or connection
-				that were passed, so instead of attempting to reconnect, throw
-				away the client's authentication information and attempt to
-				reauthorize with a /meta/handshake</dd>
-			<dt>recover</dt>
-				<dd>a superset of the "handshake" advice, this tells clients that
-				not only should they assume that they need to re-authentiate,
-				they also need to resubscribe to all the topics they are
-				interested in. This advice may be provided to servers who
-				completely fail to locate any matching authentication or
-				authorization data regarding the client, e.g. in the case of
-				hard failover between a bayeux server and a cold spare.</dd>
+ <dt>none</dt>
+  <dd>hard failure for the connect/reconnect attempt. Do not attempt to
+  reconnect at all. </dd>
+ <dt>retry</dt>
+  <dd>attempt to connect again after the interval (as defined by "interval"
+  advice or client-default backoff) with the same credentials</dd>
+ <dt>handshake</dt>
+  <dd>the server doesn't know anything about the client or connection
+  that were passed, so instead of attempting to reconnect, throw
+  away the client's authentication information and attempt to
+  reauthorize with a /meta/handshake</dd>
+    </dd>
 </dl>
 <h3 class="clause">3.6.2. interval</h3>
 An integer representing the period in milliseconds for a client to delay subsequent
 attempts of the unsuccessful message. A negative period indicates that the message should
 not be retried. 
+A client MUST implement interval suuport, but a client MAY exceed the interval provided by the server.
+
 <h3 class="clause">3.6.3. multiple-clients</h3>
 This is a boolean field, which if true indicates that the server has detected multiple bayeux client 
 instances running within the same HTTP client.
+
 <h3 class="clause">3.6.4. hosts</h3>
 This is an array of strings field, which if present indicates a list of host names or IP addresses
 that MAY be used as alternate servers with which the client may connect.  If a client receives
@@ -452,7 +470,7 @@ the data field in an event delivery message.
 The connectionId field was used during development of the bayeux protocol and it's use is now deprecated.
 <h2 class="clause">3.12. successful</h2>
 The successful boolean message field is used indicate success or failure and MUST be included in responses to the "/meta/handshake", "/meta/connect",
- "/meta/reconnect", "/meta/subscribe","/meta/unsubscribe", "/meta/disconnect", and publish channels.  
+ "/meta/subscribe","/meta/unsubscribe", "/meta/disconnect", and publish channels.  
 <h2 class="clause">3.13. subscription</h2>
 The subscription message field specific the channels the client wishes to subscribe to or unsubscribe from. The subscription message field MUST
  be included in requests and responses to/from the "/meta/subscribe" or "/meta/unsubscribe" channels. 
@@ -621,10 +639,13 @@ An example connect request is:
 ]
 </pre>
 
+A transport MUST maintain one and only one outstanding connect message. When a HTTP response that contains a /meta/connect response terminates, the client MUST wait at least the interval specified in the ast received advise before following the advise to reestable the connection
+
 <h3 class="clause">4.2.2. connect Response</h3>
 
 A bayeux server MUST respond to a connect request with a connect response message over the same transport as used for the request.
-A bayeux server MUST respond immediately to a connect request.
+A bayeux server MAY wait to respond until there are event messages available in the subscribed channels for the client that need to be 
+delivered to the client. 
 A bayeux server MAY send event messages for the client in the same http response as the connect response, but the bayeux server MUST NOT 
 wait for any such messages before sending the connect response message.
  
@@ -659,86 +680,10 @@ An example connect response is:
    }
 ]
 </pre>
-Once successfully connected, a client is implicitly subscribed to the channel "/meta/connections/CLIENTID".
 
 
-
-<h2 class="clause">4.3. reconnect</h2>
-<h3 class="clause">4.3.1. reconnect Request</h3>
-<p>
-In order to maintain a connection established by a connect message exchange, a bayeux client MUST send a message to the "/meta/reconnect" channel
-within the timeouts specificied in the advice received in the handshake or connect response.
-
-The client MUST maintain only a single outstanding reconnect message. If the server does not have a current outstanding reconnect and a reconnect is not 
+The client MUST maintain only a single outstanding connect message. If the server does not have a current outstanding connect and a connect is not 
 received within a configured timeout, then the server SHOULD act as if a disconnect message has been received.
-
-The reconnect message MUST be transported over the same transport indicated in the connect request.
-</p>
-A reconnect request MUST contain the message fields:
-<dl>
-<dt>channel</dt><dd>value "/meta/reconnect"</dd>
-<dt>clientId</dt><dd>The client ID returned in the handshake response</dd>
-</dl>
-reconnect requests MAY contain the message fields:
-<dl>
-<dt>ext</dt>
-<dt>connectionType</dt>
-</dl>
-A client MAY send other messages in the same http request with a reconnect message. A server MUST handle any other message sent in the same request as a reconnect message and 
-handling of these messages MUST NOT be deferred until a response to the reconnect message is available.
-An example reconnect request with an event message is:
-<pre class="example">
-[
-  {
-     "channel": "/meta/reconnect",
-     "clientId": "Un1q31d3nt1f13r",
-     "connectionType": "long-polling"
-  },
-  {
-     "channel": "/some/channel",
-     "clientId": "Un1q31d3nt1f13r",
-     "data": "some data"
-  }
-]
-</pre>
-
-
-<h3 class="clause">4.3.2. reconnect Response</h3>
-<p>
-A bayeux server MUST respond to a reconnect request with a reconnect response message over the same transport as used for the request.
-A bayeux server MAY wait to respond until there are event messages available in the subscribed channels for the client that need to be 
-delivered to the client. A bayeux server MAY send event messages for the client in the same http response as the reconnect response.
- </p>
-A reconnect response MUST contain the message fields:
-<dl>
-<dt>channel</dt><dd>value "/meta/reconnect"</dd>
-<dt>successful</dt><dd>boolean indicating the success or failure of the connection</dd>
-</dl>
-A reconnect response MAY contain the message fields:
-<dl>
-<dt>error</dt>
-<dt>advice</dt>
-<dt>ext</dt>
-<dt>timestamp</dt>
-</dl>
-An example reconnect response with an event message is:
-<pre class="example">
-[
-  {
-     "channel": "/meta/connect",
-     "successful": true,
-     "error": "",
-     "timestamp": "12:00:00 1970"
-   },
-   {
-     "channel": "/some/channel",
-     "data": "some data"
-   }
-]
-</pre>
-
-
-
 
 <h2 class="clause">4.4. disconnect</h2>
 <h3 class="clause">4.4.1. disconnect Request</h3>
@@ -992,7 +937,7 @@ An example event message is:
 Event messages are delivered to clients if the client is subscribed to the channel of the event message.
 Event messages may be sent to the client in the same HTTP response as any other message other than a meta handshake response.
 If a bayeux server has multiple HTTP requests from the same client, the server SHOULD deliver all available messages in HTTP response 
-that will be sent immediately in preference to waking a waiting reconnect meta message handler.
+that will be sent immediately in preference to waking a waiting connect meta message handler.
 Event message deliver is not acknowlegded by the client.
 </p>
 
@@ -1099,14 +1044,14 @@ If it is, the content-type should be text/json-comment-filtered.
 
 <h1 class="clause">8. Multi frame operation</h1>
 <p>Current HTTP client implementations are RECOMMENDED to allow only two connections between a client and a server.  This presents a problem when multiple instances of the bayeux client are operating
-in multiple tabs or windows of the same browser instance.   The two connection limit can be consumed by outstanding reconnect meta messages from each tab or window and thus prevent 
+in multiple tabs or windows of the same browser instance.   The two connection limit can be consumed by outstanding connect meta messages from each tab or window and thus prevent 
 other messages from being delivered in a timely fashion.
 </p>
 
 <h2 class="clause">8.1 Server Multi frame detection</h2>
 <p>
 It is RECOMMENDED that bayeux server implementations use the cookie "BAYEUX_HTTP_ID" to identify a HTTP client and to thus detect multiple bayeux clients running within the same HTTP
-client.  Once detected, the server SHOULD not wait for messages in reconnect and SHOULD use the advice interval mechanism to establish traditional polling.
+client.  Once detected, the server SHOULD not wait for messages in connect and SHOULD use the advice interval mechanism to establish traditional polling.
 </p>
 
 <h2 class="clause">8.2 Client Multi frame handling</h2>
