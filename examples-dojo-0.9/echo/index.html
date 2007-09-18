@@ -65,19 +65,8 @@
 			function setUp()
 			{
 				dojo.require("dojox.cometd");
-
-				dojo.connect(dojox.cometd, "finishInit", 
-					function(type, data, evt, request){
-						dojox.cometd.subscribe(
-							"/rpc/echo/"+dojox.cometd.clientId,
-							"echoRpcReturn"
-						);
-					}
-				);
-				
 				dojox.cometd.init(new String(document.location).replace(/http:\/\/[^\/]*/,'').replace(/\/examples\/.*$/,'')+"/cometd");
-				
-				
+				dojox.cometd.subscribe("/service/echo","echoReturn");
 				Behaviour.register(echoBehaviours); 
 				
 				
@@ -85,10 +74,10 @@
 
 			function echoRpc(msg)
 			{
-       		            dojox.cometd.publish("/rpc/echo", { msg: msg });
+       		            dojox.cometd.publish("/service/echo", { msg: msg });
 			}
 			
-			function echoRpcReturn(msg)
+			function echoReturn(msg)
 			{
 				$("responses").innerHTML+=msg.timestamp+" "+msg.channel+": "+msg.data.msg+"\n";
 			}
