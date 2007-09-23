@@ -40,18 +40,21 @@ var room =
        
        
        // Really need to batch to avoid ordering issues
+       dojox.cometd.startBatch();
        dojox.cometd.subscribe("/chat/demo", room, "_chat");
        dojox.cometd.publish("/chat/demo", { user: room._username, join: true, chat : room._username+" has joined"});
-	   
+       dojox.cometd.endBatch();
        // XXX ajax.sendMessage('join', room._username);
     }
   },
   
   leave: function()
   {
+       dojox.cometd.startBatch();
        dojox.cometd.unsubscribe("/chat/demo", room, "_chat");
        dojox.cometd.publish("/chat/demo", { user: room._username, leave: true, chat : room._username+" has left"});
-	   
+       dojox.cometd.endBatch();
+           
        // switch the input form
        $('join').className='';
        $('joined').className='hidden';
