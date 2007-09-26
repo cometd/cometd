@@ -1,190 +1,131 @@
+dojo.require("dojox.cometd");
+dojo.require("dojo.behavior");
 
-dojo.require("dojo.io.cometd");
+var room = {
+	_last: "",
+	_username: null,
 
-function $() {
-  return document.getElementById(arguments[0]);
-}
+	join: function(name){
+		if(name == null || name.length==0 ){
+			alert('Please enter a username!');
+		}else{
+			this._username=name;
+			dojo.byId('join').className='hidden';
+			dojo.byId('joined').className='';
+			dojo.byId('phrase').focus();
+			dojo.behavior.apply();
 
+			// Really need to batch to avoid ordering issues
+			dojox.cometd.subscribe("/chat/demo", false, room, "_chat");
+			dojox.cometd.publish("/chat/demo", { user: room._username, join: true, chat : room._username+" has joined"});
 
-var EvUtil =
-{
-    getKeyCode : function(ev)
-    {
-        var keyc;
-        if (window.event)
-            keyc=window.event.keyCode;
-        else
-            keyc=ev.keyCode;
-        return keyc;
-    }
-};
+			// XXX ajax.sendMessage('join', room._username);
+		}
+	},
 
-var room = 
-{
-  _last: "",
-  _username: null,
+	leave: function(){
+		dojox.cometd.unsubscribe("/chat/demo", false, room, "_chat");
+		dojox.cometd.publish("/chat/demo", { user: room._username, leave: true, chat : room._username+" has left"});
+
+		// switch the input form
+		dojo.byId('join').className='';
+		dojo.byId('joined').className='hidden';
+		dojo.byId('username').focus();
+		dojo.behavior.apply();
+		room._username=null;
+	},
+	  
+	chat: function(text){
+		if(!text || !text.length){ return false; }
+		// lame attempt to prevent markup
+		text=text.replace(/</g,'&lt;');
+		text=text.replace(/>/g,'&gt;');
+
+		dojox.cometd.publish("/chat/demo", { user: room._username, chat: text});
+	},
+
+	_chat: function(message){
+		var chat=dojo.byId('chat');
+		if(!message.data){
+			alert("bad message format "+message);
+			return;
+		}
+		var from=message.data.user;
+		var special=message.data.join || message.data.leave;
+		var text=message.data.chat;
+		if(!text){ return; }
+
+		if( !special && from == room._last ){
+			from="...";
+		}else{
+			room._last=from;
+			from+=":";
+		}
+
+		if(special){
+			chat.innerHTML += "<span class=\"alert\"><span class=\"from\">"+from+"&nbsp;</span><span class=\"text\">"+text+"</span></span><br/>";
+			room._last="";
+		}else{
+			chat.innerHTML += "<span class=\"from\">"+from+"&nbsp;</span><span class=\"text\">"+text+"</span><br/>";
+		} 
+		chat.scrollTop = chat.scrollHeight - chat.clientHeight;    
+	},
   
-  join: function(name)
-  {
-    if (name == null || name.length==0 )
-    {
-      alert('Please enter a username!');
-    }
-    else
-    {
-       this._username=name;
-       $('join').className='hidden';
-       $('joined').className='';
-       $('phrase').focus();
-       Behaviour.apply();
-       
-       
-       // Really need to batch to avoid ordering issues
-	   cometd.subscribe("/chat/demo", false, room, "_chat");
-	   cometd.publish("/chat/demo", { user: room._username, join: true, chat : room._username+" has joined"});
-	   
-       // XXX ajax.sendMessage('join', room._username);
-    }
-  },
-  
-  leave: function()
-  {
-       cometd.unsubscribe("/chat/demo", false, room, "_chat");
-       cometd.publish("/chat/demo", { user: room._username, leave: true, chat : room._username+" has left"});
-	   
-       // switch the input form
-       $('join').className='';
-       $('joined').className='hidden';
-       $('username').focus();
-       Behaviour.apply();
-       // XXX ajax.sendMessage('leave',room._username);
-       room._username=null;
-  },
-  
-  chat: function(text)
-  {
-    if (text != null && text.length>0 )
-    {
-    	// lame attempt to prevent markup    
-    	text=text.replace(/</g,'&lt;');
-    	text=text.replace(/>/g,'&gt;');
-    	
-        // XXX ajax.sendMessage('chat',text);
-        cometd.publish("/chat/demo", { user: room._username, chat: text});
-    }
-  },
-  
-  _chat: function(message)
-  {
-     var chat=$('chat');
-     if (!message.data)
-     {
-        alert("bad message format "+message);
-	return;
-     }
-     var from=message.data.user;
-     var special=message.data.join || message.data.leave;
-     var text=message.data.chat;
-     if (text!=null)
-     {
-       if ( !special && from == room._last )
-         from="...";
-       else
-       {
-         room._last=from;
-         from+=":";
-       }
-     
-       if (special)
-       {
-         chat.innerHTML += "<span class=\"alert\"><span class=\"from\">"+from+"&nbsp;</span><span class=\"text\">"+text+"</span></span><br/>";
-         room._last="";
-       }
-       else
-         chat.innerHTML += "<span class=\"from\">"+from+"&nbsp;</span><span class=\"text\">"+text+"</span><br/>";
-       chat.scrollTop = chat.scrollHeight - chat.clientHeight;    
-     } 
-  },
-  
-  _init: function()
-  {
-				
-       // XXX ajax.addListener('chat',room._chat);
-       // XXX ajax.addListener('joined',room._joined);
-       // XXX ajax.addListener('left',room._left);
-       // XXX ajax.addListener('members',room._members);
-       $('join').className='';
-       $('joined').className='hidden';
-       $('username').focus();
-      Behaviour.apply();
-  }
-};
-
-Behaviour.addLoadEvent(room._init);  
-
-var chatBehaviours = 
-{ 
-  '#username' : function(element)
-  {
-    element.setAttribute("autocomplete","OFF"); 
-    element.onkeyup = function(ev)
-    {          
-        var keyc=EvUtil.getKeyCode(ev);
-        if (keyc==13 || keyc==10)
-        {
-          room.join($('username').value);
-	  return false;
+  _init: function(){
+		// XXX ajax.addListener('chat',room._chat);
+		// XXX ajax.addListener('joined',room._joined);
+		// XXX ajax.addListener('left',room._left);
+		// XXX ajax.addListener('members',room._members);
+		dojo.byId('join').className='';
+		dojo.byId('joined').className='hidden';
+		dojo.byId('username').focus();
+		dojo.behavior.apply();
 	}
-	return true;
-    } 
-  },
-  
-  '#joinB' : function(element)
-  {
-    element.onclick = function(event)
-    {
-      room.join($('username').value);
-      return false;
-    }
-  },
-  
-  '#phrase' : function(element)
-  {
-    element.setAttribute("autocomplete","OFF");
-    element.onkeyup = function(ev)
-    {   
-        var keyc=EvUtil.getKeyCode(ev);
-        if (keyc==13 || keyc==10)
-        {
-          room.chat($('phrase').value);
-          $('phrase').value='';
-	  return false;
-	}
-	return true;
-    }
-  },
-  
-  '#sendB' : function(element)
-  {
-    element.onclick = function(event)
-    {
-      room.chat($('phrase').value);
-      $('phrase').value='';
-      return false;
-    }
-  },
-  
-  
-  '#leaveB' : function(element)
-  {
-    element.onclick = function()
-    {
-      room.leave();
-      return false;
-    }
-  }
 };
 
-Behaviour.register(chatBehaviours); 
-dojo.addOnUnload(dojox.cometd.disconnect);
+dojo.addOnLoad(room, "_init");
+
+var chatBehaviours = { 
+	"#username" : function(element){
+		element.setAttribute("autocomplete","OFF"); 
+		dojo.connect(element, "onkeyup", function(e){   
+			if(e.keyChar == dojo.keys.ENTER){
+				room.join(dojo.byId('username').value);
+				return false;
+			}
+			return true;
+		});
+	},
+  
+	'#joinB': function(element){
+		element.onclick = function(){
+			room.join(dojo.byId('username').value);
+			return false;
+		}
+	},
+  
+	'#phrase' : function(element){
+		element.setAttribute("autocomplete","OFF");
+		dojo.connect(element, "onkeyup", function(e){   
+			if(e.keyChar == dojo.keys.ENTER){
+				room.chat(dojo.byId('phrase').value);
+				dojo.byId('phrase').value='';
+				return false;
+			}
+			return true;
+		});
+	},
+  
+	'#sendB': { "onclick": function(){
+		room.chat(dojo.byId('phrase').value);
+		dojo.byId('phrase').value='';
+	} },
+  
+	'#leaveB': { "onclick": function(){
+		room.leave();
+	} }
+};
+
+dojo.behavior.add(chatBehaviours); 
+// dojo.addOnUnload(dojox.cometd.disconnect);
 
