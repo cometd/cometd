@@ -1,7 +1,7 @@
 ## Cometd Configuration Block ##################################################
 
 # verboseLogging: boolean
-verboseLogging = False
+verboseLogging = True #False
 
 # clientTimeout: integer, minutes
 # 	delay before culling inactive clients. Set this lower to reduce memory
@@ -12,6 +12,11 @@ clientTimeout = 10
 #	delay before culling long-running connections that haven't seen any
 #	activity.
 connectionTimeout = 15
+
+# maxClients: integer
+#	maximum number of allowed concurrent clients. Tune this to match
+#	available system resources.
+maxClients = 20000
 
 # logFile: string, path
 #	where should we log cometd activity to?
@@ -33,6 +38,8 @@ import sys; sys.path.append(".")
 import cometd
 
 
+clientTimeoutSec = clientTimeout * 60
+
 cometd.verbose = verboseLogging
 cometd.clientTimeout = clientTimeout * 60
 cometd.connectionTimeout = connectionTimeout * 60
@@ -44,7 +51,6 @@ class CometdRunner(resource.Resource):
 	if verboseLogging:
 		log.msg("cometd initialized")
 	child_examples = static.File(path("./examples").abspath())
-	child_dojo = static.File(path("./dojo").abspath())
 	child_cometd = cometd.cometd()
 
 	def render(self, ctx):

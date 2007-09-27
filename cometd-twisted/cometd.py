@@ -30,6 +30,7 @@ verbose = True
 tmp = md5.new()
 tmp.update(str(time.ctime()))
 mimeBoundary = tmp.hexdigest()
+errorHttpCode = 406
 
 # FIXME: implement advices!
 # FIXME: need to implement resource constraints
@@ -176,6 +177,7 @@ ConnectionTypes = {
 #		"tunnelInit":	"",
 #		"contentType": "text/plain"
 #	},
+
 	"flash": {
 		"closeOnDelivery": False,
 		"preamble":		"",
@@ -197,6 +199,13 @@ def getIdStr(length=32):
 	else:								 # python 2.3 on unix-like systems
 		return base64.encodestring(open("/dev/urandom").read(length))[:-1]
 
+def getTimestamp():
+	# YYYY-MM-DDThh:mm:ss.ss
+	# FIXME: need to add accurate sub-second time-stamp data!
+	# NOTE: see http://feedparser.org/docs/date-parsing.html for background
+	# FIXME: should we add a "Z" at the end for RFC 3339 compat?
+	return time.strftime("%Y-%m-%dT%H:%M:%S.00", time.gmtime())
+	
 class Connection:
 	"""
 	The cometd Connecton class is responsible for a logical connection
@@ -249,9 +258,11 @@ class Connection:
 			"successful": 	True,
 			"error": 		self.client.lastError,
 			"authToken": 	self.client.authToken,
-			"connectionId":	self.id,
 			"clientId":		self.client.id,
-			"timestamp": 	str(time.ctime())
+			"timestamp": 	getTimestamp(),
+			"advice":		{
+				"reconnect": "retry"
+			}
 		}
 
 		if verbose: log.msg(self.ctypeProps["preamble"])
@@ -392,7 +403,7 @@ class cometd(resource.PostableResource):
 				messages = simplejson.loads(request.args["message"][0])
 			except ValueError:
 				if verbose: log.msg("message parsing error")
-				return buildResponse("message not valid JSON", 500, "text/plain")
+				return buildResponse("message not valid JSON", errorHttpCode, "text/plain")
 		else:
 			return buildResponse("no message provided. Please pass a message parameter to cometd", 400)
 
@@ -451,6 +462,7 @@ class cometd(resource.PostableResource):
 		# FIXME: is there a way to keep from re-defining/copying this data
 		# structure?
 		resp = {
+			"timestamp": 	getTimestamp(),
 			"channel":	"/meta/handshake",
 			"version":	self.version,
 			"minimumVersion": self.minimumVersion,
@@ -486,6 +498,7 @@ class cometd(resource.PostableResource):
 	def checkCredentials(self, request, message):
 		# return's a tuple with the form:
 		#	(success, token, error)
+		#
 		# FIXME: plug in auth check here!
 		return (True, None, None)
 
@@ -569,6 +582,7 @@ class cometd(resource.PostableResource):
 		# self._subscribe()
 		if "clientId" not in message or \
 			message["clientId"] not in self.clients:
+			# FIXME: we should probably send advice here instead of just raw failure
 			resp = { "error": "invalid clientId provided" }
 			if verbose:
 				log.msg(simplejson.dumps(resp))
@@ -581,6 +595,7 @@ class cometd(resource.PostableResource):
 
 		# FIXME: hoist template object to top level to avoid redef
 		resp = {
+			"timestamp": 	getTimestamp(),
 			"channel":		"/meta/subscribe",
 			"subscription":	message["channel"],
 			"successful":	True
