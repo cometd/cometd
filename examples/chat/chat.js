@@ -1,5 +1,4 @@
 dojo.require("dojox.cometd");
-dojo.require("dojo.behavior");
 
 var room = {
     _last: "",
@@ -13,34 +12,32 @@ var room = {
             dojo.byId('join').className='hidden';
             dojo.byId('joined').className='';
             dojo.byId('phrase').focus();
-            dojo.behavior.apply();
 
             // Really need to batch to avoid ordering issues
-            dojox.cometd.subscribe("/chat/demo", false, room, "_chat");
+	    dojox.cometd.startBatch();
+            dojox.cometd.subscribe("/chat/demo", room, "_chat");
             dojox.cometd.publish("/chat/demo", { user: room._username, join: true, chat : room._username+" has joined"});
+	    dojox.cometd.endBatch();
 
             // XXX ajax.sendMessage('join', room._username);
         }
     },
 
     leave: function(){
-        dojox.cometd.unsubscribe("/chat/demo", false, room, "_chat");
+	dojox.cometd.startBatch();
+        dojox.cometd.unsubscribe("/chat/demo", room, "_chat");
         dojox.cometd.publish("/chat/demo", { user: room._username, leave: true, chat : room._username+" has left"});
+	dojox.cometd.endBatch();
 
         // switch the input form
         dojo.byId('join').className='';
         dojo.byId('joined').className='hidden';
         dojo.byId('username').focus();
-        dojo.behavior.apply();
         room._username=null;
     },
       
     chat: function(text){
         if(!text || !text.length){ return false; }
-        // lame attempt to prevent markup
-        text=text.replace(/</g,'&lt;');
-        text=text.replace(/>/g,'&gt;');
-
         dojox.cometd.publish("/chat/demo", { user: room._username, chat: text});
     },
 
