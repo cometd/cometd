@@ -36,7 +36,7 @@ Mark Nesbitt<br/>
 </tr>
 </table>
 
-<h1 class="intro">Bayeux Protocol -- Bayeux 1.0draft0</h1>
+<h1 class="intro">Bayeux Protocol -- Bayeux 1.0draft1</h1>
 <h2 class="intro">Status of this Memo</h2>
 This document specifies an protocol for the Internet community, and requests discussion and suggestions for improvement. This memo is written in the style and spirit of an RFC but is not, as of yet, an official RFC. Distribution of this memo is unlimited.
 This memo is written in UK English.
@@ -102,12 +102,12 @@ exchange. A client is connected if a link is established with the server, over w
 The HTTP protocol is a request/response protocol. A client sends a request to the server in the form of a request method, URI, and protocol version, followed by a MIME-like message containing request modifiers, client information, and optional body content over a connection with a server. The server responds with a status line, including the message's protocol version and a success or error code, followed by a MIME-like message containing server information, entity metainformation, and possible entity-body content. 
 The server may not initiate a connection with a client nor send an unrequested response to the client, thus asynchronous events cannot be delivered from server to client unless a previously issued request exists. In order to allow two way asynchronous communication, bayeux supports the use of multiple HTTP connections between a client and server, so that previously issued requests are available to transport server to client messages.
 The recommendation of section 8.1.4 of RFC 2616 is that a single user client SHOULD NOT maintain more than 2 connection with any server, thus the bayeux protocol MUST NOT require any more than two HTTP requests to be simultaneously handled by a server in order to handle all application (bayeux based or otherwise) running within a client. 
-<h3 class="clause">1.4.X. Non HTTP Transports</h3>
+<h3 class="clause">1.4.2. Non HTTP Transports</h3>
 While HTTP is the predominant transport protocol used on the internet, it is not intended that it will be the only transport for bayeux. Other transports that support a request/response paradym may be used. However this document is written in assuming HTTP for reasons of clarity. 
-<h3 class="clause">1.4.2. Javascript</h3>
+<h3 class="clause">1.4.3. Javascript</h3>
 The majority of Bayeux clients will be implemented in JavaScript and will be running within the security framework of a client browser. For applications that need to commicate with multiple servers, the client implementation MUST adhere to the single origin policy for security.
 
-<h3 class="clause">1.4.3. Client to Server event delivery</h3>
+<h3 class="clause">1.4.4. Client to Server event delivery</h3>
 A bayeux event is sent from the client to the server via a HTTP request initiated by a user agent and transmitted to an origin server via a chain of zero or more intermediaries (proxy, gateway or tunnel):
 <pre class="example">
 BC ---------- U ---------- P ------------ O ---------- BS
@@ -121,7 +121,7 @@ BC ---------- U ---------- P ------------ O ---------- BS
 </pre>
 The figure above represents a bayeux event E encapsulted in a bayeux message M0 being sent from a bayeux client BC to a bayeux server BS via HTTP request transmitted from a User Agent U to to an Origin server O via a proxy P. The HTTP response contains another bayeux message M1 that will at least contain the protocol response to M0, but may contain other bayeux events initiated on the server or on other clients.
 
-<h3 class="clause">1.4.4. Server to Client event delivery </h3>
+<h3 class="clause">1.4.5. Server to Client event delivery </h3>
 A bayeux event is sent from the server to the client via a HTTP response to a HTTP request  sent in anticipation by a user agent and transmitted to an origin server via a chain of zero or more intermediaries (proxy, gateway or tunnel):
 <pre class="example">
 BC ---------- U ---------- P ------------ O ---------- BS
@@ -321,6 +321,9 @@ Example channel patterns are:
 <dt>/foo/**</dt><dd>Matches /foo/bar, /foo/boo and /foo/bar/boo. Does not match /foo, /foobar or /foobar/boo</dd>
 </dl>
 
+<h3 class="clause">2.2.2 Meta Channel</h3>
+
+<h3 class="clause">2.2.3 Service Channel</h3>
 
 
 <h2 class="clause">2.3. Version</h2>
@@ -418,24 +421,28 @@ An example advice field is
 The reconnection advice field is a string that indicates how the client should act in
 the case of a failure to connect.  Defined reconnect values are:
 <dl>
- <dt>none</dt>
-  <dd>hard failure for the connect/reconnect attempt. Do not attempt to
-  reconnect at all. </dd>
  <dt>retry</dt>
   <dd>attempt to connect again after the interval (as defined by "interval"
   advice or client-default backoff) with the same credentials</dd>
  <dt>handshake</dt>
-  <dd>the server doesn't know anything about the client or connection
-  that were passed, so instead of attempting to reconnect, throw
-  away the client's authentication information and attempt to
-  reauthorize with a /meta/handshake</dd>
+  <dd>the server has terminated any prior connection status and the client MUST
+  reconnect with a /meta/handshake. A client MUST NOT automatically retry if handshake 
+  advice has been received.
     </dd>
+ <dt>none</dt>
+  <dd>hard failure for the connect/reconnect attempt. Do not attempt to
+  reconnect at all. A client MUST respect reconnect advice of none and MUST NOT
+  automatically retry or handshake. </dd>
 </dl>
+
+
 <h3 class="clause">3.6.2. interval</h3>
 An integer representing the period in milliseconds for a client to delay subsequent
 attempts of the unsuccessful message. A negative period indicates that the message should
 not be retried. 
-A client MUST implement interval suuport, but a client MAY exceed the interval provided by the server.
+A client MUST implement interval support, but a client MAY exceed the interval provided by the server.
+A client SHOULD implement a backoff strategy with regards to interval if a request fails without new
+advice being received from the server.
 
 <h3 class="clause">3.6.3. multiple-clients</h3>
 This is a boolean field, which if true indicates that the server has detected multiple bayeux client 
