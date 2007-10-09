@@ -470,7 +470,7 @@ the case of a failure to connect.  Defined reconnect values are:
 
 <h3 class="clause">3.6.2. interval advice</h3>
 An integer representing the period in milliseconds for a client to delay subsequent
-attempts of the unsuccessful message. A negative period indicates that the message should
+requests to the /meta/connect channel. A negative period indicates that the message should
 not be retried. 
 A client MUST implement interval support, but a client MAY exceed the interval provided by the server.
 A client SHOULD implement a backoff strategy to increase the interval if requests to the server fail without
