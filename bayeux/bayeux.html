@@ -929,8 +929,6 @@ Application events are published in event messages sent from a bayeux client to 
 A bayeux client can publish events on a channel by sending event messages.
 An event message MAY be sent in new HTTP request or it MAY be sent in the same HTTP request as 
 any message other than a handshake meta message.  
-If sent with a connect meta message, the event messages MUST be processed after the connect message 
-and if the connect is unsuccessful, the messages MAY be discarded.
 </p>
 <p>
 A publish message may be sent from an unconnected client (that has not performed handshaking and thus does
@@ -969,11 +967,11 @@ A bayeux server MAY respond to a publish event message with a publish event ackn
 A publish event message MUST contain the message fields:
 <dl>
 <dt>channel</dt><dd></dd>
-<dt>clientId</dt><dd>The negotiated client ID</dd>
 <dt>successful</dt><dd>boolean indicating the success or otherwise of the publish</dd>
 </dl>
 A publish event response MAY contain the message fields:
 <dl>
+<dt>clientId</dt><dd>The negotiated client ID</dd>
 <dt>id</dt>
 <dt>error</dt>
 <dt>ext</dt>
