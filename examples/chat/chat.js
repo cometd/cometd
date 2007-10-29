@@ -18,12 +18,12 @@ var room = {
             dojox.cometd.subscribe("/chat/demo", room, "_chat");
             dojox.cometd.publish("/chat/demo", { user: room._username, join: true, chat : room._username+" has joined"});
 	    dojox.cometd.endBatch();
-
-            // XXX ajax.sendMessage('join', room._username);
         }
     },
 
     leave: function(){
+        if (room._username==null)
+            return;
 	dojox.cometd.startBatch();
         dojox.cometd.unsubscribe("/chat/demo", room, "_chat");
         dojox.cometd.publish("/chat/demo", { user: room._username, leave: true, chat : room._username+" has left"});
@@ -114,4 +114,4 @@ var room = {
 };
 
 dojo.addOnLoad(room, "_init");
-dojo.addOnUnload(dojox.cometd.disconnect);
+dojo.addOnUnload(room,"leave");
