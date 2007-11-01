@@ -6,12 +6,13 @@ var room = {
 
     join: function(name){
         
-        dojox.cometd.init(new String(document.location).replace(/http:\/\/[^\/]*/,'').replace(/\/examples\/.*$/,'')+"/cometd");
-        // dojox.cometd.init("http://127.0.0.1:8080/cometd");
-        
         if(name == null || name.length==0 ){
             alert('Please enter a username!');
         }else{
+		
+            dojox.cometd.init(new String(document.location).replace(/http:\/\/[^\/]*/,'').replace(/\/examples\/.*$/,'')+"/cometd");
+            // dojox.cometd.init("http://127.0.0.1:8080/cometd");
+		
             this._username=name;
             dojo.byId('join').className='hidden';
             dojo.byId('joined').className='';
