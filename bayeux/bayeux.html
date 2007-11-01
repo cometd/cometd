@@ -380,7 +380,7 @@ Bayeux messages are JSON encoded objects that contain an unordered sequence of n
 values. Values may be a simple strings, numbers, boolean values, or complex JSON encoded objects.
 A bayeux message MUST contain one and only one channel field which determines the type of the message and the allowable
 fields.
-All bayeux messages SHOULD be encapsulated in a JSON array so that multiple messages may be transported together. A bayeux client or server MUST accept either an array of messages or a single message. The JSON message or array of messages is itself often encapsulated in transport specific formatting and encodings.
+All bayeux messages SHOULD be encapsulated in a JSON array so that multiple messages may be transported together. A bayeux client or server MUST accept either array of messages and MAY accept a single message. The JSON message or array of messages is itself often encapsulated in transport specific formatting and encodings.
 Below is an example bayeux message in a JSON array representing an event sent from a client to a server:
 <pre class="example">
 [
@@ -555,7 +555,7 @@ The contents of ext may be arbitrary values that allow extensions to be negotiat
 <h1 class="clause">4. Meta Message Definitions</h1>
 <h2 class="clause">4.1. handshake</h2>
 <h3 class="clause">4.1.1. handshake Request</h3>
-A bayeux client initiates a connection negotiation by sending a message to the "/meta/handshake" channel. Handshake requests MUST be sent to the server as the message parameter of a application/x-www-form-urlencoded encoded POST request. 
+A bayeux client initiates a connection negotiation by sending a message to the "/meta/handshake" channel. For same domain connections, the Handshake requests MUST be sent to the server as the 'message' parameter of a application/x-www-form-urlencoded encoded POST request. For cross domain connections, the Handshake request MUST be sent to the server as the url encoded GET request with the jsonp parameter set for callback-polling. 
 A handshake request MUST contain the message fields:
 <dl>
 <dt>channel</dt>
@@ -585,7 +585,7 @@ A client SHOULD NOT send any other message in the request with a handshake messa
 </pre>
 
 <h3 class="clause">4.1.2. handshake Response</h3>
-A bayeux server MUST respond to a handshake request with a handshake response message in the body content of a  POST response. 
+A bayeux server MUST respond to a handshake request with a handshake response message in the body content of the response. For cross domain connections that have the jsonp parameters set, the message body may be encapsulated in a jsonp callback method.
 <h4>Successful handshake response</h4>
 A successful handshake responses MUST contain the message fields:
 <dl>
