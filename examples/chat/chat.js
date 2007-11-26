@@ -17,18 +17,34 @@ var room = {
             dojo.byId('join').className='hidden';
             dojo.byId('joined').className='';
             dojo.byId('phrase').focus();
-
-            // Really need to batch to avoid ordering issues
+	    
+            // subscribe and join
 	    dojox.cometd.startBatch();
             dojox.cometd.subscribe("/chat/demo", room, "_chat");
             dojox.cometd.publish("/chat/demo", { user: room._username, join: true, chat : room._username+" has joined"});
 	    dojox.cometd.endBatch();
+	    
+            // handle cometd failures while in the room
+            room._meta=dojo.subscribe("/cometd/meta",function(event){
+                console.debug(event);   
+                if (event.action=="handshake") {
+	            room._chat({data:{join:true,user:"SERVER",chat:"reconnected"}});
+                    dojox.cometd.subscribe("/chat/demo", room, "_chat");
+                } else if (event.action=="connect" && !event.successful) {
+                    room._chat({data:{leave:true,user:"SERVER",chat:"disconnected!"}});
+	        }
+            });
         }
     },
 
     leave: function(){
         if (room._username==null)
             return;
+	    
+	if (room._meta)
+            dojo.unsubscribe(room._meta);
+	room._meta=null;
+	
 	dojox.cometd.startBatch();
         dojox.cometd.unsubscribe("/chat/demo", room, "_chat");
         dojox.cometd.publish("/chat/demo", { user: room._username, leave: true, chat : room._username+" has left"});
