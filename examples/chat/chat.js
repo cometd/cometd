@@ -1,4 +1,5 @@
 dojo.require("dojox.cometd");
+dojo.require("dojox.cometd.timesync");
 
 var room = {
     _last: "",
@@ -11,7 +12,7 @@ var room = {
         }else{
 		
             dojox.cometd.init(new String(document.location).replace(/http:\/\/[^\/]*/,'').replace(/\/examples\/.*$/,'')+"/cometd");
-            // dojox.cometd.init("http://127.0.0.1:8080/cometd");
+            // dojox.cometd.init("http://127.0.0.2:8080/cometd");
 		
             this._username=name;
             dojo.byId('join').className='hidden';
