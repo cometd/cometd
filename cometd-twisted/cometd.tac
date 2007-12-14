@@ -20,11 +20,29 @@ maxClients = 20000
 
 # logFile: string, path
 #	where should we log cometd activity to?
-logFile = "./cometd" 
+logFile = "./cometd.log" 
 
 # port: integer
 #	where should we log cometd activity to?
 port = 8080
+
+# autoCreateChannels: boolean
+#	should channels (and user-defined channel names) be limited to those listed
+#	in initialChannels?
+autoCreateChannels = True
+
+# clientChannels: list
+#	A list of channel names, with python regex matching, used to determine if a
+#	client-specified channel may be subscribed or published to. Meta topics are
+#	not specified here as they are handled before matching against this list
+#	takes place
+clientChannels = [ r"\/.*" ]
+
+# preAuthKeys: list
+#	an array of strings (keys) which clients using them are assumed to be
+#	"pre-authenticated" to take administrative actions such as creating
+#	channels (if client-creation is turned off) and using extension meta topics 
+preAuthKeys = [] # FIXME: implement a capabilities list instead of on/off?
 
 ## End Configuration Block #####################################################
 
@@ -50,7 +68,7 @@ class CometdRunner(resource.Resource):
 	addSlash = True
 	if verboseLogging:
 		log.msg("cometd initialized")
-	child_examples = static.File(path("./examples").abspath())
+	child_examples = static.File(path("../examples").abspath())
 	child_cometd = cometd.cometd()
 
 	def render(self, ctx):

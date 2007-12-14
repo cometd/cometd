@@ -1,13 +1,16 @@
-# Copyright (C) Alex Russell 2006
+# Copyright (C) The Dojo Foundation 2006-2007
 # All rights reserved.
 #
 # Distributed under the terms of the BSD License
 
+import twisted
+import twisted.web2
 from twisted.web2 import http, resource, channel, stream, server, static, http_headers, responsecode
 from twisted.python import log
 from twisted.internet import reactor
 from twisted.application import service, strports
 from path import path
+import re
 import os
 import md5
 import time
@@ -34,12 +37,12 @@ errorHttpCode = 406
 
 # FIXME: implement advices!
 # FIXME: need to implement resource constraints
-# FIXME: need to use weakrefs
 
 # FIXME: these should probably be pulled from a file or directory containing
 # files and read at server startup. Hard-coding them here is fine for
 # development but just won't do for deployment.
 ConnectionTypes = {
+
 	"iframe": {
 		"closeOnDelivery": False,
 		"preamble":		"""
@@ -51,19 +54,19 @@ ConnectionTypes = {
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
 		<title>cometd: The Long Tail of Comet</title>
 	</head>
-	<body onload="window.parent.cometd.tunnelCollapse();">
+	<body onload="window.parent.dojox.cometd.tunnelCollapse();">
 		""",
 		"envelope":		"""
 			<br />
 			<script type="text/javascript">
-				window.parent.cometd.deliver(%s);
+				window.parent.dojox.cometd.deliver(%s);
 			</script>
 			<br />
 		""" + (" " * 2048), # double this if it's not working
 		"keepalive":	"<br>" + (" " * 2048),
 		"signoff":		"""
 		<script type="text/javascript">
-			window.parent.cometd.disconnect();
+			window.parent.dojox.cometd.disconnect();
 		</script>
 	</body>
 </html>
@@ -78,7 +81,7 @@ ConnectionTypes = {
 		<title>cometd: The Long Tail of Comet</title>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
 		<script type="text/javascript">
-			// window.parent.dojo.debug("tunnelInit");
+			// window.parent.console.debug("tunnelInit");
 			var noInit = false;
 			var domain = "";
 			function init(){
@@ -105,7 +108,7 @@ ConnectionTypes = {
 				*/
 				if(window.parent != window){
 					//Notify parent that we are loaded.
-					window.parent.cometd.tunnelInit(window.location, document.domain);
+					window.parent.dojox.cometd.tunnelInit(window.location, document.domain);
 				}
 			}
 		</script>
@@ -116,6 +119,7 @@ ConnectionTypes = {
 </html>""",
 		"contentType": "text/html"
 	},
+
 	"callback-polling": {
 		# NOTE: the "callback-polling" method can be used via ScriptSrcIO for
 		# x-domain polling
@@ -128,6 +132,7 @@ ConnectionTypes = {
 		"tunnelInit":	"",
 		"contentType": "text/javascript"
 	},
+
 	"long-polling": {
 		"closeOnDelivery": True,
 		"preamble":		"",
@@ -137,6 +142,7 @@ ConnectionTypes = {
 		"tunnelInit":	"",
 		"contentType": "text/plain"
 	},
+
 	"ie-message-block": {
 		"closeOnDelivery": False,
 		"preamble":		"""<?xml version="1.0" encoding="UTF-8"?>
@@ -150,6 +156,7 @@ ConnectionTypes = {
 		"tunnelInit":	"",
 		"contentType": "text/xml"
 	},
+
 	"mime-message-block": {
 		"closeOnDelivery": False,
 		"preamble":		"--"+mimeBoundary+"\r\n",
@@ -157,18 +164,19 @@ ConnectionTypes = {
 %s
 \r\n
 --"""+mimeBoundary+"\r\n",
-
-#		"preamble":		"",
-#		"envelope":		"\n--"+mimeBoundary+"""
-#Content-Type: text/plain\n\n
-#%s
-#
-#""",
-# --"""+mimeBoundary+"\n",
 		"signoff":		"\n--"+mimeBoundary+"--\n",
 		"tunnelInit":	"",
 		"contentType": "multipart/x-mixed-replace; boundary=%s" % (mimeBoundary,)
 	},
+	# failed experiment
+	#		"preamble":		"",
+	#		"envelope":		"\n--"+mimeBoundary+"""
+	#Content-Type: text/plain\n\n
+	#%s
+	#
+	#""",
+	# --"""+mimeBoundary+"\n",
+
 #	"text-stream": {
 #		"closeOnDelivery": False,
 #		"preamble":		"--"+mimeBoundary+"\r\n",
@@ -178,19 +186,22 @@ ConnectionTypes = {
 #		"contentType": "text/plain"
 #	},
 
-	"flash": {
-		"closeOnDelivery": False,
-		"preamble":		"",
-		"envelope":		"",
-		"signoff":		"",
-		"tunnelInit":	"",
-		"contentType": "text/xml"
-	}
+#	"flash": {
+#		"closeOnDelivery": False,
+#		"preamble":		"",
+#		"envelope":		"",
+#		"signoff":		"",
+#		"tunnelInit":	"",
+#		"contentType": "text/xml"
+#	}
 }
 
+# need to specify http-polling for entirely disconnected clients!
+
 SupportedConnectionTypes = [
-	"iframe", "ie-message-block", "mime-message-block",
-	"callback-polling", "long-polling", "http-polling"
+	"callback-polling", "long-polling", 
+	 "mime-message-block", "iframe", 
+	 # "ie-message-block", # doesn't really work?
 ]
 
 def getIdStr(length=32):
@@ -208,17 +219,16 @@ def getTimestamp():
 	
 class Connection:
 	"""
-	The cometd Connecton class is responsible for a logical connection
-	between a client and a server. This is *NOT* implemented as a
-	twisted.internet.protocol.Protocol subclass due to the seeming
-	magicness of Protocol instances and the Factories that create/use them.
-	Instead, the Connection class manages one (or more) instances of
-	stream.ProducerStream instances which constitute output buffers for the
-	connection.
+	The cometd Connecton class is responsible for a logical connection between
+	a client and a server. This is *NOT* implemented as a
+	twisted.internet.protocol.Protocol subclass due to the seeming magicness of
+	Protocol instances and the Factories that create/use them.  Instead, the
+	Connection class manages one (or more) instances of stream.ProducerStream
+	instances which constitute output buffers for the connection.
 
-	The Connection class knows how to set up and tear down streams,
-	register and unregister with a connection registry, and communicate
-	with the event router.
+	The Connection class knows how to set up and tear down streams, register
+	and unregister with a connection registry, and communicate with the event
+	router.
 	"""
 
 	# an incrementing ID basis for connections
@@ -345,12 +355,15 @@ def buildResponse(data, code=200, type="text/html", headers={}):
 
 class cometd(resource.PostableResource):
 
-	version = 0.1
-	minimumVersion = 0.1
+	version = 1.0
+	minimumVersion = 1.0
 
-	clients = {}
-	subscriptions = { }
-	#	"__cometd_subscribers": {}
+
+	def __init__(self, credChecker=None):
+		self.credChecker = credChecker
+		self.clients = {}
+		self.subscriptions = { }
+		#	"__cometd_subscribers": {}
 
 	# FIXME: we need to implement client culling. Choices are between keeping a
 	# list of update times and associated clients, but that requires a
@@ -435,18 +448,21 @@ class cometd(resource.PostableResource):
 			elif chan == "/meta/connect" and ctr == 0:
 				# finish connection initialization!
 				return self.connect(request, m)
-			elif chan == "/meta/reconnect" and ctr == 0:
-				return self.reconnect(request, m)
+			elif chan == "/meta/reconnect" and ctr == 0: # FIXME: legacy!
+				return self.connect(request, m)
 			elif chan == "/meta/subscribe":
 				resp.append(self.subscribe(request, m))
 			elif chan == "/meta/unsubscribe":
 				resp.append(self.unsubscribe(request, m))
 			# FIXME: implement /meta/ping and /meta/status !!
 
-			# otherwise route the message to listeners
+			# otherwise we're publishing. Route the message to listeners
 			resp.append(self.route(request, m))
 			ctr += 1
 
+		# FIXME: 
+		#		need to determine here if/how we should be delivering back on
+		#		an open connection channel if one was pre-existing
 		return buildResponse(simplejson.dumps(resp), type="text/plain")
 
 	############################################################################
@@ -471,7 +487,7 @@ class cometd(resource.PostableResource):
 
 		client = self.checkHandshakeAuth(request, message)
 		resp["clientId"] = client.id
-		resp["authSuccessful"] = client.authSuccessful
+		resp["successful"] = client.authSuccessful
 		resp["authToken"] = client.authToken
 		resp["error"] = client.lastError
 
@@ -500,6 +516,8 @@ class cometd(resource.PostableResource):
 		#	(success, token, error)
 		#
 		# FIXME: plug in auth check here!
+		if self.credChecker is not None:
+			return self.credChecker.checkCredentials(request, message)
 		return (True, None, None)
 
 	def _sanityCheckConnection(self, request, message):
@@ -526,7 +544,8 @@ class cometd(resource.PostableResource):
 
 	def connect(self, request, message):
 		"""
-		Create a new connection object for the client.
+		Create a new connection object for the client if one does not already
+		exist. Otherwise, handles wait state for existing connection.
 		"""
 
 		(isSane, errorResp) = self._sanityCheckConnection(request, message)
@@ -547,33 +566,15 @@ class cometd(resource.PostableResource):
 				log.msg(resp)
 			return buildResponse(resp, 500, "text/plain")
 
-		# if the request is sane and valid, set up a new Connection object
-		# which will initiate the response and manage it from here on out
-		conn = Connection(request, message, client)
-		client.setConnection(conn)
-		return buildResponse(conn.stream, type=conn.contentType)
-
-	def reconnect(self, request, message):
-		# FIXME: implement!
-		(isSane, errorResp) = self._sanityCheckConnection(request, message)
-		if not isSane: return errorResp
-
-		clientId = message["clientId"]
-		client = self.clients[clientId]
-
-		(	client.authSuccessful,
-			client.authToken,
-			client.lastError	) = self.checkCredentials(request, message)
-
-		if not client.authSuccessful:
-			# auth failure, nuke the client from the list
-			del self.clients[clientId]
-			resp = simplejson.dumps({ "error": client.error })
-			if verbose:
-				log.msg(resp)
-			return buildResponse(resp, 500, "text/plain")
-
-		client.connection.reopen(request, message)
+		if client.connection is not None:
+			# if verbose:
+			# 	log.msg("from a reconnect!")
+			client.connection.reopen(request, message)
+		else:
+			# if the request is sane and valid, set up a new Connection object
+			# which will initiate the response and manage it from here on out
+			conn = Connection(request, message, client)
+			client.setConnection(conn)
 
 		return buildResponse(client.connection.stream, type=client.connection.contentType)
 
@@ -591,7 +592,9 @@ class cometd(resource.PostableResource):
 		client = self.clients[message["clientId"]]
 		if verbose: log.msg(client)
 
-		self._subscribe(client, message["subscription"])
+		# FIXME: need to switch to using globbing subscribe!
+		# self._subscribe(client, message["subscription"])
+		self._globbing_subscribe(client, message["subscription"])
 
 		# FIXME: hoist template object to top level to avoid redef
 		resp = {
@@ -622,7 +625,7 @@ class cometd(resource.PostableResource):
 
 		root[chan][client.id] = client
 
-	def route(self, request, message):
+	def _flat_route(self, request, message):
 		"""
 		Event routing and delivery. The guts of cometd.
 		"""
@@ -634,14 +637,13 @@ class cometd(resource.PostableResource):
 				subs[client].connection.deliver(message)
 		return { "success": True }
 
-	############################################################################
-	# NOTE: _globbing_subscribe and _globbing_route are vestigial and are not
-	# currently in use
+	# FIXME: need to implement the "**" glob
 	def _globbing_subscribe(self, client, chan):
 		"set up a subscription"
 		# the channels data structure is a tree, relying on the speed of Python
 		# dictionary lookups to quickly return a list of interested clients.
-		# NOTE: we are not currently supporting the "*" glob operator in channels
+		# NOTE: while we do "glob", it's only on terminal path components
+
 		cparts = chan.split("/")[1:]
 		if verbose: log.msg(cparts)
 		root = self.subscriptions
@@ -664,7 +666,7 @@ class cometd(resource.PostableResource):
 		root = self.subscriptions
 		for part in cparts: # FIXME: is iteration order garunteed?
 			if "*" in root:
-				log.msg("delivering to wildcard subscribers")
+				# log.msg("delivering to wildcard subscribers")
 				subs = root["*"]["__cometd_subscribers"]
 				for client in subs:
 					if verbose: log.msg(client)
@@ -680,5 +682,8 @@ class cometd(resource.PostableResource):
 		return success
 		# FIXME: aggregate ACKs!
 		# return buildResponse("{ success: true }", type="text/plain")
+	
+	def route(self, request, message):
+		return self._globbing_route(request, message)
 
 # vim:ts=4:noet:
