@@ -4,6 +4,7 @@ dojo.require("dojox.cometd.timesync");
 var room = {
     _last: "",
     _username: null,
+    _connected: true,
 
     join: function(name){
         
@@ -13,7 +14,8 @@ var room = {
 		
             dojox.cometd.init(new String(document.location).replace(/http:\/\/[^\/]*/,'').replace(/\/examples\/.*$/,'')+"/cometd");
             // dojox.cometd.init("http://127.0.0.2:8080/cometd");
-		
+            this._connected=true;
+	    
             this._username=name;
             dojo.byId('join').className='hidden';
             dojo.byId('joined').className='';
@@ -26,15 +28,19 @@ var room = {
 	    dojox.cometd.endBatch();
 	    
             // handle cometd failures while in the room
-            room._meta=dojo.subscribe("/cometd/meta",function(event){
+            room._meta=dojo.subscribe("/cometd/meta",dojo.hitch(this,function(event){
                 console.debug(event);   
                 if (event.action=="handshake") {
-	            room._chat({data:{join:true,user:"SERVER",chat:"reconnected"}});
+	            room._chat({data:{join:true,user:"SERVER",chat:"reinitialized"}});
                     dojox.cometd.subscribe("/chat/demo", room, "_chat");
-                } else if (event.action=="connect" && !event.successful) {
-                    room._chat({data:{leave:true,user:"SERVER",chat:"disconnected!"}});
+                } else if (event.action=="connect") {
+		    if (event.successful && !this._connected)
+                        room._chat({data:{leave:true,user:"SERVER",chat:"reconnected!"}});
+		    if (!event.successful && this._connected)
+                        room._chat({data:{leave:true,user:"SERVER",chat:"disconnected!"}});
+		    this._connected=event.successful;
 	        }
-            });
+            }));
         }
     },
 
