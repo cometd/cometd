@@ -1206,11 +1206,6 @@ message over the same transport as used for the request.
 A Bayeux server MAY wait to respond until there are event messages available in
 the subscribed channels for the client that need to be delivered to the client. 
 </p>
-<p>
-A Bayeux server MAY send event messages for the client in the same http
-response as the connect response, but the Bayeux server MUST NOT wait for any
-such messages before sending the connect response message.
-</p> 
 <p>A connect responses MUST contain the message fields:</p>
 <dl>
 <dt>channel</dt>
