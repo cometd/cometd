@@ -269,7 +269,6 @@ class Connection:
 			"error": 		self.client.lastError,
 			"authToken": 	self.client.authToken,
 			"clientId":		self.client.id,
-			"timestamp": 	getTimestamp(),
 			"advice":		{
 				"reconnect": "retry"
 			}
@@ -454,10 +453,10 @@ class cometd(resource.PostableResource):
 				resp.append(self.subscribe(request, m))
 			elif chan == "/meta/unsubscribe":
 				resp.append(self.unsubscribe(request, m))
+			else:
+				# otherwise we're publishing. Route the message to listeners
+				resp.append(self.route(request, m))
 			# FIXME: implement /meta/ping and /meta/status !!
-
-			# otherwise we're publishing. Route the message to listeners
-			resp.append(self.route(request, m))
 			ctr += 1
 
 		# FIXME: 
@@ -478,7 +477,6 @@ class cometd(resource.PostableResource):
 		# FIXME: is there a way to keep from re-defining/copying this data
 		# structure?
 		resp = {
-			"timestamp": 	getTimestamp(),
 			"channel":	"/meta/handshake",
 			"version":	self.version,
 			"minimumVersion": self.minimumVersion,
@@ -490,6 +488,8 @@ class cometd(resource.PostableResource):
 		resp["successful"] = client.authSuccessful
 		resp["authToken"] = client.authToken
 		resp["error"] = client.lastError
+		if message["id"] is not None:
+			resp["id"] = message["id"]
 
 		rstr = simplejson.dumps([ resp ])
 		if verbose: log.msg("initHandshake response:", rstr)
@@ -520,6 +520,13 @@ class cometd(resource.PostableResource):
 			return self.credChecker.checkCredentials(request, message)
 		return (True, None, None)
 
+	def _checkClient(self, request, message):
+		if "clientId" not in message or \
+			message["clientId"] not in self.clients:
+			return False
+		else:
+			return True
+
 	def _sanityCheckConnection(self, request, message):
 		isSane = True
 		errorResp = None
@@ -530,8 +537,7 @@ class cometd(resource.PostableResource):
 			message["connectionType"] not in SupportedConnectionTypes:
 			isSane = False
 			error = "invalid connectionType requested"
-		elif "clientId" not in message or \
-			message["clientId"] not in self.clients:
+		elif not self._checkClient(request, message):
 			isSane = False
 			error = "invalid clientId provided"
 			# log.msg(message["clientId"])
@@ -581,8 +587,7 @@ class cometd(resource.PostableResource):
 	def subscribe(self, request, message):
 		# get the client and the channel here
 		# self._subscribe()
-		if "clientId" not in message or \
-			message["clientId"] not in self.clients:
+		if not self._checkClient(request, message):
 			# FIXME: we should probably send advice here instead of just raw failure
 			resp = { "error": "invalid clientId provided" }
 			if verbose:
@@ -598,18 +603,118 @@ class cometd(resource.PostableResource):
 
 		# FIXME: hoist template object to top level to avoid redef
 		resp = {
-			"timestamp": 	getTimestamp(),
 			"channel":		"/meta/subscribe",
 			"subscription":	message["channel"],
 			"successful":	True
 			# "authToken":	"SOME_NONCE"
 		}
+		if message["id"] is not None:
+			resp["id"] = message["id"]
 
 		# FIXME: should we be calling client.deliver and having *that* dispatch
 		# down to the correct connection object?
 		client.connection.deliver(resp)
-		return { "success": True }
+		# return { "successful": True }
+		return resp
 
+	def unsubscribe(self, request, message):
+		if not self._checkClient(request, message):
+			resp = { "error": "invalid clientId provided" }
+			return resp
+
+		client = self.clients[message["clientId"]]
+		if verbose: log.msg(client)
+
+		self._globbing_unsubscribe(client, message["subscription"])
+
+		# FIXME: hoist template object to top level to avoid redef
+		resp = {
+			"channel":		"/meta/unsubscribe",
+			"subscription":	message["channel"],
+			"successful":	True
+		}
+		if message["id"] is not None:
+			resp["id"] = message["id"]
+
+		# log.msg(simplejson.dumps(resp))
+		client.connection.deliver(resp)
+		# return { "successful": True }
+		return resp
+		
+	def route(self, request, message):
+		return self._globbing_route(request, message)
+
+	def _globbing_unsubscribe(self, client, chan):
+		"remove a subscription"
+
+		cparts = chan.split("/")[1:]
+		if verbose: log.msg(cparts)
+		root = self.subscriptions
+		for part in cparts: # create parts of the topic tree that don't yet exist
+			if not part in root:
+				return
+			root = root[part] 
+
+		del root["__cometd_subscribers"][client.id]
+
+	def _globbing_subscribe(self, client, chan):
+		"set up a subscription"
+
+		# the channels data structure is a tree, relying on the speed of Python
+		# dictionary lookups to quickly return a list of interested clients.
+		# NOTE: while we do "glob", it's only on terminal path components
+
+		cparts = chan.split("/")[1:]
+		if verbose: log.msg(cparts)
+		root = self.subscriptions
+		for part in cparts: # create parts of the topic tree that don't yet exist
+			if not part in root:
+				if verbose:
+					log.msg("creating part: ", part)
+				root[part] = { "__cometd_subscribers": None }
+				# root[part] = weakref.WeakValueDictionary()
+				root[part]["__cometd_subscribers"] = weakref.WeakValueDictionary()
+
+			root = root[part] 
+
+		root["__cometd_subscribers"][client.id] = client
+
+	def _globbing_route(self, request, message):
+		"""
+		Event routing and delivery. The guts of cometd.
+		"""
+		success = { 
+			"successful": True,
+			"channel": message["channel"]
+		}
+		if message["id"] is not None:
+			success["id"] = message["id"]
+
+		cparts = message["channel"].split("/")[1:]
+		if verbose: log.msg(cparts)
+		root = self.subscriptions
+		# FIXME: need to implement the "**" glob
+		for part in cparts: # FIXME: is iteration order garunteed?
+			if "*" in root:
+				# log.msg("delivering to wildcard subscribers")
+				subs = root["*"]["__cometd_subscribers"]
+				for client in subs:
+					if verbose: log.msg(client)
+					# FIXME: check for "openness"?
+					subs[client].connection.deliver(message)
+			if not part in root:
+				if verbose: log.msg("no part:", part, "matches for delivery")
+				return success
+			root = root[part]
+			subs = root["__cometd_subscribers"]
+			for client in subs:
+				subs[client].connection.deliver(message)
+		return success
+		# FIXME: aggregate ACKs!
+
+	###########################################################################
+	# old code, unused now
+	###########################################################################
 	def _subscribe(self, client, chan):
 		"set up a subscription"
 		# the channels data structure is a flat map, with each value being map of subsribed clients
@@ -635,55 +740,6 @@ class cometd(resource.PostableResource):
 			subs = root[message["channel"]]
 			for client in subs:
 				subs[client].connection.deliver(message)
-		return { "success": True }
-
-	# FIXME: need to implement the "**" glob
-	def _globbing_subscribe(self, client, chan):
-		"set up a subscription"
-		# the channels data structure is a tree, relying on the speed of Python
-		# dictionary lookups to quickly return a list of interested clients.
-		# NOTE: while we do "glob", it's only on terminal path components
-
-		cparts = chan.split("/")[1:]
-		if verbose: log.msg(cparts)
-		root = self.subscriptions
-		for part in cparts: # FIXME: is iteration order garunteed?
-			if not part in root:
-				if verbose:
-					log.msg("creating part: ", part)
-				root[part] = { "__cometd_subscribers": {} }
-			root = root[part]
-
-		root["__cometd_subscribers"][client.id] = client
-
-	def _globbing_route(self, request, message):
-		"""
-		Event routing and delivery. The guts of cometd.
-		"""
-		success = { "success": True }
-		cparts = message["channel"].split("/")[1:]
-		if verbose: log.msg(cparts)
-		root = self.subscriptions
-		for part in cparts: # FIXME: is iteration order garunteed?
-			if "*" in root:
-				# log.msg("delivering to wildcard subscribers")
-				subs = root["*"]["__cometd_subscribers"]
-				for client in subs:
-					if verbose: log.msg(client)
-					# FIXME: check for "openness"?
-					subs[client].connection.deliver(message)
-			if not part in root:
-				if verbose: log.msg("no part:", part, "matches for delivery")
-				return success
-			root = root[part]
-			subs = root["__cometd_subscribers"]
-			for client in subs:
-				subs[client].connection.deliver(message)
-		return success
-		# FIXME: aggregate ACKs!
-		# return buildResponse("{ success: true }", type="text/plain")
-	
-	def route(self, request, message):
-		return self._globbing_route(request, message)
+		return { "successful": True }
 
 # vim:ts=4:noet:
