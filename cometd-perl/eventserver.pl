@@ -56,7 +56,6 @@ Sprocket::Server->spawn(
                     # deny any files or dirs access beginning with .
                     qr|/\.| => 'HTTP::Deny',
                     qr/\.(pl|cgi)$/ => 'HTTP::CGI',
-                    qr|voxersidebar-dev\.js$| => 'HTTP::AlwaysModified',
                     # forward /cometd to the Comet plugin
                     qr|^/cometd/?$| => 'HTTP::Comet',
                 }
