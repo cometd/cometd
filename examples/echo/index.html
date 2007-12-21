@@ -4,8 +4,8 @@
     <head>
         <title>Comet echo RPC</title>
         <link rel="stylesheet" type="text/css" href="chat/chat.css"></link>
-        <script type="text/javascript" src="../dojo/dojo/dojo.js"></script>
-        <script type="text/javascript" src="../dojo/dojox/cometd.js"></script>
+        <script type="text/javascript" src="../dojo/dojo/dojo.js.uncompressed.js"></script>
+        <script type="text/javascript" src="../dojo/dojox/cometd.js.uncompressed.js"></script>
         <script type="text/javascript">
             dojo.require("dojox.cometd");
             dojo.require("dojox.cometd.timestamp");
@@ -71,7 +71,6 @@
             }
 
             dojo.addOnLoad(setUp);
-            dojo.addOnUnload(dojox.cometd.disconnect);
         </script>
     </head>
     <body>
