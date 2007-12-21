@@ -8,6 +8,7 @@
         <script type="text/javascript" src="../dojo/dojox/cometd.js"></script>
         <script type="text/javascript">
             dojo.require("dojox.cometd");
+            dojo.require("dojox.cometd.timestamp");
             $ = dojo.byId;
 
             var echoBehaviours = { 
@@ -66,7 +67,7 @@
             }
             
             function echoRpcReturn(msg){
-                dojo.byId("responses").innerHTML += msg.timestamp+" "+msg.channel+": "+msg.data.msg+"\n";
+                dojo.byId("responses").innerHTML += (msg.timestamp?msg.timestamp:"")+" "+msg.channel+": "+msg.data.msg+"\n";
             }
 
             dojo.addOnLoad(setUp);
