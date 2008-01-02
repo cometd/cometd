@@ -1,5 +1,5 @@
 dojo.require("dojox.cometd");
-dojo.require("dojox.cometd.timesync");
+dojo.require("dojox.cometd.timestamp");
 
 var room = {
     _last: "",
@@ -30,7 +30,7 @@ var room = {
             // handle cometd failures while in the room
             room._meta=dojo.subscribe("/cometd/meta",dojo.hitch(this,function(event){
                 console.debug(event);   
-                if (event.action=="handshake") {
+                if (event.action=="handshake"){
 	            room._chat({data:{join:true,user:"SERVER",chat:"reinitialized"}});
                     dojox.cometd.subscribe("/chat/demo", room, "_chat");
                 } else if (event.action=="connect") {
@@ -112,11 +112,10 @@ var room = {
             return true;
 	});
   
-        element=dojo.byId('joinB');
-        element.onclick = function(){
+        dojo.connect(dojo.byId('joinB'), "onclick", function(e){
             room.join(dojo.byId('username').value);
-            return false;
-	}
+            e.preventDefault();
+	});
   
         element=dojo.byId('phrase');
         element.setAttribute("autocomplete","OFF");
@@ -124,21 +123,15 @@ var room = {
             if(e.keyCode == dojo.keys.ENTER){
                 room.chat(dojo.byId('phrase').value);
                 dojo.byId('phrase').value='';
-                return false;
+                e.preventDefault();
             }
-            return true;
 	});
   
-        element=dojo.byId('sendB');
-        element.onclick = function(){
-          room.chat(dojo.byId('phrase').value);
-          dojo.byId('phrase').value='';
-	}
-  
-        element=dojo.byId('leaveB');
-        element.onclick = function(){
-          room.leave();
-	}
+	dojo.connect(dojo.byId('sendB'), "onkeyup", function(e){   
+	    room.chat(dojo.byId('phrase').value);
+            dojo.byId('phrase').value='';
+	});
+	dojo.connect(dojo.byId('leaveB'), "onclick", room, "leave");
     } 
 };
 
