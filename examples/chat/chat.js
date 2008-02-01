@@ -5,6 +5,7 @@ var room = {
 	_last: "",
 	_username: null,
 	_connected: true,
+	groupName: "whimsical",
 
 	join: function(name){
 
@@ -23,16 +24,16 @@ var room = {
 
 			// subscribe and join
 			dojox.cometd.startBatch();
-			dojox.cometd.subscribe("/chat/demo", room, "_chat");
+			dojox.cometd.subscribe("/chat/demo", room, "_chat", { groupName: this.groupName});
 			dojox.cometd.publish("/chat/demo", { 
 				user: room._username,
 				join: true,
 				chat : room._username+" has joined"
-			});
+			}, { groupName: this.groupName });
 			dojox.cometd.endBatch();
 
 			// handle cometd failures while in the room
-			room._meta = dojo.subscribe("/cometd/meta", dojo.hitch(this,function(event){
+			room._meta = dojo.subscribe("/cometd/meta", this, function(event){
 				console.debug(event);   
 				if(event.action == "handshake"){
 					room._chat({ data: {
@@ -40,7 +41,7 @@ var room = {
 						user:"SERVER",
 						chat:"reinitialized"
 					} });
-					dojox.cometd.subscribe("/chat/demo", room, "_chat");
+					dojox.cometd.subscribe("/chat/demo", room, "_chat", { groupName: this.groupName });
 				}else if(event.action == "connect"){
 					if(event.successful && !this._connected){
 						room._chat({ data: {
@@ -58,7 +59,7 @@ var room = {
 					}
 					this._connected = event.successful;
 				}
-			}));
+			}, {groupName: this.groupName });
 		}
 	},
 
@@ -68,17 +69,17 @@ var room = {
 		}
 
 		if(room._meta){
-			dojo.unsubscribe(room._meta);
+			dojo.unsubscribe(room._meta, null, null, { groupName: this.groupName });
 		}
 		room._meta=null;
 
 		dojox.cometd.startBatch();
-		dojox.cometd.unsubscribe("/chat/demo", room, "_chat");
+		dojox.cometd.unsubscribe("/chat/demo", room, "_chat", { groupName: this.groupName });
 		dojox.cometd.publish("/chat/demo", { 
 			user: room._username,
 			leave: true,
 			chat : room._username+" has left"
-		});
+		}, { groupName: this.groupName });
 		dojox.cometd.endBatch();
 
 		// switch the input form
@@ -93,7 +94,7 @@ var room = {
 		if(!text || !text.length){
 			return false;
 		}
-		dojox.cometd.publish("/chat/demo", { user: room._username, chat: text});
+		dojox.cometd.publish("/chat/demo", { user: room._username, chat: text}, { groupName: this.groupName });
 	},
 
 	_chat: function(message){
