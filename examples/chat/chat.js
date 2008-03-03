@@ -154,10 +154,10 @@ var room = {
 			}
 		});
 
-		dojo.connect(dojo.byId('sendB'), "onkeyup", function(e){   
-			room.chat(dojo.byId('phrase').value);
-			dojo.byId('phrase').value='';
-		});
+                dojo.connect(dojo.byId('sendB'), "onclick", function(e){   
+                        room.chat(dojo.byId('phrase').value);
+                        dojo.byId('phrase').value='';
+                });
 		dojo.connect(dojo.byId('leaveB'), "onclick", room, "leave");
 	} 
 };
