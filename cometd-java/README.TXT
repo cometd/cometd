@@ -1,23 +1,16 @@
 
-This is a java servlet implementation of cometd server.
+This is the common elements of the java servlet implementation of cometd server.
 
-This is currently imported from the jetty project as a external svn link.
+Currently this just contains the proposed common api.
+Eventually this will contain an implementation against the servetl-3.0 
+specification.
+
+For a working implementation for servlet 2.x see ../cometd-jetty
 
 To compile, you need to use maven 2.x 
 
-   cd $COMETD_HOME/cometd-java/cometd
    mvn install
 
-This produces a jar containing a servlet (with a dependency on
-jetty-util jar). This may be used in any webapp.
-
-A demo webapp is built in $COMETD_HOME/cometd-java/cometd/demo
-and may be run with the jetty plugin:
-
-   cd $COMETD_HOME/cometd-java/cometd/demo
-   mvn jetty:run
-
-then use a browser to surf to port 8080
 
 
 
