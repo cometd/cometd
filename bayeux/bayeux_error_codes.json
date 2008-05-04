@@ -1,0 +1,54 @@
+/**/
+/* Bayeux protocol error codes for version 1.01, in language-   */
+/* independent JSON form.                                       */
+/*                                                              */
+/* GloriaJW 2008-01-03                                          */
+/*                                                              */
+/* This is a JSON dictionary of all Bayeux error codes and      */
+/* associated messages. These messages have embedded printf-    */
+/* compliant characters (%s,%d, etc.) for variables to be       */
+/* filled in.                                                   */
+/*                                                              */
+/**/
+{	
+ /* 600 range = server configuration setting errors */
+ "601":"Authentication method : %s, found in the server config file, is not valid! Valid methods are %s",
+
+ /* 700 range = service channel errors */
+ "701":"Local service %s failed with this error: %s",
+ "702":"URL service to this URL: %s failed with this error: %s",
+ "703":"Incorrect Service channel: %s",
+
+ /* 800 range = handshake errors */
+ "801":"Incorrect handshake channel: %s",
+
+ /* 900 range = protocol version errors */
+ "901":"Client protocol minimum version :  %s is higher than server version: %s",
+ "902":"Client protocol version :  %s is higher than server version, and no minimum version was provided",
+
+ /* 1000 range = connection type errors */
+ "1001":"Client connection type(s) :  %s not availiable in server conncetion types",
+ "1002":"Incorrect connect channel: %s",
+ 
+ /* 1100 range = authentication type and user/passwd errors */
+ "1101":"Authentication type %s not supported by server.",
+ "1102":"Username/password authentication on the server failed.",
+ "1103":"Failed to log in. Username/password required by server.",
+ "1104":"Handshake timer expired/missing for client %s, need to re-handshake.",
+ "1105":"Request from invalid/unrecognized client: %s. Need to handshake and connect. Rejecting.",
+
+ /* These are Comet errors, and probably should be in a separate error file: */
+ /* 1200 range = topic errors */
+ "1201":"Incorrect subscription channel: %s",
+ "1202":"Cannot remove topic if you are not the owner.",
+ "1203":"Nonexistent channel %s, Publish failed.",
+ "1204":"Publish error: %s on channel %s.",
+ "1205":"Nonexistent subscription channel %s, entire subscription rejected."
+ "1206":"Subscription failed for topic %s, not sure why.",
+
+ /* 1300 range = globbing errors */
+ "1301":"Topic %s was never published or subscribed to, with an implicit publish. It does not exist, ignoring.",
+
+ /* 1400 range = routing errors */
+ "1401":"Program Error: these client_ids are in the quick Topic match, but are not connected: %s. Routing failed."
+}
