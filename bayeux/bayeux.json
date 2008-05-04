@@ -1,0 +1,539 @@
+/**/
+/* Bayeux protocol definition version 1.01, in language-        */
+/* independent JSON form.                                       */
+/*                                                              */
+/* GloriaJW 2008-01-03                                          */
+/*                                                              */
+/* This is a JSON dictionary of all Bayeux structures and their */
+/* possible values, vtypes and rtypes.                          */
+/*                                                              */
+/* The four value types (vtypes) are:                           */
+/* (1) Single Value from a Fixed list of values (SVF),          */
+/* (2) Single Value which is Variable (SVV),                    */
+/* (3) Multiple Values from a Fixed list of values (MVF),       */
+/* (4) Multiple Values which are Variable (MVV)                 */
+/*                                                              */
+/* These vtype fields begin with 'vtype_' and can be used as    */
+/* visual aids, or assert() fixed and single/multiple value     */
+/* checking. These fields are "advice" fields, not to be passed */
+/* in the bayeux protocol, but ONLY to be used for either       */
+/* automated or manual evaluation of field values.              */
+/*                                                              */
+/* The seven (optional) restriction types (rtypes) are:         */
+/* (1) Sent from Client only (CZ)                               */
+/* (2) Sent from Server only (SZ)                               */
+/* (3) Sent from Client only, and only upon failure: (CE)       */
+/* (4) Sent from Server only, and only upon failure: (SE)       */
+/* (5) Sent from Client only, optional: (CO)                    */
+/* (6) Sent from Server only, optional: (SO)                    */
+/* (7) Optional in both directions: (BO)                        */
+/*                                                              */
+/* These rtype fields are optional, and only appear when there  */
+/* is an applicable restriction on a field. They begin with     */
+/* 'rtype_' and can be used as visual aids, or assert()         */
+/* client/server and error checking. These fields are "advice"  */
+/* fields, not to be passed in the bayeux protocol, but ONLY to */
+/* be used for either automated or manual evaluation of field   */
+/* values.                                                      */
+/*                                                              */
+/**/
+{	
+"handshake":{"channel":"/meta/handshake",
+             "vtype_channel":"SVF",
+
+             "version":"1.0.1",
+             "vtype_version":"SVF",
+
+             "supportedConnectionTypes":["iframe", "flash","callback-polling","long-polling"],
+             "vtype_supportedConnectionTypes":"MVF",
+
+             /* response only */
+             "clientId":"alphanumeric1234", 
+             "vtype_clientId":"SVV",
+             "rtype_clientId":"SZ",
+
+             /* response only */
+             "successful":["true","false"],
+             "vtype_successful":"SVF",
+             "rtype_successful":"SZ",
+
+             /* failure only, response only */
+             "error":[000,"optional error arguments","Some Error String"],
+             "vtype_error":"MVV",
+             "rtype_error":"SE",
+
+             /* optional */
+             "minimumVersion":"1.0",
+             "vtype_version":"SVF",
+             "rtype_version":"BO",
+
+             /* optional */
+             "id":"alphanumeric1234",
+             "vtype_id":"SVV",
+             "rtype_id":"BO",
+
+             /* optional, response only */
+             "authSuccessful":["true","false"],
+             "vtype_authSuccessful":"SVF",
+             "rtype_authSuccessful":"SO",
+
+             /* optional, response only */
+             "advice":{"reconnect":["retry","handshake","none"],
+                       "vtype_reconect":"SVF",
+                       "rtype_reconect":"SO",
+             
+                       "interval":[1000,-1000],
+                       "vtype_interval":"SVV",
+                       "rtype_interval":"SO",
+             
+                       "multipleClients":["true","false"],
+                       "vtype_multipleClients":"SVF",
+                       "rtype_multipleClients":"SO",
+          
+                       "hosts":["SomeHostname","192.168.1.1","localhost","127.0.0.1"],
+                       "vtype_hosts":"MVV"
+                       "rtype_hosts":"SO"
+
+                       "authenticate":{"authtype":["htpasswd","OpenId"],
+                                       "vtype_authtype":"MVF",
+                                       "rtype_authtype":"SO"
+                                      },
+
+                       "guaranteedDelivery":["true","false"],
+                       "vtype_guaranteedDelivery":"MVF",
+                       "rtype_guaranteedDelivery":"SO"
+
+                       }
+
+             /* optional, client (initiator) only */
+             "ext":{"authenticate":{"authtype":["htpasswd","OpenId"],
+                                    "vtype_authtype":"SVF",
+                                    "rtype_authtype":"CO",
+
+                                    "user":"some user id",
+                                    "vtype_user":"SVV",
+                                    "rtype_user":"CO",
+
+                                    "password":"youch if clear text!",
+                                    "vtype_password":"SVV",
+                                    "rtype_password":"CO"
+                                   },
+
+                    "guaranteedDelivery":["true","false"],
+                    "vtype_guaranteedDelivery":"SVF",
+                    "rtype_guaranteedDelivery":"CO"
+                    }
+            },
+
+"connect":{"channel":"/meta/connect",
+           "vtype_channel":"SVF",
+
+           "connectionType":["iframe", "flash","callback-polling","long-polling"],
+           "vtype_connectionType":"SVF",
+
+           "clientId":"alphanumeric1234", 
+           "vtype_clientId":"SVV",
+
+           /* response only */
+           "successful":["true","false"],
+           "vtype_successful":"SVF",
+           "rtype_successful":"SZ",
+
+           /* failure only, response only */
+           "error":[000,"optional error arguments","Some Error String"],
+           "vtype_error":"MVV",
+           "rtype_error":"SE",
+
+           /* optional */
+           "id":"alphanumeric1234",
+           "vtype_id":"SVV",
+           "rtype_id":"BO",
+
+           /* optional, response only */
+           "timestamp":"YYYY-MM-DD\thh:mm:ss.ss",
+           "vtype_timestamp":"SVV",
+           "rtype_timestamp":"SO",
+
+           /* optional, server response only */
+           "advice":{"reconnect":["retry","handshake","none"],
+                  "vtype_reconect":"SVF",
+                  "rtype_reconect":"SO",
+        
+                  "interval":[1000,-1000],
+                  "vtype_interval":"SVV",
+                  "rtype_inderval":"SO",
+        
+                  "multipleClients":["true","false"],
+                  "vtype_multipleClients":"SVF",
+                  "rtype_multipleClients":"SO",
+        
+                  "hosts":["SomeHostname","192.168.1.1","localhost","127.0.0.1"],
+                  "vtype_hosts":"MVV",
+                  "rtype_hosts":"SO"
+
+                  "authenticate":{"authtype":["htpasswd","OpenId"],
+                                  "vtype_authtype":"MVF",
+                                  "rtype_authtype":"SO"
+                                 },
+
+                  "guaranteedDelivery":["true","false"],
+                  "vtype_guaranteedDelivery":"MVF",
+                  "rtype_guaranteedDelivery":"SO"
+
+                  }
+
+           /* optional, client (initiator) only */
+           "ext":{"authenticate":{"authtype":["htpasswd","OpenId"],
+                                  "vtype_authtype":"SVF",
+                                  "rtype_authtype":"CO",
+
+                                  "user":"some user id",
+                                  "vtype_user":"SVV",
+                                  "rtype_user":"CO",
+
+                                  "password":"youch if clear text!",
+                                  "vtype_password":"SVV",
+                                  "rtype_password":"CO"
+                                 }
+                  },
+                  "guaranteedDelivery":["true","false"],
+                  "vtype_guaranteedDelivery":"SVF",
+                  "rtype_guaranteedDelivery":"CO"
+          },
+
+"disconnect":{"channel":"/meta/disconnect",
+              "vtype_channel":"SVF",
+   
+              "clientId":"alphanumeric1234", 
+              "vtype_clientId":"SVV",
+
+              /* response only */
+              "successful":["true","false"],
+              "vtype_successful":"SVF",
+              "rtype_successful":"SZ",
+   
+              /* failure only, response only */
+              "error":[000,"optional error arguments","Some Error String"],
+              "vtype_error":"MVV",
+              "rtype_error":"SE",
+   
+              /* optional */
+              "id":"alphanumeric1234",
+              "vtype_id":"SVV",
+              "rtype_id":"BO"
+   
+             },
+
+"subscribe":{"channel":"/meta/subscribe",
+             "vtype_channel":"SVF",
+   
+             "clientId":"alphanumeric1234", 
+             "vtype_clientId":"SVV",
+
+             "subscription":["/foo/**","/channel_b","/channel_c/x"],
+             "vtype_subscription":"MVV",
+
+             /* optional, response only */
+             "timestamp":"YYYY-MM-DD\thh:mm:ss.ss",
+             "vtype_timestamp":"SVV",
+             "vtype_timestamp":"SO",
+
+             /* response only */
+             "successful":["true","false"],
+             "vtype_successful":"SVF",
+             "rtype_successful":"SZ",
+   
+             /* failure only, response only */
+             "error":[000,"optional error arguments","Some Error String"],
+             "vtype_error":"MVV",
+             "rtype_error":"SE",
+  
+             /* optional */
+             "id":"alphanumeric1234",
+             "vtype_id":"SVV",
+             "rtype_id":"BO",
+  
+             /* optional, server response only */
+             "advice":{"reconnect":["retry","handshake","none"],
+                       "vtype_reconect":"SVF",
+                       "rtype_reconect":"SO",
+             
+                       "interval":[1000,-1000],
+                       "vtype_interval":"SVV",
+                       "rtype_interval":"SO",
+             
+                       "multipleClients":["true","false"],
+                       "vtype_multipleClients":"SVF",
+                       "rtype_multipleClients":"SO",
+             
+                       "hosts":["SomeHostname","192.168.1.1","localhost","127.0.0.1"],
+                       "vtype_hosts":"MVV",
+                       "rtype_hosts":"SO",
+
+
+                       "authenticate":{"authtype":["htpasswd","OpenId"],
+                                       "vtype_authtype":"MVF"
+                                       "rtype_authtype":"SO"
+                                      },
+
+                       "guaranteedDelivery":["true","false"],
+                       "vtype_guaranteedDelivery":"MVF",
+                       "rtype_guaranteedDelivery":"SO"
+                       }
+
+             /* optional, client (initiator) only */
+             "ext":{"authenticate":{"authtype":["htpasswd","OpenId"],
+                                    "vtype_authtype":"SVF",
+                                    "rtype_authtype":"CO",
+
+                                    "user":"some user id",
+                                    "vtype_user":"SVV",
+                                    "rtype_user":"CO",
+
+                                    "password":"youch if clear text!",
+                                    "vtype_password":"SVV",
+                                    "rtype_password":"CO"
+                                   }
+                    },
+                    "guaranteedDelivery":["true","false"],
+                    "vtype_guaranteedDelivery":"SVF",
+                    "rtype_guaranteedDelivery":"CO"
+            },
+
+"unsubscribe":{"channel":"/meta/unsubscribe",
+               "vtype_channel":"SVF",
+     
+               "clientId":"alphanumeric1234", 
+               "vtype_clientId":"SVV",
+  
+               "subscription":["/foo/**","/channel_b","/channel_c/x"],
+               "vtype_subscription":"MVV"
+
+               /* response only */
+               "successful":["true","false"],
+               "vtype_successful":"SVF",
+               "rtype_successful":"SZ",
+   
+               /* failure only, response only */
+               "error":[000,"optional error arguments","Some Error String"],
+               "vtype_error":"MVV",
+               "rtype_error":"SE",
+   
+               /* optional */
+               "id":"alphanumeric1234",
+               "vtype_id":"SVV",
+               "rtype_id":"BO",
+   
+               /* optional, server response only */
+               "advice":{"reconnect":["retry","handshake","none"],
+                         "vtype_reconect":"SVF",
+                         "rtype_reconect":"SO",
+               
+                         "interval":[1000,-1000],
+                         "vtype_interval":"SVV",
+                         "rtype_interval":"SO",
+               
+                         "multipleClients":["true","false"],
+                         "vtype_multipleClients":"SVF",
+                         "rtype_multipleClients":"SO",
+               
+                         "hosts":["SomeHostname","192.168.1.1","localhost","127.0.0.1"],
+                         "vtype_hosts":"MVV",
+                         "rtype_hosts":"SO",
+
+                         "authenticate":{"authtype":["htpasswd","OpenId"],
+                                         "vtype_authtype":"MVF",
+                                         "rtype_authtype":"SO"
+                                        },
+
+                         "guaranteedDelivery":["true","false"],
+                         "vtype_guaranteedDelivery":"MVF",
+                         "rtype_guaranteedDelivery":"SO"
+
+                         }
+
+               /* optional, client (initiator) only */
+               "ext":{"authenticate":{"authtype":["htpasswd","OpenId"],
+                                      "vtype_authtype":"SVF",
+                                      "rtype_authtype":"CO",
+
+                                      "user":"some user id",
+                                      "vtype_user":"SVV",
+                                      "rtype_user":"CO",
+
+                                      "password":"youch if clear text!",
+                                      "vtype_password":"SVV",
+                                      "rtype_password":"CO"
+                                     }
+                      "guaranteedDelivery":["true","false"],
+                      "vtype_guaranteedDelivery":"SVF",
+                      "rtype_guaranteedDelivery":"CO"
+                     }
+              },
+
+"publish":{"channel":"/some/channel",
+           "vtype_channel":"SVV",
+         
+           "data":"some JSON dict or raw string",
+           "vtype_data":"SVV",
+
+           /* optional */
+           "clientId":"alphanumeric1234", 
+           "vtype_clientId":"SVV",
+           "rtype_clientId":"BO",
+
+           /* optional */
+           "id":"alphanumeric1234",
+           "vtype_id":"SVV",
+           "rtype_id":"BO",
+
+           /* optional */
+           "ext":{"authenticate":{"authtype":["htpasswd","OpenId"],
+                                  "vtype_authtype":"SVF",
+                                  "rtype_authtype":"BO",
+
+                                  "user":"some user id",
+                                  "vtype_user":"SVV",
+                                  "rtype_user":"BO",
+
+                                  "password":"youch if clear text!",
+                                  "vtype_password":"SVV",
+                                  "rtype_password":"BO"
+                                 }
+
+                  "guaranteedDelivery":["true","false"],
+                  "vtype_guaranteedDelivery":"SVF",
+                  "rtype_guaranteedDelivery":"BO"
+                 }
+
+           /* response only */
+           "successful":["true","false"],
+           "vtype_successful":"SVF",
+           "rtype_successful":"SZ",
+
+           /* failure only, response only */
+           "error":[000,"optional error arguments","Some Error String"],
+           "vtype_error":"MVV",
+           "rtype_error":"SE"
+          },
+
+"deliver":{"channel":"/some/channel",
+           "vtype_channel":"SVV",
+
+           "data":"some JSON dict or raw string",
+           "vtype_data":"SVV",
+
+           /* optional */
+           "clientId":"alphanumeric1234", 
+           "vtype_clientId":"SVV",
+           "rtype_clientId":"BO",
+
+           /* optional */
+           "id":"alphanumeric1234",
+           "vtype_id":"SVV",
+           "rtype_id":"BO",
+
+           /* optional */
+           "advice":{"reconnect":["retry","handshake","none"],
+                     "vtype_reconect":"SVF",
+                     "rtype_reconect":"BO",
+           
+                     "interval":[1000,-1000],
+                     "vtype_interval":"SVV",
+                     "rtype_interval":"BO",
+           
+                     "multipleClients":["true","false"],
+                     "vtype_multipleClients":"SVF",
+                     "rtype_multipleClients":"BO",
+           
+                     "hosts":["SomeHostname","192.168.1.1","localhost","127.0.0.1"],
+                     "vtype_hosts":"MVV",
+                     "rtype_hosts":"BO",
+
+
+                     "authenticate":{"authtype":["htpasswd","OpenId"],
+                                     "vtype_authtype":"MVF",
+                                     "rtype_authtype":"BO"
+                                    },
+
+                     "guaranteedDelivery":["true","false"],
+                     "vtype_guaranteedDelivery":"MVF",
+                     "rtype_guaranteedDelivery":"BO"
+                     }
+
+           /* optional, client (initiator) only */
+           "ext":{"authenticate":{"authtype":["htpasswd","OpenId"],
+                                  "vtype_authtype":"SVF",
+                                  "rtype_authtype":"CO",
+
+                                  "user":"some user id",
+                                  "vtype_user":"SVV",
+                                  "rtype_user":"CO",
+
+                                  "password":"youch if clear text!",
+                                  "vtype_password":"SVV",
+                                  "rtype_password":"CO"
+                                 }
+
+                  "guaranteedDelivery":["true","false"],
+                  "vtype_guaranteedDelivery":"SVF",
+                  "rtype_guaranteedDelivery":"CO"
+                  },
+
+           /* response only */
+           "successful":["true","false"],
+           "vtype_successful":"SVF",
+           "rtype_successful":"SZ",
+
+           /* failure only, response only */
+           "error":[000,"optional error arguments","Some Error String"],
+           "vtype_error":"MVV",
+           "rtype_error":"SE"
+          },
+
+"lsService":{"channel":"/service/local/ls_tmp", /* an example of a local service */
+             "vtype_channel":"SVF",
+
+             "clientId":"alphanumeric1234", 
+             "vtype_clientId":"SVV",
+
+             /* response only */
+             "response":"some potentially long string",
+             "vtype_response":"SVV",
+             "rtype_response":"SZ",
+
+             /* response only */
+             "successful":["true","false"],
+             "vtype_successful":"SVF",
+             "rtype_successful":"SZ",
+
+             /* failure only, response only */
+             "error":[000,"optional error arguments","Some Error String"],
+             "vtype_error":"MVV",
+             "rtype_error":"SE"
+
+		},
+
+"urlService":{"channel":"/service/url", /* bayeux_config file endpoints are attached here. */
+              "vtype_channel":"SVF",
+
+              "clientId":"alphanumeric1234", 
+              "vtype_clientId":"SVV",
+
+              /* response only */
+              "response":"some potentially long string",
+              "vtype_response":"SVV",
+              "rtype_response":"SZ",
+
+              /* response only */
+              "successful":["true","false"],
+              "vtype_successful":"SVF",
+              "rtype_successful":"SZ",
+
+              /* failure only, response only */
+              "error":[000,"optional error arguments","Some Error String"],
+              "vtype_error":"MVV",
+              "rtype_error":"SE"
+
+		}
+}
