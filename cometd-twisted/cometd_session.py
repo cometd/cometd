@@ -17,14 +17,14 @@ from handy import *
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Global functions
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def implicitGroupName():
-	'''
-	Six random letters followed by a timestamp string.
-	'''
-	#chars=string.letters + string.digits
-	chars=string.letters
-	return "%s%s" % (''.join([random.choice(chars) for i in xrange(6)],
-		rightNowInUTC(bayeux_config.serverTimeZone).strftime("%Y%d%m%H%M%S")))
+# def implicitGroupName():
+# 	'''
+# 	Six random letters followed by a timestamp string.
+# 	'''
+# 	#chars=string.letters + string.digits
+# 	chars=string.letters
+# 	return "%s%s" % (''.join([random.choice(chars) for i in xrange(6)],
+# 		rightNowInUTC(bayeux_config.serverTimeZone).strftime("%Y%d%m%H%M%S")))
 
 def generateMessageId():
 	return (''.join([random.choice(string.digits) for i in xrange(10)]))
