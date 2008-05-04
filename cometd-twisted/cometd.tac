@@ -24,7 +24,7 @@ logFile = "./cometd.log"
 
 # port: integer
 #	where should we log cometd activity to?
-port = 8080
+port = 8090
 
 # autoCreateChannels: boolean
 #	should channels (and user-defined channel names) be limited to those listed

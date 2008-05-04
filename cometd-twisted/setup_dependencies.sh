@@ -5,17 +5,33 @@ cd /tmp
 mkdir cometd_deps
 cd cometd_deps
 
-echo "installing setuptools"
-wget "http://cheeseshop.python.org/packages/source/s/setuptools/setuptools-0.6c3.tar.gz#md5=76cb98b779d356c64323125490f88d17"
-tar -zxvf setuptools-0.6c3.tar.gz
-cd setuptools-0.6c3
+# This is dangerous if the Python user already has a different version of setuptools.
+# Plus, it's not used below at all. 
+#echo "installing setuptools"
+#wget "http://pypi.python.org/packages/source/s/setuptools/setuptools-0.6c8.tar.gz"
+#tar -zxvf setuptools-0.6c8.tar.gz
+#cd setuptools-0.6c8.tar.gz
+#sudo python setup.py install
+#cd ..
+
+echo "installing pytz"
+wget "http://pypi.python.org/packages/source/p/pytz/pytz-2008a.tar.gz"
+tar xvzf pytz-2008a.tar.gz
+cd pytz-2008a
+sudo python setup.py install
+cd ..
+
+echo "installing cjson"
+wget "http://pypi.python.org/packages/source/p/python-cjson/python-cjson-1.0.5.tar.gz#md5=4d55b66ecdf0300313af9d030d9644a3"
+tar -zxvf python-json-1.0.5.tar.gz
+cd python-json-1.0.5
 sudo python setup.py install
 cd ..
 
 echo "installing simplejson"
-wget "http://cheeseshop.python.org/packages/source/s/simplejson/simplejson-1.4.tar.gz#md5=5fbad786a4b151d44a9b1e1e157e5510"
-tar -zxvf simplejson-1.4.tar.gz
-cd simplejson-1.4
+wget "http://pypi.python.org/packages/source/s/simplejson/simplejson-1.7.tar.gz"
+tar -zxvf simplejson-1.7.tar.gz
+cd simplejson-1.7
 sudo python setup.py install
 cd ..
 
@@ -27,9 +43,9 @@ sudo python setup.py install
 cd ..
 
 echo "installing lxml"
-wget http://codespeak.net/lxml/lxml-1.1.1.tgz
-tar -zxvf lxml-1.1.1.tgz
-cd lxml-1.1.1
+wget http://codespeak.net/lxml/lxml-2.0.1.tgz
+tar -zxvf lxml-2.0.1.tgz
+cd lxml-2.0.1
 sudo python setup.py install
 cd ..
 

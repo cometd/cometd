@@ -1,14 +1,16 @@
 Dependencies:
 -------------
 
-	* Python >= 2.3
-		http://python.org/
+	* Python >= 2.5
+		http://python.org/ (manually installed)
 	* Twisted Python 2.4.0
 		http://twistedmatrix.com/trac/
 	* Twisted Web2 0.2
 		http://twistedmatrix.com/trac/wiki/TwistedWeb2
 	* simplejson >= 1.3
 		http://cheeseshop.python.org/pypi/simplejson
+	* cjson >= 1.0.5
+		http://cheeseshop.python.org/pypi/cjson
 	* path >= 2.1
 		http://www.jorendorff.com/articles/python/path/
 
@@ -48,3 +50,9 @@ the user the systems runs as to write to this file.
 
 See the configuration parameters in the file cometd.tac for details on
 available configuration options.
+
+Bayeux Specific Configuration:
+------------------------------
+
+The Bayeux protocol has it's own set of configuration parameters. See the
+bayeux_config.py for details.
