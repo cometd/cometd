@@ -5,7 +5,8 @@
 	Licensed under the Academic Free License version 2.1 or above OR the
 	modified BSD license. For more information on Dojo licensing, see:
 
-		http://dojotoolkit.org/book/dojo-book-0-9/introduction/licensing
+	http://dojotoolkit.org/license
+
 */
 
 /*
@@ -361,9 +362,10 @@ dojox.cometd = new function(){
 	this._initialized = false;
 	this._connected = false;
 	this._polling = false;
+	this._handshook = false;
 
-	this.expectedNetworkDelay = 5000; // expected max network delay
-	this.connectTimeout = 0;    // If set, used as ms to wait for a connect response and sent as the advised timeout
+	this.expectedNetworkDelay = 10000; // expected max network delay
+	this.connectTimeout = 0;	  // If set, used as ms to wait for a connect response and sent as the advised timeout
 
 	this.connectionTypes = new dojo.AdapterRegistry(true);
 
@@ -379,7 +381,7 @@ dojox.cometd = new function(){
 	this.url = null;
 	this.lastMessage = null;
 	this._messageQ = [];
-	this.handleAs = "json-comment-optional";
+	this.handleAs = "json";
 	this._advice = {};
 	this._backoffInterval = 0;
 	this._backoffIncrement = 1000;
@@ -421,7 +423,6 @@ dojox.cometd = new function(){
 		//	|	dojox.cometd.init("/cometd");
 		//	|	dojox.cometd.init("http://xdHost/cometd",{ext:{user:"fred",pwd:"secret"}});
 
-
 		// FIXME: if the root isn't from the same host, we should automatically
 		// try to select an XD-capable transport
 		props = props||{};
@@ -455,13 +456,6 @@ dojox.cometd = new function(){
 		}
 
 		if(!this._isXD){
-			if(props.ext){
-				if(props.ext["json-comment-filtered"]!==true && props.ext["json-comment-filtered"]!==false){
-					props.ext["json-comment-filtered"] = true;
-				}
-			}else{
-				props.ext = { "json-comment-filtered": true };
-			}
 			props.supportedConnectionTypes = dojo.map(this.connectionTypes.pairs, "return item[0]");
 		}
 
@@ -477,6 +471,12 @@ dojox.cometd = new function(){
 			}),
 			error: dojo.hitch(this,function(e){
 				console.debug("handshake error!:",e);
+				this._backoff();
+				this._finishInit([{}]);
+			}),
+			timeoutSeconds: this.expectedNetworkDelay/1000,
+			timeout: dojo.hitch(this, function(){
+				console.debug("handshake timeout!");
 				this._backoff();
 				this._finishInit([{}]);
 			})
@@ -682,7 +682,7 @@ dojox.cometd = new function(){
 		
 		if(s==0){
 			props = props||{};
-			props.channel = "/meta/subscribe";
+			props.channel = "/meta/unsubscribe";
 			props.subscription = channel;
 			delete this._subscriptions[tname];
 			this._sendMessage(props);
@@ -761,8 +761,9 @@ dojox.cometd = new function(){
 
 	this._interval = function(){
 		var i=this._backoffInterval+(this._advice?(this._advice.interval?this._advice.interval:0):0);
-		if (i>0)
+		if (i>0){
 			console.debug("Retry in interval+backoff="+this._advice.interval+"+"+this._backoffInterval+"="+i+"ms");
+		}
 		return i;
 	}
 
@@ -804,10 +805,11 @@ dojox.cometd = new function(){
 			this.currentTransport.startup(data);
 		}
 
-		dojo.publish("/cometd/meta", [{cometd:this,action:"handshook",successful:successful,state:this.state()}]);
-
-		// If there is a problem
-		if(!successful){
+		dojo.publish("/cometd/meta", [{cometd:this,action:"handshake",successful:successful,reestablish:successful&&this._handshook,state:this.state()}]);
+		if (successful){
+			this._handshook=true;
+		}else{
+			// If there is a problem
 			console.debug("cometd init failed");
 			// follow advice
 			if(this._advice && this._advice["reconnect"]=="none"){
@@ -873,7 +875,9 @@ dojox.cometd = new function(){
 					}else if(!this._initialized){
 						this._connected = false; // finish disconnect
 					}
-					dojo.publish("/cometd/meta",[{cometd:this,action:"connect",successful:message.successful,state:this.state()}]);
+					if(this._initialized){
+						dojo.publish("/cometd/meta",[{cometd:this,action:"connect",successful:message.successful,state:this.state()}]);
+					}
 					break;
 				case "/meta/subscribe":
 					deferred = this._deferredSubscribes[message.subscription];
@@ -917,7 +921,7 @@ dojox.cometd = new function(){
 		if(message.data){
 			// dispatch the message to any locally subscribed listeners
 			try {
-                                var messages=[message];
+				var messages=[message];
 
 				// Determine target topic
 				var tname="/cometd"+message.channel;
@@ -975,14 +979,16 @@ dojox.cometd = new function(){
 	this._connectTimeout = function(){
 		// return the connect timeout in ms, calculated as the minimum of the advised timeout
 		// and the configured timeout.  Else 0 to indicate no client side timeout
-		var _advised=0;
-		if (this._advice && this._advice.timeout && this.expectedNetworkDelay>0)
-			_advised=this._advice.timeout + this.expectedNetworkDelay;
+		var advised=0;
+		if (this._advice && this._advice.timeout && this.expectedNetworkDelay>0){
+			advised=this._advice.timeout + this.expectedNetworkDelay;
+		}
 		
-		if (this.connectTimeout>0 && this.connectTimeout<_advised)
+		if (this.connectTimeout>0 && this.connectTimeout<_advised){
 			return this.connectTimeout;
+		}
 		
-		return 0;
+		return advised;
 	}
 }
 
@@ -1011,7 +1017,7 @@ cometd.blahTransport = new function(){
 		// summary:
 		//		determines whether or not this transport is suitable given a
 		//		list of transport types that the server supports
-		return dojo.lang.inArray(types, "blah");
+		return dojo.inArray(types, "blah");
 	}
 
 	this.startup = function(){
@@ -1087,9 +1093,9 @@ dojox.cometd.longPollTransport = new function(){
 				clientId:	this._cometd.clientId,
 				id:	""+this._cometd.messageId++
 			};
-			if (this._cometd.connectTimeout>this._cometd.expectedNetworkDelay)
+			if (this._cometd.connectTimeout>this._cometd.expectedNetworkDelay){
 				message.advice={timeout:(this._cometd.connectTimeout-this._cometd.expectedNetworkDelay)};
-			                    
+			}
 			message=this._cometd._extendOut(message);
 			this.openTunnelWith({message: dojo.toJson([message])});
 		}
@@ -1121,8 +1127,9 @@ dojox.cometd.longPollTransport = new function(){
 		};
 
 		var connectTimeout=this._cometd._connectTimeout();
-		if (connectTimeout>0)
+		if (connectTimeout>0) {
 			post.timeout=connectTimeout;
+		}
 
 		this._poll = dojo.xhrPost(post);
 	}
@@ -1142,7 +1149,14 @@ dojox.cometd.longPollTransport = new function(){
 			}),
 			content: {
 				message: dojo.toJson(messages)
-			}
+			},
+			error: dojo.hitch(this, function(err){
+				dojo.event.topic.publish("/cometd/meta",{cometd:this,action:"publish",successful:false,state:this.state(),messages:messages});
+			}),
+			timeoutSeconds: this._cometd.expectedNetworkDelay/1000,
+			timeout: dojo.hitch(this, function(){
+				dojo.event.topic.publish("/cometd/meta",{cometd:this,action:"publish",successful:false,state:this.state(),messages:messages});
+			})
 		});
 	}
 
@@ -1228,8 +1242,9 @@ dojox.cometd.callbackPollTransport = new function(){
 			callbackParamName: "jsonp"
 		};
 		var connectTimeout=this._cometd._connectTimeout();
-		if (connectTimeout>0)
+		if (connectTimeout>0) {
 			script.timeout=connectTimeout;
+		}
 		dojo.io.script.get(script);
 	}
 
@@ -1243,7 +1258,14 @@ dojox.cometd.callbackPollTransport = new function(){
 			url: this._cometd.url||dojo.config["cometdRoot"],
 			load: dojo.hitch(this._cometd, "deliver"),
 			callbackParamName: "jsonp",
-			content: { message: dojo.toJson( messages ) }
+			content: { message: dojo.toJson( messages ) },
+			error: dojo.hitch(this, function(err){
+				dojo.event.topic.publish("/cometd/meta",{cometd:this,action:"publish",successful:false,state:this.state(),messages:messages});
+			}),
+			timeoutSeconds: this._cometd.expectedNetworkDelay/1000,
+			timeout: dojo.hitch(this, function(){
+				dojo.event.topic.publish("/cometd/meta",{cometd:this,action:"publish",successful:false,state:this.state(),messages:messages});
+			})
 		};
 		return dojo.io.script.get(bindArgs);
 	}

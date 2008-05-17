@@ -95,7 +95,7 @@ dojox.cometd.timesync= new function(){
 				this.offset=parseInt((total/this._offsets.length).toFixed());
 				
 				if (this.samples<this._minWindow)
-					setTimeout("dojox.cometd.publish('/meta/ping',null)",100);
+					setTimeout(dojox._scopeName + ".cometd.publish('/meta/ping',null)",100);
 			}
 		}
 		return msg;
