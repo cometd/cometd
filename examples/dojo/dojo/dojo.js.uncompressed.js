@@ -786,6 +786,23 @@ dojo.global = {
 
 	dojo._global_omit_module_check = false;
 
+	dojo.loadInit = function(/*Function*/init){
+		//	summary:
+		//		Executes a function that needs to be executed for the loader's dojo.requireIf
+		//		resolutions to work. This is needed mostly for the xdomain loader case where
+		//		a function needs to be executed to set up the possible values for a dojo.requireIf
+		//		call.
+		//	init:
+		//		a function reference. Executed immediately.
+		//	description: This function is mainly a marker for the xdomain loader to know parts of
+		//		code that needs be executed outside the function wrappper that is placed around modules.
+		//		The init function could be executed more than once, and it should make no assumptions
+		//		on what is loaded, or what modules are available. Only the functionality in Dojo Base
+		//		is allowed to be used. Avoid using this method. For a valid use case,
+		//		see the source for dojox.gfx.
+		init();
+	}
+
 	dojo._loadModule = dojo.require = function(/*String*/moduleName, /*Boolean?*/omitModuleCheck){
 		//	summary:
 		//		loads a Javascript module from the appropriate URI
@@ -1836,7 +1853,7 @@ dojo._hasResource["dojo._base.declare"] = true;
 dojo.provide("dojo._base.declare");
 
 
-// this file courtesy of the TurboAjax group, licensed under a Dojo CLA
+// this file courtesy of the TurboAjax Group, licensed under a Dojo CLA
 
 dojo.declare = function(/*String*/ className, /*Function|Function[]*/ superclass, /*Object*/ props){
 	//	summary: 
@@ -1880,7 +1897,6 @@ dojo.declare = function(/*String*/ className, /*Function|Function[]*/ superclass
 	//	|	);
 
 	// process superclass argument
-	// var dd=dojo.declare, mixins=null;
 	var dd = arguments.callee, mixins;
 	if(dojo.isArray(superclass)){
 		mixins = superclass;
@@ -1893,12 +1909,13 @@ dojo.declare = function(/*String*/ className, /*Function|Function[]*/ superclass
 			superclass = dd._delegate(superclass, m);
 		});
 	}
-	// prepare values
-	var init = (props||0).constructor, ctor = dd._delegate(superclass), fn;
-	// name methods (experimental)
-	for(var i in props){ if(dojo.isFunction(fn = props[i]) && !0[i]){fn.nom = i;} } // 0[i] checks Object.prototype
-	// decorate prototype
-	dojo.extend(ctor, {declaredClass: className, _constructor: init, preamble: null}, props || 0); 
+	// create constructor
+	var ctor = dd._delegate(superclass);
+	// extend with "props"
+	props = props || {};
+	ctor.extend(props);
+	// more prototype decoration
+	dojo.extend(ctor, {declaredClass: className, _constructor: props.constructor/*, preamble: null*/});
 	// special help for IE
 	ctor.prototype.constructor = ctor;
 	// create named reference
@@ -1907,15 +1924,15 @@ dojo.declare = function(/*String*/ className, /*Function|Function[]*/ superclass
 
 dojo.mixin(dojo.declare, {
 	_delegate: function(base, mixin){
-		var bp = (base||0).prototype, mp = (mixin||0).prototype;
+		var bp = (base||0).prototype, mp = (mixin||0).prototype, dd=dojo.declare;
 		// fresh constructor, fresh prototype
-		var ctor = dojo.declare._makeCtor();
+		var ctor = dd._makeCtor();
 		// cache ancestry
-		dojo.mixin(ctor, {superclass: bp, mixin: mp, extend: dojo.declare._extend});
+		dojo.mixin(ctor, {superclass: bp, mixin: mp, extend: dd._extend});
 		// chain prototypes
 		if(base){ctor.prototype = dojo._delegate(bp);}
 		// add mixin and core
-		dojo.extend(ctor, dojo.declare._core, mp||0, {_constructor: null, preamble: null});
+		dojo.extend(ctor, dd._core, mp||0, {_constructor: null, preamble: null});
 		// special help for IE
 		ctor.prototype.constructor = ctor;
 		// name this class for debugging
@@ -1924,7 +1941,7 @@ dojo.mixin(dojo.declare, {
 	},
 	_extend: function(props){
 		var i, fn;
-		for(i in props){ if(dojo.isFunction(fn=props[i]) && !0[i]){fn.nom=i;} }
+		for(i in props){ if(dojo.isFunction(fn=props[i]) && !0[i]){fn.nom=i;fn.ctor=this;} }
 		dojo.extend(this, props);
 	},
 	_makeCtor: function(){
@@ -1969,7 +1986,7 @@ dojo.mixin(dojo.declare, {
 				p = c.superclass;
 				m = c.mixin;
 				if(m==mixin || (m instanceof mixin.constructor)){return p;}
-				if(m && (m=m._findMixin(mixin))){return m;}
+				if(m && m._findMixin && (m=m._findMixin(mixin))){return m;}
 				c = p && p.constructor;
 			}
 		},
@@ -1990,17 +2007,21 @@ dojo.mixin(dojo.declare, {
 			return !has && (p=this._findMixin(ptype)) && this._findMethod(name, method, p, has);
 		},
 		inherited: function(name, args, newArgs){
-			// optionalize name argument (experimental)
+			// optionalize name argument
 			var a = arguments;
 			if(!dojo.isString(a[0])){newArgs=args; args=name; name=args.callee.nom;}
 			a = newArgs||args;
 			var c = args.callee, p = this.constructor.prototype, fn, mp;
-			// if not an instance override 
+			// if not an instance override
 			if(this[name] != c || p[name] == c){
-				mp = this._findMethod(name, c, p, true);
+				// start from memoized prototype, or
+				// find a prototype that has property 'name' == 'c'
+				mp = (c.ctor||0).superclass || this._findMethod(name, c, p, true);
 				if(!mp){throw(this.declaredClass + ': inherited method "' + name + '" mismatch');}
+				// find a prototype that has property 'name' != 'c'
 				p = this._findMethod(name, c, mp, false);
 			}
+			// we expect 'name' to be in prototype 'p'
 			fn = p && p[name];
 			if(!fn){throw(mp.declaredClass + ': inherited method "' + name + '" not found');}
 			// if the function exists, invoke it in our scope
@@ -3960,8 +3981,8 @@ if(dojo.isIE || dojo.isOpera){
 
 		node = d.byId(node);
 		try{
-			if(!_destroyContainer){
-				_destroyContainer = document.createElement("div");
+			if(!_destroyContainer || _destroyContainer.ownerDocument != node.ownerDocument){
+				_destroyContainer = node.ownerDocument.createElement("div");
 			}
 			_destroyContainer.appendChild(node.parentNode ? node.parentNode.removeChild(node) : node);
 			// NOTE: see http://trac.dojotoolkit.org/ticket/2931. This may be a bug and not a feature
@@ -4143,9 +4164,10 @@ if(dojo.isIE || dojo.isOpera){
 	}
 =====*/
 
-	var gcs, dv = document.defaultView;
+	var gcs;
 	if(d.isSafari){
 		gcs = function(/*DomNode*/node){
+			var dv = node.ownerDocument.defaultView;
 			var s = dv.getComputedStyle(node, null);
 			if(!s && node.style){ 
 				node.style.display = ""; 
@@ -4159,6 +4181,7 @@ if(dojo.isIE || dojo.isOpera){
 		};
 	}else{
 		gcs = function(node){
+			var dv = node.ownerDocument.defaultView;
 			return dv.getComputedStyle(node, null);
 		};
 	}
@@ -4893,6 +4916,10 @@ if(dojo.isIE || dojo.isOpera){
 				// if it is spelled "tabIndex"
 				// console.debug((dojo.isIE && dojo.isIE < 8)? "tabIndex" : "tabindex");
 				return (d.isIE && d.isIE < 8) ? "tabIndex" : "tabindex";
+		case "for": case "htmlfor":
+				// to pick up for attrib set in markup via getAttribute() IE<8 uses "htmlFor" and others use "for"
+				// get/setAttribute works in all as long use same value for both get/set
+				return (d.isIE && d.isIE < 8) ? "htmlFor" : "for";
 			default:
 				return name;
 		}
@@ -4927,7 +4954,9 @@ if(dojo.isIE || dojo.isOpera){
 		//	returns:
 		//		true if the requested attribute is specified on the
 		//		given element, and false otherwise
-		var attr = d.byId(node).getAttributeNode(_fixAttrName(name));
+		var fixName = _fixAttrName(name);
+		fixName = fixName == "htmlFor" ? "for" : fixName; //IE<8 uses htmlFor except in this case
+		var attr = d.byId(node).getAttributeNode(fixName);
 		return attr ? attr.specified : false; // Boolean
 	}
 
@@ -6853,7 +6882,7 @@ dojo.provide("dojo._base.xhr");
 	var _d = dojo;
 	function setValue(/*Object*/obj, /*String*/name, /*String*/value){
 		//summary:
-		//		For the nameed property in object, set the value. If a value
+		//		For the named property in object, set the value. If a value
 		//		already exists and it is a string, convert the value to be an
 		//		array of values.
 		var val = obj[name];
@@ -7133,9 +7162,7 @@ dojo.provide("dojo._base.xhr");
 		//	handle: Function?
 		//		function(response, ioArgs){}. response is an Object, ioArgs
 		//		is of type dojo.__IoCallbackArgs. The handle function will
-		//		be called in either the successful or error case.  For
-		//		the load, error and handle functions, the ioArgs object
-		//		will contain the following properties: 
+		//		be called in either the successful or error case.
 		this.url = url;
 		this.content = content;
 		this.timeout = timeout;
@@ -8160,6 +8187,7 @@ if(dojo.config.require){
 
 }
 
+	//INSERT dojo.i18n._preloadLocalizations HERE
 
 	if(dojo.config.afterOnLoad && dojo.isBrowser){
 		//Dojo is being added to the page after page load, so just trigger

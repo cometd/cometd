@@ -1,7 +1,7 @@
 if(!dojo._hasResource["dojox.cometd.timesync"]){ //_hasResource checks added by build. Do not use _hasResource directly in your code.
 dojo._hasResource["dojox.cometd.timesync"] = true;
 dojo.provide("dojox.cometd.timesync");
-dojo.require("dojox.cometd");
+dojo.require("dojox.cometd._base");
 
 /**
  * this file provides the time synchronization extension to cometd.
