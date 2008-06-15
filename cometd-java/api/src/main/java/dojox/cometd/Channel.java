@@ -70,6 +70,9 @@ public interface Channel
     public Collection<Client> getSubscribers();
 
     /* ------------------------------------------------------------ */
+    public int getSubscriberCount();
+ 
+    /* ------------------------------------------------------------ */
     public void addDataFilter(DataFilter filter);
 
     /* ------------------------------------------------------------ */
