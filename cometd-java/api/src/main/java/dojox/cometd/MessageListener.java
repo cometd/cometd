@@ -16,6 +16,18 @@ package dojox.cometd;
 
 import java.util.EventListener;
 
+/**
+ * Message Listener Interface.
+ * 
+ * Objects implementing this interface may listen for message deliverly events
+ * by calling the {@link Client#addListener(EventListener)}.  The {@link Synchronous}
+ * or {@link Asynchronous} nested interfaces may be used as a mixin to specify the style 
+ * of delivery required.  If neither subtype is specified, then the {@link Bayeux} 
+ * implementation may use either method.
+ * 
+ * @author gregw
+ *
+ */
 public interface MessageListener extends EventListener
 {
     /**
@@ -23,4 +35,22 @@ public interface MessageListener extends EventListener
      * @param msg TODO
      */
     public void deliver(Client fromClient, Client toClient, Message msg);
+    
+    /**
+     * Subtype of MessageListener that requires synchronous message delivery.
+     * The {@link Client} object is locked during the call to 
+     * {@link MessageListener#deliver(Client, Client, Message)}, thus 
+     * guaranteeing that only a single message will be delivered at once and 
+     * in order of receipt.
+     *
+     */
+    public interface Synchronous {};
+    
+    /** 
+     * subtype of MesssageListener that requires asynchronous message delivery.
+     * Calls to {@link MessageListener#deliver(Client, Client, Message)} may occur
+     * in parallel and possible out of order.
+     * 
+     */
+    public interface Asynchronous {};
 }
