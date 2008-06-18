@@ -104,10 +104,8 @@ Distribution of this memo is unlimited. This memo is written in UK English.
 <p>Copyright &copy; The Dojo Foundation (2007). All Rights Reserved</p>
 <h2 class="intro">Abstract</h2>
 <p>
-Bayeux is a protocol for routing JSON encoded events between clients and
-servers in a publish subscribe model. The protocol is designed to overcome the
-client/server nature of the internet in general and specifically of HTTP to
-allow asynchronous messaging between all participants.
+Bayeux is a protocol for transporting asynchronous messages (primarily over HTTP), with low latency between a web
+server. 
 </p>
 <h1 class="contents">Table of Contents</h1>
 <br>
@@ -119,12 +117,19 @@ allow asynchronous messaging between all participants.
 <h1 class="clause">1. Introduction</h1>
 <h2 class="clause">1.1. Purpose</h2>
 <p>
-Bayeux is a protocol for transporting asynchronous messages with low latency,
-primarily over HTTP. The messages are routed via named channels and can be
-delivered: server to client, client to server and client to client (via the
-server). The primary purpose of Bayeux is to implement responsive user
-interactions for web clients using Ajax and the server-push technique called
-Comet.
+The primary purpose of Bayeux is to support responsive 2 way interactions between web clients using Ajax and the web
+server. 
+</p>
+<p>
+Bayeux is a protocol for transporting asynchronous messages (primarily over HTTP), with low latency between a web
+server and a web browser
+The messages are routed via named channels and can be delivered: server to client, client to server and client to client (via the server). By default, publish subscribe routing semantics are applied to the channels, but other routing
+models are also supported. 
+</p>
+<p>
+Delivery of asynchronous messages from the server to a web client is often described as "server-push". The
+combination of server push techniques with an Ajax web application has been called "comet". Cometd is a project by
+the Dojo Foundation to provide multiple implementation of the Bayeux project in several programming languages.
 </p>
 <p>
 Bayeux seeks to reduce the complexity of developing Comet-driven applications
