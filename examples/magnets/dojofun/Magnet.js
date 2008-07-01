@@ -1,53 +1,66 @@
-dojo.provide("dojofun.widget.Magnet");
-dojo.require("dojo.html.style");
-dojo.require("dojo.lfx.html");
-dojo.require("dojo.dnd.HtmlDragMove");
+dojo.provide("dojofun.Magnet");
+dojo.require("dojo.dnd.Moveable");
+dojo.require("dijit._Widget");
+dojo.require("dijit._Templated");
 
+dojo.declare("dojofun.Magnet", [dijit._Widget, dijit._Templated], { 
+	
+	templatePath: dojo.moduleUrl("dojofun","Magnet.html"),
 
-dojo.widget.defineWidget("dojofun.widget.Magnet", dojo.widget.HtmlWidget, { 
-	templatePath: dojo.uri.dojoUri("../examples/magnets/dojofun/widget/templates/Magnet.html"),
-	templateCssPath: dojo.uri.dojoUri("../examples/magnets/dojofun/widget/templates/Magnet.css"),
+	url:"",
 
-	initializer: function(){
+	constructor: function(){
 		this.phrase = "hello world";
 		this.domNodeClass="magnet";
 		this.constrainTo="";
 	},
 
 	postCreate: function(){
+		
+		this.inherited(arguments);
 		this.domNode.innerHTML=this.phrase;
-		dojo.html.addClass(this.domNode, this.domNodeClass);
-		dojo.html.disableSelection(this.domNode);
+		dojo.addClass(this.domNode, this.domNodeClass);
+		dojo.setSelectable(this.domNode, false);
 
-		this.drag = new dojo.dnd.HtmlDragMoveSource(this.domNode);
-		this.drag.constrainTo(dojo.byId(this.constrainTo));
+//		this.drag = new dojo.dnd.move.constrainedMoveable(this.domNode, {
+		this._moveable = new dojo.dnd.Moveable(this.domNode);
+//		});
+
+
 	},
 
 	highlight: function(){
-		this.domNode.style.borderColor = "blue";
-		dojo.html.setOpacity(this.domNode, 0.5);
+		dojo.style(this.domNode,{
+			borderColor: "blue",
+			opacity: 0.5
+		});
 	},
 
 	unhighlight: function(){
-		this.domNode.style.borderColor = "black";
-		dojo.html.setOpacity(this.domNode, 1.0);
+		dojo.style(this.domNode,{
+			borderColor: "black",
+			opacity: 1
+		});
 	},
 
 	moveTo: function(coords){
-		var cpos = dojo.html.abs(this.domNode);
+//		var cpos = dojo.coords(this.domNode);
 		with(this.domNode.style){
 			if(position != "absolute"){
-				left = cpos.x+"px";
-				top = cpos.y+"px";
+//				left = coords.x+"px";
+//				top = coords.y+"px";
 				position = "absolute";
 			}
 		}
-		var anim = dojo.lfx.propertyAnimation(
-			[this.domNode],
-			[	{ property: "top", end: coords.y },
-				{ property: "left", end: coords.x }	],
-			100,
-			dojo.lfx.easeInOut
-		).play(20);
+		dojo.anim(this.domNode,{
+			top: coords.y, left:coords.x
+		});
+//		var anim = dojo.lfx.propertyAnimation(
+//			[this.domNode],
+//			[	{ property: "top", end: coords.y },
+//				{ property: "left", end: coords.x }	],
+//			100,
+//			dojo.lfx.easeInOut
+//		).play(20);
 	}
 });
