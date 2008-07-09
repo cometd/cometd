@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>dojox.cometd</groupId>
-  <artifactId>cometd-project</artifactId>
+  <groupId>org.cometd</groupId>
+  <artifactId>project</artifactId>
   <packaging>pom</packaging>
   <name>Cometd</name>
   <version>0.9-SNAPSHOT</version>
@@ -61,15 +61,62 @@
       <name>The Academic Free License, v. 2.1</name>
     </license>
   </licenses>
+
   <repositories>
-   <repository>
-    <id>cometd.org</id>
-    <name>Cometd repository</name>
-    <layout>default</layout>
-    <url>http://repository.cometd.org</url>
-    <snapshots><enabled>true</enabled></snapshots>
-   </repository>
+    <repository>
+      <id>dojo</id>
+      <name>Dojo Maven2 Repository</name>
+      <url>http://download.dojotoolkit.org/maven2</url>
+      <releases>
+        <enabled>true</enabled>
+        <updatePolicy>daily</updatePolicy>
+        <checksumPolicy>fail</checksumPolicy>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <layout>default</layout>
+    </repository>
+    <repository>
+      <id>dojoSnapshots</id>
+      <name>Dojo Maven2 Snapshot Repository</name>
+      <url>http://download.dojotoolkit.org/maven2-snapshot</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>always</updatePolicy>
+        <checksumPolicy>warn</checksumPolicy>
+      </snapshots>
+      <layout>default</layout>
+    </repository>
   </repositories>
+
+  <distributionManagement>
+    <repository>
+      <id>download.dojotoolkit.org</id>
+      <name>Dojo Maven2 Repository</name>
+      <url>scpexe://download.dojotoolkit.org/srv/www/vhosts/download.dojotoolkit.org/maven2</url>
+      <layout>default</layout>
+    </repository>
+    <snapshotRepository>
+      <id>download.dojotoolkit.org</id>
+      <name>Dojo Maven2 Snapshot Repository</name>
+      <url>scpexe://download.dojotoolkit.org/srv/www/vhosts/download.dojotoolkit.org/maven2-snapshot</url>
+      <layout>default</layout>
+    </snapshotRepository>
+    <!-- none yet 
+    <site>
+      <id></id>
+      <name></name>
+      <url></url>
+    </site>
+    -->
+  </distributionManagement>
+
+
+
   <pluginRepositories>
   </pluginRepositories>
   <scm>
@@ -81,11 +128,6 @@
     <url>http://www.dojotoolkit.org</url>
   </organization>
   <build>
-    <sourceDirectory>src/main/java</sourceDirectory>
-    <scriptSourceDirectory>src/main/scripts</scriptSourceDirectory>
-    <testSourceDirectory>src/test/java</testSourceDirectory>
-    <outputDirectory>target/classes</outputDirectory>
-    <testOutputDirectory>target/test-classes</testOutputDirectory>
     <extensions>
       <extension>
         <groupId>org.apache.maven.wagon</groupId>
@@ -142,7 +184,7 @@
               <mode>development</mode>
               <url>${pom.url}</url>
 	      <implementation-version>${pom.version}</implementation-version>
-	      <package>dojox.cometd</package>
+	      <package>org.cometd</package>
             </manifestEntries>
           </archive>
         </configuration>
@@ -213,11 +255,13 @@
     </pluginManagement>
   </build>
   <modules>
+    <module>cometd-dojox-examples</module>
     <module>cometd-java</module>
-    <module>cometd-jetty</module>
+<!--    <module>cometd-jetty</module> -->
   </modules>
 
   <properties>
     <maven-wagon-version>1.0-beta-2</maven-wagon-version>
+    <jetty.version>6.1.11</jetty.version>
   </properties>
 </project>
