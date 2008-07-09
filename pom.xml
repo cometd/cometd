@@ -257,7 +257,7 @@
   <modules>
     <module>cometd-dojox-examples</module>
     <module>cometd-java</module>
-<!--    <module>cometd-jetty</module> -->
+    <module>cometd-jetty</module> 
   </modules>
 
   <properties>
