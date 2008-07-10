@@ -1,54 +1,29 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.cometd</groupId>
+    <artifactId>project</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
   <groupId>org.mortbay.jetty</groupId>
   <artifactId>cometd</artifactId>
   <version>6.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>cometd</name>
   <url>http://www.cometd.com</url>
-  <licenses>
-    <license>
-      <name>Apache License Version 2</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
-    </license>
-  </licenses>
+
+  <properties>
+    <junit-version>3.8.2</junit-version>
+    <cometd-version>1.0-SNAPSHOT</cometd-version>
+  </properties>
 
   <modules>
     <module>bayeux</module>
     <module>client</module>
     <module>demo</module>
-    <module>install</module>
   </modules>
 
-  <build>
-    <extensions>
-      <extension>
-        <groupId>org.apache.maven.wagon</groupId>
-        <artifactId>wagon-ssh-external</artifactId>
-        <version>${maven-wagon-version}</version>
-      </extension>
-      <extension>
-        <groupId>org.apache.maven.wagon</groupId>
-        <artifactId>wagon-ssh</artifactId>
-        <version>${maven-wagon-version}</version>
-      </extension>
-      <extension>
-	<groupId>org.apache.maven.wagon</groupId>
-	<artifactId>wagon-webdav</artifactId>
-	<version>${maven-wagon-version}</version>
-      </extension>
-    </extensions>
-    <defaultGoal>install</defaultGoal>
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.5</source>
-          <target>1.5</target>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -81,9 +56,4 @@
     </site>
   </distributionManagement>
 
-  <properties>
-    <junit-version>3.8.2</junit-version>
-    <maven-wagon-version>1.0-beta-2</maven-wagon-version>
-    <cometd-version>0.9-SNAPSHOT</cometd-version>
-  </properties>
 </project>
