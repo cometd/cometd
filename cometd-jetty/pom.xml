@@ -1,0 +1,89 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.mortbay.jetty</groupId>
+  <artifactId>cometd</artifactId>
+  <version>6.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>cometd</name>
+  <url>http://www.cometd.com</url>
+  <licenses>
+    <license>
+      <name>Apache License Version 2</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <modules>
+    <module>bayeux</module>
+    <module>client</module>
+    <module>demo</module>
+    <module>install</module>
+  </modules>
+
+  <build>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-ssh-external</artifactId>
+        <version>${maven-wagon-version}</version>
+      </extension>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-ssh</artifactId>
+        <version>${maven-wagon-version}</version>
+      </extension>
+      <extension>
+	<groupId>org.apache.maven.wagon</groupId>
+	<artifactId>wagon-webdav</artifactId>
+	<version>${maven-wagon-version}</version>
+      </extension>
+    </extensions>
+    <defaultGoal>install</defaultGoal>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.5</source>
+          <target>1.5</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.cometd.java</groupId>
+        <artifactId>api</artifactId>
+        <version>${cometd-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${junit-version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <distributionManagement>
+    <repository>
+      <id>codehaus.org</id>
+      <name>Jetty Repository</name>
+      <url>dav:https://dav.codehaus.org/repository/jetty/</url>
+    </repository>
+    <snapshotRepository>
+      <id>codehaus.org</id>
+      <name>Jetty Snapshot Repository</name>
+      <url>dav:https://dav.codehaus.org/snapshots.repository/jetty/</url>
+    </snapshotRepository>
+    <site>
+      <id>codehaus.org</id>
+      <url>dav:https://dav.codehaus.org/jetty/</url>
+    </site>
+  </distributionManagement>
+
+  <properties>
+    <junit-version>3.8.2</junit-version>
+    <maven-wagon-version>1.0-beta-2</maven-wagon-version>
+    <cometd-version>0.9-SNAPSHOT</cometd-version>
+  </properties>
+</project>
