@@ -4,12 +4,24 @@
   <artifactId>project</artifactId>
   <packaging>pom</packaging>
   <name>Cometd</name>
-  <version>0.9-SNAPSHOT</version>
+  <version>1.0-SNAPSHOT</version>
   <url>http://www.cometd.org</url>
   <issueManagement>
     <system>jira</system>
     <url>http://trac.dojotoolkit.org</url>
   </issueManagement>
+
+  <properties>
+    <maven-wagon-version>1.0-beta-2</maven-wagon-version>
+    <jetty.version>6.1.11</jetty.version>
+  </properties>
+
+  <modules>
+    <module>cometd-dojox-examples</module>
+    <module>cometd-java</module>
+    <module>cometd-jetty</module> 
+  </modules>
+
   <mailingLists>
     <mailingList>
       <name>Cometd Dev List</name>
@@ -24,6 +36,7 @@
       <archive>http://dojotoolkit.org/mailman/listinfo/dojo-contributors</archive>
     </mailingList>
   </mailingLists>
+
   <developers>
     <developer>
       <id>gregw</id>
@@ -115,8 +128,6 @@
     -->
   </distributionManagement>
 
-
-
   <pluginRepositories>
   </pluginRepositories>
   <scm>
@@ -204,6 +215,7 @@
 	</executions>
       </plugin>
     </plugins>
+
     <pluginManagement>
       <plugins>
        <plugin>
@@ -254,14 +266,5 @@
       </plugins>
     </pluginManagement>
   </build>
-  <modules>
-    <module>cometd-dojox-examples</module>
-    <module>cometd-java</module>
-    <module>cometd-jetty</module> 
-  </modules>
 
-  <properties>
-    <maven-wagon-version>1.0-beta-2</maven-wagon-version>
-    <jetty.version>6.1.11</jetty.version>
-  </properties>
 </project>
