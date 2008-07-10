@@ -13,13 +13,13 @@
 
   <properties>
     <maven-wagon-version>1.0-beta-2</maven-wagon-version>
-    <jetty.version>6.1.11</jetty.version>
+    <jetty-version>6.1.11</jetty-version>
   </properties>
 
   <modules>
     <module>cometd-dojox-examples</module>
     <module>cometd-java</module>
-    <module>cometd-jetty</module> 
+    <module>cometd-jetty</module>
   </modules>
 
   <mailingLists>
@@ -139,6 +139,7 @@
     <url>http://www.dojotoolkit.org</url>
   </organization>
   <build>
+    <defaultGoal>install</defaultGoal>
     <extensions>
       <extension>
         <groupId>org.apache.maven.wagon</groupId>
@@ -156,7 +157,6 @@
 	<version>${maven-wagon-version}</version>
       </extension>
     </extensions>
-    <defaultGoal>install</defaultGoal>
     <resources>
       <resource>
         <directory>src/main/resources</directory>
