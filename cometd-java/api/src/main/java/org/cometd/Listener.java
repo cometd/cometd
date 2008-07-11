@@ -12,15 +12,15 @@
 // limitations under the License.
 // ========================================================================
 
-package dojox.cometd;
+package org.cometd;
 
-import java.util.EventListener;
 
-public interface RemoveListener extends EventListener
+
+/* ------------------------------------------------------------ */
+/** Cometd Receiver interface.
+ * A receive in an object that can receive a message for a Bayeux {@link Client}.
+ * 
+ */
+public interface Listener extends MessageListener, RemoveListener
 {
-    /**
-     * This method is called when the client is removed (explicitly or from a timeout)
-     */
-    public void removed(String clientId, boolean timeout);
-    
 }

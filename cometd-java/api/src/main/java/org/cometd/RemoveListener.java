@@ -12,16 +12,15 @@
 // limitations under the License.
 // ========================================================================
 
-package dojox.cometd;
+package org.cometd;
 
-/* ------------------------------------------------------------ */
-/** Pluggable security policy for Bayeux
- *
- */
-public interface SecurityPolicy
+import java.util.EventListener;
+
+public interface RemoveListener extends EventListener
 {
-    boolean canHandshake(Message message);
-    boolean canCreate(Client client,String channel,Message message);
-    boolean canSubscribe(Client client,String channel,Message messsage);
-    boolean canPublish(Client client,String channel,Message messsage);
+    /**
+     * This method is called when the client is removed (explicitly or from a timeout)
+     */
+    public void removed(String clientId, boolean timeout);
+    
 }

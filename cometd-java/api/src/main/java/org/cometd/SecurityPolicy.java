@@ -12,15 +12,16 @@
 // limitations under the License.
 // ========================================================================
 
-package dojox.cometd;
-
-
+package org.cometd;
 
 /* ------------------------------------------------------------ */
-/** Cometd Receiver interface.
- * A receive in an object that can receive a message for a Bayeux {@link Client}.
- * 
+/** Pluggable security policy for Bayeux
+ *
  */
-public interface Listener extends MessageListener, RemoveListener
+public interface SecurityPolicy
 {
+    boolean canHandshake(Message message);
+    boolean canCreate(Client client,String channel,Message message);
+    boolean canSubscribe(Client client,String channel,Message messsage);
+    boolean canPublish(Client client,String channel,Message messsage);
 }

@@ -12,7 +12,7 @@
 // limitations under the License.
 //========================================================================
 
-package dojox.cometd;
+package org.cometd;
 
 import java.util.Collection;
 
@@ -217,6 +217,10 @@ public interface Bayeux
      * @param subscriber
      */
     public void unsubscribe(String toChannel, Client subscriber);
-   
-    
+
+    /* ------------------------------------------------------------ */
+    /** Add a bayeux extension
+     * @param ext
+     */
+    public void addExtension(Extension ext);
 }
