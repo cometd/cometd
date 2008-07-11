@@ -12,7 +12,7 @@
 // limitations under the License.
 //========================================================================
 
-package dojox.cometd;
+package org.cometd;
 
 import java.util.Collection;
 

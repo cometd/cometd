@@ -11,23 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //========================================================================
+//
+package org.cometd;
 
-package dojox.cometd;
 
-
-/* ------------------------------------------------------------ */
-/** Data Filter
- * Data filters are used to transform data as it is sent to a Channel.
- * 
- */
-public interface DataFilter
+public interface Extension
 {
-    /**
-     * @param from
-     * @param to TODO
-     * @param data
-     * @return The filtered data.
-     * @throws IllegalStateException If the message should be aborted
-     */
-    Object filter(Client from, Channel to, Object data) throws IllegalStateException;
+    Message rcv(Message message);
+    Message rcvMeta(Message message);
+    Message send(Message message);
+    Message sendMeta(Message message);
 }
