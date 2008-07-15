@@ -18,6 +18,10 @@ import java.util.Collection;
 
 /* ------------------------------------------------------------ */
 /** A Bayeux Channel.
+ * <p>
+ * A Channel represents a routing path for messages to Clients.
+ * Clients may subscribe to a channel and will be delivered all messages
+ * published to the channel.
  * 
  */
 public interface Channel
@@ -33,9 +37,9 @@ public interface Channel
 
     /* ------------------------------------------------------------ */
     /** Publish a message.
-     * @param fromClient From client
+     * @param fromClient From client or null
      * @param data The message data
-     * @param msgId The message ID
+     * @param msgId The message ID or null
      */
     public void publish(Client fromClient, Object data, String msgId);
     

@@ -17,7 +17,8 @@ package org.cometd;
 import java.util.Collection;
 
 /* ------------------------------------------------------------ */
-/** Bayeux Interface.
+/** Bayeux Server Interface.
+ * <p>
  * This interface represents the server side API for the  Bayeux messaging protocol.
  * <p>
  * The implementation of Bayeux will be registered as a {@link javax.servlet.ServletContext} attribute
