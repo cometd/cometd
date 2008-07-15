@@ -20,7 +20,9 @@ import java.util.List;
 /* ------------------------------------------------------------ */
 /** A Bayeux Client.
  * <p>
+ * A Client instance represents a consumer/producer of messages in bayeux. 
  * A client may subscribe to channels and publish messages to channels.
+ * 
  * Client instances should not be directly created by uses, but should 
  * be obtained via the {@link Bayeux#getClient(String)} or {@link Bayeux#newClient(String, Receiver)}
  * methods.
@@ -36,34 +38,6 @@ public interface Client
 {
     /* ------------------------------------------------------------ */
     public abstract String getId();
-
-    /* ------------------------------------------------------------ */
-    /** Publish data from this client.
-     * This is equivalent to {@link Bayeux#publish(Client, String, Object, String)} with this client passed
-     * as the fromClient.
-     * @deprecated use {@link Channel#publish(Client, Object, String)}
-     * @param data The data itself which must be an Object that can be encoded with {@link JSON}.
-     * @param toChannel The Channel ID to which the data is targetted
-     * @param msgId optional message ID or null for automatic generation of a message ID.
-     */
-    public void publish(String toChannel, Object data, String msgId);
-
-    /* ------------------------------------------------------------ */
-    /** Subscribe this client to a channel.
-     * This is equivalent to {@link Bayeux#subscribe(String, Client)} with this client passed.
-     * Equivalent to getChannel(toChannel).subscribe(subscriber).
-     * @deprecated use {@link Channel#subscribe(Client)}
-     * @param toChannel
-     */
-    public void subscribe(String toChannel);
-
-    /* ------------------------------------------------------------ */
-    /** Unsubscribe this client from a channel.
-     * This is equivalent to {@link Bayeux#unsubscribe(String, Client)} with this client passed.
-     * @deprecated use {@link Channel#unsubscribe(Client)}
-     * @param toChannel
-     */
-    public void unsubscribe(String toChannel);
     
     /* ------------------------------------------------------------ */
     public abstract boolean hasMessages();
@@ -75,29 +49,7 @@ public interface Client
     public abstract List<Message> takeMessages();
 
     /* ------------------------------------------------------------ */
-    /** Deliver a message to this client only
-     * Deliver a message directly to the client. The message is not 
-     * filtered or published to a channel.
-     * @deprecated use {@link #deliver(Client, String, Object, String)}
-     * @param from The Client that published the message, or null if not known/available
-     * @param message
-     */
-    public void deliver(Client from, Message message);
-
-    /* ------------------------------------------------------------ */
     public void deliver(Client from, String toChannel, Object data, String id);
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * @deprecated use {@link #addListener(EventListener)}
-     */
-    public void setListener(Listener listener);
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * @deprecated Returns only the first listener added
-     */
-    public Listener getListener();
 
     /* ------------------------------------------------------------ */
     public void addListener(EventListener listener);
