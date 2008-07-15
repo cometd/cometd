@@ -22,16 +22,15 @@ import java.util.List;
  * <p>
  * A Client instance represents a consumer/producer of messages in bayeux. 
  * A client may subscribe to channels and publish messages to channels.
- * 
+ * <p>
  * Client instances should not be directly created by uses, but should 
  * be obtained via the {@link Bayeux#getClient(String)} or {@link Bayeux#newClient(String, Receiver)}
  * methods.
  * </p>
  * <p>
- * Three types of client may be represented by this interface:<nl>
+ * Two types of client may be represented by this interface:<nl>
  * <li>The server representation of a remote client connected via HTTP</li>
  * <li>A server side client</li>
- * <li>A java client connected to a remote Bayeux server</li>
  * </nl>
  */
 public interface Client
