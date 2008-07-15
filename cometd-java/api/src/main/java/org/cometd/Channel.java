@@ -32,8 +32,10 @@ public interface Channel
     public abstract String getId();
 
     /* ------------------------------------------------------------ */
-    /** Publish a message
-     * This is equivalent to Bayeux.publish(fromClient,channel.getId(),data,msgId).
+    /** Publish a message.
+     * @param fromClient From client
+     * @param data The message data
+     * @param msgId The message ID
      */
     public void publish(Client fromClient, Object data, String msgId);
     

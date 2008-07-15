@@ -119,18 +119,6 @@ public interface Bayeux
     public static final String JSONP_DEFAULT_NAME="jsonpcallback";
 
     /* ------------------------------------------------------------ */
-    /**
-     * @deprecated user {@link Channel#addDataFilter(DataFilter)}
-     */
-    public void addFilter(String channels, DataFilter filter);
-    
-    /* ------------------------------------------------------------ */
-    /** Deliver a message to a client.
-     * @deprecated use {@link Client#deliver(Client, Message)}
-     */
-    public void deliver(Client fromClient, Client toClient, String toChannel, Message message);
-
-    /* ------------------------------------------------------------ */
     /** Get a Channel instance by ID.
      * @param channelId The Channel ID
      * @param create If true, a channel will be created if it does not exist.
@@ -160,23 +148,7 @@ public interface Bayeux
     public boolean hasClient(String clientId);
 
     /* ------------------------------------------------------------ */
-    /**
-     * @deprecated use {@link #newClient(String)}
-     */
-    public Client newClient(String idprefix, Listener listener);
-
-    /* ------------------------------------------------------------ */
     public Client newClient(String idprefix);
-
-    /* ------------------------------------------------------------ */
-    /** Deliver data to a channel.
-     * @deprecated use {@link Channel#publish(Client, Object, String)}
-     * @param fromClient The client sending the data
-     * @param data The data itself which must be an Object that can be encoded with {@link JSON}.
-     * @param toChannel The Channel ID to which the data is targetted
-     * @param msgId optional message ID or null for automatic generation of a message ID.
-     */
-    public void publish(Client fromClient, String toChannel, Object data, String msgId);
 
     /* ------------------------------------------------------------ */
     public Channel removeChannel(String channel);
@@ -184,12 +156,6 @@ public interface Bayeux
     /* ------------------------------------------------------------ */
     public Client removeClient(String clientId);
     
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated user {@link Channel#removeDataFilter(DataFilter)}
-     */
-    public void removeFilter(String channels, DataFilter filter);
-
     /* ------------------------------------------------------------ */
     /** Set the security policy for the Bayeux instance.
      * <p>
@@ -199,24 +165,6 @@ public interface Bayeux
      * @param securityPolicy The security policy instance.
      */
     public void setSecurityPolicy(SecurityPolicy securityPolicy);
-
-    /* ------------------------------------------------------------ */
-    /** Subscribe to a channel.
-     * Equivalent to getChannel(toChannel).subscribe(subscriber).
-     * @deprecated use {@link Channel#subscribe(Client)}
-     * @param toChannel
-     * @param subscriber
-     * @param createChannel. Create the channel if it does not exist
-     */
-    public void subscribe(String toChannel, Client subscriber);
-
-    /* ------------------------------------------------------------ */
-    /** Unsubscribe to a channel
-     * @deprecated use {@link Channel#unsubscribe(Client)}
-     * @param toChannel
-     * @param subscriber
-     */
-    public void unsubscribe(String toChannel, Client subscriber);
 
     /* ------------------------------------------------------------ */
     /** Add a bayeux extension
