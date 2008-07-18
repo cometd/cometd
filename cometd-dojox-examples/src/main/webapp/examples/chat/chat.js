@@ -110,6 +110,7 @@ var room = {
 		dojo.byId("username").focus();
 		room._username = null;
 		dojox.cometd.disconnect();
+		dojo.byId('members').innerHTML="";
 	},
 	
 	chat: function(text){
@@ -123,34 +124,43 @@ var room = {
 	},
 	
 	_chat: function(message){
-		var chat = dojo.byId('chat');
 		if (!message.data) {
 			// console.debug("bad message format " + message);
 			return;
 		}
-		var from = message.data.user;
-		var special = message.data.join || message.data.leave;
-		var text = message.data.chat;
-		if (!text) {
-			return;
-		}
 		
-		if (!special && from == room._last) {
-			from = "...";
+		if (message.data instanceof Array) {
+			var members = dojo.byId('members');
+			var list="";
+			for (var i in message.data)
+				list+=message.data[i]+"<br/>";
+			members.innerHTML=list;
+		} else {
+			var chat = dojo.byId('chat');
+			var from = message.data.user;
+			var special = message.data.join || message.data.leave;
+			var text = message.data.chat;
+			if (!text) {
+				return;
+			}
+			
+			if (!special && from == room._last) {
+				from = "...";
+			}
+			else {
+				room._last = from;
+				from += ":";
+			}
+			
+			if (special) {
+				chat.innerHTML += "<span class=\"alert\"><span class=\"from\">" + from + "&nbsp;</span><span class=\"text\">" + text + "</span></span><br/>";
+				room._last = "";
+			}
+			else {
+				chat.innerHTML += "<span class=\"from\">" + from + "&nbsp;</span><span class=\"text\">" + text + "</span><br/>";
+			}
+			chat.scrollTop = chat.scrollHeight - chat.clientHeight;
 		}
-		else {
-			room._last = from;
-			from += ":";
-		}
-		
-		if (special) {
-			chat.innerHTML += "<span class=\"alert\"><span class=\"from\">" + from + "&nbsp;</span><span class=\"text\">" + text + "</span></span><br/>";
-			room._last = "";
-		}
-		else {
-			chat.innerHTML += "<span class=\"from\">" + from + "&nbsp;</span><span class=\"text\">" + text + "</span><br/>";
-		}
-		chat.scrollTop = chat.scrollHeight - chat.clientHeight;
 	},
 	
 	_init: function(){
