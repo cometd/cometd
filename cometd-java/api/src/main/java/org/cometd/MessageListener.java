@@ -14,13 +14,12 @@
 
 package org.cometd;
 
-import java.util.EventListener;
 
 /**
  * Message Listener Interface.
  * 
  * Objects implementing this interface may listen for message deliverly events
- * by calling the {@link Client#addListener(EventListener)}.  The {@link Synchronous}
+ * by calling the {@link Client#addListener(ClientListener)}  The {@link Synchronous}
  * or {@link Asynchronous} nested interfaces may be used as a mixin to specify the style 
  * of delivery required.  If neither subtype is specified, then the {@link Bayeux} 
  * implementation may use either method.
@@ -28,7 +27,7 @@ import java.util.EventListener;
  * @author gregw
  *
  */
-public interface MessageListener extends EventListener
+public interface MessageListener extends ClientListener
 {
     /**
      * Called when a message is delivered to the client
