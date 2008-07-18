@@ -17,9 +17,8 @@ package org.cometd;
 
 
 /* ------------------------------------------------------------ */
-/** Cometd Receiver interface.
- * A receive in an object that can receive a message for a Bayeux {@link Client}.
- * 
+/**
+ * @deprecated. Use {@link MessageListener} or {@link RemoveListener}
  */
 public interface Listener extends MessageListener, RemoveListener
 {

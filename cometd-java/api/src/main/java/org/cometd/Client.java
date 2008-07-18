@@ -43,7 +43,7 @@ public interface Client
 
     /* ------------------------------------------------------------ */
     /** Take any messages queued for a client.
-     * 
+     * @deprecated use listeners
      */
     public abstract List<Message> takeMessages();
 
@@ -51,10 +51,10 @@ public interface Client
     public void deliver(Client from, String toChannel, Object data, String id);
 
     /* ------------------------------------------------------------ */
-    public void addListener(EventListener listener);
+    public void addListener(ClientListener listener);
     
     /* ------------------------------------------------------------ */
-    public void removeListener(EventListener listener);
+    public void removeListener(ClientListener listener);
     
     /* ------------------------------------------------------------ */
     /**

@@ -14,9 +14,16 @@
 
 package org.cometd;
 
-import java.util.EventListener;
-
-public interface RemoveListener extends EventListener
+/**
+ * Remove Listener Interface.
+ * 
+ * Objects implementing this interface may listen for client removal events 
+ * by calling the {@link Client#addListener(ClientListener)}  
+ * 
+ * @author gregw
+ *
+ */
+public interface RemoveListener extends ClientListener
 {
     /**
      * This method is called when the client is removed (explicitly or from a timeout)
