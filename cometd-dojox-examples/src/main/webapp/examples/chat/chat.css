@@ -4,37 +4,48 @@ div
   border: 0px solid black; 
 }
 
-div#chatroom
+#chatroom
 {
+  width: 41em;
   background-color: #e0e0e0;
   border: 1px solid black; 
-  width: 45em;
 }
 
-div#chat
+#chat
 {
+  float: left;
+  width: 32em;
   height: 20ex;
   overflow: auto; 
   background-color: #f0f0f0;
   padding: 4px;
-  border: 0px solid black; 
+  border-right: 1px solid black; 
 }
 
-div#input
+#members
+{
+  float: left;
+  clear: right;
+  width: 8em;
+  border: 0px solid black; 
+  overflow: auto; 
+  padding: 4px;
+}
+
+#input
 {
   clear: both;
   padding: 4px;
-  border: 0px solid black; 
   border-top: 1px solid black; 
 }
 
-input#phrase
+#phrase
 {
   width:28em;
   background-color: #e0f0f0;
 }
 
-input#username
+#username
 {
   width:14em;
   background-color: #e0f0f0;
