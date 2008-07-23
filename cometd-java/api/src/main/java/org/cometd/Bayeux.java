@@ -22,7 +22,7 @@ import java.util.Collection;
  * This interface represents the server side API for the  Bayeux messaging protocol.
  * <p>
  * The implementation of Bayeux will be registered as a {@link javax.servlet.ServletContext} attribute
- * with the name "dojox.cometd.bayeux".  This may be set prior to the context being initialized 
+ * with the name "org.cometd.bayeux".  This may be set prior to the context being initialized 
  * (if the instance is shared between contexts) or during context initialization.
  * <p>
  * Bayeux implementations must be thread safe and multiple threads may simultaneously
@@ -108,7 +108,7 @@ public interface Bayeux
     /**Transport types - flash*/
     public static final String TRANSPORT_FLASH="flash";
     /** ServletContext attribute name used to obtain the Bayeux object */
-    public static final String DOJOX_COMETD_BAYEUX="dojox.cometd.bayeux";
+    public static final String DOJOX_COMETD_BAYEUX="org.cometd.bayeux";
     /*http field names*/
     /**http helpers - text/json content type*/
     public static final String JSON_CONTENT_TYPE="text/json";
