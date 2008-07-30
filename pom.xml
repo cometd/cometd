@@ -80,28 +80,24 @@
       <id>dojo</id>
       <name>Dojo Maven2 Repository</name>
       <url>http://download.dojotoolkit.org/maven2</url>
-      <releases>
-        <enabled>true</enabled>
-        <updatePolicy>daily</updatePolicy>
-        <checksumPolicy>fail</checksumPolicy>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
+      <releases> <enabled>true</enabled> </releases>
+      <snapshots> <enabled>false</enabled> </snapshots>
       <layout>default</layout>
     </repository>
     <repository>
       <id>dojoSnapshots</id>
       <name>Dojo Maven2 Snapshot Repository</name>
       <url>http://download.dojotoolkit.org/maven2-snapshot</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-        <updatePolicy>always</updatePolicy>
-        <checksumPolicy>warn</checksumPolicy>
-      </snapshots>
+      <releases> <enabled>false</enabled> </releases>
+      <snapshots> <enabled>true</enabled> </snapshots>
+      <layout>default</layout>
+    </repository>
+    <repository>
+      <id>jettySnapshots</id>
+      <name>Jetty Maven2 Snapshot Repository</name>
+      <url>http://snapshots.repository.codehaus.org/</url>
+      <releases> <enabled>false</enabled> </releases>
+      <snapshots> <enabled>true</enabled> </snapshots>
       <layout>default</layout>
     </repository>
   </repositories>
@@ -129,6 +125,14 @@
   </distributionManagement>
 
   <pluginRepositories>
+    <pluginRepository>
+      <id>jettySnapshots</id>
+      <name>Jetty Maven2 Snapshot Repository</name>
+      <url>http://snapshots.repository.codehaus.org/</url>
+      <releases> <enabled>false</enabled> </releases>
+      <snapshots> <enabled>true</enabled> </snapshots>
+      <layout>default</layout>
+    </pluginRepository>
   </pluginRepositories>
   <scm>
     <connection>scm:svn:http://svn.cometd.org/trunk</connection>
