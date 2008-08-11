@@ -16,6 +16,7 @@ package org.cometd;
 
 import java.util.EventListener;
 import java.util.List;
+import java.util.Queue;
 
 /* ------------------------------------------------------------ */
 /** A Bayeux Client.
@@ -80,5 +81,24 @@ public interface Client
      */
     public void endBatch();
     
-    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Access the message queue.
+     * 
+     * @return A queue that is synchronized on the Client instance. 
+     */
+    public Queue<Message> getQueue();
+
+    /* ------------------------------------------------------------ */
+    /** 
+    * @param max The size which if a client queue exceeds, forces a call to
+    * {@link QueueListener#queueMaxed(Client, Message)} to check if the message should be 
+    * added.  If set to -1, there is no queue limit. If set to zero, messages are 
+    * not queued.
+    */
+    public void setMaxQueue(int max);
+
+    /* ------------------------------------------------------------ */
+    public int getMaxQueue();
 }

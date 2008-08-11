@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright 2007 Dojo Foundation
+// Copyright 2007-2008 Dojo Foundation
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -172,4 +172,21 @@ public interface Bayeux
      * @param ext
      */
     public void addExtension(Extension ext);
+    
+    /* ------------------------------------------------------------ */
+    public void addListener(BayeuxListener listener);
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param size The size which if a client queue exceeds, forces a call to
+     * {@link QueueListener#queueMaxed(Client, Message)} to check if the message should be 
+     * added.  If set to -1, there is no queue limit. If set to zero, messages are 
+     * not queued.
+     */
+    public void setMaxClientQueue(int size);
+
+    /* ------------------------------------------------------------ */
+    public int getMaxClientQueue();
+    
+    
 }

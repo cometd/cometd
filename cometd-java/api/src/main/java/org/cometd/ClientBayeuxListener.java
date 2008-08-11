@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright 2007 Dojo Foundation
+// Copyright 2008 Dojo Foundation
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -10,24 +10,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-// ========================================================================
-
+//========================================================================
 package org.cometd;
 
 /**
- * Remove Listener Interface.
- * 
- * Objects implementing this interface may listen for client removal events 
- * by calling the {@link Client#addListener(ClientListener)}  
- * 
- * @author gregw
+ * A {@link BayeuxListener} with call backs for client life cycle events
  *
  */
-public interface RemoveListener extends ClientListener
+public interface ClientBayeuxListener extends BayeuxListener
 {
-    /**
-     * This method is called after the client is removed (explicitly or from a timeout)
-     */
-    public void removed(String clientId, boolean timeout);
-    
+    /* ------------------------------------------------------------ */
+    public void clientAdded(Client client);
+
+    /* ------------------------------------------------------------ */
+    public void clientRemoved(Client client);
 }
