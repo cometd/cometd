@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright 2007 Dojo Foundation
+// Copyright 2007-2008 Dojo Foundation
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -87,4 +87,6 @@ public interface Channel
     /* ------------------------------------------------------------ */
     public Collection<DataFilter> getDataFilters();
 
+    /* ------------------------------------------------------------ */
+    public void addListener(ChannelListener listener);
 }
