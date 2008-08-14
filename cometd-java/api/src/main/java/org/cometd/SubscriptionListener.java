@@ -21,8 +21,8 @@ package org.cometd;
 public interface SubscriptionListener extends ChannelListener
 {
     /* ------------------------------------------------------------ */
-    public void subscribed(Client client);
+    public void subscribed(Client client, Channel channel);
 
     /* ------------------------------------------------------------ */
-    public void unsubscribed(Client client);
+    public void unsubscribed(Client client, Channel channel);
 }
