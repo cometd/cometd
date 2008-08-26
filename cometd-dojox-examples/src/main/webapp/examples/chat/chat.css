@@ -6,7 +6,7 @@ div
 
 #chatroom
 {
-  width: 41em;
+  width: 42em;
   background-color: #e0e0e0;
   border: 1px solid black; 
 }
@@ -18,7 +18,7 @@ div
   height: 20ex;
   overflow: auto; 
   background-color: #f0f0f0;
-  padding: 4px;
+  padding: 0.2em;
   border-right: 1px solid black; 
 }
 
@@ -35,7 +35,7 @@ div
 #input
 {
   clear: both;
-  padding: 4px;
+  padding: 0.2em;
   border-top: 1px solid black; 
 }
 
