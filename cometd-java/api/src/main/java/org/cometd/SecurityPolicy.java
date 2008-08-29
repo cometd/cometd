@@ -20,8 +20,43 @@ package org.cometd;
  */
 public interface SecurityPolicy
 {
+    /** 
+     * Test if a handshake message should be accepted.
+     * @param message A handshake message.
+     * @return True if the handshake message should be accepted and a {@link Client} instance created
+     */
     boolean canHandshake(Message message);
+    
+    /**
+     * Test if a message should be allowed to create a new Channel
+     * @param client The client sending the message. The client may be 
+     * null if an anonymous publish is attempted. Server clients are 
+     * indicated by {@link Client#isLocal()}
+     * @param channel The channel the message is trying to create
+     * @param message The message
+     * @return true if the channel should be created
+     */
     boolean canCreate(Client client,String channel,Message message);
+    
+    /**
+     * Test if a client is allowed to subscribe to a channel
+     * @param client The client sending the message. The client may be 
+     * null if an anonymous publish is attempted. Server clients are 
+     * indicated by {@link Client#isLocal()}
+     * @param channel The channel the message is trying to subscribe to
+     * @param messsage The message to /meta/subscribe
+     * @return true if the client can subscribe to the channel
+     */
     boolean canSubscribe(Client client,String channel,Message messsage);
+    
+    /**
+     * Test if a client can publish a message to a channel
+     * @param client The client sending the message. The client may be 
+     * null if an anonymous publish is attempted. Server clients are 
+     * indicated by {@link Client#isLocal()}
+     * @param channel The channel the message is trying to publish to
+     * @param messsage The message to publish
+     * @return true if the client can publish to the channel.
+     */
     boolean canPublish(Client client,String channel,Message messsage);
 }
