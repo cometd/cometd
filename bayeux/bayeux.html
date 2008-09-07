@@ -1577,18 +1577,16 @@ A publish event message MUST contain the message fields:
 </dl>
 A publish event response MAY contain the message fields:
 <dl>
-<dt>clientId</dt><dd>The negotiated client ID</dd>
 <dt>id</dt>
 <dt>error</dt>
 <dt>ext</dt>
 </dl>
-An example event message is:
+An example event reponse message is:
 <pre class="example">
 [
   {
      "channel": "/some/channel",
-     "clientId": "Un1q31d3nt1f13r",
-     "data": "some application string or JSON object",
+     "successful": true,
      "id": "some unique message id"
   }
 ]
