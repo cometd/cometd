@@ -15,7 +15,7 @@
 
   <properties>
     <junit-version>3.8.2</junit-version>
-    <cometd-version>1.0-SNAPSHOT</cometd-version>
+    <cometd-version>1.0.beta3</cometd-version>
   </properties>
 
   <modules>
