@@ -15,6 +15,7 @@
 package org.cometd;
 
 import java.util.Collection;
+import javax.servlet.http.HttpServletRequest;
 
 /* ------------------------------------------------------------ */
 /** Bayeux Server Interface.
@@ -134,21 +135,42 @@ public interface Bayeux
     public Collection<Channel> getChannels();
 
     /* ------------------------------------------------------------ */
+    /** Get {@link Client} by ID.
+     * @param clientId
+     * @return A Client instance or null if the ID is not known
+     */
     public Client getClient(String clientId);
 
     /* ------------------------------------------------------------ */
+    /** Get a collection of all Clients.
+     * The collection is copy of the underlying collection.
+     * @return Collection of clients.
+     */
     public Collection<Client> getClients();
     
     /* ------------------------------------------------------------ */
+    /** Get the {@link SecurityPolicy} instance.
+     * @return The current {@link SecurityPolicy} instance.
+     */
     public SecurityPolicy getSecurityPolicy();
 
     /* ------------------------------------------------------------ */
+    /** Check if channel exists.
+     * @param channel
+     * @return True if Bayeux has a channel with the channel name.
+     */
     public boolean hasChannel(String channel);
 
     /* ------------------------------------------------------------ */
     public boolean hasClient(String clientId);
 
     /* ------------------------------------------------------------ */
+    /** Create a new server side Client.
+     * Server side clients can be used to interact with Bayeux with 
+     * publish and subscribe messaging.
+     * @param idprefix An identifier to prefix to the client ID.
+     * @return A {@link Client} instance with {@link Client#isLocal()} returning true.
+     */
     public Client newClient(String idprefix);
 
     /* ------------------------------------------------------------ */
@@ -187,6 +209,14 @@ public interface Bayeux
 
     /* ------------------------------------------------------------ */
     public int getMaxClientQueue();
-    
+
+    /* ------------------------------------------------------------ */
+    /** Get the current Servlet Request.
+     * If the calling thread is in the context of a servlet call, then
+     * return the request object.  This can be used to authenticate users and/or
+     * perform other validation of the caller.
+     * @return A servlet request or null if none in scope.
+     */
+    public HttpServletRequest getCurrentRequest();
     
 }
