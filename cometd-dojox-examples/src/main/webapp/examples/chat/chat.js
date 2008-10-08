@@ -117,10 +117,20 @@ var room = {
 		if (!text || !text.length) {
 			return false;
 		}
-		dojox.cometd.publish("/chat/demo", {
-			user: room._username,
-			chat: text
-		});
+		var colons = text.indexOf("::");
+		if (colons > 0) {
+			dojox.cometd.publish("/service/privatechat", {
+				room: "/chat/demo", // This should be replaced by the room name
+				user: room._username,
+				chat: text.substring(colons + 2),
+				peer: text.substring(0, colons)
+			});
+		} else {
+			dojox.cometd.publish("/chat/demo", {
+				user: room._username,
+				chat: text
+			});
+		}
 	},
 	
 	_chat: function(message){
@@ -138,25 +148,23 @@ var room = {
 		} else {
 			var chat = dojo.byId('chat');
 			var from = message.data.user;
-			var special = message.data.join || message.data.leave;
+			var membership = message.data.join || message.data.leave;
 			var text = message.data.chat;
-			if (!text) {
-				return;
-			}
-			
-			if (!special && from == room._last) {
+			if (!text) return;
+
+			if (!membership && from == room._last) {
 				from = "...";
-			}
-			else {
+			} else {
 				room._last = from;
 				from += ":";
 			}
-			
-			if (special) {
-				chat.innerHTML += "<span class=\"alert\"><span class=\"from\">" + from + "&nbsp;</span><span class=\"text\">" + text + "</span></span><br/>";
+
+			if (membership) {
+				chat.innerHTML += "<span class=\"membership\"><span class=\"from\">" + from + "&nbsp;</span><span class=\"text\">" + text + "</span></span><br/>";
 				room._last = "";
-			}
-			else {
+			} else if (message.data.scope == "private") {
+				chat.innerHTML += "<span class=\"private\"><span class=\"from\">" + from + "&nbsp;</span><span class=\"text\">[private]&nbsp;" + text + "</span></span><br/>";
+			} else {
 				chat.innerHTML += "<span class=\"from\">" + from + "&nbsp;</span><span class=\"text\">" + text + "</span><br/>";
 			}
 			chat.scrollTop = chat.scrollHeight - chat.clientHeight;
