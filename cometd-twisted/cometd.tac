@@ -51,7 +51,7 @@ from twisted.web2 import http, resource, channel, stream, server, static, http_h
 from twisted.python import log
 from twisted.internet import reactor
 from twisted.application import service, strports
-from path import path
+import os.path
 import sys; sys.path.append(".")
 import cometd
 
@@ -61,20 +61,23 @@ clientTimeoutSec = clientTimeout * 60
 cometd.verbose = verboseLogging
 cometd.clientTimeout = clientTimeout * 60
 cometd.connectionTimeout = connectionTimeout * 60
-log.startLogging(path(logFile).abspath().open("a"))
+log.startLogging(open(os.path.abspath(logFile),"a"))
 
 class CometdRunner(resource.Resource):
 	# blah, hacky class. Wish we didn't need it
 	addSlash = True
 	if verboseLogging:
 		log.msg("cometd initialized")
-	child_examples = static.File(path("../examples").abspath())
+	child_examples = static.File(os.path.abspath("../cometd-dojox-examples/src/main/webapp/examples"))
+	child_dojo = static.File(os.path.abspath("../cometd-dojox-examples/src/main/webapp/dojo"))
+	child_dojox = static.File(os.path.abspath("../cometd-dojox-examples/src/main/webapp/dojox"))
+	child_dijit = static.File(os.path.abspath("../cometd-dojox-examples/src/main/webapp/dijit"))
 	child_cometd = cometd.cometd()
 
 	def render(self, ctx):
 		return http.Response(200,
 			{ "content-type": http_headers.MimeType('text', 'html') },
-			stream=stream.FileStream(path("index.html").abspath().open())
+			stream=stream.FileStream(open(os.path.abspath("index.html")))
 		)
 
 

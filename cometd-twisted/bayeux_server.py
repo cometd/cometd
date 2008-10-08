@@ -60,7 +60,7 @@ class BayeuxServer:
 
 		GlobalLogger.debug("BayeuxServer: In Handshake...",debug=True)
 		try:
-			clientConnectionTypesSet = Set(clientHandshake["supportedConnectionTypes"])
+			clientConnectionTypesSet = Set([str(t) for t in clientHandshake['supportedConnectionTypes']])
 		except:
 			error = [1001,self.json_errcodes[1001] % "(Blank)"]
 
@@ -79,7 +79,7 @@ class BayeuxServer:
 				except KeyError:
 					error = [902,self.json_errcodes[902] % (clientHandshake["version"])]
 	
-			elif clientConnectionTypesSet.difference(self.connectionTypesSet):
+			elif not clientConnectionTypesSet.intersection(self.connectionTypesSet):
 				'''
 				Connection type checking.
 				'''
@@ -170,7 +170,7 @@ class BayeuxServer:
 			return {
 					"channel" : handshake["channel"],
 					"version" : bayeux_config.version,
-					"supportedConnectionTypes" : clientHandshake["supportedConnectionTypes"],
+					"supportedConnectionTypes" : self.json_structure["handshake"]["supportedConnectionTypes"],
 					"clientId" : client_id,
 					"successful" : handshake["successful"][0], # "true"
 					"authSuccessful" : handshake["authSuccessful"][0], # "true"
@@ -183,6 +183,7 @@ class BayeuxServer:
    	#@json_unwrap
 	def Connect(self,clientConnect,request = None):
 		error = None
+		GlobalLogger.debug("BayeuxServer: In Connect...",debug=True)
 
 		clientId = clientConnect["clientId"]
 		if clientConnect["channel"] != self.json_structure["connect"]["channel"]:
@@ -364,7 +365,7 @@ class BayeuxServer:
 			'''
 
 			# Subscription could be a string or a list. If string, make it a list.
-			if isinstance(subscription,str):
+			if isinstance(subscription,basestring):
 				subscription = [subscription]
 
 			for topic in subscription: # This is an array of at least one topic/channel.
@@ -410,10 +411,15 @@ class BayeuxServer:
 
 		if clientUnsubscribe["channel"] != self.json_structure["unsubscribe"]["channel"]:
 			error = [1201,self.json_errcodes[1201] % (clientUnsubscribe["channel"])]
-
-		# This is an array of at least one topic/channel.
-		for topic in clientUnsubscribe["unsubscription"]: 
-			if not self.cometTopics.unsubFromTopic(topic,clientUnsubscribe["clientId"]):
+			
+		clientId = clientUnsubscribe["clientId"]
+		
+		unsubscribe_list = clientUnsubscribe["subscription"]
+		if isinstance(unsubscribe_list, basestring):
+			unsubscribe_list = [unsubscribe_list]
+		
+		for topic in unsubscribe_list: 
+			if not self.cometTopics.unsubFromTopic(topic,clientId):
 				error = [1205,self.json_errcodes[1205] % (topic)]
 				break
 

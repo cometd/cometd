@@ -37,7 +37,6 @@ from twisted.web2 import http, resource, channel, stream, server, static, http_h
 from twisted.python import log
 from twisted.internet import reactor
 from twisted.application import service, strports
-from path import path
 from sets import Set
 import re
 import os
@@ -151,7 +150,42 @@ class cometd(resource.PostableResource):
 			log.msg(request)
 			log.msg(segments)
 		return (self, server.StopTraversal)
+	
+	def http_POST(self, request):
+		# we override the upstream version because it doesn't handle
+		# JSON mime types
+		from twisted.web2 import http, fileupload, responsecode, stream
+		
+		if request.stream.length == 0:
+			d = defer.succeed(None)
+		else:
+			parser = None
+			ctype = request.headers.getHeader('content-type')
 
+			if ctype is None:
+				d = defer.succeed(None)
+			else:
+				def updateArgs(data):
+					args = data
+					request.args.update(args)
+				
+				def updateJson(data):
+					request.args['message'] = [data]
+				
+				def error(f):
+					raise http.HTTPError(responsecode.BAD_REQUEST)
+				
+				if ctype.mediaType == 'application' and ctype.mediaSubtype == 'x-www-form-urlencoded':
+					d = fileupload.parse_urlencoded(request.stream)
+					d.addCallbacks(updateArgs, error)
+				elif ctype.mediaType in ('application','text') and ctype.mediaSubtype == 'json':
+					d = stream.readStream(request.stream, updateJson)
+					d.addErrback(error)
+				else:
+					raise http.HTTPError(responsecode.BAD_REQUEST)
+		
+		return d.addCallback(lambda res: self.render(request))
+	
 	def render(self, request):
 		global CleanupTimer
 
