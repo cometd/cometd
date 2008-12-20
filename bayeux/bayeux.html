@@ -633,7 +633,7 @@ same value.
 <p>
 The channels within the "/service/" channel segement are special channels
 designed to assist request/response style messaging. Messages published to
-nservice channels are not distributed to any remote Bayeux clients.
+service channels are not distributed to any remote Bayeux clients.
 Handlers of service channels MAY deliver response messages to the client that
 published the request message. Servers SHOULD NOT record any subscriptions they
 receive for service channels. If a message published to a meta channel contains
@@ -968,6 +968,9 @@ JSON map with top level names distinguished by implementation names (eg.
 The contents of ext may be arbitrary values that allow extensions to be
 negotiated and implemented between server and client implementations.  
 </p>
+
+<h2 class="clause">3.16. json-comment-filtered</h2>
+The json-comment-filtered ext field of the handshake message is deprecated.
 
 <h1 class="clause">4. Meta Message Definitions</h1>
 <h2 class="clause">4.1. handshake</h2>
@@ -1692,59 +1695,8 @@ The Ajax hijacking vulnerability is when an attacking web site uses a script
 tag to execute JSON content obtained from an Ajax server. The Bayeux protocol
 is not vulnerable to this style of attack as cookies are not used for
 authentication and a valid client ID is needed before private client data is
-returned.  The use of POST requests further protects against this style of
+returned.  The use of POST by some transports further protects against this style of
 attack.  
-</p>
-<p>
-To futher protect against this class of attack, it is RECOMMENDED that Bayeux
-clients and servers support JSON comment filtered format, where the outer JSON
-array is enclosed in a comment that will prevent execution of the JSON without
-explicit handling of the comment characters. An example of a commented message
-is:
-</p>
-<pre class="example">
-/*[
-  {
-     "channel": "/some/channel",
-     "data": "some application string or JSON object",
-     "id": "some unique message id"
-  }
-]*/
-</pre>
-<p>
-An boolean ext field of json-comment-filtered should be sent by both client and
-server in its meta handshake exchange to indicate that comment-filtering is supported.  If it is, subsequent messages (including meta connect) should be so commented, and the
-content-type should be text/json-comment-filtered.
-</p>
-An example handshake request with JSON comment support:
-<pre class="example">
-[
-  {
-     "channel": "/meta/handshake",
-     "version": "1.0",
-     "minimumVersion": "1.0",
-     "supportedConnectionTypes": ["long-polling", "callback-polling", "iframe"],
-     "ext": { "json-comment-filtered": true }
-   }
-]
-</pre>
-An example handshake response with JSON comment support:
-<pre>
-[
-  {
-     "channel": "/meta/handshake",
-     "version": "1.0",
-     "minimumVersion": "1.0",
-     "supportedConnectionTypes": ["long-polling"],
-     "clientId": "Un1q31d3nt1f13r",
-     "successful": true,
-     "authSuccessful": true,
-     "advice": { "reconnect": "retry" }
-     "ext": { "json-comment-filtered": true }
-   }
-]
-</pre>
-
 </p>
 
 <h1 class="clause">8. Multi frame operation</h1>
