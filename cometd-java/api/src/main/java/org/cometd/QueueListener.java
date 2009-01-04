@@ -32,9 +32,10 @@ public interface QueueListener extends ClientListener
      * handler to manipulate the queue returned by {@link Client#getQueue()}, but 
      * action in the callback that may result in another Client instance should be 
      * avoided as that would risk deadlock.
-     * @param client
+     * @param from Client message is published from
+     * @param to Client message is being delivered to
      * @param message
      * @return true if the message should be added to the client queue
      */
-    public boolean queueMaxed(Client client, Message message);
+    public boolean queueMaxed(Client from, Client to, Message message);
 }
