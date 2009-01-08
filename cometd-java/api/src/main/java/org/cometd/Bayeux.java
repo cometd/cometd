@@ -190,8 +190,9 @@ public interface Bayeux
     public void setSecurityPolicy(SecurityPolicy securityPolicy);
 
     /* ------------------------------------------------------------ */
-    /** Add a bayeux extension
-     * @param ext
+    /** Add a bayeux extension.
+     * A bayeux extension may modify a message or return a new message.
+     * @param ext An extension
      */
     public void addExtension(Extension ext);
     
@@ -203,7 +204,7 @@ public interface Bayeux
      * @param size The size which if a client queue exceeds, forces a call to
      * {@link QueueListener#queueMaxed(Client, Message)} to check if the message should be 
      * added.  If set to -1, there is no queue limit. If set to zero, messages are 
-     * not queued.
+     * not queued unless a {@link QueueListener} is applied that returns true.
      */
     public void setMaxClientQueue(int size);
 

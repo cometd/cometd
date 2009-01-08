@@ -51,6 +51,17 @@ public interface Client
     /* ------------------------------------------------------------ */
     public void deliver(Client from, String toChannel, Object data, String id);
 
+
+    /* ------------------------------------------------------------ */
+    /** Add a bayeux client extension.
+     * A bayeux client extension may examine a message or return a new message.
+     * A bayeux client extension should not modify a message as it may be sent to 
+     * multile clients, instead it should clone the passed message.
+     * @param ext An extension
+     */
+    public void addExtension(Extension ext);
+    
+    
     /* ------------------------------------------------------------ */
     public void addListener(ClientListener listener);
     

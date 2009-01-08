@@ -15,10 +15,43 @@
 package org.cometd;
 
 
+/**
+ * Cometd extension interface.
+ * <p>
+ * This interface is used both for server extensions and for client
+ * extensions.
+ * 
+ * @see Bayeux#addExtension(Extension)
+ * @see Client#addExtension(Extension)
+ *
+ */
 public interface Extension
 {
-    Message rcv(Message message);
-    Message rcvMeta(Message message);
-    Message send(Message message);
-    Message sendMeta(Message message);
+    /**
+     * @param from
+     * @param message
+     * @return modified message or null to discard message
+     */
+    Message rcv(Client from, Message message);
+    
+    /**
+     * @param from
+     * @param message
+     * @return modified message
+     */
+    Message rcvMeta(Client from, Message message);
+    
+    /**
+     * @param from
+     * @param message
+     * @return modified message or null to discard message
+     */
+    Message send(Client from, Message message);
+    
+    /**
+     * @param from
+     * @param message
+     * @return modified message
+     */
+    Message sendMeta(Client from, Message message);
 }
