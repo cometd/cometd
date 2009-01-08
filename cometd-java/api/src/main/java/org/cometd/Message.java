@@ -22,13 +22,15 @@ import java.util.Map;
  * A Map of String to Object that has been optimized for conversion to JSON messages.
  * 
  */
-public interface Message extends Map<String,Object>
+public interface Message extends Map<String,Object>, Cloneable
 {
     public String getClientId();
     public String getChannel();
     public String getId();
     public Object getData();
+    public Map<String,Object> getExt(boolean create);
     public Message getAssociated();
+    public Object clone();
 }
 
 
