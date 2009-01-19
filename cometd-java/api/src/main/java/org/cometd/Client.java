@@ -91,7 +91,12 @@ public interface Client
      * once all batches are ended.
      */
     public void endBatch();
-    
+
+    /* ------------------------------------------------------------ */
+    /** Disconnect Client.
+     * Disconnect client from server.
+     */
+    public void disconnect();
 
     /* ------------------------------------------------------------ */
     /**
