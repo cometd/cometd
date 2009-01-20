@@ -80,7 +80,7 @@
     <repository>
       <id>dojo</id>
       <name>Dojo Maven2 Repository</name>
-      <url>http://download.dojotoolkit.org/maven2</url>
+      <url>http://oss.sonatype.org/service/local/staging/deploy/maven2</url>
       <releases> <enabled>true</enabled> </releases>
       <snapshots> <enabled>false</enabled> </snapshots>
       <layout>default</layout>
@@ -88,7 +88,7 @@
     <repository>
       <id>dojoSnapshots</id>
       <name>Dojo Maven2 Snapshot Repository</name>
-      <url>http://download.dojotoolkit.org/maven2-snapshot</url>
+      <url>http://oss.sonatype.org/content/repositories/dojo-snapshots</url>
       <releases> <enabled>false</enabled> </releases>
       <snapshots> <enabled>true</enabled> </snapshots>
       <layout>default</layout>
