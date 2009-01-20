@@ -80,7 +80,7 @@
     <repository>
       <id>dojo</id>
       <name>Dojo Maven2 Repository</name>
-      <url>http://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+      <url>http://oss.sonatype.org/content/repositories/dojo-releases</url>
       <releases> <enabled>true</enabled> </releases>
       <snapshots> <enabled>false</enabled> </snapshots>
       <layout>default</layout>
@@ -105,15 +105,15 @@
 
   <distributionManagement>
     <repository>
-      <id>download.dojotoolkit.org</id>
-      <name>Dojo Maven2 Repository</name>
-      <url>scpexe://download.dojotoolkit.org/srv/www/vhosts/download.dojotoolkit.org/maven2</url>
+      <id>cometdReleases</id>
+      <name>Cometd Maven2 Repository</name>
+      <url>http://oss.repository.sonatype.org/service/local/staging/deploy/maven2</url>
       <layout>default</layout>
     </repository>
     <snapshotRepository>
-      <id>download.dojotoolkit.org</id>
-      <name>Dojo Maven2 Snapshot Repository</name>
-      <url>scpexe://download.dojotoolkit.org/srv/www/vhosts/download.dojotoolkit.org/maven2-snapshot</url>
+      <id>cometdSnapshots</id>
+      <name>Cometd Maven2 Snapshot Repository</name>
+      <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
       <layout>default</layout>
     </snapshotRepository>
     <!-- none yet 
