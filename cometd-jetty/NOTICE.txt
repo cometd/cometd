@@ -1,0 +1,10 @@
+==============================================================
+ Cometd Bayeux java server
+ Copyright 2006-2008 The Dojo Foundation
+ Copyright 2006-2008 Mort Bay Consulting Pty Ltd
+==============================================================
+
+The dojox.cometd api component is copyright The Dojo Foundation.
+
+The org.mortbay implementation is copyright Mort Bay Consulting Pty Ltd.
+

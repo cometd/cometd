@@ -6,54 +6,68 @@
     <version>1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <groupId>org.mortbay.jetty</groupId>
-  <artifactId>cometd-project</artifactId>
-  <version>6.1-SNAPSHOT</version>
+  <groupId>org.cometd.jetty</groupId>
+  <artifactId>project</artifactId>
   <packaging>pom</packaging>
   <name>Cometd :: Jetty</name>
   <url>http://www.cometd.com</url>
 
   <properties>
-    <junit-version>3.8.2</junit-version>
-    <cometd-version>1.0.beta3</cometd-version>
+    <servlet-version>2.5-20081211</servlet-version>
   </properties>
 
   <modules>
-    <module>bayeux</module>
+    <module>server</module>
     <module>client</module>
     <module>demo</module>
+    <module>oort</module>
   </modules>
 
+  <repositories>
+    <repository>
+      <id>cometdSnapshots</id>
+      <name>Cometd Maven2 Snapshot Repository</name>
+      <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>always</updatePolicy>
+        <checksumPolicy>warn</checksumPolicy>
+      </snapshots>
+      <layout>default</layout>
+    </repository>
+  </repositories>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.5</source>
+          <target>1.5</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
   <dependencyManagement>
     <dependencies>
       <dependency>
         <groupId>org.cometd.java</groupId>
         <artifactId>cometd-api</artifactId>
-        <version>${cometd-version}</version>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>servlet-api</artifactId>
+        <version>${servlet-version}</version>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>${junit-version}</version>
+        <version>3.8.2</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
-
-  <distributionManagement>
-    <repository>
-      <id>codehaus.org</id>
-      <name>Jetty Repository</name>
-      <url>dav:https://dav.codehaus.org/repository/jetty/</url>
-    </repository>
-    <snapshotRepository>
-      <id>codehaus.org</id>
-      <name>Jetty Snapshot Repository</name>
-      <url>dav:https://dav.codehaus.org/snapshots.repository/jetty/</url>
-    </snapshotRepository>
-    <site>
-      <id>codehaus.org</id>
-      <url>dav:https://dav.codehaus.org/jetty/</url>
-    </site>
-  </distributionManagement>
-
 </project>

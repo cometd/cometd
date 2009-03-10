@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tc:tc-config xmlns:tc="http://www.terracotta.org/config">
+  <application>
+    <dso>
+      <roots>
+        <root>
+          <field-name>org.mortbay.cometd.AbstractCometdServlet._bayeux</field-name>
+        </root>
+      </roots>      
+      <distributed-methods>
+        <method-expression>void org.mortbay.cometd.continuation.ContinuationClient.resume()</method-expression>
+      </distributed-methods>
+      <locks>
+        <autolock>
+          <method-expression>* org.mortbay.cometd.*.*(..)</method-expression>
+          <lock-level>write</lock-level>
+        </autolock>
+        <autolock>
+          <method-expression>* org.mortbay.cometd.continuation.*.*(..)</method-expression>
+          <lock-level>write</lock-level>
+        </autolock>
+        <autolock>
+          <method-expression>* org.mortbay.cometd.demo.BayeuxStartupListener$EchoRPC.*(..)</method-expression>
+          <lock-level>write</lock-level>
+        </autolock>
+      </locks>
+      <instrumented-classes>
+        <include>
+          <class-expression>org.mortbay.cometd..*</class-expression>
+          <honor-transient>true</honor-transient>
+        </include>
+        <include>
+          <class-expression>org.mortbay.util.LazyList</class-expression>
+          <honor-transient>true</honor-transient>
+        </include>
+        <include>
+          <class-expression>org.mortbay.cometd.continuation..*</class-expression>
+          <honor-transient>true</honor-transient>
+        </include>
+        <include>
+          <class-expression>org.mortbay.util.ajax..*</class-expression>
+          <honor-transient>true</honor-transient>
+        </include>
+      </instrumented-classes>
+    </dso>
+  </application>
+</tc:tc-config>
+
