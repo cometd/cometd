@@ -13,14 +13,16 @@
 
   <properties>
     <maven-wagon-version>1.0-beta-2</maven-wagon-version>
-    <jetty-version>6.1.14</jetty-version>
+    <jetty-version>6.1.15</jetty-version>
     <dojo-version>1.3.0b2</dojo-version>
   </properties>
 
   <modules>
-    <module>cometd-dojox-examples</module>
+    <module>cometd-dojox</module>
+    <module>cometd-jquery</module>
     <module>cometd-java</module>
-    <!-- module>cometd-jetty</module-->
+    <module>cometd-jetty</module>
+    <module>cometd-tests</module>
   </modules>
 
   <mailingLists>

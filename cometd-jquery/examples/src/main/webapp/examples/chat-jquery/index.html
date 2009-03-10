@@ -1,0 +1,40 @@
+<html>
+<head>
+    <title>Cometd chat</title>
+    <link rel="stylesheet" type="text/css" href="chat.css">
+    <script type="text/javascript" src="../../jquery/json2.js"></script>
+    <script type="text/javascript" src="../../jquery/jquery.js"></script>
+    <script type="text/javascript" src="../../jquery/jquery.cometd.js"></script>
+    <script type="text/javascript" src="jquery-chat.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function()
+        {
+            chat.init();
+        });
+    </script>
+
+</head>
+<body>
+<h1>Cometd Chat</h1>
+
+<div id="chatroom">
+    <div id="chat"></div>
+    <div id="members"></div>
+    <div id="input">
+        <div id="join">
+            Username:&nbsp;<input id="username" type="text" />
+            <br />
+            Alternate server: <input id="altServer" type="text" />
+            <input id="joinB" class="button" type="submit" name="join" value="Join" />
+        </div>
+        <div id="joined" class="hidden">
+            Chat:&nbsp;<input id="phrase" type="text" />
+            <input id="sendB" class="button" type="submit" name="join" value="Send" />
+            <input id="leaveB" class="button" type="submit" name="join" value="Leave" />
+        </div>
+    </div>
+</div>
+Use name::text for a private message
+
+</body>
+</html>

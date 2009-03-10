@@ -1,0 +1,43 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.cometd.dojox</groupId>
+    <artifactId>project</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.cometd.dojox</groupId>
+  <artifactId>examples</artifactId>
+  <packaging>war</packaging>
+  <name>Cometd :: Dojox :: Examples</name>
+  <build>
+    <defaultGoal>install</defaultGoal>
+    <plugins>     
+      <plugin>
+       <groupId>org.apache.maven.plugins</groupId>
+       <artifactId>maven-war-plugin</artifactId>
+       <configuration>          
+         <overlays>
+            <overlay />
+            <overlay>
+              <groupId>org.dojotoolkit.java</groupId>
+              <artifactId>dojo-war</artifactId>
+              <excludes>
+                <exclude>META-INF/**</exclude>
+              </excludes>
+            </overlay>
+         </overlays>
+       </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencies>
+    <dependency>
+      <groupId>org.dojotoolkit</groupId>
+      <artifactId>dojo-war</artifactId>
+      <version>${dojo-version}</version>
+      <type>war</type>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
+</project>

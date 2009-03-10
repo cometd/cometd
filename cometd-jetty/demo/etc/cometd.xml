@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the Jetty Server                                      -->
+<!--                                                                 -->
+<!-- Documentation of this file format can be found at:              -->
+<!-- http://docs.codehaus.org/display/JETTY/jetty.xml                -->
+<!--                                                                 -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.mortbay.jetty.Server">
+
+<New class="org.mortbay.jetty.webapp.WebAppContext">
+  <Arg><Ref id="Contexts"/></Arg>
+  <Arg><SystemProperty name="jetty.home" default="."/>/contrib/cometd/demo/src/main/webapp</Arg>
+  <Arg>/</Arg>
+  <Set name="extractWAR">false</Set>
+  <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Set>
+  <Set name="parentLoaderPriority">true</Set>
+</New>
+
+</Configure>
