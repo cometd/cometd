@@ -69,7 +69,6 @@
             <artifactId>demo</artifactId>
             <version>${project.version}</version>
             <type>war</type>
-            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.cometd.jetty</groupId>
