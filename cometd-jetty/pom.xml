@@ -7,7 +7,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.cometd.jetty</groupId>
-  <artifactId>project</artifactId>
+  <artifactId>jetty-project</artifactId>
   <packaging>pom</packaging>
   <name>Cometd :: Jetty</name>
   <url>http://www.cometd.com</url>
@@ -22,23 +22,6 @@
     <module>demo</module>
     <module>oort</module>
   </modules>
-
-  <repositories>
-    <repository>
-      <id>cometdSnapshots</id>
-      <name>Cometd Maven2 Snapshot Repository</name>
-      <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-        <updatePolicy>always</updatePolicy>
-        <checksumPolicy>warn</checksumPolicy>
-      </snapshots>
-      <layout>default</layout>
-    </repository>
-  </repositories>
 
   <build>
     <plugins>

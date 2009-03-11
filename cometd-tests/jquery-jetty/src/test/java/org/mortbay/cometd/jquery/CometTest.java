@@ -70,11 +70,16 @@ public class CometTest
         String contextPath = "/cometd";
         Context context = new Context(handlers, contextPath, Context.SESSIONS);
 
+        File jqryDirectory = new File(System.getProperty("jqrydir","../../cometd-jquery/examples"));
+        File dojoDirectory = new File(System.getProperty("dojodir","../../cometd-dojox/examples"));
+        File demoDirectory = new File(System.getProperty("demodir","../../cometd-jetty/demo"));
         File baseDirectory = new File(System.getProperty("basedir","."));
         context.setBaseResource(new ResourceCollection(new String[]
         {
-            new File(baseDirectory, "src/main/webapp").getCanonicalPath(),
-            new File(baseDirectory, "src/test/resources").getCanonicalPath()
+            new File(baseDirectory, "src/test/resources").getCanonicalPath(),
+            new File(demoDirectory, "src/main/webapp").getCanonicalPath(),
+            new File(dojoDirectory, "src/main/webapp").getCanonicalPath(),
+            new File(jqryDirectory, "src/main/webapp").getCanonicalPath()
         }));
 
         // Setup default servlet to serve static files

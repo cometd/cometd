@@ -2,8 +2,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <parent>
-        <groupId>org.cometd.jetty</groupId>
-        <artifactId>project</artifactId>
+        <groupId>org.cometd.tests</groupId>
+        <artifactId>tests-project</artifactId>
         <version>1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
@@ -29,7 +29,7 @@
                         <overlay />
                         <overlay>
                             <groupId>org.cometd.jetty</groupId>
-                            <artifactId>demo</artifactId>
+                            <artifactId>jetty-demo</artifactId>
                             <excludes>
                                 <exclude>META-INF/**</exclude>
                             </excludes>
@@ -66,13 +66,13 @@
     <dependencies>
         <dependency>
             <groupId>org.cometd.jetty</groupId>
-            <artifactId>demo</artifactId>
+            <artifactId>jetty-demo</artifactId>
             <version>${project.version}</version>
             <type>war</type>
         </dependency>
         <dependency>
             <groupId>org.cometd.jetty</groupId>
-            <artifactId>server</artifactId>
+            <artifactId>jetty-server</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
