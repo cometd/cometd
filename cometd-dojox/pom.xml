@@ -7,7 +7,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.cometd.dojox</groupId>
-  <artifactId>project</artifactId>
+  <artifactId>dojox-project</artifactId>
   <packaging>pom</packaging>
   <name>Cometd :: Dojox</name>
 

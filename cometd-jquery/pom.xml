@@ -7,7 +7,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.cometd.jquery</groupId>
-  <artifactId>project</artifactId>
+  <artifactId>jquery-project</artifactId>
   <packaging>pom</packaging>
   <name>Cometd :: JQuery</name>
 
