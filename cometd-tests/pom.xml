@@ -7,7 +7,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.cometd.tests</groupId>
-  <artifactId>tests-project</artifactId>
+  <artifactId>cometd-tests-project</artifactId>
   <packaging>pom</packaging>
   <name>Cometd :: Tests</name>
   <url>http://www.cometd.com</url>
