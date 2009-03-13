@@ -7,7 +7,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.cometd.jetty</groupId>
-  <artifactId>jetty-project</artifactId>
+  <artifactId>cometd-jetty-project</artifactId>
   <packaging>pom</packaging>
   <name>Cometd :: Jetty</name>
   <url>http://www.cometd.com</url>

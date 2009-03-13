@@ -1,13 +1,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.cometd.jetty</groupId>
-    <artifactId>jetty-project</artifactId>
+    <artifactId>cometd-jetty-project</artifactId>
     <version>1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.cometd.jetty</groupId>
-  <artifactId>jetty-oort</artifactId>
+  <artifactId>cometd-jetty-oort</artifactId>
   <packaging>jar</packaging>
   <name>Cometd :: Jetty :: Oort</name>
   <url>http://www.cometd.org</url>
@@ -16,12 +16,12 @@
   <dependencies>
     <dependency>
       <groupId>org.cometd.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
+      <artifactId>cometd-jetty-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.cometd.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
+      <artifactId>cometd-jetty-client</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>
