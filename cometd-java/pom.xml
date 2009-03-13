@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.cometd.java</groupId>
-  <artifactId>java-project</artifactId>
+  <artifactId>cometd-java-project</artifactId>
   <packaging>pom</packaging>
   <name>Cometd :: Java </name>
 
