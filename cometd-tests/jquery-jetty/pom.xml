@@ -10,7 +10,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.cometd.tests</groupId>
-    <artifactId>jquery-jetty</artifactId>
+    <artifactId>cometd-jquery-jetty</artifactId>
     <packaging>war</packaging>
     <name>Cometd :: Tests :: JQuery and Jetty</name>
 
@@ -29,7 +29,7 @@
                         <overlay />
                         <overlay>
                             <groupId>org.cometd.jetty</groupId>
-                            <artifactId>jetty-demo</artifactId>
+                            <artifactId>cometd-jetty-demo</artifactId>
                             <excludes>
                                 <exclude>META-INF/**</exclude>
                             </excludes>
@@ -66,13 +66,13 @@
     <dependencies>
         <dependency>
             <groupId>org.cometd.jetty</groupId>
-            <artifactId>jetty-demo</artifactId>
+            <artifactId>cometd-jetty-demo</artifactId>
             <version>${project.version}</version>
             <type>war</type>
         </dependency>
         <dependency>
             <groupId>org.cometd.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
+            <artifactId>cometd-jetty-server</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -85,6 +85,7 @@
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty-sslengine</artifactId>
             <version>${jetty-version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>
