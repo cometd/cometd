@@ -81,15 +81,17 @@ public class CometdDemo
         bconnector.setPort(port+1);
         server.addConnector(bconnector);
         
-        SslSelectChannelConnector connector2=new SslSelectChannelConnector();
-        // SslSocketConnector connector2=new SslSocketConnector();
-        connector2.setPort(port-80+443);
-        connector2.setKeystore(base+"/etc/keystore");
-        connector2.setPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        connector2.setKeyPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        connector2.setTruststore(base+"/etc/keystore");
-        connector2.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        server.addConnector(connector2);  
+        
+        /*
+        SslSelectChannelConnector ssl_connector=new SslSelectChannelConnector();
+        ssl_connector.setPort(port-80+443);
+        ssl_connector.setKeystore(base+"/etc/keystore");
+        ssl_connector.setPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        ssl_connector.setKeyPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        ssl_connector.setTruststore(base+"/etc/keystore");
+        ssl_connector.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        server.addConnector(ssl_connector);  
+        */
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
@@ -102,7 +104,7 @@ public class CometdDemo
         context.setBaseResource(new ResourceCollection(new Resource[]
         {
             Resource.newResource("./src/main/webapp/"),
-            Resource.newResource("./target/cometd-demo-6.1-SNAPSHOT/"),
+            Resource.newResource("./target/cometd-jetty-demo-1.0-SNAPSHOT/"),
         }));
         
         

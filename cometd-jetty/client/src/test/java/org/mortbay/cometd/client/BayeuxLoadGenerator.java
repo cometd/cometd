@@ -12,6 +12,7 @@ import org.cometd.Client;
 import org.cometd.Message;
 import org.cometd.MessageListener;
 import org.mortbay.cometd.AbstractBayeux;
+import org.mortbay.cometd.client.ext.TimesyncClientExtension;
 import org.mortbay.jetty.client.Address;
 import org.mortbay.jetty.client.HttpClient;
 import org.mortbay.thread.QueuedThreadPool;
@@ -139,6 +140,7 @@ public class BayeuxLoadGenerator
                     }
                 };
 
+                //client.addExtension(new TimesyncClientExtension());
 
                 MessageListener listener = new MessageListener()
                 {

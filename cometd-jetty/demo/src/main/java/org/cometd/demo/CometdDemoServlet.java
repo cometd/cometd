@@ -35,34 +35,23 @@ import org.mortbay.log.Log;
 
 public class CometdDemoServlet extends GenericServlet
 {
-    public void initialize(Bayeux bayeux)
+    public CometdDemoServlet()
     {
+    }
+    
+    
+    @Override
+    public void init() throws ServletException
+    {
+        super.init();
+        Bayeux bayeux=(Bayeux)getServletContext().getAttribute(Bayeux.DOJOX_COMETD_BAYEUX);
         new EchoRPC(bayeux);
         new Monitor(bayeux);
         new ChatService(bayeux);
         bayeux.addExtension(new TimesyncExtension());
         bayeux.addExtension(new AcknowledgedMessagesExtension());
     }
-    
-    public void attributeAdded(ServletContextAttributeEvent scab)
-    {
-        if (scab.getName().equals(Bayeux.DOJOX_COMETD_BAYEUX))
-        {
-            Bayeux bayeux=(Bayeux)scab.getValue();
-            initialize(bayeux);
-        }
-    }
 
-    public void attributeRemoved(ServletContextAttributeEvent scab)
-    {
-
-    }
-
-    public void attributeReplaced(ServletContextAttributeEvent scab)
-    {
-
-    }
-    
     public static class EchoRPC extends BayeuxService
     {
         public EchoRPC(Bayeux bayeux)
