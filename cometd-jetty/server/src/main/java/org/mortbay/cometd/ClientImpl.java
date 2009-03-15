@@ -56,9 +56,10 @@ public class ClientImpl implements Client
     private int _maxQueue;
     private ArrayQueue<Message> _queue=new ArrayQueue<Message>(8,16,this);
     private long _timeout;
-    protected Extension[] _extensions;
+    private int _lag;
+    private Extension[] _extensions;
     
-    protected boolean _deliverViaMetaConnectOnly;
+    private boolean _deliverViaMetaConnectOnly;
     
     // manipulated and synchronized by AbstractBayeux
     int _adviseVersion;
@@ -412,11 +413,11 @@ public class ClientImpl implements Client
     }
 
     /* ------------------------------------------------------------ */
-    protected void setId(String _id)
+    protected void setId(String id)
     {
         synchronized (this)
         {
-            this._id=_id;
+            _id=id;
         }
     }
 
@@ -552,4 +553,26 @@ public class ClientImpl implements Client
     {
         return _queue;
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.mortbay.cometd.ext.TimesyncExtension
+     * @return The lag in ms as measured by an extension like the TimesyncExtension
+     */
+    public int getLag()
+    {
+        return _lag;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.mortbay.cometd.ext.TimesyncExtension
+     * @param lag in ms
+     */
+    public void setLag(int lag)
+    {
+        _lag = lag;
+    }
+    
+    
 }
