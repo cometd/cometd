@@ -1382,16 +1382,20 @@
 
         var CallbackPollingTransport = function()
         {
-            var _maxLength = 2048;
+            var _maxLength = 2000;
             this.deliver = function(packet, request)
             {
                 // Microsoft Internet Explorer has a 2083 URL max length
                 // We must ensure that we stay within that length
                 var messages = JSON.stringify(packet.messages);
-                var urlLength = packet.url.length + messages.length;
-                // Let's stay on the safe side and use 2048 instead of 2083
+                // Encode the messages because all brackets, quotes, commas, colons, etc
+                // present in the JSON will be URL encoded, taking many more characters
+                var urlLength = packet.url.length + encodeURI(messages).length;
+                _debug('URL length: {}', urlLength);
+                // Let's stay on the safe side and use 2000 instead of 2083
                 // also because we did not count few characters among which
-                // the parameter name 'message'
+                // the parameter name 'message' and the parameter 'jsonp',
+                // which sum up to about 50 chars
                 if (urlLength > _maxLength)
                 {
                     var x = packet.messages.length > 1 ?
