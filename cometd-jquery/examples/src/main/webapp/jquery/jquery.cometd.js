@@ -105,7 +105,7 @@
             else
                 _transport = newLongPollingTransport();
             _debug('Initial transport is {}', _transport.getType());
-        }
+        };
 
         /**
          * Configures and establishes the comet communication with the comet server
@@ -422,7 +422,7 @@
         function _startBatch()
         {
             ++_batch;
-        }
+        };
 
         /**
          * Ends the batch of messages to be sent in a single request,
@@ -441,12 +441,12 @@
                 _messageQueue = [];
                 if (messages.length > 0) _deliver(messages, false);
             }
-        }
+        };
 
         function _nextMessageId()
         {
             return ++_messageId;
-        }
+        };
 
         /**
          * Converts the given response into an array of bayeux messages
@@ -460,18 +460,18 @@
             if (response instanceof String || typeof response == 'string') return eval('(' + response + ')');
             if (response instanceof Object) return [response];
             throw 'Conversion Error ' + response + ', typeof ' + (typeof response);
-        }
+        };
 
         function _setStatus(newStatus)
         {
             _debug('{} -> {}', _status, newStatus);
             _status = newStatus;
-        }
+        };
 
         function _isDisconnected()
         {
             return _status == 'disconnecting' || _status == 'disconnected';
-        }
+        };
 
         /**
          * Sends the initial handshake message
@@ -509,7 +509,7 @@
             // so here we must bypass it and deliver immediately.
             _setStatus('handshaking');
             _deliver([message], false);
-        }
+        };
 
         function _findTransport(handshakeResponse)
         {
@@ -528,7 +528,7 @@
                 if ($.inArray('callback-polling', transportTypes) >= 0) return newCallbackPollingTransport();
             }
             return null;
-        }
+        };
 
         function _delayedHandshake()
         {
@@ -537,7 +537,7 @@
             {
                 _handshake(_handshakeProps);
             });
-        }
+        };
 
         function _delayedConnect()
         {
@@ -546,7 +546,7 @@
             {
                 _connect();
             });
-        }
+        };
 
         function _delayedSend(operation)
         {
@@ -556,13 +556,13 @@
             if (_advice.interval && _advice.interval > 0)
                 delay += _advice.interval;
             _scheduledSend = _setTimeout(operation, delay);
-        }
+        };
 
         function _cancelDelayedSend()
         {
             if (_scheduledSend !== null) clearTimeout(_scheduledSend);
             _scheduledSend = null;
-        }
+        };
 
         function _setTimeout(funktion, delay)
         {
@@ -577,7 +577,7 @@
                     _debug('Exception during scheduled execution of function \'{}\': {}', funktion.name, x);
                 }
             }, delay);
-        }
+        };
 
         /**
          * Sends the connect message
@@ -592,7 +592,7 @@
             _setStatus('connecting');
             _deliver([message], true);
             _setStatus('connected');
-        }
+        };
 
         function _send(message)
         {
@@ -600,7 +600,7 @@
                 _messageQueue.push(message);
             else
                 _deliver([message], false);
-        }
+        };
 
         /**
          * Delivers the messages to the comet server
@@ -648,7 +648,7 @@
             };
             _debug('Sending request to {}, message(s): {}', envelope.url, JSON.stringify(envelope.messages));
             _transport.send(envelope, comet);
-        }
+        };
 
         function _applyIncomingExtensions(message)
         {
@@ -662,7 +662,7 @@
                 }
             });
             return message;
-        }
+        };
 
         function _applyOutgoingExtensions(message)
         {
@@ -676,7 +676,7 @@
                 }
             });
             return message;
-        }
+        };
 
         function _applyExtension(name, callback, message)
         {
@@ -689,7 +689,7 @@
                 _debug('Exception during execution of extension \'{}\': {}', name, x);
                 return message;
             }
-        }
+        };
 
         function _handleSuccess(request, response, comet)
         {
@@ -729,7 +729,7 @@
                 }
             });
             _transport.complete(request, success, comet);
-        }
+        };
 
         function _handleFailure(request, messages, reason, exception, comet)
         {
@@ -761,7 +761,7 @@
                 }
             });
             _transport.complete(request, false, comet);
-        }
+        };
 
         function _handshakeSuccess(message)
         {
@@ -820,7 +820,7 @@
                     _delayedHandshake();
                 }
             }
-        }
+        };
 
         function _handshakeFailure(xhr, message)
         {
@@ -853,7 +853,7 @@
                 _debug('Handshake failure, backing off and retrying in {} ms', _backoff);
                 _delayedHandshake();
             }
-        }
+        };
 
         function _connectSuccess(message)
         {
@@ -918,7 +918,7 @@
                         break;
                 }
             }
-        }
+        };
 
         function _connectFailure(xhr, message)
         {
@@ -961,7 +961,7 @@
                         break;
                 }
             }
-        }
+        };
 
         function _disconnectSuccess(message)
         {
@@ -978,7 +978,7 @@
                 _notifyListeners('/meta/disconnect', message);
                 _notifyListeners('/meta/usuccessful', message);
             }
-        }
+        };
 
         function _disconnect(abort)
         {
@@ -989,7 +989,7 @@
             _batch = 0;
             _messageQueue = [];
             _resetBackoff();
-        }
+        };
 
         function _disconnectFailure(xhr, message)
         {
@@ -1009,7 +1009,7 @@
             };
             _notifyListeners('/meta/disconnect', failureMessage);
             _notifyListeners('/meta/unsuccessful', failureMessage);
-        }
+        };
 
         function _subscribeSuccess(message)
         {
@@ -1024,7 +1024,7 @@
                 _notifyListeners('/meta/subscribe', message);
                 _notifyListeners('/meta/unsuccessful', message);
             }
-        }
+        };
 
         function _subscribeFailure(xhr, message)
         {
@@ -1043,7 +1043,7 @@
             };
             _notifyListeners('/meta/subscribe', failureMessage);
             _notifyListeners('/meta/unsuccessful', failureMessage);
-        }
+        };
 
         function _unsubscribeSuccess(message)
         {
@@ -1058,7 +1058,7 @@
                 _notifyListeners('/meta/unsubscribe', message);
                 _notifyListeners('/meta/unsuccessful', message);
             }
-        }
+        };
 
         function _unsubscribeFailure(xhr, message)
         {
@@ -1077,7 +1077,7 @@
             };
             _notifyListeners('/meta/unsubscribe', failureMessage);
             _notifyListeners('/meta/unsuccessful', failureMessage);
-        }
+        };
 
         function _messageSuccess(message)
         {
@@ -1107,7 +1107,7 @@
                     _notifyListeners('/meta/unsuccessful', message);
                 }
             }
-        }
+        };
 
         function _messageFailure(xhr, message)
         {
@@ -1126,7 +1126,7 @@
             };
             _notifyListeners('/meta/publish', failureMessage);
             _notifyListeners('/meta/unsuccessful', failureMessage);
-        }
+        };
 
         function _notifyListeners(channel, message)
         {
@@ -1146,7 +1146,7 @@
                 channelPart += '*';
                 _notify(channelPart, message);
             }
-        }
+        };
 
         function _notify(channel, message)
         {
@@ -1171,17 +1171,17 @@
                     }
                 });
             }
-        }
+        };
 
         function _resetBackoff()
         {
             _backoff = 0;
-        }
+        };
 
         function _increaseBackoff()
         {
             if (_backoff < _maxBackoff) _backoff += _backoffIncrement;
-        }
+        };
 
         var _error = this._error = function(text, args)
         {
@@ -1212,7 +1212,7 @@
             {
                 if (window.console) window.console.log(text);
             }
-        }
+        };
 
         function _format(text)
         {
@@ -1229,17 +1229,17 @@
             }
             result += text.substr(start, text.length - start);
             return result;
-        }
+        };
 
         function newLongPollingTransport()
         {
             return $.extend({}, new Transport('long-polling'), new LongPollingTransport());
-        }
+        };
 
         function newCallbackPollingTransport()
         {
             return $.extend({}, new Transport('callback-polling'), new CallbackPollingTransport());
-        }
+        };
 
         /**
          * Base object with the common functionality for transports.
@@ -1278,7 +1278,7 @@
                 var request = {id: requestId};
                 self.deliver(packet, request);
                 _cometRequest = request;
-            }
+            };
 
             function _send(self, packet)
             {
@@ -1298,7 +1298,7 @@
                     _packets.push([packet, request]);
                     _debug('Queued request {}, {} queued requests', requestId, _packets.length);
                 }
-            }
+            };
 
             this.complete = function(request, success, comet)
             {
@@ -1316,7 +1316,7 @@
                 // Reset comet request
                 _cometRequest = null;
                 _debug('Ended comet request {}', requestId);
-            }
+            };
 
             function _complete(self, request, success)
             {
@@ -1340,7 +1340,7 @@
                         packet[0].onFailure(packet[1], 'error');
                     }
                 }
-            }
+            };
 
             this.abort = function()
             {
