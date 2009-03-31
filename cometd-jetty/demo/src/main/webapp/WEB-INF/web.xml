@@ -58,6 +58,7 @@
   <servlet>
     <servlet-name>cometdDemo</servlet-name>
     <servlet-class>org.cometd.demo.CometdDemoServlet</servlet-class>
+    <load-on-startup>2</load-on-startup>
   </servlet>
    
 </web-app>
