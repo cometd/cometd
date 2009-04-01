@@ -13,7 +13,7 @@
 
   <properties>
     <maven-wagon-version>1.0-beta-2</maven-wagon-version>
-    <jetty-version>6.1.15</jetty-version>
+    <jetty-version>7.0.0.M0-SNAPSHOT</jetty-version>
     <dojo-version>1.3.0b2</dojo-version>
   </properties>
 
@@ -21,7 +21,6 @@
     <module>cometd-dojox</module>
     <module>cometd-jquery</module>
     <module>cometd-java</module>
-    <module>cometd-jetty</module>
     <module>cometd-tests</module>
   </modules>
 
@@ -44,8 +43,15 @@
     <developer>
       <id>gregw</id>
       <name>Greg Wilkins</name>
-      <email>gregw@apache.org</email>
+      <email>gregw@webtide.com</email>
       <url>http://www.mortbay.com/mortbay/people/gregw</url>
+      <organization>Webtide</organization>
+      <organizationUrl>http://www.webtide.com</organizationUrl>
+    </developer>
+    <developer>
+      <id>sbordet</id>
+      <name>Simone Bordet</name>
+      <email>sbordet@webtide.com</email>
       <organization>Webtide</organization>
       <organizationUrl>http://www.webtide.com</organizationUrl>
     </developer>
@@ -98,7 +104,7 @@
     <repository>
       <id>jettySnapshots</id>
       <name>Jetty Maven2 Snapshot Repository</name>
-      <url>http://snapshots.repository.codehaus.org/</url>
+      <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
       <releases> <enabled>false</enabled> </releases>
       <snapshots> <enabled>true</enabled> </snapshots>
       <layout>default</layout>

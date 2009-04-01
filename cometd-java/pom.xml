@@ -11,8 +11,49 @@
   <packaging>pom</packaging>
   <name>Cometd :: Java </name>
 
+  <properties>
+  </properties>
+
   <modules>
     <module>api</module>
+    <module>server</module>
+    <module>demo</module>
+    <module>client</module>
+    <module>oort</module>
   </modules>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.5</source>
+          <target>1.5</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.cometd.java</groupId>
+        <artifactId>cometd-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>3.8.2</version>
+      </dependency>
+      <dependency>
+      	<groupId>javax.servlet</groupId>
+      	<artifactId>servlet-api</artifactId>
+      	<version>2.5</version>
+      	<type>jar</type>
+      	<scope>provided</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
 
 </project>
