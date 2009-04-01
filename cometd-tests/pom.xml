@@ -13,7 +13,7 @@
   <url>http://www.cometd.com</url>
 
   <modules>
-    <module>jquery-jetty</module>
+    <module>jquery-java</module>
   </modules>
 
 </project>
