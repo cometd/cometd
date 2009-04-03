@@ -123,7 +123,7 @@ public abstract class AbstractCometdServlet extends GenericServlet
     {
         synchronized (AbstractCometdServlet.class)
         {
-            _bayeux=(AbstractBayeux)getServletContext().getAttribute(Bayeux.DOJOX_COMETD_BAYEUX);
+            _bayeux=(AbstractBayeux)getServletContext().getAttribute(Bayeux.ATTRIBUTE);
             if (_bayeux==null)
             {
                 _bayeux=newBayeux();
@@ -220,7 +220,7 @@ public abstract class AbstractCometdServlet extends GenericServlet
             }
         }
 
-        getServletContext().setAttribute(Bayeux.DOJOX_COMETD_BAYEUX,_bayeux);
+        getServletContext().setAttribute(Bayeux.ATTRIBUTE,_bayeux);
     }
 
     protected abstract void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException;

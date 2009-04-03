@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,6 @@ package org.cometd.demo;
 import java.io.IOException;
 
 import javax.servlet.GenericServlet;
-import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -38,13 +37,13 @@ public class CometdDemoServlet extends GenericServlet
     public CometdDemoServlet()
     {
     }
-    
-    
+
+
     @Override
     public void init() throws ServletException
     {
         super.init();
-        Bayeux bayeux=(Bayeux)getServletContext().getAttribute(Bayeux.DOJOX_COMETD_BAYEUX);
+        Bayeux bayeux=(Bayeux)getServletContext().getAttribute(Bayeux.ATTRIBUTE);
         new EchoRPC(bayeux);
         new Monitor(bayeux);
         new ChatService(bayeux);
@@ -59,14 +58,14 @@ public class CometdDemoServlet extends GenericServlet
             super(bayeux,"echo");
             subscribe("/service/echo","doEcho");
         }
-        
+
         public Object doEcho(Client client, Object data)
         {
 	    Log.info("ECHO from "+client+" "+data);
 	    return data;
         }
     }
-    
+
     public static class Monitor extends BayeuxService
     {
         public Monitor(Bayeux bayeux)
@@ -77,28 +76,28 @@ public class CometdDemoServlet extends GenericServlet
             subscribe("/meta/*","monitorMeta");
             // subscribe("/**","monitorVerbose");
         }
-        
+
         public void monitorSubscribe(Client client, Message message)
         {
             Log.info("Subscribe from "+client+" for "+message.get(Bayeux.SUBSCRIPTION_FIELD));
         }
-        
+
         public void monitorUnsubscribe(Client client, Message message)
         {
             Log.info("Unsubscribe from "+client+" for "+message.get(Bayeux.SUBSCRIPTION_FIELD));
         }
-        
+
         public void monitorMeta(Client client, Message message)
         {
             if (Log.isDebugEnabled())
                 Log.debug(message.toString());
         }
-        
+
         /*
         public void monitorVerbose(Client client, Message message)
         {
             System.err.println(message);
-            try 
+            try
             {
                 Thread.sleep(5000);
             }

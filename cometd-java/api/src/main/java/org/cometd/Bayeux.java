@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,7 @@
 package org.cometd;
 
 import java.util.Collection;
+
 import javax.servlet.http.HttpServletRequest;
 
 /* ------------------------------------------------------------ */
@@ -23,12 +24,12 @@ import javax.servlet.http.HttpServletRequest;
  * This interface represents the server side API for the  Bayeux messaging protocol.
  * <p>
  * The implementation of Bayeux will be registered as a {@link javax.servlet.ServletContext} attribute
- * with the name "org.cometd.bayeux".  This may be set prior to the context being initialized 
+ * with the name "org.cometd.bayeux".  This may be set prior to the context being initialized
  * (if the instance is shared between contexts) or during context initialization.
  * <p>
  * Bayeux implementations must be thread safe and multiple threads may simultaneously
  * call Bayeux methods.
- * 
+ *
  */
 public interface Bayeux
 {
@@ -109,7 +110,7 @@ public interface Bayeux
     /**Transport types - flash*/
     public static final String TRANSPORT_FLASH="flash";
     /** ServletContext attribute name used to obtain the Bayeux object */
-    public static final String DOJOX_COMETD_BAYEUX="org.cometd.bayeux";
+    public static final String ATTRIBUTE ="org.cometd.bayeux";
     /*http field names*/
     /**http helpers - text/json content type*/
     public static final String JSON_CONTENT_TYPE="text/json";
@@ -147,7 +148,7 @@ public interface Bayeux
      * @return Collection of clients.
      */
     public Collection<Client> getClients();
-    
+
     /* ------------------------------------------------------------ */
     /** Get the {@link SecurityPolicy} instance.
      * @return The current {@link SecurityPolicy} instance.
@@ -166,7 +167,7 @@ public interface Bayeux
 
     /* ------------------------------------------------------------ */
     /** Create a new server side Client.
-     * Server side clients can be used to interact with Bayeux with 
+     * Server side clients can be used to interact with Bayeux with
      * publish and subscribe messaging.
      * @param idprefix An identifier to prefix to the client ID.
      * @return A {@link Client} instance with {@link Client#isLocal()} returning true.
@@ -175,16 +176,16 @@ public interface Bayeux
 
     /* ------------------------------------------------------------ */
     public Channel removeChannel(String channel);
-    
+
     /* ------------------------------------------------------------ */
     public Client removeClient(String clientId);
-    
+
     /* ------------------------------------------------------------ */
     /** Set the security policy for the Bayeux instance.
      * <p>
      * The Security Policy will be called to check access for all handshakes,
      * subscriptions and publishing.
-     * 
+     *
      * @param securityPolicy The security policy instance.
      */
     public void setSecurityPolicy(SecurityPolicy securityPolicy);
@@ -195,15 +196,15 @@ public interface Bayeux
      * @param ext An extension
      */
     public void addExtension(Extension ext);
-    
+
     /* ------------------------------------------------------------ */
     public void addListener(BayeuxListener listener);
 
     /* ------------------------------------------------------------ */
     /**
      * @param size The size which if a client queue exceeds, forces a call to
-     * {@link QueueListener#queueMaxed(Client, Message)} to check if the message should be 
-     * added.  If set to -1, there is no queue limit. If set to zero, messages are 
+     * {@link QueueListener#queueMaxed(Client, Message)} to check if the message should be
+     * added.  If set to -1, there is no queue limit. If set to zero, messages are
      * not queued unless a {@link QueueListener} is applied that returns true.
      */
     public void setMaxClientQueue(int size);
@@ -219,5 +220,5 @@ public interface Bayeux
      * @return A servlet request or null if none in scope.
      */
     public HttpServletRequest getCurrentRequest();
-    
+
 }
