@@ -369,14 +369,15 @@
         this.registerExtension = function(name, extension)
         {
             var existing = false;
-            $.each(_extensions, function(index, extension)
+            for (var i = 0; i < _extensions.length; ++i)
             {
-                if (extension.name == name)
+                var existingExtension = _extensions[i];
+                if (existingExtension.name == name)
                 {
                     existing = true;
                     return false;
                 }
-            });
+            }
             if (!existing)
             {
                 _extensions.push({
@@ -652,29 +653,31 @@
 
         function _applyIncomingExtensions(message)
         {
-            $.each(_extensions, function(index, extension)
+            for (var i = 0; i < _extensions.length; ++i)
             {
+                var extension = _extensions[i];
                 var callback = extension.extension.incoming;
                 if (callback && typeof callback === 'function')
                 {
                     _debug('Calling incoming extension \'{}\', callback \'{}\'', extension.name, callback.name);
                     message = _applyExtension(extension.name, callback, message) || message;
                 }
-            });
+            }
             return message;
         };
 
         function _applyOutgoingExtensions(message)
         {
-            $.each(_extensions, function(index, extension)
+            for (var i = 0; i < _extensions.length; ++i)
             {
+                var extension = _extensions[i];
                 var callback = extension.extension.outgoing;
                 if (callback && typeof callback === 'function')
                 {
                     _debug('Calling outgoing extension \'{}\', callback \'{}\'', extension.name, callback.name);
                     message = _applyExtension(extension.name, callback, message) || message;
                 }
-            });
+            }
             return message;
         };
 
@@ -695,15 +698,16 @@
         {
             var messages = _convertToMessages(response);
             _debug('Received response {}', JSON.stringify(messages));
-            var success = true;
-            $.each(messages, function(index, message)
-            {
-                message = _applyIncomingExtensions(message);
-                if (message.advice) _advice = message.advice;
 
-                // Plain user messages do not have the successful property
-                var successful = message.successful;
-                success = success && (successful === undefined || successful);
+            // Signal the transport it can deliver other queued requests
+            _transport.complete(request, true, comet);
+
+            for (var i = 0; i < messages.length; ++i)
+            {
+                var message = messages[i];
+                message = _applyIncomingExtensions(message);
+
+                if (message.advice) _advice = message.advice;
 
                 var channel = message.channel;
                 switch (channel)
@@ -727,16 +731,20 @@
                         _messageSuccess(message);
                         break;
                 }
-            });
-            _transport.complete(request, success, comet);
+            }
         };
 
         function _handleFailure(request, messages, reason, exception, comet)
         {
             var xhr = request.xhr;
             _debug('Request failed, status: {}, reason: {}, exception: {}', xhr && xhr.status, reason, exception);
-            $.each(messages, function(index, message)
+
+            // Signal the transport it can deliver other queued requests
+            _transport.complete(request, false, comet);
+
+            for (var i = 0; i < messages.length; ++i)
             {
+                var message = messages[i];
                 var channel = message.channel;
                 switch (channel)
                 {
@@ -759,8 +767,7 @@
                         _messageFailure(xhr, message);
                         break;
                 }
-            });
-            _transport.complete(request, false, comet);
+            }
         };
 
         function _handshakeSuccess(message)
@@ -1153,8 +1160,9 @@
             var subscriptions = _listeners[channel];
             if (subscriptions && subscriptions.length > 0)
             {
-                $.each(subscriptions, function(index, subscription)
+                for (var i = 0; i < subscriptions.length; ++i)
                 {
+                    var subscription = subscriptions[i];
                     // Subscriptions may come and go, so the array may have 'holes'
                     if (subscription)
                     {
@@ -1169,7 +1177,7 @@
                             _warn('Exception during execution of callback \'{}\' on channel \'{}\' for message {}, exception: {}', subscription.callback.name, channel, JSON.stringify(message), x);
                         }
                     }
-                });
+                }
             }
         };
 
@@ -1275,7 +1283,9 @@
 
                 var requestId = ++_requestIds;
                 _debug('Beginning comet request {}', requestId);
+
                 var request = {id: requestId};
+                _debug('Delivering comet request {}', requestId);
                 self.deliver(packet, request);
                 _cometRequest = request;
             };
@@ -1337,18 +1347,20 @@
                     else
                     {
                         _debug('Dequeueing and failing request {}, {} queued requests', packet[1].id, _packets.length);
-                        packet[0].onFailure(packet[1], 'error');
+                        // Keep the semantic of calling response callbacks asynchronously after the request
+                        setTimeout(function() { packet[0].onFailure(packet[1], 'error'); }, 0);
                     }
                 }
             };
 
             this.abort = function()
             {
-                $.each(_requests, function(index, request)
+                for (var i = 0; i < _requests.length; ++i)
                 {
+                    var request = _requests[i];
                     _debug('Aborting request {}', request.id);
                     if (request.xhr) request.xhr.abort();
-                });
+                }
                 if (_cometRequest)
                 {
                     _debug('Aborting comet request {}', _cometRequest.id);
