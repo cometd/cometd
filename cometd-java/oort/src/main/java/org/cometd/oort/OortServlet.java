@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -38,17 +38,17 @@ import org.cometd.server.AbstractCometdServlet;
  * <p>
  * The following servlet init parameters are used to configure Oort:<dl>
  * <dt>oort.url</dt><dd>The absolute public URL to the cometd servlet.</dd>
- * <dt>oort.cloud</dt><dd>A comma separated list of the oort.urls of other 
+ * <dt>oort.cloud</dt><dd>A comma separated list of the oort.urls of other
  * known oort comet servers that are passed to {@link Oort#observeComet(String)}
  * on startup.</dd>
- * <dt>oort.channels</dt><dd>A comma separated list of channels that will be 
+ * <dt>oort.channels</dt><dd>A comma separated list of channels that will be
  * passed to {@link Oort#observeChannel(String)}</dd>
  * </dl>
  * @author gregw
  *
  */
 public class OortServlet implements Servlet
-{    
+{
     private ServletConfig _config;
 
     public void destroy()
@@ -69,12 +69,12 @@ public class OortServlet implements Servlet
     {
         System.err.println("INIT "+config);
         _config=config;
-        
-        Bayeux bayeux = (Bayeux)config.getServletContext().getAttribute(Bayeux.DOJOX_COMETD_BAYEUX);
+
+        Bayeux bayeux = (Bayeux)config.getServletContext().getAttribute(Bayeux.ATTRIBUTE);
         if (bayeux==null)
         {
-            _config.getServletContext().log("No "+Bayeux.DOJOX_COMETD_BAYEUX+" initialized");
-            throw new UnavailableException(Bayeux.DOJOX_COMETD_BAYEUX);
+            _config.getServletContext().log("No "+Bayeux.ATTRIBUTE +" initialized");
+            throw new UnavailableException(Bayeux.ATTRIBUTE);
         }
 
         String url=_config.getInitParameter(Oort.OORT_URL);
@@ -83,7 +83,7 @@ public class OortServlet implements Servlet
             _config.getServletContext().log("No "+Oort.OORT_URL+" init parameter");
             throw new UnavailableException(Oort.OORT_URL);
         }
-        
+
         Oort oort= new Oort(url,bayeux);
         _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE,oort);
 
@@ -93,9 +93,9 @@ public class OortServlet implements Servlet
             String[] patterns=channels.split("[, ]");
             for (String channel : patterns)
                 oort.observeChannel(channel);
-            
+
         }
-        
+
         try
         {
             oort.start();
@@ -104,20 +104,20 @@ public class OortServlet implements Servlet
         {
             throw new ServletException(e);
         }
-        
+
         String cloud = _config.getInitParameter(Oort.OORT_CLOUD);
         if (cloud!=null)
         {
             String[] urls=cloud.split("[, ]");
             for (String comet : urls)
                 oort.observeComet(comet);
-            
+
         }
     }
 
     public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
     {
         HttpServletResponse response = (HttpServletResponse)res;
-        response.sendError(503);        
+        response.sendError(503);
     }
 }

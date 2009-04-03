@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,7 +32,7 @@ public class OortDemoServlet implements Servlet
 {
     ServletConfig _config;
     ServletContext _context;
-    
+
 
     public String getServletInfo()
     {
@@ -43,15 +43,15 @@ public class OortDemoServlet implements Servlet
     {
         return _config;
     }
-    
+
     public void init(ServletConfig config) throws ServletException
     {
         _config=config;
         _context=config.getServletContext();
-        
+
         new OortChatService(_context);
-        
-        Bayeux bayeux = (Bayeux)_context.getAttribute(Bayeux.DOJOX_COMETD_BAYEUX);
+
+        Bayeux bayeux = (Bayeux)_context.getAttribute(Bayeux.ATTRIBUTE);
         bayeux.addExtension(new TimesyncExtension());
     }
 

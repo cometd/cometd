@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package org.cometd.oort;
 
@@ -27,10 +27,10 @@ public class OortChatService extends BayeuxService
     private final ConcurrentMap<String, Set<String>> _members = new ConcurrentHashMap<String, Set<String>>();
     private Oort _oort;
     private Seti _seti;
-    
+
     public OortChatService(ServletContext context)
     {
-        super((Bayeux)context.getAttribute(Bayeux.DOJOX_COMETD_BAYEUX), "chat");
+        super((Bayeux)context.getAttribute(Bayeux.ATTRIBUTE), "chat");
 
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
         if (_oort==null)
@@ -43,7 +43,7 @@ public class OortChatService extends BayeuxService
         subscribe("/chat/**", "trackMembers");
         subscribe("/service/privatechat", "privateChat");
     }
-    
+
     public void trackMembers(final Client joiner, final String channelName, Object data, final String messageId)
     {
         if (data instanceof Object[])
@@ -71,7 +71,7 @@ public class OortChatService extends BayeuxService
 
             if (Boolean.TRUE.equals(map.get("join")))
             {
-                
+
                 Set<String> members = _members.get(channelName);
                 if (members == null)
                 {
@@ -79,11 +79,11 @@ public class OortChatService extends BayeuxService
                     members = _members.putIfAbsent(channelName, newMembers);
                     if (members == null) members = newMembers;
                 }
-                
+
                 final String userName = (String)map.get("user");
-                
+
                 members.add(userName);
-                
+
                 if (!_oort.isOort(joiner))
                     _seti.associate(userName,joiner);
 
@@ -105,15 +105,15 @@ public class OortChatService extends BayeuxService
                             }
                         }
                     }
-                    
+
                 });
 
                 Log.info("Members: " + members);
                 // Broadcast the members to all existing members
                 getBayeux().getChannel(channelName, false).publish(getClient(), members, messageId);
-                
+
             }
-            
+
             if (Boolean.TRUE.equals(map.get("leave")))
             {
                 Set<String> members = _members.get(channelName);
@@ -139,7 +139,7 @@ public class OortChatService extends BayeuxService
         System.err.println("\nPRIVATE: "+data);
         String toUid=(String)data.get("peer");
         String toChannel=(String)data.get("room");
-        
+
         _seti.sendMessage(toUid,toChannel,data);
     }
 }

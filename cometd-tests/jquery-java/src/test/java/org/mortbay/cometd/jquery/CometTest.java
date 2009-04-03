@@ -233,7 +233,7 @@ public class CometTest
     {
         public void attributeAdded(ServletContextAttributeEvent event)
         {
-            if (event.getName().equals(Bayeux.DOJOX_COMETD_BAYEUX))
+            if (event.getName().equals(Bayeux.ATTRIBUTE))
             {
                 Bayeux bayeux=(Bayeux)event.getValue();
                 customizeBayeux(bayeux);
