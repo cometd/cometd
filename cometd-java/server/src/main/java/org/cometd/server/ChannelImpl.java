@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.cometd.Bayeux;
 import org.cometd.Channel;
 import org.cometd.ChannelListener;
 import org.cometd.Client;
@@ -184,6 +185,26 @@ public class ChannelImpl implements Channel
     public boolean isPersistent()
     {
         return _persistent;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void deliver(Client from, Iterable<Client> to, Object data, String id)
+    {
+        MessageImpl message=_bayeux.newMessage();
+        message.put(Bayeux.CHANNEL_FIELD,getId());
+        message.put(Bayeux.DATA_FIELD,data);
+        if (id!=null)   
+            message.put(Bayeux.ID_FIELD,id);
+
+        Message m=_bayeux.extendSendBayeux(from,message);
+        
+        if (m!=null)
+        {
+            for (Client t : to)
+                ((ClientImpl)t).doDelivery(from,m);
+        }
+        if (m instanceof MessageImpl)
+            ((MessageImpl)m).decRef();
     }
 
     /* ------------------------------------------------------------ */
