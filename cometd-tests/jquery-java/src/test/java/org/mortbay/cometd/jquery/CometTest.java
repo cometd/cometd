@@ -72,7 +72,7 @@ public class CometTest
 
         File jqryDirectory = new File(System.getProperty("jqrydir","../../cometd-jquery/examples"));
         File dojoDirectory = new File(System.getProperty("dojodir","../../cometd-dojox/examples"));
-        File demoDirectory = new File(System.getProperty("demodir","../../cometd-jetty/demo"));
+        File demoDirectory = new File(System.getProperty("demodir","../../cometd-java/demo"));
         File baseDirectory = new File(System.getProperty("basedir","."));
         context.setBaseResource(new ResourceCollection(new String[]
         {
