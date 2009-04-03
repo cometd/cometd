@@ -16,7 +16,29 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
+
 /* ------------------------------------------------------------ */
+/** The Search for Extra Terrestial Intelligence.
+ * 
+ * Well in this case, just the search for a user logged onto an
+ * Cometd node in an Oort cluster.
+ * <p>
+ * Seti allows an application to maintain a mapping from userId to 
+ * comet client ID using the {@link #associate(String, Client)} and
+ * {@link #disassociate(String)} methods. Each cometd node keeps its
+ * own associate mapping for clients connected to it.
+ * <p>
+ * The {@link #sendMessage(Collection, String, Object)} and 
+ * {@link #sendMessage(String, String, Object)} methods may be
+ * used to send a message to user(s) anywhere in the Oort cluster
+ * and Seti organizes the search of the distributed associate
+ * maps in order to locate the user(s)
+ * <p>
+ * If users can be directed to shards of cometd servers, then
+ * each Seti instance must be told it's shard ID and the {@link #userId2Shard(String)}
+ * method must be extended to map users to shards.
+ * 
+ */
 public class Seti extends AbstractLifeCycle
 {
     public final static String SETI_ATTRIBUTE="org.cometd.oort.Seti";
