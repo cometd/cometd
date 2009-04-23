@@ -136,10 +136,9 @@ public class OortChatService extends BayeuxService
 
     public void privateChat(Client source, String channel, Map<String, Object> data, String messageId)
     {
-        System.err.println("\nPRIVATE: "+data);
         String toUid=(String)data.get("peer");
         String toChannel=(String)data.get("room");
-
+        source.deliver(source,toChannel,data,messageId);
         _seti.sendMessage(toUid,toChannel,data);
     }
 }
