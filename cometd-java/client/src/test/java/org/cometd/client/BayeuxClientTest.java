@@ -55,7 +55,7 @@ public class BayeuxClientTest extends TestCase
         cometd_holder.setInitParameter("logLevel","1");
     
         context.addServlet(cometd_holder, "/cometd/*");
-        context.addServlet("org.mortbay.jetty.servlet.DefaultServlet", "/"); 
+        context.addServlet("org.eclipse.jetty.servlet.DefaultServlet", "/"); 
         
     }
 
