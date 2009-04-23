@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.cometd</groupId>
     <artifactId>cometd-project</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.beta8-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.cometd.dojox</groupId>
