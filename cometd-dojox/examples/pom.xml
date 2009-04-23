@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.cometd.dojox</groupId>
     <artifactId>cometd-dojox-project</artifactId>
-    <version>1.0.beta8</version>
+    <version>1.0.beta9-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
