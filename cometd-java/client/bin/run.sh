@@ -1,4 +1,5 @@
 #!/bin/sh
+# This run script assumes you have built from source (poor assumption)
 cd `dirname $0`/..
 REPO=$HOME/.m2/repository
 JETTY_VERSION=7.0.0.M1
