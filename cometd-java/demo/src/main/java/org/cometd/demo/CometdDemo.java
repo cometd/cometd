@@ -102,7 +102,7 @@ public class CometdDemo
         context.setBaseResource(new ResourceCollection(new Resource[]
         {
             Resource.newResource("./src/main/webapp/"),
-            Resource.newResource("./target/cometd-java-demo-1.0-SNAPSHOT/"),
+            Resource.newResource("./target/cometd-java-demo-1.0.beta9-SNAPSHOT/"),
         }));
         
         
@@ -117,7 +117,7 @@ public class CometdDemo
         comet.setInitParameter("interval","100");
         comet.setInitParameter("maxInterval","10000");
         comet.setInitParameter("multiFrameInterval","5000");
-        comet.setInitParameter("logLevel","1");
+        comet.setInitParameter("logLevel","0");
         comet.setInitOrder(2);
         
         
