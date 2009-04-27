@@ -3,6 +3,7 @@
  */
 package org.cometd.demo;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,6 +14,7 @@ import org.cometd.Channel;
 import org.cometd.Client;
 import org.cometd.RemoveListener;
 import org.cometd.server.BayeuxService;
+import org.cometd.server.ChannelImpl;
 import org.eclipse.jetty.util.log.Log;
 
 public class ChatService extends BayeuxService
@@ -66,28 +68,39 @@ public class ChatService extends BayeuxService
     {
         String roomName = (String)data.get("room");
         Map<String, String> membersMap = _members.get(roomName);
-        String peerName = (String)data.get("peer");
-        String peerId = membersMap.get(peerName);
-	if (peerId!=null)
+        String[] peerNames = ((String)data.get("peer")).split(",");
+        ArrayList<Client> to = new ArrayList<Client>(peerNames.length);
+        
+        for (String peerName : peerNames)
         {
-            Client peer = getBayeux().getClient(peerId);
-	    if (peer!=null)
-	    {
-		Map<String, Object> message = new HashMap<String, Object>();
-		message.put("chat", data.get("chat"));
-		message.put("user", data.get("user"));
-		message.put("scope", "private");
-		peer.deliver(getClient(), roomName, message, messageId);
-                if (!peerId.equals(source.getId()))
-		    source.deliver(getClient(), roomName, message, messageId);
-		return;
+            String peerId = membersMap.get(peerName);
+            if (peerId!=null)
+            {
+                Client peer = getBayeux().getClient(peerId);
+                if (peer!=null)
+                    to.add(peer);
             }
-	}
-	Map<String, Object> message = new HashMap<String, Object>();
-	message.put("chat", "Unknown user: "+peerName);
-	message.put("user", "SERVER");
-	message.put("scope", "error");
-	source.deliver(source, roomName, message, messageId);
+        }
+
+        if (to.size()>0)
+        {
+            {
+                Map<String, Object> message = new HashMap<String, Object>();
+                message.put("chat", data.get("chat"));
+                message.put("user", data.get("user"));
+                message.put("scope", "private");
+                ((ChannelImpl)(getBayeux().getChannel(roomName,false))).deliver(getClient(),to,message,messageId);
+                source.deliver(getClient(), roomName, message, messageId);
+            }
+        }
+        else
+        {
+            Map<String, Object> message = new HashMap<String, Object>();
+            message.put("chat", "Unknown user(s): "+data.get("peer"));
+            message.put("user", "SERVER");
+            message.put("scope", "error");
+            source.deliver(source, roomName, message, messageId);
+        }
     }
 }
 
