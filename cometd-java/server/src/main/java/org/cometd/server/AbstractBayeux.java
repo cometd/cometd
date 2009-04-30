@@ -793,7 +793,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     {
         if (listener instanceof ClientBayeuxListener)
             _clientListeners.add((ClientBayeuxListener)listener);
-        else if(listener instanceof ChannelBayeuxListener)
+        if(listener instanceof ChannelBayeuxListener)
             _channelListeners.add((ChannelBayeuxListener)listener);
     }
 
