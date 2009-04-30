@@ -93,7 +93,7 @@ public class ChatService extends BayeuxService
                 source.deliver(getClient(), roomName, message, messageId);
             }
         }
-        else
+        else if (!"silent".equals((String)data.get("peer")))
         {
             Map<String, Object> message = new HashMap<String, Object>();
             message.put("chat", "Unknown user(s): "+data.get("peer"));

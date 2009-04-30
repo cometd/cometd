@@ -184,88 +184,96 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
             }
         }
 
-        // Send any messages.
-        if (client!=null && (!metaConnectDeliveryOnly || metaConnect))
+        if (client!=null)
         {
-            synchronized(client)
+            if (metaConnectDeliveryOnly && !metaConnect)
             {
-                client.doDeliverListeners();
-
-                final ArrayQueue<Message> messages= (ArrayQueue)client.getQueue();
-                final int size=messages.size();           
-
-                try
+                // wake up any long poll
+                client.resume();
+            }
+            else
+            {
+                // Send any queued messages.
+                synchronized(client)
                 {
-                    for (int i=0;i<size;i++)
+                    client.doDeliverListeners();
+
+                    final ArrayQueue<Message> messages= (ArrayQueue)client.getQueue();
+                    final int size=messages.size();           
+
+                    try
                     {
-                        final Message message=messages.getUnsafe(i);
-                        final MessageImpl mesgImpl=(message instanceof MessageImpl)?(MessageImpl)message:null;
-
-                        // Can we short cut the message?
-                        if (i==0 && size==1 && mesgImpl!=null && _refsThreshold>0 && metaConnectReply!=null && transport instanceof JSONTransport)
+                        for (int i=0;i<size;i++)
                         {
-                            // is there a response already prepared
-                            ByteBuffer buffer = mesgImpl.getBuffer();
-                            if (buffer!=null)
+                            final Message message=messages.getUnsafe(i);
+                            final MessageImpl mesgImpl=(message instanceof MessageImpl)?(MessageImpl)message:null;
+
+                            // Can we short cut the message?
+                            if (i==0 && size==1 && mesgImpl!=null && _refsThreshold>0 && metaConnectReply!=null && transport instanceof JSONTransport)
                             {
-                                // Send pre-prepared buffer
-                                request.setAttribute("org.mortbay.jetty.ResponseBuffer",buffer);
-                                if (metaConnectReply instanceof MessageImpl)
-                                    ((MessageImpl)metaConnectReply).decRef();
-                                metaConnectReply=null;
-                                transport=null;
-                                mesgImpl.decRef();
-                                continue;
+                                // is there a response already prepared
+                                ByteBuffer buffer = mesgImpl.getBuffer();
+                                if (buffer!=null)
+                                {
+                                    // Send pre-prepared buffer
+                                    request.setAttribute("org.mortbay.jetty.ResponseBuffer",buffer);
+                                    if (metaConnectReply instanceof MessageImpl)
+                                        ((MessageImpl)metaConnectReply).decRef();
+                                    metaConnectReply=null;
+                                    transport=null;
+                                    mesgImpl.decRef();
+                                    continue;
+                                }
+                                else if (mesgImpl.getRefs()>=_refsThreshold)
+                                {
+                                    // create multi-use buffer
+                                    byte[] contentBytes = ("["+mesgImpl.getJSON()+",{\""+Bayeux.SUCCESSFUL_FIELD+"\":true,\""+
+                                            Bayeux.CHANNEL_FIELD+"\":\""+Bayeux.META_CONNECT+"\"}]")
+                                            .getBytes(StringUtil.__UTF8);
+                                    int contentLength = contentBytes.length;
+
+                                    String headerString = "HTTP/1.1 200 OK\r\n"+
+                                    "Content-Type: text/json; charset=utf-8\r\n" +
+                                    "Content-Length: " + contentLength + "\r\n" +
+                                    "\r\n";
+
+                                    byte[] headerBytes = headerString.getBytes(StringUtil.__UTF8);
+
+                                    buffer = ByteBuffer.allocateDirect(headerBytes.length+contentLength);
+                                    buffer.put(headerBytes);
+                                    buffer.put(contentBytes);
+                                    buffer.flip();
+
+                                    mesgImpl.setBuffer(buffer);
+                                    request.setAttribute("org.mortbay.jetty.ResponseBuffer",buffer);
+                                    metaConnectReply=null;
+                                    if (metaConnectReply instanceof MessageImpl)
+                                        ((MessageImpl)metaConnectReply).decRef();
+                                    transport=null;
+                                    mesgImpl.decRef();
+                                    continue;
+                                }
                             }
-                            else if (mesgImpl.getRefs()>=_refsThreshold)
-                            {
-                                // create multi-use buffer
-                                byte[] contentBytes = ("["+mesgImpl.getJSON()+",{\""+Bayeux.SUCCESSFUL_FIELD+"\":true,\""+
-                                        Bayeux.CHANNEL_FIELD+"\":\""+Bayeux.META_CONNECT+"\"}]")
-                                        .getBytes(StringUtil.__UTF8);
-                                int contentLength = contentBytes.length;
 
-                                String headerString = "HTTP/1.1 200 OK\r\n"+
-                                "Content-Type: text/json; charset=utf-8\r\n" +
-                                "Content-Length: " + contentLength + "\r\n" +
-                                "\r\n";
-
-                                byte[] headerBytes = headerString.getBytes(StringUtil.__UTF8);
-
-                                buffer = ByteBuffer.allocateDirect(headerBytes.length+contentLength);
-                                buffer.put(headerBytes);
-                                buffer.put(contentBytes);
-                                buffer.flip();
-
-                                mesgImpl.setBuffer(buffer);
-                                request.setAttribute("org.mortbay.jetty.ResponseBuffer",buffer);
-                                metaConnectReply=null;
-                                if (metaConnectReply instanceof MessageImpl)
-                                    ((MessageImpl)metaConnectReply).decRef();
-                                transport=null;
+                            if (message!=null)
+                                transport.send(message);
+                            if (mesgImpl!=null)
                                 mesgImpl.decRef();
-                                continue;
-                            }
                         }
-
-                        if (message!=null)
-                            transport.send(message);
-                        if (mesgImpl!=null)
-                            mesgImpl.decRef();
+                    }
+                    finally
+                    {
+                        messages.clear();
                     }
                 }
-                finally
-                {
-                    messages.clear();
-                }
-            }
 
-            if (metaConnectReply!=null)
-            {
-                metaConnectReply=_bayeux.extendSendMeta(client,metaConnectReply);
-                transport.send(metaConnectReply);
-                if (metaConnectReply instanceof MessageImpl)
-                    ((MessageImpl)metaConnectReply).decRef();
+                if (metaConnectReply!=null)
+                {
+                    metaConnectReply=_bayeux.extendSendMeta(client,metaConnectReply);
+                    transport.send(metaConnectReply);
+                    if (metaConnectReply instanceof MessageImpl)
+                        ((MessageImpl)metaConnectReply).decRef();
+                }
             }
         }
         
