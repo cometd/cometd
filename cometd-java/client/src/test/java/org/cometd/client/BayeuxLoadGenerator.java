@@ -111,7 +111,7 @@ public class BayeuxLoadGenerator
             System.err.print("clients ["+nclients+"]: ");
             t = in.readLine();
 	    if (t==null)
-	    	return
+	    	return;
             t = t.trim();
             if (t.length()==0)
                 t=""+nclients;
