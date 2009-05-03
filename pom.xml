@@ -23,6 +23,7 @@
     <module>cometd-jquery</module>
     <module>cometd-java</module>
     <module>cometd-tests</module>
+    <module>cometd-javascript</module>
   </modules>
 
   <mailingLists>
@@ -125,7 +126,7 @@
       <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
       <layout>default</layout>
     </snapshotRepository>
-    <!-- none yet 
+    <!-- none yet
     <site>
       <id></id>
       <name></name>
@@ -138,7 +139,7 @@
     <pluginRepository>
       <id>jettySnapshots</id>
       <name>Jetty Maven2 Snapshot Repository</name>
-      <url>http://snapshots.repository.codehaus.org/</url>
+      <url>http://snapshots.repository.codehaus.org</url>
       <releases> <enabled>false</enabled> </releases>
       <snapshots> <enabled>true</enabled> </snapshots>
       <layout>default</layout>
