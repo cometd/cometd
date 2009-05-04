@@ -46,7 +46,7 @@ org.cometd.JSON.toJSON = function(object)
 };
 
 org.cometd.AJAX = {};
-org.cometd.AJAX.send = function(packet)
+org.cometd.AJAX.send = function(envelope)
 {
     throw 'Abstract Function Error: this function must be overridden';
 };
@@ -1335,22 +1335,22 @@ org.cometd.Cometd = function(name)
         var _requestIds = 0;
         var _cometRequest = null;
         var _requests = [];
-        var _packets = [];
+        var _envelopes = [];
 
         this.getType = function()
         {
             return type;
         };
 
-        this.send = function(packet, comet)
+        this.send = function(envelope, comet)
         {
             if (comet)
-                _cometSend(this, packet);
+                _cometSend(this, envelope);
             else
-                _send(this, packet);
+                _send(this, envelope);
         };
 
-        function _cometSend(self, packet)
+        function _cometSend(self, envelope)
         {
             if (_cometRequest !== null) throw 'Concurrent comet requests not allowed, request ' + _cometRequest.id + ' not yet completed';
 
@@ -1359,27 +1359,27 @@ org.cometd.Cometd = function(name)
 
             var request = {id: requestId};
             _debug('Delivering comet request {}', requestId);
-            self.deliver(packet, request);
+            self.deliver(envelope, request);
             _cometRequest = request;
         };
 
-        function _send(self, packet)
+        function _send(self, envelope)
         {
             var requestId = ++_requestIds;
-            _debug('Beginning request {}, {} other requests, {} queued requests', requestId, _requests.length, _packets.length);
+            _debug('Beginning request {}, {} other requests, {} queued requests', requestId, _requests.length, _envelopes.length);
 
             var request = {id: requestId};
             // Consider the comet request which should always be present
             if (_requests.length < _maxRequests - 1)
             {
                 _debug('Delivering request {}', requestId);
-                self.deliver(packet, request);
+                self.deliver(envelope, request);
                 _requests.push(request);
             }
             else
             {
-                _packets.push([packet, request]);
-                _debug('Queued request {}, {} queued requests', requestId, _packets.length);
+                _envelopes.push([envelope, request]);
+                _debug('Queued request {}, {} queued requests', requestId, _envelopes.length);
             }
         };
 
@@ -1407,21 +1407,21 @@ org.cometd.Cometd = function(name)
             var index = _inArray(request, _requests);
             // The index can be negative the request has been aborted
             if (index >= 0) _requests.splice(index, 1);
-            _debug('Ended request {}, {} other requests, {} queued requests', requestId, _requests.length, _packets.length);
+            _debug('Ended request {}, {} other requests, {} queued requests', requestId, _requests.length, _envelopes.length);
 
-            if (_packets.length > 0)
+            if (_envelopes.length > 0)
             {
-                var packet = _packets.shift();
+                var envelope = _envelopes.shift();
                 if (success)
                 {
-                    _debug('Dequeueing and sending request {}, {} queued requests', packet[1].id, _packets.length);
-                    _send(self, packet[0]);
+                    _debug('Dequeueing and sending request {}, {} queued requests', envelope[1].id, _envelopes.length);
+                    _send(self, envelope[0]);
                 }
                 else
                 {
-                    _debug('Dequeueing and failing request {}, {} queued requests', packet[1].id, _packets.length);
+                    _debug('Dequeueing and failing request {}, {} queued requests', envelope[1].id, _envelopes.length);
                     // Keep the semantic of calling response callbacks asynchronously after the request
-                    setTimeout(function() { packet[0].onFailure(packet[1], 'error'); }, 0);
+                    setTimeout(function() { envelope[0].onFailure(envelope[1], 'error'); }, 0);
                 }
             }
         };
@@ -1441,54 +1441,38 @@ org.cometd.Cometd = function(name)
             }
             _cometRequest = null;
             _requests = [];
-            _packets = [];
+            _envelopes = [];
         };
     };
 
     org.cometd.LongPollingTransport = function()
     {
-        this.deliver = function(packet, request)
+        this.deliver = function(envelope, request)
         {
             request.xhr = org.cometd.AJAX.send({
                 transport: this,
-                url: packet.url,
+                url: envelope.url,
                 headers: {
                     Connection: 'Keep-Alive'
                 },
-                body: org.cometd.JSON.toJSON(packet.messages),
-                onSuccess: function(response) { packet.onSuccess(request, response); },
-                onError: function(reason, exception) { packet.onFailure(request, reason, exception); }
+                body: org.cometd.JSON.toJSON(envelope.messages),
+                onSuccess: function(response) { envelope.onSuccess(request, response); },
+                onError: function(reason, exception) { envelope.onFailure(request, reason, exception); }
             });
-
-/*
-            request.xhr = $.ajax({
-                url: packet.url,
-                type: 'POST',
-                contentType: 'text/json;charset=UTF-8',
-                beforeSend: function(xhr)
-                {
-                    xhr.setRequestHeader('Connection', 'Keep-Alive');
-                    return true;
-                },
-                data: org.cometd.JSON.toJSON(packet.messages),
-                success: function(response) { packet.onSuccess(request, response); },
-                error: function(xhr, reason, exception) { packet.onFailure(request, reason, exception); }
-            });
-*/
         };
     };
 
     org.cometd.CallbackPollingTransport = function()
     {
         var _maxLength = 2000;
-        this.deliver = function(packet, request)
+        this.deliver = function(envelope, request)
         {
             // Microsoft Internet Explorer has a 2083 URL max length
             // We must ensure that we stay within that length
-            var messages = org.cometd.JSON.toJSON(packet.messages);
+            var messages = org.cometd.JSON.toJSON(envelope.messages);
             // Encode the messages because all brackets, quotes, commas, colons, etc
             // present in the JSON will be URL encoded, taking many more characters
-            var urlLength = packet.url.length + encodeURI(messages).length;
+            var urlLength = envelope.url.length + encodeURI(messages).length;
             _debug('URL length: {}', urlLength);
             // Let's stay on the safe side and use 2000 instead of 2083
             // also because we did not count few characters among which
@@ -1496,47 +1480,26 @@ org.cometd.Cometd = function(name)
             // which sum up to about 50 chars
             if (urlLength > _maxLength)
             {
-                var x = packet.messages.length > 1 ?
+                var x = envelope.messages.length > 1 ?
                         'Too many bayeux messages in the same batch resulting in message too big ' +
                         '(' + urlLength + ' bytes, max is ' + _maxLength + ') for transport ' + this.getType() :
                         'Bayeux message too big (' + urlLength + ' bytes, max is ' + _maxLength + ') ' +
                         'for transport ' + this.getType();
                 // Keep the semantic of calling response callbacks asynchronously after the request
-                _setTimeout(function() { packet.onFailure(request, 'error', x); }, 0);
+                _setTimeout(function() { envelope.onFailure(request, 'error', x); }, 0);
             }
             else
             {
                 org.cometd.AJAX.send({
                     transport: this,
-                    url: packet.url,
+                    url: envelope.url,
                     headers: {
                         Connection: 'Keep-Alive'
                     },
                     body: messages,
-                    onSuccess: function(response) { packet.onSuccess(request, response); },
-                    onError: function(reason, exception) { packet.onFailure(request, reason, exception); }
+                    onSuccess: function(response) { envelope.onSuccess(request, response); },
+                    onError: function(reason, exception) { envelope.onFailure(request, reason, exception); }
                 });
-
-/*
-                $.ajax({
-                    url: packet.url,
-                    type: 'GET',
-                    dataType: 'jsonp',
-                    jsonp: 'jsonp',
-                    beforeSend: function(xhr)
-                    {
-                        xhr.setRequestHeader('Connection', 'Keep-Alive');
-                        return true;
-                    },
-                    data:
-                    {
-                        // In callback-polling, the content must be sent via the 'message' parameter
-                        message: messages
-                    },
-                    success: function(response) { packet.onSuccess(request, response); },
-                    error: function(xhr, reason, exception) { packet.onFailure(request, reason, exception); }
-                });
-*/
             }
         };
     };

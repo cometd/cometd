@@ -26,6 +26,7 @@ org.cometd.AJAX.send = function(packet)
             url: packet.url,
             callbackParamName: 'jsonp',
             content: {
+                // In callback-polling, the content must be sent via the 'message' parameter
                 message: packet.body
             },
             load: packet.onSuccess,
@@ -39,4 +40,5 @@ org.cometd.AJAX.send = function(packet)
     }
 };
 
+// The default cometd instance
 dojox.cometd = new org.cometd.Cometd();
