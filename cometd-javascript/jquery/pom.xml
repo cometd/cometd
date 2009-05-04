@@ -26,6 +26,15 @@
                     </overlays>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.mortbay.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <version>${jetty-maven-plugin-version}</version>
+                <configuration>
+                    <scanIntervalSeconds>10</scanIntervalSeconds>
+                    <contextPath>/jquery</contextPath>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
