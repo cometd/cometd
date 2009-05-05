@@ -43,7 +43,7 @@ public interface MessageListener extends ClientListener
      * in order of receipt.
      *
      */
-    public interface Synchronous {};
+    public interface Synchronous extends MessageListener {};
     
     /** 
      * subtype of MesssageListener that requires asynchronous message delivery.
@@ -51,5 +51,5 @@ public interface MessageListener extends ClientListener
      * in parallel and possible out of order.
      * 
      */
-    public interface Asynchronous {};
+    public interface Asynchronous extends MessageListener {};
 }
