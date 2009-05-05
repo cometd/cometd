@@ -114,8 +114,8 @@ public class CometdDemo
         ServletHolder comet = context.addServlet(ContinuationCometdServlet.class, "/cometd/*");
         comet.setInitParameter("filters","/WEB-INF/filters.json");
         comet.setInitParameter("timeout","20000");
-        comet.setInitParameter("interval","100");
-        comet.setInitParameter("maxInterval","10000");
+        comet.setInitParameter("interval","50");
+        comet.setInitParameter("maxInterval","20000");
         comet.setInitParameter("multiFrameInterval","5000");
         comet.setInitParameter("logLevel","0");
         comet.setInitOrder(2);
