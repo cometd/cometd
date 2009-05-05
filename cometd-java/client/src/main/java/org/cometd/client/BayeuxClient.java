@@ -302,9 +302,16 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
             else
             {
                 for (MessageListener l : _mListeners)
-                    l.deliver(from,this,message);
+                    if (l instanceof MessageListener.Synchronous)
+                        l.deliver(from,this,message);
             }
         }
+        
+        if (_mListeners !=null)
+            for (MessageListener l : _mListeners)
+                if (!(l instanceof MessageListener.Synchronous))
+                l.deliver(from,this,message);
+        
         message.decRef();
     }
 
