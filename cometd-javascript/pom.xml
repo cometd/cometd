@@ -13,12 +13,14 @@
     <name>Cometd :: JavaScript</name>
 
     <properties>
+        <rhino-version>1.6R6</rhino-version>
     </properties>
 
     <modules>
         <module>common</module>
         <module>dojo</module>
         <module>jquery</module>
+        <module>test</module>
     </modules>
 
     <build>

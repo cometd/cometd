@@ -172,9 +172,9 @@ org.cometd.Cometd = function(name)
         // Temporary setup a transport to send the initial handshake
         // The transport may be changed as a result of handshake
         if (_xd)
-            _transport = newCallbackPollingTransport();
+            _transport = _newCallbackPollingTransport();
         else
-            _transport = newLongPollingTransport();
+            _transport = _newLongPollingTransport();
         _debug('Initial transport is {}', _transport.getType());
     };
 
@@ -247,13 +247,21 @@ org.cometd.Cometd = function(name)
      * Subscribes to the given channel, performing the given callback in the given scope
      * when a message for the channel arrives.
      * @param channel the channel to subscribe to
-     * @param scope the scope of the callback
+     * @param scope the scope of the callback, may be omitted
      * @param callback the callback to call when a message is delivered to the channel
      * @param subscribeProps an object to be merged with the subscribe message
      * @return the subscription handle to be passed to {@link #unsubscribe(object)}
      */
     this.subscribe = function(channel, scope, callback, subscribeProps)
     {
+        // Normalize arguments
+        if (typeof scope === 'function')
+        {
+            subscribeProps = callback;
+            callback = scope;
+            scope = undefined;
+        }
+
         var subscription = this.addListener(channel, scope, callback);
 
         // Send the subscription message after the subscription registration to avoid
@@ -306,7 +314,7 @@ org.cometd.Cometd = function(name)
      * Adds a listener for bayeux messages, performing the given callback in the given scope
      * when a message for the given channel arrives.
      * @param channel the channel the listener is interested to
-     * @param scope the scope of the callback
+     * @param scope the scope of the callback, may be omitted
      * @param callback the callback to call when a message is delivered to the channel
      * @returns the subscription handle to be passed to {@link #removeListener(object)}
      * @see #removeListener(object)
@@ -429,9 +437,9 @@ org.cometd.Cometd = function(name)
      *     incoming: function(message) { ... },
      *     outgoing: function(message) { ... }
      * }
+     * </pre>
      * Both properties are optional, but if they are present they will be called
      * respectively for each incoming message and for each outgoing message.
-     * </pre>
      * @param name the name of the extension
      * @param extension the extension to register
      * @return true if the extension was registered, false otherwise
@@ -446,7 +454,7 @@ org.cometd.Cometd = function(name)
             if (existingExtension.name == name)
             {
                 existing = true;
-                return false;
+                break;
             }
         }
         if (!existing)
@@ -456,6 +464,10 @@ org.cometd.Cometd = function(name)
                 extension: extension
             });
             _debug('Registered extension \'{}\'', name);
+
+            // Callback for extensions
+            if (typeof extension.registered === 'function') extension.registered.call(extension, name, this);
+
             return true;
         }
         else
@@ -482,10 +494,29 @@ org.cometd.Cometd = function(name)
                 _extensions.splice(i, 1);
                 unregistered = true;
                 _debug('Unregistered extension \'{}\'', name);
+
+                // Callback for extensions
+                if (typeof extension.unregistered === 'function') extension.unregistered.call(extension);
+
                 break;
             }
         }
         return unregistered;
+    };
+
+    /**
+     * Find the extension registered with the given name.
+     * @param name the name of the extension to find
+     * @return the extension found or null if no extension with the given name has been registered
+     */
+    this.findExtension = function(name)
+    {
+        for (var i = 0; i < _extensions.length; ++i)
+        {
+            var extension = _extensions[i];
+            if (extension.name == name) return extension.extension;
+        }
+        return null;
     };
 
     /**
@@ -598,7 +629,7 @@ org.cometd.Cometd = function(name)
             if (_inArray('long-polling', transportTypes) >= 0) return _transport;
 
             // The server does not support long-polling
-            if (_inArray('callback-polling', transportTypes) >= 0) return newCallbackPollingTransport();
+            if (_inArray('callback-polling', transportTypes) >= 0) return _newCallbackPollingTransport();
         }
         return null;
     };
@@ -1312,12 +1343,12 @@ org.cometd.Cometd = function(name)
         return result;
     };
 
-    function newLongPollingTransport()
+    function _newLongPollingTransport()
     {
         return _mixin({}, new org.cometd.Transport('long-polling'), new org.cometd.LongPollingTransport());
     };
 
-    function newCallbackPollingTransport()
+    function _newCallbackPollingTransport()
     {
         return _mixin({}, new org.cometd.Transport('callback-polling'), new org.cometd.CallbackPollingTransport());
     };
