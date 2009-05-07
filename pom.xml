@@ -1,297 +1,315 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.cometd</groupId>
-  <artifactId>cometd-project</artifactId>
-  <packaging>pom</packaging>
-  <name>Cometd</name>
-  <version>1.0.beta9-SNAPSHOT</version>
-  <url>http://www.cometd.org</url>
-  <issueManagement>
-    <system>jira</system>
-    <url>http://trac.dojotoolkit.org</url>
-  </issueManagement>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
-  <properties>
-    <maven-wagon-version>1.0-beta-2</maven-wagon-version>
-    <jetty-version>7.0.0.M1</jetty-version>
-    <jetty-maven-plugin-version>7.0.0.1beta0</jetty-maven-plugin-version>
-    <dojo-version>1.3.0</dojo-version>
-  </properties>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.cometd</groupId>
+    <artifactId>cometd-project</artifactId>
+    <packaging>pom</packaging>
+    <name>Cometd</name>
+    <version>1.0.beta9-SNAPSHOT</version>
+    <url>http://www.cometd.org</url>
+    <issueManagement>
+        <system>jira</system>
+        <url>http://trac.dojotoolkit.org</url>
+    </issueManagement>
 
-  <modules>
-    <module>cometd-dojox</module>
-    <module>cometd-jquery</module>
-    <module>cometd-java</module>
-    <module>cometd-tests</module>
-    <module>cometd-javascript</module>
-  </modules>
+    <properties>
+        <maven-wagon-version>1.0-beta-2</maven-wagon-version>
+        <jetty-version>7.0.0.M1</jetty-version>
+        <jetty-maven-plugin-version>7.0.0.1beta0</jetty-maven-plugin-version>
+        <dojo-version>1.3.0</dojo-version>
+    </properties>
 
-  <mailingLists>
-    <mailingList>
-      <name>Cometd Dev List</name>
-      <archive>http://groups.google.com/group/cometd-dev/</archive>
-    </mailingList>
-    <mailingList>
-      <name>Cometd User List</name>
-      <archive>http://groups.google.com/group/cometd-user/</archive>
-    </mailingList>
-    <mailingList>
-      <name>Dojo Contributors List</name>
-      <archive>http://dojotoolkit.org/mailman/listinfo/dojo-contributors</archive>
-    </mailingList>
-  </mailingLists>
+    <modules>
+        <module>cometd-java</module>
+        <module>cometd-javascript</module>
+        <module>cometd-jquery-examples</module>
+        <module>cometd-dojox</module>
+        <module>cometd-tests</module>
+    </modules>
 
-  <developers>
-    <developer>
-      <id>gregw</id>
-      <name>Greg Wilkins</name>
-      <email>gregw@webtide.com</email>
-      <url>http://www.mortbay.com/mortbay/people/gregw</url>
-      <organization>Webtide</organization>
-      <organizationUrl>http://www.webtide.com</organizationUrl>
-    </developer>
-    <developer>
-      <id>sbordet</id>
-      <name>Simone Bordet</name>
-      <email>sbordet@webtide.com</email>
-      <organization>Webtide</organization>
-      <organizationUrl>http://www.webtide.com</organizationUrl>
-    </developer>
-    <developer>
-      <id>xantus</id>
-      <name>David Davis</name>
-      <url>http://xantus.vox.com/</url>
-    </developer>
-    <developer>
-      <id>alex</id>
-      <name>Alex Russell</name>
-      <url>http://alex.dojotoolkit.org/</url>
-      <organization>Sitepen</organization>
-    </developer>
-    <developer>
-      <id>mark</id>
-      <name>Mark Smith</name>
-    </developer>
-  </developers>
-  <licenses>
-    <license>
-      <name>Apache License Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
-    </license>
-    <license>
-      <name>The New BSD License</name>
-    </license>
-    <license>
-      <name>The Academic Free License, v. 2.1</name>
-    </license>
-  </licenses>
+    <mailingLists>
+        <mailingList>
+            <name>Cometd Dev List</name>
+            <archive>http://groups.google.com/group/cometd-dev/</archive>
+        </mailingList>
+        <mailingList>
+            <name>Cometd User List</name>
+            <archive>http://groups.google.com/group/cometd-user/</archive>
+        </mailingList>
+        <mailingList>
+            <name>Dojo Contributors List</name>
+            <archive>http://dojotoolkit.org/mailman/listinfo/dojo-contributors</archive>
+        </mailingList>
+    </mailingLists>
 
-  <repositories>
-    <repository>
-      <id>dojo</id>
-      <name>Dojo Maven2 Repository</name>
-      <url>http://oss.sonatype.org/content/repositories/dojo-releases</url>
-      <releases> <enabled>true</enabled> </releases>
-      <snapshots> <enabled>false</enabled> </snapshots>
-      <layout>default</layout>
-    </repository>
-    <repository>
-      <id>dojoSnapshots</id>
-      <name>Dojo Maven2 Snapshot Repository</name>
-      <url>http://oss.sonatype.org/content/repositories/dojo-snapshots</url>
-      <releases> <enabled>false</enabled> </releases>
-      <snapshots> <enabled>true</enabled> </snapshots>
-      <layout>default</layout>
-    </repository>
-    <repository>
-      <id>jettySnapshots</id>
-      <name>Jetty Maven2 Snapshot Repository</name>
-      <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-      <releases> <enabled>false</enabled> </releases>
-      <snapshots> <enabled>true</enabled> </snapshots>
-      <layout>default</layout>
-    </repository>
-  </repositories>
+    <developers>
+        <developer>
+            <id>gregw</id>
+            <name>Greg Wilkins</name>
+            <email>gregw@webtide.com</email>
+            <url>http://www.mortbay.com/mortbay/people/gregw</url>
+            <organization>Webtide</organization>
+            <organizationUrl>http://www.webtide.com</organizationUrl>
+        </developer>
+        <developer>
+            <id>sbordet</id>
+            <name>Simone Bordet</name>
+            <email>sbordet@webtide.com</email>
+            <organization>Webtide</organization>
+            <organizationUrl>http://www.webtide.com</organizationUrl>
+        </developer>
+        <developer>
+            <id>xantus</id>
+            <name>David Davis</name>
+            <url>http://xantus.vox.com/</url>
+        </developer>
+        <developer>
+            <id>alex</id>
+            <name>Alex Russell</name>
+            <url>http://alex.dojotoolkit.org/</url>
+            <organization>Sitepen</organization>
+        </developer>
+        <developer>
+            <id>mark</id>
+            <name>Mark Smith</name>
+        </developer>
+    </developers>
+    <licenses>
+        <license>
+            <name>Apache License Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+        </license>
+        <license>
+            <name>The New BSD License</name>
+        </license>
+        <license>
+            <name>The Academic Free License, v. 2.1</name>
+        </license>
+    </licenses>
 
-  <distributionManagement>
-    <repository>
-      <id>cometdReleases</id>
-      <name>Cometd Maven2 Repository</name>
-      <url>http://oss.repository.sonatype.org/service/local/staging/deploy/maven2</url>
-      <layout>default</layout>
-    </repository>
-    <snapshotRepository>
-      <id>cometdSnapshots</id>
-      <name>Cometd Maven2 Snapshot Repository</name>
-      <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
-      <layout>default</layout>
-    </snapshotRepository>
-    <!-- none yet
-    <site>
-      <id></id>
-      <name></name>
-      <url></url>
-    </site>
-    -->
-  </distributionManagement>
+    <repositories>
+        <repository>
+            <id>dojo</id>
+            <name>Dojo Maven2 Repository</name>
+            <url>http://oss.sonatype.org/content/repositories/dojo-releases</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <layout>default</layout>
+        </repository>
+        <repository>
+            <id>dojoSnapshots</id>
+            <name>Dojo Maven2 Snapshot Repository</name>
+            <url>http://oss.sonatype.org/content/repositories/dojo-snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <layout>default</layout>
+        </repository>
+        <repository>
+            <id>jettySnapshots</id>
+            <name>Jetty Maven2 Snapshot Repository</name>
+            <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <layout>default</layout>
+        </repository>
+    </repositories>
 
-  <pluginRepositories>
-    <pluginRepository>
-      <id>jettySnapshots</id>
-      <name>Jetty Maven2 Snapshot Repository</name>
-      <url>http://snapshots.repository.codehaus.org</url>
-      <releases> <enabled>false</enabled> </releases>
-      <snapshots> <enabled>true</enabled> </snapshots>
-      <layout>default</layout>
-    </pluginRepository>
-  </pluginRepositories>
-  <scm>
-    <connection>scm:svn:http://svn.cometd.com/trunk</connection>
-    <developerConnection>scm:svn:https://svn.cometd.com/trunk</developerConnection>
-  </scm>
-  <organization>
-    <name>Dojo Foundation</name>
-    <url>http://www.dojotoolkit.org</url>
-  </organization>
-  <build>
-    <defaultGoal>install</defaultGoal>
-    <extensions>
-      <extension>
-        <groupId>org.apache.maven.wagon</groupId>
-        <artifactId>wagon-ssh-external</artifactId>
-        <version>${maven-wagon-version}</version>
-      </extension>
-      <extension>
-        <groupId>org.apache.maven.wagon</groupId>
-        <artifactId>wagon-ssh</artifactId>
-        <version>${maven-wagon-version}</version>
-      </extension>
-      <extension>
-	<groupId>org.apache.maven.wagon</groupId>
-	<artifactId>wagon-webdav</artifactId>
-	<version>${maven-wagon-version}</version>
-      </extension>
-    </extensions>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-      </resource>
-    </resources>
-    <testResources>
-      <testResource>
-        <directory>src/test/resources</directory>
-      </testResource>
-    </testResources>
-    <directory>target</directory>
-    <finalName>${artifactId}-${version}</finalName>
-    <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.5</source>
-          <target>1.5</target>
-          <verbose>false</verbose>
-        </configuration>
-      </plugin>
+    <distributionManagement>
+        <repository>
+            <id>cometdReleases</id>
+            <name>Cometd Maven2 Repository</name>
+            <url>http://oss.repository.sonatype.org/service/local/staging/deploy/maven2</url>
+            <layout>default</layout>
+        </repository>
+        <snapshotRepository>
+            <id>cometdSnapshots</id>
+            <name>Cometd Maven2 Snapshot Repository</name>
+            <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
+            <layout>default</layout>
+        </snapshotRepository>
+        <!-- none yet
+        <site>
+          <id></id>
+          <name></name>
+          <url></url>
+        </site>
+        -->
+    </distributionManagement>
 
-      <plugin>
-        <artifactId>maven-release-plugin</artifactId>
-        <configuration>
-          <tagBase>https://svn.cometd.com/tags</tagBase>
-        </configuration>
-      </plugin>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>jettySnapshots</id>
+            <name>Jetty Maven2 Snapshot Repository</name>
+            <url>http://snapshots.repository.codehaus.org</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <layout>default</layout>
+        </pluginRepository>
+    </pluginRepositories>
+    <scm>
+        <connection>scm:svn:http://svn.cometd.com/trunk</connection>
+        <developerConnection>scm:svn:https://svn.cometd.com/trunk</developerConnection>
+    </scm>
+    <organization>
+        <name>Dojo Foundation</name>
+        <url>http://www.dojotoolkit.org</url>
+    </organization>
+    <build>
+        <defaultGoal>install</defaultGoal>
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-ssh-external</artifactId>
+                <version>${maven-wagon-version}</version>
+            </extension>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-ssh</artifactId>
+                <version>${maven-wagon-version}</version>
+            </extension>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-webdav</artifactId>
+                <version>${maven-wagon-version}</version>
+            </extension>
+        </extensions>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+        </testResources>
+        <directory>target</directory>
+        <finalName>${artifactId}-${version}</finalName>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.5</source>
+                    <target>1.5</target>
+                    <verbose>false</verbose>
+                </configuration>
+            </plugin>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <mode>development</mode>
-              <url>${pom.url}</url>
-	      <implementation-version>${pom.version}</implementation-version>
-	      <package>org.cometd</package>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
+            <plugin>
+                <artifactId>maven-release-plugin</artifactId>
+                <configuration>
+                    <tagBase>https://svn.cometd.com/tags</tagBase>
+                </configuration>
+            </plugin>
 
-      <plugin>
-	<inherited>true</inherited>
-	<groupId>org.apache.maven.plugins</groupId>
-	<artifactId>maven-source-plugin</artifactId>
-	<executions>
-	  <execution>
-	    <id>attach-sources</id>
-	    <goals>
-	      <goal>jar</goal>
-	    </goals>
-	  </execution>
-	</executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-javadocs</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <mode>development</mode>
+                            <url>${pom.url}</url>
+                            <implementation-version>${pom.version}</implementation-version>
+                            <package>org.cometd</package>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
 
-    <pluginManagement>
-      <plugins>
-       <plugin>
-        <groupId>org.apache.maven</groupId>
-	<artifactId>maven-surefire-plugin</artifactId>
-	<version>2.3</version>
-       </plugin>
-       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>1.0.1</version>
-       </plugin>
-       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>2.2</version>
-       </plugin>
-       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.1</version>
-       </plugin>
-       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.0.2</version>
-       </plugin>
-       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.4.2</version>
-       </plugin>
-       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>2.0</version>
-       </plugin>
-       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-war-plugin</artifactId>
-        <version>2.0.2</version>
-       </plugin>
-       <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <version>1.4.0</version>
-       </plugin>
-      </plugins>
-    </pluginManagement>
-  </build>
+            <plugin>
+                <inherited>true</inherited>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.3</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>1.0.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>2.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>1.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>2.0.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.4.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>2.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-war-plugin</artifactId>
+                    <version>2.0.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>1.4.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
 </project>
