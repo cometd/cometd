@@ -25,7 +25,6 @@
                 <configuration>
                     <dependentWarExcludes>WEB-INF/web.xml</dependentWarExcludes>
                     <overlays>
-                        <overlay />
                         <overlay>
                             <groupId>org.cometd.java</groupId>
                             <artifactId>cometd-java-demo</artifactId>
@@ -33,6 +32,7 @@
                                 <exclude>META-INF/**</exclude>
                             </excludes>
                         </overlay>
+                        <overlay />
                     </overlays>
                 </configuration>
             </plugin>
