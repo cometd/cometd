@@ -8,28 +8,15 @@
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.cometd.javascript</groupId>
-    <artifactId>cometd-javascript-common</artifactId>
-    <packaging>war</packaging>
-    <name>Cometd :: JavaScript :: Common</name>
+    <artifactId>cometd-javascript-test</artifactId>
+    <packaging>jar</packaging>
+    <name>Cometd :: JavaScript :: Test</name>
 
     <properties>
         <rhino-version>1.6R6</rhino-version>
     </properties>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
     </build>
 
     <dependencies>
@@ -37,13 +24,11 @@
             <groupId>org.cometd.java</groupId>
             <artifactId>cometd-api</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.cometd.java</groupId>
             <artifactId>cometd-java-server</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
@@ -55,20 +40,17 @@
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-client</artifactId>
             <version>${jetty-version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <classifier>jdk15</classifier>
             <version>5.8</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>rhino</groupId>
             <artifactId>js</artifactId>
             <version>${rhino-version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

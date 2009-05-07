@@ -54,7 +54,7 @@
                     <properties>
                         <property>
                             <name>listener</name>
-                            <value>org.mortbay.TestNGListener</value>
+                            <value>org.cometd.TestNGListener</value>
                         </property>
                     </properties>
                 </configuration>
