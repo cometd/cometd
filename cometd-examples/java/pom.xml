@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <parent>
         <groupId>org.cometd.examples</groupId>
@@ -11,7 +12,7 @@
     <artifactId>cometd-examples-java</artifactId>
     <packaging>war</packaging>
     <name>Cometd :: Examples :: Java</name>
-
+<!--
     <build>
         <defaultGoal>install</defaultGoal>
         <plugins>
@@ -52,8 +53,9 @@
             </plugin>
         </plugins>
     </build>
-
+-->
     <dependencies>
+<!--
         <dependency>
             <groupId>org.cometd.dojox</groupId>
             <artifactId>cometd-dojox-examples</artifactId>
@@ -66,6 +68,7 @@
             <version>${project.version}</version>
             <type>war</type>
         </dependency>
+-->
         <dependency>
             <groupId>org.cometd.java</groupId>
             <artifactId>cometd-java-server</artifactId>
@@ -78,4 +81,5 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
+
 </project>
