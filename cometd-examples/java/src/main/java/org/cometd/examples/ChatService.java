@@ -1,7 +1,7 @@
 /**
- * 
+ *
  */
-package org.cometd.demo;
+package org.cometd.examples;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,14 +23,14 @@ public class ChatService extends BayeuxService
      * A map(channel, map(userName, clientId))
      */
     private final ConcurrentMap<String, Map<String, String>> _members = new ConcurrentHashMap<String, Map<String, String>>();
-    
+
     public ChatService(Bayeux bayeux)
     {
         super(bayeux, "chat");
         subscribe("/chat/**", "trackMembers");
         subscribe("/service/privatechat", "privateChat");
     }
-    
+
     public void trackMembers(final Client joiner, final String channelName, Map<String, Object> data, final String messageId)
     {
         if (Boolean.TRUE.equals(data.get("join")))
@@ -42,7 +42,7 @@ public class ChatService extends BayeuxService
                 membersMap = _members.putIfAbsent(channelName, newMembersMap);
                 if (membersMap == null) membersMap = newMembersMap;
             }
-            
+
             final Map<String, String> members = membersMap;
             final String userName = (String)data.get("user");
             members.put(userName, joiner.getId());
@@ -70,7 +70,7 @@ public class ChatService extends BayeuxService
         Map<String, String> membersMap = _members.get(roomName);
         String[] peerNames = ((String)data.get("peer")).split(",");
         ArrayList<Client> to = new ArrayList<Client>(peerNames.length);
-        
+
         for (String peerName : peerNames)
         {
             String peerId = membersMap.get(peerName);
