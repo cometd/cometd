@@ -19,7 +19,7 @@ public class DojoHitchCometTest extends AbstractDojoCometTest
         evaluateScript("var handshakeListener = new Listener();");
         Listener handshakeListener = get("handshakeListener");
         handshakeListener.expect(1);
-        evaluateScript("dojox.cometd.addListener('/meta/handshake', dojo.hitch(handshakeListener, 'handle'));");
+        evaluateScript("dojox.cometd.addListener('/meta/handshake', handshakeListener, 'handle');");
         evaluateScript("dojox.cometd.init('" + cometURL + "');");
         assert handshakeListener.await(1000);
 

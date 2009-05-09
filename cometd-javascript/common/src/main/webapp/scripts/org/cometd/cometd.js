@@ -52,22 +52,21 @@ org.cometd.AJAX.send = function(envelope)
 };
 
 /**
- * TODO: rewrite jsdoc here
- * The constructor for a Cometd object.
- * There is a default Comet instance already created at the variable <code>$.cometd</code>,
- * and hence that can be used to start a comet conversation with a server.
- * In the rare case a page needs more than one comet conversation, a new instance can be
- * created via:
+ * The constructor for a Cometd object, identified by an optional name.
+ * The default name is the string 'default'.
+ * In the rare case a page needs more than one comet conversation,
+ * a new instance can be created via:
  * <pre>
- * var url2 = ...;
+ * var cometUrl2 = ...;
  * var cometd2 = new $.Cometd();
- * cometd2.init(url2);
+ * cometd2.init(cometUrl2);
  * </pre>
+ * @param name the optional name of this cometd object
  */
 org.cometd.Cometd = function(name)
 {
     var _name = name || 'default';
-    var _logPriorities = { debug: 1, info: 2, warn: 3, error: 4 };
+    var _logLevels = { debug: 1, info: 2, warn: 3, error: 4 };
     var _logLevel = 'info';
     var _url;
     var _xd = false;
@@ -324,16 +323,24 @@ org.cometd.Cometd = function(name)
         // The data structure is a map<channel, subscription[]>, where each subscription
         // holds the callback to be called and its scope.
 
+        var thiz = scope;
+        var method = callback;
         // Normalize arguments
-        if (!callback)
+        if (typeof scope === 'function')
         {
-            callback = scope;
-            scope = undefined;
+            thiz = undefined;
+            method = scope;
+        }
+        else if (typeof callback === 'string')
+        {
+            if (!scope) throw 'Invalid scope ' + scope;
+            method = scope[callback];
+            if (!method) throw 'Invalid callback ' + callback + ' for scope ' + scope;
         }
 
         var subscription = {
-            scope: scope,
-            callback: callback
+            scope: thiz,
+            callback: method
         };
 
         var subscriptions = _listeners[channel];
@@ -348,7 +355,7 @@ org.cometd.Cometd = function(name)
         // then:
         // hc==3, a.join()=='a',,'c', a.length==3
         var subscriptionIndex = subscriptions.push(subscription) - 1;
-        _debug('Added listener: channel \'{}\', callback \'{}\', index {}', channel, callback.name, subscriptionIndex);
+        _debug('Added listener: channel \'{}\', callback \'{}\', index {}', channel, method.name, subscriptionIndex);
 
         // The subscription to allow removal of the listener is made of the channel and the index
         return [channel, subscriptionIndex];
@@ -509,7 +516,7 @@ org.cometd.Cometd = function(name)
      * @param name the name of the extension to find
      * @return the extension found or null if no extension with the given name has been registered
      */
-    this.findExtension = function(name)
+    this.getExtension = function(name)
     {
         for (var i = 0; i < _extensions.length; ++i)
         {
@@ -1317,9 +1324,9 @@ org.cometd.Cometd = function(name)
 
     function _log(level, text)
     {
-        var priority = _logPriorities[level];
-        var configPriority = _logPriorities[_logLevel];
-        if (!configPriority) configPriority = _logPriorities['info'];
+        var priority = _logLevels[level];
+        var configPriority = _logLevels[_logLevel];
+        if (!configPriority) configPriority = _logLevels['info'];
         if (priority >= configPriority)
         {
             if (window.console) window.console.log(text);
