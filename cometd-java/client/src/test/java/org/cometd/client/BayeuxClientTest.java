@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.TestCase;
-
 import org.cometd.Bayeux;
 import org.cometd.Client;
 import org.cometd.Message;
@@ -22,7 +21,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class BayeuxClientTest extends TestCase
 {
@@ -32,23 +30,23 @@ public class BayeuxClientTest extends TestCase
     Random _random = new Random();
     HttpClient _httpClient;
     AbstractBayeux _bayeux;
-    
+
     protected void setUp() throws Exception
     {
         super.setUp();
-        
+
         // Manually contruct context to avoid hassles with webapp classloaders for now.
         _server = new Server();
-        
+
         SelectChannelConnector connector=new SelectChannelConnector();
         // SocketConnector connector=new SocketConnector();
         connector.setPort(0);
         connector.setMaxIdleTime(30000);
         _server.addConnector(connector);
-        
+
         ServletContextHandler context = new ServletContextHandler(_server,"/");
         context.setBaseResource(Resource.newResource("./src/test"));
-        
+
         // Cometd servlet
         _cometd=new ContinuationCometdServlet();
         ServletHolder cometd_holder = new ServletHolder(_cometd);
@@ -57,13 +55,13 @@ public class BayeuxClientTest extends TestCase
         cometd_holder.setInitParameter("maxInterval","10000");
         cometd_holder.setInitParameter("multiFrameInterval","2000");
         cometd_holder.setInitParameter("logLevel","0");
-    
+
         context.addServlet(cometd_holder, "/cometd/*");
-        context.addServlet(DefaultServlet.class, "/"); 
+        context.addServlet(DefaultServlet.class, "/");
 
         _server.start();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see junit.framework.TestCase#tearDown()
@@ -72,13 +70,13 @@ public class BayeuxClientTest extends TestCase
     protected void tearDown() throws Exception
     {
         super.tearDown();
-        
+
         if (_httpClient!=null)
             _httpClient.stop();
         _httpClient=null;
 
         if (_server!=null)
-            _server.stop();        
+            _server.stop();
         _server=null;
     }
 
@@ -86,13 +84,13 @@ public class BayeuxClientTest extends TestCase
     public void testClient() throws Exception
     {
         AbstractBayeux _bayeux = _cometd.getBayeux();
-        
+
         _httpClient = new HttpClient();
         _httpClient.setMaxConnectionsPerAddress(20000);
         _httpClient.start();
 
         final Exchanger<Object> exchanger = new Exchanger<Object>();
-        
+
         BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_server.getConnectors()[0].getLocalPort()+"/cometd")
         {
             volatile boolean connected;
@@ -128,9 +126,9 @@ public class BayeuxClientTest extends TestCase
                     e.printStackTrace();
                 }
             }
-            
+
         };
-        
+
         client.addListener(new MessageListener(){
             public void deliver(Client fromClient, Client toClient, Message message)
             {
@@ -148,7 +146,7 @@ public class BayeuxClientTest extends TestCase
                 }
             }
         });
-        
+
         client.addLifeCycleListener(new LifeCycle.Listener(){
 
             public void lifeCycleFailure(LifeCycle event, Throwable cause)
@@ -180,33 +178,33 @@ public class BayeuxClientTest extends TestCase
             }
         }
         );
-        
-        
+
+
         client.start();
-        
+
         MessageImpl message = (MessageImpl)exchanger.exchange(null,1,TimeUnit.SECONDS);
         assertEquals(Bayeux.META_HANDSHAKE,message.getChannel());
         assertTrue(message.isSuccessful());
         String id = client.getId();
         assertTrue(id!=null);
         message.decRef();
-        
+
         message = (MessageImpl)exchanger.exchange(null,1,TimeUnit.SECONDS);
         assertEquals(Bayeux.META_CONNECT,message.getChannel());
         assertTrue(message.isSuccessful());
         message.decRef();
-        
+
         client.subscribe("/a/channel");
         message = (MessageImpl)exchanger.exchange(null,1,TimeUnit.SECONDS);
         assertEquals(Bayeux.META_SUBSCRIBE,message.getChannel());
         assertTrue(message.isSuccessful());
         message.decRef();
-        
+
         client.publish("/a/channel","data","id");
         message = (MessageImpl)exchanger.exchange(null,1,TimeUnit.SECONDS);
         assertEquals("data",message.getData());
         message.decRef();
-        
+
         client.disconnect();
         message = (MessageImpl)exchanger.exchange(null,1,TimeUnit.SECONDS);
         assertEquals(Bayeux.META_DISCONNECT,message.getChannel());
@@ -214,7 +212,7 @@ public class BayeuxClientTest extends TestCase
         message.decRef();
 
         Object o = exchanger.exchange(null,1,TimeUnit.SECONDS);
-        
+
         assertTrue(client.isStopped());
     }
 
@@ -224,7 +222,7 @@ public class BayeuxClientTest extends TestCase
     {
         Runtime.getRuntime().addShutdownHook(new DumpThread());
         AbstractBayeux bayeux = _cometd.getBayeux();
-        
+
         HttpClient httpClient = new HttpClient();
         httpClient.setMaxConnectionsPerAddress(20000);
         httpClient.start();
@@ -237,7 +235,7 @@ public class BayeuxClientTest extends TestCase
 
         final AtomicInteger connected=new AtomicInteger();
         final AtomicInteger received=new AtomicInteger();
-        
+
         for (int i=0;i<clients.length;i++)
         {
             clients[i] = new BayeuxClient(httpClient,"http://localhost:"+_server.getConnectors()[0].getLocalPort()+"/cometd")
@@ -277,7 +275,7 @@ public class BayeuxClientTest extends TestCase
             clients[i].start();
             clients[i].subscribe("/channel/"+(i%rooms));
         }
-        
+
         long start=System.currentTimeMillis();
         int d=0;
         while(connected.get()<clients.length && (System.currentTimeMillis()-start)<30000)
@@ -285,7 +283,7 @@ public class BayeuxClientTest extends TestCase
             Thread.sleep(1000);
             System.err.println("connected "+connected.get()+"/"+clients.length);
         }
-        
+
         assertEquals(clients.length,connected.get());
 
         long start0=System.currentTimeMillis();
@@ -293,11 +291,11 @@ public class BayeuxClientTest extends TestCase
         {
             final int sender=_random.nextInt(clients.length);
             final String channel="/channel/"+_random.nextInt(rooms);
-            
+
             String data="data from "+sender+" to "+channel;
             // System.err.println(data);
             clients[sender].publish(channel,data,""+i);
-            
+
             if (i%batch==(batch-1))
             {
                 System.err.print('.');
@@ -307,9 +305,9 @@ public class BayeuxClientTest extends TestCase
                 System.err.println();
         }
         System.err.println();
-        
+
         int expected=clients.length*publish/rooms;
-        
+
         start=System.currentTimeMillis();
         while(received.get()<expected && (System.currentTimeMillis()-start)<10000)
         {
@@ -319,26 +317,30 @@ public class BayeuxClientTest extends TestCase
         System.err.println((received.get()*1000)/(System.currentTimeMillis()-start0)+" m/s");
 
         assertEquals(expected,received.get());
-        
+
         for (BayeuxClient client : clients)
             client.disconnect();
 
         Thread.sleep(clients.length*20);
-        
+
         for (BayeuxClient client : clients)
             client.stop();
-        
+
     }
-    
+
     private class DumpThread extends Thread
     {
         public void run()
         {
-            if (_server!=null)
-                _server.dump();
-            if (_httpClient!=null)
-                _httpClient.dump();
+            try
+            {
+                if (_server!=null) _server.dump();
+                if (_httpClient!=null) _httpClient.dump();
+            }
+            catch (Exception x)
+            {
+                x.printStackTrace();
+            }
         }
     }
-
 }
