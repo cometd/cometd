@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,20 +12,17 @@
 // limitations under the License.
 //========================================================================
 
-package org.cometd.demo;
+package org.cometd.examples;
 
 
 import java.util.Date;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import org.cometd.server.AbstractBayeux;
 import org.cometd.server.ChannelImpl;
-import org.cometd.server.ClientImpl;
 import org.cometd.server.MessageImpl;
 import org.cometd.server.continuation.ContinuationCometdServlet;
-import org.cometd.server.ext.TimesyncExtension;
 
 import org.cometd.Client;
 import org.cometd.Extension;
@@ -46,14 +43,14 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /* ------------------------------------------------------------ */
 /** Main class for cometd demo.
- * 
+ *
  * @author gregw
  *
  */
 public class CometdDemo
 {
     private static int _testHandshakeFailure;
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param args
@@ -61,16 +58,16 @@ public class CometdDemo
     public static void main(String[] args) throws Exception
     {
         int port = args.length==0?8080:Integer.parseInt(args[0]);
-     
+
         String base="../../..";
-        
+
         // Manually contruct context to avoid hassles with webapp classloaders for now.
         Server server = new Server();
         QueuedThreadPool qtp = new QueuedThreadPool();
         qtp.setMinThreads(5);
         qtp.setMaxThreads(200);
         server.setThreadPool(qtp);
-        
+
         SelectChannelConnector connector=new SelectChannelConnector();
         // SocketConnector connector=new SocketConnector();
         connector.setPort(port);
@@ -78,8 +75,8 @@ public class CometdDemo
         SocketConnector bconnector=new SocketConnector();
         bconnector.setPort(port+1);
         server.addConnector(bconnector);
-        
-        
+
+
         /*
         SslSelectChannelConnector ssl_connector=new SslSelectChannelConnector();
         ssl_connector.setPort(port-80+443);
@@ -88,24 +85,24 @@ public class CometdDemo
         ssl_connector.setKeyPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
         ssl_connector.setTruststore(base+"/etc/keystore");
         ssl_connector.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        server.addConnector(ssl_connector);  
+        server.addConnector(ssl_connector);
         */
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
-        
+
         MovedContextHandler moved = new MovedContextHandler(contexts,"/","/cometd");
         moved.setDiscardPathInfo(true);
-        
+
         ServletContextHandler context = new ServletContextHandler(contexts,"/cometd",ServletContextHandler.SESSIONS);
-        
+
         context.setBaseResource(new ResourceCollection(new Resource[]
         {
             Resource.newResource("./src/main/webapp/"),
             Resource.newResource("./target/cometd-java-demo-1.0.beta9-SNAPSHOT/"),
         }));
-        
-        
+
+
         // Cometd servlet
 
         ServletHolder dftServlet = context.addServlet(DefaultServlet.class, "/");
@@ -119,15 +116,15 @@ public class CometdDemo
         comet.setInitParameter("multiFrameInterval","5000");
         comet.setInitParameter("logLevel","0");
         comet.setInitOrder(2);
-        
-        
+
+
         ServletHolder demo=context.addServlet(CometdDemoServlet.class, "/demo");
         demo.setInitOrder(3);
-        
+
         server.start();
-        
+
         final AbstractBayeux bayeux = ((ContinuationCometdServlet)comet.getServlet()).getBayeux();
-        
+
         bayeux.setSecurityPolicy(new AbstractBayeux.DefaultPolicy()
         {
             public boolean canHandshake(Message message)
@@ -138,9 +135,9 @@ public class CometdDemo
                     return false;
                 }
                 return true;
-            }    
+            }
         });
-        
+
         // Demo lazy messages
         if (Boolean.getBoolean("LAZY"))
         {
@@ -166,14 +163,14 @@ public class CometdDemo
                 }
             });
         }
-        
+
         // Demo lazy messages
         if (Boolean.getBoolean("LAZYCHAT"))
         {
             final ChannelImpl chat_demo = (ChannelImpl)bayeux.getChannel("/chat/demo",true);
             chat_demo.setLazy(true);
             chat_demo.setPersistent(true);
-            
+
             Timer timer = new Timer();
             timer.schedule(new TimerTask()
             {
@@ -183,6 +180,6 @@ public class CometdDemo
                 }
             },2000,2000);
         }
-        
+
     }
 }

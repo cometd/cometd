@@ -13,7 +13,9 @@
     <name>Cometd :: Examples</name>
 
     <modules>
+        <module>java</module>
         <module>jquery</module>
+        <module>all</module>
     </modules>
 
     <build>

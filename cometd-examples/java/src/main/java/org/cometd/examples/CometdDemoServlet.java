@@ -12,7 +12,7 @@
 // limitations under the License.
 //========================================================================
 
-package org.cometd.demo;
+package org.cometd.examples;
 
 
 
