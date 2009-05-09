@@ -22,7 +22,7 @@
     <modules>
         <module>cometd-java</module>
         <module>cometd-javascript</module>
-        <module>cometd-jquery-examples</module>
+        <module>cometd-examples</module>
         <module>cometd-dojox</module>
         <module>cometd-tests</module>
     </modules>
