@@ -16,7 +16,6 @@
         <module>java</module>
         <module>dojo</module>
         <module>jquery</module>
-        <module>all</module>
     </modules>
 
     <build>
