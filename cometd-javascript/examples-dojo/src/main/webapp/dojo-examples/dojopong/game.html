@@ -1,0 +1,71 @@
+<html>
+<head>
+	<title>Let's draw with some SVG</title>
+	<script type="text/javascript">
+		var djConfig = {
+			//isDebug: true
+		};
+	</script>
+	<script type="text/javascript" src="../dojo/dojo.js"></script>
+	<script type="text/javascript">
+		dojo.registerModulePath("dojopong","/dojopong");
+
+		dojo.require("dojo.widget.*");
+		dojo.require("dojo.event.*");
+		dojo.require("dojo.lfx.*");
+		dojo.require("dojo.html.*");
+		dojo.require("dojo.gfx.*");
+		dojo.require("dojo.math.curves");
+		dojo.require("dojopong.widget.CountDown");
+		dojo.require("dojopong.widget.DojoPong");
+		
+		dojo.widget.manager.registerWidgetPackage("dojopong");
+        
+        var pong = null;
+		
+        function dump(obj)
+        {
+            for (var i in obj)
+            {
+                dojo.debug(i + ": " + obj[i]);
+            }
+        }
+		
+		function init()
+		{
+			//pong = new dojopong.DojoPong();
+			//pong.init();
+		}
+        
+        function randRange(intFrom, intTo, intSeed)
+        {
+            // Make sure that we have integers.
+            intFrom = Math.floor( intFrom );
+            intTo = Math.floor( intTo );
+
+            // Return the random number.
+            return(
+                Math.floor(
+                    intFrom +
+                    (
+                        (intTo - intFrom + 1) *
+                        // Seed the random number if a value was passed.
+                        Math.random(
+                            (intSeed != null) ? intSeed : 0
+                        )
+                    )
+                )
+            );
+        }
+		
+		
+		dojo.addOnLoad(init);
+	</script>
+</head>
+<body>
+
+<div dojoType="dojopong:DojoPong"></div>
+
+
+</body>
+</html>

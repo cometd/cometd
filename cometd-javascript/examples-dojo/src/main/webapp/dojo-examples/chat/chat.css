@@ -1,0 +1,68 @@
+
+div 
+{ 
+  border: 0px solid black; 
+}
+
+#chatroom
+{
+  width: 42em;
+  background-color: #e0e0e0;
+  border: 1px solid black; 
+}
+
+#chat
+{
+  float: left;
+  width: 32em;
+  height: 20ex;
+  overflow: auto; 
+  background-color: #f0f0f0;
+  padding: 0.2em;
+  border-right: 1px solid black; 
+}
+
+#members
+{
+  float: left;
+  clear: right;
+  width: 8em;
+  border: 0px solid black; 
+  overflow: auto; 
+  padding: 4px;
+}
+
+#input
+{
+  clear: both;
+  padding: 0.2em;
+  border-top: 1px solid black; 
+}
+
+#phrase
+{
+  width:28em;
+  background-color: #e0f0f0;
+}
+
+#username
+{
+  width:14em;
+  background-color: #e0f0f0;
+}
+
+div.hidden
+{
+  display: none;
+}
+
+span.from
+{
+  font-weight: bold;
+}
+
+span.alert
+{
+  font-style: italic;
+}
+

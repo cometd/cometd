@@ -1,0 +1,27 @@
+#layout,
+html,body {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	padding: 0px;
+	margin: 0px;
+}
+
+#tray {
+	width: 200px;
+	background: #ababab;
+	overflow: visible;
+}
+
+#layout {
+	background: #f5f0bf;
+}
+
+.magnet {
+	background: white;
+	border: 2px solid black;
+	padding: 4px;
+	margin:0;
+	position: absolute;
+	white-space: nowrap;
+}
