@@ -19,7 +19,9 @@
     <modules>
         <module>common</module>
         <module>dojo</module>
+        <module>examples-dojo</module>
         <module>jquery</module>
+        <module>examples-jquery</module>
     </modules>
 
     <build>

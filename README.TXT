@@ -3,7 +3,6 @@ This is the cometd project home.
 
 bayeux            - specification
 cometd-demo       - Demo of java server and dojo/jquery clients
-cometd-examples   - dojo/jquery examples used by the demo
 cometd-java       - java server and java client
 cometd-javascript - dojo/jquery clients
 cometd-perl       - perl server (ALPHA)

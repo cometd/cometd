@@ -19,8 +19,6 @@
 			<plugin>
 				<artifactId>maven-war-plugin</artifactId>
 				<configuration>
-					<dependentWarExcludes>WEB-INF/web.xml
-					</dependentWarExcludes>
 					<overlays>
 					        <overlay/>
 						<overlay>
@@ -32,20 +30,36 @@
 							</excludes>
 						</overlay>
 						<overlay>
-						    <groupId>org.cometd.javascript</groupId>
-						    <artifactId>cometd-javascript-jquery</artifactId>
+						        <groupId>org.cometd.javascript</groupId>
+						        <artifactId>cometd-javascript-jquery</artifactId>
+							<excludes>
+								<exclude>META-INF/**</exclude>
+								<exclude>WEB-INF/web.xml</exclude>
+							</excludes>
 						</overlay>
 						<overlay>
-							<groupId>org.cometd.examples</groupId>
+							<groupId>org.cometd.javascript</groupId>
 							<artifactId>cometd-examples-dojo</artifactId>
+							<excludes>
+								<exclude>META-INF/**</exclude>
+								<exclude>WEB-INF/web.xml</exclude>
+							</excludes>
 						</overlay>
 						<overlay>
-							<groupId>org.cometd.examples</groupId>
+							<groupId>org.cometd.javascript</groupId>
 							<artifactId>cometd-examples-jquery</artifactId>
+							<excludes>
+								<exclude>META-INF/**</exclude>
+								<exclude>WEB-INF/web.xml</exclude>
+							</excludes>
 						</overlay>
 						<overlay>
-							<groupId>org.cometd.examples</groupId>
+							<groupId>org.cometd.java</groupId>
 							<artifactId>cometd-examples-java</artifactId>
+							<excludes>
+								<exclude>META-INF/**</exclude>
+								<exclude>WEB-INF/web.xml</exclude>
+							</excludes>
 						</overlay>
 					</overlays>
 				</configuration>
@@ -77,19 +91,19 @@
 		    <type>war</type>
 		</dependency>
 		<dependency>
-			<groupId>org.cometd.examples</groupId>
+			<groupId>org.cometd.javascript</groupId>
 			<artifactId>cometd-examples-dojo</artifactId>
 			<version>${project.version}</version>
 			<type>war</type>
 		</dependency>
 		<dependency>
-			<groupId>org.cometd.examples</groupId>
+			<groupId>org.cometd.javascript</groupId>
 			<artifactId>cometd-examples-jquery</artifactId>
 			<version>${project.version}</version>
 			<type>war</type>
 		</dependency>
 		<dependency>
-			<groupId>org.cometd.examples</groupId>
+			<groupId>org.cometd.java</groupId>
 			<artifactId>cometd-examples-java</artifactId>
 			<version>${project.version}</version>
 			<type>war</type>
