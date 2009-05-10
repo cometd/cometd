@@ -161,7 +161,7 @@ var chat = function()
         var altServer = $('#altServer').val();
         var cometURL = (altServer.length > 0) ?
                        altServer :
-                       document.location.protocol + '//' + document.location.host + '/jquery/cometd';
+                       document.location.protocol + '//' + document.location.host + '/cometd';
 
         // Subscribe for meta channels immediately so that the chat knows about meta channel events
         _metaSubscribe();

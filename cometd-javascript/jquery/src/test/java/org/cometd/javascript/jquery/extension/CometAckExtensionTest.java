@@ -25,7 +25,7 @@ public class CometAckExtensionTest extends AbstractJQueryCometTest
     @Test
     public void testClientSupportsAckExtension() throws Exception
     {
-        URL ackExtensionURL = new URL(contextURL + "/scripts/org/cometd/cometd-ack.js");
+        URL ackExtensionURL = new URL(contextURL + "/org/cometd/cometd-ack.js");
         evaluateURL(ackExtensionURL);
 
         evaluateScript("var cometd = new org.cometd.Cometd('mycometd');");
@@ -57,7 +57,7 @@ public class CometAckExtensionTest extends AbstractJQueryCometTest
     @Test
     public void testAcknowledgement() throws Exception
     {
-        URL ackExtensionURL = new URL(contextURL + "/scripts/org/cometd/cometd-ack.js");
+        URL ackExtensionURL = new URL(contextURL + "/org/cometd/cometd-ack.js");
         evaluateURL(ackExtensionURL);
 
         evaluateScript("$.cometd.setLogLevel('debug');");
