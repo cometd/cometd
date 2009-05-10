@@ -1,17 +1,17 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<parent>
-		<groupId>org.cometd.examples</groupId>
-		<artifactId>cometd-examples-project
+		<groupId>org.cometd</groupId>
+		<artifactId>cometd-project
 		</artifactId>
 		<version>1.0.beta9-SNAPSHOT</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.cometd.examples</groupId>
-	<artifactId>cometd-examples-all</artifactId>
+	<groupId>org.cometd</groupId>
+	<artifactId>cometd-demo</artifactId>
 	<packaging>war</packaging>
-	<name>Cometd :: Examples :: All</name>
+	<name>Cometd :: Demo </name>
 
 	<build>
 		<defaultGoal>install</defaultGoal>

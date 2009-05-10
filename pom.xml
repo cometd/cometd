@@ -23,6 +23,7 @@
         <module>cometd-java</module>
         <module>cometd-javascript</module>
         <module>cometd-examples</module>
+        <module>cometd-demo</module>
     </modules>
 
     <mailingLists>
