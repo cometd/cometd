@@ -17,7 +17,7 @@ var room = {
 		
 		dojox.cometd.ackEnabled = (dojo.query("#ackInit").attr("checked") == "true");
 		
-		var loc = (new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/examples\/.*$/, '')) +
+		var loc = (new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/dojo-examples\/.*$/, '')) +
 		"/cometd";
 		dojox.cometd.init(loc);
 		// For x-domain test change line above to:

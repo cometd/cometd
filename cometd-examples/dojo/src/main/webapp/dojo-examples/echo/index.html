@@ -56,7 +56,7 @@
 
 
 
-              dojox.cometd.init(new String(document.location).replace(/http:\/\/[^\/]*/,'').replace(/\/examples\/.*$/,'')+"/cometd");
+              dojox.cometd.init(new String(document.location).replace(/http:\/\/[^\/]*/,'').replace(/\/dojo-examples\/.*$/,'')+"/cometd");
               dojox.cometd.subscribe("/service/echo",echoRpcReturn);
             }
 
