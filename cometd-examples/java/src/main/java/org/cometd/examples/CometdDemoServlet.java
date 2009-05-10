@@ -43,11 +43,14 @@ public class CometdDemoServlet extends GenericServlet
     public void init() throws ServletException
     {
         super.init();
+        getServletContext().log("Configuring cometd java demo");
         Bayeux bayeux=(Bayeux)getServletContext().getAttribute(Bayeux.ATTRIBUTE);
         new EchoRPC(bayeux);
         new Monitor(bayeux);
         new ChatService(bayeux);
+        getServletContext().log("TimesyncExtension");
         bayeux.addExtension(new TimesyncExtension());
+        getServletContext().log("AcknowledgedMessagesExtension");
         bayeux.addExtension(new AcknowledgedMessagesExtension());
     }
 
