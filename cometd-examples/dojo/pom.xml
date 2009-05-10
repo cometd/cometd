@@ -13,35 +13,4 @@
     <packaging>war</packaging>
     <name>Cometd :: Examples :: Dojo</name>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <configuration>
-                    <overlays>
-                        <overlay />
-                        <overlay>
-                            <groupId>org.dojotoolkit.java</groupId>
-                            <artifactId>dojo-war</artifactId>
-                            <excludes>
-                                <exclude>META-INF/**</exclude>
-                            </excludes>
-                        </overlay>
-                    </overlays>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.dojotoolkit</groupId>
-            <artifactId>dojo-war</artifactId>
-            <version>${dojo-version}</version>
-            <type>war</type>
-            <scope>runtime</scope>
-        </dependency>
-    </dependencies>
-
 </project>
