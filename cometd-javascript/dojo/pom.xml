@@ -23,16 +23,18 @@
                             <groupId>org.cometd.javascript</groupId>
                             <artifactId>cometd-javascript-common</artifactId>
                         </overlay>
+                        <overlay>
+                            <groupId>org.dojotoolkit</groupId>
+                            <artifactId>dojo-war</artifactId>
+                            <excludes>
+                                <exclude>META-INF/**</exclude>
+                                <exclude>dojox/cometd.js</exclude>
+                                <exclude>dojox/cometd</exclude>
+                                <exclude>dojox/cometd/**</exclude>
+                                <exclude>dojo/io/script.js</exclude>
+                            </excludes>
+                        </overlay>
                     </overlays>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>jetty-maven-plugin</artifactId>
-                <version>${jetty-maven-plugin-version}</version>
-                <configuration>
-                    <scanIntervalSeconds>10</scanIntervalSeconds>
-                    <contextPath>/dojo</contextPath>
                 </configuration>
             </plugin>
             <plugin>
@@ -62,6 +64,14 @@
                                     <outputDirectory>${project.build.directory}/scripts</outputDirectory>
                                     <includes>**/*.js</includes>
                                 </artifactItem>
+                                <artifactItem>
+				    <groupId>org.dojotoolkit</groupId>
+				    <artifactId>dojo-war</artifactId>
+                                    <version>${dojo-version}</version>
+                                    <type>war</type>
+                                    <outputDirectory>${project.build.directory}/scripts</outputDirectory>
+				    <excludes>META-INF/**,dojox/cometd.js,dojox/cometd/**,dojo/io/script.js</excludes>
+                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>
@@ -86,6 +96,12 @@
             <groupId>org.cometd.javascript</groupId>
             <artifactId>cometd-javascript-common</artifactId>
             <version>${project.version}</version>
+            <type>war</type>
+        </dependency>
+        <dependency>
+            <groupId>org.dojotoolkit</groupId>
+            <artifactId>dojo-war</artifactId>
+            <version>${dojo-version}</version>
             <type>war</type>
         </dependency>
         <dependency>

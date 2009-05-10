@@ -22,31 +22,30 @@
 					<dependentWarExcludes>WEB-INF/web.xml
 					</dependentWarExcludes>
 					<overlays>
-					    <overlay/>
+					        <overlay/>
 						<overlay>
-							<groupId>org.cometd.examples</groupId>
-							<artifactId>cometd-examples-dojo</artifactId>
+							<groupId>org.cometd.javascript</groupId>
+							<artifactId>cometd-javascript-dojo</artifactId>
 							<excludes>
 								<exclude>META-INF/**</exclude>
 								<exclude>WEB-INF/web.xml</exclude>
 							</excludes>
 						</overlay>
 						<overlay>
+						    <groupId>org.cometd.javascript</groupId>
+						    <artifactId>cometd-javascript-jquery</artifactId>
+						</overlay>
+						<overlay>
 							<groupId>org.cometd.examples</groupId>
-							<artifactId>cometd-examples-jquery
-							</artifactId>
-							<excludes>
-								<exclude>META-INF/**</exclude>
-								<exclude>WEB-INF/web.xml</exclude>
-							</excludes>
+							<artifactId>cometd-examples-dojo</artifactId>
+						</overlay>
+						<overlay>
+							<groupId>org.cometd.examples</groupId>
+							<artifactId>cometd-examples-jquery</artifactId>
 						</overlay>
 						<overlay>
 							<groupId>org.cometd.examples</groupId>
 							<artifactId>cometd-examples-java</artifactId>
-							<excludes>
-								<exclude>META-INF/**</exclude>
-								<exclude>WEB-INF/web.xml</exclude>
-							</excludes>
 						</overlay>
 					</overlays>
 				</configuration>
@@ -65,6 +64,18 @@
 	</build>
 
 	<dependencies>
+		<dependency>
+			<groupId>org.cometd.javascript</groupId>
+			<artifactId>cometd-javascript-dojo</artifactId>
+			<version>${project.version}</version>
+			<type>war</type>
+		</dependency>
+		<dependency>
+		    <groupId>org.cometd.javascript</groupId>
+		    <artifactId>cometd-javascript-jquery</artifactId>
+		    <version>${project.version}</version>
+		    <type>war</type>
+		</dependency>
 		<dependency>
 			<groupId>org.cometd.examples</groupId>
 			<artifactId>cometd-examples-dojo</artifactId>
