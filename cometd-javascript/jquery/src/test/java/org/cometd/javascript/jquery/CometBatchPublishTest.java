@@ -14,7 +14,7 @@ public class CometBatchPublishTest extends AbstractJQueryCometTest
     @Test
     public void testBatchPublish() throws Exception
     {
-        evaluateScript("$.cometd.setLogLevel('debug');");
+        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
         defineClass(Listener.class);
         StringBuilder script = new StringBuilder();
         script.append("var listener = new Listener();");
@@ -36,7 +36,7 @@ public class CometBatchPublishTest extends AbstractJQueryCometTest
         Listener listener = get("listener");
 
         listener.jsFunction_expect(1);
-        evaluateScript("$.cometd.init('" + cometURL + "')");
+        evaluateScript("$.cometd.handshake();");
         assert listener.await(1000);
 
         evaluateScript("var disconnectListener = new Listener();");

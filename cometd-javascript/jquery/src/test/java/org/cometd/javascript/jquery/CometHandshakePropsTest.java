@@ -26,7 +26,7 @@ public class CometHandshakePropsTest extends AbstractJQueryCometTest
     @Test
     public void testHandshakeProps() throws Exception
     {
-        evaluateScript("$.cometd.setLogLevel('debug');");
+        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
         defineClass(Listener.class);
         evaluateScript("var handshakeListener = new Listener();");
         Listener handshakeListener = (Listener)get("handshakeListener");
@@ -34,7 +34,7 @@ public class CometHandshakePropsTest extends AbstractJQueryCometTest
 
         // Start comet without the token; this makes the handshake fail
         handshakeListener.expect(1);
-        evaluateScript("$.cometd.init('" + cometURL + "', {})");
+        evaluateScript("$.cometd.handshake({})");
         assert handshakeListener.await(1000);
         // Disconnect to avoid the handshake to backoff
         evaluateScript("$.cometd.disconnect();");

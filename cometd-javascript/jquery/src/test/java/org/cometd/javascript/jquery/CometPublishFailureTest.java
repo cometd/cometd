@@ -35,9 +35,8 @@ public class CometPublishFailureTest extends AbstractJQueryCometTest
     @Test
     public void testPublishFailures() throws Exception
     {
-        evaluateScript("$.cometd.setLogLevel('debug');");
         defineClass(Listener.class);
-        evaluateScript("$.cometd.init('" + cometURL + "')");
+        evaluateScript("$.cometd.init({url: '" + cometURL + "', logLevel: 'debug'})");
 
         // Wait for the long poll
         Thread.sleep(1000);

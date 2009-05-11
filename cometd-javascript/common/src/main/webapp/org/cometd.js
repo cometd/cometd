@@ -80,6 +80,7 @@ org.cometd.Cometd = function(name)
     var _maxConnections;
     var _backoffIncrement;
     var _maxBackoff;
+    var _reverseIncomingExtensions;
     var _xd = false;
     var _transport;
     var _status = 'disconnected';
@@ -176,10 +177,12 @@ org.cometd.Cometd = function(name)
         if (!configuration) configuration = {};
 
         _url = configuration.url;
+        if (!_url) throw 'Missing required configuration parameter \'url\' specifying the comet server URL';
         _maxConnections = configuration.maxConnections || 2;
         _backoffIncrement = configuration.backoffIncrement || 1000;
         _maxBackoff = configuration.maxBackoff || 60000;
         _logLevel = configuration.logLevel || 'info';
+        _reverseIncomingExtensions = configuration.reverseIncomingExtensions !== false;
 
         _debug('Initializing comet with url: {}', _url);
 
@@ -850,7 +853,8 @@ org.cometd.Cometd = function(name)
     {
         for (var i = 0; i < _extensions.length; ++i)
         {
-            var extension = _extensions[i];
+            var index = _reverseIncomingExtensions ? _extensions.length - 1 - i : i;
+            var extension = _extensions[index];
             var callback = extension.extension.incoming;
             if (callback && typeof callback === 'function')
             {

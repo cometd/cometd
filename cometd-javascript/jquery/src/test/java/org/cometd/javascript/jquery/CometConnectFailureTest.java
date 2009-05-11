@@ -35,7 +35,7 @@ public class CometConnectFailureTest extends AbstractJQueryCometTest
     @Test
     public void testConnectFailure() throws Exception
     {
-        evaluateScript("$.cometd.setLogLevel('debug');");
+        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
         defineClass(Listener.class);
         evaluateScript("var handshakeListener = new Listener();");
         Listener handshakeListener = get("handshakeListener");
@@ -43,13 +43,12 @@ public class CometConnectFailureTest extends AbstractJQueryCometTest
         Listener failureListener = get("failureListener");
         evaluateScript("var connectListener = new Listener();");
         Listener connectListener = get("connectListener");
-        String script = "$.cometd.addListener('/meta/handshake', handshakeListener, handshakeListener.handle);";
-        script += "$.cometd.addListener('/meta/unsuccessful', failureListener, failureListener.handle);";
-        script += "$.cometd.addListener('/meta/connect', connectListener, connectListener.handle);";
+        evaluateScript("$.cometd.addListener('/meta/handshake', handshakeListener, handshakeListener.handle);");
+        evaluateScript("$.cometd.addListener('/meta/unsuccessful', failureListener, failureListener.handle);");
+        evaluateScript("$.cometd.addListener('/meta/connect', connectListener, connectListener.handle);");
 
-        script += "var backoff = $.cometd.getBackoffPeriod();";
-        script += "var backoffIncrement = $.cometd.getBackoffIncrement();";
-        evaluateScript(script);
+        evaluateScript("var backoff = $.cometd.getBackoffPeriod();");
+        evaluateScript("var backoffIncrement = $.cometd.getBackoffIncrement();");
         int backoff = ((Number)get("backoff")).intValue();
         final int backoffIncrement = ((Number)get("backoffIncrement")).intValue();
         assert backoff == 0;
@@ -58,7 +57,7 @@ public class CometConnectFailureTest extends AbstractJQueryCometTest
         handshakeListener.jsFunction_expect(1);
         connectListener.jsFunction_expect(1);
         failureListener.jsFunction_expect(1);
-        evaluateScript("$.cometd.init('" + cometURL + "')");
+        evaluateScript("$.cometd.handshake();");
         assert handshakeListener.await(1000);
         assert connectListener.await(1000);
         assert failureListener.await(1000);
@@ -90,9 +89,8 @@ public class CometConnectFailureTest extends AbstractJQueryCometTest
         Listener disconnectListener = get("disconnectListener");
         disconnectListener.jsFunction_expect(1);
         failureListener.jsFunction_expect(1);
-        script = "$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);";
-        script += "$.cometd.disconnect();";
-        evaluateScript(script);
+        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);");
+        evaluateScript("$.cometd.disconnect();");
         assert disconnectListener.await(1000);
         assert failureListener.await(1000);
         String status = evaluateScript("$.cometd.getStatus();");

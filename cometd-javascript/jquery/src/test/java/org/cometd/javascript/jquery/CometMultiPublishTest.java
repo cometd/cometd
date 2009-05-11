@@ -39,8 +39,7 @@ public class CometMultiPublishTest extends AbstractJQueryCometTest
     @Test
     public void testMultiPublish() throws Throwable
     {
-        evaluateScript("$.cometd.setLogLevel('debug');");
-        evaluateScript("$.cometd.init('" + cometURL + "');");
+        evaluateScript("$.cometd.init({url: '" + cometURL + "', logLevel: 'debug'});");
 
         // Wait for the long poll
         Thread.sleep(1000);

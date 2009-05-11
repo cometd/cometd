@@ -28,13 +28,13 @@ public class CometInitDisconnectTest extends AbstractJQueryCometTest
     @Test
     public void testCometInitDisconnect() throws Exception
     {
-        evaluateScript("$.cometd.setLogLevel('debug');");
+        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
         defineClass(Listener.class);
         evaluateScript("var listener = new Listener();");
         Listener listener = get("listener");
         String script = "$.cometd.addListener('/**', listener, listener.handle);" +
                         // Expect 2 messages: handshake and connect
-                        "listener.expect(2); $.cometd.init('" + cometURL + "')";
+                        "listener.expect(2); $.cometd.handshake();";
         evaluateScript(script);
         assert listener.await(1000);
 
