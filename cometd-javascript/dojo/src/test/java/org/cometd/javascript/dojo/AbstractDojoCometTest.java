@@ -32,8 +32,9 @@ public abstract class AbstractDojoCometTest extends AbstractCometTest
         URL envURL = new URL(contextURL + "/env.js");
         evaluateURL(envURL);
         evaluateScript("window.location = '" + contextURL + "'");
-        URL dojoURL = new URL(contextURL + "/dojo/dojo.js.uncompressed.js");
-        evaluateURL(dojoURL);
+        evaluateURL(new URL(contextURL + "/dojo/dojo.js"));
+        evaluateURL(new URL(contextURL + "/org/cometd.js"));
+        evaluateURL(new URL(contextURL + "/dojox/cometd.js"));
         evaluateScript("dojo.require('dojox.cometd');");
     }
 }
