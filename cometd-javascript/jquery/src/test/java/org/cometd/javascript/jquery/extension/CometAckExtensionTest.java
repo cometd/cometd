@@ -25,12 +25,12 @@ public class CometAckExtensionTest extends AbstractJQueryCometTest
     @Test
     public void testClientSupportsAckExtension() throws Exception
     {
-        URL ackExtensionURL = new URL(contextURL + "/org/cometd/cometd-ack.js");
+        URL ackExtensionURL = new URL(contextURL + "/org/cometd/AckExtension.js");
         evaluateURL(ackExtensionURL);
 
         evaluateScript("var cometd = new org.cometd.Cometd('mycometd');");
         evaluateScript("cometd.setLogLevel('debug');");
-        evaluateScript("var ackExt = new org.cometd.Cometd.AckExtension();");
+        evaluateScript("var ackExt = new org.cometd.AckExtension();");
         evaluateScript("cometd.registerExtension('myack', ackExt);");
 
         // Check that during handshake the ack extension capability is sent to server
@@ -57,11 +57,11 @@ public class CometAckExtensionTest extends AbstractJQueryCometTest
     @Test
     public void testAcknowledgement() throws Exception
     {
-        URL ackExtensionURL = new URL(contextURL + "/org/cometd/cometd-ack.js");
+        URL ackExtensionURL = new URL(contextURL + "/org/cometd/AckExtension.js");
         evaluateURL(ackExtensionURL);
 
         evaluateScript("$.cometd.setLogLevel('debug');");
-        evaluateScript("$.cometd.registerExtension('ack', new org.cometd.Cometd.AckExtension());");
+        evaluateScript("$.cometd.registerExtension('ack', new org.cometd.AckExtension());");
 
         evaluateScript("var inAckId = undefined;");
         evaluateScript("var outAckId = undefined;");
