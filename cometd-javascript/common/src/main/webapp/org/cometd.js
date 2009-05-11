@@ -269,7 +269,7 @@ org.cometd.Cometd = function(name)
             scope = undefined;
         }
 
-        var subscription = this.addListener(channel, scope, callback);
+        var subscription = _addListener(channel, scope, callback, true);
 
         // Send the subscription message after the subscription registration to avoid
         // races where the server would deliver a message to the subscribers, but here
@@ -328,6 +328,11 @@ org.cometd.Cometd = function(name)
      */
     this.addListener = function(channel, scope, callback)
     {
+        _addListener(channel, scope, callback, false);
+    }
+
+    function _addListener(channel, scope, callback, isSubscription)
+    {
         // The data structure is a map<channel, subscription[]>, where each subscription
         // holds the callback to be called and its scope.
 
@@ -348,7 +353,8 @@ org.cometd.Cometd = function(name)
 
         var subscription = {
             scope: thiz,
-            callback: method
+            callback: method,
+            subscription: isSubscription === true
         };
 
         var subscriptions = _listeners[channel];
@@ -375,6 +381,11 @@ org.cometd.Cometd = function(name)
      */
     this.removeListener = function(subscription)
     {
+        _removeListener(subscription)
+    }
+
+    function _removeListener(subscription)
+    {
         var subscriptions = _listeners[subscription[0]];
         if (subscriptions)
         {
@@ -390,6 +401,32 @@ org.cometd.Cometd = function(name)
     this.clearListeners = function()
     {
         _listeners = {};
+    };
+
+    /**
+     * Removes all subscriptions added via {@link #subscribe(channel, scope, callback, subscribeProps)},
+     * but does not remove the listeners added via {@link addListener(channel, scope, callback)}.
+     */
+    this.clearSubscriptions = function()
+    {
+        _clearSubscriptions();
+    }
+
+    function _clearSubscriptions()
+    {
+        for (var channel in _listeners)
+        {
+            var subscriptions = _listeners[channel];
+            for (var i = 0; i < subscriptions.length; ++i)
+            {
+                var subscription = subscriptions[i];
+                if (subscription.subscription)
+                {
+                    delete subscriptions[i];
+                    _debug('Removed subscription: channel \'{}\', index {}', channel, i);
+                }
+            }
+        }
     };
 
     /**
@@ -599,6 +636,8 @@ org.cometd.Cometd = function(name)
     {
         _debug('Starting handshake');
         _clientId = null;
+
+        _clearSubscriptions();
 
         // Start a batch.
         // This is needed because handshake and connect are async.
