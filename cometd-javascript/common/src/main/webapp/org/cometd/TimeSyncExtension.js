@@ -177,32 +177,56 @@ org.cometd.TimeSyncExtension = function(configuration)
         return message;
     };
 
+    /**
+     * Get the estimated offset in ms from the clients clock to the
+     * servers clock.  The server time is the client time plus the offset.
+     */
     this.getTimeOffset = function()
     {
         return _offset;
     };
 
+    /**
+     * Get an array of multiple offset samples used to calculate
+     * the offset.
+     */
     this.getTimeOffsetSamples = function()
     {
         return _offsets;
     };
 
+    /**
+     * Get the estimated network lag in ms from the client to the server.
+     */
     this.getNetworkLag = function()
     {
         return _lag;
     };
     
+    /**
+     * Get the estimated server time in ms since the epoch.
+     */
     this.getServerTime = function()
     { 
         return new Date().getTime()+_offset;
     };
         
+    /**
+     * 
+     * Get the estimated server time as a Date object
+     */
     this.getServerDate = function()
     { 
         return new Date(this.getServerTime());
     };
     
-    this.setTimeout = function(call, atTimeOrDate)
+    /**
+     * Set a timeout to expire at given time on the server.
+     * @param callback The function to call when the timer expires
+     * @param atServerTimeOrDate a js Time or Date object representing the 
+     * server time at which the timeout should expire
+     */
+    this.setTimeout = function(callback, atServerTimeOrDate)
     {
         var ts = (atTimeOrDate instanceof Date) ? atTimeOrDate.getTime() : (0 + atTimeOrDate);
         var tc = ts - _offset;
@@ -211,9 +235,12 @@ org.cometd.TimeSyncExtension = function(configuration)
 	{
             interval = 1;
         }
-        return setTimeout(call,interval);
+        return setTimeout(callback,interval);
     };
 
+    /**
+     * 
+     */
     function _debug(text, args)
     {
         _cometd._debug(text, args);
