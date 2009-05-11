@@ -31,7 +31,7 @@ var room = {
         
         // subscribe and join
         dojox.cometd.startBatch();
-        dojox.cometd.subscribe("/chat/demo", room, "_chat");
+        room._subscription=dojox.cometd.subscribe("/chat/demo", room, "_chat");
         dojox.cometd.publish("/chat/demo", {
             user: room._username,
             join: true,
@@ -48,7 +48,7 @@ var room = {
             if (e.action == "handshake") {
                 if (e.reestablish) {
                     if (e.successful) {
-                        dojox.cometd.subscribe("/chat/demo", room, "_chat");
+                        room._subscription=dojox.cometd.subscribe("/chat/demo", room, "_chat");
                         dojox.cometd.publish("/chat/demo", {
                             user: room._username,
                             join: true,
@@ -100,7 +100,7 @@ var room = {
         room._meta = null;
         
         dojox.cometd.startBatch();
-        dojox.cometd.unsubscribe("/chat/demo", room, "_chat");
+        dojox.cometd.unsubscribe(room._subscription);
         dojox.cometd.publish("/chat/demo", {
             user: room._username,
             leave: true,

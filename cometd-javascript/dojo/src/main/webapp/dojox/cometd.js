@@ -48,13 +48,23 @@ dojox.cometd = new org.cometd.Cometd();
 
 // Create a compatability API for dojox.cometd instance with 
 // the original API.
+
+dojox.cometd._unsubscribe=dojox.cometd.unsubscribe;
+
+dojox.cometd.unsubscribe=function(channelOrToken,objOrFunc,funcName)
+{
+    if (typeof channelOrToken == "string") 
+	throw "deprecated unsubscribe. - please pass token return from subscribe";
+    dojox.cometd._unsubscribe(channelOrToken);
+}
+
 dojox.cometd._metaHandshakeEvent=function(event)
 {
     event.action="handshake";
     if (event.successful)
     {
         if (dojox.cometd._reestablish)
-	    event._reestablish=true;
+	    event.reestablish=true;
         dojox.cometd._reestablish=true;
     }
     dojo.publish("/cometd/meta",[event]);
