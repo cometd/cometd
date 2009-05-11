@@ -67,7 +67,7 @@ org.cometd.AJAX.send = function(envelope)
  * <pre>
  * var cometUrl2 = ...;
  * var cometd2 = new $.Cometd();
- * cometd2.init(cometUrl2);
+ * cometd2.init({url: cometUrl2});
  * </pre>
  * @param name the optional name of this cometd object
  */
@@ -75,8 +75,11 @@ org.cometd.Cometd = function(name)
 {
     var _name = name || 'default';
     var _logLevels = { debug: 1, info: 2, warn: 3, error: 4 };
-    var _logLevel = 'info';
+    var _logLevel;
     var _url;
+    var _maxConnections;
+    var _backoffIncrement;
+    var _maxBackoff;
     var _xd = false;
     var _transport;
     var _status = 'disconnected';
@@ -86,8 +89,6 @@ org.cometd.Cometd = function(name)
     var _messageQueue = [];
     var _listeners = {};
     var _backoff = 0;
-    var _backoffIncrement = 1000;
-    var _maxBackoff = 60000;
     var _scheduledSend = null;
     var _extensions = [];
     var _advice = {};
@@ -159,21 +160,32 @@ org.cometd.Cometd = function(name)
 
     /**
      * Configures the initial comet communication with the comet server.
-     * @param cometURL the URL of the comet server
+     * Configuration is passed via an object that must contain a mandatory field <code>url</code>
+     * of type string containing the URL of the comet server.
+     * @param configuration the configuration object
      */
-    this.configure = function(cometURL)
+    this.configure = function(configuration)
     {
-        _configure(cometURL);
+        _configure(configuration);
     };
 
-    function _configure(cometURL)
+    function _configure(configuration)
     {
-        _url = cometURL;
+        // Support old style param, where only the comet URL was passed
+        if (typeof configuration === 'string') configuration = { url: configuration };
+        if (!configuration) configuration = {};
+
+        _url = configuration.url;
+        _maxConnections = configuration.maxConnections || 2;
+        _backoffIncrement = configuration.backoffIncrement || 1000;
+        _maxBackoff = configuration.maxBackoff || 60000;
+        _logLevel = configuration.logLevel || 'info';
+
         _debug('Initializing comet with url: {}', _url);
 
         // Check immediately if we're cross domain
         // If cross domain, the handshake must not send the long polling transport type
-        var urlParts = /(^https?:)?(\/\/(([^:\/\?#]+)(:(\d+))?))?([^\?#]*)/.exec(cometURL);
+        var urlParts = /(^https?:)?(\/\/(([^:\/\?#]+)(:(\d+))?))?([^\?#]*)/.exec(_url);
         if (urlParts[3]) _xd = urlParts[3] != location.host;
 
         // Temporary setup a transport to send the initial handshake
@@ -188,14 +200,14 @@ org.cometd.Cometd = function(name)
     /**
      * Configures and establishes the comet communication with the comet server
      * via a handshake and a subsequent connect.
-     * @param cometURL the URL of the comet server
+     * @param configuration the configuration object
      * @param handshakeProps an object to be merged with the handshake message
      * @see #configure(cometURL)
      * @see #handshake(handshakeProps)
      */
-    this.init = function(cometURL, handshakeProps)
+    this.init = function(configuration, handshakeProps)
     {
-        _configure(cometURL);
+        _configure(configuration);
         _handshake(handshakeProps);
     };
 
@@ -1416,7 +1428,6 @@ org.cometd.Cometd = function(name)
      */
     org.cometd.Transport = function(type)
     {
-        var _maxRequests = 2;
         var _requestIds = 0;
         var _cometRequest = null;
         var _requests = [];
@@ -1455,7 +1466,7 @@ org.cometd.Cometd = function(name)
 
             var request = {id: requestId};
             // Consider the comet request which should always be present
-            if (_requests.length < _maxRequests - 1)
+            if (_requests.length < _maxConnections - 1)
             {
                 _debug('Delivering request {}', requestId);
                 self.deliver(envelope, request);
