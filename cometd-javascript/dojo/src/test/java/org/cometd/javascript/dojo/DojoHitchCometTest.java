@@ -14,13 +14,13 @@ public class DojoHitchCometTest extends AbstractDojoCometTest
     @Test
     public void testDojoHitch() throws Exception
     {
-        evaluateScript("dojox.cometd.setLogLevel('debug');");
+        evaluateScript("dojox.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
         defineClass(Listener.class);
         evaluateScript("var handshakeListener = new Listener();");
         Listener handshakeListener = get("handshakeListener");
         handshakeListener.expect(1);
         evaluateScript("dojox.cometd.addListener('/meta/handshake', handshakeListener, 'handle');");
-        evaluateScript("dojox.cometd.init('" + cometURL + "');");
+        evaluateScript("dojox.cometd.handshake();");
         assert handshakeListener.await(1000);
 
         // Wait for the long poll to happen

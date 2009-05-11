@@ -23,7 +23,7 @@ public class CometTimeSyncExtensionTest extends AbstractJQueryCometTest
         URL timesyncExtensionURL = new URL(contextURL + "/org/cometd/TimeSyncExtension.js");
         evaluateURL(timesyncExtensionURL);
 
-        evaluateScript("$.cometd.setLogLevel('debug');");
+        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
         evaluateScript("$.cometd.registerExtension('timesync', new org.cometd.TimeSyncExtension());");
 
         evaluateScript("var inTimeSync = undefined;");
@@ -46,7 +46,7 @@ public class CometTimeSyncExtensionTest extends AbstractJQueryCometTest
                 "    }" +
                 "}" +
                 "});");
-        evaluateScript("$.cometd.init('" + cometURL + "');");
+        evaluateScript("$.cometd.handshake();");
         Thread.sleep(500); // Wait for the long poll
 
         // Both client and server should support timesync

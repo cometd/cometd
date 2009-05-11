@@ -11,7 +11,7 @@ public class CometExtensionsTest extends AbstractJQueryCometTest
     @Test
     public void testRegisterUnregister() throws Exception
     {
-        evaluateScript("$.cometd.setLogLevel('debug');");
+        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
         evaluateScript("var inCount = 0;");
         evaluateScript("var outCount = 0;");
         evaluateScript("$.cometd.registerExtension('testin', {" +
@@ -22,7 +22,7 @@ public class CometExtensionsTest extends AbstractJQueryCometTest
                 "});");
         evaluateScript("$.cometd.registerExtension('testempty', {});");
 
-        evaluateScript("$.cometd.init('" + cometURL + "')");
+        evaluateScript("$.cometd.handshake();");
         Thread.sleep(500); // Wait for the long poll
 
         Number inCount = get("inCount");
@@ -49,7 +49,7 @@ public class CometExtensionsTest extends AbstractJQueryCometTest
     @Test
     public void testExtensions() throws Exception
     {
-        evaluateScript("$.cometd.setLogLevel('debug');");
+        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
         defineClass(Listener.class);
 
         StringBuilder script = new StringBuilder();
@@ -61,7 +61,7 @@ public class CometExtensionsTest extends AbstractJQueryCometTest
         evaluateScript(script.toString());
         Listener listener = get("listener");
 
-        evaluateScript("$.cometd.init('" + cometURL + "')");
+        evaluateScript("$.cometd.handshake();");
         Thread.sleep(500); // Wait for the long poll
         assert listener.getOutgoingMessageCount() == 3; // handshake, connect1, connect2
         assert listener.getIncomingMessageCount() == 2; // handshake, connect1
@@ -97,6 +97,70 @@ public class CometExtensionsTest extends AbstractJQueryCometTest
         Thread.sleep(500); // Wait for disconnect to happen
         assert listener.getOutgoingMessageCount() == 1; // disconnect
         assert listener.getIncomingMessageCount() == 2; // connect2, disconnect
+    }
+
+    @Test
+    public void testExtensionOrder() throws Exception
+    {
+        // Default incoming extension order is reverse
+        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+
+        evaluateScript("$.cometd.registerExtension('ext1', {" +
+                       "incoming: function(message) " +
+                       "{" +
+                       "    if (message.ext2 === 1) message.ext1 = 1;" +
+                       "    return message;" +
+                       "} " +
+                       "});");
+        evaluateScript("$.cometd.registerExtension('ext2', {" +
+                       "incoming: function(message) " +
+                       "{" +
+                       "    if (message.ext1 !== 1) message.ext2 = 1;" +
+                       "    return message;" +
+                       "} " +
+                       "});");
+
+        evaluateScript("var ok = false;");
+        evaluateScript("$.cometd.addListener('/meta/handshake', function(message) " +
+                       "{" +
+                       "    if (message.ext1 === 1 && message.ext2 === 1) ok = true;" +
+                       "});");
+        evaluateScript("$.cometd.handshake();");
+        Thread.sleep(1000); // Wait for long poll
+
+        assert (Boolean)get("ok");
+
+        evaluateScript("$.cometd.disconnect();");
+        Thread.sleep(1000);
+
+        evaluateScript("$.cometd.unregisterExtension('ext1');");
+        evaluateScript("$.cometd.unregisterExtension('ext2');");
+        evaluateScript("ok = false;");
+        // Set incoming extension order to be forward
+        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug', reverseIncomingExtensions: false});");
+
+        evaluateScript("$.cometd.registerExtension('ext1', {" +
+                       "incoming: function(message) " +
+                       "{" +
+                       "    if (message.ext2 !== 1) message.ext1 = 1;" +
+                       "    return message;" +
+                       "} " +
+                       "});");
+        evaluateScript("$.cometd.registerExtension('ext2', {" +
+                       "incoming: function(message) " +
+                       "{" +
+                       "    if (message.ext1 === 1) message.ext2 = 1;" +
+                       "    return message;" +
+                       "} " +
+                       "});");
+
+        evaluateScript("$.cometd.handshake();");
+        Thread.sleep(1000); // Wait for long poll
+
+        assert (Boolean)get("ok");
+
+        evaluateScript("$.cometd.disconnect();");
+        Thread.sleep(1000);
     }
 
     public static class Listener extends ScriptableObject

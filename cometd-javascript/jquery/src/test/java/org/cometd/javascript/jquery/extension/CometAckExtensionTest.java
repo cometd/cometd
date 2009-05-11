@@ -29,7 +29,7 @@ public class CometAckExtensionTest extends AbstractJQueryCometTest
         evaluateURL(ackExtensionURL);
 
         evaluateScript("var cometd = new org.cometd.Cometd('mycometd');");
-        evaluateScript("cometd.setLogLevel('debug');");
+        evaluateScript("cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
         evaluateScript("var ackExt = new org.cometd.AckExtension();");
         evaluateScript("cometd.registerExtension('myack', ackExt);");
 
@@ -44,7 +44,7 @@ public class CometAckExtensionTest extends AbstractJQueryCometTest
                 "   }" +
                 "}" +
                 "});");
-        evaluateScript("cometd.init('" + cometURL + "');");
+        evaluateScript("cometd.handshake();");
         Thread.sleep(500); // Wait for the long poll
         Boolean clientSupportsAck = get("clientSupportsAck");
         assert clientSupportsAck;
@@ -60,7 +60,7 @@ public class CometAckExtensionTest extends AbstractJQueryCometTest
         URL ackExtensionURL = new URL(contextURL + "/org/cometd/AckExtension.js");
         evaluateURL(ackExtensionURL);
 
-        evaluateScript("$.cometd.setLogLevel('debug');");
+        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
         evaluateScript("$.cometd.registerExtension('ack', new org.cometd.AckExtension());");
 
         evaluateScript("var inAckId = undefined;");
@@ -81,7 +81,7 @@ public class CometAckExtensionTest extends AbstractJQueryCometTest
                 "   }" +
                 "}" +
                 "});");
-        evaluateScript("$.cometd.init('" + cometURL + "');");
+        evaluateScript("$.cometd.handshake();");
         Thread.sleep(500); // Wait for the long poll
         Number outAckId = get("outAckId");
         // The server should have returned a non-negative value during the first connect call
