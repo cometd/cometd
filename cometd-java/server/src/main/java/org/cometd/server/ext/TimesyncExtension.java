@@ -35,27 +35,42 @@ import org.eclipse.jetty.util.ajax.JSON;
  *  <li>l is the network lag that the client has calculated.
  *  <li>o is the clock offset that the client has calculated.
  * </ul>
- * The accuracy of the offset and lag may be calculated with tc-now-l-o,
- * which should be zero if the calculated offset and lag are perfectly
- * accurate.
+ * 
  * <p>
- * A cometd server that supports timesync, should respond only if the
- * measured accuracy value is greater than accuracy target. The response
- * will be an ext field like: <code>{ext:{timesync:{tc:12345567890,ts:1234567900,p:123,a:3},...},...}</code>
+ * A cometd server that supports timesync, can respond with an ext 
+ * field like: <code>{ext:{timesync:{tc:12345567890,ts:1234567900,p:123,a:3},...},...}</code>
  * where:<ul>
  *  <li>tc is the client timestamp of when the message was sent,
  *  <li>ts is the server timestamp of when the message was received
  *  <li>p is the poll duration in ms - ie the time the server took before sending the response.
  *  <li>a is the measured accuracy of the calculated offset and lag sent by the client
  * </ul>
+ *
+ * <p>If the client and server clocks were in sync, then network lag could
+ * be calculated with <code>(ts-tc)</code>.   But the client clock is not in sync and
+ * the calculated offset o must be applied to calculate the lag as seen
+ * by the server: <code>(ts-(tc+o))</code>. 
  * 
- * On receipt of the response, the client is able to use current time to determine
+ * <p>The accuracy of the offset o may now be calculated as the difference
+ * between the real lag measured by the client (see below) and the
+ * lag calculated on the server that is based on o.  Thus the 
+ * accuracy a is <code>(l-(ts-(tc+o))</code>
+ * 
+ * <p>On receipt of the response, the client is able to use current time to determine
  * the total trip time, from which p is subtracted to determine an approximate
- * two way network traversal time. The measured accuracy is used to adjust the assumption 
- * that the network is symmetric for traversal time, so: <ul>
+ * two way network traversal time. The measured accuracy is used to adjust the 
+ * assumption that the network is symmetric for traversal time, so: <ul>
  * <li>lag = (now-tc-p)/2-a
  * <li>offset = ts-tc-lag
  * </ul>
+ * 
+ * <p>These calculated lag and offset are sent with the next meta message
+ * and the accuracy is again measured by the server.  Thus the calculated o
+ * will iteratively be improved by application of the calculated a.
+ * 
+ * <p>A cometd server that measures a low a that is within an accuracy target
+ * may decide not to send a timesync ext response, as the offset is already
+ * accurately determined. 
  *
  */
 public class TimesyncExtension implements Extension
@@ -130,7 +145,7 @@ public class TimesyncExtension implements Extension
                     final long tc=((Number)sync.get("tc")).longValue();
                     final long ts=((Number)sync.get("ts")).longValue();
                     
-                    Number lag=(Number)sync.get("l");
+                    final Number lag=(Number)sync.get("l");
                     if (lag==null)
                     {
                         // old style timesync
