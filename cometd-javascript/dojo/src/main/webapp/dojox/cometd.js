@@ -45,3 +45,26 @@ org.cometd.AJAX.send = function(packet)
 
 // The default cometd instance
 dojox.cometd = new org.cometd.Cometd();
+
+// Create a compatability API for dojox.cometd instance with 
+// the original API.
+dojox.cometd._metaHandshakeEvent=function(event)
+{
+    event.action="handshake";
+    if (event.successful)
+    {
+        if (dojox.cometd._reestablish)
+	    event._reestablish=true;
+        dojox.cometd._reestablish=true;
+    }
+    dojo.publish("/cometd/meta",[event]);
+}
+
+dojox.cometd._metaConnectEvent=function(event)
+{
+    event.action="connect";
+    dojo.publish("/cometd/meta",[event]);
+}
+
+dojox.cometd.addListener('/meta/handshake', dojox.cometd, dojox.cometd._metaHandshakeEvent);
+dojox.cometd.addListener('/meta/connect', dojox.cometd, dojox.cometd._metaConnectEvent);
