@@ -182,13 +182,40 @@ org.cometd.TimeSyncExtension = function(configuration)
         return _offset;
     };
 
+    this.getTimeOffsetSamples = function()
+    {
+        return _offsets;
+    };
+
     this.getNetworkLag = function()
     {
         return _lag;
+    };
+    
+    this.getServerTime = function()
+    { 
+        return new Date().getTime()+_offset;
+    };
+        
+    this.getServerDate = function()
+    { 
+        return new Date(this.getServerTime());
+    };
+    
+    this.setTimeout = function(call, atTimeOrDate)
+    {
+        var ts = (atTimeOrDate instanceof Date) ? atTimeOrDate.getTime() : (0 + atTimeOrDate);
+        var tc = ts - _offset;
+        var interval = tc - new Date().getTime();
+        if(interval <= 0)
+	{
+            interval = 1;
+        }
+        return setTimeout(call,interval);
     };
 
     function _debug(text, args)
     {
         _cometd._debug(text, args);
-    }
+    };
 }
