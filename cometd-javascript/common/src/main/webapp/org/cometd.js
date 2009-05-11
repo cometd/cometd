@@ -35,9 +35,17 @@
  * $Revision$ $Date$
  */
 
-// Namespaces for the cometd implementation
-var org = org || {};
-org.cometd = {};
+// Dojo loader support
+if (typeof dojo != "undefined") 
+{
+	dojo.provide("org.cometd");
+} 
+else 
+{
+	// Namespaces for the cometd implementation
+	this.org = this.org || {};
+	org.cometd = {};
+}
 
 org.cometd.JSON = {};
 org.cometd.JSON.toJSON = function(object)

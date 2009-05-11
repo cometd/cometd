@@ -32,7 +32,7 @@ public abstract class AbstractJQueryCometTest extends AbstractCometTest
         URL envURL = new URL(contextURL + "/env.js");
         evaluateURL(envURL);
         evaluateScript("window.location = '" + contextURL + "'");
-        URL cometdURL = new URL(contextURL + "/org/cometd/cometd.js");
+        URL cometdURL = new URL(contextURL + "/org/cometd.js");
         evaluateURL(cometdURL);
         URL jqueryURL = new URL(contextURL + "/jquery/jquery-1.3.2.js");
         evaluateURL(jqueryURL);
