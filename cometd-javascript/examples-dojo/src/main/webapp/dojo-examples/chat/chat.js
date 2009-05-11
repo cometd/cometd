@@ -29,64 +29,6 @@ var room = {
         dojo.removeClass("joined", "hidden");
         dojo.byId("phrase").focus();
         
-        // subscribe and join
-        dojox.cometd.startBatch();
-        room._subscription=dojox.cometd.subscribe("/chat/demo", room, "_chat");
-        dojox.cometd.publish("/chat/demo", {
-            user: room._username,
-            join: true,
-            chat: room._username + " has joined"
-        });
-        dojox.cometd.endBatch();
-        
-        // handle cometd failures while in the room
-        if (room._meta) {
-            dojo.unsubscribe(room._meta, null, null);
-        }
-        room._meta = dojo.subscribe("/cometd/meta", this, function(e){
-            // console.debug(e);
-            if (e.action == "handshake") {
-                if (e.reestablish) {
-                    if (e.successful) {
-                        room._subscription=dojox.cometd.subscribe("/chat/demo", room, "_chat");
-                        dojox.cometd.publish("/chat/demo", {
-                            user: room._username,
-                            join: true,
-                            chat: room._username + " has re-joined"
-                        });
-                    }
-                    room._chat({
-                        data: {
-                            join: true,
-                            user: "SERVER",
-                            chat: "handshake " + e.successful ? "Handshake OK" : "Failed"
-                        }
-                    });
-                }
-            }
-            else 
-                if (e.action == "connect") {
-                    if (e.successful && !this._connected) {
-                        room._chat({
-                            data: {
-                                join: true,
-                                user: "SERVER",
-                                chat: "reconnected!"
-                            }
-                        });
-                    }
-                    if (!e.successful && this._connected) {
-                        room._chat({
-                            data: {
-                                leave: true,
-                                user: "SERVER",
-                                chat: "disconnected!"
-                            }
-                        });
-                    }
-                    this._connected = e.successful;
-                }
-        });
     },
     
     leave: function(){
@@ -222,9 +164,53 @@ var room = {
         });
         
         dojo.query("#leaveB").onclick(room, "leave");
-        
-    }
+    },
+    
+    _meta: function(e){
+        if (e.action == "handshake") {	
+            if (e.successful) {
+                room._subscription=dojox.cometd.subscribe("/chat/demo", room, "_chat");
+                dojox.cometd.publish("/chat/demo", {
+                    user: room._username,
+                    join: true,
+                    chat: room._username + (e.reestablish?" has re-joined":" has joined")
+                });
+            }
+		      
+            if (e.reestablish) {
+                room._chat({
+                    data: {
+                        join: true,
+                        user: "SERVER",
+                        chat: "handshake " + e.successful ? "Handshake OK" : "Failed"
+                    }
+                });
+            }
+        }
+        else if (e.action == "connect") {
+            if (e.successful && !this._connected) {
+                room._chat({
+                    data: {
+                        join: true,
+                        user: "SERVER",
+                        chat: "reconnected!"
+                    }
+                });
+            }
+            if (!e.successful && this._connected) {
+                room._chat({
+                    data: {
+                        leave: true,
+                        user: "SERVER",
+                        chat: "disconnected!"
+                    }
+                });
+            }
+            this._connected = e.successful;
+        }
+    }    
 };
-
+        
+dojo.subscribe("/cometd/meta",room, room._meta);
 dojo.addOnLoad(room, "_init");
 dojo.addOnUnload(room, "leave");

@@ -49,6 +49,14 @@ dojox.cometd = new org.cometd.Cometd();
 // Create a compatability API for dojox.cometd instance with 
 // the original API.
 
+dojox.cometd._init=dojox.cometd.init;
+
+dojox.cometd.init = function(configuration, handshakeProps)
+{
+    dojox.cometd._reestablish=false;
+    dojox.cometd._init(configuration, handshakeProps);
+}
+
 dojox.cometd._unsubscribe=dojox.cometd.unsubscribe;
 
 dojox.cometd.unsubscribe=function(channelOrToken,objOrFunc,funcName)
@@ -78,3 +86,4 @@ dojox.cometd._metaConnectEvent=function(event)
 
 dojox.cometd.addListener('/meta/handshake', dojox.cometd, dojox.cometd._metaHandshakeEvent);
 dojox.cometd.addListener('/meta/connect', dojox.cometd, dojox.cometd._metaConnectEvent);
+
