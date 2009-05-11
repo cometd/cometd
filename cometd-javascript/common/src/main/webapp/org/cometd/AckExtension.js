@@ -98,7 +98,7 @@ org.cometd.AckExtension = function()
         if (channel == '/meta/handshake')
         {
             if (!message.ext) message.ext = {};
-            message.ext.ack = true;
+            message.ext.ack = _cometd && _cometd.ackEnabled!==false;
             _ackId = -1;
         }
         else if (_serverSupportsAcks && channel == '/meta/connect')
