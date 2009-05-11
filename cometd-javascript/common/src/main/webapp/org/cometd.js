@@ -36,15 +36,15 @@
  */
 
 // Dojo loader support
-if (typeof dojo != "undefined") 
+if (typeof dojo !== 'undefined')
 {
-	dojo.provide("org.cometd");
-} 
-else 
+    dojo.provide('org.cometd');
+}
+else
 {
-	// Namespaces for the cometd implementation
-	this.org = this.org || {};
-	org.cometd = {};
+    // Namespaces for the cometd implementation
+    this.org = this.org || {};
+    org.cometd = {};
 }
 
 org.cometd.JSON = {};
