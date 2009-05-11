@@ -15,7 +15,7 @@
             var tick=function(){
 	    	var now=dojox.cometd.timesync.getServerDate();
 	    	dojo.byId("time").innerHTML=now.toUTCString();
-                dojo.byId("offset").innerHTML=dojox.cometd.timesync.offset+"  from samples "+dojox.cometd.timesync._offsets.join();
+                dojo.byId("offset").innerHTML=dojox.cometd.timesync.getTimeOffset()+"  from samples "+dojox.cometd.timesync.getTimeOffsetSamples().join();
 		now=now.getTime();
 		var next=""+(1+now/1000);
 		next=parseInt(next.split('.')[0])*1000+10;
