@@ -12,10 +12,50 @@ import org.testng.annotations.Test;
 public class CometSubscribeTest extends AbstractJQueryCometTest
 {
     @Test
+    public void testSubscriptionsUnsubscriptionsForSameChannelOnlySentOnce() throws Exception
+    {
+        defineClass(Listener.class);
+        evaluateScript("var subscribeListener = new Listener();");
+        Listener subscribeListener = get("subscribeListener");
+        evaluateScript("$.cometd.addListener('/meta/subscribe', subscribeListener, 'handle');");
+        evaluateScript("var unsubscribeListener = new Listener();");
+        Listener unsubscribeListener = get("unsubscribeListener");
+        evaluateScript("$.cometd.addListener('/meta/unsubscribe', unsubscribeListener, 'handle');");
+
+        evaluateScript("$.cometd.init({ url: '" + cometURL + "', logLevel: 'debug' });");
+        Thread.sleep(1000); // Wait for long poll
+
+        subscribeListener.expect(1);
+        evaluateScript("var subscription = $.cometd.subscribe('/foo', function(message) {});");
+        assert subscribeListener.await(1000);
+
+        unsubscribeListener.expect(1);
+        evaluateScript("$.cometd.unsubscribe(subscription);");
+        assert unsubscribeListener.await(1000);
+
+        // Two subscriptions to the same channel also generate only one message to the server
+        subscribeListener.expect(2);
+        evaluateScript("var subscription1 = $.cometd.subscribe('/foo', function(message) {});");
+        evaluateScript("var subscription2 = $.cometd.subscribe('/foo', function(message) {});");
+        assert !subscribeListener.await(1000);
+
+        // No message if there are subscriptions
+        unsubscribeListener.expect(0);
+        evaluateScript("$.cometd.unsubscribe(subscription2);");
+        assert unsubscribeListener.await(1000);
+
+        // Expect message for last unsubscription on the channel
+        unsubscribeListener.expect(1);
+        evaluateScript("$.cometd.unsubscribe(subscription1);");
+        assert unsubscribeListener.await(1000);
+
+        evaluateScript("$.cometd.disconnect();");
+        Thread.sleep(1000); // Wait for disconnect
+    }
+
+    @Test
     public void testSubscriptionsRemovedOnReHandshake() throws Exception
     {
-        evaluateScript("$.cometd.setLogLevel('debug');");
-
         // Listeners are not removed in case of re-handshake
         // since they are not dependent on the clientId
         defineClass(Listener.class);
@@ -23,7 +63,7 @@ public class CometSubscribeTest extends AbstractJQueryCometTest
         Listener listener = get("listener");
         evaluateScript("$.cometd.addListener('/meta/publish', listener, 'handle');");
 
-        evaluateScript("$.cometd.init('" + cometURL + "')");
+        evaluateScript("$.cometd.init({ url: '" + cometURL + "', logLevel: 'debug' });");
         Thread.sleep(1000); // Wait for long poll
         evaluateScript("$.cometd.disconnect();");
         Thread.sleep(1000); // Wait for disconnect

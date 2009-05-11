@@ -281,20 +281,39 @@ org.cometd.Cometd = function(name)
             scope = undefined;
         }
 
+        // Only send the message to the server if this clientId has not yet subscribed to the channel
+        var send = !_hasSubscriptions(channel);
+
         var subscription = _addListener(channel, scope, callback, true);
 
-        // Send the subscription message after the subscription registration to avoid
-        // races where the server would deliver a message to the subscribers, but here
-        // on the client the subscription has not been added yet to the data structures
-        var bayeuxMessage = {
-            channel: '/meta/subscribe',
-            subscription: channel
-        };
-        var message = _mixin({}, subscribeProps, bayeuxMessage);
-        _send(message);
+        if (send)
+        {
+            // Send the subscription message after the subscription registration to avoid
+            // races where the server would deliver a message to the subscribers, but here
+            // on the client the subscription has not been added yet to the data structures
+            var bayeuxMessage = {
+                channel: '/meta/subscribe',
+                subscription: channel
+            };
+            var message = _mixin({}, subscribeProps, bayeuxMessage);
+            _send(message);
+        }
 
         return subscription;
     };
+
+    function _hasSubscriptions(channel)
+    {
+        var subscriptions = _listeners[channel];
+        if (subscriptions)
+        {
+            for (var i = 0; i < subscriptions.length; ++i)
+            {
+                if (subscriptions[i]) return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Unsubscribes the subscription obtained with a call to {@link #subscribe(string, object, function)}.
@@ -305,12 +324,18 @@ org.cometd.Cometd = function(name)
         // Remove the local listener before sending the message
         // This ensures that if the server fails, this client does not get notifications
         this.removeListener(subscription);
-        var bayeuxMessage = {
-            channel: '/meta/unsubscribe',
-            subscription: subscription[0]
-        };
-        var message = _mixin({}, unsubscribeProps, bayeuxMessage);
-        _send(message);
+
+        var channel = subscription[0];
+        // Only send the message to the server if this clientId unsubscribes the last subscription
+        if (!_hasSubscriptions(channel))
+        {
+            var bayeuxMessage = {
+                channel: '/meta/unsubscribe',
+                subscription: channel
+            };
+            var message = _mixin({}, unsubscribeProps, bayeuxMessage);
+            _send(message);
+        }
     };
 
     /**
@@ -432,7 +457,7 @@ org.cometd.Cometd = function(name)
             for (var i = 0; i < subscriptions.length; ++i)
             {
                 var subscription = subscriptions[i];
-                if (subscription.subscription)
+                if (subscription && subscription.subscription)
                 {
                     delete subscriptions[i];
                     _debug('Removed subscription: channel \'{}\', index {}', channel, i);
