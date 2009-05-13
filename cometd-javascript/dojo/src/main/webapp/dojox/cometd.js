@@ -53,7 +53,6 @@ dojox.cometd._init=dojox.cometd.init;
 
 dojox.cometd.init = function(configuration, handshakeProps)
 {
-    dojox.cometd._reestablish=false;
     dojox.cometd._init(configuration, handshakeProps);
 }
 
@@ -69,12 +68,6 @@ dojox.cometd.unsubscribe=function(channelOrToken,objOrFunc,funcName)
 dojox.cometd._metaHandshakeEvent=function(event)
 {
     event.action="handshake";
-    if (event.successful)
-    {
-        if (dojox.cometd._reestablish)
-	    event.reestablish=true;
-        dojox.cometd._reestablish=true;
-    }
     dojo.publish("/cometd/meta",[event]);
 }
 

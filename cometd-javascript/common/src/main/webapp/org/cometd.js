@@ -74,8 +74,7 @@ org.cometd.AJAX.send = function(envelope)
 org.cometd.Cometd = function(name)
 {
     var _name = name || 'default';
-    var _logLevels = { debug: 1, info: 2, warn: 3, error: 4 };
-    var _logLevel;
+    var _logLevel; // 'warn','info','debug'|'dbug'
     var _url;
     var _maxConnections;
     var _backoffIncrement;
@@ -94,6 +93,7 @@ org.cometd.Cometd = function(name)
     var _extensions = [];
     var _advice = {};
     var _handshakeProps;
+    var _reestablish = false;
 
     /**
      * Mixes in the given objects into the target object by copying the properties.
@@ -210,6 +210,7 @@ org.cometd.Cometd = function(name)
      */
     this.init = function(configuration, handshakeProps)
     {
+    	_reestablish=false;
         _configure(configuration);
         _handshake(handshakeProps);
     };
@@ -826,7 +827,7 @@ org.cometd.Cometd = function(name)
             {
                 try
                 {
-                    _handleSuccess.call(self, request, response, comet);
+                    _handleResponse.call(self, request, response, comet);
                 }
                 catch (x)
                 {
@@ -893,10 +894,10 @@ org.cometd.Cometd = function(name)
         }
     };
 
-    function _handleSuccess(request, response, comet)
+    function _handleResponse(request, response, comet)
     {
         var messages = _convertToMessages(response);
-        _debug('Received response {}', org.cometd.JSON.toJSON(messages));
+        _debug('Received responses', messages);
 
         // Signal the transport it can deliver other queued requests
         _transport.complete(request, true, comet);
@@ -912,22 +913,22 @@ org.cometd.Cometd = function(name)
             switch (channel)
             {
                 case '/meta/handshake':
-                    _handshakeSuccess(message);
+                    _handshakeResponse(message);
                     break;
                 case '/meta/connect':
-                    _connectSuccess(message);
+                    _connectResponse(message);
                     break;
                 case '/meta/disconnect':
-                    _disconnectSuccess(message);
+                    _disconnectResponse(message);
                     break;
                 case '/meta/subscribe':
-                    _subscribeSuccess(message);
+                    _subscribeResponse(message);
                     break;
                 case '/meta/unsubscribe':
-                    _unsubscribeSuccess(message);
+                    _unsubscribeResponse(message);
                     break;
                 default:
-                    _messageSuccess(message);
+                    _messageResponse(message);
                     break;
             }
         }
@@ -936,8 +937,9 @@ org.cometd.Cometd = function(name)
     function _handleFailure(request, messages, reason, exception, comet)
     {
         var xhr = request.xhr;
-        _debug('Request failed, status: {}, reason: {}, exception: {}', xhr && xhr.status, reason, exception);
 
+        _debug('Failed messages', messages);
+	
         // Signal the transport it can deliver other queued requests
         _transport.complete(request, false, comet);
 
@@ -969,11 +971,10 @@ org.cometd.Cometd = function(name)
         }
     };
 
-    function _handshakeSuccess(message)
+    function _handshakeResponse(message)
     {
         if (message.successful)
         {
-            _debug('Handshake successful');
             // Save clientId, figure out transport, then follow the advice to connect
             _clientId = message.clientId;
 
@@ -995,6 +996,8 @@ org.cometd.Cometd = function(name)
             // Here the new transport is in place, as well as the clientId, so
             // the listener can perform a publish() if it wants, and the listeners
             // are notified before the connect below.
+	    message.reestablish=_reestablish;
+	    _reestablish=true;
             _notifyListeners('/meta/handshake', message);
 
             var action = _advice.reconnect ? _advice.reconnect : 'retry';
@@ -1009,8 +1012,6 @@ org.cometd.Cometd = function(name)
         }
         else
         {
-            _debug('Handshake unsuccessful');
-
             var retry = !_isDisconnected() && _advice.reconnect != 'none';
             if (!retry) _setStatus('disconnected');
 
@@ -1030,8 +1031,6 @@ org.cometd.Cometd = function(name)
 
     function _handshakeFailure(xhr, message)
     {
-        _debug('Handshake failure');
-
         // Notify listeners
         var failureMessage = {
             successful: false,
@@ -1061,15 +1060,13 @@ org.cometd.Cometd = function(name)
         }
     };
 
-    function _connectSuccess(message)
+    function _connectResponse(message)
     {
         var action = _isDisconnected() ? 'none' : (_advice.reconnect ? _advice.reconnect : 'retry');
         if (!_isDisconnected()) _setStatus(action == 'retry' ? 'connecting' : 'disconnecting');
 
         if (message.successful)
         {
-            _debug('Connect successful');
-
             // End the batch and allow held messages from the application
             // to go to the server (see _handshake() where we start the batch).
             // The batch is ended before notifying the listeners, so that
@@ -1097,8 +1094,6 @@ org.cometd.Cometd = function(name)
         }
         else
         {
-            _debug('Connect unsuccessful');
-
             // Notify the listeners after the status change but before the next action
             _notifyListeners('/meta/connect', message);
             _notifyListeners('/meta/unsuccessful', message);
@@ -1128,8 +1123,6 @@ org.cometd.Cometd = function(name)
 
     function _connectFailure(xhr, message)
     {
-        _debug('Connect failure');
-
         // Notify listeners
         var failureMessage = {
             successful: false,
@@ -1169,17 +1162,15 @@ org.cometd.Cometd = function(name)
         }
     };
 
-    function _disconnectSuccess(message)
+    function _disconnectResponse(message)
     {
         if (message.successful)
         {
-            _debug('Disconnect successful');
             _disconnect(false);
             _notifyListeners('/meta/disconnect', message);
         }
         else
         {
-            _debug('Disconnect unsuccessful');
             _disconnect(true);
             _notifyListeners('/meta/disconnect', message);
             _notifyListeners('/meta/usuccessful', message);
@@ -1199,7 +1190,6 @@ org.cometd.Cometd = function(name)
 
     function _disconnectFailure(xhr, message)
     {
-        _debug('Disconnect failure');
         _disconnect(true);
 
         var failureMessage = {
@@ -1217,16 +1207,14 @@ org.cometd.Cometd = function(name)
         _notifyListeners('/meta/unsuccessful', failureMessage);
     };
 
-    function _subscribeSuccess(message)
+    function _subscribeResponse(message)
     {
         if (message.successful)
         {
-            _debug('Subscribe successful');
             _notifyListeners('/meta/subscribe', message);
         }
         else
         {
-            _debug('Subscribe unsuccessful');
             _notifyListeners('/meta/subscribe', message);
             _notifyListeners('/meta/unsuccessful', message);
         }
@@ -1234,8 +1222,6 @@ org.cometd.Cometd = function(name)
 
     function _subscribeFailure(xhr, message)
     {
-        _debug('Subscribe failure');
-
         var failureMessage = {
             successful: false,
             failure: true,
@@ -1251,16 +1237,14 @@ org.cometd.Cometd = function(name)
         _notifyListeners('/meta/unsuccessful', failureMessage);
     };
 
-    function _unsubscribeSuccess(message)
+    function _unsubscribeResponse(message)
     {
         if (message.successful)
         {
-            _debug('Unsubscribe successful');
             _notifyListeners('/meta/unsubscribe', message);
         }
         else
         {
-            _debug('Unsubscribe unsuccessful');
             _notifyListeners('/meta/unsubscribe', message);
             _notifyListeners('/meta/unsuccessful', message);
         }
@@ -1268,8 +1252,6 @@ org.cometd.Cometd = function(name)
 
     function _unsubscribeFailure(xhr, message)
     {
-        _debug('Unsubscribe failure');
-
         var failureMessage = {
             successful: false,
             failure: true,
@@ -1285,7 +1267,7 @@ org.cometd.Cometd = function(name)
         _notifyListeners('/meta/unsuccessful', failureMessage);
     };
 
-    function _messageSuccess(message)
+    function _messageResponse(message)
     {
         if (message.successful === undefined)
         {
@@ -1303,12 +1285,10 @@ org.cometd.Cometd = function(name)
         {
             if (message.successful)
             {
-                _debug('Publish successful');
                 _notifyListeners('/meta/publish', message);
             }
             else
             {
-                _debug('Publish unsuccessful');
                 _notifyListeners('/meta/publish', message);
                 _notifyListeners('/meta/unsuccessful', message);
             }
@@ -1317,8 +1297,6 @@ org.cometd.Cometd = function(name)
 
     function _messageFailure(xhr, message)
     {
-        _debug('Publish failure');
-
         var failureMessage = {
             successful: false,
             failure: true,
@@ -1387,38 +1365,37 @@ org.cometd.Cometd = function(name)
 
     function _increaseBackoff()
     {
-        if (_backoff < _maxBackoff) _backoff += _backoffIncrement;
+        if (_backoff < _maxBackoff) 
+	    _backoff += _backoffIncrement;
     };
 
-    var _error = this._error = function(text, args)
+    var _warn = this._warn = function()
     {
-        _log('error', _format.apply(this, arguments));
+    	_log('WARN',arguments);
     };
 
-    var _warn = this._warn = function(text, args)
+    var _info = this._info = function()
     {
-        _log('warn', _format.apply(this, arguments));
+    	if (_logLevel!='warn')
+            _log('INFO',arguments);
     };
 
-    var _info = this._info = function(text, args)
+    var _debug = this._debug = function()
     {
-        _log('info', _format.apply(this, arguments));
+        if (_logLevel=='debug' || _logLevel=='dbug')
+            _log('DBUG',arguments);
     };
 
-    var _debug = this._debug = function(text, args)
+    function _log(level, args)
     {
-        _log('debug', _format.apply(this, arguments));
-    };
-
-    function _log(level, text)
-    {
-        var priority = _logLevels[level];
-        var configPriority = _logLevels[_logLevel];
-        if (!configPriority) configPriority = _logLevels['info'];
-        if (priority >= configPriority)
-        {
-            if (window.console) window.console.log(text);
-        }
+        if (window.console) 
+	{
+	    var a = new Array();
+	    a[0] = level;
+	    for (var i = 0; i < args.length; i++) 
+	        a[i + 1] = args[i];
+	    window.console.log.apply(window.console, a);
+	}
     };
 
     function _format(text)
