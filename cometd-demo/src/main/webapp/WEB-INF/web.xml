@@ -20,7 +20,7 @@
         </init-param>
         <init-param>
             <param-name>timeout</param-name>
-            <param-value>120000</param-value>
+            <param-value>30000</param-value>
         </init-param>
         <init-param>
             <param-name>interval</param-name>
