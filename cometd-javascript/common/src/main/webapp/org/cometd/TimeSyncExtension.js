@@ -228,7 +228,7 @@ org.cometd.TimeSyncExtension = function(configuration)
      */
     this.setTimeout = function(callback, atServerTimeOrDate)
     {
-        var ts = (atTimeOrDate instanceof Date) ? atTimeOrDate.getTime() : (0 + atTimeOrDate);
+        var ts = (atServerTimeOrDate instanceof Date) ? atServerTimeOrDate.getTime() : (0 + atServerTimeOrDate);
         var tc = ts - _offset;
         var interval = tc - new Date().getTime();
         if(interval <= 0)

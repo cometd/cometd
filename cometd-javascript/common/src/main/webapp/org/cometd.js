@@ -231,13 +231,12 @@ org.cometd.Cometd = function(name)
      */
     this.disconnect = function(disconnectProps)
     {
+    	if (!_transport)
+	    return;
         var bayeuxMessage = {
             channel: '/meta/disconnect'
         };
         var message = _mixin({}, disconnectProps, bayeuxMessage);
-        // Deliver immediately
-        // The handshake and connect mechanism make use of startBatch(), and in case
-        // of a failed handshake the disconnect would not be sent if using _queueSend().
         _setStatus('disconnecting');
         _send([message], false);
     };
@@ -369,7 +368,7 @@ org.cometd.Cometd = function(name)
      */
     this.addListener = function(channel, scope, callback)
     {
-        _addListener(channel, scope, callback, false);
+        return _addListener(channel, scope, callback, false);
     }
 
     function _addListener(channel, scope, callback, isSubscription)
@@ -804,8 +803,9 @@ org.cometd.Cometd = function(name)
     /**
      * Delivers the messages to the comet server
      * @param messages the array of messages to send
+     * @param connect true if this send is a long poll
      */
-    function _send(messages, comet)
+    function _send(messages, longpoll)
     {
         // We must be sure that the messages have a clientId.
         // This is not guaranteed since the handshake may take time to return
@@ -827,7 +827,7 @@ org.cometd.Cometd = function(name)
             {
                 try
                 {
-                    _handleResponse.call(self, request, response, comet);
+                    _handleResponse.call(self, request, response, longpoll);
                 }
                 catch (x)
                 {
@@ -838,7 +838,7 @@ org.cometd.Cometd = function(name)
             {
                 try
                 {
-                    _handleFailure.call(self, request, messages, reason, exception, comet);
+                    _handleFailure.call(self, request, messages, reason, exception, longpoll);
                 }
                 catch (x)
                 {
@@ -847,7 +847,7 @@ org.cometd.Cometd = function(name)
             }
         };
         _debug('send', envelope);
-        _transport.send(envelope, comet);
+        _transport.send(envelope, longpoll);
     };
 
     function _applyIncomingExtensions(message)
@@ -892,13 +892,13 @@ org.cometd.Cometd = function(name)
         }
     };
 
-    function _handleResponse(request, response, comet)
+    function _handleResponse(request, response, longpoll)
     {
         var messages = _convertToMessages(response);
         _debug('Received', messages);
 
         // Signal the transport it can send other queued requests
-        _transport.complete(request, true, comet);
+        _transport.complete(request, true, longpoll);
 
         for (var i = 0; i < messages.length; ++i)
         {
@@ -932,14 +932,14 @@ org.cometd.Cometd = function(name)
         }
     };
 
-    function _handleFailure(request, messages, reason, exception, comet)
+    function _handleFailure(request, messages, reason, exception, longpoll)
     {
         var xhr = request.xhr;
 
         _debug('Failed', messages);
 	
         // Signal the transport it can send other queued requests
-        _transport.complete(request, false, comet);
+        _transport.complete(request, false, longpoll);
 
         for (var i = 0; i < messages.length; ++i)
         {
@@ -1390,24 +1390,7 @@ org.cometd.Cometd = function(name)
 	    window.console.log.apply(window.console, a);
 	}
     };
-
-    function _format(text)
-    {
-        var braces = /\{\}/g;
-        var result = '';
-        var start = 0;
-        var count = 0;
-        while (braces.test(text))
-        {
-            result += text.substr(start, braces.lastIndex - start - 2);
-            var arg = arguments[++count];
-            result += arg !== undefined ? arg : '{}';
-            start = braces.lastIndex;
-        }
-        result += text.substr(start, text.length - start);
-        return result;
-    };
-
+    
     function _newLongPollingTransport()
     {
         return _mixin({}, new org.cometd.Transport('long-polling'), new org.cometd.LongPollingTransport());
@@ -1428,7 +1411,7 @@ org.cometd.Cometd = function(name)
     org.cometd.Transport = function(type)
     {
         var _requestIds = 0;
-        var _cometRequest = null;
+        var _longpollRequest = null;
         var _requests = [];
         var _envelopes = [];
 
@@ -1437,22 +1420,23 @@ org.cometd.Cometd = function(name)
             return type;
         };
 
-        this.send = function(envelope, comet)
+        this.send = function(envelope, longpoll)
         {
-            if (comet)
-                _cometSend(this, envelope);
+            if (longpoll)
+                _longpollSend(this, envelope);
             else
                 _queueSend(this, envelope);
         };
 
-        function _cometSend(self, envelope)
+        function _longpollSend(self, envelope)
         {
-            if (_cometRequest !== null) throw 'Concurrent comet requests not allowed, request ' + _cometRequest.id + ' not yet completed';
+            if (_longpollRequest !== null) 
+	        throw 'Concurrent longpoll requests not allowed, request ' + _longpollRequest.id + ' not yet completed';
 
             var requestId = ++_requestIds;
             var request = {id: requestId};
             self._send(envelope, request);
-            _cometRequest = request;
+            _longpollRequest = request;
         };
 
         function _queueSend(self, envelope)
@@ -1460,7 +1444,7 @@ org.cometd.Cometd = function(name)
             var requestId = ++_requestIds;
 
             var request = {id: requestId};
-            // Consider the comet request which should always be present
+            // Consider the longpoll requests which should always be present
             if (_requests.length < _maxConnections - 1)
             {
                 self._send(envelope, request);
@@ -1472,21 +1456,21 @@ org.cometd.Cometd = function(name)
             }
         };
 
-        this.complete = function(request, success, comet)
+        this.complete = function(request, success, longpoll)
         {
-            if (comet)
-                _cometComplete(request);
+            if (longpoll)
+                _longpollComplete(request);
             else
                 _complete(this, request, success);
         };
 
-        function _cometComplete(request)
+        function _longpollComplete(request)
         {
             var requestId = request.id;
-            if (_cometRequest !== request) throw 'Comet request mismatch, completing request ' + requestId;
+            if (_longpollRequest !== request) throw 'Comet request mismatch, completing request ' + requestId;
 
-            // Reset comet request
-            _cometRequest = null;
+            // Reset longpoll request
+            _longpollRequest = null;
         };
 
         function _complete(self, request, success)
@@ -1520,12 +1504,12 @@ org.cometd.Cometd = function(name)
                 if (request.xhr) 
 		    request.xhr.abort();
             }
-            if (_cometRequest)
+            if (_longpollRequest)
             {
-                _debug('Aborting request ', _cometRequest);
-                if (_cometRequest.xhr) _cometRequest.xhr.abort();
+                _debug('Aborting request ', _longpollRequest);
+                if (_longpollRequest.xhr) _longpollRequest.xhr.abort();
             }
-            _cometRequest = null;
+            _longpollRequest = null;
             _requests = [];
             _envelopes = [];
         };

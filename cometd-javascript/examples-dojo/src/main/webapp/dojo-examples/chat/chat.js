@@ -28,7 +28,6 @@ var room = {
         dojo.addClass("join", "hidden");
         dojo.removeClass("joined", "hidden");
         dojo.byId("phrase").focus();
-        
     },
     
     leave: function(){
@@ -213,4 +212,4 @@ var room = {
         
 dojo.subscribe("/cometd/meta",room, room._meta);
 dojo.addOnLoad(room, "_init");
-dojo.addOnUnload(room, "leave");
+dojo.addOnUnload(dojox.cometd, "disconnect");

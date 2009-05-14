@@ -23,6 +23,7 @@
 	    }
 
             setTimeout(tick,1000);
+            dojo.addOnUnload(dojox.cometd, "disconnect");
         </script>
     </head>
     <body>
