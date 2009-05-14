@@ -210,7 +210,6 @@ org.cometd.Cometd = function(name)
      */
     this.init = function(configuration, handshakeProps)
     {
-    	_reestablish=false;
         _configure(configuration);
         _handshake(handshakeProps);
     };
@@ -222,6 +221,7 @@ org.cometd.Cometd = function(name)
      */
     this.handshake = function(handshakeProps)
     {
+        _reestablish=false;
         _handshake(handshakeProps);
     };
 
@@ -408,12 +408,12 @@ org.cometd.Cometd = function(name)
         // a.push('a'); var hb=a.push('b'); delete a[hb-1]; var hc=a.push('c');
         // then:
         // hc==3, a.join()=='a',,'c', a.length==3
-        var subscriptionIndex = subscriptions.push(subscription) - 1;
+        var subscriptionID = subscriptions.push(subscription) - 1;
 
-        _debug('listener', channel, scope, callback, method.name, subscriptionIndex);
+        _debug('listener', channel, scope, callback, method.name, subscriptionID);
 
         // The subscription to allow removal of the listener is made of the channel and the index
-        return [channel, subscriptionIndex];
+        return [channel, subscriptionID];
     };
 
     /**
