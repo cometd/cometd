@@ -172,6 +172,7 @@ org.cometd.Cometd = function(name)
 
     function _configure(configuration)
     {
+        _debug('configure cometd ', configuration);
         // Support old style param, where only the comet URL was passed
         if (typeof configuration === 'string') configuration = { url: configuration };
         if (!configuration) configuration = {};
@@ -184,7 +185,6 @@ org.cometd.Cometd = function(name)
         _logLevel = configuration.logLevel || 'info';
         _reverseIncomingExtensions = configuration.reverseIncomingExtensions !== false;
 
-        _debug('Initializing comet with url: {}', _url);
 
         // Check immediately if we're cross domain
         // If cross domain, the handshake must not send the long polling transport type
@@ -197,7 +197,7 @@ org.cometd.Cometd = function(name)
             _transport = _newCallbackPollingTransport();
         else
             _transport = _newLongPollingTransport();
-        _debug('Initial transport is {}', _transport.getType());
+        _debug('transport', _transport);
     };
 
     /**
@@ -237,9 +237,9 @@ org.cometd.Cometd = function(name)
         var message = _mixin({}, disconnectProps, bayeuxMessage);
         // Deliver immediately
         // The handshake and connect mechanism make use of startBatch(), and in case
-        // of a failed handshake the disconnect would not be delivered if using _send().
+        // of a failed handshake the disconnect would not be sent if using _queueSend().
         _setStatus('disconnecting');
-        _deliver([message], false);
+        _send([message], false);
     };
 
     /**
@@ -271,7 +271,7 @@ org.cometd.Cometd = function(name)
      * when a message for the channel arrives.
      * @param channel the channel to subscribe to
      * @param scope the scope of the callback, may be omitted
-     * @param callback the callback to call when a message is delivered to the channel
+     * @param callback the callback to call when a message is sent to the channel
      * @param subscribeProps an object to be merged with the subscribe message
      * @return the subscription handle to be passed to {@link #unsubscribe(object)}
      */
@@ -293,14 +293,14 @@ org.cometd.Cometd = function(name)
         if (send)
         {
             // Send the subscription message after the subscription registration to avoid
-            // races where the server would deliver a message to the subscribers, but here
+            // races where the server would send a message to the subscribers, but here
             // on the client the subscription has not been added yet to the data structures
             var bayeuxMessage = {
                 channel: '/meta/subscribe',
                 subscription: channel
             };
             var message = _mixin({}, subscribeProps, bayeuxMessage);
-            _send(message);
+            _queueSend(message);
         }
 
         return subscription;
@@ -338,7 +338,7 @@ org.cometd.Cometd = function(name)
                 subscription: channel
             };
             var message = _mixin({}, unsubscribeProps, bayeuxMessage);
-            _send(message);
+            _queueSend(message);
         }
     };
 
@@ -355,7 +355,7 @@ org.cometd.Cometd = function(name)
             data: content
         };
         var message = _mixin({}, publishProps, bayeuxMessage);
-        _send(message);
+        _queueSend(message);
     };
 
     /**
@@ -363,7 +363,7 @@ org.cometd.Cometd = function(name)
      * when a message for the given channel arrives.
      * @param channel the channel the listener is interested to
      * @param scope the scope of the callback, may be omitted
-     * @param callback the callback to call when a message is delivered to the channel
+     * @param callback the callback to call when a message is sent to the channel
      * @returns the subscription handle to be passed to {@link #removeListener(object)}
      * @see #removeListener(object)
      */
@@ -410,7 +410,8 @@ org.cometd.Cometd = function(name)
         // then:
         // hc==3, a.join()=='a',,'c', a.length==3
         var subscriptionIndex = subscriptions.push(subscription) - 1;
-        _debug('Added listener: channel \'{}\', callback \'{}\', index {}', channel, method.name, subscriptionIndex);
+
+        _debug('listener', channel, scope, callback, method.name, subscriptionIndex);
 
         // The subscription to allow removal of the listener is made of the channel and the index
         return [channel, subscriptionIndex];
@@ -431,7 +432,7 @@ org.cometd.Cometd = function(name)
         if (subscriptions)
         {
             delete subscriptions[subscription[1]];
-            _debug('Removed listener: channel \'{}\', index {}', subscription[0], subscription[1]);
+            _debug('rm listener', subscription);
         }
     };
 
@@ -458,13 +459,13 @@ org.cometd.Cometd = function(name)
         for (var channel in _listeners)
         {
             var subscriptions = _listeners[channel];
+            _debug('rm subscriptions', channel, subscriptions);
             for (var i = 0; i < subscriptions.length; ++i)
             {
                 var subscription = subscriptions[i];
                 if (subscription && subscription.subscription)
                 {
                     delete subscriptions[i];
-                    _debug('Removed subscription: channel \'{}\', index {}', channel, i);
                 }
             }
         }
@@ -556,7 +557,7 @@ org.cometd.Cometd = function(name)
                 name: name,
                 extension: extension
             });
-            _debug('Registered extension \'{}\'', name);
+            _debug('Registered extension', name);
 
             // Callback for extensions
             if (typeof extension.registered === 'function') extension.registered.call(extension, name, this);
@@ -586,7 +587,7 @@ org.cometd.Cometd = function(name)
             {
                 _extensions.splice(i, 1);
                 unregistered = true;
-                _debug('Unregistered extension \'{}\'', name);
+                _debug('Unregistered extension', name);
 
                 // Callback for extensions
                 if (typeof extension.unregistered === 'function') extension.unregistered.call(extension);
@@ -614,7 +615,7 @@ org.cometd.Cometd = function(name)
 
     /**
      * Starts a the batch of messages to be sent in a single request.
-     * @see _endBatch(deliverMessages)
+     * @see _endBatch(sendMessages)
      */
     function _startBatch()
     {
@@ -623,20 +624,20 @@ org.cometd.Cometd = function(name)
 
     /**
      * Ends the batch of messages to be sent in a single request,
-     * optionally delivering messages present in the message queue depending
+     * optionally sending messages present in the message queue depending
      * on the given argument.
-     * @param deliverMessages whether to deliver the messages in the queue or not
+     * @param sendMessages whether to send the messages in the queue or not
      * @see _startBatch()
      */
-    function _endBatch(deliverMessages)
+    function _endBatch(sendMessages)
     {
         --_batch;
         if (_batch < 0) _batch = 0;
-        if (deliverMessages && _batch == 0 && !_isDisconnected())
+        if (sendMessages && _batch == 0 && !_isDisconnected())
         {
             var messages = _messageQueue;
             _messageQueue = [];
-            if (messages.length > 0) _deliver(messages, false);
+            if (messages.length > 0) _send(messages, false);
         }
     };
 
@@ -661,7 +662,7 @@ org.cometd.Cometd = function(name)
 
     function _setStatus(newStatus)
     {
-        _debug('{} -> {}', _status, newStatus);
+        _debug('status',_status,'->',newStatus);
         _status = newStatus;
     };
 
@@ -675,7 +676,7 @@ org.cometd.Cometd = function(name)
      */
     function _handshake(handshakeProps)
     {
-        _debug('Starting handshake');
+        _debug('handshake');
         _clientId = null;
 
         _clearSubscriptions();
@@ -705,9 +706,9 @@ org.cometd.Cometd = function(name)
         var message = _mixin({}, handshakeProps, bayeuxMessage);
 
         // We started a batch to hold the application messages,
-        // so here we must bypass it and deliver immediately.
+        // so here we must bypass it and send immediately.
         _setStatus('handshaking');
-        _deliver([message], false);
+        _send([message], false);
     };
 
     function _findTransport(handshakeResponse)
@@ -751,7 +752,6 @@ org.cometd.Cometd = function(name)
     {
         _cancelDelayedSend();
         var delay = _backoff;
-        _debug("Delayed send: backoff {}, interval {}", _backoff, _advice.interval);
         if (_advice.interval && _advice.interval > 0)
             delay += _advice.interval;
         _scheduledSend = _setTimeout(operation, delay);
@@ -773,7 +773,7 @@ org.cometd.Cometd = function(name)
             }
             catch (x)
             {
-                _debug('Exception during scheduled execution of function \'{}\': {}', funktion.name, x);
+                _debug(funktion.name, x);
             }
         }, delay);
     };
@@ -783,29 +783,29 @@ org.cometd.Cometd = function(name)
      */
     function _connect()
     {
-        _debug('Starting connect');
+        _debug('connect');
         var message = {
             channel: '/meta/connect',
             connectionType: _transport.getType()
         };
         _setStatus('connecting');
-        _deliver([message], true);
+        _send([message], true);
         _setStatus('connected');
     };
 
-    function _send(message)
+    function _queueSend(message)
     {
         if (_batch > 0)
             _messageQueue.push(message);
         else
-            _deliver([message], false);
+            _send([message], false);
     };
 
     /**
      * Delivers the messages to the comet server
      * @param messages the array of messages to send
      */
-    function _deliver(messages, comet)
+    function _send(messages, comet)
     {
         // We must be sure that the messages have a clientId.
         // This is not guaranteed since the handshake may take time to return
@@ -831,7 +831,7 @@ org.cometd.Cometd = function(name)
                 }
                 catch (x)
                 {
-                    _debug('Exception during execution of success callback: {}', x);
+                    _debug(x);
                 }
             },
             onFailure: function(request, reason, exception)
@@ -842,11 +842,11 @@ org.cometd.Cometd = function(name)
                 }
                 catch (x)
                 {
-                    _debug('Exception during execution of failure callback: {}', x);
+                    _debug(x);
                 }
             }
         };
-        _debug('Sending request to {}, message(s): {}', envelope.url, org.cometd.JSON.toJSON(envelope.messages));
+        _debug('send', envelope);
         _transport.send(envelope, comet);
     };
 
@@ -859,7 +859,6 @@ org.cometd.Cometd = function(name)
             var callback = extension.extension.incoming;
             if (callback && typeof callback === 'function')
             {
-                _debug('Calling incoming extension \'{}\', callback \'{}\'', extension.name, callback.name);
                 message = _applyExtension(extension.name, callback, message) || message;
             }
         }
@@ -874,7 +873,6 @@ org.cometd.Cometd = function(name)
             var callback = extension.extension.outgoing;
             if (callback && typeof callback === 'function')
             {
-                _debug('Calling outgoing extension \'{}\', callback \'{}\'', extension.name, callback.name);
                 message = _applyExtension(extension.name, callback, message) || message;
             }
         }
@@ -889,7 +887,7 @@ org.cometd.Cometd = function(name)
         }
         catch (x)
         {
-            _debug('Exception during execution of extension \'{}\': {}', name, x);
+            _debug(x);
             return message;
         }
     };
@@ -897,9 +895,9 @@ org.cometd.Cometd = function(name)
     function _handleResponse(request, response, comet)
     {
         var messages = _convertToMessages(response);
-        _debug('Received responses', messages);
+        _debug('Received', messages);
 
-        // Signal the transport it can deliver other queued requests
+        // Signal the transport it can send other queued requests
         _transport.complete(request, true, comet);
 
         for (var i = 0; i < messages.length; ++i)
@@ -938,9 +936,9 @@ org.cometd.Cometd = function(name)
     {
         var xhr = request.xhr;
 
-        _debug('Failed messages', messages);
+        _debug('Failed', messages);
 	
-        // Signal the transport it can deliver other queued requests
+        // Signal the transport it can send other queued requests
         _transport.complete(request, false, comet);
 
         for (var i = 0; i < messages.length; ++i)
@@ -987,7 +985,7 @@ org.cometd.Cometd = function(name)
             {
                 if (_transport.getType() != newTransport.getType())
                 {
-                    _debug('Changing transport from {} to {}', _transport.getType(), newTransport.getType());
+                    _debug('transport', _transport, '->',newTransport);
                     _transport = newTransport;
                 }
             }
@@ -1023,7 +1021,6 @@ org.cometd.Cometd = function(name)
             if (retry)
             {
                 _increaseBackoff();
-                _debug('Handshake failure, backing off and retrying in {} ms', _backoff);
                 _delayedHandshake();
             }
         }
@@ -1055,7 +1052,6 @@ org.cometd.Cometd = function(name)
         if (retry)
         {
             _increaseBackoff();
-            _debug('Handshake failure, backing off and retrying in {} ms', _backoff);
             _delayedHandshake();
         }
     };
@@ -1108,7 +1104,7 @@ org.cometd.Cometd = function(name)
                     _delayedConnect();
                     break;
                 case 'handshake':
-                    // End the batch but do not deliver the messages until we connect successfully
+                    // End the batch but do not send the messages until we connect successfully
                     _endBatch(false);
                     _resetBackoff();
                     _delayedHandshake();
@@ -1145,7 +1141,6 @@ org.cometd.Cometd = function(name)
             {
                 case 'retry':
                     _increaseBackoff();
-                    _debug('Connect failure, backing off and retrying in {} ms', _backoff);
                     _delayedConnect();
                     break;
                 case 'handshake':
@@ -1156,7 +1151,7 @@ org.cometd.Cometd = function(name)
                     _resetBackoff();
                     break;
                 default:
-                    _debug('Unrecognized reconnect value: {}', action);
+                    _debug('Unrecognized action', action);
                     break;
             }
         }
@@ -1278,7 +1273,7 @@ org.cometd.Cometd = function(name)
             }
             else
             {
-                _debug('Unknown message {}', org.cometd.JSON.toJSON(message));
+                _debug('Unknown message', message);
             }
         }
         else
@@ -1345,13 +1340,11 @@ org.cometd.Cometd = function(name)
                 {
                     try
                     {
-                        _debug('Notifying subscription: channel \'{}\', callback \'{}\'', channel, subscription.callback.name);
                         subscription.callback.call(subscription.scope, message);
                     }
                     catch (x)
                     {
-                        // Ignore exceptions from callbacks
-                        _warn('Exception during execution of callback \'{}\' on channel \'{}\' for message {}, exception: {}', subscription.callback.name, channel, org.cometd.JSON.toJSON(message), x);
+                        _warn(subscription,message,x);
                     }
                 }
             }
@@ -1449,7 +1442,7 @@ org.cometd.Cometd = function(name)
             if (comet)
                 _cometSend(this, envelope);
             else
-                _send(this, envelope);
+                _queueSend(this, envelope);
         };
 
         function _cometSend(self, envelope)
@@ -1457,31 +1450,25 @@ org.cometd.Cometd = function(name)
             if (_cometRequest !== null) throw 'Concurrent comet requests not allowed, request ' + _cometRequest.id + ' not yet completed';
 
             var requestId = ++_requestIds;
-            _debug('Beginning comet request {}', requestId);
-
             var request = {id: requestId};
-            _debug('Delivering comet request {}', requestId);
-            self.deliver(envelope, request);
+            self._send(envelope, request);
             _cometRequest = request;
         };
 
-        function _send(self, envelope)
+        function _queueSend(self, envelope)
         {
             var requestId = ++_requestIds;
-            _debug('Beginning request {}, {} other requests, {} queued requests', requestId, _requests.length, _envelopes.length);
 
             var request = {id: requestId};
             // Consider the comet request which should always be present
             if (_requests.length < _maxConnections - 1)
             {
-                _debug('Delivering request {}', requestId);
-                self.deliver(envelope, request);
+                self._send(envelope, request);
                 _requests.push(request);
             }
             else
             {
                 _envelopes.push([envelope, request]);
-                _debug('Queued request {}, {} queued requests', requestId, _envelopes.length);
             }
         };
 
@@ -1500,7 +1487,6 @@ org.cometd.Cometd = function(name)
 
             // Reset comet request
             _cometRequest = null;
-            _debug('Ended comet request {}', requestId);
         };
 
         function _complete(self, request, success)
@@ -1509,19 +1495,16 @@ org.cometd.Cometd = function(name)
             var index = _inArray(request, _requests);
             // The index can be negative the request has been aborted
             if (index >= 0) _requests.splice(index, 1);
-            _debug('Ended request {}, {} other requests, {} queued requests', requestId, _requests.length, _envelopes.length);
 
             if (_envelopes.length > 0)
             {
                 var envelope = _envelopes.shift();
                 if (success)
                 {
-                    _debug('Dequeueing and sending request {}, {} queued requests', envelope[1].id, _envelopes.length);
-                    _send(self, envelope[0]);
+                    _queueSend(self, envelope[0]);
                 }
                 else
                 {
-                    _debug('Dequeueing and failing request {}, {} queued requests', envelope[1].id, _envelopes.length);
                     // Keep the semantic of calling response callbacks asynchronously after the request
                     setTimeout(function() { envelope[0].onFailure(envelope[1], 'error'); }, 0);
                 }
@@ -1533,12 +1516,13 @@ org.cometd.Cometd = function(name)
             for (var i = 0; i < _requests.length; ++i)
             {
                 var request = _requests[i];
-                _debug('Aborting request {}', request.id);
-                if (request.xhr) request.xhr.abort();
+                _debug('Aborting request', request);
+                if (request.xhr) 
+		    request.xhr.abort();
             }
             if (_cometRequest)
             {
-                _debug('Aborting comet request {}', _cometRequest.id);
+                _debug('Aborting request ', _cometRequest);
                 if (_cometRequest.xhr) _cometRequest.xhr.abort();
             }
             _cometRequest = null;
@@ -1549,7 +1533,7 @@ org.cometd.Cometd = function(name)
 
     org.cometd.LongPollingTransport = function()
     {
-        this.deliver = function(envelope, request)
+        this._send = function(envelope, request)
         {
             request.xhr = org.cometd.AJAX.send({
                 transport: this,
@@ -1567,7 +1551,7 @@ org.cometd.Cometd = function(name)
     org.cometd.CallbackPollingTransport = function()
     {
         var _maxLength = 2000;
-        this.deliver = function(envelope, request)
+        this._send = function(envelope, request)
         {
             // Microsoft Internet Explorer has a 2083 URL max length
             // We must ensure that we stay within that length
@@ -1575,7 +1559,7 @@ org.cometd.Cometd = function(name)
             // Encode the messages because all brackets, quotes, commas, colons, etc
             // present in the JSON will be URL encoded, taking many more characters
             var urlLength = envelope.url.length + encodeURI(messages).length;
-            _debug('URL length: {}', urlLength);
+	    
             // Let's stay on the safe side and use 2000 instead of 2083
             // also because we did not count few characters among which
             // the parameter name 'message' and the parameter 'jsonp',
