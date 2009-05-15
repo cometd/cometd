@@ -1,8 +1,13 @@
+/**
+ * Dual licensed under the Apache License 2.0 and the MIT license.
+ * $Revision$ $Date$
+ */
 (function($)
 {
     // Remap cometd JSON functions to jquery JSON functions
     org.cometd.JSON.toJSON = $.toJSON;
-
+    org.cometd.JSON.fromJSON = $.evalJSON
+    
     // Remap cometd AJAX functions to jquery AJAX functions
     org.cometd.AJAX.send = function(packet)
     {

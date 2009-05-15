@@ -17,9 +17,8 @@ var room = {
         
         dojox.cometd.ackEnabled = (dojo.query("#ackInit").attr("checked") == "true");
         
-        var loc = (new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/dojo-examples\/.*$/, '')) +
-        "/cometd";
-        dojox.cometd.init({ url: loc, logLevel: "debug" });
+        var cometURL = (new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/dojo-examples\/.*$/, '')) + "/cometd";
+        dojox.cometd.init({ url: cometURL, logLevel: "info" });
         // For x-domain test change line above to:
         // dojox.cometd.init("http://127.0.0.1:8080/cometd/cometd");
         this._connected = true;

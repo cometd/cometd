@@ -42,6 +42,7 @@ public class CometAckExtensionTest extends AbstractJQueryCometTest
                 "   {" +
                 "       clientSupportsAck = message.ext && message.ext.ack;" +
                 "   }" +
+                "   return message;" +
                 "}" +
                 "});");
         evaluateScript("cometd.handshake();");
@@ -72,6 +73,7 @@ public class CometAckExtensionTest extends AbstractJQueryCometTest
                 "   {" +
                 "       inAckId = message.ext && message.ext.ack;" +
                 "   }" +
+                "   return message;" +
                 "}," +
                 "outgoing: function(message)" +
                 "{" +
@@ -79,6 +81,7 @@ public class CometAckExtensionTest extends AbstractJQueryCometTest
                 "   {" +
                 "       outAckId = message.ext && message.ext.ack;" +
                 "   }" +
+                "   return message;" +
                 "}" +
                 "});");
         evaluateScript("$.cometd.handshake();");

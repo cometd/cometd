@@ -1,37 +1,5 @@
 /**
- * Copyright 2008 Mort Bay Consulting Pty. Ltd.
  * Dual licensed under the Apache License 2.0 and the MIT license.
- * ----------------------------------------------------------------------------
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * http: *www.apache.org/licenses/LICENSE-2.0
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ----------------------------------------------------------------------------
- * Licensed under the MIT license;
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * ----------------------------------------------------------------------------
  * $Revision$ $Date$
  */
 
@@ -47,17 +15,14 @@ else
     org.cometd = {};
 }
 
+// Abstract APIs
 org.cometd.JSON = {};
-org.cometd.JSON.toJSON = function(object)
+org.cometd.AJAX = {};
+org.cometd.JSON.toJSON = org.cometd.JSON.fromJSON = org.cometd.AJAX.send = function(object)
 {
-    throw 'Abstract Function Error: this function must be overridden';
+    throw 'Abstract';
 };
 
-org.cometd.AJAX = {};
-org.cometd.AJAX.send = function(envelope)
-{
-    throw 'Abstract Function Error: this function must be overridden';
-};
 
 /**
  * The constructor for a Cometd object, identified by an optional name.
@@ -654,7 +619,7 @@ org.cometd.Cometd = function(name)
     {
         if (response === undefined) return [];
         if (response instanceof Array) return response;
-        if (response instanceof String || typeof response == 'string') return eval('(' + response + ')');
+        if (response instanceof String || typeof response == 'string') return org.cometd.JSON.fromJSON(response);
         if (response instanceof Object) return [response];
         throw 'Conversion Error ' + response + ', typeof ' + (typeof response);
     };
@@ -707,6 +672,7 @@ org.cometd.Cometd = function(name)
         // We started a batch to hold the application messages,
         // so here we must bypass it and send immediately.
         _setStatus('handshaking');
+	_debug('handshake send',message);
         _send([message], false);
     };
 
@@ -815,9 +781,16 @@ org.cometd.Cometd = function(name)
         {
             var message = messages[i];
             message['id'] = _nextMessageId();
-            if (_clientId) message['clientId'] = _clientId;
-            messages[i] = _applyOutgoingExtensions(message);
+            if (_clientId) 
+	        message['clientId'] = _clientId;
+	    message = _applyOutgoingExtensions(message);
+	    if (message!=null)
+                messages[i] = message;
+	    else
+                messages.splice(i--,1);
         }
+	if (messages.length==0)
+	    return;
 
         var self = this;
         var envelope = {
@@ -852,14 +825,14 @@ org.cometd.Cometd = function(name)
 
     function _applyIncomingExtensions(message)
     {
-        for (var i = 0; i < _extensions.length; ++i)
+        for (var i = 0; message!=null && i<_extensions.length; ++i)
         {
             var index = _reverseIncomingExtensions ? _extensions.length - 1 - i : i;
             var extension = _extensions[index];
             var callback = extension.extension.incoming;
             if (callback && typeof callback === 'function')
             {
-                message = _applyExtension(extension.name, callback, message) || message;
+                message = _applyExtension(extension.name, callback, message);
             }
         }
         return message;
@@ -867,13 +840,13 @@ org.cometd.Cometd = function(name)
 
     function _applyOutgoingExtensions(message)
     {
-        for (var i = 0; i < _extensions.length; ++i)
+        for (var i = 0; message!=null && i<_extensions.length; ++i)
         {
             var extension = _extensions[i];
             var callback = extension.extension.outgoing;
-            if (callback && typeof callback === 'function')
+            if (callback && typeof callback == 'function')
             {
-                message = _applyExtension(extension.name, callback, message) || message;
+                message = _applyExtension(extension.name, callback, message);
             }
         }
         return message;
@@ -892,6 +865,41 @@ org.cometd.Cometd = function(name)
         }
     };
 
+    function _receive(message)
+    {
+        if (message.advice) _advice = message.advice;
+
+        var channel = message.channel;
+        switch (channel)
+        {
+            case '/meta/handshake':
+                _handshakeResponse(message);
+                break;
+            case '/meta/connect':
+                _connectResponse(message);
+                break;
+            case '/meta/disconnect':
+                _disconnectResponse(message);
+                break;
+            case '/meta/subscribe':
+                _subscribeResponse(message);
+                break;
+            case '/meta/unsubscribe':
+                _unsubscribeResponse(message);
+                break;
+            default:
+                _messageResponse(message);
+                break;
+        }
+    };
+    
+    /**
+     * Receive a message.
+     * This method is exposed as a public message so extensions may inject
+     * messages as if they had been received.
+     */
+    this.receive = _receive;
+
     function _handleResponse(request, response, longpoll)
     {
         var messages = _convertToMessages(response);
@@ -904,34 +912,13 @@ org.cometd.Cometd = function(name)
         {
             var message = messages[i];
             message = _applyIncomingExtensions(message);
+	    if (message==null)
+	        continue;
 
-            if (message.advice) _advice = message.advice;
-
-            var channel = message.channel;
-            switch (channel)
-            {
-                case '/meta/handshake':
-                    _handshakeResponse(message);
-                    break;
-                case '/meta/connect':
-                    _connectResponse(message);
-                    break;
-                case '/meta/disconnect':
-                    _disconnectResponse(message);
-                    break;
-                case '/meta/subscribe':
-                    _subscribeResponse(message);
-                    break;
-                case '/meta/unsubscribe':
-                    _unsubscribeResponse(message);
-                    break;
-                default:
-                    _messageResponse(message);
-                    break;
-            }
-        }
-    };
-
+            _receive(message);
+	} 
+    }
+    
     function _handleFailure(request, messages, reason, exception, longpoll)
     {
         var xhr = request.xhr;

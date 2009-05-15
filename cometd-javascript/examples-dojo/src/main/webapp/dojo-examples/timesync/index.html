@@ -2,7 +2,7 @@
     "http://www.w3.org/TR/html4/strict.dtd">
 <html>
     <head>
-        <title>Comet echo RPC</title>
+        <title>Cometd timesync demo</title>
         <link rel="stylesheet" type="text/css" href="chat/chat.css"></link>
         <script type="text/javascript" src="../../dojo/dojo.js"></script>
         <script type="text/javascript">
@@ -32,8 +32,11 @@
 <a href="../..">Main Demo index</a><br/>
         <p>
             This test uses the timesync extension to calculate a timeoffset with the server.
-	    The time displayed below is the server time and should be the same for all clients no matter what their local clocks are set to. 
-	    The accuracy should improve as each connect response is received.
+	    The time displayed below is the server time and should be the same for all clients 
+	    no matter what their local clocks are set to. 
+	 </p><p>The accuracy should improve as each connect response is received. If the client and
+	 server are on the same machine, then the algorithm will likely detect good accuracy and 
+	 not send any samples.
         </p>
         <div id="time">
         </div>

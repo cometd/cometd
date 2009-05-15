@@ -15,10 +15,10 @@ public class CometExtensionsTest extends AbstractJQueryCometTest
         evaluateScript("var inCount = 0;");
         evaluateScript("var outCount = 0;");
         evaluateScript("$.cometd.registerExtension('testin', {" +
-                "incoming: function(message) { ++inCount; }" +
+                "incoming: function(message) { ++inCount; return message;}" +
                 "});");
         evaluateScript("$.cometd.registerExtension('testout', {" +
-                "outgoing: function(message) { ++outCount; }" +
+                "outgoing: function(message) { ++outCount; return message;}" +
                 "});");
         evaluateScript("$.cometd.registerExtension('testempty', {});");
 
@@ -55,8 +55,8 @@ public class CometExtensionsTest extends AbstractJQueryCometTest
         StringBuilder script = new StringBuilder();
         script.append("var listener = new Listener();");
         script.append("$.cometd.registerExtension('testext', {" +
-                "incoming: function(message) { listener.incoming(message); }," +
-                "outgoing: function(message) { listener.outgoing(message); }" +
+                "incoming: function(message) { listener.incoming(message); return message;}," +
+                "outgoing: function(message) { listener.outgoing(message); return message;}" +
                 "});");
         evaluateScript(script.toString());
         Listener listener = get("listener");
