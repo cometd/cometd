@@ -36,6 +36,7 @@ public class CometTimeSyncExtensionTest extends AbstractJQueryCometTest
                 "    {" +
                 "        inTimeSync = message.ext && message.ext.timesync;" +
                 "    }" +
+                "   return message;" +
                 "}," +
                 "outgoing: function(message)" +
                 "{" +
@@ -44,6 +45,7 @@ public class CometTimeSyncExtensionTest extends AbstractJQueryCometTest
                 "    {" +
                 "        outTimeSync = message.ext && message.ext.timesync;" +
                 "    }" +
+                "   return message;" +
                 "}" +
                 "});");
         evaluateScript("$.cometd.handshake();");

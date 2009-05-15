@@ -1,10 +1,15 @@
-// stub loader for the cometd module since no implementation code is allowed to live in top-level files
+/**
+ * Dual licensed under the Apache License 2.0 and the MIT license.
+ * $Revision$ $Date: 2009-05-10 13:06:45 +1000 (Sun, 10 May 2009) $
+ */
+
 dojo.provide("dojox.cometd");
 dojo.registerModulePath("org","../org");
 dojo.require("org.cometd");
 
 // Remap cometd JSON functions to dojo JSON functions
 org.cometd.JSON.toJSON = dojo.toJson;
+org.cometd.JSON.fromJSON = dojo.fromJson;
 
 // Remap comet AJAX functions to dojo AJAX functions
 org.cometd.AJAX.send = function(packet)
