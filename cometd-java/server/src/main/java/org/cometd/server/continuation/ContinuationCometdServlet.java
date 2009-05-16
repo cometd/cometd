@@ -280,4 +280,10 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
         if (transport!=null)
             transport.complete();
     }
+
+    public void destroy()
+    {
+        if (_bayeux!=null)
+            ((ContinuationBayeux)_bayeux).destroy();
+    }
 }
