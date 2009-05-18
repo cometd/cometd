@@ -98,8 +98,7 @@ public class CometdDemo
 
         context.setBaseResource(new ResourceCollection(new Resource[]
         {
-            Resource.newResource("./src/main/webapp/"),
-            Resource.newResource("./target/cometd-java-demo-1.0.beta9-SNAPSHOT/"),
+            Resource.newResource("../../cometd-demo/target/cometd-demo-1.0.beta9-SNAPSHOT/"),
         }));
 
 
