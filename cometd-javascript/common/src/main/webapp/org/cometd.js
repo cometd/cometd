@@ -196,8 +196,8 @@ org.cometd.Cometd = function(name)
      */
     this.disconnect = function(disconnectProps)
     {
-    	if (!_transport)
-	    return;
+        if (!_transport)
+            return;
         var bayeuxMessage = {
             channel: '/meta/disconnect'
         };
@@ -672,7 +672,7 @@ org.cometd.Cometd = function(name)
         // We started a batch to hold the application messages,
         // so here we must bypass it and send immediately.
         _setStatus('handshaking');
-	_debug('handshake send',message);
+        _debug('handshake send',message);
         _send([message], false);
     };
 
@@ -769,7 +769,7 @@ org.cometd.Cometd = function(name)
     /**
      * Delivers the messages to the comet server
      * @param messages the array of messages to send
-     * @param connect true if this send is a long poll
+     * @param longpoll true if this send is a long poll
      */
     function _send(messages, longpoll)
     {
@@ -781,16 +781,16 @@ org.cometd.Cometd = function(name)
         {
             var message = messages[i];
             message['id'] = _nextMessageId();
-            if (_clientId) 
-	        message['clientId'] = _clientId;
-	    message = _applyOutgoingExtensions(message);
-	    if (message!=null)
+            if (_clientId)
+                message['clientId'] = _clientId;
+            message = _applyOutgoingExtensions(message);
+            if (message!=null)
                 messages[i] = message;
-	    else
-                messages.splice(i--,1);
+            else
+                messages.splice(i--, 1);
         }
-	if (messages.length==0)
-	    return;
+        if (messages.length==0)
+            return;
 
         var self = this;
         var envelope = {
@@ -892,7 +892,7 @@ org.cometd.Cometd = function(name)
                 break;
         }
     };
-    
+
     /**
      * Receive a message.
      * This method is exposed as a public message so extensions may inject
@@ -912,19 +912,19 @@ org.cometd.Cometd = function(name)
         {
             var message = messages[i];
             message = _applyIncomingExtensions(message);
-	    if (message==null)
-	        continue;
+            if (message==null)
+                continue;
 
             _receive(message);
-	} 
+        }
     }
-    
+
     function _handleFailure(request, messages, reason, exception, longpoll)
     {
         var xhr = request.xhr;
 
         _debug('Failed', messages);
-	
+
         // Signal the transport it can send other queued requests
         _transport.complete(request, false, longpoll);
 
@@ -981,8 +981,8 @@ org.cometd.Cometd = function(name)
             // Here the new transport is in place, as well as the clientId, so
             // the listener can perform a publish() if it wants, and the listeners
             // are notified before the connect below.
-	    message.reestablish=_reestablish;
-	    _reestablish=true;
+            message.reestablish = _reestablish;
+            _reestablish = true;
             _notifyListeners('/meta/handshake', message);
 
             var action = _advice.reconnect ? _advice.reconnect : 'retry';
@@ -1345,18 +1345,18 @@ org.cometd.Cometd = function(name)
 
     function _increaseBackoff()
     {
-        if (_backoff < _maxBackoff) 
-	    _backoff += _backoffIncrement;
+        if (_backoff < _maxBackoff)
+            _backoff += _backoffIncrement;
     };
 
     var _warn = this._warn = function()
     {
-    	_log('WARN',arguments);
+        _log('WARN', arguments);
     };
 
     var _info = this._info = function()
     {
-    	if (_logLevel!='warn')
+        if (_logLevel != 'warn')
             _log('INFO',arguments);
     };
 
@@ -1368,16 +1368,16 @@ org.cometd.Cometd = function(name)
 
     function _log(level, args)
     {
-        if (window.console) 
-	{
-	    var a = new Array();
-	    a[0] = level;
-	    for (var i = 0; i < args.length; i++) 
-	        a[i + 1] = args[i];
-	    window.console.log.apply(window.console, a);
-	}
+        if (window.console)
+        {
+            var a = new Array();
+            a[0] = level;
+            for (var i = 0; i < args.length; i++)
+                a[i + 1] = args[i];
+            window.console.log.apply(window.console, a);
+        }
     };
-    
+
     function _newLongPollingTransport()
     {
         return _mixin({}, new org.cometd.Transport('long-polling'), new org.cometd.LongPollingTransport());
@@ -1417,8 +1417,8 @@ org.cometd.Cometd = function(name)
 
         function _longpollSend(self, envelope)
         {
-            if (_longpollRequest !== null) 
-	        throw 'Concurrent longpoll requests not allowed, request ' + _longpollRequest.id + ' not yet completed';
+            if (_longpollRequest !== null)
+                throw 'Concurrent longpoll requests not allowed, request ' + _longpollRequest.id + ' not yet completed';
 
             var requestId = ++_requestIds;
             var request = {id: requestId};
@@ -1462,7 +1462,6 @@ org.cometd.Cometd = function(name)
 
         function _complete(self, request, success)
         {
-            var requestId = request.id;
             var index = _inArray(request, _requests);
             // The index can be negative the request has been aborted
             if (index >= 0) _requests.splice(index, 1);
@@ -1488,8 +1487,8 @@ org.cometd.Cometd = function(name)
             {
                 var request = _requests[i];
                 _debug('Aborting request', request);
-                if (request.xhr) 
-		    request.xhr.abort();
+                if (request.xhr)
+                    request.xhr.abort();
             }
             if (_longpollRequest)
             {
@@ -1530,7 +1529,7 @@ org.cometd.Cometd = function(name)
             // Encode the messages because all brackets, quotes, commas, colons, etc
             // present in the JSON will be URL encoded, taking many more characters
             var urlLength = envelope.url.length + encodeURI(messages).length;
-	    
+
             // Let's stay on the safe side and use 2000 instead of 2083
             // also because we did not count few characters among which
             // the parameter name 'message' and the parameter 'jsonp',
