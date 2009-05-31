@@ -60,6 +60,12 @@ public class BayeuxClientTest extends TestCase
         context.addServlet(DefaultServlet.class, "/");
 
         _server.start();
+        
+        
+        _httpClient = new HttpClient();
+        _httpClient.setMaxConnectionsPerAddress(20000);
+        _httpClient.setIdleTimeout(15000);
+        _httpClient.start();
     }
 
     /* ------------------------------------------------------------ */
@@ -84,10 +90,6 @@ public class BayeuxClientTest extends TestCase
     public void testClient() throws Exception
     {
         AbstractBayeux _bayeux = _cometd.getBayeux();
-
-        _httpClient = new HttpClient();
-        _httpClient.setMaxConnectionsPerAddress(20000);
-        _httpClient.start();
 
         final Exchanger<Object> exchanger = new Exchanger<Object>();
 
@@ -223,10 +225,6 @@ public class BayeuxClientTest extends TestCase
         Runtime.getRuntime().addShutdownHook(new DumpThread());
         AbstractBayeux bayeux = _cometd.getBayeux();
 
-        HttpClient httpClient = new HttpClient();
-        httpClient.setMaxConnectionsPerAddress(20000);
-        httpClient.start();
-
         final int rooms=_stress?100:50;
         final int publish=_stress?4000:2000;
         final int batch=_stress?10:10;
@@ -238,7 +236,7 @@ public class BayeuxClientTest extends TestCase
 
         for (int i=0;i<clients.length;i++)
         {
-            clients[i] = new BayeuxClient(httpClient,"http://localhost:"+_server.getConnectors()[0].getLocalPort()+"/cometd")
+            clients[i] = new BayeuxClient(_httpClient,"http://localhost:"+_server.getConnectors()[0].getLocalPort()+"/cometd")
             {
                 volatile boolean _connected;
                 protected void metaConnect(boolean success, Message message)

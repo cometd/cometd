@@ -157,7 +157,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                 if (timeout==0)
                     timeout=_bayeux.getTimeout();
 
-                Continuation continuation=ContinuationSupport.getContinuation(request);
+                Continuation continuation=ContinuationSupport.getContinuation(request,response);
 
                 // Get messages or wait
                 synchronized (client)

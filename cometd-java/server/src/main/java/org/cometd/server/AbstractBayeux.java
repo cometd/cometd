@@ -1192,7 +1192,19 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             if (id!=null)
                 reply.put(ID_FIELD,id);
 
-            if (data!=null&&_securityPolicy.canPublish(client,channel_id,message))
+            if (data==null)
+            {
+                message=null;
+                reply.put(SUCCESSFUL_FIELD,Boolean.FALSE);
+                reply.put(ERROR_FIELD,"403::No data");
+            }
+            else if (!_securityPolicy.canPublish(client,channel_id,message))
+            {
+                message=null;
+                reply.put(SUCCESSFUL_FIELD,Boolean.FALSE);
+                reply.put(ERROR_FIELD,"403::Publish denied");
+            }
+            else
             {
                 message.remove(CLIENT_FIELD);
                 message=extendSendBayeux(client,message);
@@ -1206,12 +1218,6 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
                     reply.put(SUCCESSFUL_FIELD,Boolean.FALSE);
                     reply.put(ERROR_FIELD,"404::Message deleted");
                 }
-            }
-            else
-            {
-                message=null;
-                reply.put(SUCCESSFUL_FIELD,Boolean.FALSE);
-                reply.put(ERROR_FIELD,"403::Publish denied");
             }
 
             sendMetaReply(client,reply,transport);

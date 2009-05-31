@@ -123,6 +123,7 @@ public class CometdDemo
         server.start();
 
         final AbstractBayeux bayeux = ((ContinuationCometdServlet)comet.getServlet()).getBayeux();
+        bayeux.setRequestAvailable(true);
 
         bayeux.setSecurityPolicy(new AbstractBayeux.DefaultPolicy()
         {
