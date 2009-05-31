@@ -90,9 +90,11 @@ public class MessageImpl extends HashMap<String, Object> implements Message, JSO
     /* ------------------------------------------------------------ */
     public Object clone()
     {
-        MessageImpl msg = new MessageImpl(_pool);
-        if (_pool!=null)
-            msg._refs.incrementAndGet();
+        MessageImpl msg = new MessageImpl();
+        msg.putAll(this);
+        msg._channel=_channel;
+        msg._clientId=_clientId;
+        msg._id=_id;
         return msg;
     }
     

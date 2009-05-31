@@ -106,11 +106,12 @@ public class OortServlet implements Servlet
         }
 
         String cloud = _config.getInitParameter(Oort.OORT_CLOUD);
-        if (cloud!=null)
+        if (cloud!=null&&cloud.length()>0)
         {
             String[] urls=cloud.split("[, ]");
             for (String comet : urls)
-                oort.observeComet(comet);
+                if (comet.length()>0)
+                    oort.observeComet(comet);
 
         }
     }

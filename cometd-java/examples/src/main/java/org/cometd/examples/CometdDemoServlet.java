@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.Bayeux;
 import org.cometd.Client;
 import org.cometd.Message;
+import org.cometd.server.AbstractBayeux;
 import org.cometd.server.BayeuxService;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.ext.TimesyncExtension;
@@ -44,7 +45,7 @@ public class CometdDemoServlet extends GenericServlet
     {
         super.init();
         getServletContext().log("Configuring cometd java demo");
-        Bayeux bayeux=(Bayeux)getServletContext().getAttribute(Bayeux.ATTRIBUTE);
+        final Bayeux bayeux=(Bayeux)getServletContext().getAttribute(Bayeux.ATTRIBUTE);
         new EchoRPC(bayeux);
         new Monitor(bayeux);
         new ChatService(bayeux);

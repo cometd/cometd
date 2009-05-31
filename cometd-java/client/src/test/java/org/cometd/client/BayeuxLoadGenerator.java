@@ -207,7 +207,7 @@ public class BayeuxLoadGenerator
                 {
                     int i=clients.size();
                     System.err.println("clients = "+(i>=1000?"":i>=100?"0":i>=10?"00":"000")+i);
-                    Thread.sleep(100);
+                    Thread.sleep(250);
                 }
             }
 
