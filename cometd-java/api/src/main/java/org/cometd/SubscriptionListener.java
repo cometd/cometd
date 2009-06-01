@@ -15,7 +15,7 @@ package org.cometd;
 
 
 /**
- * A {@link BayeuxListener} with call backs for subscription life cycle events
+ * A {@link ChannelListener} with call backs for subscription life cycle events
  *
  */
 public interface SubscriptionListener extends ChannelListener

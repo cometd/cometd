@@ -12,9 +12,13 @@
 // limitations under the License.
 //========================================================================
 
-package org.cometd.oort;
+package com.webtide.demo.auction;
 
 
+import org.cometd.oort.Oort;
+import org.cometd.oort.OortServlet;
+import org.cometd.oort.Seti;
+import org.cometd.oort.SetiServlet;
 import org.cometd.server.continuation.ContinuationCometdServlet;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -24,6 +28,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.webtide.demo.auction.AuctionServlet;
 
 
 
@@ -35,7 +40,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * @author gregw
  *
  */
-public class OortDemo
+public class AuctionDemo
 {
     private static int _testHandshakeFailure;
     private Oort _oort;
@@ -46,13 +51,12 @@ public class OortDemo
      */
     public static void main(String[] args) throws Exception
     {
-        OortDemo d8080=new OortDemo(8080);
-        OortDemo d8081=new OortDemo(8081);
-        // OortDemo d8082=new OortDemo(8082);
+        AuctionDemo d8080=new AuctionDemo(8080);
+        AuctionDemo d8081=new AuctionDemo(8081);
     }
 
     /* ------------------------------------------------------------ */
-    public OortDemo(int port) throws Exception
+    public AuctionDemo(int port) throws Exception
     {
         String base=".";
         
@@ -75,8 +79,8 @@ public class OortDemo
         
         context.setBaseResource(new ResourceCollection(new Resource[]
         {
-            Resource.newResource(base+"/../../cometd-demo/src/main/webapp/"),
-            Resource.newResource(base+"/../../cometd-demo/target/cometd-demo-1.0.beta9-SNAPSHOT/"),
+            Resource.newResource(base+"/src/main/webapp/"),
+            Resource.newResource(base+"/target/cometd-demo-1.0.beta9-SNAPSHOT/"),
         }));
         
         // Cometd servlet
@@ -92,7 +96,6 @@ public class OortDemo
         
         ServletHolder oort_holder = new ServletHolder(OortServlet.class);
         oort_holder.setInitParameter(Oort.OORT_URL,"http://localhost:"+port+"/cometd");
-        oort_holder.setInitParameter(Oort.OORT_CHANNELS,"/chat/**");
         oort_holder.setInitParameter(Oort.OORT_CLOUD,(port==8080)?"http://localhost:"+8081+"/cometd":"http://localhost:"+8080+"/cometd");
         oort_holder.setInitOrder(2);
         context.addServlet(oort_holder, "/oort/*");
@@ -102,7 +105,9 @@ public class OortDemo
         seti_holder.setInitOrder(2);
         context.addServlet(seti_holder, "/seti/*");
 
-        ServletHolder demo_holder = new ServletHolder(OortDemoServlet.class);
+        
+        ServletHolder demo_holder = new ServletHolder(AuctionServlet.class);
+        demo_holder.setInitParameter("node",""+(char)('a'+port-8080));
         demo_holder.setInitOrder(3);
         context.getServletHandler().addServlet(demo_holder);
         

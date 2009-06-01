@@ -85,15 +85,16 @@ var room = {
             return;
         }
         
-        if (message.data instanceof Array) {
+        if (message.data instanceof Array) 
+	{
             var members = dojo.byId('members');
             var list = "";
             for (var i in message.data) 
                 list += message.data[i] + "<br/>";
             members.innerHTML = list;
         }
-        else {
-        
+        else 
+	{
             var chat = dojo.byId('chat');
             var from = message.data.user;
             var membership = message.data.join || message.data.leave;
