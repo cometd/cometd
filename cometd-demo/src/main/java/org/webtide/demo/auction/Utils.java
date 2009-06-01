@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright 2007 Mort Bay Consulting Pty. Ltd.
+// Copyright 2006 Webtide LLC
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -10,22 +10,27 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//========================================================================
+// ========================================================================
 
-package org.cometd.server.filter;
+package org.webtide.demo.auction;
 
-import java.util.regex.Pattern;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 
-public class NoMarkupFilter extends JSONDataFilter
+/**
+ * @author Nigel Canonizado
+ *
+ * Apr 19, 2006
+ */
+
+public class Utils
 {
-    private static Pattern __open = Pattern.compile("<");
-    private static Pattern __close = Pattern.compile(">");
 
-    @Override
-    protected Object filterString(String string)
+    private static final NumberFormat cashAmount = new DecimalFormat("$#,##0.00");
+
+    public static String formatCurrency(double amount)
     {
-        string = __open.matcher(string).replaceAll("&lt;");
-        string = __close.matcher(string).replaceAll("&gt;");
-        return string;
+        return cashAmount.format(amount);
     }
+
 }

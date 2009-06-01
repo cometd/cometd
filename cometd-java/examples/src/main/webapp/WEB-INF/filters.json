@@ -1,6 +1,6 @@
 [
     {
-        "channels": "/**",
+        "channels": "/chat/**",
         "filter"  : "org.cometd.server.filter.NoMarkupFilter",
         "init"    : {}
     },

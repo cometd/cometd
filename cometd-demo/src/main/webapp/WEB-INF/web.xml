@@ -59,6 +59,37 @@
         <servlet-class>org.cometd.examples.CometdDemoServlet</servlet-class>
         <load-on-startup>2</load-on-startup>
     </servlet>
+    
+    <servlet>
+        <servlet-name>oort</servlet-name>
+        <servlet-class>org.cometd.oort.OortServlet</servlet-class>
+        <init-param>
+            <param-name>oort.url</param-name>
+            <param-value>http://localhost:8080/cometd</param-value>
+        </init-param>
+        <load-on-startup>3</load-on-startup>
+    </servlet>
+    
+    <servlet>
+        <servlet-name>seti</servlet-name>
+        <servlet-class>org.cometd.oort.SetiServlet</servlet-class>
+        <init-param>
+            <param-name>seti.shard</param-name>
+            <param-value>S0</param-value>
+        </init-param>
+        <load-on-startup>4</load-on-startup>
+    </servlet>
+    
+    <servlet>
+        <servlet-name>auctionDemo</servlet-name>
+        <servlet-class>org.webtide.demo.auction.AuctionServlet</servlet-class>
+        <init-param>
+            <param-name>node</param-name>
+            <param-value>a</param-value>
+        </init-param>
+        <load-on-startup>5</load-on-startup>
+    </servlet>
+
 
 </web-app>
 

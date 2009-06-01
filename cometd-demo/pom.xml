@@ -70,14 +70,22 @@
 				<version>${jetty-maven-plugin-version}
 				</version>
 				<configuration>
-					<scanIntervalSeconds>1</scanIntervalSeconds>
-					<contextPath>/</contextPath>
+                                        <scanIntervalSeconds>1</scanIntervalSeconds>
+                                        <webAppConfig>
+                                                <contextPath>/</contextPath>
+                                        </webAppConfig>
 				</configuration>
 			</plugin>
 		</plugins>
 	</build>
 
 	<dependencies>
+                <dependency>
+                        <groupId>javax.servlet</groupId>
+                        <artifactId>servlet-api</artifactId>
+                        <version>2.5</version>
+                        <scope>provided</scope>
+                </dependency>
 		<dependency>
 			<groupId>org.cometd.javascript</groupId>
 			<artifactId>cometd-javascript-dojo</artifactId>
@@ -102,12 +110,23 @@
 			<version>${project.version}</version>
 			<type>war</type>
 		</dependency>
+                <dependency>
+                        <groupId>org.cometd.java</groupId>
+                        <artifactId>cometd-java-oort</artifactId>
+                        <version>${project.version}</version>
+                </dependency>
 		<dependency>
 			<groupId>org.cometd.java</groupId>
 			<artifactId>cometd-examples-java</artifactId>
 			<version>${project.version}</version>
 			<type>war</type>
 		</dependency>
+                <dependency>
+                        <groupId>org.eclipse.jetty</groupId>
+                        <artifactId>jetty-webapp</artifactId>
+                        <version>${jetty-version}</version>
+                        <scope>test</scope>
+                </dependency>
 	</dependencies>
 
 </project>
