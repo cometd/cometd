@@ -281,7 +281,7 @@ public class Oort extends AbstractLifeCycle
             if (message.getChannel().equals(Bayeux.META_HANDSHAKE) && Boolean.TRUE.equals(message.get(Bayeux.SUCCESSFUL_FIELD)))
             {
                 Message rcv = message.getAssociated();
-                System.err.println(_url+" --> "+rcv);
+                if (Log.isDebugEnabled()) Log.debug(_url+" --> "+rcv);
                 
                 Map<String,Object> rcvExt = (Map<String,Object>)rcv.get("ext");
                 if (rcvExt!=null)
@@ -309,7 +309,7 @@ public class Oort extends AbstractLifeCycle
                         }
                     }
                 }
-                System.err.println(_url+" <-- "+message);
+                if (Log.isDebugEnabled()) Log.debug(_url+" <-- "+message);
             }
             return message;
         }   

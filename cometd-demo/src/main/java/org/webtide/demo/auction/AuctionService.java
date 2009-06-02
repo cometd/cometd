@@ -30,17 +30,15 @@ public class AuctionService extends BayeuxService implements SubscriptionListene
     BidderDao _bidderDao=new BidderDao();
     CategoryDao _categoryDao=new CategoryDao();
     
-    private String _node;
     private Oort _oort;
     private Seti _seti;
     private AtomicInteger _bidders=new AtomicInteger(0);
     
 
-    public AuctionService(ServletContext context,String node)
+    public AuctionService(ServletContext context)
     {
         super((Bayeux)context.getAttribute(Bayeux.ATTRIBUTE), "oortion");
 
-        _node=node;
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
         if (_oort==null)
             throw new RuntimeException("!"+Oort.OORT_ATTRIBUTE);
@@ -63,9 +61,14 @@ public class AuctionService extends BayeuxService implements SubscriptionListene
     public Bidder bidder(Client source, String channel, String bidder, String messageId)
     {
         Integer id = _bidders.incrementAndGet();
+        
+        // TODO this is not atomic, but will do for the demo
+        String username=bidder.toLowerCase().replace(" ","");
+        while(_bidderDao.getBidder(username)!=null)
+            username=bidder.toLowerCase().replace(" ","")+"-"+_bidders.incrementAndGet();
         Bidder b=new Bidder();
         b.setName(bidder);
-        b.setUsername(bidder.toLowerCase().replace(" ","")+"-"+_node+id);
+        b.setUsername(username);
         _bidderDao.addBidder(b);
         _seti.associate(b.getUsername(),source);
         return b;   

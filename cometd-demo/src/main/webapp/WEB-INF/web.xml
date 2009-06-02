@@ -83,10 +83,6 @@
     <servlet>
         <servlet-name>auctionDemo</servlet-name>
         <servlet-class>org.webtide.demo.auction.AuctionServlet</servlet-class>
-        <init-param>
-            <param-name>node</param-name>
-            <param-value>a</param-value>
-        </init-param>
         <load-on-startup>5</load-on-startup>
     </servlet>
 

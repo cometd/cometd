@@ -29,7 +29,6 @@ public class AuctionServlet extends HttpServlet
 {
     AuctionService _auction;
     AuctionChatService _chat;
-    String _node;
     
     public void init() throws ServletException
     {
@@ -57,11 +56,8 @@ public class AuctionServlet extends HttpServlet
         dao.addItem(new Item(12,"Apple Macbook Pro",computers,"Apple MacBook Pro 2.0GHz Intel Core Duo",2500D));
         dao.addItem(new Item(13,"ProTrek Titanium Watch",gems,"ProTrek Titanium Triple Sensor Watch",150D));
 
-        _node=getServletConfig().getInitParameter("node");
-        if (_node==null)
-            _node="a";
         
-        _auction=new AuctionService(getServletContext(),_node);
+        _auction=new AuctionService(getServletContext());
         _chat=new AuctionChatService(getServletContext());
         
     }
