@@ -12,6 +12,7 @@ import org.cometd.Message;
 import org.cometd.MessageListener;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.MessageImpl;
+import org.eclipse.jetty.util.log.Log;
 
 /**
  * Oort Comet client.
@@ -74,12 +75,11 @@ public class OortComet extends BayeuxClient
             {
                 throw new IllegalArgumentException(e);
             } 
-     
         }
         else
             message=super.extendOut(message);
         
-        System.err.println(_oort.getURL()+" ==> "+message);
+        if (Log.isDebugEnabled()) Log.debug(_oort.getURL()+" ==> "+message);
         return message;
     }
 
@@ -115,7 +115,7 @@ public class OortComet extends BayeuxClient
                         endBatch();
                     }
                 }
-                System.err.println(_oort.getURL()+" <== "+ext);
+                if (Log.isDebugEnabled()) Log.debug(_oort.getURL()+" <== "+ext);
             }
         }
     }

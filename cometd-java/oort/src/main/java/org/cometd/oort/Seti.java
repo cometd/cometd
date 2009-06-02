@@ -15,6 +15,7 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
 
 
 /* ------------------------------------------------------------ */
@@ -169,7 +170,7 @@ public class Seti extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     protected void receive(final Client from, final Client to, final Message msg)
     {
-        //System.err.println("SETI "+_oort+":: "+msg);
+        if (Log.isDebugEnabled()) Log.debug("SETI "+_oort+":: "+msg);
 
         if (!(msg.getData() instanceof Map))
             return;
@@ -186,7 +187,7 @@ public class Seti extends AbstractLifeCycle
         {
             if (on!=null)
             {
-                //System.err.println(_oort+":: "+fromUid+" on "+on);
+                if (Log.isDebugEnabled()) Log.debug(_oort+":: "+fromUid+" on "+on);
                 _uid2Location.put(fromUid,new SetiLocation("/seti/"+on));
             }
             else 
@@ -194,7 +195,7 @@ public class Seti extends AbstractLifeCycle
                 final String off = (String)data.get("off");
                 if (off!=null)
                 {
-                    //System.err.println(_oort+":: "+fromUid+" off ");
+                    if (Log.isDebugEnabled()) Log.debug(_oort+":: "+fromUid+" off ");
                     _uid2Location.remove(fromUid,new SetiLocation("/seti/"+off));
                 }
             }

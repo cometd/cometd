@@ -105,9 +105,7 @@ public class AuctionDemo
         seti_holder.setInitOrder(2);
         context.addServlet(seti_holder, "/seti/*");
 
-        
         ServletHolder demo_holder = new ServletHolder(AuctionServlet.class);
-        demo_holder.setInitParameter("node",""+(char)('a'+port-8080));
         demo_holder.setInitOrder(3);
         context.getServletHandler().addServlet(demo_holder);
         
