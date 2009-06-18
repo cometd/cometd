@@ -16,7 +16,7 @@
         <maven-wagon-version>1.0-beta-2</maven-wagon-version>
         <jetty-version>7.0.0.M3-SNAPSHOT</jetty-version>
         <jetty-maven-plugin-version>7.0.0.1beta2-SNAPSHOT</jetty-maven-plugin-version>
-        <dojo-version>1.3.0</dojo-version>
+        <dojo-version>1.3.1</dojo-version>
     </properties>
 
     <modules>
