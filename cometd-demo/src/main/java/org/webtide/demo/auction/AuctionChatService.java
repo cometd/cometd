@@ -41,7 +41,6 @@ public class AuctionChatService extends BayeuxService
         if (_seti==null)
             throw new RuntimeException("!"+Seti.SETI_ATTRIBUTE);
 
-        _oort.observeChannel("/auction/chat/**");
         subscribe("/auction/chat/**", "trackMembers");
         subscribe("/service/auction/chat", "privateChat");
     }
