@@ -11,6 +11,17 @@
         <param-value>org.cometd.bayeux</param-value>
     </context-param>
 
+    <filter>
+        <!-- Portability Filter, needed only to run on non Jetty or non Servlet-3.0 containers -->
+        <filter-name>Continuation</filter-name>
+        <filter-class>org.eclipse.jetty.continuation.ContinuationFilter</filter-class>
+    </filter>
+    
+    <filter-mapping>
+        <filter-name>Continuation</filter-name>
+        <url-pattern>/cometd/*</url-pattern>
+    </filter-mapping>
+        
     <servlet>
         <servlet-name>cometd</servlet-name>
         <servlet-class>org.cometd.server.continuation.ContinuationCometdServlet</servlet-class>
@@ -67,6 +78,13 @@
             <param-name>oort.url</param-name>
             <param-value>http://localhost:8080/cometd</param-value>
         </init-param>
+        <!-- Set oort.cloud to a coma separated list of other oort.urls in the cluster -->
+        <!--  
+        <init-param>
+            <param-name>oort.cloud</param-name>
+            <param-value>http://localhost:8081/cometd</param-value>
+        </init-param>
+        -->
         <load-on-startup>3</load-on-startup>
     </servlet>
     

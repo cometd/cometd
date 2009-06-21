@@ -42,14 +42,25 @@
   <tr>
     <td colspan="2">
       <p align="justify">This auction application is a demonstration of an
-      some of the features of <a href="http://www.webtide.com/products/">Cometd Oort</a>:
+      some of the features of <a href="http://www.cometd.org/">Cometd Oort</a>.  The site uses
+      cometd to dynamically distribute auction bids and chat about items.  The Oort cloud mechanism
+      is used to distribute these events in a cluster (you must set the oort.cloud init parameter of
+      the Oort servlet in web.xml so that other nodes are discovered).
+      </p>
+      <p>
+      To use the demo:	
+      </p>
       <ul>
          <li>Logon using any username</li>
-         <li>The item catalog is a normal Ajax update mechanism, retrieving data from
-         a database via DWR calls.</li>
          <li>When bids are made against items, these are published on
-             a Cometd channels.  
-         </li>
+             a Cometd channels.  </li>
+         <li>Chat about items is also distributed with cometd channels.</li>
+	 <li>If a Chat message is preceeded with 'name::' then the message is sent
+	     privately to that user using the Oort Seti service to find the user in
+	     the cluster</li>
+	 <li>If you connect to the auction from multiple windows/tabs from the same
+	     browser, then one of them will work in polling mode and have greater latency.
+	     For best effect, user two browers to test.</li>
        </ul>
     </td>
   </tr>

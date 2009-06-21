@@ -36,7 +36,7 @@ public class SetiServlet implements Servlet
     {
         try
         {
-            Seti seti= (Seti)_config.getServletContext().getAttribute(Oort.OORT_ATTRIBUTE);
+            Seti seti= (Seti)_config.getServletContext().getAttribute(Seti.SETI_ATTRIBUTE);
             if (seti!=null)
                 seti.stop();
         }
