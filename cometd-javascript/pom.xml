@@ -19,6 +19,7 @@
 
     <modules>
         <module>common</module>
+        <module>common-test</module>
         <module>dojo</module>
         <module>examples-dojo</module>
         <module>jquery</module>
