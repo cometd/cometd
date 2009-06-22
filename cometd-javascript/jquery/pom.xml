@@ -49,9 +49,9 @@
                             <artifactItems>
                                 <artifactItem>
                                     <groupId>org.cometd.javascript</groupId>
-                                    <artifactId>cometd-javascript-common</artifactId>
+                                    <artifactId>cometd-javascript-common-test</artifactId>
                                     <version>${project-version}</version>
-                                    <type>test-jar</type>
+                                    <type>jar</type>
                                     <outputDirectory>${project.build.directory}/scripts</outputDirectory>
                                     <includes>*.js</includes>
                                 </artifactItem>
@@ -91,9 +91,8 @@
         </dependency>
         <dependency>
             <groupId>org.cometd.javascript</groupId>
-            <artifactId>cometd-javascript-common</artifactId>
+            <artifactId>cometd-javascript-common-test</artifactId>
             <version>${project.version}</version>
-            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>

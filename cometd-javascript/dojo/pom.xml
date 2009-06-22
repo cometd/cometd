@@ -51,9 +51,9 @@
                             <artifactItems>
                                 <artifactItem>
                                     <groupId>org.cometd.javascript</groupId>
-                                    <artifactId>cometd-javascript-common</artifactId>
-                                    <version>${project-version}</version>
-                                    <type>test-jar</type>
+                                    <artifactId>cometd-javascript-common-test</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
                                     <outputDirectory>${project.build.directory}/scripts</outputDirectory>
                                     <includes>*.js</includes>
                                 </artifactItem>
@@ -100,17 +100,16 @@
             <type>war</type>
         </dependency>
         <dependency>
+            <groupId>org.cometd.javascript</groupId>
+            <artifactId>cometd-javascript-common-test</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.dojotoolkit</groupId>
             <artifactId>dojo-war</artifactId>
             <version>${dojo-version}</version>
             <type>war</type>
-        </dependency>
-        <dependency>
-            <groupId>org.cometd.javascript</groupId>
-            <artifactId>cometd-javascript-common</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.cometd.java</groupId>
