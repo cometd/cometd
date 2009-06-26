@@ -13,6 +13,6 @@ dojo.require("org.cometd.ReloadExtension");
 org.cometd.COOKIE.set = dojo.cookie;
 org.cometd.COOKIE.get = dojo.cookie;
 
-dojox.cometd.registerExtension('ack', new org.cometd.ReloadExtension());
+dojox.cometd.registerExtension('reload', new org.cometd.ReloadExtension());
 
 
