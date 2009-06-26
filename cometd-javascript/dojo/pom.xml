@@ -31,7 +31,6 @@
                                 <exclude>dojox/cometd.js</exclude>
                                 <exclude>dojox/cometd</exclude>
                                 <exclude>dojox/cometd/**</exclude>
-                                <exclude>dojo/io/script.js</exclude>
                             </excludes>
                         </overlay>
                     </overlays>
@@ -65,12 +64,12 @@
                                     <includes>**/*.js</includes>
                                 </artifactItem>
                                 <artifactItem>
-				    <groupId>org.dojotoolkit</groupId>
-				    <artifactId>dojo-war</artifactId>
+                                    <groupId>org.dojotoolkit</groupId>
+                                    <artifactId>dojo-war</artifactId>
                                     <version>${dojo-version}</version>
                                     <type>war</type>
                                     <outputDirectory>${project.build.directory}/scripts</outputDirectory>
-				    <excludes>META-INF/**,dojox/cometd.js,dojox/cometd/**,dojo/io/script.js</excludes>
+                                    <excludes>META-INF/**,dojox/cometd.js,dojox/cometd/**</excludes>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>

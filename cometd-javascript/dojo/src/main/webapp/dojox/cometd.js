@@ -3,9 +3,10 @@
  * $Revision$ $Date: 2009-05-10 13:06:45 +1000 (Sun, 10 May 2009) $
  */
 
-dojo.provide("dojox.cometd");
-dojo.registerModulePath("org","../org");
-dojo.require("org.cometd");
+dojo.provide('dojox.cometd');
+dojo.registerModulePath('org','../org');
+dojo.require('org.cometd');
+dojo.require('dojo.io.script');
 
 // Remap cometd JSON functions to dojo JSON functions
 org.cometd.JSON.toJSON = dojo.toJson;
@@ -51,7 +52,7 @@ org.cometd.AJAX.send = function(packet)
 // The default cometd instance
 dojox.cometd = new org.cometd.Cometd();
 
-// Create a compatability API for dojox.cometd instance with 
+// Create a compatability API for dojox.cometd instance with
 // the original API.
 
 dojox.cometd._init=dojox.cometd.init;
@@ -65,7 +66,7 @@ dojox.cometd._unsubscribe=dojox.cometd.unsubscribe;
 
 dojox.cometd.unsubscribe=function(channelOrToken,objOrFunc,funcName)
 {
-    if (typeof channelOrToken == "string") 
+    if (typeof channelOrToken == "string")
 	throw "deprecated unsubscribe. - please pass token return from subscribe";
     dojox.cometd._unsubscribe(channelOrToken);
 }
