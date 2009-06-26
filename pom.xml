@@ -19,6 +19,7 @@
     </properties>
 
     <modules>
+        <module>cometd-archetypes</module>
         <module>cometd-java</module>
         <module>cometd-javascript</module>
         <module>cometd-demo</module>
@@ -136,13 +137,6 @@
             <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
             <layout>default</layout>
         </snapshotRepository>
-        <!-- none yet
-        <site>
-          <id></id>
-          <name></name>
-          <url></url>
-        </site>
-        -->
     </distributionManagement>
 
     <pluginRepositories>
