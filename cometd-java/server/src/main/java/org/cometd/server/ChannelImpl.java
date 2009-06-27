@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.cometd.Bayeux;
 import org.cometd.Channel;
+import org.cometd.ChannelBayeuxListener;
 import org.cometd.ChannelListener;
 import org.cometd.Client;
 import org.cometd.DataFilter;
@@ -226,34 +227,38 @@ public class ChannelImpl implements Channel
     }
     
     /* ------------------------------------------------------------ */
-    public boolean doRemove(ChannelImpl channel)
+    public boolean doRemove(ChannelImpl channel, List<ChannelBayeuxListener> listeners)
     {
         ChannelId channelId = channel.getChannelId();
-        String key = channelId.getSegment(channelId.depth()-1);
-        if (_children.containsKey(key))
+        int diff = channel._id.depth()-_id.depth();
+        
+        if (diff>=1)
         {
+            String key = channelId.getSegment(_id.depth());
             ChannelImpl child = _children.get(key);
             
-            synchronized (this)
+            if (child!=null)
             {
-                synchronized (child)
+                if (diff==1)
                 {
-                    if (!child.isPersistent() && child.getSubscriberCount()==0 && child.getChannelCount()==1)
+                    if (!child.isPersistent())
                     {
                         _children.remove(key);
+                        for (ChannelBayeuxListener l : listeners)
+                            l.channelRemoved(channel);
                         return true;
                     }
-                    else
-                        return false;
-                }       
-            }
-        }
-        else
-        {
-            for (ChannelImpl child : _children.values())
-            {
-                if (child.doRemove(channel))
-                    return true;
+                    return false;
+                }
+                
+                boolean removed = child.doRemove(channel,listeners);
+                if (removed && !child.isPersistent() && child.getChannelCount()==0 && child.getSubscriberCount()==0)
+                {
+                    _children.remove(key);
+                    for (ChannelBayeuxListener l : listeners)
+                        l.channelRemoved(channel);
+                }
+                return removed;
             }
         }
         return false;
