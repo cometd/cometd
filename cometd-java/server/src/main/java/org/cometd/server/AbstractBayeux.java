@@ -859,7 +859,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         {
             for (int i=0;message!=null && i<_extensions.length;i++)
             {
-                Message m=_extensions[i].send(from, message);
+                message=_extensions[i].send(from, message);
             }
         }
 

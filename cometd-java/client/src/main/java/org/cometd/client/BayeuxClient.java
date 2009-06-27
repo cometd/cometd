@@ -584,7 +584,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
             buf.append(cookie.getValue()); // TODO quotes
         }
         if (buf != null)
-            exchange.addRequestHeader(HttpHeaders.COOKIE,buf.toString());
+            exchange.setRequestHeader(HttpHeaders.COOKIE,buf.toString());
       
         if (_scheme!=null)
             exchange.setScheme(_scheme);

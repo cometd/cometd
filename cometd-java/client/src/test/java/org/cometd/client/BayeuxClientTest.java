@@ -61,7 +61,6 @@ public class BayeuxClientTest extends TestCase
 
         _server.start();
         
-        
         _httpClient = new HttpClient();
         _httpClient.setMaxConnectionsPerAddress(20000);
         _httpClient.setIdleTimeout(15000);
