@@ -444,11 +444,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     public boolean removeChannel(ChannelImpl channel)
     {
-        boolean removed = _root.doRemove(channel);
-        if (removed)
-            for (ChannelBayeuxListener l : _channelListeners)
-                l.channelRemoved(channel);
-        return removed;
+        return _root.doRemove(channel,_channelListeners);
     }
 
     /* ------------------------------------------------------------ */
