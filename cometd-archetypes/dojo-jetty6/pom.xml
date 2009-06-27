@@ -10,7 +10,7 @@
     <groupId>org.cometd.archetypes</groupId>
     <artifactId>cometd-archetype-dojo-jetty6</artifactId>
     <packaging>maven-archetype</packaging>
-    <name>Cometd archetype for creating a web application with Dojo and Jetty6</name>
+    <name>Cometd :: Archetypes :: Dojo and Jetty6</name>
 
     <build>
         <resources>

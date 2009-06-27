@@ -58,7 +58,7 @@ public class CometDisconnectFailureTest extends AbstractJQueryCometTest
         // then aborting the XmlHttpRequest calling xhr.abort() does not result in
         // any notification. The network activity is stopped, but no notification is
         // emitted by calling onreadystatechange(). Therefore, comet cannot call any
-        // callback to signal this, and any connect listener will not be notified.
+        // callback to signal this, and any connect listener will not be notified.   
     }
 
     public static class Listener extends ScriptableObject

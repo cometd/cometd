@@ -50,8 +50,11 @@ var window = this;
     // The output console
     window.console = function()
     {
-        function _log(text)
+        function _log()
         {
+	    var text="";
+	    for (var i=0;i<arguments.length;i++)
+	        text+=arguments[i]+" ";
             var formatter = new java.text.SimpleDateFormat('yyyy-MM-dd HH:mm:ss.SSS');
             var log = formatter.format(new java.util.Date());
             log += ' ' + java.lang.Thread.currentThread().getId();
@@ -62,24 +65,21 @@ var window = this;
         return {
             error: function(text)
             {
-                _log('ERROR: ' + text);
+                _log('ERROR:', text);
             },
             warn: function(text)
             {
-                _log('WARN : ' + text);
+                _log('WARN:', text);
             },
             info: function(text)
             {
-                _log('INFO : ' + text);
+                _log('INFO:', text);
             },
             debug: function(text)
             {
-                _log('DEBUG: ' + text);
+                _log('DEBUG:',text);
             },
-            log: function(text)
-            {
-                _log(text);
-            }
+            log: _log
         };
     }();
 
