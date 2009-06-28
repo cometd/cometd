@@ -96,16 +96,20 @@ public class ChannelImpl implements Channel
 
         if ((child.depth()-_id.depth())==1)
         {
-            // add the channel to this channels
-            ChannelImpl old = _children.putIfAbsent(next,channel);
-            if (old!=null)
-                throw new IllegalArgumentException("Already Exists");
+            // synchronize add and doRemove to avoid concurrent updates
+            synchronized(this)
+            {
+                // add the channel to this channels
+                ChannelImpl old = _children.putIfAbsent(next,channel);
+                if (old!=null)
+                    throw new IllegalArgumentException("Already Exists");
 
-            if (ChannelId.WILD.equals(next))
-                _wild=channel;
-            else if (ChannelId.WILDWILD.equals(next))
-                _wildWild=channel;
-            _bayeux.addChannel(channel);
+                if (ChannelId.WILD.equals(next))
+                    _wild=channel;
+                else if (ChannelId.WILDWILD.equals(next))
+                    _wildWild=channel;
+                _bayeux.addChannel(channel);
+            }
         }
         else
         {
@@ -228,40 +232,58 @@ public class ChannelImpl implements Channel
     
     /* ------------------------------------------------------------ */
     public boolean doRemove(ChannelImpl channel, List<ChannelBayeuxListener> listeners)
+    {        ChannelId channelId = channel.getChannelId();
+    int diff = channel._id.depth()-_id.depth();
+    
+    if (diff>=1)
     {
-        ChannelId channelId = channel.getChannelId();
-        int diff = channel._id.depth()-_id.depth();
+        String key = channelId.getSegment(_id.depth());
+        ChannelImpl child = _children.get(key);
         
-        if (diff>=1)
+        if (child!=null)
         {
-            String key = channelId.getSegment(_id.depth());
-            ChannelImpl child = _children.get(key);
-            
-            if (child!=null)
+            // is it this child we are removing?
+            if (diff==1)
             {
-                if (diff==1)
+                if (!child.isPersistent())
                 {
-                    if (!child.isPersistent())
+                    // synchronize add and doRemove to avoid concurrent updates
+                    synchronized(this)
                     {
+                        if (child.getChannelCount()>0)
+                        {
+                            // remove the children of the child
+                            for (ChannelImpl c : child._children.values())
+                                child.doRemove(c,listeners);
+                        }
+
+                        // remove the child
                         _children.remove(key);
-                        for (ChannelBayeuxListener l : listeners)
-                            l.channelRemoved(channel);
-                        return true;
                     }
-                    return false;
-                }
-                
-                boolean removed = child.doRemove(channel,listeners);
-                if (removed && !child.isPersistent() && child.getChannelCount()==0 && child.getSubscriberCount()==0)
-                {
-                    _children.remove(key);
                     for (ChannelBayeuxListener l : listeners)
                         l.channelRemoved(channel);
+                    return true;
                 }
-                return removed;
+                return false;
             }
+
+            boolean removed = child.doRemove(channel,listeners);
+            if (removed && !child.isPersistent() && child.getChannelCount()==0 && child.getSubscriberCount()==0)
+            {
+                // synchronize add and doRemove to avoid concurrent updates
+                synchronized(this)
+                {
+                    _children.remove(key);
+                }
+                for (ChannelBayeuxListener l : listeners)
+                    l.channelRemoved(channel);
+            }
+
+            return removed;
         }
-        return false;
+
+    }
+    return false;
     }
     
     /* ------------------------------------------------------------ */
