@@ -34,7 +34,7 @@ public class ChannelImplTest extends TestCase
            {"/test/123", "[/, /test, /test/123]", "/test/123", "/test/123", "[/, /test]"},
            {"/test/123", "[/, /test, /test/123]", "/test/abc", null, "[/, /test, /test/123]"},
            {"/test/123", "[/, /test, /test/123]", "/123", null, "[/, /test, /test/123]"},
-           {"/test/123", "[/, /test, /test/123]", "/test", null, "[/, /test, /test/123]"}
+           {"/test/123", "[/, /test, /test/123]", "/test", "/test", "[/]"}
         };
         
         for ( String[] test : tests )
