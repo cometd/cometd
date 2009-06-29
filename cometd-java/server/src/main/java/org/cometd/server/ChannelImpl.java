@@ -160,20 +160,18 @@ public class ChannelImpl implements Channel
     /* ------------------------------------------------------------ */
      public void getChannels(List<Channel> list)
      {
-         list.add(this);
-         for (ChannelImpl channel: _children.values())
-             channel.getChannels(list);
+         synchronized(this)
+         {
+             list.add(this);
+             for (ChannelImpl channel: _children.values())
+                 channel.getChannels(list);
+         }
      }
 
      /* ------------------------------------------------------------ */
      public int getChannelCount()
      {
-         int count = 1;
-         
-         for(ChannelImpl channel: _children.values())
-             count += channel.getChannelCount();
-         
-         return count;
+         return _children.size();
      }
      
     /* ------------------------------------------------------------ */
@@ -232,58 +230,59 @@ public class ChannelImpl implements Channel
     
     /* ------------------------------------------------------------ */
     public boolean doRemove(ChannelImpl channel, List<ChannelBayeuxListener> listeners)
-    {        ChannelId channelId = channel.getChannelId();
-    int diff = channel._id.depth()-_id.depth();
-    
-    if (diff>=1)
-    {
-        String key = channelId.getSegment(_id.depth());
-        ChannelImpl child = _children.get(key);
+    { 
+        ChannelId channelId = channel.getChannelId();
+        int diff = channel._id.depth()-_id.depth();
         
-        if (child!=null)
+        if (diff>=1)
         {
-            // is it this child we are removing?
-            if (diff==1)
+            String key = channelId.getSegment(_id.depth());
+            ChannelImpl child = _children.get(key);
+            
+            if (child!=null)
             {
-                if (!child.isPersistent())
+                // is it this child we are removing?
+                if (diff==1)
+                {
+                    if (!child.isPersistent())
+                    {
+                        // synchronize add and doRemove to avoid concurrent updates
+                        synchronized(this)
+                        {
+                            if (child.getChannelCount()>0)
+                            {
+                                // remove the children of the child
+                                for (ChannelImpl c : child._children.values())
+                                    child.doRemove(c,listeners);
+                            }
+
+                            // remove the child
+                            _children.remove(key);
+                        }
+                        for (ChannelBayeuxListener l : listeners)
+                            l.channelRemoved(channel);
+                        return true;
+                    }
+                    return false;
+                }
+
+                boolean removed = child.doRemove(channel,listeners);
+                if (removed && !child.isPersistent() && child.getChannelCount()==0 && child.getSubscriberCount()==0)
                 {
                     // synchronize add and doRemove to avoid concurrent updates
                     synchronized(this)
                     {
-                        if (child.getChannelCount()>0)
-                        {
-                            // remove the children of the child
-                            for (ChannelImpl c : child._children.values())
-                                child.doRemove(c,listeners);
-                        }
-
-                        // remove the child
                         _children.remove(key);
                     }
                     for (ChannelBayeuxListener l : listeners)
                         l.channelRemoved(channel);
-                    return true;
                 }
-                return false;
+
+                return removed;
             }
 
-            boolean removed = child.doRemove(channel,listeners);
-            if (removed && !child.isPersistent() && child.getChannelCount()==0 && child.getSubscriberCount()==0)
-            {
-                // synchronize add and doRemove to avoid concurrent updates
-                synchronized(this)
-                {
-                    _children.remove(key);
-                }
-                for (ChannelBayeuxListener l : listeners)
-                    l.channelRemoved(channel);
-            }
-
-            return removed;
         }
-
-    }
-    return false;
+        return false;
     }
     
     /* ------------------------------------------------------------ */

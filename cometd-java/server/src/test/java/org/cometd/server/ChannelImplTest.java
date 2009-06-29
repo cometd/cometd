@@ -31,7 +31,7 @@ public class ChannelImplTest extends TestCase
         String[][] tests = new String[][] {
            // added,  expected   , remove , removed, expected
            {"/test", "[/, /test]", "/test", "/test", "[/]"},
-           {"/test/123", "[/, /test, /test/123]", "/test/123", "/test/123", "[/, /test]"},
+           {"/test/123", "[/, /test, /test/123]", "/test/123", "/test/123", "[/]"},
            {"/test/123", "[/, /test, /test/123]", "/test/abc", null, "[/, /test, /test/123]"},
            {"/test/123", "[/, /test, /test/123]", "/123", null, "[/, /test, /test/123]"},
            {"/test/123", "[/, /test, /test/123]", "/test", "/test", "[/]"}
