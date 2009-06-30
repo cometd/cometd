@@ -16,13 +16,16 @@ package org.cometd.client;
 
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.cometd.Client;
+import org.cometd.Extension;
 import org.cometd.Message;
 import org.cometd.MessageListener;
-import org.cometd.client.ext.AckExtension;
+import org.eclipse.jetty.client.Address;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -41,10 +44,10 @@ public class ChatRoomClient extends AbstractLifeCycle
     private String _metaChannel;
     private String _publicChannel;
     private String _privateChannel;    
-    private String _username;    
+    private String _username;
+    private List<Extension> _extensions;
 
     private boolean _connected = false;
-    private boolean _sendDisconnectMsg = !"false".equals("chatroomclient.send_disconnect_msg");
     
     public ChatRoomClient()
     {
@@ -117,6 +120,20 @@ public class ChatRoomClient extends AbstractLifeCycle
         return _httpClient;
     }
     
+    public List<Extension> getExtensions()
+    {
+        return _extensions;
+    }
+    
+    public ChatRoomClient addExtension(Extension extension)
+    {
+        if(_extensions==null)
+            _extensions = new ArrayList<Extension>();
+    
+        _extensions.add(extension);
+        return this;
+    }
+    
     protected void doStart() throws Exception
     {        
         Log.info("{} {}", getClass().getSimpleName(), "starting chat client.");
@@ -144,14 +161,17 @@ public class ChatRoomClient extends AbstractLifeCycle
         Log.info("{} {}", getClass().getSimpleName(), "http client started.");
         if(_bayeuxClient==null)
         {
-        	String url = "http://localhost:" + _port + "/cometd";
-            _bayeuxClient = new BayeuxClient(_httpClient, url);
-            _bayeuxClient.addExtension(new AckExtension());
+            Address address = new Address(_host, _port);
+            _bayeuxClient = new BayeuxClient(_httpClient, address, _uri);
+            if(_extensions!=null)
+            {
+                for(Extension ext : _extensions)
+                    _bayeuxClient.addExtension(ext);
+            }
+            
             _bayeuxClient.addListener(new ChatListener());
         }
-        
-        // start asyncrhonously due to long socket timeout
-        // workaround for the android jvm bug when the endpoint doesnt exist        
+             
         _threadPool.dispatch(new Runnable()
         {
             public void run()
@@ -230,33 +250,6 @@ public class ChatRoomClient extends AbstractLifeCycle
         _bayeuxClient.endBatch();
         _username = username;
         return true;
-    }
-    
-    public void connectOrDisconnect()
-    {
-        try
-        {
-            if(_httpClient.isStarted())
-            {
-                System.err.println("stopping");
-                _httpClient.stop();
-                Thread.sleep(500);
-                System.err.println("stopped");
-            }
-            else
-            {
-                //String u = _username;
-                //_username = null;
-                System.err.println("restarting");
-                _httpClient.start();
-                Thread.sleep(500);
-                //join(u);
-            }
-        }
-        catch(Exception e)
-        {
-            throw new RuntimeException(e);
-        }
     }
     
     public boolean leave() throws Exception
@@ -367,7 +360,6 @@ public class ChatRoomClient extends AbstractLifeCycle
                 Log.info("private message: {}", message);
             }
         };
-        room._sendDisconnectMsg = false;
         room.start();
         
         Thread.sleep(500);
@@ -383,11 +375,6 @@ public class ChatRoomClient extends AbstractLifeCycle
             int idx = message.indexOf("::");
             if(idx==-1)
                 room.chat(message);
-            else if(idx==0)
-            {
-                // connect/disconnect ... to check the AckExtension
-                room.connectOrDisconnect();
-            }
             else
                 room.chat(message.substring(idx+1), message.substring(0, idx));
 

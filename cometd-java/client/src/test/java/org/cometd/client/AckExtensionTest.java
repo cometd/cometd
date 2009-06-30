@@ -30,6 +30,7 @@ import junit.framework.TestCase;
 import org.cometd.Bayeux;
 import org.cometd.Channel;
 import org.cometd.client.ChatRoomClient.Msg;
+import org.cometd.client.ext.AckExtension;
 import org.cometd.server.continuation.ContinuationCometdServlet;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
@@ -74,12 +75,8 @@ public class AckExtensionTest extends TestCase
     {
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
-
-        // MovedContextHandler moved = new
-        // MovedContextHandler(contexts,"/","/cometd");
-        // moved.setDiscardPathInfo(true);
-
-        ServletContextHandler context = new ServletContextHandler(contexts, "/", ServletContextHandler.NO_SECURITY
+        
+        ServletContextHandler context = new ServletContextHandler(contexts, "/cometd", ServletContextHandler.NO_SECURITY
                 | ServletContextHandler.SESSIONS);
 
         File file = new File("target/cometd-demo");
@@ -88,15 +85,9 @@ public class AckExtensionTest extends TestCase
 
         context.setBaseResource(FileResource.newResource(file.toURI().toURL()));
 
-        // Cometd servlet
-
-        // ServletHolder dftServlet = context.addServlet(DefaultServlet.class,
-        // "/");
-        // dftServlet.setInitOrder(1);
-
         ServletHolder comet = context.addServlet(
                 ContinuationCometdServlet.class, "/cometd/*");
-        // comet.setInitParameter("filters","/WEB-INF/filters.json");
+
         comet.setInitParameter("timeout", "20000");
         comet.setInitParameter("interval", "100");
         comet.setInitParameter("maxInterval", "10000");
@@ -149,46 +140,75 @@ public class AckExtensionTest extends TestCase
                 System.err.println(message);
             }
         };
-
+        room.addExtension(new AckExtension());
         room.start();
 
         Thread.sleep(500);
 
         room.join("foo");
 
-        int expectedMessages = 1;
-        assertTrue(receive(lock, messages, expectedMessages));
+        int expectedMessages = 0;
+        // foo has joined
+        assertTrue(receive(lock, messages, ++expectedMessages));
 
         Channel publicChat = _bayeux.getChannel("/chat/demo", false);
         assertTrue(publicChat != null);
-
-        publishFromServer(publicChat, "server", "message_while_connected");
-        assertTrue(receive(lock, messages, ++expectedMessages));
+        
+        for(int i=0; i<5;)
+        {
+            publishFromServer(publicChat, "server", "message_while_connected_" + (++i));
+            assertTrue(receive(lock, messages, ++expectedMessages));
+        }
 
         _connector.stop();
         Thread.sleep(1000);
+        assertTrue(_connector.isStopped());
 
-        // send message while client is offline
-        publishFromServer(publicChat, "server", "message_while_disconnected");
-        // verify that the latest message is not received
-        assertTrue(receive(lock, messages, expectedMessages));
-
+        // send messages while client is offline
+        for(int i=0; i<5;)
+        {
+            publishFromServer(publicChat, "server", "message_while_disconnected_" + (++i));
+            ++expectedMessages;
+        }
+        // verify that the offline messages are not received
+        assertTrue(receive(lock, messages, expectedMessages-5));
+        
         _connector.start();
         // allow a few secs for the client to reconnect
         Thread.sleep(3000);
+        assertTrue(_connector.isStarted());
 
-        assertTrue(receive(lock, messages, ++expectedMessages));
+        // check that the offline messages are received
+        assertTrue(receive(lock, messages, expectedMessages));
 
-        publishFromServer(publicChat, "server", "message_after_reconnect");
-        assertTrue(receive(lock, messages, ++expectedMessages));
+        // check if messages after reconnect are received 
+        for(int i=0; i<5;)
+        {
+            publishFromServer(publicChat, "server", "message_after_reconnect_" + (++i));
+            assertTrue(receive(lock, messages, ++expectedMessages));
+        }
         
         synchronized(lock)
         {
-            assertTrue(messages.size()==4 && expectedMessages==4);
+            assertTrue(messages.size()==16 && expectedMessages==16);
             assertEquals("foo has joined", messages.get(0).get("chat"));
-            assertEquals("message_while_connected", messages.get(1).get("chat"));
-            assertEquals("message_while_disconnected", messages.get(2).get("chat"));
-            assertEquals("message_after_reconnect", messages.get(3).get("chat"));
+            assertEquals("message_while_connected_1", messages.get(1).get("chat"));
+            assertEquals("message_while_connected_2", messages.get(2).get("chat"));
+            assertEquals("message_while_connected_3", messages.get(3).get("chat"));
+            assertEquals("message_while_connected_4", messages.get(4).get("chat"));
+            assertEquals("message_while_connected_5", messages.get(5).get("chat"));
+            
+            assertEquals("message_while_disconnected_1", messages.get(6).get("chat"));
+            assertEquals("message_while_disconnected_2", messages.get(7).get("chat"));
+            assertEquals("message_while_disconnected_3", messages.get(8).get("chat"));
+            assertEquals("message_while_disconnected_4", messages.get(9).get("chat"));
+            assertEquals("message_while_disconnected_5", messages.get(10).get("chat"));
+            
+            assertEquals("message_after_reconnect_1", messages.get(11).get("chat"));
+            assertEquals("message_after_reconnect_2", messages.get(12).get("chat"));
+            assertEquals("message_after_reconnect_3", messages.get(13).get("chat"));
+            assertEquals("message_after_reconnect_4", messages.get(14).get("chat"));
+            assertEquals("message_after_reconnect_5", messages.get(15).get("chat"));
         }
 
         room.stop();
