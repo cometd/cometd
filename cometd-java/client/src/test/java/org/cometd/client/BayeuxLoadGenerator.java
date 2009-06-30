@@ -18,6 +18,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class BayeuxLoadGenerator
 {
+    private static final long classLoadTime = System.currentTimeMillis();
+
     SecureRandom _random= new SecureRandom();
     HttpClient _httpClient;
     
@@ -159,15 +161,18 @@ public class BayeuxLoadGenerator
                             // System.err.println(name+": "+data);
                             if (msgId!=null)
                             {
-                                long latency= System.currentTimeMillis()-Long.parseLong(msgId);
-                                synchronized(BayeuxLoadGenerator.this)
-                                {
-                                    _got++;
-                                    if (_maxLatency<latency)
-                                        _maxLatency=latency;
-                                    if (_minLatency==0 || latency<_minLatency)
+                                long l=Long.parseLong(msgId);
+                                if (l > classLoadTime) {
+                                    long latency= System.currentTimeMillis()-l;
+                                    synchronized(BayeuxLoadGenerator.this)
+                                    {
+                                        _got++;
+                                        if (_maxLatency<latency)
+                                            _maxLatency=latency;
+                                        if (_minLatency==0 || latency<_minLatency)
                                         _minLatency=latency;
-                                    _totalLatency+=latency;
+                                        _totalLatency+=latency;
+                                    }
                                 }
                             }
                         }
