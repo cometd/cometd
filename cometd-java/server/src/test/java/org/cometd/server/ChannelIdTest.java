@@ -87,4 +87,28 @@ public class ChannelIdTest extends TestCase
         
         
     }
+
+    public void testParentOf()
+    {
+        ChannelId child1 = new ChannelId("/test/123");
+        ChannelId child2 = new ChannelId("/123");
+        assertFalse(child1.isParentOf (child2)); 
+        
+        child1 = new ChannelId("/test/123");
+        child2 = new ChannelId("/abc/123");
+        assertFalse(child1.isParentOf (child2)); 
+        
+        child1 = new ChannelId("/test/123");
+        child2 = new ChannelId("/test/123/xyz");
+        assertTrue(child1.isParentOf (child2));
+        
+        child1 = new ChannelId("/test/123");
+        child2 = new ChannelId("/test/123/xyz/xxx");
+        assertTrue(child1.isParentOf (child2)); 
+        
+        child1 = new ChannelId("/test");
+        child2 = new ChannelId("/test/123/xyz");
+        assertTrue(child1.isParentOf (child2));
+        
+    }
 }
