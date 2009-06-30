@@ -11,7 +11,6 @@ import org.cometd.Client;
 import org.cometd.Message;
 import org.cometd.MessageListener;
 import org.cometd.server.AbstractBayeux;
-import org.eclipse.jetty.client.Address;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -20,8 +19,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 public class BayeuxLoadGenerator
 {
     SecureRandom _random= new SecureRandom();
-    HttpClient http;
-    Address address;
+    HttpClient _httpClient;
+    
     ArrayList<BayeuxClient> clients=new ArrayList<BayeuxClient>();
     long _minLatency;
     long _maxLatency;
@@ -31,17 +30,17 @@ public class BayeuxLoadGenerator
 
     public BayeuxLoadGenerator() throws Exception
     {
-        http=new HttpClient();
+        _httpClient=new HttpClient();
 
-        http.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        _httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
         // http.setConnectorType(HttpClient.CONNECTOR_SOCKET);
-        http.setMaxConnectionsPerAddress(40000);
+        _httpClient.setMaxConnectionsPerAddress(40000);
 
         QueuedThreadPool pool = new QueuedThreadPool();
         pool.setMaxThreads(500);
         pool.setDaemon(true);
-        http.setThreadPool(pool);
-        http.start();
+        _httpClient.setThreadPool(pool);
+        _httpClient.start();
 
     }
 
@@ -50,8 +49,14 @@ public class BayeuxLoadGenerator
     {
         LineNumberReader in = new LineNumberReader(new InputStreamReader(System.in));
 
-        System.err.print("server[localhost]: ");
+        System.err.print("protocol[http]: ");
         String t = in.readLine().trim();
+        if (t.length()==0)
+            t="http";
+        String protocol=t;
+        
+        System.err.print("server[localhost]: ");
+        t = in.readLine().trim();
         if (t.length()==0)
             t="localhost";
         String host=t;
@@ -68,7 +73,7 @@ public class BayeuxLoadGenerator
             t="/cometd";
         String uri=t+"/cometd";
 
-        address=new Address(host,port);
+        String url = protocol+"://"+host+":"+port+uri;
 
         int nclients=100;
         int size=50;
@@ -127,7 +132,7 @@ public class BayeuxLoadGenerator
             while (clients.size()<nclients)
             {
                 int u=clients.size();
-                BayeuxClient client = new BayeuxClient(http,address,uri)
+                BayeuxClient client = new BayeuxClient(_httpClient,url)
                 {
                     public void deliver(Client from, Message message)
                     {
@@ -140,7 +145,7 @@ public class BayeuxLoadGenerator
                         super.deliver(from,message);
                     }
                 };
-
+                
                 //client.addExtension(new TimesyncClientExtension());
 
                 MessageListener listener = new MessageListener()
