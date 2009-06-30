@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.MovedContextHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -59,7 +60,7 @@ public class CometdDemo
     {
         int port = args.length==0?8080:Integer.parseInt(args[0]);
 
-        String base="../../..";
+        String base="..";
 
         // Manually contruct context to avoid hassles with webapp classloaders for now.
         Server server = new Server();
@@ -77,16 +78,14 @@ public class CometdDemo
         server.addConnector(bconnector);
 
 
-        /*
         SslSelectChannelConnector ssl_connector=new SslSelectChannelConnector();
         ssl_connector.setPort(port-80+443);
-        ssl_connector.setKeystore(base+"/etc/keystore");
+        ssl_connector.setKeystore(base+"/examples/src/test/resources/keystore");
         ssl_connector.setPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         ssl_connector.setKeyPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        ssl_connector.setTruststore(base+"/etc/keystore");
+        ssl_connector.setTruststore(base+"/examples/src/test/resources/keystore");
         ssl_connector.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         server.addConnector(ssl_connector);
-        */
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
