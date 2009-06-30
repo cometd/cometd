@@ -96,9 +96,22 @@ public class CometdDemo
 
         ServletContextHandler context = new ServletContextHandler(contexts,"/cometd",ServletContextHandler.SESSIONS);
 
+        // Search for demo webapp
+        Resource target = Resource.newResource("../../cometd-demo/target");
+        Resource webdir = null;
+        for (String item : target.list())
+        {
+            if (item.startsWith("cometd-demo-"))
+            {
+                Resource dir = target.addPath(item);
+                if (dir.isDirectory())
+                    webdir=dir;
+            }
+        }
+        assert webdir!=null;
         context.setBaseResource(new ResourceCollection(new Resource[]
         {
-            Resource.newResource("../../cometd-demo/target/cometd-demo-1.0.beta9-SNAPSHOT/"),
+            webdir,
         }));
 
 

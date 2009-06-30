@@ -142,27 +142,32 @@ public class ClientImpl implements Client
         {
             if (_maxQueue<0)
             {
+                // No queue limit, so always queue the message
                 ((MessageImpl)message).incRef();
                 _queue.addUnsafe(message);
             }
             else
             {
-                boolean add;
+                // We have a queue limit, 
+                boolean queue;
                 if (_queue.size()>=_maxQueue)
                 {
+                    // We are over the limit, so consult listeners
                     if (_qListeners!=null && _qListeners.length>0)
                     {
-                        add=true;
+                        queue=true;
                         for (QueueListener l : _qListeners)
-                            add &= l.queueMaxed(from,this,message);
+                            queue &= l.queueMaxed(from,this,message);
                     }
                     else
-                        add=false;
+                        queue=false;
                 }
                 else
-                    add=true;
+                    // we are under limit, so queue the messages.
+                    queue=true;
                 
-                if (add)
+                // queue the message if we are meant to
+                if (queue)
                 {
                     ((MessageImpl)message).incRef();
                     _queue.addUnsafe(message);

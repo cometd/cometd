@@ -24,6 +24,7 @@ import org.cometd.Listener;
 import org.cometd.Message;
 import org.cometd.MessageListener;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
@@ -326,12 +327,12 @@ public abstract class BayeuxService
             }
             catch (Exception e)
             {
-                System.err.println(method);
+                Log.debug("method",method);
                 exception(fromClient,toClient,msg,e);
             }
             catch (Error e)
             {
-                System.err.println(method);
+                Log.debug("method",method);
                 exception(fromClient,toClient,msg,e);
             }
         }
