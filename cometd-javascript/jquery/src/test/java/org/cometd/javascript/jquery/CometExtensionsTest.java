@@ -163,6 +163,36 @@ public class CometExtensionsTest extends AbstractJQueryCometTest
         Thread.sleep(1000);
     }
 
+    @Test
+    public void testExtensionRegistrationCallbacks() throws Exception
+    {
+        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("var n;");
+        evaluateScript("var c;");
+        evaluateScript("$.cometd.registerExtension('ext1', {" +
+                       "registered: function(name, cometd) " +
+                       "{" +
+                       "    n = name;" +
+                       "    c = cometd;" +
+                       "}," +
+                       "unregistered: function()" +
+                       "{" +
+                       "    n = null;" +
+                       "    c = null;" +
+                       "}" +
+                       "});");
+        Object extName = get("n");
+        assert extName != null;
+        Object extCometd = get("c");
+        assert extCometd != null;
+
+        evaluateScript("$.cometd.unregisterExtension('ext1');");
+        extName = get("n");
+        assert extName == null;
+        extCometd = get("c");
+        assert extCometd == null;
+    }
+
     public static class Listener extends ScriptableObject
     {
         private int outgoing;
