@@ -39,7 +39,7 @@ org.cometd.JSON.toJSON = org.cometd.JSON.fromJSON = org.cometd.AJAX.send = funct
 org.cometd.Cometd = function(name)
 {
     var _name = name || 'default';
-    var _logLevel; // 'warn','info','debug'|'dbug'
+    var _logLevel; // 'warn','info','debug'
     var _url;
     var _maxConnections;
     var _backoffIncrement;
@@ -137,7 +137,7 @@ org.cometd.Cometd = function(name)
 
     function _configure(configuration)
     {
-        _debug('configure cometd ', configuration);
+        _debug('Configuring cometd object with', configuration);
         // Support old style param, where only the comet URL was passed
         if (typeof configuration === 'string') configuration = { url: configuration };
         if (!configuration) configuration = {};
@@ -162,7 +162,7 @@ org.cometd.Cometd = function(name)
             _transport = _newCallbackPollingTransport();
         else
             _transport = _newLongPollingTransport();
-        _debug('transport', _transport);
+        _debug('Initial transport is', _transport);
     };
 
     /**
@@ -186,7 +186,7 @@ org.cometd.Cometd = function(name)
      */
     this.handshake = function(handshakeProps)
     {
-        _reestablish=false;
+        _reestablish = false;
         _handshake(handshakeProps);
     };
 
@@ -196,8 +196,7 @@ org.cometd.Cometd = function(name)
      */
     this.disconnect = function(disconnectProps)
     {
-        if (!_transport)
-            return;
+        if (!_transport) return;
         var bayeuxMessage = {
             channel: '/meta/disconnect'
         };
@@ -355,6 +354,7 @@ org.cometd.Cometd = function(name)
             method = scope[callback];
             if (!method) throw 'Invalid callback ' + callback + ' for scope ' + scope;
         }
+        _debug('Listener scope', thiz, 'and callback', method);
 
         var subscription = {
             scope: thiz,
@@ -375,7 +375,7 @@ org.cometd.Cometd = function(name)
         // hc==3, a.join()=='a',,'c', a.length==3
         var subscriptionID = subscriptions.push(subscription) - 1;
 
-        _debug('listener', channel, scope, callback, method.name, subscriptionID);
+        _debug('Added listener', subscription, 'for channel', channel, 'having id =', subscriptionID);
 
         // The subscription to allow removal of the listener is made of the channel and the index
         return [channel, subscriptionID];
@@ -396,7 +396,7 @@ org.cometd.Cometd = function(name)
         if (subscriptions)
         {
             delete subscriptions[subscription[1]];
-            _debug('rm listener', subscription);
+            _debug('Removed listener', subscription);
         }
     };
 
@@ -423,13 +423,13 @@ org.cometd.Cometd = function(name)
         for (var channel in _listeners)
         {
             var subscriptions = _listeners[channel];
-            _debug('rm subscriptions', channel, subscriptions);
             for (var i = 0; i < subscriptions.length; ++i)
             {
                 var subscription = subscriptions[i];
                 if (subscription && subscription.subscription)
                 {
                     delete subscriptions[i];
+                    _debug('Removed subscription', subscription, 'for channel', channel);
                 }
             }
         }
@@ -530,7 +530,7 @@ org.cometd.Cometd = function(name)
         }
         else
         {
-            _info('Could not register extension with name \'{}\': another extension with the same name already exists');
+            _info('Could not register extension with name', name, 'since another extension with the same name already exists');
             return false;
         }
     };
@@ -554,7 +554,8 @@ org.cometd.Cometd = function(name)
                 _debug('Unregistered extension', name);
 
                 // Callback for extensions
-                if (typeof extension.unregistered === 'function') extension.unregistered.call(extension);
+                var ext = extension.extension;
+                if (typeof ext.unregistered === 'function') ext.unregistered.call(ext);
 
                 break;
             }
@@ -626,7 +627,7 @@ org.cometd.Cometd = function(name)
 
     function _setStatus(newStatus)
     {
-        _debug('status',_status,'->',newStatus);
+        _debug('Status', _status, '->', newStatus);
         _status = newStatus;
     };
 
@@ -640,7 +641,6 @@ org.cometd.Cometd = function(name)
      */
     function _handshake(handshakeProps)
     {
-        _debug('handshake');
         _clientId = null;
 
         _clearSubscriptions();
@@ -672,7 +672,7 @@ org.cometd.Cometd = function(name)
         // We started a batch to hold the application messages,
         // so here we must bypass it and send immediately.
         _setStatus('handshaking');
-        _debug('handshake send',message);
+        _debug('Handshake sent', message);
         _send([message], false);
     };
 
@@ -738,7 +738,7 @@ org.cometd.Cometd = function(name)
             }
             catch (x)
             {
-                _debug(funktion.name, x);
+                _debug('Exception invoking timed function', funktion, x);
             }
         }, delay);
     };
@@ -748,12 +748,12 @@ org.cometd.Cometd = function(name)
      */
     function _connect()
     {
-        _debug('connect');
         var message = {
             channel: '/meta/connect',
             connectionType: _transport.getType()
         };
         _setStatus('connecting');
+        _debug('Connect sent', message);
         _send([message], true);
         _setStatus('connected');
     };
@@ -804,7 +804,7 @@ org.cometd.Cometd = function(name)
                 }
                 catch (x)
                 {
-                    _debug(x);
+                    _debug('Exception during handling of response', x);
                 }
             },
             onFailure: function(request, reason, exception)
@@ -815,11 +815,11 @@ org.cometd.Cometd = function(name)
                 }
                 catch (x)
                 {
-                    _debug(x);
+                    _debug('Exception during handling of failure', x);
                 }
             }
         };
-        _debug('send', envelope);
+        _debug('Send', envelope);
         _transport.send(envelope, longpoll);
     };
 
@@ -860,7 +860,7 @@ org.cometd.Cometd = function(name)
         }
         catch (x)
         {
-            _debug(x);
+            _debug('Exception during execution of extension', name, x);
             return message;
         }
     };
@@ -972,7 +972,7 @@ org.cometd.Cometd = function(name)
             {
                 if (_transport.getType() != newTransport.getType())
                 {
-                    _debug('transport', _transport, '->',newTransport);
+                    _debug('Transport', _transport, '->', newTransport);
                     _transport = newTransport;
                 }
             }
@@ -1331,7 +1331,7 @@ org.cometd.Cometd = function(name)
                     }
                     catch (x)
                     {
-                        _warn(subscription,message,x);
+                        _warn('Exception during notification', subscription, message, x);
                     }
                 }
             }
@@ -1351,30 +1351,26 @@ org.cometd.Cometd = function(name)
 
     var _warn = this._warn = function()
     {
-        _log('WARN', arguments);
+        _log('warn', arguments);
     };
 
     var _info = this._info = function()
     {
         if (_logLevel != 'warn')
-            _log('INFO',arguments);
+            _log('info', arguments);
     };
 
     var _debug = this._debug = function()
     {
-        if (_logLevel=='debug' || _logLevel=='dbug')
-            _log('DBUG',arguments);
+        if (_logLevel == 'debug')
+            _log('debug', arguments);
     };
 
     function _log(level, args)
     {
         if (window.console)
         {
-            var a = new Array();
-            a[0] = level;
-            for (var i = 0; i < args.length; i++)
-                a[i + 1] = args[i];
-            window.console.log.apply(window.console, a);
+            window.console[level].apply(window.console, args);
         }
     };
 
@@ -1492,7 +1488,7 @@ org.cometd.Cometd = function(name)
             }
             if (_longpollRequest)
             {
-                _debug('Aborting request ', _longpollRequest);
+                _debug('Aborting request', _longpollRequest);
                 if (_longpollRequest.xhr) _longpollRequest.xhr.abort();
             }
             _longpollRequest = null;

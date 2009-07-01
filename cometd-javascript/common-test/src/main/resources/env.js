@@ -50,11 +50,10 @@ var window = this;
     // The output console
     window.console = function()
     {
-        function _log()
+        function _log(level, args)
         {
-	    var text="";
-	    for (var i=0;i<arguments.length;i++)
-	        text+=arguments[i]+" ";
+            var text = level;
+            for (var i = 0; i < args.length; ++i) text += ' ' + args[i];
             var formatter = new java.text.SimpleDateFormat('yyyy-MM-dd HH:mm:ss.SSS');
             var log = formatter.format(new java.util.Date());
             log += ' ' + java.lang.Thread.currentThread().getId();
@@ -63,23 +62,26 @@ var window = this;
         }
 
         return {
-            error: function(text)
+            error: function()
             {
-                _log('ERROR:', text);
+                _log('ERROR:', arguments);
             },
-            warn: function(text)
+            warn: function()
             {
-                _log('WARN:', text);
+                _log('WARN:', arguments);
             },
-            info: function(text)
+            info: function()
             {
-                _log('INFO:', text);
+                _log('INFO:', arguments);
             },
-            debug: function(text)
+            debug: function()
             {
-                _log('DEBUG:',text);
+                _log('DEBUG:', arguments);
             },
-            log: _log
+            log: function()
+            {
+                _log('', arguments);
+            }
         };
     }();
 
@@ -143,6 +145,7 @@ var window = this;
     };
     window.dispatchEvent = function(event)
     {
+        window.console.debug('Event: ', event);
         if (event.type)
         {
             if (this.uuid && events[this.uuid][event.type])
@@ -289,6 +292,10 @@ var window = this;
         },
         // END OFFICIAL DOM
 
+        addEventListener: window.addEventListener,
+        removeEventListener: window.removeEventListener,
+        dispatchEvent: window.dispatchEvent,
+
         get documentElement()
         {
             return makeNode(this._dom.documentElement);
@@ -324,7 +331,10 @@ var window = this;
         {
             return makeNode(this._dom.createElement(name.toLowerCase()));
         },
-//        createDocumentFragment
+        createDocumentFragment: function()
+        {
+            return makeNode(this._dom.createDocumentFragment());
+        },
         createTextNode: function(text)
         {
             return makeNode(this._dom.createTextNode(
@@ -373,9 +383,6 @@ var window = this;
         {
             return null;
         },
-        addEventListener: window.addEventListener,
-        removeEventListener: window.removeEventListener,
-        dispatchEvent: window.dispatchEvent,
         get nodeName()
         {
             return "#document";
@@ -674,9 +681,6 @@ var window = this;
         {
             return this.setAttribute("id", val);
         },
-        addEventListener: window.addEventListener,
-        removeEventListener: window.removeEventListener,
-        dispatchEvent: window.dispatchEvent,
         click: function()
         {
             var event = document.createEvent();
