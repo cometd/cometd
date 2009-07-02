@@ -364,60 +364,64 @@ public class ChannelImpl implements Channel
         int tail = to.depth()-_id.depth();
         
         Object data = msg.getData();
-        Object old = data;
         
-        try
+        // if we have data, filter it
+        if (data!=null)
         {
-            switch(tail)
+            Object old = data;
+
+            try
             {
-                case 0:      
+                switch(tail)
                 {
-                    final DataFilter[] filters=_dataFilters;
-                    for (DataFilter filter: filters)
+                    case 0:      
                     {
-                        data=filter.filter(from,this,data);
-                        if (data==null)
-                            return;
+                        final DataFilter[] filters=_dataFilters;
+                        for (DataFilter filter: filters)
+                        {
+                            data=filter.filter(from,this,data);
+                            if (data==null)
+                                return;
+                        }
                     }
+                    break;
+
+                    case 1:
+                        if (_wild!=null)  
+                        {
+                            final DataFilter[] filters=_wild._dataFilters;
+                            for (DataFilter filter: filters)
+                            {
+                                data=filter.filter(from,this,data);
+                                if (data==null)
+                                    return;
+                            }
+                        }
+
+                    default:
+                        if (_wildWild!=null)  
+                        {
+                            final DataFilter[] filters=_wildWild._dataFilters;
+                            for (DataFilter filter: filters)
+                            {
+                                data=filter.filter(from,this,data);
+                                if (data==null)
+                                    return;
+                            }
+                        }
                 }
-                break;
-
-                case 1:
-                    if (_wild!=null)  
-                    {
-                        final DataFilter[] filters=_wild._dataFilters;
-                        for (DataFilter filter: filters)
-                        {
-                            data=filter.filter(from,this,data);
-                            if (data==null)
-                                return;
-                        }
-                    }
-
-                default:
-                    if (_wildWild!=null)  
-                    {
-                        final DataFilter[] filters=_wildWild._dataFilters;
-                        for (DataFilter filter: filters)
-                        {
-                            data=filter.filter(from,this,data);
-                            if (data==null)
-                                return;
-                        }
-                    }
             }
-        }
-        catch (IllegalStateException e)
-        {
-            Log.ignore(e);
-            return;
-        }
+            catch (IllegalStateException e)
+            {
+                Log.ignore(e);
+                return;
+            }
 
-        // TODO this may not be correct if the message is reused.
-        // probably should close message ?
-        if (data!=old)
-            msg.put(AbstractBayeux.DATA_FIELD,data);
-        
+            // TODO this may not be correct if the message is reused.
+            // probably should close message ?
+            if (data!=old)
+                msg.put(AbstractBayeux.DATA_FIELD,data);
+        }
 
         switch(tail)
         {
