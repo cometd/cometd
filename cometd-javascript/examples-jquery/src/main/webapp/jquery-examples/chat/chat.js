@@ -158,10 +158,12 @@ var chat = function()
             return;
         }
 
+
         var altServer = $('#altServer').val();
-        var cometURL = (altServer.length > 0) ?
-                       altServer :
-                       document.location.protocol + '//' + document.location.host + '/cometd';
+	// temporary fix for context path
+        var cometURL = (altServer.length > 0)
+	               ? altServer
+		       : (new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/jquery-examples\/.*$/, '')) + "/cometd";
 
         // Subscribe for meta channels immediately so that the chat knows about meta channel events
         _metaSubscribe();
