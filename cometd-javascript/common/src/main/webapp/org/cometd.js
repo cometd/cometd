@@ -785,12 +785,12 @@ org.cometd.Cometd = function(name)
             if (_clientId)
                 message['clientId'] = _clientId;
             message = _applyOutgoingExtensions(message);
-            if (message!=null)
+            if (message != null)
                 messages[i] = message;
             else
                 messages.splice(i--, 1);
         }
-        if (messages.length==0)
+        if (messages.length == 0)
             return;
 
         var self = this;
@@ -915,7 +915,7 @@ org.cometd.Cometd = function(name)
         {
             var message = messages[i];
             message = _applyIncomingExtensions(message);
-            if (message==null)
+            if (message == null)
                 continue;
 
             _receive(message);
