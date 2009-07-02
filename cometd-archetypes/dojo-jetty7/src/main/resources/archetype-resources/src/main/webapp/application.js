@@ -8,9 +8,6 @@ dojo.addOnLoad(function()
         cometd.disconnect();
     });
 
-    dojox.cometd.setLogLevel('debug');
-    dojox.cometd.addListener('/meta/connect', _onConnect);
-
     var cometURL = location.protocol + "//" + location.host + config.contextPath + "/cometd";
     cometd.configure({
         url: cometURL,
