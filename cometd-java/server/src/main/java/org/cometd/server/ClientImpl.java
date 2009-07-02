@@ -60,6 +60,7 @@ public class ClientImpl implements Client
     private Extension[] _extensions;
     
     private boolean _deliverViaMetaConnectOnly;
+    private volatile boolean _isExpired;
     
     // manipulated and synchronized by AbstractBayeux
     int _adviseVersion;
@@ -305,6 +306,7 @@ public class ClientImpl implements Client
      */
     public void remove(boolean timeout)
     {
+        _isExpired = timeout;
         Client client=_bayeux.removeClient(_id); 
         
         if (client!=null && _bayeux.isLogInfo())
@@ -326,6 +328,11 @@ public class ClientImpl implements Client
                 l.removed(_id, timeout);
         
         resume();
+    }
+    
+    public boolean isExpired ()
+    {
+        return _isExpired;
     }
     
     /* ------------------------------------------------------------ */
