@@ -20,14 +20,13 @@ package org.cometd;
  * Objects implementing this interface may listen for client removal events 
  * by calling the {@link Client#addListener(ClientListener)}  
  * 
- * @author gregw
- *
  */
 public interface RemoveListener extends ClientListener
 {
     /**
-     * This method is called after the client is removed (explicitly or from a timeout)
+     * This method is called after a client is removed.
+     * @param clientId The clientId removed
+     * @param timeout True if the client was removed due to a timeout.
      */
-    public void removed(String clientId, boolean timeout);
-    
+    public void removed(String clientId, boolean timeout); 
 }

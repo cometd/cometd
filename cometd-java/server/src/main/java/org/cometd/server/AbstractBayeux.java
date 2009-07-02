@@ -497,9 +497,9 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         }
         if (client!=null)
         {
-            client.unsubscribeAll();
             for (ClientBayeuxListener l : _clientListeners)
                 l.clientRemoved((Client)client);
+            client.unsubscribeAll();
         }
         return client;
     }
