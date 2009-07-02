@@ -826,14 +826,15 @@ org.cometd.Cometd = function(name)
 
     function _applyIncomingExtensions(message)
     {
-        for (var i = 0; message!=null && i<_extensions.length; ++i)
+        for (var i = 0; i < _extensions.length && message != null; ++i)
         {
             var index = _reverseIncomingExtensions ? _extensions.length - 1 - i : i;
             var extension = _extensions[index];
             var callback = extension.extension.incoming;
             if (callback && typeof callback === 'function')
             {
-                message = _applyExtension(extension.name, callback, message);
+                var result = _applyExtension(extension.name, callback, message);
+                message = result === undefined ? message : result;
             }
         }
         return message;
@@ -841,13 +842,14 @@ org.cometd.Cometd = function(name)
 
     function _applyOutgoingExtensions(message)
     {
-        for (var i = 0; message!=null && i<_extensions.length; ++i)
+        for (var i = 0; i < _extensions.length && message != null; ++i)
         {
             var extension = _extensions[i];
             var callback = extension.extension.outgoing;
-            if (callback && typeof callback == 'function')
+            if (callback && typeof callback === 'function')
             {
-                message = _applyExtension(extension.name, callback, message);
+                var result = _applyExtension(extension.name, callback, message);
+                message = result === undefined ? message : result;
             }
         }
         return message;
