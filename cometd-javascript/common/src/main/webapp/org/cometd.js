@@ -70,6 +70,7 @@ org.cometd.Cometd = function(name)
     {
         var result = target || {};
 
+        // Skip first 2 parameters (deep and target), and loop over the others
         for (var i = 2; i < arguments.length; ++i)
         {
             var object = arguments[i];
@@ -86,7 +87,7 @@ org.cometd.Cometd = function(name)
                 // Do not mixin undefined values
                 if (prop === undefined) continue;
 
-                if (deep && typeof prop === "object")
+                if (deep && typeof prop === "object" && prop !== null)
                 {
                     result[name] = _mixin(deep, result[name], prop);
                 }
