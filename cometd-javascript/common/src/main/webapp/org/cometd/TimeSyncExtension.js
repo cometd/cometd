@@ -170,28 +170,28 @@ org.cometd.TimeSyncExtension = function(configuration)
     {
         return _lag;
     };
-    
+
     /**
      * Get the estimated server time in ms since the epoch.
      */
     this.getServerTime = function()
-    { 
+    {
         return new Date().getTime()+_offset;
     };
-        
+
     /**
-     * 
+     *
      * Get the estimated server time as a Date object
      */
     this.getServerDate = function()
-    { 
+    {
         return new Date(this.getServerTime());
     };
-    
+
     /**
      * Set a timeout to expire at given time on the server.
      * @param callback The function to call when the timer expires
-     * @param atServerTimeOrDate a js Time or Date object representing the 
+     * @param atServerTimeOrDate a js Time or Date object representing the
      * server time at which the timeout should expire
      */
     this.setTimeout = function(callback, atServerTimeOrDate)
@@ -200,15 +200,12 @@ org.cometd.TimeSyncExtension = function(configuration)
         var tc = ts - _offset;
         var interval = tc - new Date().getTime();
         if(interval <= 0)
-	{
+        {
             interval = 1;
         }
         return setTimeout(callback,interval);
     };
 
-    /**
-     * 
-     */
     function _debug(text, args)
     {
         _cometd._debug(text, args);
