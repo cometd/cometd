@@ -64,7 +64,7 @@ org.cometd.ReloadExtension = function(configuration)
 
             _state.hsOut = message;
 
-            var cookie = org.cometd.COOKIE.set("org.cometd.reload");
+            var cookie = org.cometd.COOKIE.get("org.cometd.reload");
             if (cookie != null)
             {
                 try
