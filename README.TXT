@@ -9,10 +9,9 @@ cometd-perl       - perl server (ALPHA)
 cometd-twisted    - python server (ALPHA)
 
 
-To build and run the demonstration you need maven 2.0.8 or later:
+To build and run the demonstration you need maven 2.0.9 or later:
 
-    cd cometd
-    mvn install
+    mvn
     cd cometd-demo
     mvn jetty:run
 
