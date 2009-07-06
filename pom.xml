@@ -4,7 +4,7 @@
     <artifactId>cometd-project</artifactId>
     <packaging>pom</packaging>
     <name>Cometd</name>
-    <version>1.0.beta10</version>
+    <version>1.0.0rc0-SNAPSHOT</version>
     <url>http://www.cometd.org</url>
     <issueManagement>
         <system>jira</system>
@@ -154,8 +154,8 @@
         </pluginRepository>
     </pluginRepositories>
     <scm>
-        <connection>scm:svn:http://svn.cometd.com/tags/1.0.beta10</connection>
-        <developerConnection>scm:svn:https://svn.cometd.com/tags/1.0.beta10</developerConnection>
+        <connection>scm:svn:http://svn.cometd.com/trunk</connection>
+        <developerConnection>scm:svn:https://svn.cometd.com/trunk</developerConnection>
     </scm>
     <organization>
         <name>Dojo Foundation</name>
