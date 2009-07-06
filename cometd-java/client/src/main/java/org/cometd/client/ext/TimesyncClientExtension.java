@@ -26,17 +26,18 @@ public class TimesyncClientExtension implements Extension
             if (sync!=null)
             {
                 long now = System.currentTimeMillis();
+                
 
                 final long tc=((Number)sync.get("tc")).longValue();
                 final long ts=((Number)sync.get("ts")).longValue();
                 final int p=((Number)sync.get("p")).intValue();
-                final int a=((Number)sync.get("a")).intValue();
+                // final int a=((Number)sync.get("a")).intValue();
 
-                int l=(int)(now-tc-p)/2-a;
-                int o=(int)(ts-tc)-l;
+                int l2 = (int) ((now - tc - p) / 2);
+                int o2 = (int) (ts-tc-l2);
 
-                _lag=(_lag+l)/2;
-                _offset=(_offset+o)/2;   
+                _lag=_lag==0?l2:(_lag+l2)/2;
+                _offset=_offset==0?o2:(_offset+o2)/2;   
             }
         }
             
