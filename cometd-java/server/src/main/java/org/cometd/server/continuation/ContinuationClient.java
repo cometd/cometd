@@ -31,9 +31,9 @@ import org.eclipse.jetty.util.thread.Timeout;
 public class ContinuationClient extends ClientImpl
 {
     private long _accessed;
-    public transient Timeout.Task _timeout; 
+    public final Timeout.Task _timeout; 
     private ContinuationBayeux _bayeux;
-    private transient Continuation _continuation;
+    private volatile Continuation _continuation;
 
     /* ------------------------------------------------------------ */
     protected ContinuationClient(ContinuationBayeux bayeux)
@@ -58,6 +58,8 @@ public class ContinuationClient extends ClientImpl
             };
             _bayeux.startTimeout(_timeout,getTimeout());
         }
+        else
+            _timeout=null;
     }
 
 
@@ -147,7 +149,6 @@ public class ContinuationClient extends ClientImpl
         {
             if (!wasTimeout && _timeout!=null)
                 _bayeux.cancelTimeout(_timeout);
-            _timeout=null;
         }
         super.remove(wasTimeout);
     }
