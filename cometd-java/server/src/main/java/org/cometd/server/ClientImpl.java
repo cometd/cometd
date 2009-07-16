@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Queue;
 
 import org.cometd.Bayeux;
+import org.cometd.Channel;
 import org.cometd.Client;
 import org.cometd.ClientListener;
 import org.cometd.DeliverListener;
@@ -586,5 +587,19 @@ public class ClientImpl implements Client
         _lag = lag;
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * Get the subscribed to channels
+     * @return A copied array of the channels to which this client is subscribed
+     */
+    public Channel[] getSubscriptions()
+    {
+        ChannelImpl[] subscriptions = _subscriptions;
+        if (subscriptions==null)
+            return null;
+        Channel[] channels=new Channel[subscriptions.length];
+        System.arraycopy(subscriptions,0,channels,0,subscriptions.length);
+        return channels;
+    }
     
 }
