@@ -435,12 +435,11 @@ public class ClientImpl implements Client
     }
 
     /* ------------------------------------------------------------ */
-    protected void unsubscribeAll()
+    public void unsubscribeAll()
     {
         ChannelImpl[] subscriptions;
         synchronized(this)
         {
-            _queue.clear();
             subscriptions=_subscriptions;
             _subscriptions=new ChannelImpl[0];
         }
