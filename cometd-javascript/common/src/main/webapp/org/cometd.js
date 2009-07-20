@@ -11,7 +11,7 @@ if (typeof dojo !== 'undefined')
 else
 {
     // Namespaces for the cometd implementation
-    this.org = this.org || {};
+    org = org || {};
     org.cometd = {};
 }
 
@@ -75,25 +75,33 @@ org.cometd.Cometd = function(name)
         {
             var object = arguments[i];
 
-            // Double equal handles both undefined and null
-            if (object == null) continue;
-
-            for (name in object)
+            if (object === undefined || object === null)
             {
-                var prop = object[name];
+                continue;
+            }
+
+            for (var propName in object)
+            {
+                var prop = object[propName];
 
                 // Avoid infinite loops
-                if (prop === target) continue;
+                if (prop === target)
+                {
+                    continue;
+                }
                 // Do not mixin undefined values
-                if (prop === undefined) continue;
+                if (prop === undefined)
+                {
+                    continue;
+                }
 
                 if (deep && typeof prop === "object" && prop !== null)
                 {
-                    result[name] = _mixin(deep, result[name], prop);
+                    result[propName] = _mixin(deep, result[propName], prop);
                 }
                 else
                 {
-                    result[name] = prop;
+                    result[propName] = prop;
                 }
             }
         }
@@ -111,7 +119,10 @@ org.cometd.Cometd = function(name)
     {
         for (var i = 0; i < array.length; ++i)
         {
-            if (element == array[i]) return i;
+            if (element == array[i])
+            {
+                return i;
+            }
         }
         return -1;
     }
@@ -140,11 +151,20 @@ org.cometd.Cometd = function(name)
     {
         _debug('Configuring cometd object with', configuration);
         // Support old style param, where only the comet URL was passed
-        if (typeof configuration === 'string') configuration = { url: configuration };
-        if (!configuration) configuration = {};
+        if (typeof configuration === 'string')
+        {
+            configuration = { url: configuration };
+        }
+        if (!configuration)
+        {
+            configuration = {};
+        }
 
         _url = configuration.url;
-        if (!_url) throw 'Missing required configuration parameter \'url\' specifying the comet server URL';
+        if (!_url)
+        {
+            throw 'Missing required configuration parameter \'url\' specifying the comet server URL';
+        }
         _maxConnections = configuration.maxConnections || 2;
         _backoffIncrement = configuration.backoffIncrement || 1000;
         _maxBackoff = configuration.maxBackoff || 60000;
@@ -155,16 +175,23 @@ org.cometd.Cometd = function(name)
         // Check immediately if we're cross domain
         // If cross domain, the handshake must not send the long polling transport type
         var urlParts = /(^https?:)?(\/\/(([^:\/\?#]+)(:(\d+))?))?([^\?#]*)/.exec(_url);
-        if (urlParts[3]) _xd = urlParts[3] != location.host;
+        if (urlParts[3])
+        {
+            _xd = urlParts[3] != window.location.host;
+        }
 
         // Temporary setup a transport to send the initial handshake
         // The transport may be changed as a result of handshake
         if (_xd)
+        {
             _transport = _newCallbackPollingTransport();
+        }
         else
+        {
             _transport = _newLongPollingTransport();
+        }
         _debug('Initial transport is', _transport);
-    };
+    }
 
     /**
      * Configures and establishes the comet communication with the comet server
@@ -197,7 +224,10 @@ org.cometd.Cometd = function(name)
      */
     this.disconnect = function(disconnectProps)
     {
-        if (!_transport) return;
+        if (!_transport)
+        {
+            return;
+        }
         var bayeuxMessage = {
             channel: '/meta/disconnect'
         };
@@ -277,7 +307,10 @@ org.cometd.Cometd = function(name)
         {
             for (var i = 0; i < subscriptions.length; ++i)
             {
-                if (subscriptions[i]) return true;
+                if (subscriptions[i])
+                {
+                    return true;
+                }
             }
         }
         return false;
@@ -334,7 +367,7 @@ org.cometd.Cometd = function(name)
     this.addListener = function(channel, scope, callback)
     {
         return _addListener(channel, scope, callback, false);
-    }
+    };
 
     function _addListener(channel, scope, callback, isSubscription)
     {
@@ -351,9 +384,15 @@ org.cometd.Cometd = function(name)
         }
         else if (typeof callback === 'string')
         {
-            if (!scope) throw 'Invalid scope ' + scope;
+            if (!scope)
+            {
+                throw 'Invalid scope ' + scope;
+            }
             method = scope[callback];
-            if (!method) throw 'Invalid callback ' + callback + ' for scope ' + scope;
+            if (!method)
+            {
+                throw 'Invalid callback ' + callback + ' for scope ' + scope;
+            }
         }
         _debug('Listener scope', thiz, 'and callback', method);
 
@@ -380,7 +419,7 @@ org.cometd.Cometd = function(name)
 
         // The subscription to allow removal of the listener is made of the channel and the index
         return [channel, subscriptionID];
-    };
+    }
 
     /**
      * Removes the subscription obtained with a call to {@link #addListener(string, object, function)}.
@@ -388,8 +427,8 @@ org.cometd.Cometd = function(name)
      */
     this.removeListener = function(subscription)
     {
-        _removeListener(subscription)
-    }
+        _removeListener(subscription);
+    };
 
     function _removeListener(subscription)
     {
@@ -399,7 +438,7 @@ org.cometd.Cometd = function(name)
             delete subscriptions[subscription[1]];
             _debug('Removed listener', subscription);
         }
-    };
+    }
 
     /**
      * Removes all listeners registered with {@link #addListener(channel, scope, callback)} or
@@ -417,7 +456,7 @@ org.cometd.Cometd = function(name)
     this.clearSubscriptions = function()
     {
         _clearSubscriptions();
-    }
+    };
 
     function _clearSubscriptions()
     {
@@ -434,7 +473,7 @@ org.cometd.Cometd = function(name)
                 }
             }
         }
-    };
+    }
 
     /**
      * Returns a string representing the status of the bayeux communication with the comet server.
@@ -525,7 +564,10 @@ org.cometd.Cometd = function(name)
             _debug('Registered extension', name);
 
             // Callback for extensions
-            if (typeof extension.registered === 'function') extension.registered.call(extension, name, this);
+            if (typeof extension.registered === 'function')
+            {
+                extension.registered.call(extension, name, this);
+            }
 
             return true;
         }
@@ -556,7 +598,10 @@ org.cometd.Cometd = function(name)
 
                 // Callback for extensions
                 var ext = extension.extension;
-                if (typeof ext.unregistered === 'function') ext.unregistered.call(ext);
+                if (typeof ext.unregistered === 'function')
+                {
+                    ext.unregistered.call(ext);
+                }
 
                 break;
             }
@@ -574,7 +619,10 @@ org.cometd.Cometd = function(name)
         for (var i = 0; i < _extensions.length; ++i)
         {
             var extension = _extensions[i];
-            if (extension.name == name) return extension.extension;
+            if (extension.name == name)
+            {
+                return extension.extension;
+            }
         }
         return null;
     };
@@ -586,7 +634,7 @@ org.cometd.Cometd = function(name)
     function _startBatch()
     {
         ++_batch;
-    };
+    }
 
     /**
      * Ends the batch of messages to be sent in a single request,
@@ -598,19 +646,25 @@ org.cometd.Cometd = function(name)
     function _endBatch(sendMessages)
     {
         --_batch;
-        if (_batch < 0) _batch = 0;
-        if (sendMessages && _batch == 0 && !_isDisconnected())
+        if (_batch < 0)
+        {
+            _batch = 0;
+        }
+        if (sendMessages && _batch === 0 && !_isDisconnected())
         {
             var messages = _messageQueue;
             _messageQueue = [];
-            if (messages.length > 0) _send(messages, false);
+            if (messages.length > 0)
+            {
+                _send(messages, false);
+            }
         }
-    };
+    }
 
     function _nextMessageId()
     {
         return ++_messageId;
-    };
+    }
 
     /**
      * Converts the given response into an array of bayeux messages
@@ -619,23 +673,35 @@ org.cometd.Cometd = function(name)
      */
     function _convertToMessages(response)
     {
-        if (response === undefined) return [];
-        if (response instanceof Array) return response;
-        if (response instanceof String || typeof response == 'string') return org.cometd.JSON.fromJSON(response);
-        if (response instanceof Object) return [response];
+        if (response === undefined)
+        {
+            return [];
+        }
+        if (response instanceof Array)
+        {
+            return response;
+        }
+        if (response instanceof String || typeof response == 'string')
+        {
+            return org.cometd.JSON.fromJSON(response);
+        }
+        if (response instanceof Object)
+        {
+            return [response];
+        }
         throw 'Conversion Error ' + response + ', typeof ' + (typeof response);
-    };
+    }
 
     function _setStatus(newStatus)
     {
         _debug('Status', _status, '->', newStatus);
         _status = newStatus;
-    };
+    }
 
     function _isDisconnected()
     {
         return _status == 'disconnecting' || _status == 'disconnected';
-    };
+    }
 
     /**
      * Sends the initial handshake message
@@ -675,7 +741,7 @@ org.cometd.Cometd = function(name)
         _setStatus('handshaking');
         _debug('Handshake sent', message);
         _send([message], false);
-    };
+    }
 
     function _findTransport(handshakeResponse)
     {
@@ -683,18 +749,27 @@ org.cometd.Cometd = function(name)
         if (_xd)
         {
             // If we are cross domain, check if the server supports it, that's the only option
-            if (_inArray('callback-polling', transportTypes) >= 0) return _transport;
+            if (_inArray('callback-polling', transportTypes) >= 0)
+            {
+                return _transport;
+            }
         }
         else
         {
             // Check if we can keep long-polling
-            if (_inArray('long-polling', transportTypes) >= 0) return _transport;
+            if (_inArray('long-polling', transportTypes) >= 0)
+            {
+                return _transport;
+            }
 
             // The server does not support long-polling
-            if (_inArray('callback-polling', transportTypes) >= 0) return _newCallbackPollingTransport();
+            if (_inArray('callback-polling', transportTypes) >= 0)
+            {
+                return _newCallbackPollingTransport();
+            }
         }
         return null;
-    };
+    }
 
     function _delayedHandshake()
     {
@@ -703,7 +778,7 @@ org.cometd.Cometd = function(name)
         {
             _handshake(_handshakeProps);
         });
-    };
+    }
 
     function _delayedConnect()
     {
@@ -712,22 +787,27 @@ org.cometd.Cometd = function(name)
         {
             _connect();
         });
-    };
+    }
 
     function _delayedSend(operation)
     {
         _cancelDelayedSend();
         var delay = _backoff;
         if (_advice.interval && _advice.interval > 0)
+        {
             delay += _advice.interval;
+        }
         _scheduledSend = _setTimeout(operation, delay);
-    };
+    }
 
     function _cancelDelayedSend()
     {
-        if (_scheduledSend !== null) clearTimeout(_scheduledSend);
+        if (_scheduledSend !== null)
+        {
+            clearTimeout(_scheduledSend);
+        }
         _scheduledSend = null;
-    };
+    }
 
     function _setTimeout(funktion, delay)
     {
@@ -742,7 +822,7 @@ org.cometd.Cometd = function(name)
                 _debug('Exception invoking timed function', funktion, x);
             }
         }, delay);
-    };
+    }
 
     /**
      * Sends the connect message
@@ -757,15 +837,19 @@ org.cometd.Cometd = function(name)
         _debug('Connect sent', message);
         _send([message], true);
         _setStatus('connected');
-    };
+    }
 
     function _queueSend(message)
     {
         if (_batch > 0)
+        {
             _messageQueue.push(message);
+        }
         else
+        {
             _send([message], false);
-    };
+        }
+    }
 
     /**
      * Delivers the messages to the comet server
@@ -781,17 +865,25 @@ org.cometd.Cometd = function(name)
         for (var i = 0; i < messages.length; ++i)
         {
             var message = messages[i];
-            message['id'] = _nextMessageId();
+            message.id = _nextMessageId();
             if (_clientId)
-                message['clientId'] = _clientId;
+            {
+                message.clientId = _clientId;
+            }
             message = _applyOutgoingExtensions(message);
-            if (message != null)
+            if (message !== undefined && message !== null)
+            {
                 messages[i] = message;
+            }
             else
+            {
                 messages.splice(i--, 1);
+            }
         }
-        if (messages.length == 0)
+        if (messages.length === 0)
+        {
             return;
+        }
 
         var self = this;
         var envelope = {
@@ -822,12 +914,17 @@ org.cometd.Cometd = function(name)
         };
         _debug('Send', envelope);
         _transport.send(envelope, longpoll);
-    };
+    }
 
     function _applyIncomingExtensions(message)
     {
-        for (var i = 0; i < _extensions.length && message != null; ++i)
+        for (var i = 0; i < _extensions.length; ++i)
         {
+            if (message === undefined || message === null)
+            {
+                break;
+            }
+
             var index = _reverseIncomingExtensions ? _extensions.length - 1 - i : i;
             var extension = _extensions[index];
             var callback = extension.extension.incoming;
@@ -838,12 +935,17 @@ org.cometd.Cometd = function(name)
             }
         }
         return message;
-    };
+    }
 
     function _applyOutgoingExtensions(message)
     {
-        for (var i = 0; i < _extensions.length && message != null; ++i)
+        for (var i = 0; i < _extensions.length; ++i)
         {
+            if (message === undefined || message === null)
+            {
+                break;
+            }
+
             var extension = _extensions[i];
             var callback = extension.extension.outgoing;
             if (callback && typeof callback === 'function')
@@ -853,7 +955,7 @@ org.cometd.Cometd = function(name)
             }
         }
         return message;
-    };
+    }
 
     function _applyExtension(name, callback, message)
     {
@@ -866,11 +968,14 @@ org.cometd.Cometd = function(name)
             _debug('Exception during execution of extension', name, x);
             return message;
         }
-    };
+    }
 
     function _receive(message)
     {
-        if (message.advice) _advice = message.advice;
+        if (message.advice)
+        {
+            _advice = message.advice;
+        }
 
         var channel = message.channel;
         switch (channel)
@@ -894,7 +999,7 @@ org.cometd.Cometd = function(name)
                 _messageResponse(message);
                 break;
         }
-    };
+    }
 
     /**
      * Receive a message.
@@ -915,8 +1020,10 @@ org.cometd.Cometd = function(name)
         {
             var message = messages[i];
             message = _applyIncomingExtensions(message);
-            if (message == null)
+            if (message === undefined || message === null)
+            {
                 continue;
+            }
 
             _receive(message);
         }
@@ -957,7 +1064,7 @@ org.cometd.Cometd = function(name)
                     break;
             }
         }
-    };
+    }
 
     function _handshakeResponse(message)
     {
@@ -1001,7 +1108,10 @@ org.cometd.Cometd = function(name)
         else
         {
             var retry = !_isDisconnected() && _advice.reconnect != 'none';
-            if (!retry) _setStatus('disconnected');
+            if (!retry)
+            {
+                _setStatus('disconnected');
+            }
 
             _notifyListeners('/meta/handshake', message);
             _notifyListeners('/meta/unsuccessful', message);
@@ -1014,7 +1124,7 @@ org.cometd.Cometd = function(name)
                 _delayedHandshake();
             }
         }
-    };
+    }
 
     function _handshakeFailure(xhr, message)
     {
@@ -1032,7 +1142,10 @@ org.cometd.Cometd = function(name)
         };
 
         var retry = !_isDisconnected() && _advice.reconnect != 'none';
-        if (!retry) _setStatus('disconnected');
+        if (!retry)
+        {
+            _setStatus('disconnected');
+        }
 
         _notifyListeners('/meta/handshake', failureMessage);
         _notifyListeners('/meta/unsuccessful', failureMessage);
@@ -1044,12 +1157,15 @@ org.cometd.Cometd = function(name)
             _increaseBackoff();
             _delayedHandshake();
         }
-    };
+    }
 
     function _connectResponse(message)
     {
         var action = _isDisconnected() ? 'none' : (_advice.reconnect ? _advice.reconnect : 'retry');
-        if (!_isDisconnected()) _setStatus(action == 'retry' ? 'connecting' : 'disconnecting');
+        if (!_isDisconnected())
+        {
+            _setStatus(action == 'retry' ? 'connecting' : 'disconnecting');
+        }
 
         if (message.successful)
         {
@@ -1105,7 +1221,7 @@ org.cometd.Cometd = function(name)
                     break;
             }
         }
-    };
+    }
 
     function _connectFailure(xhr, message)
     {
@@ -1145,7 +1261,7 @@ org.cometd.Cometd = function(name)
                     break;
             }
         }
-    };
+    }
 
     function _disconnectResponse(message)
     {
@@ -1160,18 +1276,21 @@ org.cometd.Cometd = function(name)
             _notifyListeners('/meta/disconnect', message);
             _notifyListeners('/meta/usuccessful', message);
         }
-    };
+    }
 
     function _disconnect(abort)
     {
         _cancelDelayedSend();
-        if (abort) _transport.abort();
+        if (abort)
+        {
+            _transport.abort();
+        }
         _clientId = null;
         _setStatus('disconnected');
         _batch = 0;
         _messageQueue = [];
         _resetBackoff();
-    };
+    }
 
     function _disconnectFailure(xhr, message)
     {
@@ -1190,7 +1309,7 @@ org.cometd.Cometd = function(name)
         };
         _notifyListeners('/meta/disconnect', failureMessage);
         _notifyListeners('/meta/unsuccessful', failureMessage);
-    };
+    }
 
     function _subscribeResponse(message)
     {
@@ -1203,7 +1322,7 @@ org.cometd.Cometd = function(name)
             _notifyListeners('/meta/subscribe', message);
             _notifyListeners('/meta/unsuccessful', message);
         }
-    };
+    }
 
     function _subscribeFailure(xhr, message)
     {
@@ -1220,7 +1339,7 @@ org.cometd.Cometd = function(name)
         };
         _notifyListeners('/meta/subscribe', failureMessage);
         _notifyListeners('/meta/unsuccessful', failureMessage);
-    };
+    }
 
     function _unsubscribeResponse(message)
     {
@@ -1233,7 +1352,7 @@ org.cometd.Cometd = function(name)
             _notifyListeners('/meta/unsubscribe', message);
             _notifyListeners('/meta/unsuccessful', message);
         }
-    };
+    }
 
     function _unsubscribeFailure(xhr, message)
     {
@@ -1250,7 +1369,7 @@ org.cometd.Cometd = function(name)
         };
         _notifyListeners('/meta/unsubscribe', failureMessage);
         _notifyListeners('/meta/unsuccessful', failureMessage);
-    };
+    }
 
     function _messageResponse(message)
     {
@@ -1278,7 +1397,7 @@ org.cometd.Cometd = function(name)
                 _notifyListeners('/meta/unsuccessful', message);
             }
         }
-    };
+    }
 
     function _messageFailure(xhr, message)
     {
@@ -1295,7 +1414,7 @@ org.cometd.Cometd = function(name)
         };
         _notifyListeners('/meta/publish', failureMessage);
         _notifyListeners('/meta/unsuccessful', failureMessage);
-    };
+    }
 
     function _notifyListeners(channel, message)
     {
@@ -1310,12 +1429,15 @@ org.cometd.Cometd = function(name)
             var channelPart = channelParts.slice(0, i).join('/') + '/*';
             // We don't want to notify /foo/* if the channel is /foo/bar/baz,
             // so we stop at the first non recursive globbing
-            if (i == last) _notify(channelPart, message);
+            if (i == last)
+            {
+                _notify(channelPart, message);
+            }
             // Add the recursive globber and notify
             channelPart += '*';
             _notify(channelPart, message);
         }
-    };
+    }
 
     function _notify(channel, message)
     {
@@ -1339,35 +1461,44 @@ org.cometd.Cometd = function(name)
                 }
             }
         }
-    };
+    }
 
     function _resetBackoff()
     {
         _backoff = 0;
-    };
+    }
 
     function _increaseBackoff()
     {
         if (_backoff < _maxBackoff)
+        {
             _backoff += _backoffIncrement;
-    };
+        }
+    }
 
-    var _warn = this._warn = function()
+    function _warn()
     {
         _log('warn', arguments);
-    };
+    }
+    this._warn = _warn;
 
-    var _info = this._info = function()
+    function _info()
     {
         if (_logLevel != 'warn')
+        {
             _log('info', arguments);
-    };
+        }
+    }
+    this._info = _info;
 
-    var _debug = this._debug = function()
+    function _debug()
     {
         if (_logLevel == 'debug')
+        {
             _log('debug', arguments);
-    };
+        }
+    }
+    this._debug = _debug;
 
     function _log(level, args)
     {
@@ -1375,17 +1506,17 @@ org.cometd.Cometd = function(name)
         {
             window.console[level].apply(window.console, args);
         }
-    };
+    }
 
     function _newLongPollingTransport()
     {
         return _mixin({}, new org.cometd.Transport('long-polling'), new org.cometd.LongPollingTransport());
-    };
+    }
 
     function _newCallbackPollingTransport()
     {
         return _mixin({}, new org.cometd.Transport('callback-polling'), new org.cometd.CallbackPollingTransport());
-    };
+    }
 
     /**
      * Base object with the common functionality for transports.
@@ -1409,21 +1540,27 @@ org.cometd.Cometd = function(name)
         this.send = function(envelope, longpoll)
         {
             if (longpoll)
+            {
                 _longpollSend(this, envelope);
+            }
             else
+            {
                 _queueSend(this, envelope);
+            }
         };
 
         function _longpollSend(self, envelope)
         {
             if (_longpollRequest !== null)
+            {
                 throw 'Concurrent longpoll requests not allowed, request ' + _longpollRequest.id + ' not yet completed';
+            }
 
             var requestId = ++_requestIds;
             var request = {id: requestId};
             self._send(envelope, request);
             _longpollRequest = request;
-        };
+        }
 
         function _queueSend(self, envelope)
         {
@@ -1440,30 +1577,40 @@ org.cometd.Cometd = function(name)
             {
                 _envelopes.push([envelope, request]);
             }
-        };
+        }
 
         this.complete = function(request, success, longpoll)
         {
             if (longpoll)
+            {
                 _longpollComplete(request);
+            }
             else
+            {
                 _complete(this, request, success);
+            }
         };
 
         function _longpollComplete(request)
         {
             var requestId = request.id;
-            if (_longpollRequest !== request) throw 'Comet request mismatch, completing request ' + requestId;
+            if (_longpollRequest !== request)
+            {
+                throw 'Comet request mismatch, completing request ' + requestId;
+            }
 
             // Reset longpoll request
             _longpollRequest = null;
-        };
+        }
 
         function _complete(self, request, success)
         {
             var index = _inArray(request, _requests);
             // The index can be negative the request has been aborted
-            if (index >= 0) _requests.splice(index, 1);
+            if (index >= 0)
+            {
+                _requests.splice(index, 1);
+            }
 
             if (_envelopes.length > 0)
             {
@@ -1478,7 +1625,7 @@ org.cometd.Cometd = function(name)
                     setTimeout(function() { envelope[0].onFailure(envelope[1], 'error'); }, 0);
                 }
             }
-        };
+        }
 
         this.abort = function()
         {
@@ -1487,12 +1634,17 @@ org.cometd.Cometd = function(name)
                 var request = _requests[i];
                 _debug('Aborting request', request);
                 if (request.xhr)
+                {
                     request.xhr.abort();
+                }
             }
             if (_longpollRequest)
             {
                 _debug('Aborting request', _longpollRequest);
-                if (_longpollRequest.xhr) _longpollRequest.xhr.abort();
+                if (_longpollRequest.xhr)
+                {
+                    _longpollRequest.xhr.abort();
+                }
             }
             _longpollRequest = null;
             _requests = [];
