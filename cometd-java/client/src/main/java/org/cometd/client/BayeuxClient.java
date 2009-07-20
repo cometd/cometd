@@ -414,7 +414,11 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                 {
                     send(_push);
                 }
-                catch (Exception e)
+                catch (IOException e)
+                {
+                    metaPublishFail(e,((Publish)_push).getOutboundMessages());
+                }
+                catch (IllegalStateException e)
                 {
                     metaPublishFail(e,((Publish)_push).getOutboundMessages());
                 }
@@ -495,7 +499,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
      */
     public void disconnect()
     {
-        if (!isRunning() || _disconnecting)
+        if (isStopped() || _disconnecting)
             throw new IllegalStateException("Not running");
 
         MessageImpl msg = _msgPool.newMessage();
@@ -597,7 +601,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
      */
     public void startBatch()
     {
-        if (!isRunning())
+        if (isStopped())
             throw new IllegalStateException("Not running");
 
         synchronized (_outQ)
@@ -1174,6 +1178,9 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
          */
         protected void onResponseComplete() throws IOException
         {
+            if (!isRunning())
+                return;
+            
             super.onResponseComplete();
             try
             {
@@ -1349,6 +1356,12 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                         Log.debug(e);
                         send(exchange,true);
                     }
+                    catch (IllegalStateException e)
+                    {
+                        Log.warn("Delayed send, retry: "+e);
+                        Log.debug(e);
+                        send(exchange,true);
+                    }
                 }
             };
             if (Log.isDebugEnabled())
@@ -1362,6 +1375,12 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                 send(exchange);
             }
             catch (IOException e)
+            {
+                Log.warn("Send, retry on fail: "+e);
+                Log.debug(e);
+                return send(exchange,true);
+            }
+            catch (IllegalStateException e)
             {
                 Log.warn("Send, retry on fail: "+e);
                 Log.debug(e);
