@@ -11,7 +11,7 @@ if (typeof dojo !== 'undefined')
 else
 {
     // Namespaces for the cometd implementation
-    org = org || {};
+    this.org = this.org || {};
     org.cometd = {};
 }
 
