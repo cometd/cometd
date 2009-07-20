@@ -45,6 +45,7 @@ public class SimpleEchoBayeuxClient
 
         QueuedThreadPool pool = new QueuedThreadPool();
         pool.setMaxThreads(500);
+        pool.setMinThreads(200);
         pool.setDaemon(true);
         _httpClient.setThreadPool(pool);
         _httpClient.start();
@@ -140,6 +141,34 @@ public class SimpleEchoBayeuxClient
         _client.publish("/foo/alpha", msg, String.valueOf(_id++));
     }
     
+    public void stopHttp()
+    {
+        try
+        {
+            System.err.println("Stopping HttpClient");
+            _httpClient.stop(); 
+            System.err.println("Stopped HttpClient");
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+    
+    public void startHttp()
+    {
+        try
+        {
+            System.err.println("Starting HttpClient");
+            _httpClient.start();
+            System.err.println("Started HttpClient");
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+    
     
     public static final void main(String[] args)
     {
@@ -171,6 +200,10 @@ public class SimpleEchoBayeuxClient
                         sbc.stop();
                     else if (say.equalsIgnoreCase("start"))
                         sbc.start();
+                    else if (say.equalsIgnoreCase("stophttp"))
+                        sbc.stopHttp();
+                    else if (say.equalsIgnoreCase("starthttp"))
+                        sbc.startHttp();
                     else
                         sbc.publish (say);
                 }
