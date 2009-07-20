@@ -91,8 +91,9 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     private Map<String, Cookie> _cookies = new ConcurrentHashMap<String, Cookie>();
     private Advice _advice;
     private Timer _timer;
-    private int _backoffInterval = 1000;
-    private int _backoffMaxRetries = 60; // equivalent to 60 seconds
+    private int _backoffInterval = 0;
+    private int _backoffIncrement = 1000;
+    private int _backoffMaxInterval = 60000;
     private Buffer _scheme;
     protected Extension[] _extensions;
     protected JSON _jsonOut;
@@ -144,10 +145,9 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     /**
      * If unable to connect/handshake etc, even if following the interval in the
-     * advice, wait for this interval and try again, up to a maximum of
-     * _backoffRetries
+     * advice, wait for this interval initially, and try again.
      * 
-     * @param interval
+     * @param interval 
      */
     public void setBackOffInterval(int interval)
     {
@@ -155,21 +155,63 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @return the backoff interval to wait before retrying an unsuccessful
+     * or failed message 
+     */
     public int getBackoffInterval()
     {
         return _backoffInterval;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @deprecated We retry an infinite number of times. 
+     * use {@link #getBackoffIncrement()} to set limits
+     */
     public void setBackoffMaxRetries(int retries)
     {
-        _backoffMaxRetries = retries;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @deprecated
+     */
     public int getBackoffMaxRetries()
     {
-        return _backoffMaxRetries;
+        return -1;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     . Each retry will increment by this 
+     * intervel, until we reach _backoffMaxInterval
+     * 
+    */
+    public void setBackoffIncrement(int interval)
+    {
+        _backoffIncrement = interval;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return the backoff interval used to increase the backoff time when 
+     * retrying an unsuccessful or failed message. 
+     */
+    public int getBackoffIncrement()
+    {
+        return _backoffIncrement;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setBackoffMaxInterval(int interval)
+    {
+        _backoffMaxInterval = interval;
+    }
+    
+    public int getBackoffMaxInterval()
+    {
+        return _backoffMaxInterval;
     }
 
     /* ------------------------------------------------------------ */
@@ -606,7 +648,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     {
         Message[] _responses;
         int _connectFailures;
-        int _backoffRetries = 0;
+        int _backoff = _backoffInterval;
         String _json;
 
         /* ------------------------------------------------------------ */
@@ -620,15 +662,15 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         }
 
         /* ------------------------------------------------------------ */
-        public int getBackoffRetries()
+        public int getBackoff()
         {
-            return _backoffRetries;
+            return _backoff;
         }
 
         /* ------------------------------------------------------------ */
-        public void incBackoffRetries()
+        public void incBackoff()
         {
-            ++_backoffRetries;
+            _backoff = Math.min(_backoff+_backoffIncrement,_backoffMaxInterval);
         }
 
         /* ------------------------------------------------------------ */
@@ -1282,14 +1324,13 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
 
         if (backoff)
         {
-            int retries = exchange.getBackoffRetries();
+            int backoffInterval = exchange.getBackoff();
             if (Log.isDebugEnabled())
-                Log.debug("Send with backoff, retries=" + retries + " for " + exchange);
-            if (retries >= _backoffMaxRetries)
-                return false;
+                Log.debug("Send with backoff, interval=" + backoffInterval + " for " + exchange);
 
-            exchange.incBackoffRetries();
-            interval += (retries * _backoffInterval);
+            exchange.incBackoff();
+
+            interval += backoffInterval;
         }
 
         if (interval > 0)
