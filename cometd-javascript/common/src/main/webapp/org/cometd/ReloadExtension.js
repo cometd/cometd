@@ -31,7 +31,13 @@ org.cometd.ReloadExtension = function(configuration)
 {
     var _cometd;
     var _debug;
-    var _state = {hsOut:null,hsIn:null,subs:{}};
+    var _state = 
+    {
+    	hsOut:null,  // handshake message Outbound
+	hsIn:null,   // handshake message Inbound
+	subs:{}
+    };
+    
     var _cookieMaxAge = configuration && configuration.cookieMaxAge || 5;
 
     function _reload()
@@ -59,11 +65,11 @@ org.cometd.ReloadExtension = function(configuration)
     this.outgoing = function(message)
     {
         var channel = message.channel;
+	
         if (channel == '/meta/handshake')
         {
-
+            // this is a handshake.   Is there a saved response from a prior load?
             _state.hsOut = message;
-
             var cookie = org.cometd.COOKIE.get("org.cometd.reload");
             if (cookie != null)
             {
@@ -73,6 +79,8 @@ org.cometd.ReloadExtension = function(configuration)
                     _debug(cookie);
                     var reload = org.cometd.JSON.fromJSON(cookie);
 
+                    // If the handshake matches the save copy, send the prior
+		    // handshake response.
                     if (reload && reload.hsIn && reload.hsOut &&
                         org.cometd.JSON.toJSON(message) == org.cometd.JSON.toJSON(reload.hsOut))
                     {
@@ -80,6 +88,7 @@ org.cometd.ReloadExtension = function(configuration)
                         setTimeout(function()
                         {
                             _state.hsIn = reload.hsIn;
+			    _state.subs = reload.subs;
                             _cometd.receive(reload.hsIn);
                         }, 1);
                         return null;
@@ -94,17 +103,21 @@ org.cometd.ReloadExtension = function(configuration)
         }
         else if (channel == '/meta/subscribe')
         {
-            // consume the subscribe message, as we are already subscribed!
-            setTimeout(function()
-            {
-                _cometd.receive(
+	    // are we already subscribed?
+	    if (_state.subs[message.subscription])
+	    {
+                // consume the subscribe message, as we are already subscribed!
+                setTimeout(function()
                 {
-                    channel:'/meta/subscribe',
-                    subscription:message.subscription,
-                    successful: true
-                });
-            }, 1);
-            return null;
+                    _cometd.receive(
+                    {
+                        channel:'/meta/subscribe',
+                        subscription:message.subscription,
+                        successful: true
+                    });
+                }, 1);
+                return null;
+	    }
         }
         else if (channel == '/meta/disconnect')
         {
@@ -116,14 +129,20 @@ org.cometd.ReloadExtension = function(configuration)
     this.incoming = function(message)
     {
         var channel = message.channel;
+	
+    	// save outbound handshake message
         if (channel == '/meta/handshake' && message.successful)
         {
             _state.hsIn = message;
         }
+	
+	// track subscriptions
         else if (channel == '/meta/subscribe' && message.successful)
         {
             _state.subs[message.subscription] = true;
         }
+	
+        // track unsubscriptions
         else if (channel == '/meta/unsubscribe' && message.successful)
         {
             delete _state.subs[message.subscription];
