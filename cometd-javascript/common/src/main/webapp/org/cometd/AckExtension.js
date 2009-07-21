@@ -4,7 +4,9 @@
  */
 
 if (typeof dojo!="undefined")
+{
     dojo.provide("org.cometd.AckExtension");
+}
 
 /**
  * This client-side extension enables the client to acknowledge to the server
@@ -38,7 +40,7 @@ org.cometd.AckExtension = function()
     {
         _debug('AckExtension: executing unregistration callback');
         _cometd = null;
-    }
+    };
 
     this.incoming = function(message)
     {
@@ -65,13 +67,19 @@ org.cometd.AckExtension = function()
         var channel = message.channel;
         if (channel == '/meta/handshake')
         {
-            if (!message.ext) message.ext = {};
+            if (!message.ext)
+            {
+                message.ext = {};
+            }
             message.ext.ack = _cometd && _cometd.ackEnabled!==false;
             _ackId = -1;
         }
         else if (_serverSupportsAcks && channel == '/meta/connect')
         {
-            if (!message.ext) message.ext = {};
+            if (!message.ext)
+            {
+                message.ext = {};
+            }
             message.ext.ack = _ackId;
             _debug('AckExtension: client sending ack id {}', _ackId);
         }

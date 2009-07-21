@@ -3,7 +3,10 @@
  * $Revision$ $Date$
  */
 
-if (typeof dojo!="undefined") dojo.provide("org.cometd.TimeStampExtension");
+if (typeof dojo!="undefined")
+{
+    dojo.provide("org.cometd.TimeStampExtension");
+}
 
 /**
  * The timestamp extension adds the optional timestamp field to all outgoing messages.
@@ -15,5 +18,5 @@ org.cometd.TimeStampExtension = function()
     {
         message.timestamp = new Date().toUTCString();
         return message;
-    }
-}
+    };
+};
