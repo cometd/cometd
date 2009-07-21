@@ -3,20 +3,23 @@
  * $Revision$ $Date$
  */
 
-if (typeof dojo!="undefined") dojo.provide("org.cometd.TimeSyncExtension");
+if (typeof dojo != "undefined")
+{
+    dojo.provide("org.cometd.TimeSyncExtension");
+}
 
 /**
- * 
- * With each handshake or connect, the extension sends timestamps within the 
+ *
+ * With each handshake or connect, the extension sends timestamps within the
  * ext field like: <code>{ext:{timesync:{tc:12345567890,l:23,o:4567},...},...}</code>
  * where:<ul>
  *  <li>tc is the client timestamp in ms since 1970 of when the message was sent.
  *  <li>l is the network lag that the client has calculated.
  *  <li>o is the clock offset that the client has calculated.
  * </ul>
- * 
+ *
  * <p>
- * A cometd server that supports timesync, can respond with an ext 
+ * A cometd server that supports timesync, can respond with an ext
  * field like: <code>{ext:{timesync:{tc:12345567890,ts:1234567900,p:123,a:3},...},...}</code>
  * where:<ul>
  *  <li>tc is the client timestamp of when the message was sent,
@@ -32,8 +35,8 @@ if (typeof dojo!="undefined") dojo.provide("org.cometd.TimeSyncExtension");
  * <code>a=(tc+o+l)-ts</code>.
  * </p>
  * <p>
- * When the client has received the response, it can make a more accurate estimate 
- * of the lag as <code>l2=(now-tc-p)/2</code> (assuming symmetric lag).   
+ * When the client has received the response, it can make a more accurate estimate
+ * of the lag as <code>l2=(now-tc-p)/2</code> (assuming symmetric lag).
  * A new offset can then be calculated with the relationship on the client
  * that <code>ts=tc+o2+l2</code>, thus <code>o2=ts-tc-l2</code>.
  * </p>
@@ -72,17 +75,17 @@ org.cometd.TimeSyncExtension = function(configuration)
     this.incoming = function(message)
     {
         var channel = message.channel;
-        if (channel && channel.indexOf('/meta/') == 0)
+        if (channel && channel.indexOf('/meta/') === 0)
         {
             if (message.ext && message.ext.timesync)
             {
                 var timesync = message.ext.timesync;
-                _debug('TimeSyncExtension: server sent timesync: {}', org.cometd.JSON.toJSON(timesync));
+                _debug('TimeSyncExtension: server sent timesync', timesync);
 
                 var now = new Date().getTime();
                 var l2 = (now - timesync.tc - timesync.p) / 2;
-		var o2 = timesync.ts-timesync.tc-l2;
-		
+                var o2 = timesync.ts - timesync.tc - l2;
+
                 _lags.push(l2);
                 _offsets.push(o2);
                 if (_offsets.length > _maxSamples)
@@ -101,7 +104,7 @@ org.cometd.TimeSyncExtension = function(configuration)
                 }
                 _lag = parseInt((lagsSum / samples).toFixed());
                 _offset = parseInt((offsetsSum / samples).toFixed());
-                _debug('TimeSyncExtension: network lag {} ms, time offset with server {} ms', _lag, _offset, a2);
+                _debug('TimeSyncExtension: network lag', _lag, 'ms, time offset with server', _offset, 'ms', _lag, _offset);
             }
         }
         return message;
@@ -110,9 +113,12 @@ org.cometd.TimeSyncExtension = function(configuration)
     this.outgoing = function(message)
     {
         var channel = message.channel;
-        if (channel && channel.indexOf('/meta/') == 0)
+        if (channel && channel.indexOf('/meta/') === 0)
         {
-            if (!message.ext) message.ext = {};
+            if (!message.ext)
+            {
+                message.ext = {};
+            }
             message.ext.timesync = {
                 tc: new Date().getTime(),
                 l: _lag,
@@ -154,7 +160,7 @@ org.cometd.TimeSyncExtension = function(configuration)
      */
     this.getServerTime = function()
     {
-        return new Date().getTime()+_offset;
+        return new Date().getTime() + _offset;
     };
 
     /**
@@ -177,15 +183,15 @@ org.cometd.TimeSyncExtension = function(configuration)
         var ts = (atServerTimeOrDate instanceof Date) ? atServerTimeOrDate.getTime() : (0 + atServerTimeOrDate);
         var tc = ts - _offset;
         var interval = tc - new Date().getTime();
-        if(interval <= 0)
+        if (interval <= 0)
         {
             interval = 1;
         }
-        return setTimeout(callback,interval);
+        return setTimeout(callback, interval);
     };
 
     function _debug(text, args)
     {
         _cometd._debug(text, args);
-    };
-}
+    }
+};
