@@ -30,6 +30,11 @@ org.cometd.AckExtension = function()
     var _serverSupportsAcks = false;
     var _ackId = -1;
 
+    function _debug(text, args)
+    {
+        _cometd._debug(text, args);
+    }
+
     this.registered = function(name, cometd)
     {
         _cometd = cometd;
@@ -85,9 +90,4 @@ org.cometd.AckExtension = function()
         }
         return message;
     };
-
-    function _debug(text, args)
-    {
-        _cometd._debug(text, args);
-    }
 };

@@ -58,6 +58,11 @@ org.cometd.TimeSyncExtension = function(configuration)
     var _lag = 0;
     var _offset = 0;
 
+    function _debug(text, args)
+    {
+        _cometd._debug(text, args);
+    }
+
     this.registered = function(name, cometd)
     {
         _cometd = cometd;
@@ -189,9 +194,4 @@ org.cometd.TimeSyncExtension = function(configuration)
         }
         return setTimeout(callback, interval);
     };
-
-    function _debug(text, args)
-    {
-        _cometd._debug(text, args);
-    }
 };

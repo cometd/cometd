@@ -36,6 +36,10 @@ org.cometd.JSON.toJSON = org.cometd.JSON.fromJSON = org.cometd.AJAX.send = funct
  * </pre>
  * @param name the optional name of this cometd object
  */
+// IMPLEMENTATION NOTES:
+// Be very careful in not changing the function order and pass this file every time through JSLint (http://jslint.com)
+// The only implied globals must be "dojo", "org" and "window", and check that there are no "unused" warnings
+// Failing to pass JSLint may result in shrinkers/minifiers to create an unusable file.
 org.cometd.Cometd = function(name)
 {
     var _name = name || 'default';
@@ -127,25 +131,75 @@ org.cometd.Cometd = function(name)
         return -1;
     }
 
-    /**
-     * Returns the name assigned to this Comet object, or the string 'default'
-     * if no name has been explicitely passed as parameter to the constructor.
-     */
-    this.getName = function()
+    function _log(level, args)
     {
-        return _name;
-    };
+        if (window.console)
+        {
+            window.console[level].apply(window.console, args);
+        }
+    }
 
-    /**
-     * Configures the initial comet communication with the comet server.
-     * Configuration is passed via an object that must contain a mandatory field <code>url</code>
-     * of type string containing the URL of the comet server.
-     * @param configuration the configuration object
-     */
-    this.configure = function(configuration)
+    function _warn()
     {
-        _configure(configuration);
-    };
+        _log('warn', arguments);
+    }
+    this._warn = _warn;
+
+    function _info()
+    {
+        if (_logLevel != 'warn')
+        {
+            _log('info', arguments);
+        }
+    }
+    this._info = _info;
+
+    function _debug()
+    {
+        if (_logLevel == 'debug')
+        {
+            _log('debug', arguments);
+        }
+    }
+    this._debug = _debug;
+
+    function _newLongPollingTransport()
+    {
+        return _mixin({}, new org.cometd.Transport('long-polling'), new org.cometd.LongPollingTransport());
+    }
+
+    function _newCallbackPollingTransport()
+    {
+        return _mixin({}, new org.cometd.Transport('callback-polling'), new org.cometd.CallbackPollingTransport());
+    }
+
+    function _findTransport(handshakeResponse)
+    {
+        var transportTypes = handshakeResponse.supportedConnectionTypes;
+        if (_xd)
+        {
+            // If we are cross domain, check if the server supports it, that's the only option
+            if (_inArray('callback-polling', transportTypes) >= 0)
+            {
+                return _transport;
+            }
+        }
+        else
+        {
+            // Check if we can keep long-polling
+            if (_inArray('long-polling', transportTypes) >= 0)
+            {
+                return _transport;
+            }
+
+            // The server does not support long-polling
+            if (_inArray('callback-polling', transportTypes) >= 0)
+            {
+                return _newCallbackPollingTransport();
+            }
+        }
+        return null;
+    }
 
     function _configure(configuration)
     {
@@ -193,271 +247,6 @@ org.cometd.Cometd = function(name)
         _debug('Initial transport is', _transport);
     }
 
-    /**
-     * Configures and establishes the comet communication with the comet server
-     * via a handshake and a subsequent connect.
-     * @param configuration the configuration object
-     * @param handshakeProps an object to be merged with the handshake message
-     * @see #configure(cometURL)
-     * @see #handshake(handshakeProps)
-     */
-    this.init = function(configuration, handshakeProps)
-    {
-        _configure(configuration);
-        _handshake(handshakeProps);
-    };
-
-    /**
-     * Establishes the comet communication with the comet server
-     * via a handshake and a subsequent connect.
-     * @param handshakeProps an object to be merged with the handshake message
-     */
-    this.handshake = function(handshakeProps)
-    {
-        _reestablish = false;
-        _handshake(handshakeProps);
-    };
-
-    /**
-     * Disconnects from the comet server.
-     * @param disconnectProps an object to be merged with the disconnect message
-     */
-    this.disconnect = function(disconnectProps)
-    {
-        if (!_transport)
-        {
-            return;
-        }
-        var bayeuxMessage = {
-            channel: '/meta/disconnect'
-        };
-        var message = _mixin({}, disconnectProps, bayeuxMessage);
-        _setStatus('disconnecting');
-        _send([message], false);
-    };
-
-    /**
-     * Marks the start of a batch of application messages to be sent to the server
-     * in a single request, obtaining a single response containing (possibly) many
-     * application reply messages.
-     * Messages are held in a queue and not sent until {@link #endBatch()} is called.
-     * If startBatch() is called multiple times, then an equal number of endBatch()
-     * calls must be made to close and send the batch of messages.
-     * @see #endBatch()
-     */
-    this.startBatch = function()
-    {
-        _startBatch();
-    };
-
-    /**
-     * Marks the end of a batch of application messages to be sent to the server
-     * in a single request.
-     * @see #startBatch()
-     */
-    this.endBatch = function()
-    {
-        _endBatch(true);
-    };
-
-    /**
-     * Subscribes to the given channel, performing the given callback in the given scope
-     * when a message for the channel arrives.
-     * @param channel the channel to subscribe to
-     * @param scope the scope of the callback, may be omitted
-     * @param callback the callback to call when a message is sent to the channel
-     * @param subscribeProps an object to be merged with the subscribe message
-     * @return the subscription handle to be passed to {@link #unsubscribe(object)}
-     */
-    this.subscribe = function(channel, scope, callback, subscribeProps)
-    {
-        // Normalize arguments
-        if (typeof scope === 'function')
-        {
-            subscribeProps = callback;
-            callback = scope;
-            scope = undefined;
-        }
-
-        // Only send the message to the server if this clientId has not yet subscribed to the channel
-        var send = !_hasSubscriptions(channel);
-
-        var subscription = _addListener(channel, scope, callback, true);
-
-        if (send)
-        {
-            // Send the subscription message after the subscription registration to avoid
-            // races where the server would send a message to the subscribers, but here
-            // on the client the subscription has not been added yet to the data structures
-            var bayeuxMessage = {
-                channel: '/meta/subscribe',
-                subscription: channel
-            };
-            var message = _mixin({}, subscribeProps, bayeuxMessage);
-            _queueSend(message);
-        }
-
-        return subscription;
-    };
-
-    function _hasSubscriptions(channel)
-    {
-        var subscriptions = _listeners[channel];
-        if (subscriptions)
-        {
-            for (var i = 0; i < subscriptions.length; ++i)
-            {
-                if (subscriptions[i])
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Unsubscribes the subscription obtained with a call to {@link #subscribe(string, object, function)}.
-     * @param subscription the subscription to unsubscribe.
-     */
-    this.unsubscribe = function(subscription, unsubscribeProps)
-    {
-        // Remove the local listener before sending the message
-        // This ensures that if the server fails, this client does not get notifications
-        this.removeListener(subscription);
-
-        var channel = subscription[0];
-        // Only send the message to the server if this clientId unsubscribes the last subscription
-        if (!_hasSubscriptions(channel))
-        {
-            var bayeuxMessage = {
-                channel: '/meta/unsubscribe',
-                subscription: channel
-            };
-            var message = _mixin({}, unsubscribeProps, bayeuxMessage);
-            _queueSend(message);
-        }
-    };
-
-    /**
-     * Publishes a message on the given channel, containing the given content.
-     * @param channel the channel to publish the message to
-     * @param content the content of the message
-     * @param publishProps an object to be merged with the publish message
-     */
-    this.publish = function(channel, content, publishProps)
-    {
-        var bayeuxMessage = {
-            channel: channel,
-            data: content
-        };
-        var message = _mixin({}, publishProps, bayeuxMessage);
-        _queueSend(message);
-    };
-
-    /**
-     * Adds a listener for bayeux messages, performing the given callback in the given scope
-     * when a message for the given channel arrives.
-     * @param channel the channel the listener is interested to
-     * @param scope the scope of the callback, may be omitted
-     * @param callback the callback to call when a message is sent to the channel
-     * @returns the subscription handle to be passed to {@link #removeListener(object)}
-     * @see #removeListener(object)
-     */
-    this.addListener = function(channel, scope, callback)
-    {
-        return _addListener(channel, scope, callback, false);
-    };
-
-    function _addListener(channel, scope, callback, isSubscription)
-    {
-        // The data structure is a map<channel, subscription[]>, where each subscription
-        // holds the callback to be called and its scope.
-
-        var thiz = scope;
-        var method = callback;
-        // Normalize arguments
-        if (typeof scope === 'function')
-        {
-            thiz = undefined;
-            method = scope;
-        }
-        else if (typeof callback === 'string')
-        {
-            if (!scope)
-            {
-                throw 'Invalid scope ' + scope;
-            }
-            method = scope[callback];
-            if (!method)
-            {
-                throw 'Invalid callback ' + callback + ' for scope ' + scope;
-            }
-        }
-        _debug('Listener scope', thiz, 'and callback', method);
-
-        var subscription = {
-            scope: thiz,
-            callback: method,
-            subscription: isSubscription === true
-        };
-
-        var subscriptions = _listeners[channel];
-        if (!subscriptions)
-        {
-            subscriptions = [];
-            _listeners[channel] = subscriptions;
-        }
-        // Pushing onto an array appends at the end and returns the id associated with the element increased by 1.
-        // Note that if:
-        // a.push('a'); var hb=a.push('b'); delete a[hb-1]; var hc=a.push('c');
-        // then:
-        // hc==3, a.join()=='a',,'c', a.length==3
-        var subscriptionID = subscriptions.push(subscription) - 1;
-
-        _debug('Added listener', subscription, 'for channel', channel, 'having id =', subscriptionID);
-
-        // The subscription to allow removal of the listener is made of the channel and the index
-        return [channel, subscriptionID];
-    }
-
-    /**
-     * Removes the subscription obtained with a call to {@link #addListener(string, object, function)}.
-     * @param subscription the subscription to unsubscribe.
-     */
-    this.removeListener = function(subscription)
-    {
-        _removeListener(subscription);
-    };
-
-    function _removeListener(subscription)
-    {
-        var subscriptions = _listeners[subscription[0]];
-        if (subscriptions)
-        {
-            delete subscriptions[subscription[1]];
-            _debug('Removed listener', subscription);
-        }
-    }
-
-    /**
-     * Removes all listeners registered with {@link #addListener(channel, scope, callback)} or
-     * {@link #subscribe(channel, scope, callback)}.
-     */
-    this.clearListeners = function()
-    {
-        _listeners = {};
-    };
-
-    /**
-     * Removes all subscriptions added via {@link #subscribe(channel, scope, callback, subscribeProps)},
-     * but does not remove the listeners added via {@link addListener(channel, scope, callback)}.
-     */
-    this.clearSubscriptions = function()
-    {
-        _clearSubscriptions();
-    };
-
     function _clearSubscriptions()
     {
         for (var channel in _listeners)
@@ -475,195 +264,74 @@ org.cometd.Cometd = function(name)
         }
     }
 
-    /**
-     * Returns a string representing the status of the bayeux communication with the comet server.
-     */
-    this.getStatus = function()
+    function _setStatus(newStatus)
     {
-        return _status;
-    };
-
-    /**
-     * Sets the backoff period used to increase the backoff time when retrying an unsuccessful or failed message.
-     * Default value is 1 second, which means if there is a persistent failure the retries will happen
-     * after 1 second, then after 2 seconds, then after 3 seconds, etc. So for example with 15 seconds of
-     * elapsed time, there will be 5 retries (at 1, 3, 6, 10 and 15 seconds elapsed).
-     * @param period the backoff period to set
-     * @see #getBackoffIncrement()
-     */
-    this.setBackoffIncrement = function(period)
-    {
-        _backoffIncrement = period;
-    };
-
-    /**
-     * Returns the backoff period used to increase the backoff time when retrying an unsuccessful or failed message.
-     * @see #setBackoffIncrement(period)
-     */
-    this.getBackoffIncrement = function()
-    {
-        return _backoffIncrement;
-    };
-
-    /**
-     * Returns the backoff period to wait before retrying an unsuccessful or failed message.
-     */
-    this.getBackoffPeriod = function()
-    {
-        return _backoff;
-    };
-
-    /**
-     * Sets the log level for console logging.
-     * Valid values are the strings 'error', 'warn', 'info' and 'debug', from
-     * less verbose to more verbose.
-     * @param level the log level string
-     */
-    this.setLogLevel = function(level)
-    {
-        _logLevel = level;
-    };
-
-    /**
-     * Registers an extension whose callbacks are called for every incoming message
-     * (that comes from the server to this client implementation) and for every
-     * outgoing message (that originates from this client implementation for the
-     * server).
-     * The format of the extension object is the following:
-     * <pre>
-     * {
-     *     incoming: function(message) { ... },
-     *     outgoing: function(message) { ... }
-     * }
-     * </pre>
-     * Both properties are optional, but if they are present they will be called
-     * respectively for each incoming message and for each outgoing message.
-     * @param name the name of the extension
-     * @param extension the extension to register
-     * @return true if the extension was registered, false otherwise
-     * @see #unregisterExtension(name)
-     */
-    this.registerExtension = function(name, extension)
-    {
-        var existing = false;
-        for (var i = 0; i < _extensions.length; ++i)
-        {
-            var existingExtension = _extensions[i];
-            if (existingExtension.name == name)
-            {
-                existing = true;
-                break;
-            }
-        }
-        if (!existing)
-        {
-            _extensions.push({
-                name: name,
-                extension: extension
-            });
-            _debug('Registered extension', name);
-
-            // Callback for extensions
-            if (typeof extension.registered === 'function')
-            {
-                extension.registered.call(extension, name, this);
-            }
-
-            return true;
-        }
-        else
-        {
-            _info('Could not register extension with name', name, 'since another extension with the same name already exists');
-            return false;
-        }
-    };
-
-    /**
-     * Unregister an extension previously registered with
-     * {@link #registerExtension(name, extension)}.
-     * @param name the name of the extension to unregister.
-     * @return true if the extension was unregistered, false otherwise
-     */
-    this.unregisterExtension = function(name)
-    {
-        var unregistered = false;
-        for (var i = 0; i < _extensions.length; ++i)
-        {
-            var extension = _extensions[i];
-            if (extension.name == name)
-            {
-                _extensions.splice(i, 1);
-                unregistered = true;
-                _debug('Unregistered extension', name);
-
-                // Callback for extensions
-                var ext = extension.extension;
-                if (typeof ext.unregistered === 'function')
-                {
-                    ext.unregistered.call(ext);
-                }
-
-                break;
-            }
-        }
-        return unregistered;
-    };
-
-    /**
-     * Find the extension registered with the given name.
-     * @param name the name of the extension to find
-     * @return the extension found or null if no extension with the given name has been registered
-     */
-    this.getExtension = function(name)
-    {
-        for (var i = 0; i < _extensions.length; ++i)
-        {
-            var extension = _extensions[i];
-            if (extension.name == name)
-            {
-                return extension.extension;
-            }
-        }
-        return null;
-    };
-
-    /**
-     * Starts a the batch of messages to be sent in a single request.
-     * @see _endBatch(sendMessages)
-     */
-    function _startBatch()
-    {
-        ++_batch;
+        _debug('Status', _status, '->', newStatus);
+        _status = newStatus;
     }
 
-    /**
-     * Ends the batch of messages to be sent in a single request,
-     * optionally sending messages present in the message queue depending
-     * on the given argument.
-     * @param sendMessages whether to send the messages in the queue or not
-     * @see _startBatch()
-     */
-    function _endBatch(sendMessages)
+    function _isDisconnected()
     {
-        --_batch;
-        if (_batch < 0)
-        {
-            _batch = 0;
-        }
-        if (sendMessages && _batch === 0 && !_isDisconnected())
-        {
-            var messages = _messageQueue;
-            _messageQueue = [];
-            if (messages.length > 0)
-            {
-                _send(messages, false);
-            }
-        }
+        return _status == 'disconnecting' || _status == 'disconnected';
     }
 
     function _nextMessageId()
     {
         return ++_messageId;
+    }
+
+    function _applyExtension(name, callback, message)
+    {
+        try
+        {
+            return callback(message);
+        }
+        catch (x)
+        {
+            _debug('Exception during execution of extension', name, x);
+            return message;
+        }
+    }
+
+    function _applyIncomingExtensions(message)
+    {
+        for (var i = 0; i < _extensions.length; ++i)
+        {
+            if (message === undefined || message === null)
+            {
+                break;
+            }
+
+            var index = _reverseIncomingExtensions ? _extensions.length - 1 - i : i;
+            var extension = _extensions[index];
+            var callback = extension.extension.incoming;
+            if (callback && typeof callback === 'function')
+            {
+                var result = _applyExtension(extension.name, callback, message);
+                message = result === undefined ? message : result;
+            }
+        }
+        return message;
+    }
+
+    function _applyOutgoingExtensions(message)
+    {
+        for (var i = 0; i < _extensions.length; ++i)
+        {
+            if (message === undefined || message === null)
+            {
+                break;
+            }
+
+            var extension = _extensions[i];
+            var callback = extension.extension.outgoing;
+            if (callback && typeof callback === 'function')
+            {
+                var result = _applyExtension(extension.name, callback, message);
+                message = result === undefined ? message : result;
+            }
+        }
+        return message;
     }
 
     /**
@@ -692,121 +360,51 @@ org.cometd.Cometd = function(name)
         throw 'Conversion Error ' + response + ', typeof ' + (typeof response);
     }
 
-    function _setStatus(newStatus)
+    function _notify(channel, message)
     {
-        _debug('Status', _status, '->', newStatus);
-        _status = newStatus;
-    }
-
-    function _isDisconnected()
-    {
-        return _status == 'disconnecting' || _status == 'disconnected';
-    }
-
-    /**
-     * Sends the initial handshake message
-     */
-    function _handshake(handshakeProps)
-    {
-        _clientId = null;
-
-        _clearSubscriptions();
-
-        // Start a batch.
-        // This is needed because handshake and connect are async.
-        // It may happen that the application calls init() then subscribe()
-        // and the subscribe message is sent before the connect message, if
-        // the subscribe message is not held until the connect message is sent.
-        // So here we start a batch to hold temporarly any message until
-        // the connection is fully established.
-        _batch = 0;
-        _startBatch();
-
-        // Save the original properties provided by the user
-        // Deep copy to avoid the user to be able to change them later
-        _handshakeProps = _mixin(true, {}, handshakeProps);
-
-        var bayeuxMessage = {
-            version: '1.0',
-            minimumVersion: '0.9',
-            channel: '/meta/handshake',
-            supportedConnectionTypes: _xd ? ['callback-polling'] : ['long-polling', 'callback-polling']
-        };
-        // Do not allow the user to mess with the required properties,
-        // so merge first the user properties and *then* the bayeux message
-        var message = _mixin({}, handshakeProps, bayeuxMessage);
-
-        // We started a batch to hold the application messages,
-        // so here we must bypass it and send immediately.
-        _setStatus('handshaking');
-        _debug('Handshake sent', message);
-        _send([message], false);
-    }
-
-    function _findTransport(handshakeResponse)
-    {
-        var transportTypes = handshakeResponse.supportedConnectionTypes;
-        if (_xd)
+        var subscriptions = _listeners[channel];
+        if (subscriptions && subscriptions.length > 0)
         {
-            // If we are cross domain, check if the server supports it, that's the only option
-            if (_inArray('callback-polling', transportTypes) >= 0)
+            for (var i = 0; i < subscriptions.length; ++i)
             {
-                return _transport;
+                var subscription = subscriptions[i];
+                // Subscriptions may come and go, so the array may have 'holes'
+                if (subscription)
+                {
+                    try
+                    {
+                        subscription.callback.call(subscription.scope, message);
+                    }
+                    catch (x)
+                    {
+                        _warn('Exception during notification', subscription, message, x);
+                    }
+                }
             }
         }
-        else
+    }
+
+    function _notifyListeners(channel, message)
+    {
+        // Notify direct listeners
+        _notify(channel, message);
+
+        // Notify the globbing listeners
+        var channelParts = channel.split("/");
+        var last = channelParts.length - 1;
+        for (var i = last; i > 0; --i)
         {
-            // Check if we can keep long-polling
-            if (_inArray('long-polling', transportTypes) >= 0)
+            var channelPart = channelParts.slice(0, i).join('/') + '/*';
+            // We don't want to notify /foo/* if the channel is /foo/bar/baz,
+            // so we stop at the first non recursive globbing
+            if (i == last)
             {
-                return _transport;
+                _notify(channelPart, message);
             }
-
-            // The server does not support long-polling
-            if (_inArray('callback-polling', transportTypes) >= 0)
-            {
-                return _newCallbackPollingTransport();
-            }
+            // Add the recursive globber and notify
+            channelPart += '*';
+            _notify(channelPart, message);
         }
-        return null;
-    }
-
-    function _delayedHandshake()
-    {
-        _setStatus('handshaking');
-        _delayedSend(function()
-        {
-            _handshake(_handshakeProps);
-        });
-    }
-
-    function _delayedConnect()
-    {
-        _setStatus('connecting');
-        _delayedSend(function()
-        {
-            _connect();
-        });
-    }
-
-    function _delayedSend(operation)
-    {
-        _cancelDelayedSend();
-        var delay = _backoff;
-        if (_advice.interval && _advice.interval > 0)
-        {
-            delay += _advice.interval;
-        }
-        _scheduledSend = _setTimeout(operation, delay);
-    }
-
-    function _cancelDelayedSend()
-    {
-        if (_scheduledSend !== null)
-        {
-            clearTimeout(_scheduledSend);
-        }
-        _scheduledSend = null;
     }
 
     function _setTimeout(funktion, delay)
@@ -824,35 +422,32 @@ org.cometd.Cometd = function(name)
         }, delay);
     }
 
-    /**
-     * Sends the connect message
-     */
-    function _connect()
+    function _cancelDelayedSend()
     {
-        var message = {
-            channel: '/meta/connect',
-            connectionType: _transport.getType()
-        };
-        _setStatus('connecting');
-        _debug('Connect sent', message);
-        _send([message], true);
-        _setStatus('connected');
+        if (_scheduledSend !== null)
+        {
+            clearTimeout(_scheduledSend);
+        }
+        _scheduledSend = null;
     }
 
-    function _queueSend(message)
+    function _delayedSend(operation)
     {
-        if (_batch > 0)
+        _cancelDelayedSend();
+        var delay = _backoff;
+        if (_advice.interval && _advice.interval > 0)
         {
-            _messageQueue.push(message);
+            delay += _advice.interval;
         }
-        else
-        {
-            _send([message], false);
-        }
+        _scheduledSend = _setTimeout(operation, delay);
     }
 
+    // Needed to break cyclic dependencies between function definitions
+    var _handleResponse;
+    var _handleFailure;
+
     /**
-     * Delivers the messages to the comet server
+     * Delivers the messages to the Cometd server
      * @param messages the array of messages to send
      * @param longpoll true if this send is a long poll
      */
@@ -916,154 +511,136 @@ org.cometd.Cometd = function(name)
         _transport.send(envelope, longpoll);
     }
 
-    function _applyIncomingExtensions(message)
+    function _queueSend(message)
     {
-        for (var i = 0; i < _extensions.length; ++i)
+        if (_batch > 0)
         {
-            if (message === undefined || message === null)
-            {
-                break;
-            }
-
-            var index = _reverseIncomingExtensions ? _extensions.length - 1 - i : i;
-            var extension = _extensions[index];
-            var callback = extension.extension.incoming;
-            if (callback && typeof callback === 'function')
-            {
-                var result = _applyExtension(extension.name, callback, message);
-                message = result === undefined ? message : result;
-            }
+            _messageQueue.push(message);
         }
-        return message;
-    }
-
-    function _applyOutgoingExtensions(message)
-    {
-        for (var i = 0; i < _extensions.length; ++i)
+        else
         {
-            if (message === undefined || message === null)
-            {
-                break;
-            }
-
-            var extension = _extensions[i];
-            var callback = extension.extension.outgoing;
-            if (callback && typeof callback === 'function')
-            {
-                var result = _applyExtension(extension.name, callback, message);
-                message = result === undefined ? message : result;
-            }
-        }
-        return message;
-    }
-
-    function _applyExtension(name, callback, message)
-    {
-        try
-        {
-            return callback(message);
-        }
-        catch (x)
-        {
-            _debug('Exception during execution of extension', name, x);
-            return message;
+            _send([message], false);
         }
     }
 
-    function _receive(message)
+    function _resetBackoff()
     {
-        if (message.advice)
-        {
-            _advice = message.advice;
-        }
+        _backoff = 0;
+    }
 
-        var channel = message.channel;
-        switch (channel)
+    function _increaseBackoff()
+    {
+        if (_backoff < _maxBackoff)
         {
-            case '/meta/handshake':
-                _handshakeResponse(message);
-                break;
-            case '/meta/connect':
-                _connectResponse(message);
-                break;
-            case '/meta/disconnect':
-                _disconnectResponse(message);
-                break;
-            case '/meta/subscribe':
-                _subscribeResponse(message);
-                break;
-            case '/meta/unsubscribe':
-                _unsubscribeResponse(message);
-                break;
-            default:
-                _messageResponse(message);
-                break;
+            _backoff += _backoffIncrement;
         }
     }
 
     /**
-     * Receive a message.
-     * This method is exposed as a public message so extensions may inject
-     * messages as if they had been received.
+     * Starts a the batch of messages to be sent in a single request.
+     * @see _endBatch(sendMessages)
      */
-    this.receive = _receive;
-
-    function _handleResponse(request, response, longpoll)
+    function _startBatch()
     {
-        var messages = _convertToMessages(response);
-        _debug('Received', messages);
+        ++_batch;
+    }
 
-        // Signal the transport it can send other queued requests
-        _transport.complete(request, true, longpoll);
-
-        for (var i = 0; i < messages.length; ++i)
+    /**
+     * Ends the batch of messages to be sent in a single request,
+     * optionally sending messages present in the message queue depending
+     * on the given argument.
+     * @param sendMessages whether to send the messages in the queue or not
+     * @see _startBatch()
+     */
+    function _endBatch(sendMessages)
+    {
+        --_batch;
+        if (_batch < 0)
         {
-            var message = messages[i];
-            message = _applyIncomingExtensions(message);
-            if (message === undefined || message === null)
+            _batch = 0;
+        }
+        if (sendMessages && _batch === 0 && !_isDisconnected())
+        {
+            var messages = _messageQueue;
+            _messageQueue = [];
+            if (messages.length > 0)
             {
-                continue;
+                _send(messages, false);
             }
-
-            _receive(message);
         }
     }
 
-    function _handleFailure(request, messages, reason, exception, longpoll)
+    /**
+     * Sends the connect message
+     */
+    function _connect()
     {
-        var xhr = request.xhr;
+        var message = {
+            channel: '/meta/connect',
+            connectionType: _transport.getType()
+        };
+        _setStatus('connecting');
+        _debug('Connect sent', message);
+        _send([message], true);
+        _setStatus('connected');
+    }
 
-        _debug('Failed', messages);
-
-        // Signal the transport it can send other queued requests
-        _transport.complete(request, false, longpoll);
-
-        for (var i = 0; i < messages.length; ++i)
+    function _delayedConnect()
+    {
+        _setStatus('connecting');
+        _delayedSend(function()
         {
-            var message = messages[i];
-            var channel = message.channel;
-            switch (channel)
-            {
-                case '/meta/handshake':
-                    _handshakeFailure(xhr, message);
-                    break;
-                case '/meta/connect':
-                    _connectFailure(xhr, message);
-                    break;
-                case '/meta/disconnect':
-                    _disconnectFailure(xhr, message);
-                    break;
-                case '/meta/subscribe':
-                    _subscribeFailure(xhr, message);
-                    break;
-                case '/meta/unsubscribe':
-                    _unsubscribeFailure(xhr, message);
-                    break;
-                default:
-                    _messageFailure(xhr, message);
-                    break;
-            }
-        }
+            _connect();
+        });
+    }
+
+    /**
+     * Sends the initial handshake message
+     */
+    function _handshake(handshakeProps)
+    {
+        _clientId = null;
+
+        _clearSubscriptions();
+
+        // Start a batch.
+        // This is needed because handshake and connect are async.
+        // It may happen that the application calls init() then subscribe()
+        // and the subscribe message is sent before the connect message, if
+        // the subscribe message is not held until the connect message is sent.
+        // So here we start a batch to hold temporarly any message until
+        // the connection is fully established.
+        _batch = 0;
+        _startBatch();
+
+        // Save the original properties provided by the user
+        // Deep copy to avoid the user to be able to change them later
+        _handshakeProps = _mixin(true, {}, handshakeProps);
+
+        var bayeuxMessage = {
+            version: '1.0',
+            minimumVersion: '0.9',
+            channel: '/meta/handshake',
+            supportedConnectionTypes: _xd ? ['callback-polling'] : ['long-polling', 'callback-polling']
+        };
+        // Do not allow the user to mess with the required properties,
+        // so merge first the user properties and *then* the bayeux message
+        var message = _mixin({}, handshakeProps, bayeuxMessage);
+
+        // We started a batch to hold the application messages,
+        // so here we must bypass it and send immediately.
+        _setStatus('handshaking');
+        _debug('Handshake sent', message);
+        _send([message], false);
+    }
+
+    function _delayedHandshake()
+    {
+        _setStatus('handshaking');
+        _delayedSend(function()
+        {
+            _handshake(_handshakeProps);
+        });
     }
 
     function _handshakeResponse(message)
@@ -1263,6 +840,20 @@ org.cometd.Cometd = function(name)
         }
     }
 
+    function _disconnect(abort)
+    {
+        _cancelDelayedSend();
+        if (abort)
+        {
+            _transport.abort();
+        }
+        _clientId = null;
+        _setStatus('disconnected');
+        _batch = 0;
+        _messageQueue = [];
+        _resetBackoff();
+    }
+
     function _disconnectResponse(message)
     {
         if (message.successful)
@@ -1276,20 +867,6 @@ org.cometd.Cometd = function(name)
             _notifyListeners('/meta/disconnect', message);
             _notifyListeners('/meta/usuccessful', message);
         }
-    }
-
-    function _disconnect(abort)
-    {
-        _cancelDelayedSend();
-        if (abort)
-        {
-            _transport.abort();
-        }
-        _clientId = null;
-        _setStatus('disconnected');
-        _batch = 0;
-        _messageQueue = [];
-        _resetBackoff();
     }
 
     function _disconnectFailure(xhr, message)
@@ -1416,107 +993,542 @@ org.cometd.Cometd = function(name)
         _notifyListeners('/meta/unsuccessful', failureMessage);
     }
 
-    function _notifyListeners(channel, message)
+    function _receive(message)
     {
-        // Notify direct listeners
-        _notify(channel, message);
-
-        // Notify the globbing listeners
-        var channelParts = channel.split("/");
-        var last = channelParts.length - 1;
-        for (var i = last; i > 0; --i)
+        if (message.advice)
         {
-            var channelPart = channelParts.slice(0, i).join('/') + '/*';
-            // We don't want to notify /foo/* if the channel is /foo/bar/baz,
-            // so we stop at the first non recursive globbing
-            if (i == last)
-            {
-                _notify(channelPart, message);
-            }
-            // Add the recursive globber and notify
-            channelPart += '*';
-            _notify(channelPart, message);
+            _advice = message.advice;
+        }
+
+        var channel = message.channel;
+        switch (channel)
+        {
+            case '/meta/handshake':
+                _handshakeResponse(message);
+                break;
+            case '/meta/connect':
+                _connectResponse(message);
+                break;
+            case '/meta/disconnect':
+                _disconnectResponse(message);
+                break;
+            case '/meta/subscribe':
+                _subscribeResponse(message);
+                break;
+            case '/meta/unsubscribe':
+                _unsubscribeResponse(message);
+                break;
+            default:
+                _messageResponse(message);
+                break;
         }
     }
 
-    function _notify(channel, message)
+    /**
+     * Receives a message.
+     * This method is exposed as a public so that extensions may inject
+     * messages simulating that they had been received.
+     */
+    this.receive = _receive;
+
+    _handleResponse = function _handleResponse(request, response, longpoll)
+    {
+        var messages = _convertToMessages(response);
+        _debug('Received', messages);
+
+        // Signal the transport it can send other queued requests
+        _transport.complete(request, true, longpoll);
+
+        for (var i = 0; i < messages.length; ++i)
+        {
+            var message = messages[i];
+            message = _applyIncomingExtensions(message);
+            if (message === undefined || message === null)
+            {
+                continue;
+            }
+
+            _receive(message);
+        }
+    };
+
+    _handleFailure = function _handleFailure(request, messages, reason, exception, longpoll)
+    {
+        var xhr = request.xhr;
+
+        _debug('Failed', messages);
+
+        // Signal the transport it can send other queued requests
+        _transport.complete(request, false, longpoll);
+
+        for (var i = 0; i < messages.length; ++i)
+        {
+            var message = messages[i];
+            var channel = message.channel;
+            switch (channel)
+            {
+                case '/meta/handshake':
+                    _handshakeFailure(xhr, message);
+                    break;
+                case '/meta/connect':
+                    _connectFailure(xhr, message);
+                    break;
+                case '/meta/disconnect':
+                    _disconnectFailure(xhr, message);
+                    break;
+                case '/meta/subscribe':
+                    _subscribeFailure(xhr, message);
+                    break;
+                case '/meta/unsubscribe':
+                    _unsubscribeFailure(xhr, message);
+                    break;
+                default:
+                    _messageFailure(xhr, message);
+                    break;
+            }
+        }
+    };
+
+    function _hasSubscriptions(channel)
     {
         var subscriptions = _listeners[channel];
-        if (subscriptions && subscriptions.length > 0)
+        if (subscriptions)
         {
             for (var i = 0; i < subscriptions.length; ++i)
             {
-                var subscription = subscriptions[i];
-                // Subscriptions may come and go, so the array may have 'holes'
-                if (subscription)
+                if (subscriptions[i])
                 {
-                    try
-                    {
-                        subscription.callback.call(subscription.scope, message);
-                    }
-                    catch (x)
-                    {
-                        _warn('Exception during notification', subscription, message, x);
-                    }
+                    return true;
                 }
             }
         }
+        return false;
     }
 
-    function _resetBackoff()
+    function _addListener(channel, scope, callback, isSubscription)
     {
-        _backoff = 0;
-    }
+        // The data structure is a map<channel, subscription[]>, where each subscription
+        // holds the callback to be called and its scope.
 
-    function _increaseBackoff()
-    {
-        if (_backoff < _maxBackoff)
+        var thiz = scope;
+        var method = callback;
+        // Normalize arguments
+        if (typeof scope === 'function')
         {
-            _backoff += _backoffIncrement;
+            thiz = undefined;
+            method = scope;
+        }
+        else if (typeof callback === 'string')
+        {
+            if (!scope)
+            {
+                throw 'Invalid scope ' + scope;
+            }
+            method = scope[callback];
+            if (!method)
+            {
+                throw 'Invalid callback ' + callback + ' for scope ' + scope;
+            }
+        }
+        _debug('Listener scope', thiz, 'and callback', method);
+
+        var subscription = {
+            scope: thiz,
+            callback: method,
+            subscription: isSubscription === true
+        };
+
+        var subscriptions = _listeners[channel];
+        if (!subscriptions)
+        {
+            subscriptions = [];
+            _listeners[channel] = subscriptions;
+        }
+        // Pushing onto an array appends at the end and returns the id associated with the element increased by 1.
+        // Note that if:
+        // a.push('a'); var hb=a.push('b'); delete a[hb-1]; var hc=a.push('c');
+        // then:
+        // hc==3, a.join()=='a',,'c', a.length==3
+        var subscriptionID = subscriptions.push(subscription) - 1;
+
+        _debug('Added listener', subscription, 'for channel', channel, 'having id =', subscriptionID);
+
+        // The subscription to allow removal of the listener is made of the channel and the index
+        return [channel, subscriptionID];
+    }
+
+    function _removeListener(subscription)
+    {
+        var subscriptions = _listeners[subscription[0]];
+        if (subscriptions)
+        {
+            delete subscriptions[subscription[1]];
+            _debug('Removed listener', subscription);
         }
     }
 
-    function _warn()
-    {
-        _log('warn', arguments);
-    }
-    this._warn = _warn;
+    //
+    // PUBLIC API
+    //
 
-    function _info()
+    /**
+     * Configures the initial comet communication with the comet server.
+     * Configuration is passed via an object that must contain a mandatory field <code>url</code>
+     * of type string containing the URL of the comet server.
+     * @param configuration the configuration object
+     */
+    this.configure = function(configuration)
     {
-        if (_logLevel != 'warn')
+        _configure(configuration);
+    };
+
+    /**
+     * Configures and establishes the comet communication with the comet server
+     * via a handshake and a subsequent connect.
+     * @param configuration the configuration object
+     * @param handshakeProps an object to be merged with the handshake message
+     * @see #configure(cometURL)
+     * @see #handshake(handshakeProps)
+     */
+    this.init = function(configuration, handshakeProps)
+    {
+        _configure(configuration);
+        _handshake(handshakeProps);
+    };
+
+    /**
+     * Establishes the comet communication with the comet server
+     * via a handshake and a subsequent connect.
+     * @param handshakeProps an object to be merged with the handshake message
+     */
+    this.handshake = function(handshakeProps)
+    {
+        _reestablish = false;
+        _handshake(handshakeProps);
+    };
+
+    /**
+     * Disconnects from the comet server.
+     * @param disconnectProps an object to be merged with the disconnect message
+     */
+    this.disconnect = function(disconnectProps)
+    {
+        if (!_transport)
         {
-            _log('info', arguments);
+            return;
         }
-    }
-    this._info = _info;
+        var bayeuxMessage = {
+            channel: '/meta/disconnect'
+        };
+        var message = _mixin({}, disconnectProps, bayeuxMessage);
+        _setStatus('disconnecting');
+        _send([message], false);
+    };
 
-    function _debug()
+    /**
+     * Marks the start of a batch of application messages to be sent to the server
+     * in a single request, obtaining a single response containing (possibly) many
+     * application reply messages.
+     * Messages are held in a queue and not sent until {@link #endBatch()} is called.
+     * If startBatch() is called multiple times, then an equal number of endBatch()
+     * calls must be made to close and send the batch of messages.
+     * @see #endBatch()
+     */
+    this.startBatch = function()
     {
-        if (_logLevel == 'debug')
+        _startBatch();
+    };
+
+    /**
+     * Marks the end of a batch of application messages to be sent to the server
+     * in a single request.
+     * @see #startBatch()
+     */
+    this.endBatch = function()
+    {
+        _endBatch(true);
+    };
+
+    /**
+     * Adds a listener for bayeux messages, performing the given callback in the given scope
+     * when a message for the given channel arrives.
+     * @param channel the channel the listener is interested to
+     * @param scope the scope of the callback, may be omitted
+     * @param callback the callback to call when a message is sent to the channel
+     * @returns the subscription handle to be passed to {@link #removeListener(object)}
+     * @see #removeListener(object)
+     */
+    this.addListener = function(channel, scope, callback)
+    {
+        return _addListener(channel, scope, callback, false);
+    };
+
+    /**
+     * Removes the subscription obtained with a call to {@link #addListener(string, object, function)}.
+     * @param subscription the subscription to unsubscribe.
+     */
+    this.removeListener = function(subscription)
+    {
+        _removeListener(subscription);
+    };
+
+    /**
+     * Removes all listeners registered with {@link #addListener(channel, scope, callback)} or
+     * {@link #subscribe(channel, scope, callback)}.
+     */
+    this.clearListeners = function()
+    {
+        _listeners = {};
+    };
+
+    /**
+     * Subscribes to the given channel, performing the given callback in the given scope
+     * when a message for the channel arrives.
+     * @param channel the channel to subscribe to
+     * @param scope the scope of the callback, may be omitted
+     * @param callback the callback to call when a message is sent to the channel
+     * @param subscribeProps an object to be merged with the subscribe message
+     * @return the subscription handle to be passed to {@link #unsubscribe(object)}
+     */
+    this.subscribe = function(channel, scope, callback, subscribeProps)
+    {
+        // Normalize arguments
+        if (typeof scope === 'function')
         {
-            _log('debug', arguments);
+            subscribeProps = callback;
+            callback = scope;
+            scope = undefined;
         }
-    }
-    this._debug = _debug;
 
-    function _log(level, args)
-    {
-        if (window.console)
+        // Only send the message to the server if this clientId has not yet subscribed to the channel
+        var send = !_hasSubscriptions(channel);
+
+        var subscription = _addListener(channel, scope, callback, true);
+
+        if (send)
         {
-            window.console[level].apply(window.console, args);
+            // Send the subscription message after the subscription registration to avoid
+            // races where the server would send a message to the subscribers, but here
+            // on the client the subscription has not been added yet to the data structures
+            var bayeuxMessage = {
+                channel: '/meta/subscribe',
+                subscription: channel
+            };
+            var message = _mixin({}, subscribeProps, bayeuxMessage);
+            _queueSend(message);
         }
-    }
 
-    function _newLongPollingTransport()
-    {
-        return _mixin({}, new org.cometd.Transport('long-polling'), new org.cometd.LongPollingTransport());
-    }
+        return subscription;
+    };
 
-    function _newCallbackPollingTransport()
+    /**
+     * Unsubscribes the subscription obtained with a call to {@link #subscribe(string, object, function)}.
+     * @param subscription the subscription to unsubscribe.
+     */
+    this.unsubscribe = function(subscription, unsubscribeProps)
     {
-        return _mixin({}, new org.cometd.Transport('callback-polling'), new org.cometd.CallbackPollingTransport());
-    }
+        // Remove the local listener before sending the message
+        // This ensures that if the server fails, this client does not get notifications
+        this.removeListener(subscription);
+
+        var channel = subscription[0];
+        // Only send the message to the server if this clientId unsubscribes the last subscription
+        if (!_hasSubscriptions(channel))
+        {
+            var bayeuxMessage = {
+                channel: '/meta/unsubscribe',
+                subscription: channel
+            };
+            var message = _mixin({}, unsubscribeProps, bayeuxMessage);
+            _queueSend(message);
+        }
+    };
+
+    /**
+     * Removes all subscriptions added via {@link #subscribe(channel, scope, callback, subscribeProps)},
+     * but does not remove the listeners added via {@link addListener(channel, scope, callback)}.
+     */
+    this.clearSubscriptions = function()
+    {
+        _clearSubscriptions();
+    };
+
+    /**
+     * Publishes a message on the given channel, containing the given content.
+     * @param channel the channel to publish the message to
+     * @param content the content of the message
+     * @param publishProps an object to be merged with the publish message
+     */
+    this.publish = function(channel, content, publishProps)
+    {
+        var bayeuxMessage = {
+            channel: channel,
+            data: content
+        };
+        var message = _mixin({}, publishProps, bayeuxMessage);
+        _queueSend(message);
+    };
+
+    /**
+     * Returns a string representing the status of the bayeux communication with the comet server.
+     */
+    this.getStatus = function()
+    {
+        return _status;
+    };
+
+    /**
+     * Sets the backoff period used to increase the backoff time when retrying an unsuccessful or failed message.
+     * Default value is 1 second, which means if there is a persistent failure the retries will happen
+     * after 1 second, then after 2 seconds, then after 3 seconds, etc. So for example with 15 seconds of
+     * elapsed time, there will be 5 retries (at 1, 3, 6, 10 and 15 seconds elapsed).
+     * @param period the backoff period to set
+     * @see #getBackoffIncrement()
+     */
+    this.setBackoffIncrement = function(period)
+    {
+        _backoffIncrement = period;
+    };
+
+    /**
+     * Returns the backoff period used to increase the backoff time when retrying an unsuccessful or failed message.
+     * @see #setBackoffIncrement(period)
+     */
+    this.getBackoffIncrement = function()
+    {
+        return _backoffIncrement;
+    };
+
+    /**
+     * Returns the backoff period to wait before retrying an unsuccessful or failed message.
+     */
+    this.getBackoffPeriod = function()
+    {
+        return _backoff;
+    };
+
+    /**
+     * Sets the log level for console logging.
+     * Valid values are the strings 'error', 'warn', 'info' and 'debug', from
+     * less verbose to more verbose.
+     * @param level the log level string
+     */
+    this.setLogLevel = function(level)
+    {
+        _logLevel = level;
+    };
+
+    /**
+     * Registers an extension whose callbacks are called for every incoming message
+     * (that comes from the server to this client implementation) and for every
+     * outgoing message (that originates from this client implementation for the
+     * server).
+     * The format of the extension object is the following:
+     * <pre>
+     * {
+     *     incoming: function(message) { ... },
+     *     outgoing: function(message) { ... }
+     * }
+     * </pre>
+     * Both properties are optional, but if they are present they will be called
+     * respectively for each incoming message and for each outgoing message.
+     * @param name the name of the extension
+     * @param extension the extension to register
+     * @return true if the extension was registered, false otherwise
+     * @see #unregisterExtension(name)
+     */
+    this.registerExtension = function(name, extension)
+    {
+        var existing = false;
+        for (var i = 0; i < _extensions.length; ++i)
+        {
+            var existingExtension = _extensions[i];
+            if (existingExtension.name == name)
+            {
+                existing = true;
+                break;
+            }
+        }
+        if (!existing)
+        {
+            _extensions.push({
+                name: name,
+                extension: extension
+            });
+            _debug('Registered extension', name);
+
+            // Callback for extensions
+            if (typeof extension.registered === 'function')
+            {
+                extension.registered.call(extension, name, this);
+            }
+
+            return true;
+        }
+        else
+        {
+            _info('Could not register extension with name', name, 'since another extension with the same name already exists');
+            return false;
+        }
+    };
+
+    /**
+     * Unregister an extension previously registered with
+     * {@link #registerExtension(name, extension)}.
+     * @param name the name of the extension to unregister.
+     * @return true if the extension was unregistered, false otherwise
+     */
+    this.unregisterExtension = function(name)
+    {
+        var unregistered = false;
+        for (var i = 0; i < _extensions.length; ++i)
+        {
+            var extension = _extensions[i];
+            if (extension.name == name)
+            {
+                _extensions.splice(i, 1);
+                unregistered = true;
+                _debug('Unregistered extension', name);
+
+                // Callback for extensions
+                var ext = extension.extension;
+                if (typeof ext.unregistered === 'function')
+                {
+                    ext.unregistered.call(ext);
+                }
+
+                break;
+            }
+        }
+        return unregistered;
+    };
+
+    /**
+     * Find the extension registered with the given name.
+     * @param name the name of the extension to find
+     * @return the extension found or null if no extension with the given name has been registered
+     */
+    this.getExtension = function(name)
+    {
+        for (var i = 0; i < _extensions.length; ++i)
+        {
+            var extension = _extensions[i];
+            if (extension.name == name)
+            {
+                return extension.extension;
+            }
+        }
+        return null;
+    };
+
+    /**
+     * Returns the name assigned to this Comet object, or the string 'default'
+     * if no name has been explicitely passed as parameter to the constructor.
+     */
+    this.getName = function()
+    {
+        return _name;
+    };
 
     /**
      * Base object with the common functionality for transports.
@@ -1531,23 +1543,6 @@ org.cometd.Cometd = function(name)
         var _longpollRequest = null;
         var _requests = [];
         var _envelopes = [];
-
-        this.getType = function()
-        {
-            return type;
-        };
-
-        this.send = function(envelope, longpoll)
-        {
-            if (longpoll)
-            {
-                _longpollSend(this, envelope);
-            }
-            else
-            {
-                _queueSend(this, envelope);
-            }
-        };
 
         function _longpollSend(self, envelope)
         {
@@ -1578,18 +1573,6 @@ org.cometd.Cometd = function(name)
                 _envelopes.push([envelope, request]);
             }
         }
-
-        this.complete = function(request, success, longpoll)
-        {
-            if (longpoll)
-            {
-                _longpollComplete(request);
-            }
-            else
-            {
-                _complete(this, request, success);
-            }
-        };
 
         function _longpollComplete(request)
         {
@@ -1626,6 +1609,40 @@ org.cometd.Cometd = function(name)
                 }
             }
         }
+
+        this._send = function(envelope, request)
+        {
+            throw 'Abstract';
+        };
+
+        this.getType = function()
+        {
+            return type;
+        };
+
+        this.send = function(envelope, longpoll)
+        {
+            if (longpoll)
+            {
+                _longpollSend(this, envelope);
+            }
+            else
+            {
+                _queueSend(this, envelope);
+            }
+        };
+
+        this.complete = function(request, success, longpoll)
+        {
+            if (longpoll)
+            {
+                _longpollComplete(request);
+            }
+            else
+            {
+                _complete(this, request, success);
+            }
+        };
 
         this.abort = function()
         {
