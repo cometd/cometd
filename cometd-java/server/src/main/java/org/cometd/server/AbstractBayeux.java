@@ -72,9 +72,9 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     protected int _adviceVersion=0;
     protected Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
     protected int _logLevel;
-    protected long _timeout=240000;
+    protected long _timeout=30000;
     protected long _interval=0;
-    protected long _maxInterval=30000;
+    protected long _maxInterval=10000;
     protected boolean _initialized;
     protected ConcurrentHashMap<String, List<String>> _browser2client=new ConcurrentHashMap<String, List<String>>();
     protected int _multiFrameInterval=-1;
@@ -999,9 +999,18 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
                     client.setTimeout(timeout.longValue());
                 else
                     client.setTimeout(0);
+                
+                Long interval=(Long)((Map)advice).get("interval");
+                if (interval!=null && interval.longValue()>0)
+                    client.setInterval(interval.longValue());
+                else
+                    client.setInterval(0);
             }
             else
+            {
                 client.setTimeout(0);
+                client.setInterval(0);
+            }
 
             advice=null;
 

@@ -96,19 +96,22 @@ public class ContinuationBayeux extends AbstractBayeux
     }
 
     /* ------------------------------------------------------------ */
-    void startTimeout(Timeout.Task timeout,long delay)
+    void startIntervalTimeout(Timeout.Task timeout,long interval)
     {
         synchronized(_timeout)
         {
-            if (delay==0)
+            if (interval==0)
                 _timeout.schedule(timeout);
             else
+            {
+                long delay = interval-getMaxInterval();
                 _timeout.schedule(timeout,delay);
+            }
         }
     }
 
     /* ------------------------------------------------------------ */
-    public void cancelTimeout(Timeout.Task timeout)
+    void cancelIntervalTimeout(Timeout.Task timeout)
     {
         synchronized(_timeout)
         {
