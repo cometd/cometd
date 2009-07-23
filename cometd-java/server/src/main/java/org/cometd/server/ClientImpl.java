@@ -57,6 +57,7 @@ public class ClientImpl implements Client
     private int _maxQueue;
     private ArrayQueue<Message> _queue=new ArrayQueue<Message>(8,16,this);
     private long _timeout;
+    private long _interval;
     private int _lag;
     private Extension[] _extensions;
     
@@ -537,12 +538,34 @@ public class ClientImpl implements Client
     }
 
     /* ------------------------------------------------------------ */
+    public long getInterval() 
+    {
+        return _interval;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set per client interval
+     * @param intervalMS timeout in MS for longpoll duration or 0 to use default
+     * from {@link AbstractBayeux#getMaxInterval()}.
+     */
+    public void setInterval(long intervalMS) 
+    {
+        _interval=intervalMS;
+    }
+
+    /* ------------------------------------------------------------ */
     public long getTimeout() 
     {
     	return _timeout;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Set per client timeout
+     * @param timeoutMS timeout in MS for longpoll duration or 0 to use default
+     * from {@link AbstractBayeux#getTimeout()}.
+     */
     public void setTimeout(long timeoutMS) 
     {
     	_timeout=timeoutMS;

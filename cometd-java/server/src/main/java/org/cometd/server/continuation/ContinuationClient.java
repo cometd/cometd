@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.thread.Timeout;
 public class ContinuationClient extends ClientImpl
 {
     private long _accessed;
-    public final Timeout.Task _timeout; 
+    public final Timeout.Task _intervalTimeoutTask; 
     private ContinuationBayeux _bayeux;
     private volatile Continuation _continuation;
 
@@ -43,7 +43,7 @@ public class ContinuationClient extends ClientImpl
 
         if (!isLocal())
         {
-            _timeout=new Timeout.Task()
+            _intervalTimeoutTask=new Timeout.Task()
             {
                 @Override
                 public void expired()
@@ -56,10 +56,10 @@ public class ContinuationClient extends ClientImpl
                     return "T-"+ContinuationClient.this.toString();
                 }
             };
-            _bayeux.startTimeout(_timeout,getTimeout());
+            _bayeux.startIntervalTimeout(_intervalTimeoutTask,getInterval());
         }
         else
-            _timeout=null;
+            _intervalTimeoutTask=null;
     }
 
 
@@ -73,8 +73,8 @@ public class ContinuationClient extends ClientImpl
                 if (_continuation!=null)
                     _continuation.resume(); 
                 _continuation=null;
-                if(_timeout!=null)
-                    _bayeux.startTimeout(_timeout,getTimeout());
+                if(_intervalTimeoutTask!=null)
+                    _bayeux.startIntervalTimeout(_intervalTimeoutTask,getInterval());
             }
         }
         else
@@ -85,7 +85,7 @@ public class ContinuationClient extends ClientImpl
                     _continuation.resume(); 
                 _continuation=continuation;
                 
-                _bayeux.cancelTimeout(_timeout);
+                _bayeux.cancelIntervalTimeout(_intervalTimeoutTask);
             }
         }
     }
@@ -122,15 +122,14 @@ public class ContinuationClient extends ClientImpl
     {
         synchronized(this)
         {
-            // distribute access time in cluster
             _accessed=_bayeux.getNow();
-            if (_timeout!=null && _timeout.isScheduled())
+            if (_intervalTimeoutTask!=null && _intervalTimeoutTask.isScheduled())
             {
-                _timeout.reschedule();
+                // reschedule the timer even though it may be cancelled next... it might not be.
+                _intervalTimeoutTask.reschedule();
             }
         }
     }
-
 
     /* ------------------------------------------------------------ */
     public synchronized long lastAccessed()
@@ -147,8 +146,8 @@ public class ContinuationClient extends ClientImpl
     {
         synchronized(this)
         {
-            if (!wasTimeout && _timeout!=null)
-                _bayeux.cancelTimeout(_timeout);
+            if (!wasTimeout && _intervalTimeoutTask!=null)
+                _bayeux.cancelIntervalTimeout(_intervalTimeoutTask);
         }
         super.remove(wasTimeout);
     }
