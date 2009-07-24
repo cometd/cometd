@@ -26,8 +26,9 @@ import org.eclipse.jetty.util.thread.Timeout;
 /* ------------------------------------------------------------ */
 /**
  * Extension of Bayeux that uses {@link ContinuationClient}s.
+ * 
  * @author gregw
- *
+ * 
  */
 public class ContinuationBayeux extends AbstractBayeux
 {
@@ -35,11 +36,13 @@ public class ContinuationBayeux extends AbstractBayeux
     private transient Timer _tick;
     private transient Timeout _timeout;
     private long _now;
-    
-    
+
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see org.cometd.server.AbstractBayeux#newClient(java.lang.String, dojox.io.cometd.Destination)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.cometd.server.AbstractBayeux#newClient(java.lang.String,
+     * dojox.io.cometd.Destination)
      */
     @Override
     public ClientImpl newRemoteClient()
@@ -47,20 +50,22 @@ public class ContinuationBayeux extends AbstractBayeux
         return new ContinuationClient(this);
     }
 
-
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see org.cometd.server.AbstractBayeux#initialize(javax.servlet.ServletContext)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * org.cometd.server.AbstractBayeux#initialize(javax.servlet.ServletContext)
      */
     @Override
     protected void initialize(ServletContext context)
     {
         super.initialize(context);
-        
-        _tick=new Timer("ContinuationBayeux-"+__id++, true);
+
+        _tick=new Timer("ContinuationBayeux-" + __id++,true);
         _timeout=new Timeout();
         _timeout.setDuration(getMaxInterval());
-    
+
         _tick.schedule(new TimerTask()
         {
             @Override
@@ -77,18 +82,21 @@ public class ContinuationBayeux extends AbstractBayeux
     {
         return _now;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
-	public void setMaxInterval(long ms)
+    public void setMaxInterval(long ms)
     {
         _timeout.setDuration(ms);
         super.setMaxInterval(ms);
     }
 
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see org.cometd.server.AbstractBayeux#initialize(javax.servlet.ServletContext)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * org.cometd.server.AbstractBayeux#initialize(javax.servlet.ServletContext)
      */
     public void destroy()
     {
@@ -96,15 +104,15 @@ public class ContinuationBayeux extends AbstractBayeux
     }
 
     /* ------------------------------------------------------------ */
-    void startIntervalTimeout(Timeout.Task timeout,long interval)
+    void startIntervalTimeout(Timeout.Task timeout, long interval)
     {
         synchronized(_timeout)
         {
-            if (interval==0)
+            if (interval == 0)
                 _timeout.schedule(timeout);
             else
             {
-                long delay = interval-getMaxInterval();
+                long delay=interval - getMaxInterval();
                 _timeout.schedule(timeout,delay);
             }
         }
@@ -115,9 +123,9 @@ public class ContinuationBayeux extends AbstractBayeux
     {
         synchronized(_timeout)
         {
-            if (timeout!=null)
+            if (timeout != null)
                 timeout.cancel();
         }
     }
-    
+
 }

@@ -22,29 +22,28 @@ import org.cometd.Message;
 import org.cometd.server.AbstractBayeux;
 import org.eclipse.jetty.util.DateCache;
 
-
 public class TimestampExtension implements Extension
 {
     private final DateCache _dateCache;
-    
+
     public TimestampExtension()
     {
         _dateCache=new DateCache();
         _dateCache.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
-    
+
     public TimestampExtension(String format)
     {
         _dateCache=new DateCache(format);
         _dateCache.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
-    
-    public TimestampExtension(String format,TimeZone tz)
+
+    public TimestampExtension(String format, TimeZone tz)
     {
         _dateCache=new DateCache(format);
         _dateCache.setTimeZone(tz);
     }
-    
+
     public Message rcv(Client from, Message message)
     {
         return message;
@@ -57,14 +56,14 @@ public class TimestampExtension implements Extension
 
     public Message send(Client from, Message message)
     {
-        message.put(AbstractBayeux.TIMESTAMP_FIELD, _dateCache.format(System.currentTimeMillis()));
+        message.put(AbstractBayeux.TIMESTAMP_FIELD,_dateCache.format(System.currentTimeMillis()));
         return message;
     }
 
     public Message sendMeta(Client from, Message message)
     {
-        message.put(AbstractBayeux.TIMESTAMP_FIELD, _dateCache.format(System.currentTimeMillis()));
+        message.put(AbstractBayeux.TIMESTAMP_FIELD,_dateCache.format(System.currentTimeMillis()));
         return message;
     }
-    
+
 }

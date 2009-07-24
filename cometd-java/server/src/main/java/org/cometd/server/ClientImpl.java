@@ -32,8 +32,6 @@ import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.ajax.JSON;
 
-
-
 /* ------------------------------------------------------------ */
 /**
  * 
@@ -60,10 +58,10 @@ public class ClientImpl implements Client
     private long _interval;
     private int _lag;
     private Extension[] _extensions;
-    
+
     private boolean _deliverViaMetaConnectOnly;
     private volatile boolean _isExpired;
-    
+
     // manipulated and synchronized by AbstractBayeux
     int _adviseVersion;
 
@@ -74,25 +72,25 @@ public class ClientImpl implements Client
         _maxQueue=bayeux.getMaxClientQueue();
         _bayeux.addClient(this,null);
         if (_bayeux.isLogInfo())
-            _bayeux.logInfo("newClient: "+this);
+            _bayeux.logInfo("newClient: " + this);
     }
-    
+
     /* ------------------------------------------------------------ */
     protected ClientImpl(AbstractBayeux bayeux, String idPrefix)
     {
         _bayeux=bayeux;
         _maxQueue=0;
-        
+
         _bayeux.addClient(this,idPrefix);
-        
+
         if (_bayeux.isLogInfo())
-            _bayeux.logInfo("newClient: "+this);
+            _bayeux.logInfo("newClient: " + this);
     }
 
     /* ------------------------------------------------------------ */
     public void addExtension(Extension ext)
     {
-        _extensions = (Extension[])LazyList.addToArray(_extensions,ext,Extension.class);
+        _extensions=(Extension[])LazyList.addToArray(_extensions,ext,Extension.class);
     }
 
     /* ------------------------------------------------------------ */
@@ -100,50 +98,50 @@ public class ClientImpl implements Client
     {
         return _extensions;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void deliver(Client from, String toChannel, Object data, String id)
     {
         MessageImpl message=_bayeux.newMessage();
         message.put(Bayeux.CHANNEL_FIELD,toChannel);
         message.put(Bayeux.DATA_FIELD,data);
-        if (id!=null)   
+        if (id != null)
             message.put(Bayeux.ID_FIELD,id);
 
         Message m=_bayeux.extendSendBayeux(from,message);
-        if (m!=null)
+        if (m != null)
             doDelivery(from,m);
         if (m instanceof MessageImpl)
             ((MessageImpl)m).decRef();
     }
-    
+
     /* ------------------------------------------------------------ */
     public void deliverLazy(Client from, String toChannel, Object data, String id)
     {
         MessageImpl message=_bayeux.newMessage();
         message.put(Bayeux.CHANNEL_FIELD,toChannel);
         message.put(Bayeux.DATA_FIELD,data);
-        if (id!=null)   
+        if (id != null)
             message.put(Bayeux.ID_FIELD,id);
         message.setLazy(true);
         Message m=_bayeux.extendSendBayeux(from,message);
-        if (m!=null)
+        if (m != null)
             doDelivery(from,m);
         if (m instanceof MessageImpl)
             ((MessageImpl)m).decRef();
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void doDelivery(Client from, final Message msg)
     {
         final Message message=_bayeux.extendSendClient(from,this,msg);
-        if (message==null)
+        if (message == null)
             return;
-        
+
         MessageListener[] alisteners=null;
         synchronized(this)
         {
-            if (_maxQueue<0)
+            if (_maxQueue < 0)
             {
                 // No queue limit, so always queue the message
                 ((MessageImpl)message).incRef();
@@ -151,16 +149,16 @@ public class ClientImpl implements Client
             }
             else
             {
-                // We have a queue limit, 
+                // We have a queue limit,
                 boolean queue;
-                if (_queue.size()>=_maxQueue)
+                if (_queue.size() >= _maxQueue)
                 {
                     // We are over the limit, so consult listeners
-                    if (_qListeners!=null && _qListeners.length>0)
+                    if (_qListeners != null && _qListeners.length > 0)
                     {
                         queue=true;
                         for (QueueListener l : _qListeners)
-                            queue &= l.queueMaxed(from,this,message);
+                            queue&=l.queueMaxed(from,this,message);
                     }
                     else
                         queue=false;
@@ -168,38 +166,38 @@ public class ClientImpl implements Client
                 else
                     // we are under limit, so queue the messages.
                     queue=true;
-                
+
                 // queue the message if we are meant to
                 if (queue)
                 {
                     ((MessageImpl)message).incRef();
                     _queue.addUnsafe(message);
                 }
-            }    
+            }
 
             // deliver synchronized
-            if (_syncMListeners!=null)
-                for (MessageListener l:_syncMListeners)
+            if (_syncMListeners != null)
+                for (MessageListener l : _syncMListeners)
                     l.deliver(from,this,message);
             alisteners=_asyncMListeners;
-             
-            if (_batch==0 &&  _responsesPending<1 && _queue.size()>0 && !((MessageImpl)message).isLazy())
+
+            if (_batch == 0 && _responsesPending < 1 && _queue.size() > 0 && !((MessageImpl)message).isLazy())
                 resume();
         }
-        
+
         // deliver unsynchronized
-        if (alisteners!=null)
-            for (MessageListener l:alisteners)
+        if (alisteners != null)
+            for (MessageListener l : alisteners)
                 l.deliver(from,this,message);
     }
 
     /* ------------------------------------------------------------ */
     public void doDeliverListeners()
     {
-        synchronized (this)
+        synchronized(this)
         {
-            if (_dListeners!=null)
-                for (DeliverListener l:_dListeners)
+            if (_dListeners != null)
+                for (DeliverListener l : _dListeners)
                     l.deliver(this,_queue);
         }
     }
@@ -207,15 +205,15 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     public void setMetaConnectDeliveryOnly(boolean deliverViaMetaConnectOnly)
     {
-        _deliverViaMetaConnectOnly = deliverViaMetaConnectOnly;
+        _deliverViaMetaConnectOnly=deliverViaMetaConnectOnly;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isMetaConnectDeliveryOnly()
     {
         return _deliverViaMetaConnectOnly;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void startBatch()
     {
@@ -224,13 +222,13 @@ public class ClientImpl implements Client
             _batch++;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public void endBatch()
     {
         synchronized(this)
         {
-            if (--_batch==0 && _responsesPending<1)
+            if (--_batch == 0 && _responsesPending < 1)
             {
                 switch(_queue.size())
                 {
@@ -247,34 +245,36 @@ public class ClientImpl implements Client
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public String getConnectionType()
     {
         return _type;
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.cometd.server.C#getId()
      */
     public String getId()
     {
         return _id;
     }
-   
+
     /* ------------------------------------------------------------ */
     public boolean hasMessages()
     {
-        return _queue.size()>0;
+        return _queue.size() > 0;
     }
-   
+
     /* ------------------------------------------------------------ */
     public boolean hasNonLazyMessages()
     {
-        synchronized (this)
+        synchronized(this)
         {
-            for (int i=_queue.size();i-->0;)
+            for (int i=_queue.size(); i-- > 0;)
             {
                 if (!((MessageImpl)_queue.getUnsafe(i)).isLazy())
                     return true;
@@ -290,7 +290,9 @@ public class ClientImpl implements Client
     }
 
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.cometd.Client#disconnect()
      */
     public void disconnect()
@@ -303,40 +305,43 @@ public class ClientImpl implements Client
     }
 
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see dojox.cometd.Client#remove(boolean)
      */
     public void remove(boolean timeout)
     {
-        _isExpired = timeout;
-        Client client=_bayeux.removeClient(_id); 
-        
-        if (client!=null && _bayeux.isLogInfo())
-            _bayeux.logInfo("Remove client "+client+" timeout="+timeout); 
-        
+        _isExpired=timeout;
+        Client client=_bayeux.removeClient(_id);
+
+        if (client != null && _bayeux.isLogInfo())
+            _bayeux.logInfo("Remove client " + client + " timeout=" + timeout);
+
         final String browser_id;
         final RemoveListener[] listeners;
         synchronized(this)
-        {  
+        {
             browser_id=_browserId;
             _browserId=null;
             listeners=_rListeners;
         }
 
-        if (browser_id!=null)
+        if (browser_id != null)
             _bayeux.clientOffBrowser(browser_id,_id);
-        if (listeners!=null)
-            for (RemoveListener l:listeners)
-                l.removed(_id, timeout);
-        
+        if (listeners != null)
+            for (RemoveListener l : listeners)
+                l.removed(_id,timeout);
+
         resume();
     }
-    
-    public boolean isExpired ()
+
+    /* ------------------------------------------------------------ */
+    public boolean isExpired()
     {
         return _isExpired;
     }
-    
+
     /* ------------------------------------------------------------ */
     public int responded()
     {
@@ -354,14 +359,15 @@ public class ClientImpl implements Client
             return ++_responsesPending;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
-    /** Called by deliver to resume anything waiting on this client.
+    /**
+     * Called by deliver to resume anything waiting on this client.
      */
     public void resume()
     {
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @return the number of messages queued
@@ -370,18 +376,17 @@ public class ClientImpl implements Client
     {
         return _queue.size();
     }
-    
+
     /* ------------------------------------------------------------ */
     public List<Message> takeMessages()
     {
         synchronized(this)
         {
-            ArrayList<Message> list = new ArrayList<Message>(_queue);
+            ArrayList<Message> list=new ArrayList<Message>(_queue);
             _queue.clear();
             return list;
         }
     }
-    
 
     /* ------------------------------------------------------------ */
     public void returnMessages(List<Message> messages)
@@ -391,7 +396,7 @@ public class ClientImpl implements Client
             _queue.addAll(0,messages);
         }
     }
-        
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
@@ -402,7 +407,7 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     protected void addSubscription(ChannelImpl channel)
     {
-        synchronized (this)
+        synchronized(this)
         {
             _subscriptions=(ChannelImpl[])LazyList.addToArray(_subscriptions,channel,null);
         }
@@ -411,7 +416,7 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     protected void removeSubscription(ChannelImpl channel)
     {
-        synchronized (this)
+        synchronized(this)
         {
             _subscriptions=(ChannelImpl[])LazyList.removeFromArray(_subscriptions,channel);
         }
@@ -420,7 +425,7 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     protected void setConnectionType(String type)
     {
-        synchronized (this)
+        synchronized(this)
         {
             _type=type;
         }
@@ -429,7 +434,7 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     protected void setId(String id)
     {
-        synchronized (this)
+        synchronized(this)
         {
             _id=id;
         }
@@ -446,16 +451,16 @@ public class ClientImpl implements Client
         }
         for (ChannelImpl channel : subscriptions)
             channel.unsubscribe(this);
-        
+
     }
 
     /* ------------------------------------------------------------ */
     public void setBrowserId(String id)
     {
-        if (_browserId!=null && !_browserId.equals(id))
+        if (_browserId != null && !_browserId.equals(id))
             _bayeux.clientOffBrowser(_browserId,_id);
         _browserId=id;
-        if (_browserId!=null)
+        if (_browserId != null)
             _bayeux.clientOnBrowser(_browserId,_id);
     }
 
@@ -469,30 +474,31 @@ public class ClientImpl implements Client
     @Override
     public boolean equals(Object o)
     {
-    	if (!(o instanceof Client))
-    		return false;
-    	return getId().equals(((Client)o).getId());
+        if (!(o instanceof Client))
+            return false;
+        return getId().equals(((Client)o).getId());
     }
 
     /* ------------------------------------------------------------ */
     /**
      * Get the advice specific for this Client
+     * 
      * @return advice specific for this client or null
      */
     public JSON.Literal getAdvice()
     {
-    	return _advice;
+        return _advice;
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * @param advice specific for this client
+     * @param advice
+     *            specific for this client
      */
     public void setAdvice(JSON.Literal advice)
     {
-    	_advice=advice;
+        _advice=advice;
     }
-    
 
     /* ------------------------------------------------------------ */
     public void addListener(ClientListener listener)
@@ -538,7 +544,7 @@ public class ClientImpl implements Client
     }
 
     /* ------------------------------------------------------------ */
-    public long getInterval() 
+    public long getInterval()
     {
         return _interval;
     }
@@ -546,29 +552,33 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     /**
      * Set per client interval
-     * @param intervalMS timeout in MS for longpoll duration or 0 to use default
-     * from {@link AbstractBayeux#getMaxInterval()}.
+     * 
+     * @param intervalMS
+     *            timeout in MS for longpoll duration or 0 to use default from
+     *            {@link AbstractBayeux#getMaxInterval()}.
      */
-    public void setInterval(long intervalMS) 
+    public void setInterval(long intervalMS)
     {
         _interval=intervalMS;
     }
 
     /* ------------------------------------------------------------ */
-    public long getTimeout() 
+    public long getTimeout()
     {
-    	return _timeout;
+        return _timeout;
     }
 
     /* ------------------------------------------------------------ */
     /**
      * Set per client timeout
-     * @param timeoutMS timeout in MS for longpoll duration or 0 to use default
-     * from {@link AbstractBayeux#getTimeout()}.
+     * 
+     * @param timeoutMS
+     *            timeout in MS for longpoll duration or 0 to use default from
+     *            {@link AbstractBayeux#getTimeout()}.
      */
-    public void setTimeout(long timeoutMS) 
+    public void setTimeout(long timeoutMS)
     {
-    	_timeout=timeoutMS;
+        _timeout=timeoutMS;
     }
 
     /* ------------------------------------------------------------ */
@@ -576,13 +586,13 @@ public class ClientImpl implements Client
     {
         _maxQueue=maxQueue;
     }
-    
+
     /* ------------------------------------------------------------ */
     public int getMaxQueue()
     {
         return _maxQueue;
     }
-    
+
     /* ------------------------------------------------------------ */
     public Queue<Message> getQueue()
     {
@@ -592,7 +602,8 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.server.ext.TimesyncExtension
-     * @return The lag in ms as measured by an extension like the TimesyncExtension
+     * @return The lag in ms as measured by an extension like the
+     *         TimesyncExtension
      */
     public int getLag()
     {
@@ -602,26 +613,28 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.server.ext.TimesyncExtension
-     * @param lag in ms
+     * @param lag
+     *            in ms
      */
     public void setLag(int lag)
     {
-        _lag = lag;
+        _lag=lag;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Get the subscribed to channels
+     * 
      * @return A copied array of the channels to which this client is subscribed
      */
     public Channel[] getSubscriptions()
     {
-        ChannelImpl[] subscriptions = _subscriptions;
-        if (subscriptions==null)
+        ChannelImpl[] subscriptions=_subscriptions;
+        if (subscriptions == null)
             return null;
         Channel[] channels=new Channel[subscriptions.length];
         System.arraycopy(subscriptions,0,channels,0,subscriptions.length);
         return channels;
     }
-    
+
 }

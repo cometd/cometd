@@ -22,7 +22,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.Message;
 import org.eclipse.jetty.util.ajax.JSON;
 
-
 public class JSONTransport extends AbstractTransport
 {
     private int _responses=0;
@@ -30,7 +29,7 @@ public class JSONTransport extends AbstractTransport
     protected String _contentType;
     protected String _start;
     protected String _end;
-    
+
     /* ------------------------------------------------------------ */
     public JSONTransport()
     {
@@ -38,21 +37,19 @@ public class JSONTransport extends AbstractTransport
         _start="[";
         _end="]\r\n";
     }
-    
+
     /* ------------------------------------------------------------ */
     public synchronized void send(Message message) throws IOException
     {
-        if (message!=null)
+        if (message != null)
         {
-            if (message.size()==0)
+            if (message.size() == 0)
                 throw new IllegalStateException();
 
-            String r=(message instanceof MessageImpl)
-                ?((MessageImpl)message).getJSON()
-                :JSON.toString(message);
-            
+            String r=(message instanceof MessageImpl)?((MessageImpl)message).getJSON():JSON.toString(message);
+
             HttpServletResponse response=getResponse();
-            
+
             switch(_responses)
             {
                 case 0:
@@ -62,12 +59,12 @@ public class JSONTransport extends AbstractTransport
                     _out.write(_start);
                     _out.write(r);
                     break;
-                    
-                default: 
+
+                default:
                     _out.write(',');
                     _out.write(r);
             }
-            
+
             _responses++;
         }
     }
@@ -75,7 +72,7 @@ public class JSONTransport extends AbstractTransport
     /* ------------------------------------------------------------ */
     public synchronized void complete() throws IOException
     {
-        if (_responses==0)
+        if (_responses == 0)
         {
             HttpServletResponse response=getResponse();
             response.setStatus(200);

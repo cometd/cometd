@@ -34,7 +34,6 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.StringUtil;
 
-
 public class ContinuationCometdServlet extends AbstractCometdServlet
 {
     /* ------------------------------------------------------------ */
@@ -59,7 +58,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
 
         // Have we seen this request before
         ContinuationClient client=(clientObj instanceof ClientImpl)?(ContinuationClient)clientObj:null;
-        if (client!=null)
+        if (client != null)
         {
             initial=false;
             // yes - extract saved properties
@@ -71,7 +70,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
         else
         {
             initial=true;
-            Message[] messages = getMessages(request);
+            Message[] messages=getMessages(request);
             received=messages.length;
 
             /* check jsonp parameter */
@@ -82,22 +81,23 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
             {
                 for (Message message : messages)
                 {
-                    if (jsonpParam!=null)
+                    if (jsonpParam != null)
                         message.put("jsonp",jsonpParam);
 
-                    if (client==null)
+                    if (client == null)
                     {
                         client=(ContinuationClient)_bayeux.getClient((String)message.get(AbstractBayeux.CLIENT_FIELD));
 
-                        // If no client,  SHOULD be a handshake, so force a transport and handle
-                        if (client==null)
+                        // If no client, SHOULD be a handshake, so force a
+                        // transport and handle
+                        if (client == null)
                         {
                             // Setup a browser ID
                             String browser_id=findBrowserId(request);
-                            if (browser_id==null)
+                            if (browser_id == null)
                                 browser_id=setBrowserId(request,response);
 
-                            if (transport==null)
+                            if (transport == null)
                             {
                                 transport=_bayeux.newTransport(client,message);
                                 transport.setResponse(response);
@@ -108,29 +108,30 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                             continue;
                         }
                     }
-                    
+
                     String browser_id=findBrowserId(request);
-                    if (browser_id!=null && (client.getBrowserId()==null || !client.getBrowserId().equals(browser_id)))
+                    if (browser_id != null && (client.getBrowserId() == null || !client.getBrowserId().equals(browser_id)))
                         client.setBrowserId(browser_id);
 
                     // resolve transport
-                    if (transport==null)
+                    if (transport == null)
                     {
                         transport=_bayeux.newTransport(client,message);
                         transport.setResponse(response);
                         metaConnectDeliveryOnly=client.isMetaConnectDeliveryOnly() || transport.isMetaConnectDeliveryOnly();
                     }
 
-                    // Tell client to hold messages as a response is likely to be sent.
+                    // Tell client to hold messages as a response is likely to
+                    // be sent.
                     if (!metaConnectDeliveryOnly && !pendingResponse)
                     {
                         pendingResponse=true;
                         client.responsePending();
                     }
-                    
+
                     if (Bayeux.META_CONNECT.equals(message.getChannel()))
                         metaConnect=true;
-                    
+
                     _bayeux.handle(client,transport,message);
                 }
             }
@@ -146,23 +147,23 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
         }
 
         Message metaConnectReply=null;
-        
+
         // Do we need to wait for messages
-        if (transport!=null)
+        if (transport != null)
         {
             metaConnectReply=transport.getMetaConnectReply();
-            if (metaConnectReply!=null)
+            if (metaConnectReply != null)
             {
                 long timeout=client.getTimeout();
-                if (timeout==0)
+                if (timeout == 0)
                     timeout=_bayeux.getTimeout();
 
                 Continuation continuation=ContinuationSupport.getContinuation(request,response);
 
                 // Get messages or wait
-                synchronized (client)
+                synchronized(client)
                 {
-                    if (!client.hasNonLazyMessages() && initial && received<=1)
+                    if (!client.hasNonLazyMessages() && initial && received <= 1)
                     {
                         // save state and suspend
                         request.setAttribute(CLIENT_ATTR,client);
@@ -178,13 +179,13 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                 transport.setMetaConnnectReply(null);
 
             }
-            else if (client!=null)
+            else if (client != null)
             {
                 client.access();
             }
         }
 
-        if (client!=null)
+        if (client != null)
         {
             if (metaConnectDeliveryOnly && !metaConnect)
             {
@@ -198,22 +199,22 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                 {
                     client.doDeliverListeners();
 
-                    final ArrayQueue<Message> messages= (ArrayQueue)client.getQueue();
-                    final int size=messages.size();           
+                    final ArrayQueue<Message> messages=(ArrayQueue)client.getQueue();
+                    final int size=messages.size();
 
                     try
                     {
-                        for (int i=0;i<size;i++)
+                        for (int i=0; i < size; i++)
                         {
                             final Message message=messages.getUnsafe(i);
                             final MessageImpl mesgImpl=(message instanceof MessageImpl)?(MessageImpl)message:null;
 
                             // Can we short cut the message?
-                            if (i==0 && size==1 && mesgImpl!=null && _refsThreshold>0 && metaConnectReply!=null && transport instanceof JSONTransport)
+                            if (i == 0 && size == 1 && mesgImpl != null && _refsThreshold > 0 && metaConnectReply != null && transport instanceof JSONTransport)
                             {
                                 // is there a response already prepared
-                                ByteBuffer buffer = mesgImpl.getBuffer();
-                                if (buffer!=null)
+                                ByteBuffer buffer=mesgImpl.getBuffer();
+                                if (buffer != null)
                                 {
                                     // Send pre-prepared buffer
                                     request.setAttribute("org.mortbay.jetty.ResponseBuffer",buffer);
@@ -224,22 +225,19 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                                     mesgImpl.decRef();
                                     continue;
                                 }
-                                else if (mesgImpl.getRefs()>=_refsThreshold)
+                                else if (mesgImpl.getRefs() >= _refsThreshold)
                                 {
                                     // create multi-use buffer
-                                    byte[] contentBytes = ("["+mesgImpl.getJSON()+",{\""+Bayeux.SUCCESSFUL_FIELD+"\":true,\""+
-                                            Bayeux.CHANNEL_FIELD+"\":\""+Bayeux.META_CONNECT+"\"}]")
-                                            .getBytes(StringUtil.__UTF8);
-                                    int contentLength = contentBytes.length;
+                                    byte[] contentBytes=("[" + mesgImpl.getJSON() + ",{\"" + Bayeux.SUCCESSFUL_FIELD + "\":true,\"" + Bayeux.CHANNEL_FIELD
+                                            + "\":\"" + Bayeux.META_CONNECT + "\"}]").getBytes(StringUtil.__UTF8);
+                                    int contentLength=contentBytes.length;
 
-                                    String headerString = "HTTP/1.1 200 OK\r\n"+
-                                    "Content-Type: text/json; charset=utf-8\r\n" +
-                                    "Content-Length: " + contentLength + "\r\n" +
-                                    "\r\n";
+                                    String headerString="HTTP/1.1 200 OK\r\n" + "Content-Type: text/json; charset=utf-8\r\n" + "Content-Length: "
+                                            + contentLength + "\r\n" + "\r\n";
 
-                                    byte[] headerBytes = headerString.getBytes(StringUtil.__UTF8);
+                                    byte[] headerBytes=headerString.getBytes(StringUtil.__UTF8);
 
-                                    buffer = ByteBuffer.allocateDirect(headerBytes.length+contentLength);
+                                    buffer=ByteBuffer.allocateDirect(headerBytes.length + contentLength);
                                     buffer.put(headerBytes);
                                     buffer.put(contentBytes);
                                     buffer.flip();
@@ -255,9 +253,9 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                                 }
                             }
 
-                            if (message!=null)
+                            if (message != null)
                                 transport.send(message);
-                            if (mesgImpl!=null)
+                            if (mesgImpl != null)
                                 mesgImpl.decRef();
                         }
                     }
@@ -267,7 +265,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                     }
                 }
 
-                if (metaConnectReply!=null)
+                if (metaConnectReply != null)
                 {
                     metaConnectReply=_bayeux.extendSendMeta(client,metaConnectReply);
                     transport.send(metaConnectReply);
@@ -276,14 +274,14 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                 }
             }
         }
-        
-        if (transport!=null)
+
+        if (transport != null)
             transport.complete();
     }
 
     public void destroy()
     {
-        if (_bayeux!=null)
+        if (_bayeux != null)
             ((ContinuationBayeux)_bayeux).destroy();
     }
 }

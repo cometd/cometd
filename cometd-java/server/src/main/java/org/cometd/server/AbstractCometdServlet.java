@@ -37,15 +37,14 @@ import org.cometd.server.filter.JSONDataFilter;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 
-
 /**
  * Cometd Filter Servlet implementing the {@link AbstractBayeux} protocol.
- *
+ * 
  * The Servlet can be initialized with a json file mapping channels to
  * {@link DataFilter} definitions. The servlet init parameter "filters" should
  * point to a webapplication resource containing a JSON array of filter
  * definitions. For example:
- *
+ * 
  * <pre>
  *  [
  *    {
@@ -55,46 +54,50 @@ import org.eclipse.jetty.util.log.Log;
  *    }
  *  ]
  * </pre>
- * The following init parameters can be used to configure the servlet:<dl>
+ * 
+ * The following init parameters can be used to configure the servlet:
+ * <dl>
  * <dt>timeout</dt>
- * <dd>The server side poll timeout in milliseconds (default 250000). This is how
- * long the server will hold a reconnect request before responding.</dd>
- *
+ * <dd>The server side poll timeout in milliseconds (default 250000). This is
+ * how long the server will hold a reconnect request before responding.</dd>
+ * 
  * <dt>interval</dt>
- * <dd>The client side poll timeout in milliseconds (default 0). How long a client
- * will wait between reconnects</dd>
- *
+ * <dd>The client side poll timeout in milliseconds (default 0). How long a
+ * client will wait between reconnects</dd>
+ * 
  * <dt>maxInterval</dt>
- * <dd>The max client side poll timeout in milliseconds (default 30000). A client will
- * be removed if a connection is not received in this time.
- *
+ * <dd>The max client side poll timeout in milliseconds (default 30000). A
+ * client will be removed if a connection is not received in this time.
+ * 
  * <dt>multiFrameInterval</dt>
- * <dd>the client side poll timeout
- * if multiple connections are detected from the same browser (default 1500).</dd>
- *
+ * <dd>the client side poll timeout if multiple connections are detected from
+ * the same browser (default 1500).</dd>
+ * 
  * <dt>JSONCommented</dt>
- * <dd>If "true" then the server will accept JSON wrapped
- * in a comment and will generate JSON wrapped in a comment. This is a defence against
- * Ajax Hijacking.</dd>
- *
+ * <dd>If "true" then the server will accept JSON wrapped in a comment and will
+ * generate JSON wrapped in a comment. This is a defence against Ajax Hijacking.
+ * </dd>
+ * 
  * <dt>filters</dt>
- * <dd>the location of a JSON file describing {@link DataFilter} instances to be installed</dd>
- *
+ * <dd>the location of a JSON file describing {@link DataFilter} instances to be
+ * installed</dd>
+ * 
  * <dt>requestAvailable</dt>
- * <dd>If true, the current request is made available via the {@link AbstractBayeux#getCurrentRequest()} method</dd>
- *
+ * <dd>If true, the current request is made available via the
+ * {@link AbstractBayeux#getCurrentRequest()} method</dd>
+ * 
  * <dt>loglevel</dt>
  * <dd>0=none, 1=info, 2=debug</dd>
- *
+ * 
  * <dt>refsThreshold</dt>
  * <dd>The number of message refs at which the a single message response will be
- * cached instead of being generated for every client delivered to. Done to optimize
- * a single message being sent to multiple clients.</dd>
+ * cached instead of being generated for every client delivered to. Done to
+ * optimize a single message being sent to multiple clients.</dd>
  * </dl>
- *
+ * 
  * @author gregw
  * @author aabeling: added JSONP transport
- *
+ * 
  * @see {@link AbstractBayeux}
  * @see {@link ChannelId}
  */
@@ -108,7 +111,7 @@ public abstract class AbstractCometdServlet extends GenericServlet
     public final static String BROWSER_ID="BAYEUX_BROWSER";
 
     protected AbstractBayeux _bayeux;
-    public final static int __DEFAULT_REFS_THRESHOLD = 0;
+    public final static int __DEFAULT_REFS_THRESHOLD=0;
     protected int _refsThreshold=__DEFAULT_REFS_THRESHOLD;
 
     public AbstractBayeux getBayeux()
@@ -121,10 +124,10 @@ public abstract class AbstractCometdServlet extends GenericServlet
     @Override
     public void init() throws ServletException
     {
-        synchronized (AbstractCometdServlet.class)
+        synchronized(AbstractCometdServlet.class)
         {
             _bayeux=(AbstractBayeux)getServletContext().getAttribute(Bayeux.ATTRIBUTE);
-            if (_bayeux==null)
+            if (_bayeux == null)
             {
                 _bayeux=newBayeux();
             }
@@ -138,22 +141,22 @@ public abstract class AbstractCometdServlet extends GenericServlet
             if (!was_initialized)
             {
                 String filters=getInitParameter("filters");
-                if (filters!=null)
+                if (filters != null)
                 {
                     try
                     {
-                        InputStream is = getServletContext().getResourceAsStream(filters);
-                        if (is==null)
+                        InputStream is=getServletContext().getResourceAsStream(filters);
+                        if (is == null)
                             throw new FileNotFoundException(filters);
 
                         Object[] objects=(Object[])JSON.parse(new InputStreamReader(getServletContext().getResourceAsStream(filters),"utf-8"));
-                        for (int i=0; objects!=null&&i<objects.length; i++)
+                        for (int i=0; objects != null && i < objects.length; i++)
                         {
                             Map<?,?> filter_def=(Map<?,?>)objects[i];
 
-                            String fc = (String)filter_def.get("class");
-                            if (fc!=null)
-                                Log.warn(filters+" file uses deprecated \"class\" name. Use \"filter\" instead");
+                            String fc=(String)filter_def.get("class");
+                            if (fc != null)
+                                Log.warn(filters + " file uses deprecated \"class\" name. Use \"filter\" instead");
                             else
                                 fc=(String)filter_def.get("filter");
                             Class<?> c=Thread.currentThread().getContextClassLoader().loadClass(fc);
@@ -165,57 +168,57 @@ public abstract class AbstractCometdServlet extends GenericServlet
                             _bayeux.getChannel((String)filter_def.get("channels"),true).addDataFilter(filter);
                         }
                     }
-                    catch (Exception e)
+                    catch(Exception e)
                     {
-                        getServletContext().log("Could not parse: "+filters,e);
+                        getServletContext().log("Could not parse: " + filters,e);
                         throw new ServletException(e);
                     }
                 }
 
                 String timeout=getInitParameter("timeout");
-                if (timeout!=null)
+                if (timeout != null)
                     _bayeux.setTimeout(Long.parseLong(timeout));
 
                 String maxInterval=getInitParameter("maxInterval");
-                if (maxInterval!=null)
+                if (maxInterval != null)
                     _bayeux.setMaxInterval(Long.parseLong(maxInterval));
 
                 String commentedJSON=getInitParameter("JSONCommented");
-                _bayeux.setJSONCommented(commentedJSON!=null && Boolean.parseBoolean(commentedJSON));
+                _bayeux.setJSONCommented(commentedJSON != null && Boolean.parseBoolean(commentedJSON));
 
                 String l=getInitParameter("logLevel");
-                if (l!=null&&l.length()>0)
+                if (l != null && l.length() > 0)
                     _bayeux.setLogLevel(Integer.parseInt(l));
 
                 String interval=getInitParameter("interval");
-                if (interval!=null)
+                if (interval != null)
                     _bayeux.setInterval(Long.parseLong(interval));
 
                 String mfInterval=getInitParameter("multiFrameInterval");
-                if (mfInterval!=null)
+                if (mfInterval != null)
                     _bayeux.setMultiFrameInterval(Integer.parseInt(mfInterval));
 
                 String requestAvailable=getInitParameter("requestAvailable");
-                _bayeux.setRequestAvailable(requestAvailable!=null && Boolean.parseBoolean(requestAvailable));
+                _bayeux.setRequestAvailable(requestAvailable != null && Boolean.parseBoolean(requestAvailable));
 
                 String async=getInitParameter("asyncDeliver");
-                if (async!=null)
+                if (async != null)
                     getServletContext().log("asyncDeliver no longer supported");
 
                 String refsThreshold=getInitParameter("refsThreshold");
-                if (refsThreshold!=null)
+                if (refsThreshold != null)
                     _refsThreshold=Integer.parseInt(refsThreshold);
 
                 _bayeux.generateAdvice();
 
                 if (_bayeux.isLogInfo())
                 {
-                    getServletContext().log("timeout="+timeout);
-                    getServletContext().log("interval="+interval);
-                    getServletContext().log("maxInterval="+maxInterval);
-                    getServletContext().log("multiFrameInterval="+mfInterval);
-                    getServletContext().log("filters="+filters);
-                    getServletContext().log("refsThreshold="+refsThreshold);
+                    getServletContext().log("timeout=" + timeout);
+                    getServletContext().log("interval=" + interval);
+                    getServletContext().log("maxInterval=" + maxInterval);
+                    getServletContext().log("multiFrameInterval=" + mfInterval);
+                    getServletContext().log("filters=" + filters);
+                    getServletContext().log("refsThreshold=" + refsThreshold);
                 }
             }
         }
@@ -244,11 +247,10 @@ public abstract class AbstractCometdServlet extends GenericServlet
         }
     }
 
-
     protected String findBrowserId(HttpServletRequest request)
     {
-        Cookie[] cookies = request.getCookies();
-        if (cookies!=null)
+        Cookie[] cookies=request.getCookies();
+        if (cookies != null)
         {
             for (Cookie cookie : cookies)
             {
@@ -260,14 +262,12 @@ public abstract class AbstractCometdServlet extends GenericServlet
         return null;
     }
 
-    protected String setBrowserId(HttpServletRequest request,HttpServletResponse response)
+    protected String setBrowserId(HttpServletRequest request, HttpServletResponse response)
     {
-        String browser_id=Long.toHexString(request.getRemotePort())+
-        Long.toString(_bayeux.getRandom(),36)+
-        Long.toString(System.currentTimeMillis(),36)+
-        Long.toString(request.getRemotePort(),36);
+        String browser_id=Long.toHexString(request.getRemotePort()) + Long.toString(_bayeux.getRandom(),36) + Long.toString(System.currentTimeMillis(),36)
+                + Long.toString(request.getRemotePort(),36);
 
-        Cookie cookie = new Cookie(BROWSER_ID,browser_id);
+        Cookie cookie=new Cookie(BROWSER_ID,browser_id);
         cookie.setPath("/");
         cookie.setMaxAge(-1);
         response.addCookie(cookie);
@@ -289,19 +289,19 @@ public abstract class AbstractCometdServlet extends GenericServlet
 
             String[] batches=request.getParameterValues(MESSAGE_PARAM);
 
-            if (batches==null || batches.length==0)
+            if (batches == null || batches.length == 0)
                 return __EMPTY_BATCH;
 
-            if (batches.length==0)
+            if (batches.length == 0)
             {
                 fodder=batches[0];
                 return _bayeux.parse(fodder);
             }
 
-            List<Message> messages = new ArrayList<Message>();
-            for (int i=0;i<batches.length;i++)
+            List<Message> messages=new ArrayList<Message>();
+            for (int i=0; i < batches.length; i++)
             {
-                if (batches[i]==null)
+                if (batches[i] == null)
                     continue;
 
                 fodder=batches[i];

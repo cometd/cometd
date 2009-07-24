@@ -42,12 +42,11 @@ import org.cometd.SecurityPolicy;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.ajax.JSON;
 
-
 /* ------------------------------------------------------------ */
 /**
  * @author gregw
  * @author aabeling: added JSONP transport
- *
+ * 
  */
 public abstract class AbstractBayeux extends MessagePool implements Bayeux
 {
@@ -61,10 +60,9 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     public static final ChannelId META_SUBSCRIBE_ID=new ChannelId(META_SUBSCRIBE);
     public static final ChannelId META_UNSUBSCRIBE_ID=new ChannelId(META_UNSUBSCRIBE);
 
-
     private HashMap<String,Handler> _handlers=new HashMap<String,Handler>();
 
-    private ChannelImpl _root = new ChannelImpl("/",this);
+    private ChannelImpl _root=new ChannelImpl("/",this);
     private ConcurrentHashMap<String,ClientImpl> _clients=new ConcurrentHashMap<String,ClientImpl>();
     protected SecurityPolicy _securityPolicy=new DefaultPolicy();
     protected JSON.Literal _advice;
@@ -76,29 +74,29 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     protected long _interval=0;
     protected long _maxInterval=10000;
     protected boolean _initialized;
-    protected ConcurrentHashMap<String, List<String>> _browser2client=new ConcurrentHashMap<String, List<String>>();
+    protected ConcurrentHashMap<String,List<String>> _browser2client=new ConcurrentHashMap<String,List<String>>();
     protected int _multiFrameInterval=-1;
 
     protected boolean _requestAvailable;
-    protected ThreadLocal<HttpServletRequest> _request = new ThreadLocal<HttpServletRequest>();
+    protected ThreadLocal<HttpServletRequest> _request=new ThreadLocal<HttpServletRequest>();
 
     transient ServletContext _context;
     transient Random _random;
-    transient ConcurrentHashMap<String, ChannelId> _channelIdCache;
+    transient ConcurrentHashMap<String,ChannelId> _channelIdCache;
     protected Handler _publishHandler;
     protected Handler _metaPublishHandler;
     protected int _maxClientQueue=-1;
 
     protected Extension[] _extensions;
-    protected JSON.Literal _transports=new JSON.Literal("[\""+Bayeux.TRANSPORT_LONG_POLL+ "\",\""+Bayeux.TRANSPORT_CALLBACK_POLL+"\"]");
-    protected JSON.Literal _replyExt = new JSON.Literal("{\"ack\":\"true\"}");
+    protected JSON.Literal _transports=new JSON.Literal("[\"" + Bayeux.TRANSPORT_LONG_POLL + "\",\"" + Bayeux.TRANSPORT_CALLBACK_POLL + "\"]");
+    protected JSON.Literal _replyExt=new JSON.Literal("{\"ack\":\"true\"}");
     protected List<ClientBayeuxListener> _clientListeners=new CopyOnWriteArrayList<ClientBayeuxListener>();
     protected List<ChannelBayeuxListener> _channelListeners=new CopyOnWriteArrayList<ChannelBayeuxListener>();
 
     /* ------------------------------------------------------------ */
     /**
-     * @param context.
-     *            The logLevel init parameter is used to set the logging to
+     * @param context
+     *            . The logLevel init parameter is used to set the logging to
      *            0=none, 1=info, 2=debug
      */
     protected AbstractBayeux()
@@ -118,7 +116,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     public void addExtension(Extension ext)
     {
-        _extensions = (Extension[])LazyList.addToArray(_extensions,ext,Extension.class);
+        _extensions=(Extension[])LazyList.addToArray(_extensions,ext,Extension.class);
     }
 
     /* ------------------------------------------------------------ */
@@ -135,7 +133,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     public ChannelImpl getChannel(String id)
     {
         ChannelId cid=getChannelId(id);
-        if (cid.depth()==0)
+        if (cid.depth() == 0)
             return null;
         return _root.getChild(cid);
     }
@@ -147,13 +145,13 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         {
             ChannelImpl channel=getChannel(id);
 
-            if (channel==null && create)
+            if (channel == null && create)
             {
                 channel=new ChannelImpl(id,this);
                 _root.addChild(channel);
 
                 if (isLogInfo())
-                    logInfo("newChannel: "+channel);
+                    logInfo("newChannel: " + channel);
             }
             return channel;
         }
@@ -162,8 +160,8 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     public ChannelId getChannelId(String id)
     {
-        ChannelId cid = _channelIdCache.get(id);
-        if (cid==null)
+        ChannelId cid=_channelIdCache.get(id);
+        if (cid == null)
         {
             // TODO shrink cache!
             cid=new ChannelId(id);
@@ -173,16 +171,18 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     }
 
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.cometd.server.Bx#getClient(java.lang.String)
      */
     public Client getClient(String client_id)
     {
         synchronized(this)
         {
-            if (client_id==null)
+            if (client_id == null)
                 return null;
-            Client client = _clients.get(client_id);
+            Client client=_clients.get(client_id);
             return client;
         }
     }
@@ -195,7 +195,8 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @return The maximum time in ms to wait between polls before timing out a client
+     * @return The maximum time in ms to wait between polls before timing out a
+     *         client
      */
     public long getMaxInterval()
     {
@@ -212,7 +213,9 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     }
 
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.cometd.server.Bx#getSecurityPolicy()
      */
     public SecurityPolicy getSecurityPolicy()
@@ -234,8 +237,9 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @return true if published messages are directly delivered to subscribers. False if
-     * a new message is to be created that holds only supported fields.
+     * @return true if published messages are directly delivered to subscribers.
+     *         False if a new message is to be created that holds only supported
+     *         fields.
      */
     public boolean isDirectDeliver()
     {
@@ -245,8 +249,10 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     /**
      * @deprecated
-     * @param directDeliver true if published messages are directly delivered to subscribers. False if
-     * a new message is to be created that holds only supported fields.
+     * @param directDeliver
+     *            true if published messages are directly delivered to
+     *            subscribers. False if a new message is to be created that
+     *            holds only supported fields.
      */
     public void setDirectDeliver(boolean directDeliver)
     {
@@ -254,18 +260,23 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     }
 
     /* ------------------------------------------------------------ */
-    /** Handle a Bayeux message.
-     * This is normally only called by the bayeux servlet or a test harness.
-     * @param client The client if known
-     * @param transport The transport to use for the message
-     * @param message The bayeux message.
+    /**
+     * Handle a Bayeux message. This is normally only called by the bayeux
+     * servlet or a test harness.
+     * 
+     * @param client
+     *            The client if known
+     * @param transport
+     *            The transport to use for the message
+     * @param message
+     *            The bayeux message.
      */
     public String handle(ClientImpl client, Transport transport, Message message) throws IOException
     {
         String channel_id=message.getChannel();
 
         Handler handler=(Handler)_handlers.get(channel_id);
-        if (handler!=null)
+        if (handler != null)
         {
             message=extendRcvMeta(client,message);
             handler.handle(client,transport,message);
@@ -291,7 +302,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     public boolean hasChannel(String id)
     {
         ChannelId cid=getChannelId(id);
-        return _root.getChild(cid)!=null;
+        return _root.getChild(cid) != null;
     }
 
     /* ------------------------------------------------------------ */
@@ -313,33 +324,33 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     public boolean isLogDebug()
     {
-        return _logLevel>1;
+        return _logLevel > 1;
     }
 
     /* ------------------------------------------------------------ */
     public boolean isLogInfo()
     {
-        return _logLevel>0;
+        return _logLevel > 0;
     }
 
     /* ------------------------------------------------------------ */
     public void logDebug(String message)
     {
-        if (_logLevel>1)
+        if (_logLevel > 1)
             _context.log(message);
     }
 
     /* ------------------------------------------------------------ */
     public void logDebug(String message, Throwable th)
     {
-        if (_logLevel>1)
+        if (_logLevel > 1)
             _context.log(message,th);
     }
 
     /* ------------------------------------------------------------ */
     public void logWarn(String message, Throwable th)
     {
-        _context.log(message+": "+th.toString());
+        _context.log(message + ": " + th.toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -351,14 +362,14 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     public void logInfo(String message)
     {
-        if (_logLevel>0)
+        if (_logLevel > 0)
             _context.log(message);
     }
 
     /* ------------------------------------------------------------ */
     public Client newClient(String idPrefix)
     {
-        ClientImpl client = new ClientImpl(this,idPrefix);
+        ClientImpl client=new ClientImpl(this,idPrefix);
         return client;
     }
 
@@ -366,28 +377,32 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     public abstract ClientImpl newRemoteClient();
 
     /* ------------------------------------------------------------ */
-    /** Create new transport object for a bayeux message
-     * @param client The client
-     * @param message the bayeux message
+    /**
+     * Create new transport object for a bayeux message
+     * 
+     * @param client
+     *            The client
+     * @param message
+     *            the bayeux message
      * @return the negotiated transport.
      */
     public Transport newTransport(ClientImpl client, Map<?,?> message)
     {
         if (isLogDebug())
-            logDebug("newTransport: client="+client+",message="+message);
+            logDebug("newTransport: client=" + client + ",message=" + message);
 
         Transport result=null;
 
         try
         {
-            String type=client==null?null:client.getConnectionType();
-            if (type==null)
+            String type=client == null?null:client.getConnectionType();
+            if (type == null)
                 type=(String)message.get(Bayeux.CONNECTION_TYPE_FIELD);
 
-            if (Bayeux.TRANSPORT_CALLBACK_POLL.equals(type) || type==null)
+            if (Bayeux.TRANSPORT_CALLBACK_POLL.equals(type) || type == null)
             {
                 String jsonp=(String)message.get(Bayeux.JSONP_PARAMETER);
-                if(jsonp!=null)
+                if (jsonp != null)
                     result=new JSONPTransport(jsonp);
                 else
                     result=new JSONTransport();
@@ -396,19 +411,21 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
                 result=new JSONTransport();
 
         }
-        catch (Exception e)
+        catch(Exception e)
         {
             throw new RuntimeException(e);
         }
 
         if (isLogDebug())
-            logDebug("newTransport: result="+result);
+            logDebug("newTransport: result=" + result);
         return result;
     }
 
     /* ------------------------------------------------------------ */
-    /** Publish data to a channel.
-     * Creates a message and delivers it to the root channel.
+    /**
+     * Publish data to a channel. Creates a message and delivers it to the root
+     * channel.
+     * 
      * @param to
      * @param from
      * @param data
@@ -416,26 +433,24 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
      */
     protected void doPublish(ChannelId to, Client from, Object data, String msgId, boolean lazy)
     {
-        final MessageImpl message = newMessage();
+        final MessageImpl message=newMessage();
         message.put(CHANNEL_FIELD,to.toString());
 
-        if (msgId==null)
+        if (msgId == null)
         {
-            long id=message.hashCode()
-            ^(to==null?0:to.hashCode())
-            ^(from==null?0:from.hashCode());
-            id=id<0?-id:id;
+            long id=message.hashCode() ^ (to == null?0:to.hashCode()) ^ (from == null?0:from.hashCode());
+            id=id < 0?-id:id;
             message.put(ID_FIELD,Long.toString(id,36));
         }
         else
             message.put(ID_FIELD,msgId);
         message.put(DATA_FIELD,data);
-        
+
         message.setLazy(lazy);
 
         final Message m=extendSendBayeux(from,message);
 
-        if (m!=null)
+        if (m != null)
             _root.doDelivery(to,from,m);
         if (m instanceof MessageImpl)
             ((MessageImpl)m).decRef();
@@ -457,22 +472,22 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     protected String newClientId(long variation, String idPrefix)
     {
-        if (idPrefix==null)
-            return Long.toString(getRandom(),36)+Long.toString(variation,36);
+        if (idPrefix == null)
+            return Long.toString(getRandom(),36) + Long.toString(variation,36);
         else
-            return idPrefix+"_"+Long.toString(getRandom(),36);
+            return idPrefix + "_" + Long.toString(getRandom(),36);
     }
 
     /* ------------------------------------------------------------ */
-    protected void addClient(ClientImpl client,String idPrefix)
+    protected void addClient(ClientImpl client, String idPrefix)
     {
         while(true)
         {
-            String id = newClientId(client.hashCode(),idPrefix);
+            String id=newClientId(client.hashCode(),idPrefix);
             client.setId(id);
 
-            ClientImpl other = _clients.putIfAbsent(id,client);
-            if (other==null)
+            ClientImpl other=_clients.putIfAbsent(id,client);
+            if (other == null)
             {
                 for (ClientBayeuxListener l : _clientListeners)
                     l.clientAdded((Client)client);
@@ -483,7 +498,9 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     }
 
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.cometd.server.Bx#removeClient(java.lang.String)
      */
     public Client removeClient(String client_id)
@@ -491,11 +508,11 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         ClientImpl client;
         synchronized(this)
         {
-            if (client_id==null)
+            if (client_id == null)
                 return null;
-            client = _clients.remove(client_id);
+            client=_clients.remove(client_id);
         }
-        if (client!=null)
+        if (client != null)
         {
             for (ClientBayeuxListener l : _clientListeners)
                 l.clientRemoved((Client)client);
@@ -506,7 +523,9 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @param ms The maximum time in ms to wait between polls before timing out a client
+     * @param ms
+     *            The maximum time in ms to wait between polls before timing out
+     *            a client
      */
     public void setMaxInterval(long ms)
     {
@@ -515,7 +534,8 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @param commented the commented to set
+     * @param commented
+     *            the commented to set
      */
     public void setJSONCommented(boolean commented)
     {
@@ -534,36 +554,39 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     }
 
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see org.cometd.server.Bx#setSecurityPolicy(org.cometd.server.SecurityPolicy)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * org.cometd.server.Bx#setSecurityPolicy(org.cometd.server.SecurityPolicy)
      */
     public void setSecurityPolicy(SecurityPolicy securityPolicy)
     {
         _securityPolicy=securityPolicy;
     }
 
-
     /* ------------------------------------------------------------ */
     public void setTimeout(long ms)
     {
-        _timeout = ms;
+        _timeout=ms;
         generateAdvice();
     }
-
 
     /* ------------------------------------------------------------ */
     public void setInterval(long ms)
     {
-        _interval = ms;
+        _interval=ms;
         generateAdvice();
     }
 
     /* ------------------------------------------------------------ */
     /**
      * The time a client should delay between reconnects when multiple
-     * connections from the same browser are detected. This effectively
-     * produces traditional polling.
-     * @param multiFrameInterval the multiFrameInterval to set
+     * connections from the same browser are detected. This effectively produces
+     * traditional polling.
+     * 
+     * @param multiFrameInterval
+     *            the multiFrameInterval to set
      */
     public void setMultiFrameInterval(int multiFrameInterval)
     {
@@ -583,7 +606,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     void generateAdvice()
     {
-        setAdvice(new JSON.Literal("{\"reconnect\":\"retry\",\"interval\":"+getInterval()+",\"timeout\":"+getTimeout()+"}"));
+        setAdvice(new JSON.Literal("{\"reconnect\":\"retry\",\"interval\":" + getInterval() + ",\"timeout\":" + getTimeout() + "}"));
     }
 
     /* ------------------------------------------------------------ */
@@ -600,9 +623,9 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     private Map<String,Object> multiFrameAdvice(JSON.Literal advice)
     {
-        Map<String,Object> a = (Map<String,Object>)JSON.parse(_advice.toString());
+        Map<String,Object> a=(Map<String,Object>)JSON.parse(_advice.toString());
         a.put("multiple-clients",Boolean.TRUE);
-        if (_multiFrameInterval>0)
+        if (_multiFrameInterval > 0)
         {
             a.put("reconnect","retry");
             a.put("interval",_multiFrameInterval);
@@ -620,7 +643,8 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @return TRUE if {@link #getCurrentRequest()} will return the current request
+     * @return TRUE if {@link #getCurrentRequest()} will return the current
+     *         request
      */
     public boolean isRequestAvailable()
     {
@@ -629,7 +653,9 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @param requestAvailable TRUE if {@link #getCurrentRequest()} will return the current request
+     * @param requestAvailable
+     *            TRUE if {@link #getCurrentRequest()} will return the current
+     *            request
      */
     public void setRequestAvailable(boolean requestAvailable)
     {
@@ -638,7 +664,8 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @return the current request if {@link #isRequestAvailable()} is true, else null
+     * @return the current request if {@link #isRequestAvailable()} is true,
+     *         else null
      */
     public HttpServletRequest getCurrentRequest()
     {
@@ -647,19 +674,18 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @return the current request if {@link #isRequestAvailable()} is true, else null
+     * @return the current request if {@link #isRequestAvailable()} is true,
+     *         else null
      */
     void setCurrentRequest(HttpServletRequest request)
     {
         _request.set(request);
     }
 
-
-
     /* ------------------------------------------------------------ */
     public Collection<Channel> getChannels()
     {
-        List<Channel> channels = new ArrayList<Channel>();
+        List<Channel> channels=new ArrayList<Channel>();
         _root.getChannels(channels);
         return channels;
     }
@@ -699,7 +725,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     {
         synchronized(this)
         {
-            if (clientId==null)
+            if (clientId == null)
                 return false;
             return _clients.containsKey(clientId);
         }
@@ -708,11 +734,11 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     public Channel removeChannel(String channelId)
     {
-        Channel channel = getChannel(channelId);
+        Channel channel=getChannel(channelId);
 
-        boolean removed = false;
-        if (channel!=null)
-            removed = channel.remove();
+        boolean removed=false;
+        if (channel != null)
+            removed=channel.remove();
 
         if (removed)
             return channel;
@@ -731,13 +757,13 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             {
                 _random=SecureRandom.getInstance("SHA1PRNG");
             }
-            catch (Exception e)
+            catch(Exception e)
             {
                 context.log("Could not get secure random for ID generation",e);
                 _random=new Random();
             }
-            _random.setSeed(_random.nextLong()^hashCode()^System.nanoTime()^Runtime.getRuntime().freeMemory());
-            _channelIdCache=new ConcurrentHashMap<String, ChannelId>();
+            _random.setSeed(_random.nextLong() ^ hashCode() ^ System.nanoTime() ^ Runtime.getRuntime().freeMemory());
+            _channelIdCache=new ConcurrentHashMap<String,ChannelId>();
 
             _root.addChild(new ServiceChannel(Bayeux.SERVICE));
 
@@ -748,29 +774,29 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     long getRandom()
     {
         long l=_random.nextLong();
-        return l<0?-l:l;
+        return l < 0?-l:l;
     }
 
     /* ------------------------------------------------------------ */
-    void clientOnBrowser(String browserId,String clientId)
+    void clientOnBrowser(String browserId, String clientId)
     {
         List<String> clients=_browser2client.get(browserId);
-        if (clients==null)
+        if (clients == null)
         {
             List<String> new_clients=new CopyOnWriteArrayList<String>();
             clients=_browser2client.putIfAbsent(browserId,new_clients);
-            if (clients==null)
+            if (clients == null)
                 clients=new_clients;
         }
         clients.add(clientId);
     }
 
     /* ------------------------------------------------------------ */
-    void clientOffBrowser(String browserId,String clientId)
+    void clientOffBrowser(String browserId, String clientId)
     {
         List<String> clients=_browser2client.get(browserId);
-        
-        if (clients!=null)
+
+        if (clients != null)
             clients.remove(clientId);
     }
 
@@ -778,8 +804,8 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     List<String> clientsOnBrowser(String browserId)
     {
         List<String> clients=_browser2client.get(browserId);
-        
-        if (clients==null)
+
+        if (clients == null)
             return Collections.emptyList();
         return clients;
     }
@@ -789,7 +815,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     {
         if (listener instanceof ClientBayeuxListener)
             _clientListeners.add((ClientBayeuxListener)listener);
-        if(listener instanceof ChannelBayeuxListener)
+        if (listener instanceof ChannelBayeuxListener)
             _channelListeners.add((ChannelBayeuxListener)listener);
     }
 
@@ -808,19 +834,19 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     protected Message extendRcv(ClientImpl from, Message message)
     {
-        if (_extensions!=null)
+        if (_extensions != null)
         {
-            for (int i=_extensions.length;message!=null && i-->0;)
-                message=_extensions[i].rcv(from, message);
+            for (int i=_extensions.length; message != null && i-- > 0;)
+                message=_extensions[i].rcv(from,message);
         }
 
-        if (from!=null)
+        if (from != null)
         {
-            Extension[] client_exs = from.getExtensions();
-            if (client_exs!=null)
+            Extension[] client_exs=from.getExtensions();
+            if (client_exs != null)
             {
-                for (int i=client_exs.length;message!=null && i-->0;)
-                    message=client_exs[i].rcv(from, message);
+                for (int i=client_exs.length; message != null && i-- > 0;)
+                    message=client_exs[i].rcv(from,message);
             }
         }
 
@@ -830,19 +856,19 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     protected Message extendRcvMeta(ClientImpl from, Message message)
     {
-        if (_extensions!=null)
+        if (_extensions != null)
         {
-            for (int i=_extensions.length;message!=null && i-->0;)
-                message=_extensions[i].rcvMeta(from, message);
+            for (int i=_extensions.length; message != null && i-- > 0;)
+                message=_extensions[i].rcvMeta(from,message);
         }
 
-        if (from!=null)
+        if (from != null)
         {
-            Extension[] client_exs = from.getExtensions();
-            if (client_exs!=null)
+            Extension[] client_exs=from.getExtensions();
+            if (client_exs != null)
             {
-                for (int i=client_exs.length;message!=null && i-->0;)
-                    message=client_exs[i].rcvMeta(from, message);
+                for (int i=client_exs.length; message != null && i-- > 0;)
+                    message=client_exs[i].rcvMeta(from,message);
             }
         }
         return message;
@@ -851,11 +877,11 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     protected Message extendSendBayeux(Client from, Message message)
     {
-        if (_extensions!=null)
+        if (_extensions != null)
         {
-            for (int i=0;message!=null && i<_extensions.length;i++)
+            for (int i=0; message != null && i < _extensions.length; i++)
             {
-                message=_extensions[i].send(from, message);
+                message=_extensions[i].send(from,message);
             }
         }
 
@@ -865,13 +891,13 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     public Message extendSendClient(Client from, ClientImpl to, Message message)
     {
-        if (to!=null)
+        if (to != null)
         {
-            Extension[] client_exs = to.getExtensions();
-            if (client_exs!=null)
+            Extension[] client_exs=to.getExtensions();
+            if (client_exs != null)
             {
-                for (int i=0;message!=null && i<client_exs.length;i++)
-                    message=client_exs[i].send(from, message);
+                for (int i=0; message != null && i < client_exs.length; i++)
+                    message=client_exs[i].send(from,message);
             }
         }
 
@@ -881,25 +907,24 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     public Message extendSendMeta(ClientImpl from, Message message)
     {
-        if (_extensions!=null)
+        if (_extensions != null)
         {
-            for (int i=0;message!=null && i<_extensions.length;i++)
-                message=_extensions[i].sendMeta(from, message);
+            for (int i=0; message != null && i < _extensions.length; i++)
+                message=_extensions[i].sendMeta(from,message);
         }
 
-        if (from!=null)
+        if (from != null)
         {
-            Extension[] client_exs = from.getExtensions();
-            if (client_exs!=null)
+            Extension[] client_exs=from.getExtensions();
+            if (client_exs != null)
             {
-                for (int i=0;message!=null && i<client_exs.length;i++)
-                    message=client_exs[i].sendMeta(from, message);
+                for (int i=0; message != null && i < client_exs.length; i++)
+                    message=client_exs[i].sendMeta(from,message);
             }
         }
 
         return message;
     }
-
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -912,31 +937,32 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
         public boolean canCreate(Client client, String channel, Message message)
         {
-            return client!=null && !channel.startsWith(Bayeux.META_SLASH);
+            return client != null && !channel.startsWith(Bayeux.META_SLASH);
         }
 
         public boolean canSubscribe(Client client, String channel, Message message)
         {
-	    if (client!=null && ("/**".equals(channel) || "/*".equals(channel)))
-	        return false;
-            return client!=null && !channel.startsWith(Bayeux.META_SLASH);
+            if (client != null && ("/**".equals(channel) || "/*".equals(channel)))
+                return false;
+            return client != null && !channel.startsWith(Bayeux.META_SLASH);
         }
 
         public boolean canPublish(Client client, String channel, Message message)
         {
-            return client!=null || client==null && Bayeux.META_HANDSHAKE.equals(channel);
+            return client != null || client == null && Bayeux.META_HANDSHAKE.equals(channel);
         }
 
     }
-
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     protected abstract class Handler
     {
         abstract void handle(ClientImpl client, Transport transport, Message message) throws IOException;
+
         abstract ChannelId getMetaChannelId();
-        void unknownClient(Transport transport,String channel) throws IOException
+
+        void unknownClient(Transport transport, String channel) throws IOException
         {
             MessageImpl reply=newMessage();
 
@@ -947,11 +973,11 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             transport.send(reply);
             reply.decRef();
         }
-        
-        void sendMetaReply(final ClientImpl client,Message reply, final Transport transport) throws IOException
+
+        void sendMetaReply(final ClientImpl client, Message reply, final Transport transport) throws IOException
         {
             reply=extendSendMeta(client,reply);
-            if (reply!=null)
+            if (reply != null)
             {
                 transport.send(reply);
                 if (reply instanceof MessageImpl)
@@ -975,7 +1001,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         @Override
         public void handle(ClientImpl client, Transport transport, Message message) throws IOException
         {
-            if (client==null)
+            if (client == null)
             {
                 unknownClient(transport,_metaChannel);
                 return;
@@ -984,24 +1010,24 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             // is this the first connect message?
             String type=client.getConnectionType();
             boolean polling=true;
-            if (type==null)
+            if (type == null)
             {
                 type=(String)message.get(Bayeux.CONNECTION_TYPE_FIELD);
                 client.setConnectionType(type);
                 polling=false;
             }
 
-            Object advice = message.get(ADVICE_FIELD);
-            if (advice!=null)
+            Object advice=message.get(ADVICE_FIELD);
+            if (advice != null)
             {
                 Long timeout=(Long)((Map)advice).get("timeout");
-                if (timeout!=null && timeout.longValue()>0)
+                if (timeout != null && timeout.longValue() > 0)
                     client.setTimeout(timeout.longValue());
                 else
                     client.setTimeout(0);
-                
+
                 Long interval=(Long)((Map)advice).get("interval");
-                if (interval!=null && interval.longValue()>0)
+                if (interval != null && interval.longValue() > 0)
                     client.setInterval(interval.longValue());
                 else
                     client.setInterval(0);
@@ -1015,33 +1041,35 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             advice=null;
 
             // Work out if multiple clients from some browser?
-            if (polling && _multiFrameInterval>0 && client.getBrowserId()!=null)
+            if (polling && _multiFrameInterval > 0 && client.getBrowserId() != null)
             {
                 List<String> clients=clientsOnBrowser(client.getBrowserId());
                 int count=clients.size();
-                if (count>1)
+                if (count > 1)
                 {
                     polling=clients.get(0).equals(client.getId());
                     advice=client.getAdvice();
-                    if (advice==null)
+                    if (advice == null)
                         advice=_multiFrameAdvice;
-                    else // could probably cache this
+                    else
+                        // could probably cache this
                         advice=multiFrameAdvice((JSON.Literal)advice);
                 }
             }
 
             synchronized(this)
             {
-                if (advice==null)
+                if (advice == null)
                 {
-                    if (_adviceVersion!=client._adviseVersion)
+                    if (_adviceVersion != client._adviseVersion)
                     {
                         advice=_advice;
                         client._adviseVersion=_adviceVersion;
                     }
                 }
                 else
-                    client._adviseVersion=-1; // clear so it is reset after multi state clears
+                    client._adviseVersion=-1; // clear so it is reset after
+                // multi state clears
             }
 
             // reply to connect message
@@ -1051,9 +1079,9 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
             reply.put(CHANNEL_FIELD,META_CONNECT);
             reply.put(SUCCESSFUL_FIELD,Boolean.TRUE);
-            if (advice!=null)
+            if (advice != null)
                 reply.put(ADVICE_FIELD,advice);
-            if (id!=null)
+            if (id != null)
                 reply.put(ID_FIELD,id);
 
             if (polling)
@@ -1076,13 +1104,13 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         @Override
         public void handle(ClientImpl client, Transport transport, Message message) throws IOException
         {
-            if (client==null)
+            if (client == null)
             {
                 unknownClient(transport,META_DISCONNECT);
                 return;
             }
             if (isLogInfo())
-                logInfo("Disconnect "+client.getId());
+                logInfo("Disconnect " + client.getId());
 
             client.remove(false);
 
@@ -1090,13 +1118,13 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             reply.put(CHANNEL_FIELD,META_DISCONNECT);
             reply.put(SUCCESSFUL_FIELD,Boolean.TRUE);
             String id=message.getId();
-            if (id!=null)
+            if (id != null)
                 reply.put(ID_FIELD,id);
 
             reply=extendSendMeta(client,reply);
 
-            Message pollReply = transport.getMetaConnectReply();
-            if (pollReply!=null)
+            Message pollReply=transport.getMetaConnectReply();
+            if (pollReply != null)
             {
                 transport.setMetaConnnectReply(null);
                 sendMetaReply(client,pollReply,transport);
@@ -1104,7 +1132,6 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             sendMetaReply(client,reply,transport);
         }
     }
-
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -1119,10 +1146,10 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         @Override
         public void handle(ClientImpl client, Transport transport, Message message) throws IOException
         {
-            if (client!=null)
+            if (client != null)
                 throw new IllegalStateException();
 
-            if (_securityPolicy!=null && !_securityPolicy.canHandshake(message))
+            if (_securityPolicy != null && !_securityPolicy.canHandshake(message))
             {
                 Message reply=newMessage(message);
                 reply.put(CHANNEL_FIELD,META_HANDSHAKE);
@@ -1136,30 +1163,30 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             client=newRemoteClient();
 
             Message reply=newMessage(message);
-            reply.put(CHANNEL_FIELD, META_HANDSHAKE);
-            reply.put(VERSION_FIELD, "1.0");
-            reply.put(MIN_VERSION_FIELD, "0.9");
+            reply.put(CHANNEL_FIELD,META_HANDSHAKE);
+            reply.put(VERSION_FIELD,"1.0");
+            reply.put(MIN_VERSION_FIELD,"0.9");
 
-            if (client!=null)
+            if (client != null)
             {
-                reply.put(SUPP_CONNECTION_TYPE_FIELD, _transports);
-                reply.put(SUCCESSFUL_FIELD, Boolean.TRUE);
-                reply.put(CLIENT_FIELD, client.getId());
-                if (_advice!=null)
+                reply.put(SUPP_CONNECTION_TYPE_FIELD,_transports);
+                reply.put(SUCCESSFUL_FIELD,Boolean.TRUE);
+                reply.put(CLIENT_FIELD,client.getId());
+                if (_advice != null)
                     reply.put(ADVICE_FIELD,_advice);
             }
             else
             {
                 reply.put(Bayeux.SUCCESSFUL_FIELD,Boolean.FALSE);
-                if (_advice!=null)
+                if (_advice != null)
                     reply.put(ADVICE_FIELD,_advice);
             }
 
             if (isLogDebug())
-                logDebug("handshake.handle: reply="+reply);
+                logDebug("handshake.handle: reply=" + reply);
 
             String id=message.getId();
-            if (id!=null)
+            if (id != null)
                 reply.put(ID_FIELD,id);
 
             sendMetaReply(client,reply,transport);
@@ -1181,7 +1208,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         {
             String channel_id=message.getChannel();
 
-            if (client==null && message.containsKey(CLIENT_FIELD))
+            if (client == null && message.containsKey(CLIENT_FIELD))
             {
                 unknownClient(transport,channel_id);
                 return;
@@ -1194,10 +1221,10 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
             Message reply=newMessage(message);
             reply.put(CHANNEL_FIELD,channel_id);
-            if (id!=null)
+            if (id != null)
                 reply.put(ID_FIELD,id);
 
-            if (data==null)
+            if (data == null)
             {
                 message=null;
                 reply.put(SUCCESSFUL_FIELD,Boolean.FALSE);
@@ -1214,7 +1241,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
                 message.remove(CLIENT_FIELD);
                 message=extendSendBayeux(client,message);
 
-                if (message!=null)
+                if (message != null)
                 {
                     reply.put(SUCCESSFUL_FIELD,Boolean.TRUE);
                 }
@@ -1227,7 +1254,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
             sendMetaReply(client,reply,transport);
 
-            if (message!=null)
+            if (message != null)
                 _root.doDelivery(cid,client,message);
         }
     }
@@ -1247,13 +1274,13 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         {
             String channel_id=message.getChannel();
 
-            if (client==null && !META_HANDSHAKE.equals(channel_id))
+            if (client == null && !META_HANDSHAKE.equals(channel_id))
             {
                 // unknown client
                 return;
             }
 
-            if(_securityPolicy.canPublish(client,channel_id,message))
+            if (_securityPolicy.canPublish(client,channel_id,message))
             {
                 _root.doDelivery(getChannelId(channel_id),client,message);
             }
@@ -1273,7 +1300,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         @Override
         public void handle(ClientImpl client, Transport transport, Message message) throws IOException
         {
-            if (client==null)
+            if (client == null)
             {
                 unknownClient(transport,META_SUBSCRIBE);
                 return;
@@ -1282,10 +1309,10 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             String subscribe_id=(String)message.get(SUBSCRIPTION_FIELD);
 
             // select a random channel ID if none specifified
-            if (subscribe_id==null)
+            if (subscribe_id == null)
             {
                 subscribe_id=Long.toString(getRandom(),36);
-                while (getChannel(subscribe_id)!=null)
+                while(getChannel(subscribe_id) != null)
                     subscribe_id=Long.toString(getRandom(),36);
             }
 
@@ -1312,13 +1339,13 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
             if (can_subscribe)
             {
-                if (cid!=null)
+                if (cid != null)
                 {
                     ChannelImpl channel=getChannel(cid);
-                    if (channel==null&&_securityPolicy.canCreate(client,subscribe_id,message))
-                        channel=(ChannelImpl)getChannel(subscribe_id, true);
+                    if (channel == null && _securityPolicy.canCreate(client,subscribe_id,message))
+                        channel=(ChannelImpl)getChannel(subscribe_id,true);
 
-                    if (channel!=null)
+                    if (channel != null)
                         channel.subscribe(client);
                     else
                         can_subscribe=false;
@@ -1342,7 +1369,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             }
 
             String id=message.getId();
-            if (id!=null)
+            if (id != null)
                 reply.put(ID_FIELD,id);
 
             sendMetaReply(client,reply,transport);
@@ -1362,7 +1389,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         @Override
         public void handle(ClientImpl client, Transport transport, Message message) throws IOException
         {
-            if (client==null)
+            if (client == null)
             {
                 unknownClient(transport,META_UNSUBSCRIBE);
                 return;
@@ -1370,7 +1397,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
             String channel_id=(String)message.get(SUBSCRIPTION_FIELD);
             ChannelImpl channel=getChannel(channel_id);
-            if (channel!=null)
+            if (channel != null)
                 channel.unsubscribe(client);
 
             Message reply=newMessage(message);
@@ -1379,7 +1406,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             reply.put(SUCCESSFUL_FIELD,Boolean.TRUE);
 
             String id=message.getId();
-            if (id!=null)
+            if (id != null)
                 reply.put(ID_FIELD,id);
 
             sendMetaReply(client,reply,transport);
@@ -1404,13 +1431,12 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             reply.put(SUCCESSFUL_FIELD,Boolean.TRUE);
 
             String id=message.getId();
-            if (id!=null)
+            if (id != null)
                 reply.put(ID_FIELD,id);
 
             sendMetaReply(client,reply,transport);
         }
     }
-
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -1422,8 +1448,11 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         }
 
         /* ------------------------------------------------------------ */
-        /* (non-Javadoc)
-         * @see org.cometd.server.ChannelImpl#addChild(org.cometd.server.ChannelImpl)
+        /*
+         * (non-Javadoc)
+         * 
+         * @see
+         * org.cometd.server.ChannelImpl#addChild(org.cometd.server.ChannelImpl)
          */
         @Override
         public void addChild(ChannelImpl channel)

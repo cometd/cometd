@@ -34,14 +34,14 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
         super(initCapacity,growBy,lock);
         _ids=new int[initCapacity];
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return currentId the latest batch that has been sent to the client
      */
     public int getCurrentId()
     {
-        synchronized (_lock)
+        synchronized(_lock)
         {
             return _currentId;
         }
@@ -50,7 +50,7 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
     /* ------------------------------------------------------------ */
     public void setCurrentId(int currentId)
     {
-        synchronized (_lock)
+        synchronized(_lock)
         {
             _currentId=currentId;
         }
@@ -59,7 +59,7 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
     /* ------------------------------------------------------------ */
     public void incrementCurrentId()
     {
-        synchronized (_lock)
+        synchronized(_lock)
         {
             _currentId++;
         }
@@ -68,7 +68,7 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
     /* ------------------------------------------------------------ */
     public boolean add(E e)
     {
-        synchronized (_lock)
+        synchronized(_lock)
         {
             final int nextSlot=_nextSlot;
             super.add(e);
@@ -89,14 +89,14 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
     /* ------------------------------------------------------------ */
     public boolean offer(E e)
     {
-        synchronized (_lock)
+        synchronized(_lock)
         {
             final int nextSlot=_nextSlot;
             super.offer(e);
             _ids[nextSlot]=_currentId;
         }
         return true;
-        
+
     }
 
     /* ------------------------------------------------------------ */
@@ -104,9 +104,9 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
     {
         synchronized(_lock)
         {
-            if (index<0 || index>=_size)
-                throw new IndexOutOfBoundsException("!("+0+"<"+index+"<="+_size+")");
-            int i = (_nextE+index)%_ids.length;
+            if (index < 0 || index >= _size)
+                throw new IndexOutOfBoundsException("!(" + 0 + "<" + index + "<=" + _size + ")");
+            int i=(_nextE + index) % _ids.length;
             return _ids[i];
         }
     }
@@ -114,7 +114,7 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
     /* ------------------------------------------------------------ */
     public long getAssociatedIdUnsafe(int index)
     {
-        int i = (_nextE+index)%_ids.length;
+        int i=(_nextE + index) % _ids.length;
         return _ids[i];
     }
 
@@ -123,31 +123,31 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
     {
         synchronized(_lock)
         {
-            int nextSlot = _nextSlot;
-            E e = super.remove(index);
+            int nextSlot=_nextSlot;
+            E e=super.remove(index);
 
-            int i = _nextE+index;
-            if (i>=_ids.length)
+            int i=_nextE + index;
+            if (i >= _ids.length)
                 i-=_ids.length;
-            
-            if (i<nextSlot)
+
+            if (i < nextSlot)
             {
-                System.arraycopy(_ids,i+1,_ids,i,nextSlot-i);
+                System.arraycopy(_ids,i + 1,_ids,i,nextSlot - i);
                 nextSlot--;
             }
             else
             {
-                System.arraycopy(_ids,i+1,_ids,i,_ids.length-i-1);
-                if (nextSlot>0)
+                System.arraycopy(_ids,i + 1,_ids,i,_ids.length - i - 1);
+                if (nextSlot > 0)
                 {
-                    _ids[_ids.length-1]=_ids[0];
-                    System.arraycopy(_ids,1,_ids,0,nextSlot-1);
+                    _ids[_ids.length - 1]=_ids[0];
+                    System.arraycopy(_ids,1,_ids,0,nextSlot - 1);
                     nextSlot--;
                 }
                 else
-                    nextSlot=_ids.length-1;
+                    nextSlot=_ids.length - 1;
             }
-            
+
             return e;
         }
     }
@@ -157,55 +157,55 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
     {
         synchronized(_lock)
         {
-            E old = super.set(index, element);
+            E old=super.set(index,element);
 
-            int i = _nextE+index;
-            if (i>=_ids.length)
+            int i=_nextE + index;
+            if (i >= _ids.length)
                 i-=_ids.length;
-            // TODO: what if the id is not meant to be the latest? 
+            // TODO: what if the id is not meant to be the latest?
             _ids[i]=_currentId;
             return old;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public void add(int index, E element)
     {
         synchronized(_lock)
         {
-            int nextSlot = _nextSlot;
-            super.add(index, element);
-            
-            if (index==_size)
+            int nextSlot=_nextSlot;
+            super.add(index,element);
+
+            if (index == _size)
             {
-                _ids[index] = _currentId;
+                _ids[index]=_currentId;
             }
             else
             {
-                int i = _nextE+index;
-                if (i>=_ids.length)
+                int i=_nextE + index;
+                if (i >= _ids.length)
                     i-=_ids.length;
 
-                if (i<nextSlot)
+                if (i < nextSlot)
                 {
-                    System.arraycopy(_ids,i,_ids,i+1,nextSlot-i);
+                    System.arraycopy(_ids,i,_ids,i + 1,nextSlot - i);
                     _ids[i]=_currentId;
                 }
                 else
                 {
-                    if (nextSlot>0)
+                    if (nextSlot > 0)
                     {
                         System.arraycopy(_ids,0,_ids,1,nextSlot);
-                        _ids[0]=_ids[_ids.length-1];
+                        _ids[0]=_ids[_ids.length - 1];
                     }
 
-                    System.arraycopy(_ids,i,_ids,i+1,_ids.length-i-1);
+                    System.arraycopy(_ids,i,_ids,i + 1,_ids.length - i - 1);
                     _ids[i]=_currentId;
                 }
             }
         }
     }
-    
+
     protected boolean grow()
     {
         int nextE=_nextE;
@@ -224,7 +224,5 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
         _ids=Ids;
         return true;
     }
-    
- 
 
 }

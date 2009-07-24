@@ -20,18 +20,18 @@ import org.eclipse.jetty.util.thread.Timeout;
 
 /* ------------------------------------------------------------ */
 /**
- * Extension of {@link ClientImpl} that uses {@link Continuation}s to
- * resume clients waiting for messages. Continuation clients are used for
- * remote clients and have removed if they are not accessed within
- * an idle timeout (@link {@link ContinuationBayeux#_clientTimer}).
+ * Extension of {@link ClientImpl} that uses {@link Continuation}s to resume
+ * clients waiting for messages. Continuation clients are used for remote
+ * clients and have removed if they are not accessed within an idle timeout (@link
+ * {@link ContinuationBayeux#_clientTimer}).
  * 
  * @author gregw
- *
+ * 
  */
 public class ContinuationClient extends ClientImpl
 {
     private long _accessed;
-    public final Timeout.Task _intervalTimeoutTask; 
+    public final Timeout.Task _intervalTimeoutTask;
     private ContinuationBayeux _bayeux;
     private volatile Continuation _continuation;
 
@@ -50,10 +50,11 @@ public class ContinuationClient extends ClientImpl
                 {
                     remove(true);
                 }
+
                 @Override
                 public String toString()
                 {
-                    return "T-"+ContinuationClient.this.toString();
+                    return "T-" + ContinuationClient.this.toString();
                 }
             };
             _bayeux.startIntervalTimeout(_intervalTimeoutTask,getInterval());
@@ -62,34 +63,33 @@ public class ContinuationClient extends ClientImpl
             _intervalTimeoutTask=null;
     }
 
-
     /* ------------------------------------------------------------ */
     public void setContinuation(Continuation continuation)
     {
-        if (continuation==null)
+        if (continuation == null)
         {
-            synchronized (this)
+            synchronized(this)
             {
-                if (_continuation!=null)
-                    _continuation.resume(); 
+                if (_continuation != null)
+                    _continuation.resume();
                 _continuation=null;
-                if(_intervalTimeoutTask!=null)
+                if (_intervalTimeoutTask != null)
                     _bayeux.startIntervalTimeout(_intervalTimeoutTask,getInterval());
             }
         }
         else
         {
-            synchronized (this)
+            synchronized(this)
             {
-                if (_continuation!=null)
-                    _continuation.resume(); 
+                if (_continuation != null)
+                    _continuation.resume();
                 _continuation=continuation;
-                
+
                 _bayeux.cancelIntervalTimeout(_intervalTimeoutTask);
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public Continuation getContinuation()
     {
@@ -100,14 +100,14 @@ public class ContinuationClient extends ClientImpl
     @Override
     public void resume()
     {
-        synchronized (this)
+        synchronized(this)
         {
-            if (_continuation!=null)
+            if (_continuation != null)
             {
                 _continuation.resume();
             }
             _continuation=null;
-        }        
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -123,9 +123,10 @@ public class ContinuationClient extends ClientImpl
         synchronized(this)
         {
             _accessed=_bayeux.getNow();
-            if (_intervalTimeoutTask!=null && _intervalTimeoutTask.isScheduled())
+            if (_intervalTimeoutTask != null && _intervalTimeoutTask.isScheduled())
             {
-                // reschedule the timer even though it may be cancelled next... it might not be.
+                // reschedule the timer even though it may be cancelled next...
+                // it might not be.
                 _intervalTimeoutTask.reschedule();
             }
         }
@@ -136,20 +137,21 @@ public class ContinuationClient extends ClientImpl
     {
         return _accessed;
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
+    /*
+     * (non-Javadoc)
+     * 
      * @see org.cometd.server.ClientImpl#remove(boolean)
      */
     @Override
-    public void remove(boolean wasTimeout) 
+    public void remove(boolean wasTimeout)
     {
         synchronized(this)
         {
-            if (!wasTimeout && _intervalTimeoutTask!=null)
+            if (!wasTimeout && _intervalTimeoutTask != null)
                 _bayeux.cancelIntervalTimeout(_intervalTimeoutTask);
         }
         super.remove(wasTimeout);
     }
-
 }
