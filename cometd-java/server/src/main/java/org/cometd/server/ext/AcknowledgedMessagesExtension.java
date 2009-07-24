@@ -13,18 +13,18 @@ import org.eclipse.jetty.util.log.Log;
 /**
  * Acknowledged Messages extension.
  * 
- * Installing this extension in a bayeux server allows it to handle 
- * the ack extension if a client also supports it.
+ * Installing this extension in a bayeux server allows it to handle the ack
+ * extension if a client also supports it.
  * 
- * The main role of this extension is to install the {@link AcknowledgedMessagesClientExtension}
- * on the {@link Client} instances created during handshake for clients that
- * also support the ack extension.
- *
+ * The main role of this extension is to install the
+ * {@link AcknowledgedMessagesClientExtension} on the {@link Client} instances
+ * created during handshake for clients that also support the ack extension.
+ * 
  */
 public class AcknowledgedMessagesExtension implements Extension
 {
-    JSON.Literal _replyExt = new JSON.Literal("{\"ack\":true}");
-    
+    JSON.Literal _replyExt=new JSON.Literal("{\"ack\":true}");
+
     public Message rcv(Client from, Message message)
     {
         return message;
@@ -44,18 +44,19 @@ public class AcknowledgedMessagesExtension implements Extension
     {
         if (message.getChannel().equals(Bayeux.META_HANDSHAKE) && Boolean.TRUE.equals(message.get(Bayeux.SUCCESSFUL_FIELD)))
         {
-            Message rcv = message.getAssociated();
-            
-            Map<String, Object> ext = rcv.getExt(false);
-            boolean clientRequestedAcks = ext != null && ext.get("ack")==Boolean.TRUE;
+            Message rcv=message.getAssociated();
 
-            if (clientRequestedAcks && from!=null) {
+            Map<String,Object> ext=rcv.getExt(false);
+            boolean clientRequestedAcks=ext != null && ext.get("ack") == Boolean.TRUE;
+
+            if (clientRequestedAcks && from != null)
+            {
                 Log.info("Enabled message acknowledgement for client " + from);
                 from.addExtension(new AcknowledgedMessagesClientExtension(from));
                 ((ClientImpl)from).setMetaConnectDeliveryOnly(true);
             }
-            
-            message.put(Bayeux.EXT_FIELD, _replyExt);
+
+            message.put(Bayeux.EXT_FIELD,_replyExt);
         }
 
         return message;

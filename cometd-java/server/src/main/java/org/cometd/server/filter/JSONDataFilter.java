@@ -27,37 +27,35 @@ import org.cometd.server.ClientImpl;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 
-
-/** JSON DataFilter
- * This {@link DataFilter} walks an Object as if it was a call to {@link JSON#toString(Object)} and 
- * calls the protected methods 
- * {@link #filterString(String)},
- * {@link #filterNumber(Number)},
- * {@link #filterBoolean(Boolean)},
- * {@link #filterArray(Object, ClientImpl)} or
- * {@link #filterMap(Map, ClientImpl)} appropriate.
- * Derived filters may override one or more of these methods to provide filtering of specific types.
+/**
+ * JSON DataFilter This {@link DataFilter} walks an Object as if it was a call
+ * to {@link JSON#toString(Object)} and calls the protected methods
+ * {@link #filterString(String)}, {@link #filterNumber(Number)},
+ * {@link #filterBoolean(Boolean)}, {@link #filterArray(Object, ClientImpl)} or
+ * {@link #filterMap(Map, ClientImpl)} appropriate. Derived filters may override
+ * one or more of these methods to provide filtering of specific types.
  * 
  * @author gregw
- *
+ * 
  */
 public class JSONDataFilter implements DataFilter
 {
     public void init(Object init)
-    {}
-    
+    {
+    }
+
     public Object filter(Client from, Channel to, Object data) throws IllegalStateException
     {
-        if (data==null)
+        if (data == null)
             return null;
-        
+
         if (data instanceof Map)
             return filterMap(from,to,(Map)data);
         if (data instanceof List)
-            return filterArray(from,to,((List) data).toArray ());
+            return filterArray(from,to,((List)data).toArray());
         if (data instanceof Collection)
-        	return filterArray(from,to,((Collection)data).toArray());
-        if (data.getClass().isArray() )
+            return filterArray(from,to,((Collection)data).toArray());
+        if (data.getClass().isArray())
             return filterArray(from,to,data);
         if (data instanceof Number)
             return filterNumber((Number)data);
@@ -89,27 +87,27 @@ public class JSONDataFilter implements DataFilter
 
     protected Object filterArray(Client from, Channel to, Object array)
     {
-       if (array==null)
+        if (array == null)
             return null;
-        
-        int length = Array.getLength(array);
-        
-        for (int i=0;i<length;i++)
-            Array.set(array,i,filter(from, to, Array.get(array,i)));
-        
+
+        int length=Array.getLength(array);
+
+        for (int i=0; i < length; i++)
+            Array.set(array,i,filter(from,to,Array.get(array,i)));
+
         return array;
     }
 
     protected Object filterMap(Client from, Channel to, Map object)
     {
-        if (object==null)
+        if (object == null)
             return null;
-        
-        Iterator iter = object.entrySet().iterator();
+
+        Iterator iter=object.entrySet().iterator();
         while(iter.hasNext())
         {
-            Map.Entry entry = (Map.Entry)iter.next();
-            entry.setValue(filter(from, to, entry.getValue()));
+            Map.Entry entry=(Map.Entry)iter.next();
+            entry.setValue(filter(from,to,entry.getValue()));
         }
 
         return object;
@@ -117,20 +115,20 @@ public class JSONDataFilter implements DataFilter
 
     protected Object filterJSON(Client from, Channel to, JSON.Generator generator)
     {
-        String json = JSON.toString(generator);
-        Object data = JSON.parse (json);
+        String json=JSON.toString(generator);
+        Object data=JSON.parse(json);
         return filter(from,to,data);
     }
 
     protected Object filterJSON(Client from, Channel to, JSON.Literal json)
     {
-        Object data = JSON.parse(json.toString());
+        Object data=JSON.parse(json.toString());
         return filter(from,to,data);
     }
-    
+
     protected Object filterObject(Client from, Channel to, Object obj)
     {
-        Log.warn(this+": Cannot Filter "+obj.getClass());
+        Log.warn(this + ": Cannot Filter " + obj.getClass());
         return obj;
     }
 

@@ -1,4 +1,5 @@
 package org.cometd.server;
+
 //========================================================================
 //Copyright 2007 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
@@ -19,23 +20,21 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.Message;
 
-
-
 public abstract class AbstractTransport implements Transport
 {
     private HttpServletResponse _response;
     private Message _pollReply;
-    
+
     public void setResponse(HttpServletResponse response) throws IOException
     {
         _response=response;
     }
-    
+
     public HttpServletResponse getResponse()
     {
         return _response;
     }
-    
+
     public Message getMetaConnectReply()
     {
         return _pollReply;

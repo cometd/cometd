@@ -20,17 +20,18 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.Message;
 
-
-public interface Transport 
+public interface Transport
 {
     public void setResponse(HttpServletResponse response) throws IOException;
 
     public void send(Message message) throws IOException;
+
     public void complete() throws IOException;
-    
+
     public Message getMetaConnectReply();
+
     public void setMetaConnnectReply(Message reply);
-    
+
     public boolean isMetaConnectDeliveryOnly();
-    
+
 }
