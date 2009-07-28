@@ -138,7 +138,10 @@ org.cometd.Cometd = function(name)
     {
         if (window.console)
         {
-            window.console[level].apply(window.console, args);
+            if (window.console[level])
+            {
+                window.console[level].apply(window.console, args);
+            }
         }
     }
 
