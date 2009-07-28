@@ -26,7 +26,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
@@ -46,7 +45,7 @@ import org.eclipse.jetty.util.ajax.JSON;
 /**
  * @author gregw
  * @author aabeling: added JSONP transport
- * 
+ *
  */
 public abstract class AbstractBayeux extends MessagePool implements Bayeux
 {
@@ -95,9 +94,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @param context
-     *            . The logLevel init parameter is used to set the logging to
-     *            0=none, 1=info, 2=debug
+     * @param context The logLevel init parameter is used to set the logging to: 0=none, 1=info, 2=debug
      */
     protected AbstractBayeux()
     {
@@ -173,7 +170,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.cometd.server.Bx#getClient(java.lang.String)
      */
     public Client getClient(String client_id)
@@ -215,7 +212,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.cometd.server.Bx#getSecurityPolicy()
      */
     public SecurityPolicy getSecurityPolicy()
@@ -263,7 +260,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /**
      * Handle a Bayeux message. This is normally only called by the bayeux
      * servlet or a test harness.
-     * 
+     *
      * @param client
      *            The client if known
      * @param transport
@@ -379,7 +376,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     /**
      * Create new transport object for a bayeux message
-     * 
+     *
      * @param client
      *            The client
      * @param message
@@ -391,33 +388,29 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         if (isLogDebug())
             logDebug("newTransport: client=" + client + ",message=" + message);
 
-        Transport result=null;
+        Transport result;
 
-        try
+        String type = client == null ? null : client.getConnectionType();
+        if (type == null) type = (String)message.get(Bayeux.CONNECTION_TYPE_FIELD);
+
+        if (Bayeux.TRANSPORT_CALLBACK_POLL.equals(type))
         {
-            String type=client == null?null:client.getConnectionType();
-            if (type == null)
-                type=(String)message.get(Bayeux.CONNECTION_TYPE_FIELD);
-
-            if (Bayeux.TRANSPORT_CALLBACK_POLL.equals(type) || type == null)
-            {
-                String jsonp=(String)message.get(Bayeux.JSONP_PARAMETER);
-                if (jsonp != null)
-                    result=new JSONPTransport(jsonp);
-                else
-                    result=new JSONTransport();
-            }
-            else
-                result=new JSONTransport();
-
+            String jsonp = (String)message.get(Bayeux.JSONP_PARAMETER);
+            if (jsonp == null) throw new IllegalArgumentException("Missing 'jsonp' field in message " + message + " for transport " + type);
+            result = new JSONPTransport(jsonp);
         }
-        catch(Exception e)
+        else if (Bayeux.TRANSPORT_LONG_POLL.equals(type))
         {
-            throw new RuntimeException(e);
+            result = new JSONTransport();
+        }
+        else
+        {
+            throw new IllegalArgumentException("Unsupported transport type " + type);
         }
 
         if (isLogDebug())
-            logDebug("newTransport: result=" + result);
+            logDebug("newTransport: result="+result);
+
         return result;
     }
 
@@ -425,7 +418,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /**
      * Publish data to a channel. Creates a message and delivers it to the root
      * channel.
-     * 
+     *
      * @param to
      * @param from
      * @param data
@@ -500,7 +493,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.cometd.server.Bx#removeClient(java.lang.String)
      */
     public Client removeClient(String client_id)
@@ -534,8 +527,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @param commented
-     *            the commented to set
+     * @param commented the commented to set
      */
     public void setJSONCommented(boolean commented)
     {
@@ -556,7 +548,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * org.cometd.server.Bx#setSecurityPolicy(org.cometd.server.SecurityPolicy)
      */
@@ -584,7 +576,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
      * The time a client should delay between reconnects when multiple
      * connections from the same browser are detected. This effectively produces
      * traditional polling.
-     * 
+     *
      * @param multiFrameInterval
      *            the multiFrameInterval to set
      */
@@ -1068,8 +1060,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
                     }
                 }
                 else
-                    client._adviseVersion=-1; // clear so it is reset after
-                // multi state clears
+                    client._adviseVersion=-1; // clear so it is reset after multi state clears
             }
 
             // reply to connect message
@@ -1450,7 +1441,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         /* ------------------------------------------------------------ */
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * org.cometd.server.ChannelImpl#addChild(org.cometd.server.ChannelImpl)
          */
