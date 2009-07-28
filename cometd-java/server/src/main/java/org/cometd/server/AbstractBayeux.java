@@ -1103,7 +1103,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
                 reply.put(ID_FIELD,id);
 
             if (polling)
-                transport.setMetaConnnectReply(reply);
+                transport.setMetaConnectReply(reply);
             else
                 sendMetaReply(client,reply,transport);
         }
@@ -1144,7 +1144,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             Message pollReply=transport.getMetaConnectReply();
             if (pollReply != null)
             {
-                transport.setMetaConnnectReply(null);
+                transport.setMetaConnectReply(null);
                 sendMetaReply(client,pollReply,transport);
             }
             sendMetaReply(client,reply,transport);

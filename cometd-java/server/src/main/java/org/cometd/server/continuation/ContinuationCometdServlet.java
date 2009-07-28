@@ -16,7 +16,6 @@ package org.cometd.server.continuation;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -158,7 +157,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                 if (timeout == 0)
                     timeout=_bayeux.getTimeout();
 
-                Continuation continuation=ContinuationSupport.getContinuation(request,response);
+                Continuation continuation=ContinuationSupport.getContinuation(request);
 
                 // Get messages or wait
                 synchronized(client)
@@ -170,13 +169,13 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                         request.setAttribute(TRANSPORT_ATTR,transport);
                         continuation.setTimeout(timeout);
                         continuation.suspend();
-                        ((ContinuationClient)client).setContinuation(continuation);
+                        client.setContinuation(continuation);
                         return;
                     }
                 }
 
-                ((ContinuationClient)client).setContinuation(null);
-                transport.setMetaConnnectReply(null);
+                client.setContinuation(null);
+                transport.setMetaConnectReply(null);
 
             }
             else if (client != null)
