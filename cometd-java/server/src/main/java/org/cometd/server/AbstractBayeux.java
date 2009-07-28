@@ -392,9 +392,14 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         Transport result;
 
         String type = client == null ? null : client.getConnectionType();
-        if (type == null) type = (String)message.get(Bayeux.CONNECTION_TYPE_FIELD);
         if (type == null)
         {
+            // Check if it is a connect message and we can extract the connection type
+            type = (String)message.get(Bayeux.CONNECTION_TYPE_FIELD);
+        }
+        if (type == null)
+        {
+            // Check if it is an handshake message and we can negotiate the connection type
             Object types = message.get(Bayeux.SUPPORTED_CONNECTION_TYPES_FIELD);
             if (types != null)
             {
@@ -407,6 +412,12 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
                 if (supportedTypes.contains(Bayeux.TRANSPORT_LONG_POLL)) type = Bayeux.TRANSPORT_LONG_POLL;
                 else if (supportedTypes.contains(Bayeux.TRANSPORT_CALLBACK_POLL)) type = Bayeux.TRANSPORT_CALLBACK_POLL;
             }
+        }
+        if (type == null)
+        {
+            // A normal message, check if it has the jsonp parameter
+            String jsonp = (String) message.get(Bayeux.JSONP_PARAMETER);
+            type = jsonp != null ? Bayeux.TRANSPORT_CALLBACK_POLL : Bayeux.TRANSPORT_LONG_POLL;
         }
 
         if (Bayeux.TRANSPORT_CALLBACK_POLL.equals(type))
