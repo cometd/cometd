@@ -5,7 +5,7 @@ package org.cometd.server;
 //------------------------------------------------------------------------
 //Licensed under the Apache License, Version 2.0 (the "License");
 //you may not use this file except in compliance with the License.
-//You may obtain a copy of the License at 
+//You may obtain a copy of the License at
 //http://www.apache.org/licenses/LICENSE-2.0
 //Unless required by applicable law or agreed to in writing, software
 //distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,6 @@ package org.cometd.server;
 //========================================================================
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.Message;
@@ -40,7 +39,7 @@ public abstract class AbstractTransport implements Transport
         return _pollReply;
     }
 
-    public void setMetaConnnectReply(Message reply)
+    public void setMetaConnectReply(Message reply)
     {
         _pollReply=reply;
     }
