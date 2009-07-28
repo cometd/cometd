@@ -101,7 +101,10 @@ org.cometd.Cometd = function(name)
 
                 if (deep && typeof prop === "object" && prop !== null)
                 {
-                    result[propName] = _mixin(deep, result[propName], prop);
+                    if (prop instanceof Array)
+                        result[propName] = _mixin(deep, [], prop);
+                    else
+                        result[propName] = _mixin(deep, {}, prop);
                 }
                 else
                 {
@@ -165,12 +168,12 @@ org.cometd.Cometd = function(name)
 
     function _newLongPollingTransport()
     {
-        return _mixin({}, new org.cometd.Transport('long-polling'), new org.cometd.LongPollingTransport());
+        return _mixin(false, {}, new org.cometd.Transport('long-polling'), new org.cometd.LongPollingTransport());
     }
 
     function _newCallbackPollingTransport()
     {
-        return _mixin({}, new org.cometd.Transport('callback-polling'), new org.cometd.CallbackPollingTransport());
+        return _mixin(false, {}, new org.cometd.Transport('callback-polling'), new org.cometd.CallbackPollingTransport());
     }
 
     function _findTransport(handshakeResponse)
@@ -625,7 +628,7 @@ org.cometd.Cometd = function(name)
         };
         // Do not allow the user to mess with the required properties,
         // so merge first the user properties and *then* the bayeux message
-        var message = _mixin({}, handshakeProps, bayeuxMessage);
+        var message = _mixin(false, {}, _handshakeProps, bayeuxMessage);
 
         // We started a batch to hold the application messages,
         // so here we must bypass it and send immediately.
@@ -1220,7 +1223,7 @@ org.cometd.Cometd = function(name)
         var bayeuxMessage = {
             channel: '/meta/disconnect'
         };
-        var message = _mixin({}, disconnectProps, bayeuxMessage);
+        var message = _mixin(false, {}, _mixin(true, {}, disconnectProps), bayeuxMessage);
         _setStatus('disconnecting');
         _send([message], false);
     };
@@ -1314,7 +1317,7 @@ org.cometd.Cometd = function(name)
                 channel: '/meta/subscribe',
                 subscription: channel
             };
-            var message = _mixin({}, subscribeProps, bayeuxMessage);
+            var message = _mixin(false, {}, _mixin(true, {}, subscribeProps), bayeuxMessage);
             _queueSend(message);
         }
 
@@ -1339,7 +1342,7 @@ org.cometd.Cometd = function(name)
                 channel: '/meta/unsubscribe',
                 subscription: channel
             };
-            var message = _mixin({}, unsubscribeProps, bayeuxMessage);
+            var message = _mixin(false, {}, _mixin(true, {}, unsubscribeProps), bayeuxMessage);
             _queueSend(message);
         }
     };
@@ -1365,7 +1368,7 @@ org.cometd.Cometd = function(name)
             channel: channel,
             data: content
         };
-        var message = _mixin({}, publishProps, bayeuxMessage);
+        var message = _mixin(false, {}, _mixin(true, {}, publishProps), bayeuxMessage);
         _queueSend(message);
     };
 
