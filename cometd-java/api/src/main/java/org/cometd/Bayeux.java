@@ -15,7 +15,6 @@
 package org.cometd;
 
 import java.util.Collection;
-
 import javax.servlet.http.HttpServletRequest;
 
 /* ------------------------------------------------------------ */
@@ -37,7 +36,7 @@ public interface Bayeux
     /** ServletContext attribute name used to obtain the Bayeux object */
     /* was DOJOX_COMETD_BAYEUX */
     public static final String ATTRIBUTE ="org.cometd.bayeux";
-    
+
     /**Meta definitions for channels*/
     public static final String META="/meta";
     /**Meta definitions for channels*/
@@ -88,7 +87,7 @@ public interface Bayeux
     /**Field names inside Bayeux messages - minimumVersion field*/
     public static final String MIN_VERSION_FIELD="minimumVersion";
     /**Field names inside Bayeux messages - supportedConnectionTypes field*/
-    public static final String SUPP_CONNECTION_TYPE_FIELD="supportedConnectionTypes";
+    public static final String SUPPORTED_CONNECTION_TYPES_FIELD ="supportedConnectionTypes";
     /**Field names inside Bayeux messages - json-comment-filtered field*/
     public static final String JSON_COMMENT_FILTERED_FIELD="json-comment-filtered";
     /**Field names inside Bayeux messages - reconnect field*/
@@ -114,7 +113,7 @@ public interface Bayeux
     public static final String TRANSPORT_IFRAME="iframe";
     /**Transport types - flash*/
     public static final String TRANSPORT_FLASH="flash";
-    
+
     /*http field names*/
     /**http helpers - text/json content type*/
     public static final String JSON_CONTENT_TYPE="text/json";

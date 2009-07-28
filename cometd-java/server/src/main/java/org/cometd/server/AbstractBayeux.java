@@ -17,6 +17,7 @@ package org.cometd.server;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -392,6 +393,21 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
         String type = client == null ? null : client.getConnectionType();
         if (type == null) type = (String)message.get(Bayeux.CONNECTION_TYPE_FIELD);
+        if (type == null)
+        {
+            Object types = message.get(Bayeux.SUPPORTED_CONNECTION_TYPES_FIELD);
+            if (types != null)
+            {
+                List supportedTypes;
+                if (types instanceof Object[]) supportedTypes = Arrays.asList((Object[])types);
+                else if (types instanceof List) supportedTypes = (List)types;
+                else if (types instanceof Map) supportedTypes = new ArrayList(((Map)types).values());
+                else supportedTypes = Collections.emptyList();
+
+                if (supportedTypes.contains(Bayeux.TRANSPORT_LONG_POLL)) type = Bayeux.TRANSPORT_LONG_POLL;
+                else if (supportedTypes.contains(Bayeux.TRANSPORT_CALLBACK_POLL)) type = Bayeux.TRANSPORT_CALLBACK_POLL;
+            }
+        }
 
         if (Bayeux.TRANSPORT_CALLBACK_POLL.equals(type))
         {
@@ -1160,7 +1176,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
             if (client != null)
             {
-                reply.put(SUPP_CONNECTION_TYPE_FIELD,_transports);
+                reply.put(SUPPORTED_CONNECTION_TYPES_FIELD,_transports);
                 reply.put(SUCCESSFUL_FIELD,Boolean.TRUE);
                 reply.put(CLIENT_FIELD,client.getId());
                 if (_advice != null)
