@@ -49,7 +49,7 @@ org.cometd.Cometd = function(name)
     var _backoffIncrement;
     var _maxBackoff;
     var _reverseIncomingExtensions;
-    var _xd = false;
+    var _crossDomain = false;
     var _transport;
     var _status = 'disconnected';
     var _messageId = 0;
@@ -102,9 +102,13 @@ org.cometd.Cometd = function(name)
                 if (deep && typeof prop === "object" && prop !== null)
                 {
                     if (prop instanceof Array)
+                    {
                         result[propName] = _mixin(deep, [], prop);
+                    }
                     else
+                    {
                         result[propName] = _mixin(deep, {}, prop);
+                    }
                 }
                 else
                 {
@@ -170,39 +174,39 @@ org.cometd.Cometd = function(name)
     }
     this._debug = _debug;
 
-    function _newLongPollingTransport()
+    function _newTransport(type)
     {
-        return _mixin(false, {}, new org.cometd.Transport('long-polling'), new org.cometd.LongPollingTransport());
-    }
-
-    function _newCallbackPollingTransport()
-    {
-        return _mixin(false, {}, new org.cometd.Transport('callback-polling'), new org.cometd.CallbackPollingTransport());
+        switch (type)
+        {
+            case 'long-polling':
+                return _mixin(false, {}, new org.cometd.Transport(type), new org.cometd.LongPollingTransport());
+            case 'callback-polling':
+                return _mixin(false, {}, new org.cometd.Transport(type), new org.cometd.CallbackPollingTransport());
+            default:
+                return null;
+        }
     }
 
     function _findTransport(handshakeResponse)
     {
         var transportTypes = handshakeResponse.supportedConnectionTypes;
-        if (_xd)
+
+        // Check if the server supports the current transport
+        if (_inArray(_transport.getType(), transportTypes) >= 0)
         {
-            // If we are cross domain, check if the server supports it, that's the only option
-            if (_inArray('callback-polling', transportTypes) >= 0)
-            {
-                return _transport;
-            }
+            return _transport;
         }
         else
         {
-            // Check if we can keep long-polling
-            if (_inArray('long-polling', transportTypes) >= 0)
+            // Make a copy in order to not modify the message
+            var serverTransports = transportTypes.slice(0);
+            var clientTransports = ['long-polling', 'callback-polling'];
+            // Remove the current transport, which we know it's not supported
+            clientTransports.splice(_inArray(_transport.getType(), clientTransports), 1);
+            // Check the remaining option
+            if (_inArray(clientTransports[0], serverTransports) >= 0)
             {
-                return _transport;
-            }
-
-            // The server does not support long-polling
-            if (_inArray('callback-polling', transportTypes) >= 0)
-            {
-                return _newCallbackPollingTransport();
+                return _newTransport(clientTransports[0]);
             }
         }
         return null;
@@ -232,26 +236,9 @@ org.cometd.Cometd = function(name)
         _logLevel = configuration.logLevel || 'info';
         _reverseIncomingExtensions = configuration.reverseIncomingExtensions !== false;
 
-
-        // Check immediately if we're cross domain
-        // If cross domain, the handshake must not send the long polling transport type
+        // Check if we're cross domain
         var urlParts = /(^https?:)?(\/\/(([^:\/\?#]+)(:(\d+))?))?([^\?#]*)/.exec(_url);
-        if (urlParts[3])
-        {
-            _xd = urlParts[3] != window.location.host;
-        }
-
-        // Temporary setup a transport to send the initial handshake
-        // The transport may be changed as a result of handshake
-        if (_xd)
-        {
-            _transport = _newCallbackPollingTransport();
-        }
-        else
-        {
-            _transport = _newLongPollingTransport();
-        }
-        _debug('Initial transport is', _transport);
+        _crossDomain = urlParts[3] && urlParts[3] != window.location.host;
     }
 
     function _clearSubscriptions()
@@ -610,6 +597,12 @@ org.cometd.Cometd = function(name)
 
         _clearSubscriptions();
 
+        // Reset the transport to support disconnect() followed by handshake()
+        if (_isDisconnected())
+        {
+            _transport = null;
+        }
+
         // Start a batch.
         // This is needed because handshake and connect are async.
         // It may happen that the application calls init() then subscribe()
@@ -624,15 +617,42 @@ org.cometd.Cometd = function(name)
         // Deep copy to avoid the user to be able to change them later
         _handshakeProps = _mixin(true, {}, handshakeProps);
 
+        // Figure out what is the transport that we must use
+        var connectionTypes = [];
+        if (_crossDomain)
+        {
+            if (!_transport)
+            {
+                // First time we try to handshake, try cross-origin request
+                connectionTypes.push('long-polling');
+            }
+            else
+            {
+                connectionTypes.push(_transport.getType());
+            }
+        }
+        else
+        {
+            connectionTypes.push('long-polling');
+        }
+
         var bayeuxMessage = {
             version: '1.0',
             minimumVersion: '0.9',
             channel: '/meta/handshake',
-            supportedConnectionTypes: _xd ? ['callback-polling'] : ['long-polling', 'callback-polling']
+            supportedConnectionTypes: connectionTypes
         };
         // Do not allow the user to mess with the required properties,
         // so merge first the user properties and *then* the bayeux message
         var message = _mixin(false, {}, _handshakeProps, bayeuxMessage);
+
+        if (!_transport)
+        {
+            // Always use long polling as the initial transport.
+            // In this way we check if cross-origin requests are supported
+            _transport = _newTransport('long-polling');
+            _debug('Initial transport is', _transport);
+        }
 
         // We started a batch to hold the application messages,
         // so here we must bypass it and send immediately.
@@ -738,6 +758,13 @@ org.cometd.Cometd = function(name)
         // advice permits us to try again
         if (retry)
         {
+            if (_crossDomain && _transport.getType() === 'long-polling')
+            {
+                // We tried a cross origin request, but it failed,
+                // so now try using the jsonp transport
+                _transport = _newTransport('callback-polling');
+            }
+
             _increaseBackoff();
             _delayedHandshake();
         }
@@ -872,7 +899,7 @@ org.cometd.Cometd = function(name)
         {
             _disconnect(true);
             _notifyListeners('/meta/disconnect', message);
-            _notifyListeners('/meta/usuccessful', message);
+            _notifyListeners('/meta/unsuccessful', message);
         }
     }
 
@@ -1680,16 +1707,24 @@ org.cometd.Cometd = function(name)
     {
         this._send = function(envelope, request)
         {
-            request.xhr = org.cometd.AJAX.send({
-                transport: this,
-                url: envelope.url,
-                headers: {
-                    Connection: 'Keep-Alive'
-                },
-                body: org.cometd.JSON.toJSON(envelope.messages),
-                onSuccess: function(response) { envelope.onSuccess(request, response); },
-                onError: function(reason, exception) { envelope.onFailure(request, reason, exception); }
-            });
+            try
+            {
+                request.xhr = org.cometd.AJAX.send({
+                    transport: this,
+                    url: envelope.url,
+                    headers: {
+                        Connection: 'Keep-Alive'
+                    },
+                    body: org.cometd.JSON.toJSON(envelope.messages),
+                    onSuccess: function(response) { envelope.onSuccess(request, response); },
+                    onError: function(reason, exception) { envelope.onFailure(request, reason, exception); }
+                });
+            }
+            catch (x)
+            {
+                // Keep the semantic of calling response callbacks asynchronously after the request
+                _setTimeout(function() { envelope.onFailure(request, 'error', x); }, 0);
+            }
         };
     };
 
@@ -1721,16 +1756,30 @@ org.cometd.Cometd = function(name)
             }
             else
             {
-                org.cometd.AJAX.send({
-                    transport: this,
-                    url: envelope.url,
-                    headers: {
-                        Connection: 'Keep-Alive'
-                    },
-                    body: messages,
-                    onSuccess: function(response) { envelope.onSuccess(request, response); },
-                    onError: function(reason, exception) { envelope.onFailure(request, reason, exception); }
-                });
+                try
+                {
+                    org.cometd.AJAX.send({
+                        transport: this,
+                        url: envelope.url,
+                        headers: {
+                            Connection: 'Keep-Alive'
+                        },
+                        body: messages,
+                        onSuccess: function(response)
+                        {
+                            envelope.onSuccess(request, response);
+                        },
+                        onError: function(reason, exception)
+                        {
+                            envelope.onFailure(request, reason, exception);
+                        }
+                    });
+                }
+                catch (xx)
+                {
+                    // Keep the semantic of calling response callbacks asynchronously after the request
+                    _setTimeout(function() { envelope.onFailure(request, 'error', xx); }, 0);
+                }
             }
         };
     };
