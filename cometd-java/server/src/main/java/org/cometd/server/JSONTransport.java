@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,19 +16,19 @@ package org.cometd.server;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.Message;
 import org.eclipse.jetty.util.ajax.JSON;
 
+
 public class JSONTransport extends AbstractTransport
 {
-    private int _responses=0;
+    private int _responses;
     private PrintWriter _out;
-    protected String _contentType;
-    protected String _start;
-    protected String _end;
+    private String _contentType;
+    private String _start;
+    private String _end;
 
     /* ------------------------------------------------------------ */
     public JSONTransport()
@@ -41,12 +41,14 @@ public class JSONTransport extends AbstractTransport
     /* ------------------------------------------------------------ */
     public synchronized void send(Message message) throws IOException
     {
-        if (message != null)
+        if (message!=null)
         {
-            if (message.size() == 0)
+            if (message.size()==0)
                 throw new IllegalStateException();
 
-            String r=(message instanceof MessageImpl)?((MessageImpl)message).getJSON():JSON.toString(message);
+            String r=(message instanceof MessageImpl)
+                ?((MessageImpl)message).getJSON()
+                :JSON.toString(message);
 
             HttpServletResponse response=getResponse();
 
@@ -72,7 +74,7 @@ public class JSONTransport extends AbstractTransport
     /* ------------------------------------------------------------ */
     public synchronized void complete() throws IOException
     {
-        if (_responses == 0)
+        if (_responses==0)
         {
             HttpServletResponse response=getResponse();
             response.setStatus(200);
