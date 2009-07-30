@@ -74,7 +74,7 @@ public class ContinuationBayeux extends AbstractBayeux
                 _now=System.currentTimeMillis();
                 _timeout.tick(_now);
             }
-        },500L,500L);
+        },100L,100L);
     }
 
     /* ------------------------------------------------------------ */
@@ -104,22 +104,22 @@ public class ContinuationBayeux extends AbstractBayeux
     }
 
     /* ------------------------------------------------------------ */
-    void startIntervalTimeout(Timeout.Task timeout, long interval)
+    void startTimeout(Timeout.Task timeout, long interval)
     {
         synchronized(_timeout)
         {
-            if (interval == 0)
+            if (interval == 0 || interval==_maxInterval)
                 _timeout.schedule(timeout);
             else
             {
-                long delay=interval - getMaxInterval();
+                long delay=interval - _maxInterval;
                 _timeout.schedule(timeout,delay);
             }
         }
     }
 
     /* ------------------------------------------------------------ */
-    void cancelIntervalTimeout(Timeout.Task timeout)
+    void cancelTimeout(Timeout.Task timeout)
     {
         synchronized(_timeout)
         {

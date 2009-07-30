@@ -181,8 +181,13 @@ public class ClientImpl implements Client
                     l.deliver(from,this,message);
             alisteners=_asyncMListeners;
 
-            if (_batch == 0 && _responsesPending < 1 && _queue.size() > 0 && !((MessageImpl)message).isLazy())
-                resume();
+            if (_batch == 0 && _responsesPending < 1 && _queue.size() > 0)
+            {
+                if (((MessageImpl)message).isLazy())
+                    lazyResume();
+                else
+                    resume();
+            }
         }
 
         // deliver unsynchronized
@@ -230,17 +235,26 @@ public class ClientImpl implements Client
         {
             if (--_batch == 0 && _responsesPending < 1)
             {
-                switch(_queue.size())
+                batch:switch(_queue.size())
                 {
                     case 0:
                         break;
                     case 1:
-                        if (!((MessageImpl)_queue.get(0)).isLazy())
+                        if (((MessageImpl)_queue.get(0)).isLazy())
+                            lazyResume();
+                        else
                             resume();
                         break;
                     default:
-                        // TODO check entire queue for non-lazy messages!
-                        resume();
+                        for (int i=_queue.size();i-->0;)
+                        {
+                            if (!((MessageImpl)_queue.get(i)).isLazy())
+                            {
+                                resume();
+                                break batch;
+                            }
+                        }
+                        lazyResume();
                 }
             }
         }
@@ -360,6 +374,14 @@ public class ClientImpl implements Client
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Called by deliver to resume anything waiting on this client lazily
+     */
+    public void lazyResume()
+    {
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Called by deliver to resume anything waiting on this client.

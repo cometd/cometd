@@ -69,6 +69,11 @@ import org.eclipse.jetty.util.log.Log;
  * <dd>The max client side poll timeout in milliseconds (default 30000). A
  * client will be removed if a connection is not received in this time.
  * 
+ * <dt>maxLazyLatency</dt>
+ * <dd>The max time in ms(default 0) that a client with lazy messages will wait before
+ * sending a response. If 0, then the client will wait until the next timeout or
+ * non-lazy message.
+ * 
  * <dt>multiFrameInterval</dt>
  * <dd>the client side poll timeout if multiple connections are detected from
  * the same browser (default 1500).</dd>
@@ -193,6 +198,10 @@ public abstract class AbstractCometdServlet extends GenericServlet
                 String interval=getInitParameter("interval");
                 if (interval != null)
                     _bayeux.setInterval(Long.parseLong(interval));
+
+                String maxLazy=getInitParameter("maxLazyLatency");
+                if (maxLazy != null)
+                    _bayeux.setMaxLazyLatency(Integer.parseInt(maxLazy));
 
                 String mfInterval=getInitParameter("multiFrameInterval");
                 if (mfInterval != null)
