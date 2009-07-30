@@ -32,8 +32,10 @@ public class ContinuationClient extends ClientImpl
 {
     private long _accessed;
     public final Timeout.Task _intervalTimeoutTask;
+    public final Timeout.Task _lazyTimeoutTask;
     private ContinuationBayeux _bayeux;
     private volatile Continuation _continuation;
+    private volatile boolean _lazyResuming;
 
     /* ------------------------------------------------------------ */
     protected ContinuationClient(ContinuationBayeux bayeux)
@@ -41,7 +43,12 @@ public class ContinuationClient extends ClientImpl
         super(bayeux);
         _bayeux=bayeux;
 
-        if (!isLocal())
+        if (isLocal())
+        {
+            _intervalTimeoutTask=null;
+            _lazyTimeoutTask=null;
+        }
+        else
         {
             _intervalTimeoutTask=new Timeout.Task()
             {
@@ -57,10 +64,26 @@ public class ContinuationClient extends ClientImpl
                     return "T-" + ContinuationClient.this.toString();
                 }
             };
-            _bayeux.startIntervalTimeout(_intervalTimeoutTask,getInterval());
+
+            _lazyTimeoutTask=new Timeout.Task()
+            {
+                @Override
+                public void expired()
+                {
+                    _lazyResuming=false;
+                    if (hasMessages())
+                        resume();
+                }
+
+                @Override
+                public String toString()
+                {
+                    return "L-" + ContinuationClient.this.toString();
+                }
+            };
+            
+            _bayeux.startTimeout(_intervalTimeoutTask,getInterval());
         }
-        else
-            _intervalTimeoutTask=null;
     }
 
     /* ------------------------------------------------------------ */
@@ -74,7 +97,7 @@ public class ContinuationClient extends ClientImpl
                     _continuation.resume();
                 _continuation=null;
                 if (_intervalTimeoutTask != null)
-                    _bayeux.startIntervalTimeout(_intervalTimeoutTask,getInterval());
+                    _bayeux.startTimeout(_intervalTimeoutTask,getInterval());
             }
         }
         else
@@ -85,7 +108,8 @@ public class ContinuationClient extends ClientImpl
                     _continuation.resume();
                 _continuation=continuation;
 
-                _bayeux.cancelIntervalTimeout(_intervalTimeoutTask);
+                _bayeux.cancelTimeout(_intervalTimeoutTask);
+                _accessed=_bayeux.getNow();
             }
         }
     }
@@ -96,6 +120,20 @@ public class ContinuationClient extends ClientImpl
         return _continuation;
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public void lazyResume()
+    {
+        int max=_bayeux.getMaxLazyLatency();
+        if (max>0 && _lazyTimeoutTask!=null && !_lazyResuming)
+        {
+            _lazyResuming=true;
+            // use modulo so all lazy clients do not wakeup at once
+            System.err.println(this+" "+_accessed+"%"+max+"="+_accessed%max);
+            _bayeux.startTimeout(_lazyTimeoutTask,_accessed%max); 
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public void resume()
@@ -150,7 +188,7 @@ public class ContinuationClient extends ClientImpl
         synchronized(this)
         {
             if (!wasTimeout && _intervalTimeoutTask != null)
-                _bayeux.cancelIntervalTimeout(_intervalTimeoutTask);
+                _bayeux.cancelTimeout(_intervalTimeoutTask);
         }
         super.remove(wasTimeout);
     }

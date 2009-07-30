@@ -92,6 +92,8 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     protected JSON.Literal _replyExt=new JSON.Literal("{\"ack\":\"true\"}");
     protected List<ClientBayeuxListener> _clientListeners=new CopyOnWriteArrayList<ClientBayeuxListener>();
     protected List<ChannelBayeuxListener> _channelListeners=new CopyOnWriteArrayList<ChannelBayeuxListener>();
+    
+    protected int _maxLazyLatency=5000;
 
     /* ------------------------------------------------------------ */
     /**
@@ -943,6 +945,26 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         }
 
         return message;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return the maximum ms that a lazy message will wait before 
+     * resuming waiting client
+     */
+    public int getMaxLazyLatency()
+    {
+        return _maxLazyLatency;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param ms the maximum ms that a lazy message will wait before 
+     * resuming waiting client
+     */
+    public void setMaxLazyLatency(int ms)
+    {
+        _maxLazyLatency = ms;
     }
 
     /* ------------------------------------------------------------ */
