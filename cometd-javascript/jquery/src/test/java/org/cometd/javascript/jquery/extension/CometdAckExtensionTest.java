@@ -3,7 +3,7 @@ package org.cometd.javascript.jquery.extension;
 import java.net.URL;
 
 import org.cometd.Bayeux;
-import org.cometd.javascript.jquery.AbstractJQueryCometTest;
+import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
 import org.cometd.server.BayeuxService;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.testng.annotations.Test;
@@ -11,7 +11,7 @@ import org.testng.annotations.Test;
 /**
  * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
  */
-public class CometAckExtensionTest extends AbstractJQueryCometTest
+public class CometdAckExtensionTest extends AbstractCometdJQueryTest
 {
     private AckService ackService;
 

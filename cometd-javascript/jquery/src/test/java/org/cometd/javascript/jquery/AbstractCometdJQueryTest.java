@@ -3,7 +3,7 @@ package org.cometd.javascript.jquery;
 import java.io.File;
 import java.net.URL;
 
-import org.cometd.AbstractCometTest;
+import org.cometd.AbstractCometdTest;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.testng.annotations.BeforeMethod;
@@ -11,7 +11,7 @@ import org.testng.annotations.BeforeMethod;
 /**
  * @version $Revision$ $Date$
  */
-public abstract class AbstractJQueryCometTest extends AbstractCometTest
+public abstract class AbstractCometdJQueryTest extends AbstractCometdTest
 {
     protected void customizeContext(ServletContextHandler context) throws Exception
     {

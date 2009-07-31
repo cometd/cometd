@@ -9,7 +9,7 @@ import org.testng.annotations.Test;
 /**
  * @version $Revision$ $Date$
  */
-public class DojoHitchCometTest extends AbstractDojoCometTest
+public class CometdDojoHitchTest extends AbstractCometdDojoTest
 {
     @Test
     public void testDojoHitch() throws Exception
