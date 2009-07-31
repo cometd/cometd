@@ -39,7 +39,7 @@ import org.testng.annotations.BeforeMethod;
 /**
  * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
-public abstract class AbstractCometTest
+public abstract class AbstractCometdTest
 {
     private ThreadModel threadModel;
     private Server server;

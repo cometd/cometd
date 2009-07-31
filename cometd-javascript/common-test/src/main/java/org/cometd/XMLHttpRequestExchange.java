@@ -17,7 +17,7 @@ import org.mozilla.javascript.ScriptableObject;
  */
 public class XMLHttpRequestExchange extends ScriptableObject
 {
-    private CometExchange exchange;
+    private CometdExchange exchange;
 
     public XMLHttpRequestExchange()
     {
@@ -25,7 +25,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
 
     public void jsConstructor(Object threadModel, Scriptable scope, Scriptable thiz, Function function, String method, String url)
     {
-        exchange = new CometExchange((ThreadModel)threadModel, scope, thiz, function, method, url);
+        exchange = new CometdExchange((ThreadModel)threadModel, scope, thiz, function, method, url);
     }
 
     public String getClassName()
@@ -88,7 +88,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         return exchange.getResponseHeader(name);
     }
 
-    public static class CometExchange extends ContentExchange
+    public static class CometdExchange extends ContentExchange
     {
         public enum ReadyState
         {
@@ -105,7 +105,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         private volatile String responseText;
         private volatile String responseStatusText;
 
-        public CometExchange(ThreadModel threads, Scriptable scope, Scriptable thiz, Function function, String method, String url)
+        public CometdExchange(ThreadModel threads, Scriptable scope, Scriptable thiz, Function function, String method, String url)
         {
             this.threads = threads;
             this.scope = scope;

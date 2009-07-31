@@ -6,7 +6,7 @@ import org.testng.annotations.Test;
 /**
  * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
  */
-public class CometExtensionsTest extends AbstractJQueryCometTest
+public class CometdExtensionsTest extends AbstractCometdJQueryTest
 {
     @Test
     public void testRegisterUnregister() throws Exception

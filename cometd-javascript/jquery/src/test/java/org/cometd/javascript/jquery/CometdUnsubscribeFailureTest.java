@@ -21,19 +21,19 @@ import org.testng.annotations.Test;
 /**
  * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
  */
-public class CometSubscribeFailureTest extends AbstractJQueryCometTest
+public class CometdUnsubscribeFailureTest extends AbstractCometdJQueryTest
 {
     @Override
     protected void customizeContext(ServletContextHandler context) throws Exception
     {
         super.customizeContext(context);
-        SubscribeThrowingFilter filter = new SubscribeThrowingFilter();
+        UnsubscribeThrowingFilter filter = new UnsubscribeThrowingFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
         context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
     }
 
     @Test
-    public void testSubscribeFailure() throws Exception
+    public void testUnsubscribeFailure() throws Exception
     {
         defineClass(Listener.class);
         evaluateScript("$.cometd.init({url: '" + cometURL + "', logLevel: 'debug'})");
@@ -43,16 +43,21 @@ public class CometSubscribeFailureTest extends AbstractJQueryCometTest
 
         evaluateScript("var subscribeListener = new Listener();");
         Listener subscribeListener = get("subscribeListener");
+        evaluateScript("$.cometd.addListener('/meta/subscribe', subscribeListener, subscribeListener.handle);");
+        subscribeListener.jsFunction_expect(1);
+        evaluateScript("var subscription = $.cometd.subscribe('/echo', subscribeListener, subscribeListener.handle);");
+        assert subscribeListener.await(1000);
+
+        evaluateScript("var unsubscribeListener = new Listener();");
+        Listener unsubscribeListener = get("unsubscribeListener");
         evaluateScript("var failureListener = new Listener();");
         Listener failureListener = get("failureListener");
-        String script = "$.cometd.addListener('/meta/subscribe', subscribeListener, subscribeListener.handle);";
-        script += "$.cometd.addListener('/meta/unsuccessful', failureListener, failureListener.handle);";
-        evaluateScript(script);
-
-        subscribeListener.jsFunction_expect(1);
+        evaluateScript("$.cometd.addListener('/meta/unsubscribe', unsubscribeListener, unsubscribeListener.handle);");
+        evaluateScript("$.cometd.addListener('/meta/unsuccessful', failureListener, failureListener.handle);");
+        unsubscribeListener.jsFunction_expect(1);
         failureListener.jsFunction_expect(1);
-        evaluateScript("$.cometd.subscribe('/echo', subscribeListener, subscribeListener.handle);");
-        assert subscribeListener.await(1000);
+        evaluateScript("$.cometd.unsubscribe(subscription);");
+        assert unsubscribeListener.await(1000);
         assert failureListener.await(1000);
 
         // Be sure there is no backoff
@@ -61,11 +66,10 @@ public class CometSubscribeFailureTest extends AbstractJQueryCometTest
         assert backoff == 0;
 
         evaluateScript("var disconnectListener = new Listener();");
-        Listener disconnectListener = get("disconnectListener");
+        Listener disconnectListener = (Listener)get("disconnectListener");
         disconnectListener.jsFunction_expect(1);
-        script = "$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);";
-        script += "$.cometd.disconnect();";
-        evaluateScript(script);
+        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);");
+        evaluateScript("$.cometd.disconnect();");
         assert disconnectListener.await(1000);
         String status = evaluateScript("$.cometd.getStatus();");
         assert "disconnected".equals(status) : status;
@@ -97,7 +101,7 @@ public class CometSubscribeFailureTest extends AbstractJQueryCometTest
         }
     }
 
-    public static class SubscribeThrowingFilter implements Filter
+    public static class UnsubscribeThrowingFilter implements Filter
     {
         private int messages;
 
@@ -113,8 +117,8 @@ public class CometSubscribeFailureTest extends AbstractJQueryCometTest
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             ++messages;
-            // The fourth message will be the subscribe, throw
-            if (messages == 4) throw new IOException();
+            // The fifth message will be the unsubscribe, throw
+            if (messages == 5) throw new IOException();
             chain.doFilter(request, response);
         }
 

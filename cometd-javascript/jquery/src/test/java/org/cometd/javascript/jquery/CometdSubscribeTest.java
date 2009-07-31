@@ -9,7 +9,7 @@ import org.testng.annotations.Test;
 /**
  * @version $Revision$ $Date$
  */
-public class CometSubscribeTest extends AbstractJQueryCometTest
+public class CometdSubscribeTest extends AbstractCometdJQueryTest
 {
     @Test
     public void testSubscriptionsUnsubscriptionsForSameChannelOnlySentOnce() throws Exception

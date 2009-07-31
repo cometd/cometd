@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
  * Tests that hanshake properties are passed correctly during handshake
  * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
  */
-public class CometHandshakePropsTest extends AbstractJQueryCometTest
+public class CometdHandshakePropsTest extends AbstractCometdJQueryTest
 {
     @Override
     protected void customizeBayeux(Bayeux bayeux)

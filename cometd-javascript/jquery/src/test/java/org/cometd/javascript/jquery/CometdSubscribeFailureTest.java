@@ -19,22 +19,21 @@ import org.mozilla.javascript.ScriptableObject;
 import org.testng.annotations.Test;
 
 /**
- * Tests that failing the disconnect, the comet communication is aborted anyway
  * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
  */
-public class CometDisconnectFailureTest extends AbstractJQueryCometTest
+public class CometdSubscribeFailureTest extends AbstractCometdJQueryTest
 {
     @Override
     protected void customizeContext(ServletContextHandler context) throws Exception
     {
         super.customizeContext(context);
-        DisconnectThrowingFilter filter = new DisconnectThrowingFilter();
+        SubscribeThrowingFilter filter = new SubscribeThrowingFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
         context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
     }
 
     @Test
-    public void testDisconnectFailure() throws Exception
+    public void testSubscribeFailure() throws Exception
     {
         defineClass(Listener.class);
         evaluateScript("$.cometd.init({url: '" + cometURL + "', logLevel: 'debug'})");
@@ -42,37 +41,48 @@ public class CometDisconnectFailureTest extends AbstractJQueryCometTest
         // Wait for the long poll
         Thread.sleep(1000);
 
+        evaluateScript("var subscribeListener = new Listener();");
+        Listener subscribeListener = get("subscribeListener");
+        evaluateScript("var failureListener = new Listener();");
+        Listener failureListener = get("failureListener");
+        String script = "$.cometd.addListener('/meta/subscribe', subscribeListener, subscribeListener.handle);";
+        script += "$.cometd.addListener('/meta/unsuccessful', failureListener, failureListener.handle);";
+        evaluateScript(script);
+
+        subscribeListener.jsFunction_expect(1);
+        failureListener.jsFunction_expect(1);
+        evaluateScript("$.cometd.subscribe('/echo', subscribeListener, subscribeListener.handle);");
+        assert subscribeListener.await(1000);
+        assert failureListener.await(1000);
+
+        // Be sure there is no backoff
+        evaluateScript("var backoff = $.cometd.getBackoffPeriod();");
+        int backoff = ((Number)get("backoff")).intValue();
+        assert backoff == 0;
+
         evaluateScript("var disconnectListener = new Listener();");
         Listener disconnectListener = get("disconnectListener");
-        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);");
-
-        disconnectListener.expect(1);
-        evaluateScript("$.cometd.disconnect();");
+        disconnectListener.jsFunction_expect(1);
+        script = "$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);";
+        script += "$.cometd.disconnect();";
+        evaluateScript(script);
         assert disconnectListener.await(1000);
-
-        // The test ends here, as we cannot get any information about the fact that
-        // the long poll call returned (which we would have liked to, confirming that
-        // a client-side only disconnect() actually stops the comet communication,
-        // even if it fails).
-        // The XmlHttpRequest specification says that if the response has not begun,
-        // then aborting the XmlHttpRequest calling xhr.abort() does not result in
-        // any notification. The network activity is stopped, but no notification is
-        // emitted by calling onreadystatechange(). Therefore, comet cannot call any
-        // callback to signal this, and any connect listener will not be notified.   
+        String status = evaluateScript("$.cometd.getStatus();");
+        assert "disconnected".equals(status) : status;
     }
 
     public static class Listener extends ScriptableObject
     {
         private CountDownLatch latch;
 
+        public void jsFunction_expect(int messageCount)
+        {
+            latch = new CountDownLatch(messageCount);
+        }
+
         public String getClassName()
         {
             return "Listener";
-        }
-
-        public void expect(int messageCount)
-        {
-            latch = new CountDownLatch(messageCount);
         }
 
         public void jsFunction_handle(Object message)
@@ -87,7 +97,7 @@ public class CometDisconnectFailureTest extends AbstractJQueryCometTest
         }
     }
 
-    public static class DisconnectThrowingFilter implements Filter
+    public static class SubscribeThrowingFilter implements Filter
     {
         private int messages;
 
@@ -103,7 +113,7 @@ public class CometDisconnectFailureTest extends AbstractJQueryCometTest
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             ++messages;
-            // The fourth message will be the disconnect, throw
+            // The fourth message will be the subscribe, throw
             if (messages == 4) throw new IOException();
             chain.doFilter(request, response);
         }
