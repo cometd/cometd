@@ -2,7 +2,34 @@
 {
     $(document).ready(function()
     {
+        var _connected = false;
+
+        function _connectionSucceeded()
+        {
+            $('#body').empty().html('Cometd Connection Succeeded');
+        }
+
+        function _connectionBroken()
+        {
+            $('#body').empty().html('Cometd Connection Broken');
+        }
+
+        function _metaConnect(message)
+        {
+            var wasConnected = _connected;
+            _connected = message.successful === true;
+            if (!wasConnected && _connected)
+            {
+                _connectionSucceeded();
+            }
+            else if (wasConnected && !_connected)
+            {
+                _connectionBroken();
+            }
+        }
+
         var cometd = $.cometd;
+
         // Disconnect when the page unloads
         $(window).unload(function()
         {
@@ -15,19 +42,8 @@
             logLevel: 'debug'
         });
 
-        cometd.addListener('/meta/connect', _onConnect);
+        cometd.addListener('/meta/connect', _metaConnect);
 
         cometd.handshake();
-
-        var _connected = false;
-        function _onConnect(message)
-        {
-            var wasConnected = _connected;
-            _connected = message.successful;
-            if (!wasConnected && _connected)
-            {
-                $('#body').html('Cometd Configured Successfully');
-            }
-        };
     });
 })(jQuery);
