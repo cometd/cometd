@@ -15,7 +15,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 /**
  * @version $Revision$ $Date$
  */
-public class AbstractBayeuxServiceTest extends TestCase
+public abstract class AbstractBayeuxServiceTest extends TestCase
 {
     private Server server;
     protected String cometdURL;
