@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <archetype-descriptor name="cometd-archetype-jquery-jetty7">
     <requiredProperties>
-        <requiredProperty key="codehausJettyVersion">
-            <defaultValue>7.0.0.1beta2</defaultValue>
+        <requiredProperty key="jettyVersion">
+            <defaultValue>7.0.0.RC2</defaultValue>
         </requiredProperty>
         <requiredProperty key="cometdVersion">
             <defaultValue>${project.version}</defaultValue>
