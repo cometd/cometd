@@ -517,6 +517,8 @@ org.cometd.Cometd = function(name)
         }
     }
 
+    this.send = _queueSend;
+
     function _resetBackoff()
     {
         _backoff = 0;
