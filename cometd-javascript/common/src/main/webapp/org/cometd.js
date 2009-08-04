@@ -517,6 +517,13 @@ org.cometd.Cometd = function(name)
         }
     }
 
+    /**
+     * Sends a complete bayeux message.
+     * This method is exposed as a public so that extensions may use it
+     * to send bayeux message directly, for example in case of re-sending
+     * messages that have already been sent but that for some reason must
+     * be resent.
+     */
     this.send = _queueSend;
 
     function _resetBackoff()
