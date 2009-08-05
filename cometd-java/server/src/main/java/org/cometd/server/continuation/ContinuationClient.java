@@ -129,7 +129,6 @@ public class ContinuationClient extends ClientImpl
         {
             _lazyResuming=true;
             // use modulo so all lazy clients do not wakeup at once
-            System.err.println(this+" "+_accessed+"%"+max+"="+_accessed%max);
             _bayeux.startTimeout(_lazyTimeoutTask,_accessed%max); 
         }
     }
