@@ -49,6 +49,7 @@ org.cometd.Cometd = function(name)
     var _backoffIncrement;
     var _maxBackoff;
     var _reverseIncomingExtensions;
+    var _jsonpFailureDelay;
     var _crossDomain = false;
     var _transport;
     var _status = 'disconnected';
