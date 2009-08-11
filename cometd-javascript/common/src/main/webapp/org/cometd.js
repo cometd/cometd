@@ -27,12 +27,12 @@ org.cometd.JSON.toJSON = org.cometd.JSON.fromJSON = org.cometd.AJAX.send = funct
 /**
  * The constructor for a Cometd object, identified by an optional name.
  * The default name is the string 'default'.
- * In the rare case a page needs more than one comet conversation,
+ * In the rare case a page needs more than one Bayeux conversation,
  * a new instance can be created via:
  * <pre>
- * var cometUrl2 = ...;
+ * var bayeuxUrl2 = ...;
  * var cometd2 = new $.Cometd();
- * cometd2.init({url: cometUrl2});
+ * cometd2.init({url: bayeuxUrl2});
  * </pre>
  * @param name the optional name of this cometd object
  */
@@ -215,7 +215,7 @@ org.cometd.Cometd = function(name)
     function _configure(configuration)
     {
         _debug('Configuring cometd object with', configuration);
-        // Support old style param, where only the comet URL was passed
+        // Support old style param, where only the Bayeux server URL was passed
         if (typeof configuration === 'string')
         {
             configuration = { url: configuration };
@@ -228,13 +228,14 @@ org.cometd.Cometd = function(name)
         _url = configuration.url;
         if (!_url)
         {
-            throw 'Missing required configuration parameter \'url\' specifying the comet server URL';
+            throw 'Missing required configuration parameter \'url\' specifying the Bayeux server URL';
         }
         _maxConnections = configuration.maxConnections || 2;
         _backoffIncrement = configuration.backoffIncrement || 1000;
         _maxBackoff = configuration.maxBackoff || 60000;
         _logLevel = configuration.logLevel || 'info';
         _reverseIncomingExtensions = configuration.reverseIncomingExtensions !== false;
+        _jsonpFailureDelay = configuration.jsonpFailureDelay || 5000;
 
         // Check if we're cross domain
         var urlParts = /(^https?:)?(\/\/(([^:\/\?#]+)(:(\d+))?))?([^\?#]*)/.exec(_url);
@@ -1215,9 +1216,9 @@ org.cometd.Cometd = function(name)
     //
 
     /**
-     * Configures the initial comet communication with the comet server.
+     * Configures the initial Bayeux communication with the Bayeux server.
      * Configuration is passed via an object that must contain a mandatory field <code>url</code>
-     * of type string containing the URL of the comet server.
+     * of type string containing the URL of the Bayeux server.
      * @param configuration the configuration object
      */
     this.configure = function(configuration)
@@ -1226,11 +1227,11 @@ org.cometd.Cometd = function(name)
     };
 
     /**
-     * Configures and establishes the comet communication with the comet server
+     * Configures and establishes the Bayeux communication with the Bayeux server
      * via a handshake and a subsequent connect.
      * @param configuration the configuration object
      * @param handshakeProps an object to be merged with the handshake message
-     * @see #configure(cometURL)
+     * @see #configure(configuration)
      * @see #handshake(handshakeProps)
      */
     this.init = function(configuration, handshakeProps)
@@ -1240,7 +1241,7 @@ org.cometd.Cometd = function(name)
     };
 
     /**
-     * Establishes the comet communication with the comet server
+     * Establishes the Bayeux communication with the Bayeux server
      * via a handshake and a subsequent connect.
      * @param handshakeProps an object to be merged with the handshake message
      */
@@ -1251,7 +1252,7 @@ org.cometd.Cometd = function(name)
     };
 
     /**
-     * Disconnects from the comet server.
+     * Disconnects from the Bayeux server.
      * @param disconnectProps an object to be merged with the disconnect message
      */
     this.disconnect = function(disconnectProps)
@@ -1413,7 +1414,7 @@ org.cometd.Cometd = function(name)
     };
 
     /**
-     * Returns a string representing the status of the bayeux communication with the comet server.
+     * Returns a string representing the status of the bayeux communication with the Bayeux server.
      */
     this.getStatus = function()
     {
@@ -1565,7 +1566,7 @@ org.cometd.Cometd = function(name)
     };
 
     /**
-     * Returns the name assigned to this Comet object, or the string 'default'
+     * Returns the name assigned to this Cometd object, or the string 'default'
      * if no name has been explicitely passed as parameter to the constructor.
      */
     this.getName = function()
@@ -1595,7 +1596,10 @@ org.cometd.Cometd = function(name)
             }
 
             var requestId = ++_requestIds;
-            var request = {id: requestId};
+            var request = {
+                id: requestId,
+                longpoll: true
+            };
             self._send(envelope, request);
             _longpollRequest = request;
         }
@@ -1603,8 +1607,10 @@ org.cometd.Cometd = function(name)
         function _queueSend(self, envelope)
         {
             var requestId = ++_requestIds;
-
-            var request = {id: requestId};
+            var request = {
+                id: requestId,
+                longpoll: false
+            };
             // Consider the longpoll requests which should always be present
             if (_requests.length < _maxConnections - 1)
             {
@@ -1620,9 +1626,9 @@ org.cometd.Cometd = function(name)
         function _longpollComplete(request)
         {
             var requestId = request.id;
-            if (_longpollRequest !== request)
+            if (_longpollRequest !== null && _longpollRequest !== request)
             {
-                throw 'Comet request mismatch, completing request ' + requestId;
+                throw 'Longpoll request mismatch, completing request ' + requestId;
             }
 
             // Reset longpoll request
@@ -1700,7 +1706,7 @@ org.cometd.Cometd = function(name)
             }
             if (_longpollRequest)
             {
-                _debug('Aborting request', _longpollRequest);
+                _debug('Aborting longpoll request', _longpollRequest);
                 if (_longpollRequest.xhr)
                 {
                     _longpollRequest.xhr.abort();
@@ -1767,6 +1773,8 @@ org.cometd.Cometd = function(name)
             {
                 try
                 {
+                    var expired = false;
+                    var timeout;
                     org.cometd.AJAX.send({
                         transport: this,
                         url: envelope.url,
@@ -1776,13 +1784,34 @@ org.cometd.Cometd = function(name)
                         body: messages,
                         onSuccess: function(response)
                         {
-                            envelope.onSuccess(request, response);
+                            if (!expired)
+                            {
+                                clearTimeout(timeout);
+                                envelope.onSuccess(request, response);
+                            }
                         },
                         onError: function(reason, exception)
                         {
-                            envelope.onFailure(request, reason, exception);
+                            if (!expired)
+                            {
+                                clearTimeout(timeout);
+                                envelope.onFailure(request, reason, exception);
+                            }
                         }
                     });
+                    var self = this;
+                    var delay = _jsonpFailureDelay;
+                    if (request.longpoll === true)
+                    {
+                        delay +=_advice && typeof _advice.timeout === 'number' ? _advice.timeout : 0;
+                    }
+                    timeout = _setTimeout(function()
+                    {
+                        expired = true;
+                        var errorMessage = 'Transport ' + self.getType() + ' exceeded ' + delay + ' ms failure delay';
+                        _debug(errorMessage);
+                        envelope.onFailure(request, 'timeout', errorMessage);
+                    }, delay);
                 }
                 catch (xx)
                 {
