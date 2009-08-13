@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.cometd</groupId>
     <artifactId>cometd-project</artifactId>
@@ -6,6 +7,7 @@
     <name>Cometd</name>
     <version>1.0.0rc0-SNAPSHOT</version>
     <url>http://www.cometd.org</url>
+
     <issueManagement>
         <system>jira</system>
         <url>http://trac.dojotoolkit.org</url>
@@ -72,6 +74,7 @@
             <name>Mark Smith</name>
         </developer>
     </developers>
+
     <licenses>
         <license>
             <name>Apache License Version 2.0</name>
@@ -153,14 +156,17 @@
             <layout>default</layout>
         </pluginRepository>
     </pluginRepositories>
+
     <scm>
         <connection>scm:svn:http://svn.cometd.com/trunk</connection>
         <developerConnection>scm:svn:https://svn.cometd.com/trunk</developerConnection>
     </scm>
+
     <organization>
         <name>Dojo Foundation</name>
         <url>http://www.dojotoolkit.org</url>
     </organization>
+
     <build>
         <defaultGoal>install</defaultGoal>
         <extensions>
@@ -201,16 +207,14 @@
                     <verbose>false</verbose>
                 </configuration>
             </plugin>
-
             <plugin>
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <tagBase>https://svn.cometd.com/tags</tagBase>
-	            <goals>deploy</goals>
-	            <preparationGoals>clean install</preparationGoals>
+                    <goals>deploy</goals>
+                    <preparationGoals>clean install</preparationGoals>
                 </configuration>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -225,7 +229,6 @@
                     </archive>
                 </configuration>
             </plugin>
-
             <plugin>
                 <inherited>true</inherited>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -251,8 +254,26 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>requirements</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>[2.0.9,)</version>
+                                </requireMavenVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
-
         <pluginManagement>
             <plugins>
                 <plugin>
