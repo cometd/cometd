@@ -428,6 +428,14 @@ var window = this;
                     this.type = type;
                 }
             };
+        },
+        get cookie()
+        {
+            return cookies.get(window.location.protocol, window.location.host, window.location.pathname);
+        },
+        set cookie(value)
+        {
+            cookies.set(window.location.protocol, window.location.host, window.location.pathname, value);
         }
     });
 
