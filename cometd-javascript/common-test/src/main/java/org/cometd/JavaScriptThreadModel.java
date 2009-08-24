@@ -40,17 +40,18 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         this.rootScope = rootScope;
     }
 
-    public void init()
+    public void init() throws Exception
     {
         assert rootScope != null;
         running = true;
         thread.start();
     }
 
-    public void destroy()
+    public void destroy() throws Exception
     {
         running = false;
         thread.interrupt();
+        thread.join();
     }
 
     public String getClassName()

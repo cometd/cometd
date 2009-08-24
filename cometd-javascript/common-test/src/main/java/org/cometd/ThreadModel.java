@@ -12,9 +12,9 @@ import org.mozilla.javascript.Scriptable;
  */
 public interface ThreadModel
 {
-    void init();
+    void init() throws Exception;
 
-    void destroy();
+    void destroy() throws Exception;
 
     Object evaluate(URL url) throws IOException;
 
