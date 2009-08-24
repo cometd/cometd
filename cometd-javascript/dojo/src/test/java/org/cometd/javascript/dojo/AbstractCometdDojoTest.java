@@ -6,6 +6,7 @@ import java.net.URL;
 import org.cometd.AbstractCometdTest;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
 /**
@@ -26,8 +27,10 @@ public abstract class AbstractCometdDojoTest extends AbstractCometdTest
     }
 
     @BeforeMethod
-    public void init() throws Exception
+    public void initPage() throws Exception
     {
+        initJavaScript();
+
         // Order of the script evaluation is important, as they depend one from the other
         URL envURL = new URL(contextURL + "/env.js");
         evaluateURL(envURL);
@@ -37,5 +40,12 @@ public abstract class AbstractCometdDojoTest extends AbstractCometdTest
         evaluateURL(new URL(contextURL + "/org/cometd.js"));
         evaluateURL(new URL(contextURL + "/dojox/cometd.js"));
         evaluateScript("dojo.require('dojox.cometd');");
+    }
+
+
+    @AfterMethod(alwaysRun = true)
+    public void destroyPage() throws Exception
+    {
+        destroyJavaScript();
     }
 }

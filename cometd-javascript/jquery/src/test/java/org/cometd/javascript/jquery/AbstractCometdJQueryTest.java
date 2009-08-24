@@ -6,6 +6,7 @@ import java.net.URL;
 import org.cometd.AbstractCometdTest;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
 /**
@@ -18,16 +19,20 @@ public abstract class AbstractCometdJQueryTest extends AbstractCometdTest
         File baseDirectory = new File(System.getProperty("basedir"));
         File webappDirectory = new File(baseDirectory, "src/main/webapp");
         File overlaidScriptDirectory = new File(baseDirectory, "target/scripts");
+        File testResourcesDirectory = new File(baseDirectory, "src/test/resources");
         context.setBaseResource(new ResourceCollection(new String[]
         {
             webappDirectory.getCanonicalPath(),
-            overlaidScriptDirectory.getCanonicalPath()
+            overlaidScriptDirectory.getCanonicalPath(),
+            testResourcesDirectory.getCanonicalPath()
         }));
     }
 
     @BeforeMethod
-    public void init() throws Exception
+    public void initPage() throws Exception
     {
+        initJavaScript();
+
         // Order of the script evaluation is important, as they depend one from the other
         URL envURL = new URL(contextURL + "/env.js");
         evaluateURL(envURL);
@@ -40,5 +45,11 @@ public abstract class AbstractCometdJQueryTest extends AbstractCometdTest
         evaluateURL(jqueryJSONURL);
         URL jqueryCometdURL = new URL(contextURL + "/jquery/jquery.cometd.js");
         evaluateURL(jqueryCometdURL);
+    }
+
+    @AfterMethod(alwaysRun = true)
+    public void destroyPage() throws Exception
+    {
+        destroyJavaScript();
     }
 }

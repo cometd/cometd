@@ -48,9 +48,16 @@ public abstract class AbstractCometdTest
     protected String cometServletPath = "/cometd";
     protected String cometURL;
     protected int longPollingPeriod = 5000;
+    private HttpCookieStore cookies;
 
     @BeforeMethod
-    public void startComet() throws Exception
+    public void init() throws Exception
+    {
+        cookies = new HttpCookieStore();
+        initCometServer();
+    }
+
+    public void initCometServer() throws Exception
     {
         server = new Server();
         SelectChannelConnector connector = new SelectChannelConnector();
@@ -82,15 +89,25 @@ public abstract class AbstractCometdTest
 
         contextURL = "http://localhost:" + port + contextPath;
         cometURL = contextURL + cometServletPath;
+    }
 
-        // Initializes the threading model
+    public void initJavaScript() throws Exception
+    {
+        // Initializes the thread model
         org.mozilla.javascript.Context jsContext = org.mozilla.javascript.Context.enter();
         try
         {
             ScriptableObject rootScope = jsContext.initStandardObjects();
+
+            ScriptableObject.defineClass(rootScope, HttpCookieStore.class);
+            jsContext.evaluateString(rootScope, "var cookies = new HttpCookieStore();", "cookies", 1, null);
+            HttpCookieStore cookies = (HttpCookieStore)rootScope.get("cookies", rootScope);
+            cookies.putAll(this.cookies);
+            this.cookies = cookies;
+
             ScriptableObject.defineClass(rootScope, JavaScriptThreadModel.class);
             jsContext.evaluateString(rootScope, "var threadModel = new JavaScriptThreadModel(this);", "threadModel", 1, null);
-            threadModel = (ThreadModel) rootScope.get("threadModel", rootScope);
+            threadModel = (ThreadModel)rootScope.get("threadModel", rootScope);
             threadModel.init();
         }
         finally
@@ -113,9 +130,19 @@ public abstract class AbstractCometdTest
     }
 
     @AfterMethod(alwaysRun = true)
-    public void stopComet() throws Exception
+    public void destroy() throws Exception
+    {
+        destroyCometServer();
+        cookies.clear();
+    }
+
+    public void destroyJavaScript() throws Exception
     {
         threadModel.destroy();
+    }
+
+    public void destroyCometServer() throws Exception
+    {
         server.stop();
         server.join();
     }
