@@ -1576,6 +1576,22 @@ org.cometd.Cometd = function(name)
     };
 
     /**
+     * Returns the clientId assigned by the Bayeux server during handshake.
+     */
+    this.getClientId = function()
+    {
+        return _clientId;
+    };
+
+    /**
+     * Returns the URL of the Bayeux server.
+     */
+    this.getURL = function()
+    {
+        return _url;
+    };
+
+    /**
      * Base object with the common functionality for transports.
      * The key responsibility is to allow at most 2 outstanding requests to the server,
      * to avoid that requests are sent behind a long poll.
