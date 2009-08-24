@@ -5,7 +5,7 @@
 (function($)
 {
     var _defaultConfig = {
-        'max-age' : 365,
+        'max-age' : 30 * 60,
         path : '/'
     };
 
@@ -15,27 +15,19 @@
         if (value === null || value === undefined)
         {
             value = '';
-            o.expires = -1;
-        }
-
-        if (typeof o.expires === 'number')
-        {
-            // Assume it's the number of days from now
-            var today = new Date();
-            today.setDate(today.getDate() + o.expires);
-            o.expires = today;
-        }
-        var expires;
-        if (o.expires && o.expires.toUTCString)
-        {
-            expires = o.expires.toUTCString();
+            o['max-age'] = 0;
+            o.expires = new Date(new Date().getTime() - 1000);
         }
 
         // Create the cookie string
         var result = key + '=' + encodeURIComponent(value);
-        if (expires)
+        if (o.expires && o.expires.toUTCString)
         {
-            result += '; expires=' + expires;
+            result += '; expires=' + o.expires.toUTCString();
+        }
+        if (o['max-age'] && typeof o['max-age'] === 'number')
+        {
+            result += '; max-age=' + o['max-age'];
         }
         if (o.path)
         {

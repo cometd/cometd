@@ -39,20 +39,31 @@ org.cometd.ReloadExtension = function(configuration)
 {
     var _cometd;
     var _debug;
-    var _state = {
-        handshakeRequest: null,
-        handshakeResponse: null,
-        subscriptions: {}
-    };
+    var _state = {};
     var _cookieMaxAge = configuration && configuration.cookieMaxAge || 5;
 
     function _reload()
     {
         if (_state && _state.handshakeResponse !== null)
         {
-            org.cometd.COOKIE.set('org.cometd.reload', org.cometd.JSON.toJSON(_state), {'max-age': _cookieMaxAge});
+            var cookie = org.cometd.JSON.toJSON(_state);
+            _debug('Reload extension saving cookie value', cookie);
+            org.cometd.COOKIE.set('org.cometd.reload', cookie, {
+                'max-age': _cookieMaxAge,
+                expires: new Date(new Date().getTime() + _cookieMaxAge * 1000)
+            });
             _state = {};
         }
+    }
+
+    function _similarState(oldState)
+    {
+        // We want to check here that the Cometd object
+        // did not change much between reloads.
+        // We just check the URL for now, but in future
+        // further checks may involve the transport type
+        // and other configuration parameters.
+        return _state.url == oldState.url;
     }
 
     this.registered = function(name, cometd)
@@ -74,31 +85,39 @@ org.cometd.ReloadExtension = function(configuration)
 
         if (channel == '/meta/handshake')
         {
-            _state.handshakeRequest = message;
+            _state.url = _cometd.getURL();
             _state.subscriptions = {};
+
             var cookie = org.cometd.COOKIE.get('org.cometd.reload');
             // Is there a saved handshake response from a prior load ?
             if (cookie)
             {
                 try
                 {
-                    org.cometd.COOKIE.set('org.cometd.reload', '', {expires:-1});
-                    _debug('Reload extension found cookie', cookie);
-                    var reload = org.cometd.JSON.fromJSON(cookie);
+                    // Remove the cookie, not needed anymore
+                    org.cometd.COOKIE.set('org.cometd.reload', '', {
+                        'max-age': 0,
+                        expires: new Date(new Date().getTime() - 1000)
+                    });
 
-                    // If the handshake matches the save copy, send the prior handshake response.
-                    if (reload && reload.handshakeResponse && reload.handshakeRequest &&
-                        org.cometd.JSON.toJSON(message) == org.cometd.JSON.toJSON(reload.handshakeRequest))
+                    _debug('Reload extension found cookie value', cookie);
+                    var oldState = org.cometd.JSON.fromJSON(cookie);
+
+                    if (oldState && oldState.handshakeResponse && _similarState(oldState))
                     {
-                        _debug('Reload extension restoring state', reload);
+                        _debug('Reload extension restoring state', oldState);
                         setTimeout(function()
                         {
-                            _state.handshakeResponse = reload.handshakeResponse;
-                            _state.subscriptions = reload.subscriptions;
-                            _cometd.receive(reload.handshakeResponse);
+                            _state.handshakeResponse = oldState.handshakeResponse;
+                            _state.subscriptions = oldState.subscriptions;
+                            _cometd.receive(oldState.handshakeResponse);
                         }, 0);
                         // This handshake is aborted, as we will replay the prior handshake response
                         return null;
+                    }
+                    else
+                    {
+                        _debug('Reload extension could not restore state', oldState);
                     }
                 }
                 catch(x)
@@ -129,11 +148,7 @@ org.cometd.ReloadExtension = function(configuration)
         }
         else if (channel == '/meta/disconnect')
         {
-            _state = {
-                handshakeRequest: null,
-                handshakeResponse: null,
-                subscriptions: {}
-            };
+            _state = {};
         }
         return message;
     };
@@ -142,7 +157,7 @@ org.cometd.ReloadExtension = function(configuration)
     {
         if (message.successful)
         {
-            switch(message.channel)
+            switch (message.channel)
             {
                 case '/meta/handshake':
                     // Save successful handshake response
