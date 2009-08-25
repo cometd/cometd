@@ -2,13 +2,13 @@
     <parent>
         <groupId>org.cometd</groupId>
         <artifactId>cometd-project</artifactId>
-        <version>1.0.0rc0</version>
+        <version>1.0.0rc1-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.cometd.archetypes</groupId>
     <artifactId>cometd-archetypes-project</artifactId>
-  <version>1.0.0rc0 </version>
+  <version>1.0.0rc1-SNAPSHOT </version>
     <packaging>pom</packaging>
     <name>Cometd :: Archetypes</name>
 
