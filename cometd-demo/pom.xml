@@ -3,14 +3,14 @@
 		<groupId>org.cometd</groupId>
 		<artifactId>cometd-project
 		</artifactId>
-		<version>1.0.0rc0</version>
+		<version>1.0.0rc1-SNAPSHOT</version>
                 <relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.cometd</groupId>
 	<artifactId>cometd-demo</artifactId>
-  <version>1.0.0rc0 </version>
+  <version>1.0.0rc1-SNAPSHOT </version>
 	<packaging>war</packaging>
 	<name>Cometd :: Demo </name>
 

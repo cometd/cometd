@@ -3,7 +3,7 @@
     <parent>
 	<groupId>org.cometd.javascript</groupId>
 	<artifactId>cometd-javascript-project</artifactId>
-        <version>1.0.0rc0 </version>
+        <version>1.0.0rc1-SNAPSHOT </version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
