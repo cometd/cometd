@@ -50,6 +50,7 @@ org.cometd.Cometd = function(name)
     var _maxBackoff;
     var _reverseIncomingExtensions;
     var _jsonpFailureDelay;
+    var _requestHeaders;
     var _crossDomain = false;
     var _transport;
     var _status = 'disconnected';
@@ -237,6 +238,7 @@ org.cometd.Cometd = function(name)
         _logLevel = configuration.logLevel || 'info';
         _reverseIncomingExtensions = configuration.reverseIncomingExtensions !== false;
         _jsonpFailureDelay = configuration.jsonpFailureDelay || 5000;
+        _requestHeaders = configuration.requestHeaders || {};
 
         // Check if we're cross domain
         var urlParts = /(^https?:)?(\/\/(([^:\/\?#]+)(:(\d+))?))?([^\?#]*)/.exec(_url);
@@ -1744,9 +1746,7 @@ org.cometd.Cometd = function(name)
                 request.xhr = org.cometd.AJAX.send({
                     transport: this,
                     url: envelope.url,
-                    headers: {
-                        Connection: 'Keep-Alive'
-                    },
+                    headers: _requestHeaders,
                     body: org.cometd.JSON.toJSON(envelope.messages),
                     onSuccess: function(response) { envelope.onSuccess(request, response); },
                     onError: function(reason, exception) { envelope.onFailure(request, reason, exception); }
@@ -1795,9 +1795,7 @@ org.cometd.Cometd = function(name)
                     org.cometd.AJAX.send({
                         transport: this,
                         url: envelope.url,
-                        headers: {
-                            Connection: 'Keep-Alive'
-                        },
+                        headers: _requestHeaders,
                         body: messages,
                         onSuccess: function(response)
                         {
