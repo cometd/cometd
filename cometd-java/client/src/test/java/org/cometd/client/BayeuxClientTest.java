@@ -4,6 +4,7 @@ import java.util.Random;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.servlet.http.Cookie;
 
 import junit.framework.TestCase;
 import org.cometd.Bayeux;
@@ -60,7 +61,7 @@ public class BayeuxClientTest extends TestCase
         context.addServlet(DefaultServlet.class, "/");
 
         _server.start();
-        
+
         _httpClient = new HttpClient();
         _httpClient.setMaxConnectionsPerAddress(20000);
         _httpClient.setIdleTimeout(15000);
@@ -215,6 +216,27 @@ public class BayeuxClientTest extends TestCase
         Object o = exchanger.exchange(null,1,TimeUnit.SECONDS);
 
         assertTrue(client.isStopped());
+    }
+
+    public void testCookies() throws Exception
+    {
+        BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_server.getConnectors()[0].getLocalPort()+"/cometd");
+
+        String cookieName = "foo";
+        Cookie cookie = new Cookie(cookieName, "bar");
+        cookie.setMaxAge(1);
+
+        client.setCookie(cookie);
+        assertNotNull(client.getCookie(cookieName));
+
+        // Allow cookie to expire
+        Thread.sleep(1500);
+
+        assertNull(client.getCookie(cookieName));
+
+        cookie.setMaxAge(-1);
+        client.setCookie(cookie);
+        assertNotNull(client.getCookie(cookieName));
     }
 
 
