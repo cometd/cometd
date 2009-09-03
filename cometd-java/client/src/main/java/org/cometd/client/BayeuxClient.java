@@ -16,7 +16,10 @@ package org.cometd.client;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +27,7 @@ import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.concurrent.TimeUnit;
 import javax.servlet.http.Cookie;
 
 import org.cometd.Bayeux;
@@ -60,10 +63,10 @@ import org.eclipse.jetty.util.log.Log;
  * <p>
  * The HttpClient attributes are used to share a Timer and MessagePool instance
  * between all Bayeux clients sharing the same HttpClient.
- * 
+ *
  * @see http://cometd.org
  * @author gregw
- * 
+ *
  */
 public class BayeuxClient extends AbstractLifeCycle implements Client
 {
@@ -73,7 +76,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     protected HttpClient _httpClient;
 
     protected MessagePool _msgPool;
-    private ArrayQueue<Message> _inQ = new ArrayQueue<Message>();  // queue of incoming messages 
+    private ArrayQueue<Message> _inQ = new ArrayQueue<Message>();  // queue of incoming messages
     private ArrayQueue<Message> _outQ = new ArrayQueue<Message>(); // queue of outgoing messages
     protected Address _cometdAddress;
     private Exchange _pull;
@@ -88,7 +91,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     private List<MessageListener> _mListeners;
     private int _batch;
     private boolean _formEncoded;
-    private Map<String, Cookie> _cookies = new ConcurrentHashMap<String, Cookie>();
+    private Map<String, ExpirableCookie> _cookies = new ConcurrentHashMap<String, ExpirableCookie>();
     private Advice _advice;
     private Timer _timer;
     private int _backoffInterval = 0;
@@ -97,13 +100,13 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     private Buffer _scheme;
     protected Extension[] _extensions;
     protected JSON _jsonOut;
-    
+
     /* ------------------------------------------------------------ */
     public BayeuxClient(HttpClient client, String url)
     {
         this(client,url,null);
     }
-    
+
     /* ------------------------------------------------------------ */
     public BayeuxClient(HttpClient client, String url, Timer timer)
     {
@@ -114,7 +117,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         _timer = timer;
         _scheme = (HttpSchemes.HTTPS.equals(uri.getScheme()))?HttpSchemes.HTTPS_BUFFER:HttpSchemes.HTTP_BUFFER;
     }
-    
+
     /* ------------------------------------------------------------ */
     public BayeuxClient(HttpClient client, Address address, String path, Timer timer)
     {
@@ -141,13 +144,13 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     {
         return _extensions;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * If unable to connect/handshake etc, even if following the interval in the
      * advice, wait for this interval initially, and try again.
-     * 
-     * @param interval 
+     *
+     * @param interval
      */
     public void setBackOffInterval(int interval)
     {
@@ -157,7 +160,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     /**
      * @return the backoff interval to wait before retrying an unsuccessful
-     * or failed message 
+     * or failed message
      */
     public int getBackoffInterval()
     {
@@ -166,7 +169,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
 
     /* ------------------------------------------------------------ */
     /**
-     * @deprecated We retry an infinite number of times. 
+     * @deprecated We retry an infinite number of times.
      * use {@link #getBackoffIncrement()} to set limits
      */
     public void setBackoffMaxRetries(int retries)
@@ -184,9 +187,9 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
 
     /* ------------------------------------------------------------ */
     /**
-     . Each retry will increment by this 
+     . Each retry will increment by this
      * intervel, until we reach _backoffMaxInterval
-     * 
+     *
     */
     public void setBackoffIncrement(int interval)
     {
@@ -195,8 +198,8 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
 
     /* ------------------------------------------------------------ */
     /**
-     * @return the backoff interval used to increase the backoff time when 
-     * retrying an unsuccessful or failed message. 
+     * @return the backoff interval used to increase the backoff time when
+     * retrying an unsuccessful or failed message.
      */
     public int getBackoffIncrement()
     {
@@ -208,7 +211,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     {
         _backoffMaxInterval = interval;
     }
-    
+
     public int getBackoffMaxInterval()
     {
         return _backoffMaxInterval;
@@ -217,7 +220,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc) Returns the clientId
-     * 
+     *
      * @see dojox.cometd.Client#getId()
      */
     public String getId()
@@ -230,7 +233,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     {
         if (!_httpClient.isStarted())
             throw new IllegalStateException("!HttpClient.isStarted()");
-            
+
         synchronized (_httpClient)
         {
             if (_jsonOut == null)
@@ -242,7 +245,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                     _httpClient.setAttribute(__JSON,_jsonOut);
                 }
             }
-            
+
             if (_timer == null)
             {
                 _timer = (Timer)_httpClient.getAttribute(__TIMER);
@@ -252,7 +255,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                     _httpClient.setAttribute(__TIMER,_timer);
                 }
             }
-            
+
             if (_msgPool == null)
             {
                 _msgPool = (MessagePool)_httpClient.getAttribute(__MSGPOOL);
@@ -318,7 +321,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see dojox.cometd.Client#deliver(dojox.cometd.Client, java.lang.String,
      * java.lang.Object, java.lang.String)
      */
@@ -348,12 +351,12 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                         l.deliver(from,this,message);
             }
         }
-        
+
         if (_mListeners !=null)
             for (MessageListener l : _mListeners)
                 if (!(l instanceof MessageListener.Synchronous))
                 l.deliver(from,this,message);
-        
+
         message.decRef();
     }
 
@@ -372,7 +375,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see dojox.cometd.Client#hasMessages()
      */
     public boolean hasMessages()
@@ -386,7 +389,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see dojox.cometd.Client#isLocal()
      */
     public boolean isLocal()
@@ -397,7 +400,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see dojox.cometd.Client#subscribe(java.lang.String)
      */
     private void publish(MessageImpl msg)
@@ -429,7 +432,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see dojox.cometd.Client#publish(java.lang.String, java.lang.Object,
      * java.lang.String)
      */
@@ -450,7 +453,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see dojox.cometd.Client#subscribe(java.lang.String)
      */
     public void subscribe(String toChannel)
@@ -468,7 +471,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see dojox.cometd.Client#unsubscribe(java.lang.String)
      */
     public void unsubscribe(String toChannel)
@@ -492,7 +495,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     {
         disconnect();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Disconnect this client.
@@ -547,7 +550,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /*
      * (non-Javadoc) Removes all available messages from the inbound queue. If a
      * listener is set then messages are not queued.
-     * 
+     *
      * @see dojox.cometd.Client#takeMessages()
      */
     public List<Message> takeMessages()
@@ -567,7 +570,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see dojox.cometd.Client#endBatch()
      */
     public void endBatch()
@@ -596,7 +599,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see dojox.cometd.Client#startBatch()
      */
     public void startBatch()
@@ -618,20 +621,27 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
      */
     protected void customize(HttpExchange exchange)
     {
-        StringBuilder buf = null;
-        for (Cookie cookie : _cookies.values())
+        StringBuilder builder = null;
+        for (String cookieName : _cookies.keySet())
         {
-            if (buf == null)
-                buf = new StringBuilder();
+            if (builder == null)
+                builder = new StringBuilder();
             else
-                buf.append("; ");
-            buf.append(cookie.getName()); // TODO quotes
-            buf.append("=");
-            buf.append(cookie.getValue()); // TODO quotes
+                builder.append("; ");
+
+            // Expiration is handled by getCookie()
+            Cookie cookie = getCookie(cookieName);
+            if (cookie != null)
+            {
+                builder.append(cookie.getName()); // TODO quotes
+                builder.append("=");
+                builder.append(cookie.getValue()); // TODO quotes
+            }
         }
-        if (buf != null)
-            exchange.setRequestHeader(HttpHeaders.COOKIE,buf.toString());
-      
+
+        if (builder != null)
+            exchange.setRequestHeader(HttpHeaders.COOKIE,builder.toString());
+
         if (_scheme!=null)
             exchange.setScheme(_scheme);
     }
@@ -639,7 +649,29 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     public void setCookie(Cookie cookie)
     {
-        _cookies.put(cookie.getName(),cookie);
+        long expirationTime = System.currentTimeMillis();
+        int maxAge = cookie.getMaxAge();
+        if (maxAge < 0)
+            expirationTime = -1L;
+        else
+            expirationTime += TimeUnit.SECONDS.toMillis(maxAge);
+
+        ExpirableCookie expirableCookie = new ExpirableCookie(cookie, expirationTime);
+        _cookies.put(cookie.getName(), expirableCookie);
+    }
+
+    public Cookie getCookie(String name)
+    {
+        ExpirableCookie cookie = _cookies.get(name);
+        if (cookie != null)
+        {
+            if (cookie.isExpired())
+            {
+                _cookies.remove(name);
+                cookie = null;
+            }
+        }
+        return cookie == null ? null : cookie.cookie;
     }
 
     /* ------------------------------------------------------------ */
@@ -744,13 +776,26 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                         cookie.setDomain(tok.nextToken());
                     else if ("Expires".equalsIgnoreCase(token))
                     {
-                        tok.nextToken();
-                        // TODO
+                        try
+                        {
+                            Date date = new SimpleDateFormat("EEE, dd-MMM-yy HH:mm:ss 'GMT'").parse(tok.nextToken());
+                            Long maxAge = TimeUnit.MILLISECONDS.toSeconds(date.getTime() - System.currentTimeMillis());
+                            cookie.setMaxAge(maxAge > 0 ? maxAge.intValue() : 0);
+                        }
+                        catch (ParseException ignored)
+                        {
+                        }
                     }
                     else if ("Max-Age".equalsIgnoreCase(token))
                     {
-                        tok.nextToken();
-                        // TODO
+                        try
+                        {
+                            int maxAge = Integer.parseInt(tok.nextToken());
+                            cookie.setMaxAge(maxAge);
+                        }
+                        catch (NumberFormatException ignored)
+                        {
+                        }
                     }
                     else if ("Secure".equalsIgnoreCase(token))
                         cookie.setSecure(true);
@@ -775,7 +820,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                 if (content == null || content.length() == 0)
                     throw new IllegalStateException();
                 _responses = _msgPool.parse(content);
-                
+
                 if (_responses!=null)
                     for (int i=0;i<_responses.length;i++)
                         extendIn(_responses[i]);
@@ -798,12 +843,12 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                 try{stop();}catch(Exception e){Log.ignore(e);}
                 return;
             }
-            
+
             setJson(_json);
             if (!send(this,backoff))
                 Log.warn("Retries exhausted"); // giving up
         }
-        
+
         /* ------------------------------------------------------------ */
         protected void recycle()
         {
@@ -819,7 +864,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /**
      * The Bayeux handshake exchange. Negotiates a client Id and initializes the
      * protocol.
-     * 
+     *
      */
     protected class Handshake extends Exchange
     {
@@ -834,7 +879,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         /* ------------------------------------------------------------ */
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * org.cometd.client.BayeuxClient.Exchange#onResponseComplete()
          */
@@ -843,8 +888,8 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
             super.onResponseComplete();
 
             if (!isRunning())
-                return;    
-            
+                return;
+
             if (_disconnecting)
             {
                 Message error=_msgPool.newMessage();
@@ -903,11 +948,11 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                 error.put(Bayeux.SUCCESSFUL_FIELD,Boolean.FALSE);
                 error.put("status",new Integer(getResponseStatus()));
                 error.put("content",getResponseContent());
-                
+
                 metaHandshake(false,false,error);
                 resend(true);
             }
-            
+
             recycle();
         }
 
@@ -989,17 +1034,17 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                         {
                             Boolean successful = (Boolean)msg.get(Bayeux.SUCCESSFUL_FIELD);
                             if (successful != null && successful.booleanValue())
-                            {                               
+                            {
                                 metaConnect(true,msg);
 
                                 if (!isRunning())
                                     break;
-                                
+
                                 synchronized (_outQ)
                                 {
                                     if (_disconnecting)
                                         continue;
-                                    
+
                                     if (!isInitialized())
                                     {
                                         setInitialized(true);
@@ -1014,7 +1059,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
 
                                 }
                                 // send a Connect (ie longpoll) possibly with
-                                // delay according to interval advice                                
+                                // delay according to interval advice
                                 _pull = new Connect();
                                 send(_pull,false);
                             }
@@ -1030,13 +1075,13 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
 
                                 setInitialized(false);
                                 metaConnect(false,msg);
-                                
+
                                 synchronized(_outQ)
                                 {
                                     if (!isRunning()||_disconnecting)
                                         break;
                                 }
-                                
+
                                 if (_advice != null && _advice.isReconnectNone())
                                     throw new IOException("Connect failed, advice reconnect=none");
                                 else if (_advice != null && _advice.isReconnectHandshake())
@@ -1125,7 +1170,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         Publish()
         {
             super("publish");
-            
+
             StringBuffer json = new StringBuffer(256);
             synchronized (json)
             {
@@ -1172,7 +1217,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         /* ------------------------------------------------------------ */
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see
          * org.cometd.client.BayeuxClient.Exchange#onResponseComplete()
          */
@@ -1180,7 +1225,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         {
             if (!isRunning())
                 return;
-            
+
             super.onResponseComplete();
             try
             {
@@ -1195,7 +1240,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                     for (int i = 0; i < _responses.length; i++)
                     {
                         MessageImpl msg = (MessageImpl)_responses[i];
-                            
+
                         deliver(null,msg);
                         if (Bayeux.META_DISCONNECT.equals(msg.getChannel())&&msg.isSuccessful())
                         {
@@ -1273,7 +1318,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                     _rListeners = new ArrayList<RemoveListener>();
                 _rListeners.add((RemoveListener)listener);
             }
-            
+
             if (!added)
                 throw new IllegalArgumentException();
         }
@@ -1319,7 +1364,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     /**
      * Send the exchange, possibly using a backoff.
-     * 
+     *
      * @param exchange
      * @param backoff
      *            if true, use backoff algorithm to send
@@ -1394,7 +1439,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     /**
      * Send the exchange.
-     * 
+     *
      * @param exchange
      * @throws IOException
      */
@@ -1411,9 +1456,9 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /**
      * False when we have received a success=false message in response to a
      * Connect, or we have had an exception when sending or receiving a Connect.
-     * 
+     *
      * True when handshake and then connect has happened.
-     * 
+     *
      * @param b
      */
     protected void setInitialized(boolean b)
@@ -1471,7 +1516,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
      * preformatted strings.
      * <p>
      * This method calls the {@link Extension}s added by {@link #addExtension(Extension)}
-     * 
+     *
      * @param msg
      * @return the extended message
      */
@@ -1479,7 +1524,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     {
         if (_extensions==null)
             return msg;
-        
+
         try
         {
             Message[] messages = _msgPool.parse(msg);
@@ -1500,7 +1545,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /** Called to extend outbound messages
      * <p>
      * This method calls the {@link Extension}s added by {@link #addExtension(Extension)}
-     * 
+     *
      */
     protected void extendOut(Message message)
     {
@@ -1513,7 +1558,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
             else
                 for (int i=0;m!=null && i<_extensions.length;i++)
                     m=_extensions[i].send(this,m);
-                
+
             if (message!=m)
             {
                 message.clear();
@@ -1528,7 +1573,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /** Called to extend inbound messages
      * <p>
      * This method calls the {@link Extension}s added by {@link #addExtension(Extension)}
-     * 
+     *
      */
     protected void extendIn(Message message)
     {
@@ -1541,7 +1586,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
             else
                 for (int i=_extensions.length;m!=null && i-->0;)
                     m=_extensions[i].rcv(this,m);
-                
+
             if (message!=m)
             {
                 message.clear();
@@ -1552,5 +1597,21 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         }
     }
 
-    
+    private static class ExpirableCookie
+    {
+        private final Cookie cookie;
+        private final long expirationTime;
+
+        private ExpirableCookie(Cookie cookie, long expirationTime)
+        {
+            this.cookie = cookie;
+            this.expirationTime = expirationTime;
+        }
+
+        private boolean isExpired()
+        {
+            if (expirationTime < 0) return false;
+            return System.currentTimeMillis() >= expirationTime;
+        }
+    }
 }
