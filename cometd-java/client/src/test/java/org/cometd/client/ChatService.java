@@ -11,7 +11,6 @@ import org.cometd.Channel;
 import org.cometd.Client;
 import org.cometd.RemoveListener;
 import org.cometd.server.BayeuxService;
-import org.cometd.server.ChannelImpl;
 import org.eclipse.jetty.util.log.Log;
 
 public class ChatService extends BayeuxService
@@ -24,7 +23,7 @@ public class ChatService extends BayeuxService
         subscribe("/chat/**", "trackMembers");
         subscribe("/service/privatechat", "privateChat");
     }
-    
+
     public void trackMembers(final Client joiner, final String channelName, Map<String, Object> data, final String messageId)
     {
         if (Boolean.TRUE.equals(data.get("join")))
@@ -36,7 +35,7 @@ public class ChatService extends BayeuxService
                 membersMap = _members.putIfAbsent(channelName, newMembersMap);
                 if (membersMap == null) membersMap = newMembersMap;
             }
-            
+
             final Map<String, String> members = membersMap;
             final String userName = (String)data.get("user");
             members.put(userName, joiner.getId());
@@ -63,8 +62,8 @@ public class ChatService extends BayeuxService
         String roomName = (String)data.get("room");
         Map<String, String> membersMap = _members.get(roomName);
         String[] peerNames = ((String)data.get("peer")).split(",");
-        ArrayList<Client> to = new ArrayList<Client>(peerNames.length);
-        
+        ArrayList<Client> peers = new ArrayList<Client>(peerNames.length);
+
         for (String peerName : peerNames)
         {
             String peerId = membersMap.get(peerName);
@@ -72,22 +71,20 @@ public class ChatService extends BayeuxService
             {
                 Client peer = getBayeux().getClient(peerId);
                 if (peer!=null)
-                    to.add(peer);
+                    peers.add(peer);
             }
         }
 
-        if (to.size()>0)
+        if (peers.size() > 0)
         {
-            {
-                Map<String, Object> message = new HashMap<String, Object>();
-                message.put("chat", data.get("chat"));
-                message.put("user", data.get("user"));
-                message.put("scope", "private");
-                ((ChannelImpl)(getBayeux().getChannel(roomName,false))).deliver(getClient(),to,message,messageId);
-                source.deliver(getClient(), roomName, message, messageId);
-            }
+            Map<String, Object> message = new HashMap<String, Object>();
+            message.put("chat", data.get("chat"));
+            message.put("user", data.get("user"));
+            message.put("scope", "private");
+            for (Client peer : peers) peer.deliver(source, roomName, message, messageId);
+            source.deliver(getClient(), roomName, message, messageId);
         }
-        else if (!"silent".equals((String)data.get("peer")))
+        else if (!"silent".equals(data.get("peer")))
         {
             Map<String, Object> message = new HashMap<String, Object>();
             message.put("chat", "Unknown user(s): "+data.get("peer"));
