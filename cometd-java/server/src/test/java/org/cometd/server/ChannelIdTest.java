@@ -84,8 +84,6 @@ public class ChannelIdTest extends TestCase
         assertTrue(id.matches("/test/foo"));
         assertTrue(id.matches("/test/abc/foo"));
         assertTrue(id.matches("/test/abc/def/foo"));
-        
-        
     }
 
     public void testParentOf()
@@ -110,5 +108,9 @@ public class ChannelIdTest extends TestCase
         child2 = new ChannelId("/test/123/xyz");
         assertTrue(child1.isParentOf (child2));
         
+        ChannelId parentpp = new ChannelId("/test");
+        ChannelId childcc = new ChannelId("/abc/123");
+        assertFalse(childcc.isParentOf(parentpp));
+        assertFalse(parentpp.isParentOf (childcc));
     }
 }
