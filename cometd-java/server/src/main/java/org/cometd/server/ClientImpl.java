@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,10 +31,11 @@ import org.cometd.RemoveListener;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
 /**
- * 
+ *
  * @author gregw
  */
 public class ClientImpl implements Client
@@ -158,7 +159,7 @@ public class ClientImpl implements Client
                     {
                         queue=true;
                         for (QueueListener l : _qListeners)
-                            queue&=l.queueMaxed(from,this,message);
+                            queue &= notifyQueueListener(l, from, message);
                     }
                     else
                         queue=false;
@@ -178,7 +179,7 @@ public class ClientImpl implements Client
             // deliver synchronized
             if (_syncMListeners != null)
                 for (MessageListener l : _syncMListeners)
-                    l.deliver(from,this,message);
+                    notifyMessageListener(l, from, message);
             alisteners=_asyncMListeners;
 
             if (_batch == 0 && _responsesPending < 1 && _queue.size() > 0)
@@ -193,7 +194,32 @@ public class ClientImpl implements Client
         // deliver unsynchronized
         if (alisteners != null)
             for (MessageListener l : alisteners)
-                l.deliver(from,this,message);
+                notifyMessageListener(l, from, message);
+    }
+
+    private boolean notifyQueueListener(QueueListener listener, Client from, Message message)
+    {
+        try
+        {
+            return listener.queueMaxed(from, this, message);
+        }
+        catch (Throwable x)
+        {
+            Log.debug(x);
+            return false;
+        }
+    }
+
+    private void notifyMessageListener(MessageListener listener, Client from, Message message)
+    {
+        try
+        {
+            listener.deliver(from, this, message);
+        }
+        catch (Throwable x)
+        {
+            Log.debug(x);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -203,7 +229,19 @@ public class ClientImpl implements Client
         {
             if (_dListeners != null)
                 for (DeliverListener l : _dListeners)
-                    l.deliver(this,_queue);
+                    notifyDeliverListener(l, _queue);
+        }
+    }
+
+    private void notifyDeliverListener(DeliverListener listener, Queue<Message> queue)
+    {
+        try
+        {
+            listener.deliver(this, queue);
+        }
+        catch (Throwable x)
+        {
+            Log.debug(x);
         }
     }
 
@@ -269,7 +307,7 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.cometd.server.C#getId()
      */
     public String getId()
@@ -306,7 +344,7 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.cometd.Client#disconnect()
      */
     public void disconnect()
@@ -321,7 +359,7 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see dojox.cometd.Client#remove(boolean)
      */
     public void remove(boolean timeout)
@@ -345,9 +383,21 @@ public class ClientImpl implements Client
             _bayeux.clientOffBrowser(browser_id,_id);
         if (listeners != null)
             for (RemoveListener l : listeners)
-                l.removed(_id,timeout);
+                notifyRemoveListener(l, _id, timeout);
 
         resume();
+    }
+
+    private void notifyRemoveListener(RemoveListener listener, String clientId, boolean timeout)
+    {
+        try
+        {
+            listener.removed(clientId, timeout);
+        }
+        catch (Throwable x)
+        {
+            Log.debug(x);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -381,7 +431,7 @@ public class ClientImpl implements Client
     public void lazyResume()
     {
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Called by deliver to resume anything waiting on this client.
@@ -504,7 +554,7 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     /**
      * Get the advice specific for this Client
-     * 
+     *
      * @return advice specific for this client or null
      */
     public JSON.Literal getAdvice()
@@ -574,7 +624,7 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     /**
      * Set per client interval
-     * 
+     *
      * @param intervalMS
      *            timeout in MS for longpoll duration or 0 to use default from
      *            {@link AbstractBayeux#getMaxInterval()}.
@@ -593,7 +643,7 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     /**
      * Set per client timeout
-     * 
+     *
      * @param timeoutMS
      *            timeout in MS for longpoll duration or 0 to use default from
      *            {@link AbstractBayeux#getTimeout()}.
@@ -646,7 +696,7 @@ public class ClientImpl implements Client
     /* ------------------------------------------------------------ */
     /**
      * Get the subscribed to channels
-     * 
+     *
      * @return A copied array of the channels to which this client is subscribed
      */
     public Channel[] getSubscriptions()
