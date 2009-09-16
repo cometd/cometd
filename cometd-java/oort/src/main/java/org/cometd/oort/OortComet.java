@@ -17,7 +17,7 @@ import org.eclipse.jetty.util.log.Log;
 /**
  * Oort Comet client.
  * <p>
- * A BayeuxClient that connects the local Oort comet server to 
+ * A BayeuxClient that connects the local Oort comet server to
  * a remote Oort comet server.
  *
  */
@@ -62,23 +62,23 @@ public class OortComet extends BayeuxClient
                 oort.put("comet",_cometUrl);
                 Map<String,Object> ext = msg[0].getExt(true);
                 ext.put("oort",oort);
-                
+
                 super.extendOut(msg[0]);
                 message= _msgPool.getJSON().toJSON(msg);
-                
+
                 for (Message m:msg)
                     if (m instanceof MessageImpl)
                         ((MessageImpl)m).decRef();
-                
+
             }
             catch (IOException e)
             {
                 throw new IllegalArgumentException(e);
-            } 
+            }
         }
         else
             message=super.extendOut(message);
-        
+
         if (Log.isDebugEnabled()) Log.debug(_oort.getURL()+" ==> "+message);
         return message;
     }
@@ -144,12 +144,12 @@ public class OortComet extends BayeuxClient
                         for (Object o:data)
                             comets.add(o.toString());
                         _oort.observedComets(comets);
-                    }  
+                    }
 
                     synchronized (_oort)
                     {
                         for( MessageListener listener : _oort._oortMessageListeners)
-                            listener.deliver(fromClient,toClient,msg);
+                            notifyMessageListener(listener, fromClient, toClient, msg);
                     }
                 }
                 else
@@ -159,6 +159,18 @@ public class OortComet extends BayeuxClient
                         channel.publish(_oort._oortClient,msg.getData(),msg.getId());
                 }
             }
+        }
+    }
+
+    private void notifyMessageListener(MessageListener listener, Client from, Client to, Message message)
+    {
+        try
+        {
+            listener.deliver(from, to, message);
+        }
+        catch (Throwable x)
+        {
+            Log.debug(x);
         }
     }
 }
