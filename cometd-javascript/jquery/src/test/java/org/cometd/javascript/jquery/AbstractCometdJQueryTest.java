@@ -16,7 +16,7 @@ public abstract class AbstractCometdJQueryTest extends AbstractCometdTest
 {
     protected void customizeContext(ServletContextHandler context) throws Exception
     {
-        File baseDirectory = new File(System.getProperty("basedir"));
+        File baseDirectory = new File(System.getProperty("basedir","."));
         File webappDirectory = new File(baseDirectory, "src/main/webapp");
         File overlaidScriptDirectory = new File(baseDirectory, "target/scripts");
         File testResourcesDirectory = new File(baseDirectory, "src/test/resources");

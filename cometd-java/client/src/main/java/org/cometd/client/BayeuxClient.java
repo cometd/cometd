@@ -830,7 +830,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                 String content = getResponseContent();
                 // TODO
                 if (content == null || content.length() == 0)
-                    throw new IllegalStateException();
+                    throw new IllegalStateException("No content in response for "+getURI());
                 _responses = _msgPool.parse(content);
 
                 if (_responses!=null)
@@ -975,6 +975,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
             Message error=_msgPool.newMessage();
             error.put(Bayeux.SUCCESSFUL_FIELD,Boolean.FALSE);
             error.put("failure","expired");
+            error.put("uri",getURI());
             metaHandshake(false,false,error);
             resend(true);
         }
@@ -987,6 +988,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
             error.put(Bayeux.SUCCESSFUL_FIELD,Boolean.FALSE);
             error.put("failure",ex.toString());
             error.put("exception",ex);
+            error.put("uri",getURI());
             ex.printStackTrace();
             metaHandshake(false,false,error);
             resend(true);
@@ -998,8 +1000,9 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
             // super.onException(ex);
             Message error=_msgPool.newMessage();
             error.put(Bayeux.SUCCESSFUL_FIELD,Boolean.FALSE);
-            error.put("failure",ex.toString());
+            error.put("failure",getURI());
             error.put("exception",ex);
+            error.put("uri",getURI());
             metaHandshake(false,false,error);
             resend(true);
         }
