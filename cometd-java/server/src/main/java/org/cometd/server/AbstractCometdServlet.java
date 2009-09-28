@@ -116,8 +116,6 @@ public abstract class AbstractCometdServlet extends GenericServlet
     public final static String BROWSER_ID="BAYEUX_BROWSER";
 
     protected AbstractBayeux _bayeux;
-    public final static int __DEFAULT_REFS_THRESHOLD=0;
-    protected int _refsThreshold=__DEFAULT_REFS_THRESHOLD;
 
     public AbstractBayeux getBayeux()
     {
@@ -214,10 +212,6 @@ public abstract class AbstractCometdServlet extends GenericServlet
                 if (async != null)
                     getServletContext().log("asyncDeliver no longer supported");
 
-                String refsThreshold=getInitParameter("refsThreshold");
-                if (refsThreshold != null)
-                    _refsThreshold=Integer.parseInt(refsThreshold);
-
                 _bayeux.generateAdvice();
 
                 if (_bayeux.isLogInfo())
@@ -227,7 +221,6 @@ public abstract class AbstractCometdServlet extends GenericServlet
                     getServletContext().log("maxInterval=" + maxInterval);
                     getServletContext().log("multiFrameInterval=" + mfInterval);
                     getServletContext().log("filters=" + filters);
-                    getServletContext().log("refsThreshold=" + refsThreshold);
                 }
             }
         }
