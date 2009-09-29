@@ -12,11 +12,13 @@ dojo.require('dojo.io.script');
 org.cometd.JSON.toJSON = dojo.toJson;
 org.cometd.JSON.fromJSON = dojo.fromJson;
 
-// Remap comet AJAX functions to dojo AJAX functions
-org.cometd.AJAX.send = function(packet)
+// The default cometd instance
+dojox.cometd = new org.cometd.Cometd();
+
+// Remap toolkit-specific transport calls
+dojox.cometd.LongPollingTransport = function()
 {
-    var transportType = packet.transport.getType();
-    if (transportType == 'long-polling')
+    this.transportSend = function(packet)
     {
         var deferred = dojo.rawXhrPost({
             url: packet.url,
@@ -25,13 +27,22 @@ org.cometd.AJAX.send = function(packet)
             postData: packet.body,
             handleAs: 'json',
             load: packet.onSuccess,
-            error: function(error) { packet.onError(error.message, deferred.ioArgs.error); }
+            error: function(error)
+            {
+                packet.onError(error.message, deferred.ioArgs.error);
+            }
         });
         return deferred.ioArgs.xhr;
-    }
-    else if (transportType == 'callback-polling')
+    };
+};
+dojox.cometd.LongPollingTransport.prototype = new org.cometd.LongPollingTransport();
+dojox.cometd.LongPollingTransport.prototype.constructor = dojox.cometd.LongPollingTransport;
+
+dojox.cometd.CallbackPollingTransport = function()
+{
+    this.transportSend = function(packet)
     {
-        dojo.io.script.get({
+        var deferred = dojo.io.script.get({
             url: packet.url,
             callbackParamName: 'jsonp',
             content: {
@@ -39,50 +50,46 @@ org.cometd.AJAX.send = function(packet)
                 message: packet.body
             },
             load: packet.onSuccess,
-            error: function(error) { packet.onError(error.message, deferred.ioArgs.error); }
+            error: function(error)
+            {
+                packet.onError(error.message, deferred.ioArgs.error);
+            }
         });
         return undefined;
-    }
-    else
-    {
-        throw 'Unsupported transport ' + transportType;
-    }
+    };
 };
+dojox.cometd.CallbackPollingTransport.prototype = new org.cometd.CallbackPollingTransport();
+dojox.cometd.CallbackPollingTransport.prototype.constructor = dojox.cometd.CallbackPollingTransport;
 
-// The default cometd instance
-dojox.cometd = new org.cometd.Cometd();
+dojox.cometd.registerTransport('long-polling', new dojox.cometd.LongPollingTransport());
+dojox.cometd.registerTransport('callback-polling', new dojox.cometd.CallbackPollingTransport());
 
-// Create a compatability API for dojox.cometd instance with
+// Create a compatibility API for dojox.cometd instance with
 // the original API.
 
-dojox.cometd._init=dojox.cometd.init;
+dojox.cometd._init = dojox.cometd.init;
 
-dojox.cometd.init = function(configuration, handshakeProps)
+dojox.cometd._unsubscribe = dojox.cometd.unsubscribe;
+
+dojox.cometd.unsubscribe = function(channelOrToken, objOrFunc, funcName)
 {
-    dojox.cometd._init(configuration, handshakeProps);
-}
+    if (typeof channelOrToken === 'string')
+        throw "Deprecated function unsubscribe(string). Use unsubscribe(object) passing as argument the return value of subscribe()";
 
-dojox.cometd._unsubscribe=dojox.cometd.unsubscribe;
-
-dojox.cometd.unsubscribe=function(channelOrToken,objOrFunc,funcName)
-{
-    if (typeof channelOrToken == "string")
-	throw "deprecated unsubscribe. - please pass token return from subscribe";
     dojox.cometd._unsubscribe(channelOrToken);
-}
+};
 
-dojox.cometd._metaHandshakeEvent=function(event)
+dojox.cometd._metaHandshakeEvent = function(event)
 {
-    event.action="handshake";
-    dojo.publish("/cometd/meta",[event]);
-}
+    event.action = "handshake";
+    dojo.publish("/cometd/meta", [event]);
+};
 
-dojox.cometd._metaConnectEvent=function(event)
+dojox.cometd._metaConnectEvent = function(event)
 {
-    event.action="connect";
-    dojo.publish("/cometd/meta",[event]);
-}
+    event.action = "connect";
+    dojo.publish("/cometd/meta", [event]);
+};
 
 dojox.cometd.addListener('/meta/handshake', dojox.cometd, dojox.cometd._metaHandshakeEvent);
 dojox.cometd.addListener('/meta/connect', dojox.cometd, dojox.cometd._metaConnectEvent);
-

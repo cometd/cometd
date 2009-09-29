@@ -6,13 +6,27 @@
 {
     // Remap cometd JSON functions to jquery JSON functions
     org.cometd.JSON.toJSON = $.toJSON;
-    org.cometd.JSON.fromJSON = $.evalJSON
-    
-    // Remap cometd AJAX functions to jquery AJAX functions
-    org.cometd.AJAX.send = function(packet)
+    org.cometd.JSON.fromJSON = $.evalJSON;
+
+    function _setHeaders(xhr, headers)
     {
-        var transportType = packet.transport.getType();
-        if (transportType == 'long-polling')
+        if (headers)
+        {
+            for (var headerName in headers)
+            {
+                if (headerName.toLowerCase() === 'content-type') continue;
+                xhr.setRequestHeader(headerName, headers[headerName]);
+            }
+        }
+    };
+
+    // The default cometd instance
+    $.cometd = new org.cometd.Cometd();
+
+    // Remap toolkit-specific transport calls
+    $.cometd.LongPollingTransport = function()
+    {
+        this.transportSend = function(packet)
         {
             return $.ajax({
                 url: packet.url,
@@ -26,10 +40,19 @@
                     return true;
                 },
                 success: packet.onSuccess,
-                error: function(xhr, reason, exception) { packet.onError(reason, exception); }
+                error: function(xhr, reason, exception)
+                {
+                    packet.onError(reason, exception);
+                }
             });
-        }
-        else if (transportType == 'callback-polling')
+        };
+    };
+    $.cometd.LongPollingTransport.prototype = new org.cometd.LongPollingTransport();
+    $.cometd.LongPollingTransport.prototype.constructor = $.cometd.LongPollingTransport;
+
+    $.cometd.CallbackPollingTransport = function()
+    {
+        this.transportSend = function(packet)
         {
             $.ajax({
                 url: packet.url,
@@ -47,28 +70,17 @@
                     return true;
                 },
                 success: packet.onSuccess,
-                error: function(xhr, reason, exception) { packet.onError(reason, exception); }
+                error: function(xhr, reason, exception)
+                {
+                    packet.onError(reason, exception);
+                }
             });
-        }
-        else
-        {
-            throw 'Unsupported transport ' + transportType;
-        }
+        };
     };
+    $.cometd.CallbackPollingTransport.prototype = new org.cometd.CallbackPollingTransport();
+    $.cometd.CallbackPollingTransport.prototype.constructor = $.cometd.CallbackPollingTransport;
 
-    function _setHeaders(xhr, headers)
-    {
-        if (headers)
-        {
-            for (var headerName in headers)
-            {
-                if (headerName.toLowerCase() === 'content-type') continue;
-                xhr.setRequestHeader(headerName, headers[headerName]);
-            }
-        }
-    };
-
-    // The default cometd instance
-    $.cometd = new org.cometd.Cometd();
+    $.cometd.registerTransport('long-polling', new $.cometd.LongPollingTransport());
+    $.cometd.registerTransport('callback-polling', new $.cometd.CallbackPollingTransport());
 
 })(jQuery);
