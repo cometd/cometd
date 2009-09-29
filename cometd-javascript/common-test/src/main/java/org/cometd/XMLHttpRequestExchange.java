@@ -5,7 +5,6 @@ import java.io.UnsupportedEncodingException;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.mozilla.javascript.Function;
@@ -99,7 +98,6 @@ public class XMLHttpRequestExchange extends ScriptableObject
         private final Scriptable scope;
         private final Scriptable thiz;
         private final Function function;
-        private final HttpFields responseFields = new HttpFields();
         private volatile boolean aborted;
         private volatile ReadyState readyState = ReadyState.UNSENT;
         private volatile String responseText;
@@ -107,6 +105,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
 
         public CometdExchange(ThreadModel threads, Scriptable scope, Scriptable thiz, Function function, String method, String url)
         {
+            super(true);
             this.threads = threads;
             this.scope = scope;
             this.thiz = thiz;
@@ -162,12 +161,12 @@ public class XMLHttpRequestExchange extends ScriptableObject
 
         public String getAllResponseHeaders()
         {
-            return responseFields.toString();
+            return getResponseFields().toString();
         }
 
         public String getResponseHeader(String name)
         {
-            return responseFields.getStringField(name);
+            return getResponseFields().getStringField(name);
         }
 
         @Override
@@ -178,16 +177,8 @@ public class XMLHttpRequestExchange extends ScriptableObject
         }
 
         @Override
-        protected void onResponseHeader(Buffer name, Buffer value) throws IOException
-        {
-            responseFields.add(name, value);
-            super.onResponseHeader(name, value);
-        }
-
-        @Override
         protected void onResponseHeaderComplete() throws IOException
         {
-            super.onResponseHeaderComplete();
             if (!aborted)
             {
                 readyState = ReadyState.HEADERS_RECEIVED;
@@ -212,7 +203,6 @@ public class XMLHttpRequestExchange extends ScriptableObject
         @Override
         protected void onResponseComplete() throws IOException
         {
-            super.onResponseComplete();
             if (!aborted)
             {
                 responseText = getResponseContent();

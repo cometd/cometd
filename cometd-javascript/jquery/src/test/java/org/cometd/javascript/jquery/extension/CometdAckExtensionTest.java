@@ -28,7 +28,7 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
         URL ackExtensionURL = new URL(contextURL + "/org/cometd/AckExtension.js");
         evaluateURL(ackExtensionURL);
 
-        evaluateScript("var cometd = new org.cometd.Cometd('mycometd');");
+        evaluateScript("var cometd = $.cometd;");
         evaluateScript("cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
         evaluateScript("var ackExt = new org.cometd.AckExtension();");
         evaluateScript("cometd.registerExtension('myack', ackExt);");

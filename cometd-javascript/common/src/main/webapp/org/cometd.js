@@ -17,10 +17,98 @@ else
 
 // Abstract APIs
 org.cometd.JSON = {};
-org.cometd.AJAX = {};
-org.cometd.JSON.toJSON = org.cometd.JSON.fromJSON = org.cometd.AJAX.send = function(object)
+org.cometd.JSON.toJSON = org.cometd.JSON.fromJSON = function(object)
 {
     throw 'Abstract';
+};
+
+
+/**
+ * A registry for transports used by the Cometd object.
+ */
+org.cometd.TransportRegistry = function()
+{
+    var _types = [];
+    var _transports = {};
+
+    this.findTransportTypes = function(version, crossDomain)
+    {
+        var result = [];
+        for (var i = 0; i < _types.length; ++i)
+        {
+            var type = _types[i];
+            if (_transports[type].accept(version, crossDomain))
+                result.push(type);
+        }
+        return result;
+    };
+
+    this.matchTransport = function(types, version, crossDomain)
+    {
+        for (var i = 0; i < _types.length; ++i)
+        {
+            var type = _types[i];
+            for (var j = 0; j < types.length; ++j)
+            {
+                if (type == types[j])
+                {
+                    var transport = _transports[type];
+                    if (transport.accept(version, crossDomain) === true)
+                    {
+                        return transport;
+                    }
+                }
+            }
+        }
+        return null;
+    };
+
+    this.add = function(type, transport, index)
+    {
+        var existing = false;
+        for (var i = 0; i < _types.length; ++i)
+        {
+            if (_types[i] == type)
+            {
+                existing = true;
+                break;
+            }
+        }
+
+        if (!existing)
+        {
+            if (typeof index !== 'number')
+                _types.push(type);
+            else
+                _types.splice(index, 0, type);
+            _transports[type] = transport;
+        }
+
+        return !existing;
+    };
+
+    this.remove = function(type)
+    {
+        for (var i = 0; i < _types.length; ++i)
+        {
+            if (_types[i] == type)
+            {
+                _types.splice(i, 1);
+                var transport = _transports[type];
+                delete _transports[type];
+                return transport;
+            }
+        }
+        return null;
+    };
+
+    this.reset = function()
+    {
+        for (var i = 0; i < _types.length; ++i)
+        {
+            _transports[_types[i]].reset();
+        }
+    };
 };
 
 
@@ -52,6 +140,7 @@ org.cometd.Cometd = function(name)
     var _jsonpFailureDelay;
     var _requestHeaders;
     var _crossDomain = false;
+    var _transports = new org.cometd.TransportRegistry();
     var _transport;
     var _status = 'disconnected';
     var _messageId = 0;
@@ -176,43 +265,32 @@ org.cometd.Cometd = function(name)
     }
     this._debug = _debug;
 
-    function _newTransport(type)
+    this.registerTransport = function(type, transport, index)
     {
-        switch (type)
+        if (_transports.add(type, transport, index))
         {
-            case 'long-polling':
-                return _mixin(false, {}, new org.cometd.Transport(type), new org.cometd.LongPollingTransport());
-            case 'callback-polling':
-                return _mixin(false, {}, new org.cometd.Transport(type), new org.cometd.CallbackPollingTransport());
-            default:
-                return null;
-        }
-    }
+            _debug('Registered transport {}', type);
 
-    function _findTransport(handshakeResponse)
-    {
-        var transportTypes = handshakeResponse.supportedConnectionTypes;
-
-        // Check if the server supports the current transport
-        if (_inArray(_transport.getType(), transportTypes) >= 0)
-        {
-            return _transport;
-        }
-        else
-        {
-            // Make a copy in order to not modify the message
-            var serverTransports = transportTypes.slice(0);
-            var clientTransports = ['long-polling', 'callback-polling'];
-            // Remove the current transport, which we know it's not supported
-            clientTransports.splice(_inArray(_transport.getType(), clientTransports), 1);
-            // Check the remaining option
-            if (_inArray(clientTransports[0], serverTransports) >= 0)
+            if (typeof transport.registered === 'function')
             {
-                return _newTransport(clientTransports[0]);
+                transport.registered(type, this);
             }
         }
-        return null;
-    }
+    };
+
+    this.unregisterTransport = function(type)
+    {
+        var transport = _transports.remove(type);
+        if (transport != null)
+        {
+            _debug('Unregistered transport {}', type);
+
+            if (typeof transport.unregistered === 'function')
+            {
+                transport.unregistered();
+            }
+        }
+    };
 
     function _configure(configuration)
     {
@@ -610,10 +688,10 @@ org.cometd.Cometd = function(name)
 
         _clearSubscriptions();
 
-        // Reset the transport to support disconnect() followed by handshake()
+        // Reset the transports if we're not retrying the handshake
         if (_isDisconnected())
         {
-            _transport = null;
+            _transports.reset();
         }
 
         // Start a batch.
@@ -630,42 +708,25 @@ org.cometd.Cometd = function(name)
         // Deep copy to avoid the user to be able to change them later
         _handshakeProps = _mixin(true, {}, handshakeProps);
 
-        // Figure out what is the transport that we must use
-        var connectionTypes = [];
-        if (_crossDomain)
-        {
-            if (!_transport)
-            {
-                // First time we try to handshake, try cross-origin request
-                connectionTypes.push('long-polling');
-            }
-            else
-            {
-                connectionTypes.push(_transport.getType());
-            }
-        }
-        else
-        {
-            connectionTypes.push('long-polling');
-        }
+        var version = '1.0';
+
+        // Figure out the transports to send to the server
+        var transportTypes = _transports.findTransportTypes(version, _crossDomain);
 
         var bayeuxMessage = {
-            version: '1.0',
+            version: version,
             minimumVersion: '0.9',
             channel: '/meta/handshake',
-            supportedConnectionTypes: connectionTypes
+            supportedConnectionTypes: transportTypes
         };
         // Do not allow the user to mess with the required properties,
         // so merge first the user properties and *then* the bayeux message
         var message = _mixin(false, {}, _handshakeProps, bayeuxMessage);
 
-        if (!_transport)
-        {
-            // Always use long polling as the initial transport.
-            // In this way we check if cross-origin requests are supported
-            _transport = _newTransport('long-polling');
-            _debug('Initial transport is', _transport);
-        }
+        // Pick up the first available transport as initial transport
+        // since we don't know if the server supports it
+        _transport = _transports.matchTransport(transportTypes, version, _crossDomain);
+        _debug('Initial transport is', _transport);
 
         // We started a batch to hold the application messages,
         // so here we must bypass it and send immediately.
@@ -690,18 +751,18 @@ org.cometd.Cometd = function(name)
             // Save clientId, figure out transport, then follow the advice to connect
             _clientId = message.clientId;
 
-            var newTransport = _findTransport(message);
+            var newTransport = _transports.matchTransport(message.supportedConnectionTypes, message.version, _crossDomain);
             if (newTransport === null)
             {
-                throw 'Could not agree on transport with server';
+                throw 'Could not negotiate transport with server; client ' +
+                      _transports.findTransportTypes(message.version, _crossDomain) +
+                      ", server " +
+                      message.supportedConnectionTypes;
             }
             else
             {
-                if (_transport.getType() != newTransport.getType())
-                {
-                    _debug('Transport', _transport, '->', newTransport);
-                    _transport = newTransport;
-                }
+                _debug('Transport', _transport, '->', newTransport);
+                _transport = newTransport;
             }
 
             // Notify the listeners
@@ -771,13 +832,7 @@ org.cometd.Cometd = function(name)
         // advice permits us to try again
         if (retry)
         {
-            if (_crossDomain && _transport.getType() === 'long-polling')
-            {
-                // We tried a cross origin request, but it failed,
-                // so now try using the jsonp transport
-                _transport = _newTransport('callback-polling');
-            }
-
+            // Null out the transport so that it will be recomputed
             _increaseBackoff();
             _delayedHandshake();
         }
@@ -1226,7 +1281,7 @@ org.cometd.Cometd = function(name)
      */
     this.configure = function(configuration)
     {
-        _configure(configuration);
+        _configure.call(this, configuration);
     };
 
     /**
@@ -1239,8 +1294,8 @@ org.cometd.Cometd = function(name)
      */
     this.init = function(configuration, handshakeProps)
     {
-        _configure(configuration);
-        _handshake(handshakeProps);
+        this.configure(configuration);
+        this.handshake(handshakeProps);
     };
 
     /**
@@ -1250,6 +1305,7 @@ org.cometd.Cometd = function(name)
      */
     this.handshake = function(handshakeProps)
     {
+        _setStatus('disconnected');
         _reestablish = false;
         _handshake(handshakeProps);
     };
@@ -1507,7 +1563,7 @@ org.cometd.Cometd = function(name)
             // Callback for extensions
             if (typeof extension.registered === 'function')
             {
-                extension.registered.call(extension, name, this);
+                extension.registered(name, this);
             }
 
             return true;
@@ -1541,7 +1597,7 @@ org.cometd.Cometd = function(name)
                 var ext = extension.extension;
                 if (typeof ext.unregistered === 'function')
                 {
-                    ext.unregistered.call(ext);
+                    ext.unregistered();
                 }
 
                 break;
@@ -1593,6 +1649,11 @@ org.cometd.Cometd = function(name)
         return _url;
     };
 
+    this.getTransport = function()
+    {
+        return _transport;
+    };
+
     /**
      * Base object with the common functionality for transports.
      * The key responsibility is to allow at most 2 outstanding requests to the server,
@@ -1600,14 +1661,30 @@ org.cometd.Cometd = function(name)
      * To achieve this, we have one reserved request for the long poll, and all other
      * requests are serialized one after the other.
      */
-    org.cometd.Transport = function(type)
+    org.cometd.Transport = function()
     {
+        var _type;
         var _requestIds = 0;
         var _longpollRequest = null;
         var _requests = [];
         var _envelopes = [];
 
-        function _longpollSend(self, envelope)
+        this.registered = function(type)
+        {
+            _type = type;
+        };
+
+        this.unregistered = function()
+        {
+            _type = null;
+        };
+
+        this.accept = function(version, crossDomain)
+        {
+            return false;
+        };
+
+        function _longpollSend(envelope)
         {
             if (_longpollRequest !== null)
             {
@@ -1619,11 +1696,11 @@ org.cometd.Cometd = function(name)
                 id: requestId,
                 longpoll: true
             };
-            self._send(envelope, request);
+            this._send(envelope, request);
             _longpollRequest = request;
         }
 
-        function _queueSend(self, envelope)
+        function _queueSend(envelope)
         {
             var requestId = ++_requestIds;
             var request = {
@@ -1633,7 +1710,7 @@ org.cometd.Cometd = function(name)
             // Consider the longpoll requests which should always be present
             if (_requests.length < _maxConnections - 1)
             {
-                self._send(envelope, request);
+                this._send(envelope, request);
                 _requests.push(request);
             }
             else
@@ -1654,7 +1731,7 @@ org.cometd.Cometd = function(name)
             _longpollRequest = null;
         }
 
-        function _complete(self, request, success)
+        function _complete(request, success)
         {
             var index = _inArray(request, _requests);
             // The index can be negative the request has been aborted
@@ -1668,7 +1745,7 @@ org.cometd.Cometd = function(name)
                 var envelope = _envelopes.shift();
                 if (success)
                 {
-                    _queueSend(self, envelope[0]);
+                    _queueSend.call(this, envelope[0]);
                 }
                 else
                 {
@@ -1685,18 +1762,18 @@ org.cometd.Cometd = function(name)
 
         this.getType = function()
         {
-            return type;
+            return _type;
         };
 
         this.send = function(envelope, longpoll)
         {
             if (longpoll)
             {
-                _longpollSend(this, envelope);
+                _longpollSend.call(this, envelope);
             }
             else
             {
-                _queueSend(this, envelope);
+                _queueSend.call(this, envelope);
             }
         };
 
@@ -1704,11 +1781,11 @@ org.cometd.Cometd = function(name)
         {
             if (longpoll)
             {
-                _longpollComplete(request);
+                _longpollComplete.call(this, request);
             }
             else
             {
-                _complete(this, request, success);
+                _complete.call(this, request, success);
             }
         };
 
@@ -1731,6 +1808,11 @@ org.cometd.Cometd = function(name)
                     _longpollRequest.xhr.abort();
                 }
             }
+            this.reset();
+        };
+
+        this.reset = function()
+        {
             _longpollRequest = null;
             _requests = [];
             _envelopes = [];
@@ -1739,30 +1821,65 @@ org.cometd.Cometd = function(name)
 
     org.cometd.LongPollingTransport = function()
     {
+        // By default, support cross domain
+        var _supportsCrossDomain = true;
+
+        this.accept = function(version, crossDomain)
+        {
+            return _supportsCrossDomain || !crossDomain;
+        };
+
+        this.transportSend = function(packet)
+        {
+            throw 'Abstract';
+        };
+
         this._send = function(envelope, request)
         {
             try
             {
-                request.xhr = org.cometd.AJAX.send({
+                request.xhr = this.transportSend({
                     transport: this,
                     url: envelope.url,
                     headers: _requestHeaders,
                     body: org.cometd.JSON.toJSON(envelope.messages),
-                    onSuccess: function(response) { envelope.onSuccess(request, response); },
-                    onError: function(reason, exception) { envelope.onFailure(request, reason, exception); }
+                    onSuccess: function(response)
+                    {
+                        envelope.onSuccess(request, response);
+                    },
+                    onError: function(reason, exception)
+                    {
+                        _supportsCrossDomain = false;
+                        envelope.onFailure(request, reason, exception);
+                    }
                 });
             }
             catch (x)
             {
+                _supportsCrossDomain = false;
                 // Keep the semantic of calling response callbacks asynchronously after the request
                 _setTimeout(function() { envelope.onFailure(request, 'error', x); }, 0);
             }
         };
+
+        this.reset = function()
+        {
+            org.cometd.LongPollingTransport.prototype.reset();
+            _supportsCrossDomain = true;
+        };
     };
+    org.cometd.LongPollingTransport.prototype = new org.cometd.Transport();
+    org.cometd.LongPollingTransport.prototype.constructor = org.cometd.LongPollingTransport;
 
     org.cometd.CallbackPollingTransport = function()
     {
         var _maxLength = 2000;
+
+        this.accept = function(version, crossDomain)
+        {
+            return crossDomain;
+        };
+
         this._send = function(envelope, request)
         {
             // Microsoft Internet Explorer has a 2083 URL max length
@@ -1792,7 +1909,7 @@ org.cometd.Cometd = function(name)
                 {
                     var expired = false;
                     var timeout;
-                    org.cometd.AJAX.send({
+                    this.transportSend({
                         transport: this,
                         url: envelope.url,
                         headers: _requestHeaders,
@@ -1836,4 +1953,6 @@ org.cometd.Cometd = function(name)
             }
         };
     };
+    org.cometd.CallbackPollingTransport.prototype = new org.cometd.Transport();
+    org.cometd.CallbackPollingTransport.prototype.constructor = org.cometd.CallbackPollingTransport;
 };
