@@ -1356,7 +1356,7 @@ org.cometd.Cometd = function(name)
      */
     this.disconnect = function(disconnectProps)
     {
-        if (!_transport)
+        if (_isDisconnected())
         {
             return;
         }
