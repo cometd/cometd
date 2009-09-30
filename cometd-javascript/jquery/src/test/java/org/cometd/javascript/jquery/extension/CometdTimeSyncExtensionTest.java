@@ -33,9 +33,11 @@ public class CometdTimeSyncExtensionTest extends AbstractCometdJQueryTest
                 "    var channel = message.channel;" +
                 "    if (channel && channel.indexOf('/meta/') == 0)" +
                 "    {" +
-                "        inTimeSync = message.ext && message.ext.timesync;" +
+                "        /* The timesync from the server may be missing if it's accurate enough */" +
+                "        var timesync = message.ext && message.ext.timesync;" +
+                "        if (timesync) inTimeSync = timesync;" +
                 "    }" +
-                "   return message;" +
+                "    return message;" +
                 "}," +
                 "outgoing: function(message)" +
                 "{" +
@@ -44,7 +46,7 @@ public class CometdTimeSyncExtensionTest extends AbstractCometdJQueryTest
                 "    {" +
                 "        outTimeSync = message.ext && message.ext.timesync;" +
                 "    }" +
-                "   return message;" +
+                "    return message;" +
                 "}" +
                 "});");
         evaluateScript("$.cometd.handshake();");
