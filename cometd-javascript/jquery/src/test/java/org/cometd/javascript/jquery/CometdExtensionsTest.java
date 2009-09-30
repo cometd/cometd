@@ -25,20 +25,20 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
 
         Number inCount = get("inCount");
         Number outCount = get("outCount");
-        assert inCount.intValue() == 2; // handshake, connect1
-        assert outCount.intValue() == 3; // handshake, connect1, connect2
+        assertEquals(2, inCount.intValue()); // handshake, connect1
+        assertEquals(3, outCount.intValue()); // handshake, connect1, connect2
 
         Boolean unregistered = evaluateScript("$.cometd.unregisterExtension('testin');");
-        assert unregistered;
+        assertTrue(unregistered);
         unregistered = evaluateScript("$.cometd.unregisterExtension('testout');");
-        assert unregistered;
+        assertTrue(unregistered);
 
         evaluateScript("$.cometd.publish('/echo', 'ping');");
         Thread.sleep(500); // Wait for the publish to return
         inCount = get("inCount");
         outCount = get("outCount");
-        assert inCount.intValue() == 2;
-        assert outCount.intValue() == 3;
+        assertEquals(2, inCount.intValue());
+        assertEquals(3, outCount.intValue());
 
         evaluateScript("$.cometd.disconnect();");
         Thread.sleep(500); // Wait for the disconnect to return
@@ -60,40 +60,40 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
 
         evaluateScript("$.cometd.handshake();");
         Thread.sleep(500); // Wait for the long poll
-        assert listener.getOutgoingMessageCount() == 3; // handshake, connect1, connect2
-        assert listener.getIncomingMessageCount() == 2; // handshake, connect1
+        assertEquals(3, listener.getOutgoingMessageCount()); // handshake, connect1, connect2
+        assertEquals(2, listener.getIncomingMessageCount()); // handshake, connect1
 
         listener.reset();
         script.setLength(0);
         script.append("var subscription = $.cometd.subscribe('/echo', window.console, window.console.debug);");
         evaluateScript(script.toString());
         Thread.sleep(500); // Wait for subscribe to happen
-        assert listener.getOutgoingMessageCount() == 1; // subscribe
-        assert listener.getIncomingMessageCount() == 1; // subscribe
+        assertEquals(1, listener.getOutgoingMessageCount()); // subscribe
+        assertEquals(1, listener.getIncomingMessageCount()); // subscribe
 
         listener.reset();
         script.setLength(0);
         script.append("$.cometd.publish('/echo', 'test');");
         evaluateScript(script.toString());
         Thread.sleep(500); // Wait for subscribe to happen
-        assert listener.getOutgoingMessageCount() == 1; // publish
-        assert listener.getIncomingMessageCount() == 2; // publish, message
+        assertEquals(1, listener.getOutgoingMessageCount()); // publish
+        assertEquals(2, listener.getIncomingMessageCount()); // publish, message
 
         listener.reset();
         script.setLength(0);
         script.append("$.cometd.unsubscribe(subscription);");
         evaluateScript(script.toString());
         Thread.sleep(500); // Wait for subscribe to happen
-        assert listener.getOutgoingMessageCount() == 1; // unsubscribe
-        assert listener.getIncomingMessageCount() == 1; // unsubscribe
+        assertEquals(1, listener.getOutgoingMessageCount()); // unsubscribe
+        assertEquals(1, listener.getIncomingMessageCount()); // unsubscribe
 
         listener.reset();
         script.setLength(0);
         script.append("$.cometd.disconnect();");
         evaluateScript(script.toString());
         Thread.sleep(500); // Wait for disconnect to happen
-        assert listener.getOutgoingMessageCount() == 1; // disconnect
-        assert listener.getIncomingMessageCount() == 2; // connect2, disconnect
+        assertEquals(1, listener.getOutgoingMessageCount()); // disconnect
+        assertEquals(2, listener.getIncomingMessageCount()); // connect2, disconnect
     }
 
     public void testExtensionOrder() throws Exception
@@ -124,7 +124,7 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.handshake();");
         Thread.sleep(1000); // Wait for long poll
 
-        assert (Boolean)get("ok");
+        assertTrue((Boolean)get("ok"));
 
         evaluateScript("$.cometd.disconnect();");
         Thread.sleep(1000);
@@ -153,7 +153,7 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.handshake();");
         Thread.sleep(1000); // Wait for long poll
 
-        assert (Boolean)get("ok");
+        assertTrue((Boolean)get("ok"));
 
         evaluateScript("$.cometd.disconnect();");
         Thread.sleep(1000);
@@ -177,15 +177,15 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
                        "}" +
                        "});");
         Object extName = get("n");
-        assert extName != null;
+        assertNotNull(extName);
         Object extCometd = get("c");
-        assert extCometd != null;
+        assertNotNull(extCometd);
 
         evaluateScript("$.cometd.unregisterExtension('ext1');");
         extName = get("n");
-        assert extName == null;
+        assertNull(extName);
         extCometd = get("c");
-        assert extCometd == null;
+        assertNull(extCometd);
     }
 
     public static class Listener extends ScriptableObject

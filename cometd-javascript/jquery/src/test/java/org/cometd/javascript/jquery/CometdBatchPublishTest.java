@@ -35,14 +35,14 @@ public class CometdBatchPublishTest extends AbstractCometdJQueryTest
 
         listener.jsFunction_expect(1);
         evaluateScript("$.cometd.handshake();");
-        assert listener.await(1000);
+        assertTrue(listener.await(1000));
 
         evaluateScript("var disconnectListener = new Listener();");
         Listener disconnectListener = get("disconnectListener");
         disconnectListener.jsFunction_expect(1);
         evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);");
         evaluateScript("$.cometd.disconnect();");
-        assert disconnectListener.await(1000);
+        assertTrue(disconnectListener.await(1000));
     }
 
     public static class Listener extends ScriptableObject

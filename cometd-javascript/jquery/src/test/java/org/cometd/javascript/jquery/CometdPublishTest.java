@@ -28,17 +28,17 @@ public class CometdPublishTest extends AbstractCometdJQueryTest
         echoListener.jsFunction_expect(1);
         publishListener.jsFunction_expect(1);
         evaluateScript("$.cometd.publish('/echo', 'test');");
-        assert echoListener.await(1000);
-        assert publishListener.await(1000);
+        assertTrue(echoListener.await(1000));
+        assertTrue(publishListener.await(1000));
 
         evaluateScript("var disconnectListener = new Listener();");
         Listener disconnectListener = get("disconnectListener");
         disconnectListener.jsFunction_expect(1);
         evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);");
         evaluateScript("$.cometd.disconnect();");
-        assert disconnectListener.await(1000);
+        assertTrue(disconnectListener.await(1000));
         String status = evaluateScript("$.cometd.getStatus();");
-        assert "disconnected".equals(status) : status;
+        assertEquals("disconnected", status);
     }
 
     public static class Listener extends ScriptableObject

@@ -44,7 +44,7 @@ public class CometdUnsubscribeFailureTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.addListener('/meta/subscribe', subscribeListener, subscribeListener.handle);");
         subscribeListener.jsFunction_expect(1);
         evaluateScript("var subscription = $.cometd.subscribe('/echo', subscribeListener, subscribeListener.handle);");
-        assert subscribeListener.await(1000);
+        assertTrue(subscribeListener.await(1000));
 
         evaluateScript("var unsubscribeListener = new Listener();");
         Listener unsubscribeListener = get("unsubscribeListener");
@@ -55,22 +55,22 @@ public class CometdUnsubscribeFailureTest extends AbstractCometdJQueryTest
         unsubscribeListener.jsFunction_expect(1);
         failureListener.jsFunction_expect(1);
         evaluateScript("$.cometd.unsubscribe(subscription);");
-        assert unsubscribeListener.await(1000);
-        assert failureListener.await(1000);
+        assertTrue(unsubscribeListener.await(1000));
+        assertTrue(failureListener.await(1000));
 
         // Be sure there is no backoff
         evaluateScript("var backoff = $.cometd.getBackoffPeriod();");
         int backoff = ((Number)get("backoff")).intValue();
-        assert backoff == 0;
+        assertEquals(0, backoff);
 
         evaluateScript("var disconnectListener = new Listener();");
         Listener disconnectListener = (Listener)get("disconnectListener");
         disconnectListener.jsFunction_expect(1);
         evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);");
         evaluateScript("$.cometd.disconnect();");
-        assert disconnectListener.await(1000);
+        assertTrue(disconnectListener.await(1000));
         String status = evaluateScript("$.cometd.getStatus();");
-        assert "disconnected".equals(status) : status;
+        assertEquals("disconnected", status);
     }
 
     public static class Listener extends ScriptableObject

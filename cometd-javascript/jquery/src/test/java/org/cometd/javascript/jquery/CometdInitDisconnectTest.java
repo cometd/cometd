@@ -34,27 +34,27 @@ public class CometdInitDisconnectTest extends AbstractCometdJQueryTest
                         // Expect 2 messages: handshake and connect
                         "listener.expect(2); $.cometd.handshake();";
         evaluateScript(script);
-        assert listener.await(1000);
+        assertTrue(listener.await(1000));
 
         // Wait for the long poll to happen, so that we're sure
         // the disconnect is sent after the long poll
         Thread.sleep(1000);
 
         String status = evaluateScript("$.cometd.getStatus();");
-        assert "connected".equals(status) : status;
+        assertEquals("connected", status);
 
         evaluateScript("listener.expect(1); $.cometd.disconnect();");
-        assert listener.await(1000);
+        assertTrue(listener.await(1000));
 
         // Wait for the disconnect to happen
         Thread.sleep(1000);
 
         status = evaluateScript("$.cometd.getStatus();");
-        assert "disconnected".equals(status) : status;
+        assertEquals("disconnected", status);
 
         // Make sure there are no attempts to reconnect
         evaluateScript("listener.expect(1);");
-        assert !listener.await(longPollingPeriod * 2);
+        assertFalse(listener.await(longPollingPeriod * 2));
     }
 
     public static class Listener extends ScriptableObject

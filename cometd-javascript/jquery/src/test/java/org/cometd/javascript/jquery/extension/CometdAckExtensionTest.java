@@ -46,7 +46,7 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
         evaluateScript("cometd.handshake();");
         Thread.sleep(500); // Wait for the long poll
         Boolean clientSupportsAck = get("clientSupportsAck");
-        assert clientSupportsAck;
+        assertTrue(clientSupportsAck);
         evaluateScript("cometd.unregisterExtension('test');");
 
         evaluateScript("cometd.disconnect();");
@@ -85,7 +85,7 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
         Thread.sleep(500); // Wait for the long poll
         Number outAckId = get("outAckId");
         // The server should have returned a non-negative value during the first connect call
-        assert outAckId.intValue() >= 0;
+        assertTrue(outAckId.intValue() >= 0);
 
         // Subscribe to receive server events
         evaluateScript("var msgCount = 0;");
@@ -95,9 +95,9 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
         ackService.emit("test acknowledgement");
         Thread.sleep(500); // Wait for server-side event to arrive via long poll
         Number inAckId = get("inAckId");
-        assert inAckId.intValue() > outAckId.intValue();
+        assertTrue(inAckId.intValue() > outAckId.intValue());
         Number msgCount = get("msgCount");
-        assert msgCount.intValue() == 1;
+        assertEquals(1, msgCount.intValue());
 
         evaluateScript("$.cometd.unregisterExtension('test');");
 

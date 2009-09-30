@@ -52,15 +52,15 @@ public class CometdTimeSyncExtensionTest extends AbstractCometdJQueryTest
 
         // Both client and server should support timesync
         Object outTimeSync = get("outTimeSync");
-        assert outTimeSync != null;
+        assertNotNull(outTimeSync);
         Object inTimeSync = get("inTimeSync");
-        assert inTimeSync != null;
+        assertNotNull(inTimeSync);
 
         evaluateScript("var timesync = $.cometd.getExtension('timesync');");
         evaluateScript("var networkLag = timesync.getNetworkLag();");
         evaluateScript("var timeOffset = timesync.getTimeOffset();");
         int networkLag = ((Number)get("networkLag")).intValue();
-        assert networkLag > 0;
+        assertTrue(networkLag > 0);
 
         evaluateScript("$.cometd.disconnect();");
         Thread.sleep(500); // Wait for the disconnect to return

@@ -40,14 +40,14 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         Thread.sleep(500); // Wait for the long poll
 
         String newClientId = evaluateScript("$.cometd.getClientId();");
-        assert clientId.equals(newClientId);
+        assertEquals(clientId, newClientId);
 
         evaluateScript("$.cometd.disconnect();");
         Thread.sleep(500); // Wait for the disconnect to return
 
         // Be sure the cookie has been removed on disconnect
         String cookie = evaluateScript("org.cometd.COOKIE.get('org.cometd.reload');");
-        assert cookie == null;
+        assertNull(cookie);
     }
 
     public void testReloadWithTimestamp() throws Exception
@@ -92,7 +92,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         Thread.sleep(500); // Wait for the long poll
 
         String newClientId = evaluateScript("$.cometd.getClientId();");
-        assert clientId.equals(newClientId);
+        assertEquals(clientId, newClientId);
 
         evaluateScript("$.cometd.disconnect();");
         Thread.sleep(500); // Wait for the disconnect to return
