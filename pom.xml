@@ -185,18 +185,6 @@
                 <version>${maven-wagon-version}</version>
             </extension>
         </extensions>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-            </resource>
-        </resources>
-        <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
-            </testResource>
-        </testResources>
-        <directory>target</directory>
-        <finalName>${artifactId}-${version}</finalName>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -235,6 +223,7 @@
                 <executions>
                     <execution>
                         <id>attach-sources</id>
+                        <phase>deploy</phase>
                         <goals>
                             <goal>jar</goal>
                         </goals>
@@ -247,6 +236,7 @@
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
+                        <phase>deploy</phase>
                         <goals>
                             <goal>jar</goal>
                         </goals>
