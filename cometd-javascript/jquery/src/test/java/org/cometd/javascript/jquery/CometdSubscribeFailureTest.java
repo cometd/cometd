@@ -34,7 +34,7 @@ public class CometdSubscribeFailureTest extends AbstractCometdJQueryTest
     public void testSubscribeFailure() throws Exception
     {
         defineClass(Listener.class);
-        evaluateScript("$.cometd.init({url: '" + cometURL + "', logLevel: 'debug'})");
+        evaluateScript("$.cometd.init({url: '" + cometdURL + "', logLevel: 'debug'})");
 
         // Wait for the long poll
         Thread.sleep(1000);

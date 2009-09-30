@@ -9,7 +9,7 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
 {
     public void testRegisterUnregister() throws Exception
     {
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("var inCount = 0;");
         evaluateScript("var outCount = 0;");
         evaluateScript("$.cometd.registerExtension('testin', {" +
@@ -46,7 +46,7 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
 
     public void testExtensions() throws Exception
     {
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         defineClass(Listener.class);
 
         StringBuilder script = new StringBuilder();
@@ -99,7 +99,7 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
     public void testExtensionOrder() throws Exception
     {
         // Default incoming extension order is reverse
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
 
         evaluateScript("$.cometd.registerExtension('ext1', {" +
                        "incoming: function(message) " +
@@ -133,7 +133,7 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.unregisterExtension('ext2');");
         evaluateScript("ok = false;");
         // Set incoming extension order to be forward
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug', reverseIncomingExtensions: false});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug', reverseIncomingExtensions: false});");
 
         evaluateScript("$.cometd.registerExtension('ext1', {" +
                        "incoming: function(message) " +
@@ -161,7 +161,7 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
 
     public void testExtensionRegistrationCallbacks() throws Exception
     {
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("var n;");
         evaluateScript("var c;");
         evaluateScript("$.cometd.registerExtension('ext1', {" +

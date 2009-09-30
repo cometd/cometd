@@ -13,7 +13,7 @@ public class CometdPublishTest extends AbstractCometdJQueryTest
     public void testPublish() throws Exception
     {
         defineClass(Listener.class);
-        evaluateScript("$.cometd.init({url: '" + cometURL + "', logLevel: 'debug'})");
+        evaluateScript("$.cometd.init({url: '" + cometdURL + "', logLevel: 'debug'})");
 
         // Wait for the long poll
         Thread.sleep(1000);

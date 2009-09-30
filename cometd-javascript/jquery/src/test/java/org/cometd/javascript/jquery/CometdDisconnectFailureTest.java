@@ -35,7 +35,7 @@ public class CometdDisconnectFailureTest extends AbstractCometdJQueryTest
     public void testDisconnectFailure() throws Exception
     {
         defineClass(Listener.class);
-        evaluateScript("$.cometd.init({url: '" + cometURL + "', logLevel: 'debug'})");
+        evaluateScript("$.cometd.init({url: '" + cometdURL + "', logLevel: 'debug'})");
 
         // Wait for the long poll
         Thread.sleep(1000);

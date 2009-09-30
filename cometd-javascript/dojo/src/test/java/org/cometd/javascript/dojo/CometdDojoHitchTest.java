@@ -12,7 +12,7 @@ public class CometdDojoHitchTest extends AbstractCometdDojoTest
 {
     public void testDojoHitch() throws Exception
     {
-        evaluateScript("dojox.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("dojox.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         defineClass(Listener.class);
         evaluateScript("var handshakeListener = new Listener();");
         Listener handshakeListener = get("handshakeListener");

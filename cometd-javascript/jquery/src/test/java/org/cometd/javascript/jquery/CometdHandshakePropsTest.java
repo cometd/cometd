@@ -24,7 +24,7 @@ public class CometdHandshakePropsTest extends AbstractCometdJQueryTest
 
     public void testHandshakeProps() throws Exception
     {
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         defineClass(Listener.class);
         evaluateScript("var handshakeListener = new Listener();");
         Listener handshakeListener = (Listener)get("handshakeListener");

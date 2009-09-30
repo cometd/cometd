@@ -12,7 +12,7 @@ public class CometdBatchPublishTest extends AbstractCometdJQueryTest
 {
     public void testBatchPublish() throws Exception
     {
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         defineClass(Listener.class);
         StringBuilder script = new StringBuilder();
         script.append("var listener = new Listener();");

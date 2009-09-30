@@ -33,7 +33,7 @@ public class CometdConnectFailureTest extends AbstractCometdJQueryTest
 
     public void testConnectFailure() throws Exception
     {
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         defineClass(Listener.class);
         evaluateScript("var handshakeListener = new Listener();");
         Listener handshakeListener = get("handshakeListener");
