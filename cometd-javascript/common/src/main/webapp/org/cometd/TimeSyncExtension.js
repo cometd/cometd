@@ -129,7 +129,7 @@ org.cometd.TimeSyncExtension = function(configuration)
                 l: _lag,
                 o: _offset
             };
-            _debug('TimeSyncExtension: client sending timesync: {}', org.cometd.JSON.toJSON(message.ext.timesync));
+            _debug('TimeSyncExtension: client sending timesync', org.cometd.JSON.toJSON(message.ext.timesync));
         }
         return message;
     };
