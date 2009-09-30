@@ -23,7 +23,7 @@ public class CometdTimeSyncExtensionTest extends AbstractCometdJQueryTest
         URL jqueryTimesyncExtensionURL = new URL(contextURL + "/jquery/jquery.cometd-timesync.js");
         evaluateURL(jqueryTimesyncExtensionURL);
 
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
 
         evaluateScript("var inTimeSync = undefined;");
         evaluateScript("var outTimeSync = undefined;");

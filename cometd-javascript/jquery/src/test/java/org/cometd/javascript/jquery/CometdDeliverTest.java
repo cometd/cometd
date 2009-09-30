@@ -26,7 +26,7 @@ public class CometdDeliverTest extends AbstractCometdJQueryTest
     {
         defineClass(Latch.class);
 
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("var _data;");
         evaluateScript("$.cometd.addListener('/deliver', function(message) { _data = message.data; });");
 

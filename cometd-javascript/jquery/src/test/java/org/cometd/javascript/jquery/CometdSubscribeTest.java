@@ -20,7 +20,7 @@ public class CometdSubscribeTest extends AbstractCometdJQueryTest
         Listener unsubscribeListener = get("unsubscribeListener");
         evaluateScript("$.cometd.addListener('/meta/unsubscribe', unsubscribeListener, 'handle');");
 
-        evaluateScript("$.cometd.init({ url: '" + cometURL + "', logLevel: 'debug' });");
+        evaluateScript("$.cometd.init({ url: '" + cometdURL + "', logLevel: 'debug' });");
         Thread.sleep(1000); // Wait for long poll
 
         subscribeListener.expect(1);
@@ -60,7 +60,7 @@ public class CometdSubscribeTest extends AbstractCometdJQueryTest
         Listener listener = get("listener");
         evaluateScript("$.cometd.addListener('/meta/publish', listener, 'handle');");
 
-        evaluateScript("$.cometd.init({ url: '" + cometURL + "', logLevel: 'debug' });");
+        evaluateScript("$.cometd.init({ url: '" + cometdURL + "', logLevel: 'debug' });");
         Thread.sleep(1000); // Wait for long poll
         evaluateScript("$.cometd.disconnect();");
         Thread.sleep(1000); // Wait for disconnect

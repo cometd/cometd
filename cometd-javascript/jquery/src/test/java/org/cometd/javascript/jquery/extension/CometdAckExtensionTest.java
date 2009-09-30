@@ -27,7 +27,7 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
         evaluateURL(ackExtensionURL);
 
         evaluateScript("var cometd = $.cometd;");
-        evaluateScript("cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("var ackExt = new org.cometd.AckExtension();");
         evaluateScript("cometd.registerExtension('myack', ackExt);");
 
@@ -58,7 +58,7 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
         URL ackExtensionURL = new URL(contextURL + "/org/cometd/AckExtension.js");
         evaluateURL(ackExtensionURL);
 
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("$.cometd.registerExtension('ack', new org.cometd.AckExtension());");
 
         evaluateScript("var inAckId = undefined;");

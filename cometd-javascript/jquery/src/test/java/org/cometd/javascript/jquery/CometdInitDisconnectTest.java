@@ -26,7 +26,7 @@ public class CometdInitDisconnectTest extends AbstractCometdJQueryTest
 {
     public void testCometInitDisconnect() throws Exception
     {
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         defineClass(Listener.class);
         evaluateScript("var listener = new Listener();");
         Listener listener = get("listener");

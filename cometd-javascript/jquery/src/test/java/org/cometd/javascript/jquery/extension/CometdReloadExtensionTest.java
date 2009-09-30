@@ -18,7 +18,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         URL jqueryReloadExtension = new URL(contextURL + "/jquery/jquery.cometd-reload.js");
         evaluateURL(jqueryReloadExtension);
 
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("$.cometd.handshake();");
         Thread.sleep(500); // Wait for the long poll
 
@@ -35,7 +35,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         evaluateURL(reloadExtension);
         evaluateURL(jqueryReloadExtension);
 
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("$.cometd.handshake();");
         Thread.sleep(500); // Wait for the long poll
 
@@ -66,7 +66,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         URL jqueryReloadExtension = new URL(contextURL + "/jquery/jquery.cometd-reload.js");
         evaluateURL(jqueryReloadExtension);
 
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("$.cometd.handshake();");
         Thread.sleep(500); // Wait for the long poll
 
@@ -87,7 +87,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         evaluateURL(reloadExtension);
         evaluateURL(jqueryReloadExtension);
 
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("$.cometd.handshake();");
         Thread.sleep(500); // Wait for the long poll
 

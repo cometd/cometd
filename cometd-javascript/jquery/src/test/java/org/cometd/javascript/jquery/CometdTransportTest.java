@@ -7,7 +7,7 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
 {
     public void testTransport() throws Exception
     {
-        evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         Object[] transportTypes = (Object[])jsToJava(evaluateScript("$.cometd.getTransportTypes()"));
         assertEquals("long-polling", transportTypes[0]);
         assertEquals("callback-polling", transportTypes[1]);

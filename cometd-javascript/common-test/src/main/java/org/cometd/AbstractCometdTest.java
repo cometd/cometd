@@ -45,7 +45,7 @@ public abstract class AbstractCometdTest extends TestCase
     protected int port;
     protected String contextURL;
     protected String cometServletPath = "/cometd";
-    protected String cometURL;
+    protected String cometdURL;
     protected int longPollingPeriod = 5000;
     private HttpCookieStore cookies;
 
@@ -87,7 +87,7 @@ public abstract class AbstractCometdTest extends TestCase
         port = connector.getLocalPort();
 
         contextURL = "http://localhost:" + port + contextPath;
-        cometURL = contextURL + cometServletPath;
+        cometdURL = contextURL + cometServletPath;
     }
 
     public void initJavaScript() throws Exception

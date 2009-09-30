@@ -25,7 +25,7 @@ public class CometdCrossOriginTest extends AbstractCometdJQueryTest
 
     public void testCrossOriginSupported() throws Exception
     {
-        String crossOriginCometdURL = cometURL.replace("localhost", "127.0.0.1");
+        String crossOriginCometdURL = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("$.cometd.configure({" +
                        "url: '" + crossOriginCometdURL + "', " +
                        "requestHeaders: { Origin: 'http://localhost:8080' }, " +
