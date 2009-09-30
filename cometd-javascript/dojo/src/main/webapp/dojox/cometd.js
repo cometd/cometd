@@ -18,7 +18,7 @@ dojox.cometd = new org.cometd.Cometd();
 // Remap toolkit-specific transport calls
 dojox.cometd.LongPollingTransport = function()
 {
-    this.transportSend = function(packet)
+    this.xhrSend = function(packet)
     {
         var deferred = dojo.rawXhrPost({
             url: packet.url,
@@ -40,7 +40,7 @@ dojox.cometd.LongPollingTransport.prototype.constructor = dojox.cometd.LongPolli
 
 dojox.cometd.CallbackPollingTransport = function()
 {
-    this.transportSend = function(packet)
+    this.jsonpSend = function(packet)
     {
         var deferred = dojo.io.script.get({
             url: packet.url,
@@ -74,7 +74,9 @@ dojox.cometd._unsubscribe = dojox.cometd.unsubscribe;
 dojox.cometd.unsubscribe = function(channelOrToken, objOrFunc, funcName)
 {
     if (typeof channelOrToken === 'string')
+    {
         throw "Deprecated function unsubscribe(string). Use unsubscribe(object) passing as argument the return value of subscribe()";
+    }
 
     dojox.cometd._unsubscribe(channelOrToken);
 };
