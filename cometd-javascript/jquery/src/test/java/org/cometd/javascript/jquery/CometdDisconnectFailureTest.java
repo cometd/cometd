@@ -46,7 +46,7 @@ public class CometdDisconnectFailureTest extends AbstractCometdJQueryTest
 
         disconnectListener.expect(1);
         evaluateScript("$.cometd.disconnect();");
-        assert disconnectListener.await(1000);
+        assertTrue(disconnectListener.await(1000));
 
         // The test ends here, as we cannot get any information about the fact that
         // the long poll call returned (which we would have liked to, confirming that

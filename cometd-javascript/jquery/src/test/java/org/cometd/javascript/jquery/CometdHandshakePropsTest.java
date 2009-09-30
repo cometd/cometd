@@ -33,25 +33,25 @@ public class CometdHandshakePropsTest extends AbstractCometdJQueryTest
         // Start comet without the token; this makes the handshake fail
         handshakeListener.expect(1);
         evaluateScript("$.cometd.handshake({})");
-        assert handshakeListener.await(1000);
+        assertTrue(handshakeListener.await(1000));
         // Disconnect to avoid the handshake to backoff
         evaluateScript("$.cometd.disconnect();");
         // Wait for the disconnect to happen
         Thread.sleep(1000);
         String status = evaluateScript("$.cometd.getStatus();");
-        assert "disconnected".equals(status) : status;
+        assertEquals("disconnected", status);
 
         // We are already initialized, handshake again with a token
         handshakeListener.expect(1);
         evaluateScript("$.cometd.handshake({ext: {token: 'test'}})");
-        assert handshakeListener.await(1000);
+        assertTrue(handshakeListener.await(1000));
 
         // Wait for the long poll to happen, so that we're sure
         // the disconnect is sent after the long poll
         Thread.sleep(1000);
 
         status = evaluateScript("$.cometd.getStatus();");
-        assert "connected".equals(status) : status;
+        assertEquals("connected", status);
 
         evaluateScript("$.cometd.disconnect();");
 
@@ -59,7 +59,7 @@ public class CometdHandshakePropsTest extends AbstractCometdJQueryTest
         Thread.sleep(1000);
 
         status = evaluateScript("$.cometd.getStatus();");
-        assert "disconnected".equals(status) : status;
+        assertEquals("disconnected", status);
     }
 
     public static class Listener extends ScriptableObject

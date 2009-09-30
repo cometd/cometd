@@ -25,27 +25,27 @@ public class CometdSubscribeTest extends AbstractCometdJQueryTest
 
         subscribeListener.expect(1);
         evaluateScript("var subscription = $.cometd.subscribe('/foo', function(message) {});");
-        assert subscribeListener.await(1000);
+        assertTrue(subscribeListener.await(1000));
 
         unsubscribeListener.expect(1);
         evaluateScript("$.cometd.unsubscribe(subscription);");
-        assert unsubscribeListener.await(1000);
+        assertTrue(unsubscribeListener.await(1000));
 
         // Two subscriptions to the same channel also generate only one message to the server
         subscribeListener.expect(2);
         evaluateScript("var subscription1 = $.cometd.subscribe('/foo', function(message) {});");
         evaluateScript("var subscription2 = $.cometd.subscribe('/foo', function(message) {});");
-        assert !subscribeListener.await(1000);
+        assertFalse(subscribeListener.await(1000));
 
         // No message if there are subscriptions
         unsubscribeListener.expect(0);
         evaluateScript("$.cometd.unsubscribe(subscription2);");
-        assert unsubscribeListener.await(1000);
+        assertTrue(unsubscribeListener.await(1000));
 
         // Expect message for last unsubscription on the channel
         unsubscribeListener.expect(1);
         evaluateScript("$.cometd.unsubscribe(subscription1);");
-        assert unsubscribeListener.await(1000);
+        assertTrue(unsubscribeListener.await(1000));
 
         evaluateScript("$.cometd.disconnect();");
         Thread.sleep(1000); // Wait for disconnect
@@ -71,18 +71,18 @@ public class CometdSubscribeTest extends AbstractCometdJQueryTest
         // Wait for the message on the listener
         listener.expect(1);
         evaluateScript("$.cometd.publish('/foo', {});");
-        assert listener.await(1000);
+        assertTrue(listener.await(1000));
 
         evaluateScript("var subscriber = new Listener();");
         Listener subscriber = get("subscriber");
         evaluateScript("$.cometd.subscribe('/test', subscriber, 'handle');");
-        assert listener.await(1000); // Wait for subscribe to happen
+        assertTrue(listener.await(1000)); // Wait for subscribe to happen
         // Wait for the message on the subscriber and on the listener
         listener.expect(1);
         subscriber.expect(1);
         evaluateScript("$.cometd.publish('/test', {});");
-        assert listener.await(1000);
-        assert subscriber.await(1000);
+        assertTrue(listener.await(1000));
+        assertTrue(subscriber.await(1000));
 
         evaluateScript("$.cometd.disconnect();");
         Thread.sleep(1000); // Wait for disconnect
@@ -93,12 +93,12 @@ public class CometdSubscribeTest extends AbstractCometdJQueryTest
         // Now the previous subscriber must be gone, but not the listener
         // Subscribe again: if the previous listener is not gone, I get 2 notifications
         evaluateScript("$.cometd.subscribe('/test', subscriber, 'handle');");
-        assert listener.await(1000); // Wait for subscribe to happen
+        assertTrue(listener.await(1000)); // Wait for subscribe to happen
         listener.expect(1);
         subscriber.expect(2);
         evaluateScript("$.cometd.publish('/test', {});");
-        assert listener.await(1000);
-        assert !subscriber.await(1000);
+        assertTrue(listener.await(1000));
+        assertFalse(subscriber.await(1000));
 
         evaluateScript("$.cometd.disconnect();");
         Thread.sleep(1000); // Wait for disconnect

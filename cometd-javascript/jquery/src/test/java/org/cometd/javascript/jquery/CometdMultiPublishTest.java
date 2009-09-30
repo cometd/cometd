@@ -71,10 +71,10 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
                 "$.cometd.publish('/echo', {id: 4});" +
                 "$.cometd.disconnect();");
 
-        assert listener.await(1000);
-        assert handler.await(1000);
-        assert failure.get().isEmpty() : failure.get();
-        assert disconnect.await(1000);
+        assertTrue(listener.await(1000));
+        assertTrue(handler.await(1000));
+        assertTrue(failure.get().toString(), failure.get().isEmpty());
+        assertTrue(disconnect.await(1000));
     }
 
     public static class Listener extends ScriptableObject

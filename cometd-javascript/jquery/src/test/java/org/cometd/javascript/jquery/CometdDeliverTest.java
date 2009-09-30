@@ -39,14 +39,14 @@ public class CometdDeliverTest extends AbstractCometdJQueryTest
         Latch latch = get("latch");
         evaluateScript("var listener = $.cometd.addListener('/meta/publish', function(message) { latch.countDown(); });");
         evaluateScript("$.cometd.publish('/deliver', { deliver: false });");
-        assert latch.await(1000);
+        assertTrue(latch.await(1000));
         evaluateScript("$.cometd.removeListener(listener);");
         evaluateScript("window.assert(_data === undefined);");
 
         evaluateScript("latch = new Latch(1);");
         evaluateScript("listener = $.cometd.addListener('/meta/publish', function(message) { latch.countDown(); });");
         evaluateScript("$.cometd.publish('/deliver', { deliver: true });");
-        assert latch.await(1000);
+        assertTrue(latch.await(1000));
         evaluateScript("$.cometd.removeListener(listener);");
         // Wait for the listener to be notified
         Thread.sleep(500);

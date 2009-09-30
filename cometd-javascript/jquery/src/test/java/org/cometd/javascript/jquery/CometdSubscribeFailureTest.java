@@ -50,13 +50,13 @@ public class CometdSubscribeFailureTest extends AbstractCometdJQueryTest
         subscribeListener.jsFunction_expect(1);
         failureListener.jsFunction_expect(1);
         evaluateScript("$.cometd.subscribe('/echo', subscribeListener, subscribeListener.handle);");
-        assert subscribeListener.await(1000);
-        assert failureListener.await(1000);
+        assertTrue(subscribeListener.await(1000));
+        assertTrue(failureListener.await(1000));
 
         // Be sure there is no backoff
         evaluateScript("var backoff = $.cometd.getBackoffPeriod();");
         int backoff = ((Number)get("backoff")).intValue();
-        assert backoff == 0;
+        assertEquals(0, backoff);
 
         evaluateScript("var disconnectListener = new Listener();");
         Listener disconnectListener = get("disconnectListener");
@@ -64,9 +64,9 @@ public class CometdSubscribeFailureTest extends AbstractCometdJQueryTest
         script = "$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);";
         script += "$.cometd.disconnect();";
         evaluateScript(script);
-        assert disconnectListener.await(1000);
+        assertTrue(disconnectListener.await(1000));
         String status = evaluateScript("$.cometd.getStatus();");
-        assert "disconnected".equals(status) : status;
+        assertEquals("disconnected", status);
     }
 
     public static class Listener extends ScriptableObject

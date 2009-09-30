@@ -49,38 +49,38 @@ public class CometdConnectFailureTest extends AbstractCometdJQueryTest
         evaluateScript("var backoffIncrement = $.cometd.getBackoffIncrement();");
         int backoff = ((Number)get("backoff")).intValue();
         final int backoffIncrement = ((Number)get("backoffIncrement")).intValue();
-        assert backoff == 0;
-        assert backoffIncrement > 0;
+        assertEquals(0, backoff);
+        assertTrue(backoffIncrement > 0);
 
         handshakeListener.jsFunction_expect(1);
         connectListener.jsFunction_expect(1);
         failureListener.jsFunction_expect(1);
         evaluateScript("$.cometd.handshake();");
-        assert handshakeListener.await(1000);
-        assert connectListener.await(1000);
-        assert failureListener.await(1000);
+        assertTrue(handshakeListener.await(1000));
+        assertTrue(connectListener.await(1000));
+        assertTrue(failureListener.await(1000));
 
         // There is a failure, the backoff will be increased from 0 to backoffIncrement
         Thread.sleep(backoffIncrement / 2); // Waits for the backoff to happen
         evaluateScript("var backoff = $.cometd.getBackoffPeriod();");
         backoff = ((Number)get("backoff")).intValue();
-        assert backoff == backoffIncrement : backoff;
+        assertEquals(backoffIncrement, backoff);
 
         connectListener.jsFunction_expect(1);
         failureListener.jsFunction_expect(1);
-        assert connectListener.await(backoffIncrement);
-        assert failureListener.await(backoffIncrement);
+        assertTrue(connectListener.await(backoffIncrement));
+        assertTrue(failureListener.await(backoffIncrement));
 
         // Another failure, backoff will be increased to 2 * backoffIncrement
         Thread.sleep(backoffIncrement / 2); // Waits for the backoff to happen
         evaluateScript("var backoff = $.cometd.getBackoffPeriod();");
         backoff = ((Number)get("backoff")).intValue();
-        assert backoff == 2 * backoffIncrement : backoff;
+        assertEquals(2 * backoffIncrement, backoff);
 
         connectListener.jsFunction_expect(1);
         failureListener.jsFunction_expect(1);
-        assert connectListener.await(2 * backoffIncrement);
-        assert failureListener.await(2 * backoffIncrement);
+        assertTrue(connectListener.await(2 * backoffIncrement));
+        assertTrue(failureListener.await(2 * backoffIncrement));
 
         // Disconnect so that connect is not performed anymore
         evaluateScript("var disconnectListener = new Listener();");
@@ -89,14 +89,14 @@ public class CometdConnectFailureTest extends AbstractCometdJQueryTest
         failureListener.jsFunction_expect(1);
         evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);");
         evaluateScript("$.cometd.disconnect();");
-        assert disconnectListener.await(1000);
-        assert failureListener.await(1000);
+        assertTrue(disconnectListener.await(1000));
+        assertTrue(failureListener.await(1000));
         String status = evaluateScript("$.cometd.getStatus();");
-        assert "disconnected".equals(status) : status;
+        assertEquals("disconnected", status);
 
         // Be sure the connect is not retried anymore
         connectListener.jsFunction_expect(1);
-        assert !connectListener.await(4 * backoffIncrement);
+        assertFalse(connectListener.await(4 * backoffIncrement));
     }
 
     public static class Listener extends ScriptableObject

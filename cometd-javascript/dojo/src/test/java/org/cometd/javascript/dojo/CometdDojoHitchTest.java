@@ -19,7 +19,7 @@ public class CometdDojoHitchTest extends AbstractCometdDojoTest
         handshakeListener.expect(1);
         evaluateScript("dojox.cometd.addListener('/meta/handshake', handshakeListener, 'handle');");
         evaluateScript("dojox.cometd.handshake();");
-        assert handshakeListener.await(1000);
+        assertTrue(handshakeListener.await(1000));
 
         // Wait for the long poll to happen
         Thread.sleep(1000);
@@ -33,8 +33,8 @@ public class CometdDojoHitchTest extends AbstractCometdDojoTest
         testListener2.expect(1);
         evaluateScript("dojox.cometd.subscribe('/test', dojo.hitch(testListener2, 'handle'));");
         evaluateScript("dojox.cometd.publish('/test', {});");
-        assert testListener1.await(1000);
-        assert testListener2.await(1000);
+        assertTrue(testListener1.await(1000));
+        assertTrue(testListener2.await(1000));
 
         evaluateScript("dojox.cometd.disconnect();");
 

@@ -38,8 +38,8 @@ public class CometdCrossOriginTest extends AbstractCometdJQueryTest
         connectListener.expect(1);
         evaluateScript("$.cometd.handshake();");
 
-        assert connectListener.await(1000);
-        assert "long-polling".equals(evaluateScript("$.cometd.getTransport().getType()"));
+        assertTrue(connectListener.await(1000));
+        assertEquals("long-polling", evaluateScript("$.cometd.getTransport().getType()"));
     }
 
     public static class Listener extends ScriptableObject
