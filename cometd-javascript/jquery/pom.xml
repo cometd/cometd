@@ -67,17 +67,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <properties>
-                        <property>
-                            <name>listener</name>
-                            <value>org.cometd.TestNGListener</value>
-                        </property>
-                    </properties>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
@@ -122,19 +111,6 @@
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-client</artifactId>
             <version>${jetty-version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <classifier>jdk15</classifier>
-            <version>5.8</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>rhino</groupId>
-            <artifactId>js</artifactId>
-            <version>${rhino-version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

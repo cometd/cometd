@@ -8,7 +8,6 @@ import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.mozilla.javascript.ScriptableObject;
-import org.testng.annotations.Test;
 
 /**
  * @version $Revision$ $Date$
@@ -24,7 +23,6 @@ public class CometdCrossOriginTest extends AbstractCometdJQueryTest
         context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
     }
 
-    @Test
     public void testCrossOriginSupported() throws Exception
     {
         String crossOriginCometdURL = cometURL.replace("localhost", "127.0.0.1");

@@ -22,6 +22,7 @@ import java.util.Map;
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
 
+import junit.framework.TestCase;
 import org.cometd.server.continuation.ContinuationCometdServlet;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -33,13 +34,11 @@ import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.ScriptableObject;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 
 /**
  * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
-public abstract class AbstractCometdTest
+public abstract class AbstractCometdTest extends TestCase
 {
     private ThreadModel threadModel;
     private Server server;
@@ -50,8 +49,8 @@ public abstract class AbstractCometdTest
     protected int longPollingPeriod = 5000;
     private HttpCookieStore cookies;
 
-    @BeforeMethod
-    public void init() throws Exception
+    @Override
+    protected void setUp() throws Exception
     {
         cookies = new HttpCookieStore();
         initCometServer();
@@ -129,8 +128,8 @@ public abstract class AbstractCometdTest
         return 2;
     }
 
-    @AfterMethod(alwaysRun = true)
-    public void destroy() throws Exception
+    @Override
+    protected void tearDown() throws Exception
     {
         destroyCometServer();
         cookies.clear();

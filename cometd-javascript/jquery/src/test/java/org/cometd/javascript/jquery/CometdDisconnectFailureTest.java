@@ -16,7 +16,6 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.mozilla.javascript.ScriptableObject;
-import org.testng.annotations.Test;
 
 /**
  * Tests that failing the disconnect, the comet communication is aborted anyway
@@ -33,7 +32,6 @@ public class CometdDisconnectFailureTest extends AbstractCometdJQueryTest
         context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
     }
 
-    @Test
     public void testDisconnectFailure() throws Exception
     {
         defineClass(Listener.class);

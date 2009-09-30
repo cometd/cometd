@@ -9,7 +9,6 @@ import org.cometd.Client;
 import org.cometd.Message;
 import org.cometd.SecurityPolicy;
 import org.mozilla.javascript.ScriptableObject;
-import org.testng.annotations.Test;
 
 /**
  * Tests that hanshake properties are passed correctly during handshake
@@ -23,7 +22,6 @@ public class CometdHandshakePropsTest extends AbstractCometdJQueryTest
         bayeux.setSecurityPolicy(new TokenSecurityPolicy());
     }
 
-    @Test
     public void testHandshakeProps() throws Exception
     {
         evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");

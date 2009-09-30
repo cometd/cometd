@@ -6,7 +6,6 @@ import org.cometd.Bayeux;
 import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
 import org.cometd.server.BayeuxService;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
-import org.testng.annotations.Test;
 
 /**
  * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
@@ -22,7 +21,6 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
         ackService = new AckService(bayeux);
     }
 
-    @Test
     public void testClientSupportsAckExtension() throws Exception
     {
         URL ackExtensionURL = new URL(contextURL + "/org/cometd/AckExtension.js");
@@ -55,7 +53,6 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
         Thread.sleep(500); // Wait for the disconnect to return
     }
 
-    @Test
     public void testAcknowledgement() throws Exception
     {
         URL ackExtensionURL = new URL(contextURL + "/org/cometd/AckExtension.js");

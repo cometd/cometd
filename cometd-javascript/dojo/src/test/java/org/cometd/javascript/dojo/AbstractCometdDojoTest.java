@@ -6,8 +6,6 @@ import java.net.URL;
 import org.cometd.AbstractCometdTest;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 
 /**
  * @version $Revision$ $Date$
@@ -16,7 +14,7 @@ public abstract class AbstractCometdDojoTest extends AbstractCometdTest
 {
     protected void customizeContext(ServletContextHandler context) throws Exception
     {
-        File baseDirectory = new File(System.getProperty("basedir"));
+        File baseDirectory = new File(System.getProperty("basedir", "."));
         File webappDirectory = new File(baseDirectory, "src/main/webapp");
         File overlaidScriptDirectory = new File(baseDirectory, "target/scripts");
         context.setBaseResource(new ResourceCollection(new String[]
@@ -26,7 +24,13 @@ public abstract class AbstractCometdDojoTest extends AbstractCometdTest
         }));
     }
 
-    @BeforeMethod
+    @Override
+    protected void setUp() throws Exception
+    {
+        super.setUp();
+        initPage();
+    }
+
     public void initPage() throws Exception
     {
         initJavaScript();
@@ -42,8 +46,13 @@ public abstract class AbstractCometdDojoTest extends AbstractCometdTest
         evaluateScript("dojo.require('dojox.cometd');");
     }
 
+    @Override
+    protected void tearDown() throws Exception
+    {
+        super.tearDown();
+        destroyPage();
+    }
 
-    @AfterMethod(alwaysRun = true)
     public void destroyPage() throws Exception
     {
         destroyJavaScript();
