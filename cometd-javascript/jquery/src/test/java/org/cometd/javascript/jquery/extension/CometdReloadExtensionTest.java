@@ -3,14 +3,12 @@ package org.cometd.javascript.jquery.extension;
 import java.net.URL;
 
 import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
-import org.testng.annotations.Test;
 
 /**
  * @version $Revision$ $Date$
  */
 public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
 {
-    @Test
     public void testReload() throws Exception
     {
         URL cookiePlugin = new URL(contextURL + "/jquery/jquery.cookie.js");
@@ -52,7 +50,6 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         assert cookie == null;
     }
 
-    @Test
     public void testReloadWithTimestamp() throws Exception
     {
         evaluateScript("$.cometd.setLogLevel('debug');");

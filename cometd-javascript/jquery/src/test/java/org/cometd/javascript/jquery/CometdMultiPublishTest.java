@@ -20,7 +20,6 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.mozilla.javascript.ScriptableObject;
-import org.testng.annotations.Test;
 
 /**
  * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
@@ -36,7 +35,6 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
         context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
     }
 
-    @Test
     public void testMultiPublish() throws Throwable
     {
         evaluateScript("$.cometd.init({url: '" + cometURL + "', logLevel: 'debug'});");

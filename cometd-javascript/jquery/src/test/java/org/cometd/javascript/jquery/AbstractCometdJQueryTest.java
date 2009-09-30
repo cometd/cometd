@@ -6,8 +6,6 @@ import java.net.URL;
 import org.cometd.AbstractCometdTest;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 
 /**
  * @version $Revision$ $Date$
@@ -16,7 +14,7 @@ public abstract class AbstractCometdJQueryTest extends AbstractCometdTest
 {
     protected void customizeContext(ServletContextHandler context) throws Exception
     {
-        File baseDirectory = new File(System.getProperty("basedir","."));
+        File baseDirectory = new File(System.getProperty("basedir", "."));
         File webappDirectory = new File(baseDirectory, "src/main/webapp");
         File overlaidScriptDirectory = new File(baseDirectory, "target/scripts");
         File testResourcesDirectory = new File(baseDirectory, "src/test/resources");
@@ -28,7 +26,13 @@ public abstract class AbstractCometdJQueryTest extends AbstractCometdTest
         }));
     }
 
-    @BeforeMethod
+    @Override
+    protected void setUp() throws Exception
+    {
+        super.setUp();
+        initPage();
+    }
+
     public void initPage() throws Exception
     {
         initJavaScript();
@@ -47,7 +51,13 @@ public abstract class AbstractCometdJQueryTest extends AbstractCometdTest
         evaluateURL(jqueryCometdURL);
     }
 
-    @AfterMethod(alwaysRun = true)
+    @Override
+    protected void tearDown() throws Exception
+    {
+        super.tearDown();
+        destroyPage();
+    }
+
     public void destroyPage() throws Exception
     {
         destroyJavaScript();

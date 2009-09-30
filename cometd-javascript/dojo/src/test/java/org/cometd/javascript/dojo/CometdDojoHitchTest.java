@@ -4,14 +4,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.mozilla.javascript.ScriptableObject;
-import org.testng.annotations.Test;
 
 /**
  * @version $Revision$ $Date$
  */
 public class CometdDojoHitchTest extends AbstractCometdDojoTest
 {
-    @Test
     public void testDojoHitch() throws Exception
     {
         evaluateScript("dojox.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");

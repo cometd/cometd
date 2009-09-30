@@ -4,14 +4,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.mozilla.javascript.ScriptableObject;
-import org.testng.annotations.Test;
 
 /**
  * @version $Revision$ $Date$
  */
 public class CometdSubscribeTest extends AbstractCometdJQueryTest
 {
-    @Test
     public void testSubscriptionsUnsubscriptionsForSameChannelOnlySentOnce() throws Exception
     {
         defineClass(Listener.class);
@@ -53,7 +51,6 @@ public class CometdSubscribeTest extends AbstractCometdJQueryTest
         Thread.sleep(1000); // Wait for disconnect
     }
 
-    @Test
     public void testSubscriptionsRemovedOnReHandshake() throws Exception
     {
         // Listeners are not removed in case of re-handshake

@@ -5,7 +5,6 @@ import java.net.URL;
 import org.cometd.Bayeux;
 import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
 import org.cometd.server.ext.TimesyncExtension;
-import org.testng.annotations.Test;
 
 /**
  * @version $Revision$ $Date$
@@ -17,7 +16,6 @@ public class CometdTimeSyncExtensionTest extends AbstractCometdJQueryTest
         bayeux.addExtension(new TimesyncExtension());
     }
 
-    @Test
     public void testTimeSync() throws Exception
     {
         URL timesyncExtensionURL = new URL(contextURL + "/org/cometd/TimeSyncExtension.js");

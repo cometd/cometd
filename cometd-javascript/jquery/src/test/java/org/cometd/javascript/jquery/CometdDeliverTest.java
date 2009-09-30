@@ -8,7 +8,6 @@ import org.cometd.Bayeux;
 import org.cometd.Client;
 import org.cometd.server.BayeuxService;
 import org.mozilla.javascript.ScriptableObject;
-import org.testng.annotations.Test;
 
 /**
  * @version $Revision$ $Date$
@@ -23,7 +22,6 @@ public class CometdDeliverTest extends AbstractCometdJQueryTest
         service = new DeliverService(bayeux);
     }
 
-    @Test
     public void testDeliver() throws Exception
     {
         defineClass(Latch.class);

@@ -1,14 +1,12 @@
 package org.cometd.javascript.jquery;
 
 import org.mozilla.javascript.ScriptableObject;
-import org.testng.annotations.Test;
 
 /**
  * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
  */
 public class CometdExtensionsTest extends AbstractCometdJQueryTest
 {
-    @Test
     public void testRegisterUnregister() throws Exception
     {
         evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
@@ -46,7 +44,6 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
         Thread.sleep(500); // Wait for the disconnect to return
     }
 
-    @Test
     public void testExtensions() throws Exception
     {
         evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
@@ -99,7 +96,6 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
         assert listener.getIncomingMessageCount() == 2; // connect2, disconnect
     }
 
-    @Test
     public void testExtensionOrder() throws Exception
     {
         // Default incoming extension order is reverse
@@ -163,7 +159,6 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
         Thread.sleep(1000);
     }
 
-    @Test
     public void testExtensionRegistrationCallbacks() throws Exception
     {
         evaluateScript("$.cometd.configure({url: '" + cometURL + "', logLevel: 'debug'});");
