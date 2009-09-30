@@ -14,11 +14,14 @@
         {
             for (var headerName in headers)
             {
-                if (headerName.toLowerCase() === 'content-type') continue;
+                if (headerName.toLowerCase() === 'content-type')
+                {
+                    continue;
+                }
                 xhr.setRequestHeader(headerName, headers[headerName]);
             }
         }
-    };
+    }
 
     // The default cometd instance
     $.cometd = new org.cometd.Cometd();
@@ -26,7 +29,7 @@
     // Remap toolkit-specific transport calls
     $.cometd.LongPollingTransport = function()
     {
-        this.transportSend = function(packet)
+        this.xhrSend = function(packet)
         {
             return $.ajax({
                 url: packet.url,
@@ -52,7 +55,7 @@
 
     $.cometd.CallbackPollingTransport = function()
     {
-        this.transportSend = function(packet)
+        this.jsonpSend = function(packet)
         {
             $.ajax({
                 url: packet.url,

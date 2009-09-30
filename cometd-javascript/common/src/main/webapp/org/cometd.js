@@ -31,6 +31,11 @@ org.cometd.TransportRegistry = function()
     var _types = [];
     var _transports = {};
 
+    this.getTransportTypes = function()
+    {
+        return _types.slice(0);
+    };
+
     this.findTransportTypes = function(version, crossDomain)
     {
         var result = [];
@@ -38,12 +43,14 @@ org.cometd.TransportRegistry = function()
         {
             var type = _types[i];
             if (_transports[type].accept(version, crossDomain))
+            {
                 result.push(type);
+            }
         }
         return result;
     };
 
-    this.matchTransport = function(types, version, crossDomain)
+    this.negotiateTransport = function(types, version, crossDomain)
     {
         for (var i = 0; i < _types.length; ++i)
         {
@@ -78,9 +85,13 @@ org.cometd.TransportRegistry = function()
         if (!existing)
         {
             if (typeof index !== 'number')
+            {
                 _types.push(type);
+            }
             else
+            {
                 _types.splice(index, 0, type);
+            }
             _transports[type] = transport;
         }
 
@@ -264,33 +275,6 @@ org.cometd.Cometd = function(name)
         }
     }
     this._debug = _debug;
-
-    this.registerTransport = function(type, transport, index)
-    {
-        if (_transports.add(type, transport, index))
-        {
-            _debug('Registered transport {}', type);
-
-            if (typeof transport.registered === 'function')
-            {
-                transport.registered(type, this);
-            }
-        }
-    };
-
-    this.unregisterTransport = function(type)
-    {
-        var transport = _transports.remove(type);
-        if (transport != null)
-        {
-            _debug('Unregistered transport {}', type);
-
-            if (typeof transport.unregistered === 'function')
-            {
-                transport.unregistered();
-            }
-        }
-    };
 
     function _configure(configuration)
     {
@@ -725,7 +709,7 @@ org.cometd.Cometd = function(name)
 
         // Pick up the first available transport as initial transport
         // since we don't know if the server supports it
-        _transport = _transports.matchTransport(transportTypes, version, _crossDomain);
+        _transport = _transports.negotiateTransport(transportTypes, version, _crossDomain);
         _debug('Initial transport is', _transport);
 
         // We started a batch to hold the application messages,
@@ -751,7 +735,7 @@ org.cometd.Cometd = function(name)
             // Save clientId, figure out transport, then follow the advice to connect
             _clientId = message.clientId;
 
-            var newTransport = _transports.matchTransport(message.supportedConnectionTypes, message.version, _crossDomain);
+            var newTransport = _transports.negotiateTransport(message.supportedConnectionTypes, message.version, _crossDomain);
             if (newTransport === null)
             {
                 throw 'Could not negotiate transport with server; client ' +
@@ -1274,6 +1258,62 @@ org.cometd.Cometd = function(name)
     //
 
     /**
+     * Registers the given transport under the given transport type.
+     * The optional index parameter specifies the "priority" at which the
+     * transport is registered (where 0 is the max priority).
+     * If a transport with the same type is already registered, this function
+     * does nothing and returns false.
+     * @param type the transport type
+     * @param transport the transport object
+     * @param index the index at which this transport is to be registered
+     * @return true if the transport has been registered, false otherwise
+     * @see #unregisterTransport(type)
+     */
+    this.registerTransport = function(type, transport, index)
+    {
+        var result = _transports.add(type, transport, index);
+        if (result)
+        {
+            _debug('Registered transport', type);
+
+            if (typeof transport.registered === 'function')
+            {
+                transport.registered(type, this);
+            }
+        }
+        return result;
+    };
+
+    /**
+     * @return an array of all registered transport types
+     */
+    this.getTransportTypes = function()
+    {
+        return _transports.getTransportTypes();
+    };
+
+    /**
+     * Unregisters the transport with the given transport type.
+     * @param type the transport type to unregister
+     * @return the transport that has been unregistered,
+     * or null if no transport was previously registered under the given transport type
+     */
+    this.unregisterTransport = function(type)
+    {
+        var transport = _transports.remove(type);
+        if (transport !== null)
+        {
+            _debug('Unregistered transport', type);
+
+            if (typeof transport.unregistered === 'function')
+            {
+                transport.unregistered();
+            }
+        }
+        return transport;
+    };
+
+    /**
      * Configures the initial Bayeux communication with the Bayeux server.
      * Configuration is passed via an object that must contain a mandatory field <code>url</code>
      * of type string containing the URL of the Bayeux server.
@@ -1681,7 +1721,7 @@ org.cometd.Cometd = function(name)
 
         this.accept = function(version, crossDomain)
         {
-            return false;
+            throw 'Abstract';
         };
 
         function _longpollSend(envelope)
@@ -1696,7 +1736,7 @@ org.cometd.Cometd = function(name)
                 id: requestId,
                 longpoll: true
             };
-            this._send(envelope, request);
+            this.transportSend(envelope, request);
             _longpollRequest = request;
         }
 
@@ -1710,7 +1750,7 @@ org.cometd.Cometd = function(name)
             // Consider the longpoll requests which should always be present
             if (_requests.length < _maxConnections - 1)
             {
-                this._send(envelope, request);
+                this.transportSend(envelope, request);
                 _requests.push(request);
             }
             else
@@ -1755,7 +1795,7 @@ org.cometd.Cometd = function(name)
             }
         }
 
-        this._send = function(envelope, request)
+        this.transportSend = function(envelope, request)
         {
             throw 'Abstract';
         };
@@ -1829,16 +1869,16 @@ org.cometd.Cometd = function(name)
             return _supportsCrossDomain || !crossDomain;
         };
 
-        this.transportSend = function(packet)
+        this.xhrSend = function(packet)
         {
             throw 'Abstract';
         };
 
-        this._send = function(envelope, request)
+        this.transportSend = function(envelope, request)
         {
             try
             {
-                request.xhr = this.transportSend({
+                request.xhr = this.xhrSend({
                     transport: this,
                     url: envelope.url,
                     headers: _requestHeaders,
@@ -1880,7 +1920,12 @@ org.cometd.Cometd = function(name)
             return crossDomain;
         };
 
-        this._send = function(envelope, request)
+        this.jsonpSend = function(packet)
+        {
+            throw 'Abstract';
+        };
+
+        this.transportSend = function(envelope, request)
         {
             // Microsoft Internet Explorer has a 2083 URL max length
             // We must ensure that we stay within that length
@@ -1909,7 +1954,7 @@ org.cometd.Cometd = function(name)
                 {
                     var expired = false;
                     var timeout;
-                    this.transportSend({
+                    this.jsonpSend({
                         transport: this,
                         url: envelope.url,
                         headers: _requestHeaders,
