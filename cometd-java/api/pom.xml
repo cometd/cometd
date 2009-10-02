@@ -4,7 +4,6 @@
         <groupId>org.cometd.java</groupId>
         <artifactId>cometd-java-project</artifactId>
         <version>1.0.0rc1-SNAPSHOT </version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -17,8 +16,6 @@
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>servlet-api</artifactId>
-            <type>jar</type>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 
