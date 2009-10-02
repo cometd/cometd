@@ -15,7 +15,7 @@
 
     <properties>
         <jetty-version>7.0.0.RC7-SNAPSHOT</jetty-version>
-        <jetty-maven-plugin-version>${jetty-version}</jetty-maven-plugin-version>
+        <jetty-maven-plugin-version>7.0.0.RC6</jetty-maven-plugin-version>
         <dojo-version>1.3.2</dojo-version>
         <maven-wagon-version>1.0-beta-2</maven-wagon-version>
     </properties>
@@ -138,11 +138,12 @@
         </snapshotRepository>
     </distributionManagement>
 
+<!--
     <pluginRepositories>
         <pluginRepository>
             <id>jettySnapshots</id>
             <name>Jetty Maven2 Snapshot Repository</name>
-            <url>http://snapshots.repository.codehaus.org</url>
+            <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
             <releases>
                 <enabled>false</enabled>
             </releases>
@@ -152,6 +153,7 @@
             <layout>default</layout>
         </pluginRepository>
     </pluginRepositories>
+-->
 
     <scm>
         <connection>scm:svn:http://svn.cometd.com/trunk</connection>
@@ -272,9 +274,9 @@
         <pluginManagement>
             <plugins>
                 <plugin>
-                    <groupId>org.apache.maven</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.3</version>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>jetty-maven-plugin</artifactId>
+                    <version>${jetty-maven-plugin-version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
