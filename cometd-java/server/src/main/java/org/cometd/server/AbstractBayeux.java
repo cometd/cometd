@@ -141,20 +141,18 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     public Channel getChannel(String id, boolean create)
     {
-        synchronized(this)
+        ChannelImpl channel=getChannel(id);
+
+        if (channel == null && create)
         {
-            ChannelImpl channel=getChannel(id);
-
-            if (channel == null && create)
-            {
-                channel=new ChannelImpl(id,this);
-                _root.addChild(channel);
-
-                if (isLogInfo())
-                    logInfo("newChannel: " + channel);
-            }
-            return channel;
+            channel=new ChannelImpl(id,this);
+            Channel added =_root.addChild(channel);
+            if (added!=channel) 
+                return added;
+            if (isLogInfo())
+                logInfo("newChannel: " + channel);
         }
+        return channel;
     }
 
     /* ------------------------------------------------------------ */
@@ -165,7 +163,9 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         {
             // TODO shrink cache!
             cid=new ChannelId(id);
-            _channelIdCache.put(id,cid);
+            ChannelId other=_channelIdCache.putIfAbsent(id,cid);
+            if (other!=null)
+                return other;
         }
         return cid;
     }
@@ -178,13 +178,10 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
      */
     public Client getClient(String client_id)
     {
-        synchronized(this)
-        {
-            if (client_id == null)
-                return null;
-            Client client=_clients.get(client_id);
-            return client;
-        }
+        if (client_id == null)
+            return null;
+        Client client=_clients.get(client_id);
+        return client;
     }
 
     /* ------------------------------------------------------------ */
@@ -485,7 +482,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     }
 
     /* ------------------------------------------------------------ */
-    public void addChannel(ChannelImpl channel)
+    protected void addChannel(ChannelImpl channel)
     {
         for (ChannelBayeuxListener l : _channelListeners)
             l.channelAdded(channel);
@@ -528,12 +525,9 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     public Client removeClient(String client_id)
     {
         ClientImpl client;
-        synchronized(this)
-        {
-            if (client_id == null)
-                return null;
-            client=_clients.remove(client_id);
-        }
+        if (client_id == null)
+            return null;
+        client=_clients.remove(client_id);
         if (client != null)
         {
             for (ClientBayeuxListener l : _clientListeners)
@@ -723,10 +717,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     public Collection<Client> getClients()
     {
-        synchronized(this)
-        {
-            return new ArrayList<Client>(_clients.values());
-        }
+        return new ArrayList<Client>(_clients.values());
     }
 
     /* ------------------------------------------------------------ */
@@ -735,21 +726,15 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
      */
     public int getClientCount()
     {
-        synchronized(this)
-        {
-            return _clients.size();
-        }
+        return _clients.size();
     }
 
     /* ------------------------------------------------------------ */
     public boolean hasClient(String clientId)
     {
-        synchronized(this)
-        {
-            if (clientId == null)
-                return false;
-            return _clients.containsKey(clientId);
-        }
+        if (clientId == null)
+            return false;
+        return _clients.containsKey(clientId);
     }
 
     /* ------------------------------------------------------------ */
@@ -1485,6 +1470,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         ServiceChannel(String id)
         {
             super(id,AbstractBayeux.this);
+            setPersistent(true);
         }
 
         /* ------------------------------------------------------------ */
@@ -1495,10 +1481,10 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
          * org.cometd.server.ChannelImpl#addChild(org.cometd.server.ChannelImpl)
          */
         @Override
-        public void addChild(ChannelImpl channel)
+        public ChannelImpl addChild(ChannelImpl channel)
         {
-            super.addChild(channel);
             setPersistent(true);
+            return super.addChild(channel);
         }
 
         /* ------------------------------------------------------------ */
