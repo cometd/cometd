@@ -49,9 +49,9 @@ public class ChannelImpl implements Channel
     // on
     // write
     private ChannelId _id;
-    private ConcurrentMap<String,ChannelImpl> _children=new ConcurrentHashMap<String,ChannelImpl>();
-    private ChannelImpl _wild;
-    private ChannelImpl _wildWild;
+    private ConcurrentHashMap<String,ChannelImpl> _children=new ConcurrentHashMap<String,ChannelImpl>();
+    private volatile ChannelImpl _wild;
+    private volatile ChannelImpl _wildWild;
     private boolean _persistent;
     private int _split;
     private boolean _lazy;
@@ -89,7 +89,13 @@ public class ChannelImpl implements Channel
     }
 
     /* ------------------------------------------------------------ */
-    public void addChild(ChannelImpl channel)
+    /**
+     * Add a channel
+     * @param channel
+     * @return The added channel, or the existing channel if another thread
+     * already added the channel
+     */
+    public ChannelImpl addChild(ChannelImpl channel)
     {
         ChannelId child=channel.getChannelId();
         if (!_id.isParentOf(child))
@@ -101,25 +107,22 @@ public class ChannelImpl implements Channel
 
         if ((child.depth() - _id.depth()) == 1)
         {
-            // synchronize add and doRemove to avoid concurrent updates
-            synchronized(this)
-            {
-                // add the channel to this channels
-                ChannelImpl old=_children.putIfAbsent(next,channel);
-                if (old != null)
-                    throw new IllegalArgumentException("Already Exists");
+            // add the channel to this channels
+            ChannelImpl old=_children.putIfAbsent(next,channel);
+            if (old != null)
+                return old;
 
-                if (ChannelId.WILD.equals(next))
-                    _wild=channel;
-                else if (ChannelId.WILDWILD.equals(next))
-                    _wildWild=channel;
-                _bayeux.addChannel(channel);
-            }
+            if (ChannelId.WILD.equals(next))
+                _wild=channel;
+            else if (ChannelId.WILDWILD.equals(next))
+                _wildWild=channel;
+            _bayeux.addChannel(channel);
+            return channel;
         }
         else
         {
             ChannelImpl branch=(ChannelImpl)_bayeux.getChannel((_id.depth() == 0?"/":(_id.toString() + "/")) + next,true);
-            branch.addChild(channel);
+            return branch.addChild(channel);
         }
     }
 
@@ -163,12 +166,9 @@ public class ChannelImpl implements Channel
     /* ------------------------------------------------------------ */
     public void getChannels(List<Channel> list)
     {
-        synchronized(this)
-        {
-            list.add(this);
-            for (ChannelImpl channel : _children.values())
-                channel.getChannels(list);
-        }
+        list.add(this);
+        for (ChannelImpl channel : _children.values())
+            channel.getChannels(list);
     }
 
     /* ------------------------------------------------------------ */
@@ -248,37 +248,37 @@ public class ChannelImpl implements Channel
                 {
                     if (!child.isPersistent())
                     {
-                        // synchronize add and doRemove to avoid concurrent
-                        // updates
-                        synchronized(this)
+                        // remove the child
+                        child=_children.remove(key);
+                        if (child !=null)
                         {
-                            if (child.getChannelCount() > 0)
+                            if (_wild==channel)
+                                _wild=null;
+                            else if (_wildWild==channel)
+                                _wildWild=null;
+                            if ( child.getChannelCount() > 0)
                             {
                                 // remove the children of the child
                                 for (ChannelImpl c : child._children.values())
                                     child.doRemove(c,listeners);
                             }
-
-                            // remove the child
-                            _children.remove(key);
+                            for (ChannelBayeuxListener l : listeners)
+                                l.channelRemoved(child);
                         }
-                        for (ChannelBayeuxListener l : listeners)
-                            l.channelRemoved(channel);
                         return true;
                     }
                     return false;
                 }
 
                 boolean removed=child.doRemove(channel,listeners);
+                
+                // Do we remove a non persistent child?
                 if (removed && !child.isPersistent() && child.getChannelCount() == 0 && child.getSubscriberCount() == 0)
                 {
-                    // synchronize add and doRemove to avoid concurrent updates
-                    synchronized(this)
-                    {
-                        _children.remove(key);
-                    }
-                    for (ChannelBayeuxListener l : listeners)
-                        l.channelRemoved(channel);
+                    child=_children.remove(key);
+                    if (child!=null)
+                        for (ChannelBayeuxListener l : listeners)
+                            l.channelRemoved(child);
                 }
 
                 return removed;
@@ -324,10 +324,10 @@ public class ChannelImpl implements Channel
                     return;
             }
             _subscribers=(ClientImpl[])LazyList.addToArray(_subscribers,client,null);
-
-            for (SubscriptionListener l : _subscriptionListeners)
-                l.subscribed(client,this);
         }
+        SubscriptionListener[] listeners=_subscriptionListeners;
+        for (SubscriptionListener l : listeners)
+            l.subscribed(client,this);
 
         ((ClientImpl)client).addSubscription(this);
     }
@@ -351,13 +351,14 @@ public class ChannelImpl implements Channel
         synchronized(this)
         {
             _subscribers=(ClientImpl[])LazyList.removeFromArray(_subscribers,client);
-
-            for (SubscriptionListener l : _subscriptionListeners)
-                l.unsubscribed(client,this);
-
-            if (!_persistent && _subscribers.length == 0 && _children.size() == 0)
-                remove();
         }
+
+        for (SubscriptionListener l : _subscriptionListeners)
+            l.unsubscribed(client,this);
+        
+        if (!_persistent && _subscribers.length == 0 && _children.size() == 0)
+            remove();
+        
     }
 
     /* ------------------------------------------------------------ */
@@ -389,9 +390,10 @@ public class ChannelImpl implements Channel
                         break;
 
                     case 1:
-                        if (_wild != null)
+                        final ChannelImpl wild = _wild;
+                        if (wild != null)
                         {
-                            final DataFilter[] filters=_wild._dataFilters;
+                            final DataFilter[] filters=wild._dataFilters;
                             for (DataFilter filter : filters)
                             {
                                 data=filter.filter(from,this,data);
@@ -401,9 +403,10 @@ public class ChannelImpl implements Channel
                         }
 
                     default:
-                        if (_wildWild != null)
+                        final ChannelImpl wildWild = _wildWild;
+                        if (wildWild != null)
                         {
-                            final DataFilter[] filters=_wildWild._dataFilters;
+                            final DataFilter[] filters=wildWild._dataFilters;
                             for (DataFilter filter : filters)
                             {
                                 data=filter.filter(from,this,data);
@@ -446,22 +449,24 @@ public class ChannelImpl implements Channel
             }
 
             case 1:
-                if (_wild != null)
+                final ChannelImpl wild = _wild;
+                if (wild != null)
                 {
-                    if (_wild._lazy && msg instanceof MessageImpl)
+                    if (wild._lazy && msg instanceof MessageImpl)
                         ((MessageImpl)msg).setLazy(true);
-                    final ClientImpl[] subscribers=_wild._subscribers;
+                    final ClientImpl[] subscribers=wild._subscribers;
                     for (ClientImpl client : subscribers)
                         client.doDelivery(from,msg);
                 }
 
             default:
             {
-                if (_wildWild != null)
+                final ChannelImpl wildWild = _wildWild;
+                if (wildWild != null)
                 {
-                    if (_wildWild._lazy && msg instanceof MessageImpl)
+                    if (wildWild._lazy && msg instanceof MessageImpl)
                         ((MessageImpl)msg).setLazy(true);
-                    final ClientImpl[] subscribers=_wildWild._subscribers;
+                    final ClientImpl[] subscribers=wildWild._subscribers;
                     for (ClientImpl client : subscribers)
                         client.doDelivery(from,msg);
                 }
@@ -485,10 +490,7 @@ public class ChannelImpl implements Channel
     /* ------------------------------------------------------------ */
     public int getSubscriberCount()
     {
-        synchronized(this)
-        {
-            return _subscribers.length;
-        }
+        return _subscribers.length;
     }
 
     /* ------------------------------------------------------------ */
@@ -508,18 +510,20 @@ public class ChannelImpl implements Channel
     /* ------------------------------------------------------------ */
     public void addListener(ChannelListener listener)
     {
-        synchronized(this)
+        if (listener instanceof SubscriptionListener)
         {
-            if (listener instanceof SubscriptionListener)
+            synchronized(this)
+            {
                 _subscriptionListeners=(SubscriptionListener[])LazyList.addToArray(_subscriptionListeners,listener,null);
+            }
         }
     }
 
     public void removeListener(ChannelListener listener)
     {
-        synchronized(this)
+        if (listener instanceof SubscriptionListener)
         {
-            if (listener instanceof SubscriptionListener)
+            synchronized(this)
             {
                 _subscriptionListeners=(SubscriptionListener[])LazyList.removeFromArray(_subscriptionListeners,listener);
             }
