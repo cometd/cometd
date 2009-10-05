@@ -19,6 +19,7 @@ import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -1392,12 +1393,11 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         if (backoff)
         {
             int backoffInterval = exchange.getBackoff();
-            if (Log.isDebugEnabled())
-                Log.debug("Send with backoff, interval=" + backoffInterval + " for " + exchange);
-
+            interval += backoffInterval;
             exchange.incBackoff();
 
-            interval += backoffInterval;
+            if (Log.isDebugEnabled())
+                Log.debug("Send with backoff, interval=" + interval + " for " + exchange);
         }
 
         if (interval > 0)
@@ -1498,7 +1498,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     protected void metaConnect(boolean success, Message message)
     {
         if (!success)
-            Log.warn(this.toString()+" "+message.toString());
+            Log.warn(this.toString()+": connect failed, "+message.toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -1510,7 +1510,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     protected void metaHandshake(boolean success, boolean reestablish, Message message)
     {
         if (!success)
-            Log.warn(this.toString()+" "+message.toString());
+            Log.warn(this.toString()+": handshake failed, "+message.toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -1519,7 +1519,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
      */
     protected void metaPublishFail(Throwable e, Message[] messages)
     {
-        Log.warn(this.toString()+": "+e);
+        Log.warn(this.toString()+": publish failed, " + Arrays.toString(messages));
         Log.debug(e);
     }
 
