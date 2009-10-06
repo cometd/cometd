@@ -3,6 +3,7 @@ package org.cometd.client;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -24,7 +25,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class BayeuxLoadGenerator
 {
-    private final List<LoadBayeuxClient> bayeuxClients = new ArrayList<LoadBayeuxClient>();
+    private final List<LoadBayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<LoadBayeuxClient>());
     private final Map<Integer, Integer> rooms = new HashMap<Integer, Integer>();
     private final AtomicLong start = new AtomicLong();
     private final AtomicLong end = new AtomicLong();
@@ -46,6 +47,7 @@ public class BayeuxLoadGenerator
         threadPool.setMaxThreads(500);
         threadPool.setDaemon(true);
         httpClient.setThreadPool(threadPool);
+        httpClient.setIdleTimeout(5000);
         httpClient.start();
 
         BayeuxLoadGenerator generator = new BayeuxLoadGenerator(httpClient);
@@ -148,6 +150,13 @@ public class BayeuxLoadGenerator
                         client.init(channel, room);
                     }
                     client.endBatch();
+
+                    // Give some time to the server to accept connections and
+                    // reply to handshakes, connects and subscribes
+                    if (i % 10 == 0)
+                    {
+                        Thread.sleep(100);
+                    }
                 }
             }
             else if (currentClients > clients)
@@ -160,13 +169,14 @@ public class BayeuxLoadGenerator
                 }
             }
 
-            int maxRetries = 20;
+            int maxRetries = 60;
             int retries = maxRetries;
             int lastSize = 0;
             int currentSize = bayeuxClients.size();
             while (currentSize != clients)
             {
                 Thread.sleep(250);
+                System.err.println("Waiting for clients " + currentSize + "/" + clients);
                 if (lastSize == currentSize)
                 {
                     --retries;
