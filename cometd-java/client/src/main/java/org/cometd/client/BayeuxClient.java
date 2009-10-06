@@ -74,15 +74,17 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     private final static String __TIMER="org.cometd.client.Timer";
     private final static String __JSON="org.cometd.client.JSON";
     private final static String __MSGPOOL="org.cometd.server.MessagePool";
-    protected HttpClient _httpClient;
 
+    private final ArrayQueue<Message> _inQ = new ArrayQueue<Message>();  // queue of incoming messages
+    private final ArrayQueue<Message> _outQ = new ArrayQueue<Message>(); // queue of outgoing messages
+    private final HttpClient _httpClient;
+    private final Buffer _scheme;
+    private final Address _cometdAddress;
+    private final String _path;
+    private Timer _timer;
     protected MessagePool _msgPool;
-    private ArrayQueue<Message> _inQ = new ArrayQueue<Message>();  // queue of incoming messages
-    private ArrayQueue<Message> _outQ = new ArrayQueue<Message>(); // queue of outgoing messages
-    protected Address _cometdAddress;
     private Exchange _pull;
     private Exchange _push;
-    private String _path = "/cometd";
     private boolean _initialized = false;
     private boolean _disconnecting = false;
     private boolean _handshook = false;
@@ -94,13 +96,11 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     private boolean _formEncoded;
     private Map<String, ExpirableCookie> _cookies = new ConcurrentHashMap<String, ExpirableCookie>();
     private Advice _advice;
-    private Timer _timer;
     private int _backoffInterval = 0;
     private int _backoffIncrement = 1000;
     private int _backoffMaxInterval = 60000;
-    private Buffer _scheme;
-    protected Extension[] _extensions;
-    protected JSON _jsonOut;
+    private Extension[] _extensions;
+    private JSON _jsonOut;
 
     /* ------------------------------------------------------------ */
     public BayeuxClient(HttpClient client, String url)
@@ -113,16 +113,17 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     {
         HttpURI uri = new HttpURI(url);
         _httpClient = client;
+        _scheme = (HttpSchemes.HTTPS.equals(uri.getScheme()))?HttpSchemes.HTTPS_BUFFER:HttpSchemes.HTTP_BUFFER;
         _cometdAddress = new Address(uri.getHost(),uri.getPort());
         _path=uri.getPath();
         _timer = timer;
-        _scheme = (HttpSchemes.HTTPS.equals(uri.getScheme()))?HttpSchemes.HTTPS_BUFFER:HttpSchemes.HTTP_BUFFER;
     }
 
     /* ------------------------------------------------------------ */
     public BayeuxClient(HttpClient client, Address address, String path, Timer timer)
     {
         _httpClient = client;
+        _scheme = HttpSchemes.HTTP_BUFFER;
         _cometdAddress = address;
         _path = path;
         _timer = timer;
@@ -350,6 +351,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         if (id != null)
             message.put(Bayeux.ID_FIELD,id);
 
+        List<MessageListener> asyncListeners = new ArrayList<MessageListener>();
         synchronized (_inQ)
         {
             if (_mListeners == null)
@@ -362,13 +364,13 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                 for (MessageListener l : _mListeners)
                     if (l instanceof MessageListener.Synchronous)
                         notifyMessageListener(l, from, message);
+                    else
+                        asyncListeners.add(l);
             }
         }
 
-        if (_mListeners !=null)
-            for (MessageListener l : _mListeners)
-                if (!(l instanceof MessageListener.Synchronous))
-                    notifyMessageListener(l, from, message);
+        for (MessageListener l : asyncListeners)
+            notifyMessageListener(l, from, message);
 
         message.decRef();
     }
