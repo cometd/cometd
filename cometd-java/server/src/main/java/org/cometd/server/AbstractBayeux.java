@@ -1483,7 +1483,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         @Override
         public ChannelImpl addChild(ChannelImpl channel)
         {
-            setPersistent(true);
+            channel.setPersistent(true);
             return super.addChild(channel);
         }
 

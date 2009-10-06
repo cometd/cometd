@@ -48,9 +48,9 @@ public class ChannelImpl implements Channel
     private volatile SubscriptionListener[] _subscriptionListeners=new SubscriptionListener[0]; // copy on write
     private volatile ChannelImpl _wild;
     private volatile ChannelImpl _wildWild;
-    private boolean _persistent;
-    private int _split;
-    private boolean _lazy;
+    private volatile boolean _persistent;
+    private volatile int _split;
+    private volatile boolean _lazy;
     
     /* ------------------------------------------------------------ */
     protected ChannelImpl(String id, AbstractBayeux bayeux)
