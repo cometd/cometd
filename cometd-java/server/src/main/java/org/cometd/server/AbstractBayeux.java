@@ -60,10 +60,17 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     public static final ChannelId META_SUBSCRIBE_ID=new ChannelId(META_SUBSCRIBE);
     public static final ChannelId META_UNSUBSCRIBE_ID=new ChannelId(META_UNSUBSCRIBE);
 
-    private HashMap<String,Handler> _handlers=new HashMap<String,Handler>();
-
-    private ChannelImpl _root=new ChannelImpl("/",this);
-    private ConcurrentHashMap<String,ClientImpl> _clients=new ConcurrentHashMap<String,ClientImpl>();
+    private final HashMap<String,Handler> _handlers=new HashMap<String,Handler>();
+    private final ChannelImpl _root=new ChannelImpl("/",this);
+    private final ConcurrentHashMap<String,ClientImpl> _clients=new ConcurrentHashMap<String,ClientImpl>();
+    protected final ConcurrentHashMap<String,ChannelId> _channelIdCache=new ConcurrentHashMap<String,ChannelId>();
+    protected final ConcurrentHashMap<String,List<String>> _browser2client=new ConcurrentHashMap<String,List<String>>();
+    protected final ThreadLocal<HttpServletRequest> _request=new ThreadLocal<HttpServletRequest>();
+    protected final List<ClientBayeuxListener> _clientListeners=new CopyOnWriteArrayList<ClientBayeuxListener>();
+    protected final List<ChannelBayeuxListener> _channelListeners=new CopyOnWriteArrayList<ChannelBayeuxListener>();
+    protected final Handler _publishHandler;
+    protected final Handler _metaPublishHandler;
+    
     protected SecurityPolicy _securityPolicy=new DefaultPolicy();
     protected JSON.Literal _advice;
     protected JSON.Literal _multiFrameAdvice;
@@ -74,24 +81,17 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     protected long _interval=0;
     protected long _maxInterval=10000;
     protected boolean _initialized;
-    protected ConcurrentHashMap<String,List<String>> _browser2client=new ConcurrentHashMap<String,List<String>>();
     protected int _multiFrameInterval=-1;
 
     protected boolean _requestAvailable;
-    protected ThreadLocal<HttpServletRequest> _request=new ThreadLocal<HttpServletRequest>();
 
-    transient ServletContext _context;
-    transient Random _random;
-    transient ConcurrentHashMap<String,ChannelId> _channelIdCache;
-    protected Handler _publishHandler;
-    protected Handler _metaPublishHandler;
+    private ServletContext _context;
+    protected Random _random;
     protected int _maxClientQueue=-1;
 
     protected Extension[] _extensions;
     protected JSON.Literal _transports=new JSON.Literal("[\"" + Bayeux.TRANSPORT_LONG_POLL + "\",\"" + Bayeux.TRANSPORT_CALLBACK_POLL + "\"]");
     protected JSON.Literal _replyExt=new JSON.Literal("{\"ack\":\"true\"}");
-    protected List<ClientBayeuxListener> _clientListeners=new CopyOnWriteArrayList<ClientBayeuxListener>();
-    protected List<ChannelBayeuxListener> _channelListeners=new CopyOnWriteArrayList<ChannelBayeuxListener>();
     
     protected int _maxLazyLatency=5000;
 
@@ -769,7 +769,6 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
                 _random=new Random();
             }
             _random.setSeed(_random.nextLong() ^ hashCode() ^ System.nanoTime() ^ Runtime.getRuntime().freeMemory());
-            _channelIdCache=new ConcurrentHashMap<String,ChannelId>();
 
             _root.addChild(new ServiceChannel(Bayeux.SERVICE));
 

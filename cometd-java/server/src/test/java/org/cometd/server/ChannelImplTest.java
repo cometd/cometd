@@ -93,7 +93,6 @@ public class ChannelImplTest extends TestCase
             }
 
             _random.setSeed(_random.nextLong()^hashCode()^Runtime.getRuntime().freeMemory());
-            _channelIdCache=new ConcurrentHashMap<String, ChannelId>();
         }
          
         public ClientImpl newRemoteClient()
