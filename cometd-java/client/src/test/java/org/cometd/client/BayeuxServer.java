@@ -42,6 +42,7 @@ public class BayeuxServer
         String cometServletPath = "/cometd";
         ContinuationCometdServlet cometServlet = new ContinuationCometdServlet();
         ServletHolder cometServletHolder = new ServletHolder(cometServlet);
+        cometServletHolder.setInitParameter("maxInterval", String.valueOf(60000));
         context.addServlet(cometServletHolder, cometServletPath + "/*");
 
         server.start();
