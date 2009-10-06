@@ -72,6 +72,10 @@ public class CometdDemo
         SelectChannelConnector connector=new SelectChannelConnector();
         // SocketConnector connector=new SocketConnector();
         connector.setPort(port);
+        connector.setMaxIdleTime(120000);
+        connector.setLowResourceMaxIdleTime(60000);
+        connector.setLowResourcesConnections(20000);
+        connector.setAcceptQueueSize(5000);
         server.addConnector(connector);
         SocketConnector bconnector=new SocketConnector();
         bconnector.setPort(port+1);
