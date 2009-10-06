@@ -40,22 +40,18 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class ChannelImpl implements Channel
 {
-    protected AbstractBayeux _bayeux;
-    private volatile ClientImpl[] _subscribers=new ClientImpl[0]; // copy on
-    // write
-    private volatile DataFilter[] _dataFilters=new DataFilter[0]; // copy on
-    // write
-    private volatile SubscriptionListener[] _subscriptionListeners=new SubscriptionListener[0]; // copy
-    // on
-    // write
-    private ChannelId _id;
-    private ConcurrentHashMap<String,ChannelImpl> _children=new ConcurrentHashMap<String,ChannelImpl>();
+    private final AbstractBayeux _bayeux;
+    private final ChannelId _id;
+    private final ConcurrentHashMap<String,ChannelImpl> _children=new ConcurrentHashMap<String,ChannelImpl>();
+    private volatile ClientImpl[] _subscribers=new ClientImpl[0]; // copy on write
+    private volatile DataFilter[] _dataFilters=new DataFilter[0]; // copy on write
+    private volatile SubscriptionListener[] _subscriptionListeners=new SubscriptionListener[0]; // copy on write
     private volatile ChannelImpl _wild;
     private volatile ChannelImpl _wildWild;
     private boolean _persistent;
     private int _split;
     private boolean _lazy;
-
+    
     /* ------------------------------------------------------------ */
     protected ChannelImpl(String id, AbstractBayeux bayeux)
     {
@@ -439,7 +435,7 @@ public class ChannelImpl implements Channel
                 if (subscribers.length > 0)
                 {
                     // fair delivery
-                    int split=_split++ % _subscribers.length;
+                    int split=_split++ % subscribers.length;
                     for (int i=split; i < subscribers.length; i++)
                         subscribers[i].doDelivery(from,msg);
                     for (int i=0; i < split; i++)
