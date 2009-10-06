@@ -128,6 +128,8 @@ public class BayeuxLoadGenerator
                 value = "" + clients;
             clients = Integer.parseInt(value);
 
+            System.err.println("Waiting for clients to be ready...");
+
             // Create or remove the necessary bayeux clients
             int currentClients = bayeuxClients.size();
             if (currentClients < clients)
@@ -158,7 +160,6 @@ public class BayeuxLoadGenerator
                 }
             }
 
-            System.err.println("Waiting for clients to be ready...");
             int maxRetries = 20;
             int retries = maxRetries;
             int lastSize = 0;
@@ -179,7 +180,15 @@ public class BayeuxLoadGenerator
                 }
                 currentSize = bayeuxClients.size();
             }
-            System.err.println("Clients ready");
+            if (currentSize != clients)
+            {
+                System.err.println("Clients not ready, only " + currentSize + "/" + clients);
+                break;
+            }
+            else
+            {
+                System.err.println("Clients ready");
+            }
 
             reset();
 
@@ -343,8 +352,7 @@ public class BayeuxLoadGenerator
                 for (int j = value + 1; j < latencyBucketFrequencies.length; ++j) System.err.print(" ");
                 System.err.print("  _  ");
                 System.err.print(TimeUnit.NANOSECONDS.toMillis((latencyRange * (i + 1) / latencyBucketFrequencies.length) + minLatency.get()));
-                System.err.print(" (" + latencyBucketFrequency + ")");
-                System.err.println(" ms");
+                System.err.println(" ms (" + latencyBucketFrequency + ")");
             }
         }
 
