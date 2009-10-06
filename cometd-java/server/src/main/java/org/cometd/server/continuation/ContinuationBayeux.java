@@ -64,7 +64,6 @@ public class ContinuationBayeux extends AbstractBayeux
 
         _tick=new Timer("ContinuationBayeux-" + __id++,true);
         _timeout=new Timeout();
-        _timeout.setDuration(getMaxInterval());
 
         _tick.schedule(new TimerTask()
         {
@@ -84,14 +83,6 @@ public class ContinuationBayeux extends AbstractBayeux
     }
 
     /* ------------------------------------------------------------ */
-    @Override
-    public void setMaxInterval(long ms)
-    {
-        _timeout.setDuration(ms);
-        super.setMaxInterval(ms);
-    }
-
-    /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
      * 
@@ -108,13 +99,7 @@ public class ContinuationBayeux extends AbstractBayeux
     {
         synchronized(_timeout)
         {
-            if (interval == 0 || interval==_maxInterval)
-                _timeout.schedule(timeout);
-            else
-            {
-                long delay=interval - _maxInterval;
-                _timeout.schedule(timeout,delay);
-            }
+            _timeout.schedule(timeout,interval);
         }
     }
 

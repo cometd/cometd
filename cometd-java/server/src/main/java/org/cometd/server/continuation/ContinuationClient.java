@@ -30,10 +30,10 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public class ContinuationClient extends ClientImpl
 {
+    private final ContinuationBayeux _bayeux;
+    private final Timeout.Task _intervalTimeoutTask;
+    private final Timeout.Task _lazyTimeoutTask;
     private long _accessed;
-    public final Timeout.Task _intervalTimeoutTask;
-    public final Timeout.Task _lazyTimeoutTask;
-    private ContinuationBayeux _bayeux;
     private volatile Continuation _continuation;
     private volatile boolean _lazyResuming;
 
@@ -50,6 +50,7 @@ public class ContinuationClient extends ClientImpl
         }
         else
         {
+            // The timeout task for when a long poll does not arrive.
             _intervalTimeoutTask=new Timeout.Task()
             {
                 @Override
@@ -65,6 +66,7 @@ public class ContinuationClient extends ClientImpl
                 }
             };
 
+            // The timeout task for lazy messages
             _lazyTimeoutTask=new Timeout.Task()
             {
                 @Override
@@ -82,7 +84,7 @@ public class ContinuationClient extends ClientImpl
                 }
             };
             
-            _bayeux.startTimeout(_intervalTimeoutTask,getInterval());
+            _bayeux.startTimeout(_intervalTimeoutTask,_bayeux.getMaxInterval());
         }
     }
 
@@ -93,21 +95,30 @@ public class ContinuationClient extends ClientImpl
         {
             synchronized(this)
             {
+                // This is the end of a long poll
+                
+                // resume any prior continuation
                 if (_continuation != null)
                     _continuation.resume();
                 _continuation=null;
+                
+                // Set timeout when to expect the next long poll
                 if (_intervalTimeoutTask != null)
-                    _bayeux.startTimeout(_intervalTimeoutTask,getInterval());
+                    _bayeux.startTimeout(_intervalTimeoutTask,_bayeux.getMaxInterval());
             }
         }
         else
         {
             synchronized(this)
             {
+                // This is the start of a long poll
+
+                // resume any prior continuation
                 if (_continuation != null)
                     _continuation.resume();
                 _continuation=continuation;
 
+                // Cancel timeout expecting the next long poll
                 _bayeux.cancelTimeout(_intervalTimeoutTask);
                 _accessed=_bayeux.getNow();
             }
