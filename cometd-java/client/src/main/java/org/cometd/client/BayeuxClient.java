@@ -28,6 +28,7 @@ import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.Cookie;
 
@@ -351,7 +352,6 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         if (id != null)
             message.put(Bayeux.ID_FIELD,id);
 
-        List<MessageListener> asyncListeners = new ArrayList<MessageListener>();
         synchronized (_inQ)
         {
             if (_mListeners == null)
@@ -364,13 +364,12 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                 for (MessageListener l : _mListeners)
                     if (l instanceof MessageListener.Synchronous)
                         notifyMessageListener(l, from, message);
-                    else
-                        asyncListeners.add(l);
             }
         }
 
-        for (MessageListener l : asyncListeners)
-            notifyMessageListener(l, from, message);
+        for (MessageListener l : _mListeners)
+            if (!(l instanceof MessageListener.Synchronous))
+                notifyMessageListener(l, from, message);
 
         message.decRef();
     }
@@ -1326,14 +1325,14 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
             {
                 added=true;
                 if (_mListeners == null)
-                    _mListeners = new ArrayList<MessageListener>();
+                    _mListeners = new CopyOnWriteArrayList<MessageListener>();
                 _mListeners.add((MessageListener)listener);
             }
             if (listener instanceof RemoveListener)
             {
                 added=true;
                 if (_rListeners == null)
-                    _rListeners = new ArrayList<RemoveListener>();
+                    _rListeners = new CopyOnWriteArrayList<RemoveListener>();
                 _rListeners.add((RemoveListener)listener);
             }
 
