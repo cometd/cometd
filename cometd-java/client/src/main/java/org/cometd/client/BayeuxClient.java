@@ -309,19 +309,19 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         if (!isRunning())
             throw new IllegalStateException("Not running");
 
-        synchronized (_inQ)
+        if (_mListeners == null)
         {
-            if (_mListeners == null)
+            synchronized (_inQ)
             {
                 if (message instanceof MessageImpl)
                     ((MessageImpl)message).incRef();
                 _inQ.add(message);
             }
-            else
-            {
-                for (MessageListener l : _mListeners)
-                    notifyMessageListener(l, from, message);
-            }
+        }
+        else
+        {
+            for (MessageListener l : _mListeners)
+                notifyMessageListener(l, from, message);
         }
     }
 
