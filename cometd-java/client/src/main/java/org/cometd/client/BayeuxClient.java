@@ -312,24 +312,16 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         synchronized (_inQ)
         {
             if (_mListeners == null)
+            {
+                if (message instanceof MessageImpl)
+                    ((MessageImpl)message).incRef();
                 _inQ.add(message);
+            }
             else
             {
                 for (MessageListener l : _mListeners)
                     notifyMessageListener(l, from, message);
             }
-        }
-    }
-
-    private void notifyMessageListener(MessageListener listener, Client from, Message message)
-    {
-        try
-        {
-            listener.deliver(from, this, message);
-        }
-        catch (Throwable x)
-        {
-            Log.debug(x);
         }
     }
 
@@ -351,27 +343,22 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         message.put(Bayeux.DATA_FIELD,data);
         if (id != null)
             message.put(Bayeux.ID_FIELD,id);
-
-        synchronized (_inQ)
-        {
-            if (_mListeners == null)
-            {
-                message.incRef();
-                _inQ.add(message);
-            }
-            else
-            {
-                for (MessageListener l : _mListeners)
-                    if (l instanceof MessageListener.Synchronous)
-                        notifyMessageListener(l, from, message);
-            }
-        }
-
-        for (MessageListener l : _mListeners)
-            if (!(l instanceof MessageListener.Synchronous))
-                notifyMessageListener(l, from, message);
-
+        deliver(from,message);
         message.decRef();
+    }
+
+
+    /* ------------------------------------------------------------ */
+    private void notifyMessageListener(MessageListener listener, Client from, Message message)
+    {
+        try
+        {
+            listener.deliver(from, this, message);
+        }
+        catch (Throwable x)
+        {
+            Log.debug(x);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -1318,44 +1305,38 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     public void addListener(ClientListener listener)
     {
-        synchronized (_inQ)
+        boolean added=false;
+        if (listener instanceof MessageListener)
         {
-            boolean added=false;
-            if (listener instanceof MessageListener)
-            {
-                added=true;
-                if (_mListeners == null)
-                    _mListeners = new CopyOnWriteArrayList<MessageListener>();
-                _mListeners.add((MessageListener)listener);
-            }
-            if (listener instanceof RemoveListener)
-            {
-                added=true;
-                if (_rListeners == null)
-                    _rListeners = new CopyOnWriteArrayList<RemoveListener>();
-                _rListeners.add((RemoveListener)listener);
-            }
-
-            if (!added)
-                throw new IllegalArgumentException();
+            added=true;
+            if (_mListeners == null)
+                _mListeners = new CopyOnWriteArrayList<MessageListener>();
+            _mListeners.add((MessageListener)listener);
         }
+        if (listener instanceof RemoveListener)
+        {
+            added=true;
+            if (_rListeners == null)
+                _rListeners = new CopyOnWriteArrayList<RemoveListener>();
+            _rListeners.add((RemoveListener)listener);
+        }
+
+        if (!added)
+            throw new IllegalArgumentException();
     }
 
     /* ------------------------------------------------------------ */
     public void removeListener(ClientListener listener)
     {
-        synchronized (_inQ)
+        if (listener instanceof MessageListener)
         {
-            if (listener instanceof MessageListener)
-            {
-                if (_mListeners != null)
-                    _mListeners.remove((MessageListener)listener);
-            }
-            if (listener instanceof RemoveListener)
-            {
-                if (_rListeners != null)
-                    _rListeners.remove((RemoveListener)listener);
-            }
+            if (_mListeners != null)
+                _mListeners.remove((MessageListener)listener);
+        }
+        if (listener instanceof RemoveListener)
+        {
+            if (_rListeners != null)
+                _rListeners.remove((RemoveListener)listener);
         }
     }
 
