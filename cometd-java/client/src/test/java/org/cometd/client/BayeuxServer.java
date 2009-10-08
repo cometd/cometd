@@ -1,7 +1,6 @@
 package org.cometd.client;
 
 import org.cometd.server.continuation.ContinuationCometdServlet;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -22,7 +21,12 @@ public class BayeuxServer
             port = Integer.parseInt(args[0]);
 
         Server server = new Server();
-        Connector connector = new SelectChannelConnector();
+        SelectChannelConnector connector = new SelectChannelConnector();
+        // Make sure the OS is configured properly for load testing;
+        // see http://docs.codehaus.org/display/JETTY/HighLoadServers
+        connector.setAcceptQueueSize(2048);
+        // Make sure the server timeout on a TCP connection is large
+        connector.setMaxIdleTime(240000);
         connector.setPort(port);
         server.addConnector(connector);
 
@@ -42,7 +46,13 @@ public class BayeuxServer
         String cometServletPath = "/cometd";
         ContinuationCometdServlet cometServlet = new ContinuationCometdServlet();
         ServletHolder cometServletHolder = new ServletHolder(cometServlet);
+        // Make sure the expiration timeout is large to avoid clients to timeout
+        // This value must be several times larger than the client value
+        // (e.g. 60 s on server vs 5 s on client) so that it's guaranteed that
+        // it will be the client to dispose idle connections. 
         cometServletHolder.setInitParameter("maxInterval", String.valueOf(60000));
+        // Explicitely set the timeout value
+        cometServletHolder.setInitParameter("timeout", String.valueOf(30000));
         context.addServlet(cometServletHolder, cometServletPath + "/*");
 
         server.start();
