@@ -2,7 +2,7 @@
 <archetype-descriptor name="cometd-archetype-jquery-jetty6">
     <requiredProperties>
         <requiredProperty key="jettyVersion">
-            <defaultValue>6.1.19</defaultValue>
+            <defaultValue>6.1.21</defaultValue>
         </requiredProperty>
         <requiredProperty key="cometdVersion">
             <defaultValue>${project.version}</defaultValue>
