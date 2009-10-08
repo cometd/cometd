@@ -9,7 +9,7 @@
 
     <servlet>
         <servlet-name>cometd</servlet-name>
-        <servlet-class>org.mortbay.cometd.continuation.ContinuationCometdServlet</servlet-class>
+        <servlet-class>org.cometd.server.continuation.ContinuationCometdServlet</servlet-class>
         <init-param>
             <param-name>timeout</param-name>
             <param-value>60000</param-value>
