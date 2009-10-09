@@ -2,68 +2,121 @@ dojo.require("dojox.cometd");
 dojo.require("dojox.cometd.timestamp");
 dojo.require("dojox.cometd.ack");
 
-
 var room = {
-    _last: "",
+    _lastUser: null,
     _username: null,
-    _connected: true,
-    
-    join: function(name){
-    
-        if (name == null || name.length == 0) {
-            alert('Please enter a username!');
+    _connected: false,
+    _disconnecting: false,
+    _chatSubscription: null,
+    _membersSubscription: null,
+
+    _init: function()
+    {
+        dojo.removeClass("join", "hidden");
+        dojo.addClass("joined", "hidden");
+        dojo.byId('username').focus();
+
+        dojo.query("#username").attr({
+            "autocomplete": "off"
+        }).onkeyup(function(e)
+        {
+            if (e.keyCode == dojo.keys.ENTER)
+            {
+                room.join(dojo.byId('username').value);
+            }
+        });
+
+        dojo.query("#joinButton").onclick(function(e)
+        {
+            room.join(dojo.byId('username').value);
+        });
+
+        dojo.query("#phrase").attr({
+            "autocomplete": "off"
+        }).onkeyup(function(e)
+        {
+            if (e.keyCode == dojo.keys.ENTER)
+            {
+                room.chat();
+            }
+        });
+
+        dojo.query("#sendButton").onclick(function(e)
+        {
+            room.chat();
+        });
+
+        dojo.query("#leaveButton").onclick(room, "leave");
+    },
+
+    join: function(name)
+    {
+        room._disconnecting = false;
+
+        if (name == null || name.length == 0)
+        {
+            alert('Please enter a username');
             return;
         }
-        
-        dojox.cometd.ackEnabled = (dojo.query("#ackInit").attr("checked") == "true");
-        
-        var cometURL = (new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/dojo-examples\/.*$/, '')) + "/cometd";
-        dojox.cometd.init({ url: cometURL, logLevel: "info" });
-        // For x-domain test change line above to:
-        // dojox.cometd.init("http://127.0.0.1:8080/cometd/cometd");
-        this._connected = true;
-        
-        this._username = name;
+
+        dojox.cometd.ackEnabled = dojo.query("#ackEnabled").attr("checked");
+
+        var cometdURL = location.protocol + "//" + location.host + config.contextPath + "/cometd";
+        dojox.cometd.init({
+            url: cometdURL,
+            logLevel: "debug"
+        });
+
+        room._username = name;
+
         dojo.addClass("join", "hidden");
         dojo.removeClass("joined", "hidden");
         dojo.byId("phrase").focus();
     },
-    
-    leave: function(){
-        if (!room._username) {
-            return;
-        }
-        
-        if (room._meta) {
-            dojo.unsubscribe(room._meta);
-        }
-        room._meta = null;
-        
+
+    _unsubscribe: function()
+    {
+
+    },
+
+    _subscribe: function()
+    {
+        room._chatSubscription = dojox.cometd.subscribe('/chat/demo', room.receive);
+        room._membersSubscription = dojox.cometd.subscribe('/chat/members', room.members);
+    },
+
+    leave: function()
+    {
         dojox.cometd.startBatch();
-        dojox.cometd.unsubscribe(room._subscription);
         dojox.cometd.publish("/chat/demo", {
             user: room._username,
-            leave: true,
             chat: room._username + " has left"
         });
+        room._unsubscribe();
+        dojox.cometd.disconnect();
         dojox.cometd.endBatch();
-        
+
         // switch the input form
         dojo.removeClass("join", "hidden");
         dojo.addClass("joined", "hidden");
-        
+
         dojo.byId("username").focus();
-        room._username = null;
-        dojox.cometd.disconnect();
         dojo.byId('members').innerHTML = "";
+
+        room._username = null;
+        room._lastUser = null;
+        room._disconnecting = true;
     },
-    
-    chat: function(text){
-        if (!text || !text.length) {
-            return false;
-        }
+
+    chat: function()
+    {
+        var text = dojo.byId('phrase').value;
+        dojo.byId('phrase').value = '';
+        if (!text || !text.length) return;
+
         var colons = text.indexOf("::");
-        if (colons > 0) {
+        if (colons > 0)
+        {
             dojox.cometd.publish("/service/privatechat", {
                 room: "/chat/demo", // This should be replaced by the room name
                 user: room._username,
@@ -71,145 +124,125 @@ var room = {
                 peer: text.substring(0, colons)
             });
         }
-        else {
+        else
+        {
             dojox.cometd.publish("/chat/demo", {
                 user: room._username,
                 chat: text
             });
         }
     },
-    
-    _chat: function(message){
-        if (!message.data) {
-            // console.debug("bad message format " + message);
-            return;
+
+    receive: function(message)
+    {
+        var fromUser = message.data.user;
+        var membership = message.data.join || message.data.leave;
+        var text = message.data.chat;
+
+        if (!membership && fromUser == room._lastUser)
+        {
+            fromUser = "...";
         }
-        
-        if (message.data instanceof Array) 
-	{
-            var members = dojo.byId('members');
-            var list = "";
-            for (var i in message.data) 
-                list += message.data[i] + "<br/>";
-            members.innerHTML = list;
+        else
+        {
+            room._lastUser = fromUser;
+            fromUser += ":";
         }
-        else 
-	{
-            var chat = dojo.byId('chat');
-            var from = message.data.user;
-            var membership = message.data.join || message.data.leave;
-            var text = message.data.chat;
-            if (!text) 
-                return;
-            
-            if (!membership && from == room._last) {
-                from = "...";
-            }
-            else {
-                room._last = from;
-                from += ":";
-            }
-            
-            if (membership) {
-                chat.innerHTML += "<span class=\"membership\"><span class=\"from\">" + from + "&nbsp;</span><span class=\"text\">" + text + "</span></span><br/>";
-                room._last = "";
-            }
-            else 
-                if (message.data.scope == "private") {
-                    chat.innerHTML += "<span class=\"private\"><span class=\"from\">" + from + "&nbsp;</span><span class=\"text\">[private]&nbsp;" + text + "</span></span><br/>";
-                }
-                else {
-                    chat.innerHTML += "<span class=\"from\">" + from + "&nbsp;</span><span class=\"text\">" + text + "</span><br/>";
-                }
-            chat.scrollTop = chat.scrollHeight - chat.clientHeight;
+
+        var chat = dojo.byId('chat');
+        if (membership)
+        {
+            chat.innerHTML += "<span class=\"membership\"><span class=\"from\">" + fromUser + "&nbsp;</span><span class=\"text\">" + text + "</span></span><br/>";
+            room._lastUser = null;
         }
+        else if (message.data.scope == "private")
+        {
+            chat.innerHTML += "<span class=\"private\"><span class=\"from\">" + fromUser + "&nbsp;</span><span class=\"text\">[private]&nbsp;" + text + "</span></span><br/>";
+        }
+        else
+        {
+            chat.innerHTML += "<span class=\"from\">" + fromUser + "&nbsp;</span><span class=\"text\">" + text + "</span><br/>";
+        }
+
+        chat.scrollTop = chat.scrollHeight - chat.clientHeight;
     },
-    
-    _init: function(){
-        dojo.removeClass("join", "hidden");
-        dojo.addClass("joined", "hidden");
-        
-        dojo.byId('username').focus();
-        
-        dojo.query("#username").attr({
-            "autocomplete": "OFF"
-        }).onkeyup(function(e){
-            if (e.keyCode == dojo.keys.ENTER) {
-                room.join(dojo.byId('username').value);
-                
-                return false;
-            }
-            return true;
-        });
-        
-        dojo.query("#joinB").onclick(function(e){
-            room.join(dojo.byId('username').value);
-            e.preventDefault();
-        });
-        
-        dojo.query("#phrase").attr({
-            "autocomplete": "OFF"
-        }).onkeyup(function(e){
-            if (e.keyCode == dojo.keys.ENTER) {
-                room.chat(dojo.byId('phrase').value);
-                dojo.byId('phrase').value = '';
-                e.preventDefault();
-            }
-        });
-        
-        dojo.query("#sendB").onclick(function(e){
-            room.chat(dojo.byId('phrase').value);
-            dojo.byId('phrase').value = '';
-        });
-        
-        dojo.query("#leaveB").onclick(room, "leave");
+
+    members: function(message)
+    {
+        var members = dojo.byId('members');
+        var list = "";
+        for (var i in message.data)
+            list += message.data[i] + "<br/>";
+        members.innerHTML = list;
     },
-    
-    _meta: function(e){
-        if (e.action == "handshake") {	
-            if (e.successful) {
-                room._subscription=dojox.cometd.subscribe("/chat/demo", room, "_chat");
-                dojox.cometd.publish("/chat/demo", {
-                    user: room._username,
-                    join: true,
-                    chat: room._username + (e.reestablish?" has re-joined":" has joined")
-                });
+
+    _connectionEstablished: function()
+    {
+        room.receive({
+            data: {
+                user: 'system',
+                chat: 'Connection to Server Opened'
             }
-		      
-            if (e.reestablish) {
-                room._chat({
-                    data: {
-                        join: true,
-                        user: "SERVER",
-                        chat: "handshake " + e.successful ? "Handshake OK" : "Failed"
-                    }
-                });
+        });
+        dojox.cometd.startBatch();
+        room._unsubscribe();
+        room._subscribe();
+        dojox.cometd.publish('/service/members', {
+            user: room._username,
+            room: '/chat/demo'
+        });
+        dojox.cometd.publish('/chat/demo', {
+            user: room._username,
+            membership: 'join',
+            chat: room._username + ' has joined'
+        });
+        dojox.cometd.endBatch();
+    },
+
+    _connectionBroken: function()
+    {
+        room.receive({
+            data: {
+                user: 'system',
+                chat: 'Connection to Server Broken'
+            }
+        });
+        dojo.byId('members').innerHTML = "";
+    },
+
+    _connectionClosed: function()
+    {
+        room.receive({
+            data: {
+                user: 'system',
+                chat: 'Connection to Server Closed'
+            }
+        });
+    },
+
+    _metaConnect: function(message)
+    {
+        if (room._disconnecting)
+        {
+            room._connected = false;
+            room._connectionClosed();
+        }
+        else
+        {
+            var wasConnected = room._connected;
+            room._connected = message.successful === true;
+            if (!wasConnected && room._connected)
+            {
+                room._connectionEstablished();
+            }
+            else if (wasConnected && !room._connected)
+            {
+                room._connectionBroken();
             }
         }
-        else if (e.action == "connect") {
-            if (e.successful && !this._connected) {
-                room._chat({
-                    data: {
-                        join: true,
-                        user: "SERVER",
-                        chat: "reconnected!"
-                    }
-                });
-            }
-            if (!e.successful && this._connected) {
-                room._chat({
-                    data: {
-                        leave: true,
-                        user: "SERVER",
-                        chat: "disconnected!"
-                    }
-                });
-            }
-            this._connected = e.successful;
-        }
-    }    
+    }
 };
-        
-dojo.subscribe("/cometd/meta",room, room._meta);
+
+dojox.cometd.addListener("/meta/connect", room, room._metaConnect);
 dojo.addOnLoad(room, "_init");
-dojo.addOnUnload(dojox.cometd, "disconnect");
+dojo.addOnUnload(room, "leave");
