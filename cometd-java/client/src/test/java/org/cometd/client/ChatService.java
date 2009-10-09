@@ -3,6 +3,7 @@ package org.cometd.client;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -11,7 +12,6 @@ import org.cometd.Channel;
 import org.cometd.Client;
 import org.cometd.RemoveListener;
 import org.cometd.server.BayeuxService;
-import org.eclipse.jetty.util.log.Log;
 
 public class ChatService extends BayeuxService
 {
@@ -20,44 +20,43 @@ public class ChatService extends BayeuxService
     public ChatService(Bayeux bayeux)
     {
         super(bayeux, "chat");
-        subscribe("/chat/**", "trackMembers");
+        subscribe("/service/members", "handleMembership");
         subscribe("/service/privatechat", "privateChat");
     }
 
-    public void trackMembers(final Client joiner, final String channelName, Map<String, Object> data, final String messageId)
+    public void handleMembership(Client client, Map<String, Object> data)
     {
-        if (Boolean.TRUE.equals(data.get("join")))
+        String room = (String)data.get("room");
+        Map<String, String> roomMembers = _members.get(room);
+        if (roomMembers == null)
         {
-            Map<String, String> membersMap = _members.get(channelName);
-            if (membersMap == null)
-            {
-                Map<String, String> newMembersMap = new ConcurrentHashMap<String, String>();
-                membersMap = _members.putIfAbsent(channelName, newMembersMap);
-                if (membersMap == null) membersMap = newMembersMap;
-            }
-
-            final Map<String, String> members = membersMap;
-            final String userName = (String)data.get("user");
-            members.put(userName, joiner.getId());
-            joiner.addListener(new RemoveListener()
-            {
-                public void removed(String clientId, boolean timeout)
-                {
-                    members.values().remove(clientId);
-                    Log.info("members: " + members);
-                    // Broadcast the members to all existing members
-                    Channel channel = getBayeux().getChannel(channelName, false);
-                    if (channel != null) channel.publish(getClient(), members.keySet(), messageId);
-                }
-            });
-
-            Log.info("Members: " + members);
-            // Broadcast the members to all existing members
-            getBayeux().getChannel(channelName, false).publish(getClient(), members.keySet(), messageId);
+            Map<String, String> newRoomMembers = new ConcurrentHashMap<String, String>();
+            roomMembers = _members.putIfAbsent(room, newRoomMembers);
+            if (roomMembers == null) roomMembers = newRoomMembers;
         }
+        final Map<String, String> members = roomMembers;
+        String userName = (String)data.get("user");
+        members.put(userName, client.getId());
+        client.addListener(new RemoveListener()
+        {
+            public void removed(String clientId, boolean timeout)
+            {
+                members.values().remove(clientId);
+                broadcastMembers(members.keySet());
+            }
+        });
+        broadcastMembers(members.keySet());
     }
 
-    public void privateChat(Client source, String channel, Map<String, Object> data, String messageId)
+    private void broadcastMembers(Set<String> members)
+    {
+        // Broadcast the new members list
+        Channel channel = getBayeux().getChannel("/chat/members", false);
+        if (channel != null)
+            channel.publish(getClient(), members, null);
+    }
+
+    public void privateChat(Client client, Map<String, Object> data)
     {
         String roomName = (String)data.get("room");
         Map<String, String> membersMap = _members.get(roomName);
@@ -81,16 +80,9 @@ public class ChatService extends BayeuxService
             message.put("chat", data.get("chat"));
             message.put("user", data.get("user"));
             message.put("scope", "private");
-            for (Client peer : peers) peer.deliver(source, roomName, message, messageId);
-            source.deliver(getClient(), roomName, message, messageId);
-        }
-        else if (!"silent".equals(data.get("peer")))
-        {
-            Map<String, Object> message = new HashMap<String, Object>();
-            message.put("chat", "Unknown user(s): "+data.get("peer"));
-            message.put("user", "SERVER");
-            message.put("scope", "error");
-            source.deliver(source, roomName, message, messageId);
+            for (Client peer : peers)
+                peer.deliver(client, roomName, message, null);
+            client.deliver(getClient(), roomName, message, null);
         }
     }
 }

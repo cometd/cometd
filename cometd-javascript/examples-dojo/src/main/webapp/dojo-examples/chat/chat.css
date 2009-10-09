@@ -1,68 +1,66 @@
-
-div 
-{ 
-  border: 0px solid black; 
+body {
+    margin-left: auto;
+    margin-right: auto;
+    width: 50em;
 }
 
-#chatroom
-{
-  width: 42em;
-  background-color: #e0e0e0;
-  border: 1px solid black; 
+input {
+    margin: 0;
 }
 
-#chat
-{
-  float: left;
-  width: 32em;
-  height: 20ex;
-  overflow: auto; 
-  background-color: #f0f0f0;
-  padding: 0.2em;
-  border-right: 1px solid black; 
+table td {
+    padding: 0.2em;
 }
 
-#members
-{
-  float: left;
-  clear: right;
-  width: 8em;
-  border: 0px solid black; 
-  overflow: auto; 
-  padding: 4px;
+#chatroom {
+    border: 1px solid black;
+    background-color: #ffffff;
 }
 
-#input
-{
-  clear: both;
-  padding: 0.2em;
-  border-top: 1px solid black; 
+#chat {
+    float: left;
+    width: 38em;
+    height: 16em;
+    overflow: auto;
+    background-color: #f0f0f0;
+    padding: 0.2em;
+    border-right: 1px solid black;
 }
 
-#phrase
-{
-  width:28em;
-  background-color: #e0f0f0;
+#members {
+    float: left;
+    clear: right;
+    overflow: auto;
+    padding: 0.2em;
 }
 
-#username
-{
-  width:14em;
-  background-color: #e0f0f0;
+#input {
+    clear: both;
+    padding: 0.2em;
+    border-top: 1px solid black;
+    background-color: #efebe7;
 }
 
-div.hidden
-{
+#phrase {
+    width: 28em;
+}
+
+#altServer {
+    width: 20em;
+}
+
+#username {
+    width: 20em;
+}
+
+.hidden {
   display: none;
 }
 
-span.from
-{
-  font-weight: bold;
+span.from {
+    font-weight: bold;
 }
 
-span.alert
-{
-  font-style: italic;
+span.membership {
+    font-style: italic;
 }
-
