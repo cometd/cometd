@@ -148,7 +148,7 @@ org.cometd.Cometd = function(name)
     var _backoffIncrement;
     var _maxBackoff;
     var _reverseIncomingExtensions;
-    var _jsonpFailureDelay;
+    var _maxNetworkDelay;
     var _requestHeaders;
     var _crossDomain = false;
     var _transports = new org.cometd.TransportRegistry();
@@ -299,7 +299,7 @@ org.cometd.Cometd = function(name)
         _maxBackoff = configuration.maxBackoff || 60000;
         _logLevel = configuration.logLevel || 'info';
         _reverseIncomingExtensions = configuration.reverseIncomingExtensions !== false;
-        _jsonpFailureDelay = configuration.jsonpFailureDelay || 5000;
+        _maxNetworkDelay = configuration.maxNetworkDelay || 5000;
         _requestHeaders = configuration.requestHeaders || {};
 
         // Check if we're cross domain
@@ -1709,20 +1709,91 @@ org.cometd.Cometd = function(name)
         var _requests = [];
         var _envelopes = [];
 
-        this.registered = function(type)
+        /**
+         * Function invoked just after a transport has been successfully registered.
+         * @param type the type of transport (for example 'long-polling')
+         * @param cometd the cometd object this transport has been registered to
+         * @see #unregistered()
+         */
+        this.registered = function(type, cometd)
         {
             _type = type;
         };
 
+        /**
+         * Function invoked just after a transport has been successfully unregistered.
+         * @see #registered(type, cometd)
+         */
         this.unregistered = function()
         {
             _type = null;
         };
 
+        /**
+         * Returns whether this transport can work for the given version and cross domain communication case.
+         * @param version a string indicating the transport version
+         * @param crossDomain a boolean indicating whether the communication is cross domain
+         * @return true if this transport can work for the given version and cross domain communication case,
+         * false otherwise
+         */
         this.accept = function(version, crossDomain)
         {
             throw 'Abstract';
         };
+
+        /**
+         * Performs the actual send depending on the transport type details.
+         * @param envelope the envelope to send
+         * @param request the request information
+         */
+        this.transportSend = function(envelope, request)
+        {
+            throw 'Abstract';
+        };
+
+        this.transportSuccess = function(envelope, request, response)
+        {
+            if (!request.expired)
+            {
+                clearTimeout(request.timeout);
+                envelope.onSuccess(request, response);
+            }
+        };
+
+        this.transportFailure = function(envelope, request, reason, exception)
+        {
+            if (!request.expired)
+            {
+                clearTimeout(request.timeout);
+                envelope.onFailure(request, reason, exception);
+            }
+        };
+
+        function _transportSend(envelope, request)
+        {
+            var self = this;
+
+            this.transportSend(envelope, request);
+
+            request.expired = false;
+
+            var delay = _maxNetworkDelay;
+            if (request.longpoll === true)
+            {
+                delay +=_advice && typeof _advice.timeout === 'number' ? _advice.timeout : 0;
+            }
+            request.timeout = _setTimeout(function()
+            {
+                request.expired = true;
+                if (request.xhr)
+                {
+                    request.xhr.abort();
+                }
+                var errorMessage = 'Transport ' + self.getType() + ' exceeded ' + delay + ' ms max network delay';
+                _debug(errorMessage);
+                envelope.onFailure(request, 'timeout', errorMessage);
+            }, delay);
+        }
 
         function _longpollSend(envelope)
         {
@@ -1736,7 +1807,7 @@ org.cometd.Cometd = function(name)
                 id: requestId,
                 longpoll: true
             };
-            this.transportSend(envelope, request);
+            _transportSend.call(this, envelope, request);
             _longpollRequest = request;
         }
 
@@ -1750,7 +1821,7 @@ org.cometd.Cometd = function(name)
             // Consider the longpoll requests which should always be present
             if (_requests.length < _maxConnections - 1)
             {
-                this.transportSend(envelope, request);
+                _transportSend.call(this, envelope, request);
                 _requests.push(request);
             }
             else
@@ -1795,11 +1866,10 @@ org.cometd.Cometd = function(name)
             }
         }
 
-        this.transportSend = function(envelope, request)
-        {
-            throw 'Abstract';
-        };
-
+        /**
+         * Returns the type of this transport.
+         * @see #registered(type, cometd)
+         */
         this.getType = function()
         {
             return _type;
@@ -1876,6 +1946,7 @@ org.cometd.Cometd = function(name)
 
         this.transportSend = function(envelope, request)
         {
+            var self = this;
             try
             {
                 request.xhr = this.xhrSend({
@@ -1885,12 +1956,12 @@ org.cometd.Cometd = function(name)
                     body: org.cometd.JSON.toJSON(envelope.messages),
                     onSuccess: function(response)
                     {
-                        envelope.onSuccess(request, response);
+                        self.transportSuccess(envelope, request, response);
                     },
                     onError: function(reason, exception)
                     {
                         _supportsCrossDomain = false;
-                        envelope.onFailure(request, reason, exception);
+                        self.transportFailure(envelope, request, reason, exception);
                     }
                 });
             }
@@ -1898,7 +1969,10 @@ org.cometd.Cometd = function(name)
             {
                 _supportsCrossDomain = false;
                 // Keep the semantic of calling response callbacks asynchronously after the request
-                _setTimeout(function() { envelope.onFailure(request, 'error', x); }, 0);
+                _setTimeout(function()
+                {
+                    self.transportFailure(envelope, request, 'error', x);
+                }, 0);
             }
         };
 
@@ -1927,6 +2001,8 @@ org.cometd.Cometd = function(name)
 
         this.transportSend = function(envelope, request)
         {
+            var self = this;
+
             // Microsoft Internet Explorer has a 2083 URL max length
             // We must ensure that we stay within that length
             var messages = org.cometd.JSON.toJSON(envelope.messages);
@@ -1946,14 +2022,15 @@ org.cometd.Cometd = function(name)
                         'Bayeux message too big (' + urlLength + ' bytes, max is ' + _maxLength + ') ' +
                         'for transport ' + this.getType();
                 // Keep the semantic of calling response callbacks asynchronously after the request
-                _setTimeout(function() { envelope.onFailure(request, 'error', x); }, 0);
+                _setTimeout(function()
+                {
+                    self.transportFailure(envelope, request, 'error', x);
+                }, 0);
             }
             else
             {
                 try
                 {
-                    var expired = false;
-                    var timeout;
                     this.jsonpSend({
                         transport: this,
                         url: envelope.url,
@@ -1961,39 +2038,21 @@ org.cometd.Cometd = function(name)
                         body: messages,
                         onSuccess: function(response)
                         {
-                            if (!expired)
-                            {
-                                clearTimeout(timeout);
-                                envelope.onSuccess(request, response);
-                            }
+                            self.transportSuccess(envelope, request, response);
                         },
                         onError: function(reason, exception)
                         {
-                            if (!expired)
-                            {
-                                clearTimeout(timeout);
-                                envelope.onFailure(request, reason, exception);
-                            }
+                            self.transportFailure(envelope, request, reason, exception);
                         }
                     });
-                    var self = this;
-                    var delay = _jsonpFailureDelay;
-                    if (request.longpoll === true)
-                    {
-                        delay +=_advice && typeof _advice.timeout === 'number' ? _advice.timeout : 0;
-                    }
-                    timeout = _setTimeout(function()
-                    {
-                        expired = true;
-                        var errorMessage = 'Transport ' + self.getType() + ' exceeded ' + delay + ' ms failure delay';
-                        _debug(errorMessage);
-                        envelope.onFailure(request, 'timeout', errorMessage);
-                    }, delay);
                 }
                 catch (xx)
                 {
                     // Keep the semantic of calling response callbacks asynchronously after the request
-                    _setTimeout(function() { envelope.onFailure(request, 'error', xx); }, 0);
+                    _setTimeout(function()
+                    {
+                        self.transportFailure(envelope, request, 'error', xx);
+                    }, 0);
                 }
             }
         };
