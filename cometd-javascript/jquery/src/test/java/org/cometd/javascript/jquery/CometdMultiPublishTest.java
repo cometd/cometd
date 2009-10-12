@@ -58,8 +58,8 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.addListener('/meta/disconnect', disconnect, disconnect.listen);");
 
         listener.expect(1);
-        AtomicReference<List<Throwable>> failure = new AtomicReference<List<Throwable>>(new ArrayList<Throwable>());
-        handler.expect(failure, 4);
+        AtomicReference<List<Throwable>> failures = new AtomicReference<List<Throwable>>(new ArrayList<Throwable>());
+        handler.expect(failures, 4);
         disconnect.expect(1);
 
         // These publish are sent without waiting each one to return,
@@ -73,7 +73,7 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
 
         assertTrue(listener.await(1000));
         assertTrue(handler.await(1000));
-        assertTrue(failure.get().toString(), failure.get().isEmpty());
+        assertTrue(failures.get().toString(), failures.get().isEmpty());
         assertTrue(disconnect.await(1000));
     }
 
@@ -88,7 +88,6 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
 
         public void jsFunction_listen(Object message)
         {
-            if (latch.getCount() == 0) throw new AssertionError();
             latch.countDown();
         }
 
@@ -106,7 +105,7 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
     public static class Handler extends ScriptableObject
     {
         private int id;
-        private AtomicReference<List<Throwable>> failure;
+        private AtomicReference<List<Throwable>> failures;
         private CountDownLatch latch;
 
         public String getClassName()
@@ -122,7 +121,7 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
             if (id == 1)
             {
                 // First publish should succeed
-                if (successful == null || !successful) failure.get().add(new AssertionError("Publish " + id + " expected successful"));
+                if (successful == null || !successful) failures.get().add(new AssertionError("Publish " + id + " expected successful"));
             }
             else if (id == 2 || id == 3 || id == 4)
             {
@@ -130,20 +129,20 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
                 // Third and fourth are soft failed by the comet implementation
                 if (successful == null || successful)
                 {
-                    failure.get().add(new AssertionError("Publish " + id + " expected unsuccessful"));
+                    failures.get().add(new AssertionError("Publish " + id + " expected unsuccessful"));
                 }
                 else
                 {
                     int dataId = (Integer)((Map)((Map)message.get("request")).get("data")).get("id");
-                    if (dataId != id) failure.get().add(new AssertionError("data id " + dataId + ", expecting " + id));
+                    if (dataId != id) failures.get().add(new AssertionError("data id " + dataId + ", expecting " + id));
                 }
             }
             latch.countDown();
         }
 
-        public void expect(AtomicReference<List<Throwable>> failure, int count)
+        public void expect(AtomicReference<List<Throwable>> failures, int count)
         {
-            this.failure = failure;
+            this.failures = failures;
             latch = new CountDownLatch(count);
         }
 

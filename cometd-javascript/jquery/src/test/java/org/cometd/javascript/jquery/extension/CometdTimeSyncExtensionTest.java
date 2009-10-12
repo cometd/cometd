@@ -2,8 +2,8 @@ package org.cometd.javascript.jquery.extension;
 
 import java.net.URL;
 
-import org.cometd.Bayeux;
 import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
+import org.cometd.server.AbstractBayeux;
 import org.cometd.server.ext.TimesyncExtension;
 
 /**
@@ -11,7 +11,7 @@ import org.cometd.server.ext.TimesyncExtension;
  */
 public class CometdTimeSyncExtensionTest extends AbstractCometdJQueryTest
 {
-    protected void customizeBayeux(Bayeux bayeux)
+    protected void customizeBayeux(AbstractBayeux bayeux)
     {
         bayeux.addExtension(new TimesyncExtension());
     }

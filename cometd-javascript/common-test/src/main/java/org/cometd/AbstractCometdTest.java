@@ -23,6 +23,7 @@ import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
 
 import junit.framework.TestCase;
+import org.cometd.server.AbstractBayeux;
 import org.cometd.server.continuation.ContinuationCometdServlet;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -148,7 +149,7 @@ public abstract class AbstractCometdTest extends TestCase
 
     protected abstract void customizeContext(ServletContextHandler context) throws Exception;
 
-    protected void customizeBayeux(Bayeux bayeux)
+    protected void customizeBayeux(AbstractBayeux bayeux)
     {
     }
 
@@ -231,7 +232,7 @@ public abstract class AbstractCometdTest extends TestCase
             if (event.getName().equals(Bayeux.ATTRIBUTE))
             {
                 Bayeux bayeux = (Bayeux) event.getValue();
-                customizeBayeux(bayeux);
+                customizeBayeux((AbstractBayeux)bayeux);
             }
         }
 

@@ -4,10 +4,10 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.Bayeux;
 import org.cometd.Client;
 import org.cometd.Message;
 import org.cometd.SecurityPolicy;
+import org.cometd.server.AbstractBayeux;
 import org.mozilla.javascript.ScriptableObject;
 
 /**
@@ -17,7 +17,7 @@ import org.mozilla.javascript.ScriptableObject;
 public class CometdHandshakePropsTest extends AbstractCometdJQueryTest
 {
     @Override
-    protected void customizeBayeux(Bayeux bayeux)
+    protected void customizeBayeux(AbstractBayeux bayeux)
     {
         bayeux.setSecurityPolicy(new TokenSecurityPolicy());
     }
@@ -73,7 +73,6 @@ public class CometdHandshakePropsTest extends AbstractCometdJQueryTest
 
         public void jsFunction_handle(Object message)
         {
-            if (latch.getCount() == 0) throw new AssertionError();
             latch.countDown();
         }
 
