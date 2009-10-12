@@ -58,7 +58,6 @@ public class CometdDojoHitchTest extends AbstractCometdDojoTest
 
         public void jsFunction_handle(Object message)
         {
-            if (latch.getCount() == 0) throw new AssertionError();
             latch.countDown();
         }
 

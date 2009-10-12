@@ -58,7 +58,6 @@ public class CometdCrossOriginTest extends AbstractCometdJQueryTest
 
         public void jsFunction_countDown()
         {
-            if (latch.getCount() == 0) throw new AssertionError();
             latch.countDown();
         }
 

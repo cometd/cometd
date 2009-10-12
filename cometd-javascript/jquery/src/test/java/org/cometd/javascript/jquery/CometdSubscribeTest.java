@@ -120,7 +120,6 @@ public class CometdSubscribeTest extends AbstractCometdJQueryTest
 
         public void jsFunction_handle(Object message)
         {
-            if (latch.getCount() == 0) throw new AssertionError();
             latch.countDown();
         }
 

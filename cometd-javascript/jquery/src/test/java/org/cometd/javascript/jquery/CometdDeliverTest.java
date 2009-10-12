@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.Bayeux;
 import org.cometd.Client;
+import org.cometd.server.AbstractBayeux;
 import org.cometd.server.BayeuxService;
 import org.mozilla.javascript.ScriptableObject;
 
@@ -16,9 +17,8 @@ public class CometdDeliverTest extends AbstractCometdJQueryTest
 {
     private DeliverService service;
 
-    protected void customizeBayeux(Bayeux bayeux)
+    protected void customizeBayeux(AbstractBayeux bayeux)
     {
-        super.customizeBayeux(bayeux);
         service = new DeliverService(bayeux);
     }
 
