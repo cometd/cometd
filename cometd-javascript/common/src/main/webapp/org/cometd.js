@@ -299,7 +299,7 @@ org.cometd.Cometd = function(name)
         _maxBackoff = configuration.maxBackoff || 60000;
         _logLevel = configuration.logLevel || 'info';
         _reverseIncomingExtensions = configuration.reverseIncomingExtensions !== false;
-        _maxNetworkDelay = configuration.maxNetworkDelay || 5000;
+        _maxNetworkDelay = configuration.maxNetworkDelay || 10000;
         _requestHeaders = configuration.requestHeaders || {};
 
         // Check if we're cross domain
