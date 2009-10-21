@@ -6,6 +6,7 @@
 
     <display-name>Cometd Test WebApp</display-name>
 
+    <!--  Request that Jetty create an MBean to manage the Bayeux instance -->
     <context-param>
         <param-name>org.eclipse.jetty.server.context.ManagedAttributes</param-name>
         <param-value>org.cometd.bayeux</param-value>
