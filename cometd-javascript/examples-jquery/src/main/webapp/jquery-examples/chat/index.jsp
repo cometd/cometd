@@ -7,7 +7,7 @@
     <script type="text/javascript" src="../../org/cometd.js"></script>
     <script type="text/javascript" src="../../org/cometd/AckExtension.js"></script>
     <script type="text/javascript" src="../../jquery/jquery-1.3.2.js"></script>
-    <script type="text/javascript" src="../../jquery/jquery.json-1.3.js"></script>
+    <script type="text/javascript" src="../../jquery/jquery.json-2.2.js"></script>
     <script type="text/javascript" src="../../jquery/jquery.cometd.js"></script>
     <script type="text/javascript" src="chat.js"></script>
     <script type="text/javascript">

@@ -45,7 +45,7 @@ public abstract class AbstractCometdJQueryTest extends AbstractCometdTest
         evaluateURL(cometdURL);
         URL jqueryURL = new URL(contextURL + "/jquery/jquery-1.3.2.js");
         evaluateURL(jqueryURL);
-        URL jqueryJSONURL = new URL(contextURL + "/jquery/jquery.json-1.3.js");
+        URL jqueryJSONURL = new URL(contextURL + "/jquery/jquery.json-2.2.js");
         evaluateURL(jqueryJSONURL);
         URL jqueryCometdURL = new URL(contextURL + "/jquery/jquery.cometd.js");
         evaluateURL(jqueryCometdURL);
