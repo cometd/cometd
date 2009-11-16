@@ -240,12 +240,39 @@ org.cometd.Cometd = function(name)
         return -1;
     }
 
+    function _isString(value)
+    {
+        if (value === undefined || value === null)
+        {
+            return false;
+        }
+        return typeof value === 'string' ||  value instanceof String;
+    }
+
+    function _isArray(value)
+    {
+        if (value === undefined || value === null)
+        {
+            return false;
+        }
+        return value instanceof Array;
+    }
+
+    function _isFunction(value)
+    {
+        if (value === undefined || value === null)
+        {
+            return false;
+        }
+        return typeof value === 'function';
+    }
+
     function _log(level, args)
     {
         if (window.console)
         {
             var logger = window.console[level];
-            if (typeof logger === 'function')
+            if (_isFunction(logger))
             {
                 logger.apply(window.console, args);
             }
@@ -280,7 +307,7 @@ org.cometd.Cometd = function(name)
     {
         _debug('Configuring cometd object with', configuration);
         // Support old style param, where only the Bayeux server URL was passed
-        if (typeof configuration === 'string')
+        if (_isString(configuration))
         {
             configuration = { url: configuration };
         }
@@ -365,7 +392,7 @@ org.cometd.Cometd = function(name)
             var index = _reverseIncomingExtensions ? _extensions.length - 1 - i : i;
             var extension = _extensions[index];
             var callback = extension.extension.incoming;
-            if (callback && typeof callback === 'function')
+            if (_isFunction(callback))
             {
                 var result = _applyExtension(extension.name, callback, message);
                 message = result === undefined ? message : result;
@@ -385,7 +412,7 @@ org.cometd.Cometd = function(name)
 
             var extension = _extensions[i];
             var callback = extension.extension.outgoing;
-            if (callback && typeof callback === 'function')
+            if (_isFunction(callback))
             {
                 var result = _applyExtension(extension.name, callback, message);
                 message = result === undefined ? message : result;
@@ -1199,21 +1226,28 @@ org.cometd.Cometd = function(name)
         var thiz = scope;
         var method = callback;
         // Normalize arguments
-        if (typeof scope === 'function')
+        if (_isFunction(scope))
         {
             thiz = undefined;
             method = scope;
         }
-        else if (typeof callback === 'string')
+        else
         {
-            if (!scope)
+            if (_isString(callback))
             {
-                throw 'Invalid scope ' + scope;
+                if (!scope)
+                {
+                    throw 'Invalid scope ' + scope;
+                }
+                method = scope[callback];
+                if (!method)
+                {
+                    throw 'Invalid callback ' + callback + ' for scope ' + scope;
+                }
             }
-            method = scope[callback];
-            if (!method)
+            else if (!_isFunction(callback))
             {
-                throw 'Invalid callback ' + callback + ' for scope ' + scope;
+                throw 'Invalid callback ' + callback;
             }
         }
         _debug('Listener scope', thiz, 'and callback', method);
@@ -1276,7 +1310,7 @@ org.cometd.Cometd = function(name)
         {
             _debug('Registered transport', type);
 
-            if (typeof transport.registered === 'function')
+            if (_isFunction(transport.registered))
             {
                 transport.registered(type, this);
             }
@@ -1305,7 +1339,7 @@ org.cometd.Cometd = function(name)
         {
             _debug('Unregistered transport', type);
 
-            if (typeof transport.unregistered === 'function')
+            if (_isFunction(transport.unregistered))
             {
                 transport.unregistered();
             }
@@ -1399,19 +1433,28 @@ org.cometd.Cometd = function(name)
      * @param scope the scope of the callback, may be omitted
      * @param callback the callback to call when a message is sent to the channel
      * @returns the subscription handle to be passed to {@link #removeListener(object)}
-     * @see #removeListener(object)
+     * @see #removeListener(subscription)
      */
     this.addListener = function(channel, scope, callback)
     {
+        if (arguments.length < 2)
+            throw 'Illegal arguments number: required 2, got ' + arguments.length;
+        if (!_isString(channel))
+            throw 'Illegal argument type: channel must be a string';
+
         return _addListener(channel, scope, callback, false);
     };
 
     /**
      * Removes the subscription obtained with a call to {@link #addListener(string, object, function)}.
      * @param subscription the subscription to unsubscribe.
+     * @see #addListener(channel, scope, callback)
      */
     this.removeListener = function(subscription)
     {
+        if (!_isArray(subscription))
+            throw 'Invalid argument: expected subscription, not ' + subscription;
+
         _removeListener(subscription);
     };
 
@@ -1435,8 +1478,13 @@ org.cometd.Cometd = function(name)
      */
     this.subscribe = function(channel, scope, callback, subscribeProps)
     {
+        if (arguments.length < 2)
+            throw 'Illegal arguments number: required 2, got ' + arguments.length;
+        if (!_isString(channel))
+            throw 'Illegal argument type: channel must be a string';
+
         // Normalize arguments
-        if (typeof scope === 'function')
+        if (_isFunction(scope))
         {
             subscribeProps = callback;
             callback = scope;
@@ -1504,6 +1552,11 @@ org.cometd.Cometd = function(name)
      */
     this.publish = function(channel, content, publishProps)
     {
+        if (arguments.length < 1)
+            throw 'Illegal arguments number: required 1, got ' + arguments.length;
+        if (!_isString(channel))
+            throw 'Illegal argument type: channel must be a string';
+
         var bayeuxMessage = {
             channel: channel,
             data: content
@@ -1582,6 +1635,11 @@ org.cometd.Cometd = function(name)
      */
     this.registerExtension = function(name, extension)
     {
+        if (arguments.length < 2)
+            throw 'Illegal arguments number: required 2, got ' + arguments.length;
+        if (!_isString(name))
+            throw 'Illegal argument type: extension name must be a string';
+
         var existing = false;
         for (var i = 0; i < _extensions.length; ++i)
         {
@@ -1601,7 +1659,7 @@ org.cometd.Cometd = function(name)
             _debug('Registered extension', name);
 
             // Callback for extensions
-            if (typeof extension.registered === 'function')
+            if (_isFunction(extension.registered))
             {
                 extension.registered(name, this);
             }
@@ -1623,6 +1681,9 @@ org.cometd.Cometd = function(name)
      */
     this.unregisterExtension = function(name)
     {
+        if (!_isString(name))
+            throw 'Illegal argument type: extension name must be a string';
+
         var unregistered = false;
         for (var i = 0; i < _extensions.length; ++i)
         {
@@ -1635,7 +1696,7 @@ org.cometd.Cometd = function(name)
 
                 // Callback for extensions
                 var ext = extension.extension;
-                if (typeof ext.unregistered === 'function')
+                if (_isFunction(ext.unregistered))
                 {
                     ext.unregistered();
                 }
