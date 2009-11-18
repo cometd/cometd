@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,11 +22,9 @@ import org.eclipse.jetty.util.thread.Timeout;
 /**
  * Extension of {@link ClientImpl} that uses {@link Continuation}s to resume
  * clients waiting for messages. Continuation clients are used for remote
- * clients and have removed if they are not accessed within an idle timeout (@link
- * {@link ContinuationBayeux#_clientTimer}).
- * 
- * @author gregw
- * 
+ * clients and are removed if they are not accessed within an idle timeout.
+ *
+ * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
  */
 public class ContinuationClient extends ClientImpl
 {
@@ -83,7 +81,7 @@ public class ContinuationClient extends ClientImpl
                     return "L-" + ContinuationClient.this.toString();
                 }
             };
-            
+
             _bayeux.startTimeout(_intervalTimeoutTask,_bayeux.getMaxInterval());
         }
     }
@@ -96,12 +94,8 @@ public class ContinuationClient extends ClientImpl
             synchronized(this)
             {
                 // This is the end of a long poll
-                
-                // resume any prior continuation
-                if (_continuation != null)
-                    _continuation.resume();
                 _continuation=null;
-                
+
                 // Set timeout when to expect the next long poll
                 if (_intervalTimeoutTask != null)
                     _bayeux.startTimeout(_intervalTimeoutTask,_bayeux.getMaxInterval());
@@ -140,10 +134,10 @@ public class ContinuationClient extends ClientImpl
         {
             _lazyResuming=true;
             // use modulo so all lazy clients do not wakeup at once
-            _bayeux.startTimeout(_lazyTimeoutTask,_accessed%max); 
+            _bayeux.startTimeout(_lazyTimeoutTask,_accessed%max);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void resume()
@@ -189,7 +183,7 @@ public class ContinuationClient extends ClientImpl
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.cometd.server.ClientImpl#remove(boolean)
      */
     @Override
