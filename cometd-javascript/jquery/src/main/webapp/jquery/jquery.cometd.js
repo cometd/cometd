@@ -34,7 +34,7 @@
             return $.ajax({
                 url: packet.url,
                 type: 'POST',
-                contentType: 'text/json;charset=UTF-8',
+                contentType: 'application/json',
                 data: packet.body,
                 beforeSend: function(xhr)
                 {

@@ -115,8 +115,8 @@ public interface Bayeux
     public static final String TRANSPORT_FLASH="flash";
 
     /*http field names*/
-    /**http helpers - text/json content type*/
-    public static final String JSON_CONTENT_TYPE="text/json";
+    /**http helpers - application/json content type*/
+    public static final String JSON_CONTENT_TYPE="application/json";
     /**http helpers - parameter name for json message*/
     public static final String MESSAGE_PARAMETER="message";
     /**http helpers - name of the jsonp parameter*/

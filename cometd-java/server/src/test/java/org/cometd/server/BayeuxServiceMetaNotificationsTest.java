@@ -137,7 +137,7 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxServiceTes
         ContentExchange result = new ContentExchange(true);
         result.setURL(cometdURL);
         result.setMethod(HttpMethods.POST);
-        result.setRequestContentType("text/json;charset=UTF-8");
+        result.setRequestContentType(Bayeux.JSON_CONTENT_TYPE);
         result.setRequestContent(new ByteArrayBuffer(requestBody, "UTF-8"));
         return result;
     }
