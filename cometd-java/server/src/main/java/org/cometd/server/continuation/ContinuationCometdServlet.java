@@ -38,14 +38,14 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
     public final static int __DEFAULT_REFS_THRESHOLD=0;
     protected int _refsThreshold=__DEFAULT_REFS_THRESHOLD;
     String _responseBuffer;
-    
+
     @Override
-    public void init() throws ServletException 
+    public void init() throws ServletException
     {
         String refsThreshold=getInitParameter("refsThreshold");
         if (refsThreshold != null)
             _refsThreshold=Integer.parseInt(refsThreshold);
-        
+
         if (_refsThreshold>0)
         {
             String server = getServletContext().getServerInfo();
@@ -56,10 +56,10 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
             else
                 _refsThreshold=0;
         }
-        
+
         super.init();
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected AbstractBayeux newBayeux()
@@ -256,8 +256,10 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                                             + "\":\"" + Bayeux.META_CONNECT + "\"}]").getBytes(StringUtil.__UTF8);
                                     int contentLength=contentBytes.length;
 
-                                    String headerString="HTTP/1.1 200 OK\r\n" + "Content-Type: text/json; charset=utf-8\r\n" + "Content-Length: "
-                                            + contentLength + "\r\n" + "\r\n";
+                                    String headerString="HTTP/1.1 200 OK\r\n" +
+                                            "Content-Type: " + Bayeux.JSON_CONTENT_TYPE + "\r\n" + 
+                                            "Content-Length: " + contentLength + "\r\n" +
+                                            "\r\n";
 
                                     byte[] headerBytes=headerString.getBytes(StringUtil.__UTF8);
 

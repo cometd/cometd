@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import javax.servlet.http.HttpServletResponse;
 
+import org.cometd.Bayeux;
 import org.cometd.Message;
 import org.eclipse.jetty.util.ajax.JSON;
 
@@ -26,14 +27,12 @@ public class JSONTransport extends AbstractTransport
 {
     private int _responses;
     private PrintWriter _out;
-    private String _contentType;
     private String _start;
     private String _end;
 
     /* ------------------------------------------------------------ */
     public JSONTransport()
     {
-        _contentType="text/json; charset=utf-8";
         _start="[";
         _end="]\r\n";
     }
@@ -56,7 +55,7 @@ public class JSONTransport extends AbstractTransport
             {
                 case 0:
                     response.setStatus(200);
-                    response.setContentType(_contentType);
+                    response.setContentType(Bayeux.JSON_CONTENT_TYPE);
                     _out=response.getWriter();
                     _out.write(_start);
                     _out.write(r);

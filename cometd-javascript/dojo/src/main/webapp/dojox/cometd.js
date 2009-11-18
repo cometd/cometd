@@ -22,7 +22,7 @@ dojox.cometd.LongPollingTransport = function()
     {
         var deferred = dojo.rawXhrPost({
             url: packet.url,
-            contentType: 'text/json;charset=UTF-8',
+            contentType: 'application/json',
             headers: packet.headers,
             postData: packet.body,
             handleAs: 'json',

@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
@@ -695,7 +694,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
             setScheme(HttpSchemes.HTTP_BUFFER);
             setAddress(_cometdAddress);
             setURI(_path + "/" + info);
-            setRequestContentType(_formEncoded?"application/x-www-form-urlencoded;charset=utf-8":"text/json;charset=utf-8");
+            setRequestContentType(_formEncoded ? "application/x-www-form-urlencoded;charset=utf-8" : Bayeux.JSON_CONTENT_TYPE);
         }
 
         /* ------------------------------------------------------------ */
