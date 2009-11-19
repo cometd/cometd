@@ -2,6 +2,7 @@ package org.cometd;
 
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -64,7 +65,7 @@ public class HttpCookieStore extends ScriptableObject
                     if ("expires".equalsIgnoreCase(key))
                     {
                         if (cookie.expires == null)
-                            cookie.expires = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'").parse(val).getTime();
+                            cookie.expires = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US).parse(val).getTime();
                     }
                     else if ("max-age".equalsIgnoreCase(key))
                     {
