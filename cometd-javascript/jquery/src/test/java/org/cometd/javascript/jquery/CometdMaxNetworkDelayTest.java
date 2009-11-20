@@ -58,11 +58,13 @@ public class CometdMaxNetworkDelayTest extends AbstractCometdJQueryTest
 
         evaluateScript("$.cometd.handshake();");
 
+        Thread.sleep(500); // Allow long poll to establish
+
         AtomicReference<List<Throwable>> failures = new AtomicReference<List<Throwable>>(new ArrayList<Throwable>());
         publishListener.expect(failures, 1);
         evaluateScript("$.cometd.publish('/test', {});");
 
-        // The publish is supposed to return immediately
+        // The publish() above is supposed to return immediately
         // However, the test holds it for 2 * maxNetworkDelay
         // The request timeout kicks in after maxNetworkDelay,
         // canceling the request.
