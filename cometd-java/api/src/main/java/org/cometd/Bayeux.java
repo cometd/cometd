@@ -130,7 +130,17 @@ public interface Bayeux
      * @param create If true, a channel will be created if it does not exist.
      * @return A Channel instance or null if it does not exist and create is false.
      */
-    public Channel getChannel(String channelId,boolean create);
+    public Channel getChannel(String channelId, boolean create);
+
+    /* ------------------------------------------------------------ */
+    /** Check if channel exists.
+     * @param channel
+     * @return True if Bayeux has a channel with the channel name.
+     */
+    public boolean hasChannel(String channel);
+
+    /* ------------------------------------------------------------ */
+    public Channel removeChannel(String channel);
 
     /* ------------------------------------------------------------ */
     /** Get all known channels.
@@ -146,6 +156,21 @@ public interface Bayeux
     public Client getClient(String clientId);
 
     /* ------------------------------------------------------------ */
+    public boolean hasClient(String clientId);
+
+    /* ------------------------------------------------------------ */
+    /** Create a new server side Client.
+     * Server side clients can be used to interact with Bayeux with
+     * publish and subscribe messaging.
+     * @param idprefix An identifier to prefix to the client ID.
+     * @return A {@link Client} instance with {@link Client#isLocal()} returning true.
+     */
+    public Client newClient(String idprefix);
+
+    /* ------------------------------------------------------------ */
+    public Client removeClient(String clientId);
+
+    /* ------------------------------------------------------------ */
     /** Get a collection of all Clients.
      * The collection is copy of the underlying collection.
      * @return Collection of clients.
@@ -159,31 +184,6 @@ public interface Bayeux
     public SecurityPolicy getSecurityPolicy();
 
     /* ------------------------------------------------------------ */
-    /** Check if channel exists.
-     * @param channel
-     * @return True if Bayeux has a channel with the channel name.
-     */
-    public boolean hasChannel(String channel);
-
-    /* ------------------------------------------------------------ */
-    public boolean hasClient(String clientId);
-
-    /* ------------------------------------------------------------ */
-    /** Create a new server side Client.
-     * Server side clients can be used to interact with Bayeux with
-     * publish and subscribe messaging.
-     * @param idprefix An identifier to prefix to the client ID.
-     * @return A {@link Client} instance with {@link Client#isLocal()} returning true.
-     */
-    public Client newClient(String idprefix);
-
-    /* ------------------------------------------------------------ */
-    public Channel removeChannel(String channel);
-
-    /* ------------------------------------------------------------ */
-    public Client removeClient(String clientId);
-
-    /* ------------------------------------------------------------ */
     /** Set the security policy for the Bayeux instance.
      * <p>
      * The Security Policy will be called to check access for all handshakes,
@@ -194,14 +194,41 @@ public interface Bayeux
     public void setSecurityPolicy(SecurityPolicy securityPolicy);
 
     /* ------------------------------------------------------------ */
-    /** Add a bayeux extension.
+    /** Adds a bayeux extension.
      * A bayeux extension may modify a message or return a new message.
-     * @param ext An extension
+     * @param ext the extension to add
+     * @see #removeExtension(Extension)
      */
     public void addExtension(Extension ext);
 
+    /**
+     * Removes a bayeux extension.
+     * @param ext the extension to remove
+     * @see #addExtension(Extension)
+     */
+    public void removeExtension(Extension ext);
+
     /* ------------------------------------------------------------ */
+    /**
+     * Adds a bayeux listener,
+     * @param listener the listener to add
+     * @see #removeListener(BayeuxListener)
+     */
     public void addListener(BayeuxListener listener);
+
+    /**
+     * Removes a bayeux listener
+     * @param listener the listener to remove
+     * @see #addListener(BayeuxListener)
+     */
+    public void removeListener(BayeuxListener listener);
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return the max client queue size
+     * @see #setMaxClientQueue(int)
+     */
+    public int getMaxClientQueue();
 
     /* ------------------------------------------------------------ */
     /**
@@ -209,11 +236,9 @@ public interface Bayeux
      * {@link QueueListener#queueMaxed(Client, Message)} to check if the message should be
      * added.  If set to -1, there is no queue limit. If set to zero, messages are
      * not queued unless a {@link QueueListener} is applied that returns true.
+     * @see #getMaxClientQueue()
      */
     public void setMaxClientQueue(int size);
-
-    /* ------------------------------------------------------------ */
-    public int getMaxClientQueue();
 
     /* ------------------------------------------------------------ */
     /** Get the current Servlet Request.
@@ -223,5 +248,4 @@ public interface Bayeux
      * @return A servlet request or null if none in scope.
      */
     public HttpServletRequest getCurrentRequest();
-
 }
