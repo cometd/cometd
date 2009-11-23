@@ -70,7 +70,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     protected final List<ChannelBayeuxListener> _channelListeners=new CopyOnWriteArrayList<ChannelBayeuxListener>();
     protected final Handler _publishHandler;
     protected final Handler _metaPublishHandler;
-    
+
     protected SecurityPolicy _securityPolicy=new DefaultPolicy();
     protected JSON.Literal _advice;
     protected JSON.Literal _multiFrameAdvice;
@@ -92,7 +92,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     protected Extension[] _extensions;
     protected JSON.Literal _transports=new JSON.Literal("[\"" + Bayeux.TRANSPORT_LONG_POLL + "\",\"" + Bayeux.TRANSPORT_CALLBACK_POLL + "\"]");
     protected JSON.Literal _replyExt=new JSON.Literal("{\"ack\":\"true\"}");
-    
+
     protected int _maxLazyLatency=5000;
 
     /* ------------------------------------------------------------ */
@@ -116,7 +116,12 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     public void addExtension(Extension ext)
     {
-        _extensions=(Extension[])LazyList.addToArray(_extensions,ext,Extension.class);
+        _extensions=(Extension[])LazyList.addToArray(_extensions, ext, Extension.class);
+    }
+
+    public void removeExtension(Extension ext)
+    {
+        _extensions = (Extension[])LazyList.removeFromArray(_extensions, ext);
     }
 
     /* ------------------------------------------------------------ */
@@ -147,7 +152,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         {
             channel=new ChannelImpl(id,this);
             Channel added =_root.addChild(channel);
-            if (added!=channel) 
+            if (added!=channel)
                 return added;
             if (isLogInfo())
                 logInfo("newChannel: " + channel);
@@ -824,6 +829,14 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             _channelListeners.add((ChannelBayeuxListener)listener);
     }
 
+    public void removeListener(BayeuxListener listener)
+    {
+        if (listener instanceof ClientBayeuxListener)
+            _clientListeners.remove(listener);
+        if (listener instanceof ChannelBayeuxListener)
+            _channelListeners.remove(listener);
+    }
+
     /* ------------------------------------------------------------ */
     public int getMaxClientQueue()
     {
@@ -933,7 +946,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @return the maximum ms that a lazy message will wait before 
+     * @return the maximum ms that a lazy message will wait before
      * resuming waiting client
      */
     public int getMaxLazyLatency()
@@ -943,7 +956,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @param ms the maximum ms that a lazy message will wait before 
+     * @param ms the maximum ms that a lazy message will wait before
      * resuming waiting client
      */
     public void setMaxLazyLatency(int ms)
