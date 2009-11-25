@@ -1,12 +1,28 @@
 (function($)
 {
+    var cometd = $.cometd;
+
     $(document).ready(function()
     {
-        var _connected = false;
-
+        // Idempotent function called every time the connection
+        // with the Bayeux server is (re-)established
+        var _subscription;
         function _connectionSucceeded()
         {
-            $('#body').empty().html('Cometd Connection Succeeded');
+            $('#body').empty().append('<div>Cometd Connection Succeeded</div>');
+
+            cometd.startBatch();
+            if (_subscription)
+            {
+                cometd.unsubscribe(_subscription);
+            }
+            _subscription = cometd.subscribe('/hello', function(message)
+            {
+                $('#body').append('<div>Server Says: ' + message.data.greeting + '</div>');
+            });
+            // Publish on a service channel since the message is for the server only
+            cometd.publish('/service/hello', { name: 'World' });
+            cometd.endBatch();
         }
 
         function _connectionBroken()
@@ -14,6 +30,8 @@
             $('#body').empty().html('Cometd Connection Broken');
         }
 
+        // Function that manages the connection status with the Bayeux server
+        var _connected = false;
         function _metaConnect(message)
         {
             var wasConnected = _connected;
@@ -27,8 +45,6 @@
                 _connectionBroken();
             }
         }
-
-        var cometd = $.cometd;
 
         // Disconnect when the page unloads
         $(window).unload(function()

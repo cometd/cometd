@@ -2,7 +2,7 @@
 <archetype-descriptor name="cometd-archetype-jquery-jetty6">
     <requiredProperties>
         <requiredProperty key="jettyVersion">
-            <defaultValue>6.1.21</defaultValue>
+            <defaultValue>6.1.22</defaultValue>
         </requiredProperty>
         <requiredProperty key="cometdVersion">
             <defaultValue>${project.version}</defaultValue>
@@ -10,6 +10,12 @@
     </requiredProperties>
 
     <fileSets>
+        <fileSet filtered="true" packaged="true" encoding="UTF-8">
+            <directory>src/main/java</directory>
+            <includes>
+                <include>**/*.java</include>
+            </includes>
+        </fileSet>
         <fileSet filtered="true" encoding="UTF-8">
             <directory>src/main/webapp</directory>
             <includes>
