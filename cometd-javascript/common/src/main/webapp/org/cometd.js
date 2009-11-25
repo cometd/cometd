@@ -428,17 +428,25 @@ org.cometd.Cometd = function(name)
      */
     function _convertToMessages(response)
     {
-        if (response === undefined)
+        if (_isString(response))
         {
-            return [];
+            try
+            {
+                return org.cometd.JSON.fromJSON(response);
+            }
+            catch(x)
+            {
+                _debug('Could not convert to JSON the following string', '"' + response + '"');
+                throw x;
+            }
         }
-        if (response instanceof Array)
+        if (_isArray(response))
         {
             return response;
         }
-        if (response instanceof String || typeof response == 'string')
+        if (response === undefined || response === null)
         {
-            return org.cometd.JSON.fromJSON(response);
+            return [];
         }
         if (response instanceof Object)
         {
