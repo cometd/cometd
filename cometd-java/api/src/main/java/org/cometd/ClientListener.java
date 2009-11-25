@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,9 +17,11 @@ package org.cometd;
 import java.util.EventListener;
 
 /**
- * A marker interface for all interfaces that listen for Client events
+ * A marker interface for all interfaces that listen for Client events.
+ * See subinterfaces for specific behavior.
  *
+ * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
  */
-public interface ClientListener extends EventListener {
-
+public interface ClientListener extends EventListener
+{
 }
