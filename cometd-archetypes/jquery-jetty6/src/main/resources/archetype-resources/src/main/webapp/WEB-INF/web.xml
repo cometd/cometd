@@ -23,4 +23,13 @@
         <load-on-startup>2</load-on-startup>
     </servlet>
 
+    <filter>
+        <filter-name>continuation</filter-name>
+        <filter-class>org.eclipse.jetty.continuation.ContinuationFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>continuation</filter-name>
+        <url-pattern>/cometd/*</url-pattern>
+    </filter-mapping>
+
 </web-app>
