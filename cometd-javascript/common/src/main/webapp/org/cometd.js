@@ -538,7 +538,7 @@ org.cometd.Cometd = function(name)
      * @param messages the array of messages to send
      * @param longpoll true if this send is a long poll
      */
-    function _send(messages, longpoll)
+    function _send(messages, longpoll, extraPath)
     {
         // We must be sure that the messages have a clientId.
         // This is not guaranteed since the handshake may take time to return
@@ -567,9 +567,20 @@ org.cometd.Cometd = function(name)
             return;
         }
 
+        // Prepare the URL to send the message to
+        var url = _url;
+        if (!url.match(/\/$/)) // url.endsWith('/') ?
+        {
+            url = url + '/';
+        }
+        if (extraPath)
+        {
+            url = url + extraPath;
+        }
+
         var self = this;
         var envelope = {
-            url: _url,
+            url: url,
             messages: messages,
             onSuccess: function(request, response)
             {
@@ -677,7 +688,7 @@ org.cometd.Cometd = function(name)
         };
         _setStatus('connecting');
         _debug('Connect sent', message);
-        _send([message], true);
+        _send([message], true, 'connect');
         _setStatus('connected');
     }
 
@@ -743,7 +754,7 @@ org.cometd.Cometd = function(name)
         // so here we must bypass it and send immediately.
         _setStatus('handshaking');
         _debug('Handshake sent', message);
-        _send([message], false);
+        _send([message], false, 'handshake');
     }
 
     function _delayedHandshake()
@@ -1399,7 +1410,7 @@ org.cometd.Cometd = function(name)
         };
         var message = _mixin(false, {}, _mixin(true, {}, disconnectProps), bayeuxMessage);
         _setStatus('disconnecting');
-        _send([message], false);
+        _send([message], false, 'disconnect');
     };
 
     /**
