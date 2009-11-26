@@ -158,6 +158,7 @@ org.cometd.Cometd = function(name)
     var _clientId = null;
     var _batch = 0;
     var _messageQueue = [];
+    var _internalBatch = false;
     var _listeners = {};
     var _backoff = 0;
     var _scheduledSend = null;
@@ -619,7 +620,7 @@ org.cometd.Cometd = function(name)
 
     function _queueSend(message)
     {
-        if (_batch > 0)
+        if (_batch > 0 || _internalBatch === true)
         {
             _messageQueue.push(message);
         }
@@ -653,35 +654,40 @@ org.cometd.Cometd = function(name)
 
     /**
      * Starts a the batch of messages to be sent in a single request.
-     * @see _endBatch(sendMessages)
+     * @see #_endBatch(sendMessages)
      */
     function _startBatch()
     {
         ++_batch;
     }
 
+    function _flushBatch()
+    {
+        var messages = _messageQueue;
+        _messageQueue = [];
+        if (messages.length > 0)
+        {
+            _send(messages, false);
+        }
+    }
+
     /**
      * Ends the batch of messages to be sent in a single request,
      * optionally sending messages present in the message queue depending
      * on the given argument.
-     * @param sendMessages whether to send the messages in the queue or not
-     * @see _startBatch()
+     * @see #_startBatch()
      */
-    function _endBatch(sendMessages)
+    function _endBatch()
     {
         --_batch;
         if (_batch < 0)
         {
-            _batch = 0;
+            throw 'Calls to startBatch() and endBatch() are not paired';
         }
-        if (sendMessages && _batch === 0 && !_isDisconnected())
+
+        if (_batch === 0 && !_isDisconnected() && !_internalBatch)
         {
-            var messages = _messageQueue;
-            _messageQueue = [];
-            if (messages.length > 0)
-            {
-                _send(messages, false);
-            }
+            _flushBatch();
         }
     }
 
@@ -724,15 +730,16 @@ org.cometd.Cometd = function(name)
             _transports.reset();
         }
 
-        // Start a batch.
+        _batch = 0;
+
+        // Mark the start of an internal batch.
         // This is needed because handshake and connect are async.
         // It may happen that the application calls init() then subscribe()
         // and the subscribe message is sent before the connect message, if
         // the subscribe message is not held until the connect message is sent.
         // So here we start a batch to hold temporarly any message until
         // the connection is fully established.
-        _batch = 0;
-        _startBatch();
+        _internalBatch = true;
 
         // Save the original properties provided by the user
         // Deep copy to avoid the user to be able to change them later
@@ -768,6 +775,12 @@ org.cometd.Cometd = function(name)
     function _delayedHandshake()
     {
         _setStatus('handshaking');
+
+        // We will call _handshake() which will reset _clientId, but we want to avoid
+        // that between the end of this method and the call to _handshake() someone may
+        // call publish() (or other methods that call _queueSend()).
+        _internalBatch = true;
+
         _delayedSend(function()
         {
             _handshake(_handshakeProps);
@@ -862,7 +875,6 @@ org.cometd.Cometd = function(name)
         // advice permits us to try again
         if (retry)
         {
-            // Null out the transport so that it will be recomputed
             _increaseBackoff();
             _delayedHandshake();
         }
@@ -878,11 +890,12 @@ org.cometd.Cometd = function(name)
 
         if (message.successful)
         {
-            // End the batch and allow held messages from the application
-            // to go to the server (see _handshake() where we start the batch).
-            // The batch is ended before notifying the listeners, so that
+            // End the internal batch and allow held messages from the application
+            // to go to the server (see _handshake() where we start the internal batch).
+            // The internal batch is ended before notifying the listeners, so that
             // listeners can batch other cometd operations
-            _endBatch(true);
+            _internalBatch = false;
+            _flushBatch();
 
             // Notify the listeners after the status change but before the next connect
             _notifyListeners('/meta/connect', message);
@@ -919,8 +932,6 @@ org.cometd.Cometd = function(name)
                     _delayedConnect();
                     break;
                 case 'handshake':
-                    // End the batch but do not send the messages until we connect successfully
-                    _endBatch(false);
                     _resetBackoff();
                     _delayedHandshake();
                     break;
@@ -1237,18 +1248,16 @@ org.cometd.Cometd = function(name)
         return false;
     }
 
-    function _addListener(channel, scope, callback, isSubscription)
+    function _resolveScopedCallback(scope, callback)
     {
-        // The data structure is a map<channel, subscription[]>, where each subscription
-        // holds the callback to be called and its scope.
-
-        var thiz = scope;
-        var method = callback;
-        // Normalize arguments
+        var delegate = {
+            scope: scope,
+            method: callback
+        };
         if (_isFunction(scope))
         {
-            thiz = undefined;
-            method = scope;
+            delegate.scope = undefined;
+            delegate.method = scope;
         }
         else
         {
@@ -1258,8 +1267,8 @@ org.cometd.Cometd = function(name)
                 {
                     throw 'Invalid scope ' + scope;
                 }
-                method = scope[callback];
-                if (!method)
+                delegate.method = scope[callback];
+                if (!_isFunction(delegate.method))
                 {
                     throw 'Invalid callback ' + callback + ' for scope ' + scope;
                 }
@@ -1269,11 +1278,20 @@ org.cometd.Cometd = function(name)
                 throw 'Invalid callback ' + callback;
             }
         }
-        _debug('Listener scope', thiz, 'and callback', method);
+        return delegate;
+    }
+
+    function _addListener(channel, scope, callback, isSubscription)
+    {
+        // The data structure is a map<channel, subscription[]>, where each subscription
+        // holds the callback to be called and its scope.
+
+        var delegate = _resolveScopedCallback(scope, callback);
+        _debug('Listener scope', delegate.scope, 'and callback', delegate.method);
 
         var subscription = {
-            scope: thiz,
-            callback: method,
+            scope: delegate.scope,
+            callback: delegate.method,
             subscription: isSubscription === true
         };
 
@@ -1442,7 +1460,30 @@ org.cometd.Cometd = function(name)
      */
     this.endBatch = function()
     {
-        _endBatch(true);
+        _endBatch();
+    };
+
+    /**
+     * Executes the given callback in the given scope, surrounded by a {@link #startBatch()}
+     * and {@link #endBatch()} calls.
+     * @param scope the scope of the callback, may be omitted
+     * @param callback the callback to be executed within {@link #startBatch()} and {@link #endBatch()} calls
+     */
+    this.batch = function(scope, callback)
+    {
+        var delegate = _resolveScopedCallback(scope, callback);
+        this.startBatch();
+        try
+        {
+            delegate.method.call(delegate.scope);
+            this.endBatch();
+        }
+        catch (x)
+        {
+            _debug('Exception during execution of batch', x);
+            this.endBatch();
+            throw x;
+        }
     };
 
     /**
