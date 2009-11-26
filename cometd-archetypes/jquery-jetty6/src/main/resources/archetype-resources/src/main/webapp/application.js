@@ -11,18 +11,19 @@
         {
             $('#body').empty().append('<div>Cometd Connection Succeeded</div>');
 
-            cometd.startBatch();
-            if (_subscription)
+            cometd.batch(function()
             {
-                cometd.unsubscribe(_subscription);
-            }
-            _subscription = cometd.subscribe('/hello', function(message)
-            {
-                $('#body').append('<div>Server Says: ' + message.data.greeting + '</div>');
+                if (_subscription)
+                {
+                    cometd.unsubscribe(_subscription);
+                }
+                _subscription = cometd.subscribe('/hello', function(message)
+                {
+                    $('#body').append('<div>Server Says: ' + message.data.greeting + '</div>');
+                });
+                // Publish on a service channel since the message is for the server only
+                cometd.publish('/service/hello', { name: 'World' });
             });
-            // Publish on a service channel since the message is for the server only
-            cometd.publish('/service/hello', { name: 'World' });
-            cometd.endBatch();
         }
 
         function _connectionBroken()
