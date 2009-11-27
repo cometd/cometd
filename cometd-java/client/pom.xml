@@ -8,11 +8,9 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.cometd.java</groupId>
     <artifactId>cometd-java-client</artifactId>
     <packaging>jar</packaging>
-    <name>Cometd :: Java :: Client</name>
-    <url>http://www.cometd.com</url>
+    <name>CometD :: Java :: Client</name>
 
     <build>
         <plugins>

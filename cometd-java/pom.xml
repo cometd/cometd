@@ -11,7 +11,7 @@
     <groupId>org.cometd.java</groupId>
     <artifactId>cometd-java-project</artifactId>
     <packaging>pom</packaging>
-    <name>Cometd :: Java</name>
+    <name>CometD :: Java</name>
 
     <modules>
         <module>api</module>
@@ -20,18 +20,6 @@
         <module>oort</module>
         <module>examples</module>
     </modules>
-
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 
     <dependencyManagement>
         <dependencies>
@@ -49,7 +37,6 @@
                 <groupId>javax.servlet</groupId>
                 <artifactId>servlet-api</artifactId>
                 <version>2.5</version>
-                <optional>true</optional>
             </dependency>
         </dependencies>
     </dependencyManagement>

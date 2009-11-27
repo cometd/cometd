@@ -8,10 +8,9 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.cometd.java</groupId>
     <artifactId>cometd-examples-java</artifactId>
     <packaging>war</packaging>
-    <name>Cometd :: Java :: Examples</name>
+    <name>CometD :: Java :: Examples</name>
 
     <dependencies>
         <dependency>

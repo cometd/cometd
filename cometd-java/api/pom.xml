@@ -7,10 +7,9 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.cometd.java</groupId>
     <artifactId>cometd-api</artifactId>
     <packaging>jar</packaging>
-    <name>Cometd :: Java :: API</name>
+    <name>CometD :: Java :: API</name>
 
     <dependencies>
         <dependency>

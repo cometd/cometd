@@ -8,10 +8,9 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.cometd</groupId>
     <artifactId>cometd-demo</artifactId>
     <packaging>war</packaging>
-    <name>Cometd :: Demo</name>
+    <name>CometD :: Demo</name>
 
     <build>
         <defaultGoal>install</defaultGoal>

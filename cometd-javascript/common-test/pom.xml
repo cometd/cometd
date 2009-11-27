@@ -8,10 +8,9 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-javascript-common-test</artifactId>
     <packaging>jar</packaging>
-    <name>Cometd :: JavaScript :: Common Test</name>
+    <name>CometD :: JavaScript :: Common Test</name>
 
     <dependencies>
         <dependency>

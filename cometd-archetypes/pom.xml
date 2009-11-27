@@ -11,7 +11,7 @@
     <groupId>org.cometd.archetypes</groupId>
     <artifactId>cometd-archetypes-project</artifactId>
     <packaging>pom</packaging>
-    <name>Cometd :: Archetypes</name>
+    <name>CometD :: Archetypes</name>
 
     <modules>
         <module>dojo-jetty6</module>

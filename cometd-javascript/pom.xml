@@ -11,7 +11,7 @@
     <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-javascript-project</artifactId>
     <packaging>pom</packaging>
-    <name>Cometd :: JavaScript</name>
+    <name>CometD :: JavaScript</name>
 
     <properties>
         <rhino-version>1.6R6</rhino-version>
