@@ -210,6 +210,14 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-release-plugin</artifactId>
+                <configuration>
+                    <tagBase>https://svn.cometd.com/tags</tagBase>
+                    <goals>deploy</goals>
+                    <preparationGoals>clean install</preparationGoals>
+                </configuration>
+            </plugin>
         </plugins>
         <pluginManagement>
             <plugins>
