@@ -8,9 +8,8 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-javascript-common</artifactId>
     <packaging>war</packaging>
-    <name>Cometd :: JavaScript :: Common</name>
+    <name>CometD :: JavaScript :: Common</name>
 
 </project>

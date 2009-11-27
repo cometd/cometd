@@ -8,9 +8,8 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-examples-dojo</artifactId>
     <packaging>war</packaging>
-    <name>Cometd :: JavaScript :: Examples Dojo</name>
+    <name>CometD :: JavaScript :: Examples Dojo</name>
 
 </project>

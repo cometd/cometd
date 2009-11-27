@@ -30,11 +30,11 @@
 
     <mailingLists>
         <mailingList>
-            <name>Cometd Dev List</name>
+            <name>CometD Dev List</name>
             <archive>http://groups.google.com/group/cometd-dev/</archive>
         </mailingList>
         <mailingList>
-            <name>Cometd User List</name>
+            <name>CometD User List</name>
             <archive>http://groups.google.com/group/cometd-users/</archive>
         </mailingList>
     </mailingLists>
@@ -130,12 +130,12 @@
     <distributionManagement>
         <repository>
             <id>cometdReleases</id>
-            <name>Cometd Maven2 Repository</name>
+            <name>CometD Maven2 Repository</name>
             <url>http://oss.repository.sonatype.org/service/local/staging/deploy/maven2</url>
         </repository>
         <snapshotRepository>
             <id>cometdSnapshots</id>
-            <name>Cometd Maven2 Snapshot Repository</name>
+            <name>CometD Maven2 Snapshot Repository</name>
             <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
         </snapshotRepository>
     </distributionManagement>

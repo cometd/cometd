@@ -8,10 +8,9 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-javascript-jquery</artifactId>
     <packaging>war</packaging>
-    <name>Cometd :: JavaScript :: jQuery</name>
+    <name>CometD :: JavaScript :: jQuery</name>
 
     <build>
         <plugins>

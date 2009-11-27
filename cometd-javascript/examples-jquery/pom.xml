@@ -8,9 +8,8 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.cometd.javascript</groupId>
     <artifactId>cometd-examples-jquery</artifactId>
     <packaging>war</packaging>
-    <name>Cometd :: JavaScript :: Examples JQuery</name>
+    <name>CometD :: JavaScript :: Examples JQuery</name>
 
 </project>
