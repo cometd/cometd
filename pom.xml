@@ -1,10 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.cometd</groupId>
     <artifactId>cometd-project</artifactId>
     <packaging>pom</packaging>
-    <name>Cometd</name>
+    <name>CometD</name>
     <version>1.0.0rc1-SNAPSHOT</version>
     <url>http://www.cometd.org</url>
 
@@ -123,21 +124,6 @@
         </repository>
     </repositories>
 
-    <distributionManagement>
-        <repository>
-            <id>cometdReleases</id>
-            <name>Cometd Maven2 Repository</name>
-            <url>http://oss.repository.sonatype.org/service/local/staging/deploy/maven2</url>
-            <layout>default</layout>
-        </repository>
-        <snapshotRepository>
-            <id>cometdSnapshots</id>
-            <name>Cometd Maven2 Snapshot Repository</name>
-            <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
-            <layout>default</layout>
-        </snapshotRepository>
-    </distributionManagement>
-
     <pluginRepositories>
         <pluginRepository>
             <id>jettySnapshots</id>
@@ -153,6 +139,19 @@
         </pluginRepository>
     </pluginRepositories>
 
+    <distributionManagement>
+        <repository>
+            <id>cometdReleases</id>
+            <name>Cometd Maven2 Repository</name>
+            <url>http://oss.repository.sonatype.org/service/local/staging/deploy/maven2</url>
+        </repository>
+        <snapshotRepository>
+            <id>cometdSnapshots</id>
+            <name>Cometd Maven2 Snapshot Repository</name>
+            <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <scm>
         <connection>scm:svn:http://svn.cometd.com/trunk</connection>
         <developerConnection>scm:svn:https://svn.cometd.com/trunk</developerConnection>
@@ -160,44 +159,8 @@
 
     <organization>
         <name>Dojo Foundation</name>
-        <url>http://www.dojotoolkit.org</url>
+        <url>http://dojofoundation.org</url>
     </organization>
-
-    <profiles>
-        <profile>
-            <id>release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <inherited>true</inherited>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <inherited>true</inherited>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 
     <build>
         <defaultGoal>install</defaultGoal>
@@ -228,15 +191,6 @@
                 </configuration>
             </plugin>
             <plugin>
-                <artifactId>maven-release-plugin</artifactId>
-                <configuration>
-                    <tagBase>https://svn.cometd.com/tags</tagBase>
-                    <goals>deploy</goals>
-                    <preparationGoals>clean install</preparationGoals>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
                     <archive>
