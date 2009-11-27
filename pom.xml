@@ -87,18 +87,6 @@
 
     <repositories>
         <repository>
-            <id>dojo</id>
-            <name>Dojo Maven2 Repository</name>
-            <url>http://oss.sonatype.org/content/repositories/dojo-releases</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <layout>default</layout>
-        </repository>
-        <repository>
             <id>dojoSnapshots</id>
             <name>Dojo Maven2 Snapshot Repository</name>
             <url>http://oss.sonatype.org/content/repositories/dojo-snapshots</url>
