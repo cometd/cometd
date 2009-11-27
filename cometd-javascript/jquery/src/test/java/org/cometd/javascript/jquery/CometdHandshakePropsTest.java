@@ -29,17 +29,19 @@ public class CometdHandshakePropsTest extends AbstractCometdJQueryTest
         evaluateScript("var handshakeListener = new Listener();");
         Listener handshakeListener = (Listener)get("handshakeListener");
         evaluateScript("$.cometd.addListener('/meta/handshake', handshakeListener, handshakeListener.handle);");
+        evaluateScript("var disconnectListener = new Listener();");
+        Listener disconnectListener = (Listener)get("disconnectListener");
+        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);");
 
-        // Start comet without the token; this makes the handshake fail
+        // Start without the token; this makes the handshake fail
         handshakeListener.expect(1);
         evaluateScript("$.cometd.handshake({})");
         assertTrue(handshakeListener.await(1000));
+
         // Disconnect to avoid the handshake to backoff
+        disconnectListener.expect(1);
         evaluateScript("$.cometd.disconnect();");
-        // Wait for the disconnect to happen
-        Thread.sleep(1000);
-        String status = evaluateScript("$.cometd.getStatus();");
-        assertEquals("disconnected", status);
+        assertTrue(disconnectListener.await(1000));
 
         // We are already initialized, handshake again with a token
         handshakeListener.expect(1);
@@ -50,13 +52,12 @@ public class CometdHandshakePropsTest extends AbstractCometdJQueryTest
         // the disconnect is sent after the long poll
         Thread.sleep(1000);
 
-        status = evaluateScript("$.cometd.getStatus();");
+        String status = evaluateScript("$.cometd.getStatus();");
         assertEquals("connected", status);
 
+        disconnectListener.expect(1);
         evaluateScript("$.cometd.disconnect();");
-
-        // Wait for the disconnect to happen
-        Thread.sleep(1000);
+        assertTrue(disconnectListener.await(1000));
 
         status = evaluateScript("$.cometd.getStatus();");
         assertEquals("disconnected", status);

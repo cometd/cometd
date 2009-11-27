@@ -741,9 +741,9 @@ org.cometd.Cometd = function(name)
         // the connection is fully established.
         _internalBatch = true;
 
-        // Save the original properties provided by the user
-        // Deep copy to avoid the user to be able to change them later
-        _handshakeProps = _mixin(true, {}, handshakeProps);
+        // Save the properties provided by the user, so that
+        // we can reuse them during automatic re-handshake
+        _handshakeProps = handshakeProps;
 
         var version = '1.0';
 
@@ -1434,7 +1434,7 @@ org.cometd.Cometd = function(name)
         var bayeuxMessage = {
             channel: '/meta/disconnect'
         };
-        var message = _mixin(false, {}, _mixin(true, {}, disconnectProps), bayeuxMessage);
+        var message = _mixin(false, {}, disconnectProps, bayeuxMessage);
         _setStatus('disconnecting');
         _send([message], false, 'disconnect');
     };
@@ -1565,7 +1565,7 @@ org.cometd.Cometd = function(name)
                 channel: '/meta/subscribe',
                 subscription: channel
             };
-            var message = _mixin(false, {}, _mixin(true, {}, subscribeProps), bayeuxMessage);
+            var message = _mixin(false, {}, subscribeProps, bayeuxMessage);
             _queueSend(message);
         }
 
@@ -1590,7 +1590,7 @@ org.cometd.Cometd = function(name)
                 channel: '/meta/unsubscribe',
                 subscription: channel
             };
-            var message = _mixin(false, {}, _mixin(true, {}, unsubscribeProps), bayeuxMessage);
+            var message = _mixin(false, {}, unsubscribeProps, bayeuxMessage);
             _queueSend(message);
         }
     };
@@ -1621,7 +1621,7 @@ org.cometd.Cometd = function(name)
             channel: channel,
             data: content
         };
-        var message = _mixin(false, {}, _mixin(true, {}, publishProps), bayeuxMessage);
+        var message = _mixin(false, {}, publishProps, bayeuxMessage);
         _queueSend(message);
     };
 
