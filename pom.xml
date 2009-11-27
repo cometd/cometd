@@ -1,12 +1,11 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.cometd</groupId>
     <artifactId>cometd-project</artifactId>
     <packaging>pom</packaging>
     <name>CometD</name>
-    <version>1.0.0rc1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <url>http://www.cometd.org</url>
 
     <issueManagement>
@@ -141,8 +140,8 @@
     </distributionManagement>
 
     <scm>
-        <connection>scm:svn:http://svn.cometd.org/trunk</connection>
-        <developerConnection>scm:svn:https://svn.cometd.org/trunk</developerConnection>
+        <connection>scm:svn:http://svn.cometd.org/tags/1.0.0</connection>
+        <developerConnection>scm:svn:https://svn.cometd.org/tags/1.0.0</developerConnection>
     </scm>
 
     <organization>
