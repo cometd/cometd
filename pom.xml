@@ -213,7 +213,7 @@
             <plugin>
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
-                    <tagBase>https://svn.cometd.com/tags</tagBase>
+                    <tagBase>https://svn.cometd.org/tags</tagBase>
                     <goals>deploy</goals>
                     <preparationGoals>clean install</preparationGoals>
                 </configuration>
