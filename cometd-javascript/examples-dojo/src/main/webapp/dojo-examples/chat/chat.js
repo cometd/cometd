@@ -87,14 +87,15 @@ var room = {
 
     leave: function()
     {
-        dojox.cometd.startBatch();
-        dojox.cometd.publish("/chat/demo", {
-            user: room._username,
-            chat: room._username + " has left"
+        dojox.cometd.batch(function()
+        {
+            dojox.cometd.publish("/chat/demo", {
+                user: room._username,
+                chat: room._username + " has left"
+            });
+            room._unsubscribe();
         });
-        room._unsubscribe();
         dojox.cometd.disconnect();
-        dojox.cometd.endBatch();
 
         // switch the input form
         dojo.removeClass("join", "hidden");
@@ -184,19 +185,20 @@ var room = {
                 chat: 'Connection to Server Opened'
             }
         });
-        dojox.cometd.startBatch();
-        room._unsubscribe();
-        room._subscribe();
-        dojox.cometd.publish('/service/members', {
-            user: room._username,
-            room: '/chat/demo'
+        dojox.cometd.batch(function()
+        {
+            room._unsubscribe();
+            room._subscribe();
+            dojox.cometd.publish('/service/members', {
+                user: room._username,
+                room: '/chat/demo'
+            });
+            dojox.cometd.publish('/chat/demo', {
+                user: room._username,
+                membership: 'join',
+                chat: room._username + ' has joined'
+            });
         });
-        dojox.cometd.publish('/chat/demo', {
-            user: room._username,
-            membership: 'join',
-            chat: room._username + ' has joined'
-        });
-        dojox.cometd.endBatch();
     },
 
     _connectionBroken: function()

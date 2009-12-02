@@ -74,14 +74,15 @@
 
         this.leave = function()
         {
-            $.cometd.startBatch();
-            $.cometd.publish('/chat/demo', {
-                user: _username,
-                chat: _username + ' has left'
+            $.cometd.batch(function()
+            {
+                $.cometd.publish('/chat/demo', {
+                    user: _username,
+                    chat: _username + ' has left'
+                });
+                _unsubscribe();
             });
-            _unsubscribe();
             $.cometd.disconnect();
-            $.cometd.endBatch();
 
             $('#join').show();
             $('#joined').hide();
@@ -196,19 +197,20 @@
                     chat: 'Connection to Server Opened'
                 }
             });
-            $.cometd.startBatch();
-            _unsubscribe();
-            _subscribe();
-            $.cometd.publish('/service/members', {
-                user: _username,
-                room: '/chat/demo'
+            $.cometd.batch(function()
+            {
+                _unsubscribe();
+                _subscribe();
+                $.cometd.publish('/service/members', {
+                    user: _username,
+                    room: '/chat/demo'
+                });
+                $.cometd.publish('/chat/demo', {
+                    user: _username,
+                    membership: 'join',
+                    chat: _username + ' has joined'
+                });
             });
-            $.cometd.publish('/chat/demo', {
-                user: _username,
-                membership: 'join',
-                chat: _username + ' has joined'
-            });
-            $.cometd.endBatch();
         }
 
         function _connectionBroken()
