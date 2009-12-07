@@ -1,0 +1,13 @@
+GOALS
+
+§ Have a *safe* API, so that users cannot:
+   + publish to a meta channel
+   + subscribe to a channel before handshake
+   + subscribe to a meta channel (they can listen to them though)
+   + forget to call endBatch()
+
+§ Make implementation simpler
+   + Make handshake synchronous, so implementors don't have to worry about queueing other messages
+
+2. Have an extensible API
+   +
