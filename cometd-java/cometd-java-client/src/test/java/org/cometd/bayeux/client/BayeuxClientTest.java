@@ -1,12 +1,17 @@
 package org.cometd.bayeux.client;
 
+import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import bayeux.Extension;
+import bayeux.Message;
+import bayeux.MessageListener;
 import bayeux.MetaChannelType;
 import bayeux.MetaMessage;
 import bayeux.MetaMessageListener;
+import bayeux.ChannelSubscription;
 import bayeux.client.Client;
 import bayeux.client.Session;
 import static junit.framework.Assert.assertTrue;
@@ -62,5 +67,42 @@ public class BayeuxClientTest
         {
             session.disconnect();
         }
+    }
+
+    @Test
+    public void testUsage() throws Exception
+    {
+        Client client = newClient();
+
+        final Session session = client.handshake();
+
+        final ChannelSubscription subscription = session.channel("/foo").subscribe(new MessageListener()
+        {
+            public void onMessage(Message message)
+            {
+                // TODO
+            }
+        });
+
+        Map<String, Object> data = new HashMap<String, Object>();
+        session.channel("/service/foo").publish(data);
+
+        session.batch(new Runnable()
+        {
+            public void run()
+            {
+                subscription.unsubscribe();
+                session.channel("/one").publish(null);
+                session.channel("/two").subscribe(new MessageListener()
+                {
+                    public void onMessage(Message message)
+                    {
+                        // TODO
+                    }
+                });
+            }
+        });
+
+        session.disconnect();
     }
 }
