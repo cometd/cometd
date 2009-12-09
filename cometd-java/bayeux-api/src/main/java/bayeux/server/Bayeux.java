@@ -5,4 +5,5 @@ package bayeux.server;
  */
 public interface Bayeux
 {
+    public final static String ATTRIBUTE="Bayeux";
 }
