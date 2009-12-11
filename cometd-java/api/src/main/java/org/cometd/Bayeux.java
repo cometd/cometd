@@ -116,7 +116,7 @@ public interface Bayeux
 
     /*http field names*/
     /**http helpers - application/json content type*/
-    public static final String JSON_CONTENT_TYPE="application/json";
+    public static final String JSON_CONTENT_TYPE="application/json;charset=UTF-8";
     /**http helpers - parameter name for json message*/
     public static final String MESSAGE_PARAMETER="message";
     /**http helpers - name of the jsonp parameter*/
