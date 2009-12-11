@@ -13,4 +13,6 @@ public interface Message
     Object getData();
     Map<String, Object> getExt();
     Map<String, Object> getAdvice();
+    Map<String, Object> getExt(boolean create);
+    Map<String, Object> getAdvice(boolean create);
 }
