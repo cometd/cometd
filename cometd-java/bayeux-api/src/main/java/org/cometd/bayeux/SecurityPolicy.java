@@ -35,11 +35,10 @@ public interface SecurityPolicy
      * @param client  The client sending the message. The client may be
      *                null if an anonymous publish is attempted. Server clients are
      *                indicated by {@link Client#isLocal()}
-     * @param channel The channel the message is trying to create
      * @param message The message
      * @return true if the channel should be created
      */
-    boolean canCreate(Client client, String channel, Message message);
+    boolean canCreate(ServerSession client, Message message);
 
     /**
      * Test if a client is allowed to subscribe to a channel
@@ -47,11 +46,10 @@ public interface SecurityPolicy
      * @param client   The client sending the message. The client may be
      *                 null if an anonymous publish is attempted. Server clients are
      *                 indicated by {@link Client#isLocal()}
-     * @param channel  The channel the message is trying to subscribe to
      * @param messsage The message to /meta/subscribe
      * @return true if the client can subscribe to the channel
      */
-    boolean canSubscribe(Client client, String channel, Message messsage);
+    boolean canSubscribe(ServerSession client, Message messsage);
 
     /**
      * Test if a client can publish a message to a channel
@@ -59,9 +57,8 @@ public interface SecurityPolicy
      * @param client   The client sending the message. The client may be
      *                 null if an anonymous publish is attempted. Server clients are
      *                 indicated by {@link Client#isLocal()}
-     * @param channel  The channel the message is trying to publish to
      * @param messsage The message to publish
      * @return true if the client can publish to the channel.
      */
-    boolean canPublish(Client client, String channel, Message messsage);
+    boolean canPublish(ServerSession client, Message messsage);
 }
