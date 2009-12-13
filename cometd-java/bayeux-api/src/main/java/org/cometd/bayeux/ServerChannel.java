@@ -1,5 +1,6 @@
 package org.cometd.bayeux;
 
+import java.util.EventListener;
 import java.util.Set;
 
 
@@ -12,5 +13,8 @@ public interface ServerChannel extends Channel
 
     Set<Subscription> getSubscriptions();
     void addDataFilter(DataFilter filter);
-    void addListener(ChannelListener listener);
+    void addListener(Listener listener);
+    
+    interface Listener extends EventListener
+    {};
 }

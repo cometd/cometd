@@ -27,7 +27,7 @@ public interface SecurityPolicy
      * @param message A handshake message.
      * @return True if the handshake message should be accepted and a {@link Client} instance created
      */
-    boolean canHandshake(Message message);
+    boolean canHandshake(BayeuxServer server,Message message);
 
     /**
      * Test if a message should be allowed to create a new Channel
@@ -38,7 +38,7 @@ public interface SecurityPolicy
      * @param message The message
      * @return true if the channel should be created
      */
-    boolean canCreate(ServerSession client, Message message);
+    boolean canCreate(BayeuxServer server,ServerSession client, Message message);
 
     /**
      * Test if a client is allowed to subscribe to a channel
@@ -49,7 +49,7 @@ public interface SecurityPolicy
      * @param messsage The message to /meta/subscribe
      * @return true if the client can subscribe to the channel
      */
-    boolean canSubscribe(ServerSession client, Message messsage);
+    boolean canSubscribe(BayeuxServer server,ServerSession client, Message messsage);
 
     /**
      * Test if a client can publish a message to a channel
@@ -60,5 +60,5 @@ public interface SecurityPolicy
      * @param messsage The message to publish
      * @return true if the client can publish to the channel.
      */
-    boolean canPublish(ServerSession client, Message messsage);
+    boolean canPublish(BayeuxServer server,ServerSession client, Message messsage);
 }

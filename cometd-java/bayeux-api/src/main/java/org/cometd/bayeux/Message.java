@@ -13,6 +13,13 @@ public interface Message
     Object getData();
     Map<String, Object> getExt();
     Map<String, Object> getAdvice();
-    Map<String, Object> getExt(boolean create);
-    Map<String, Object> getAdvice(boolean create);
+ 
+    interface Mutable extends Message
+    {
+        void setData(Object data);
+        Map<String, Object> getExt(boolean create);
+        Map<String, Object> getAdvice(boolean create);
+        boolean isLazy();
+        void setLazy(boolean lazy);
+    }
 }
