@@ -32,26 +32,26 @@ public interface Extension
      * @param message
      * @return modified message or null to discard message
      */
-    Message rcv(Client from, Message message);
+    Message rcv(Client from, Message.Mutable message);
     
     /**
      * @param from
      * @param message
      * @return modified message
      */
-    Message rcvMeta(Client from, Message message);
+    Message rcvMeta(Client from, Message.Mutable message);
     
     /**
      * @param from
      * @param message
      * @return modified message or null to discard message
      */
-    Message send(Client from, Message message);
+    Message send(Client from, Message.Mutable message);
     
     /**
      * @param from
      * @param message
      * @return modified message
      */
-    Message sendMeta(Client from, Message message);
+    Message sendMeta(Client from, Message.Mutable message);
 }
