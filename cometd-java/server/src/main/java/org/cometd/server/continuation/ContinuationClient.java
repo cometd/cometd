@@ -14,8 +14,11 @@
 
 package org.cometd.server.continuation;
 
+import org.cometd.server.AbstractBayeux;
+import org.cometd.server.AbstractCometdServlet;
 import org.cometd.server.ClientImpl;
 import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 
 /* ------------------------------------------------------------ */
@@ -108,9 +111,19 @@ public class ContinuationClient extends ClientImpl
                 // This is the start of a long poll
 
                 // resume any prior continuation
-                if (_continuation != null)
-                    _continuation.resume();
+                Continuation old=_continuation;
                 _continuation=continuation;
+                if (old != null)
+                {
+                    try
+                    {
+                        old.resume();
+                    }
+                    catch(IllegalStateException e)
+                    {
+                        Log.warn(e);
+                    }
+                }
 
                 // Cancel timeout expecting the next long poll
                 _bayeux.cancelTimeout(_intervalTimeoutTask);
