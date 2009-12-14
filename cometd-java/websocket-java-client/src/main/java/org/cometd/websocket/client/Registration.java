@@ -3,7 +3,6 @@ package org.cometd.websocket.client;
 /**
  * @version $Revision$ $Date$
  */
-public class WebSocketClient
+public interface Registration
 {
-    private String url;
 }
