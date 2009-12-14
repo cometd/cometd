@@ -11,7 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //========================================================================
-package org.cometd.bayeux;
+package org.cometd.bayeux.server;
+
+import org.cometd.bayeux.Channel;
 
 /**
  * A {@link BayeuxServerListener} with call backs for channel life cycle events

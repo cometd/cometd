@@ -11,18 +11,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //========================================================================
-package org.cometd.bayeux;
+
+package org.cometd.bayeux.server;
+
+import org.cometd.bayeux.Client;
+import org.cometd.bayeux.Message;
 
 
 /**
- * A {@link ChannelListener} with call backs for subscription life cycle events
  *
  */
-public interface SubscriptionListener extends ServerChannel.Listener
+public interface QueueListener extends ServerSession.Listener
 {
     /* ------------------------------------------------------------ */
-    public void subscribed(Client client, Channel channel);
-
-    /* ------------------------------------------------------------ */
-    public void unsubscribed(Client client, Channel channel);
+    /**
+     * Call back to notify if a message for a client will result in the
+     * message queue exceeding {@link Client#getMaxQueue()}.
+     * This is called with the client instance locked, so it is safe for the
+     * handler to manipulate the queue returned by {@link Client#getQueue()}, but 
+     * action in the callback that may result in another Client instance should be 
+     * avoided as that would risk deadlock.
+     * @param from Client message is published from
+     * @param to Client message is being delivered to
+     * @param message
+     * @return true if the message should be added to the client queue
+     */
+    public boolean queueMaxed(Client from, Client to, Message message);
 }

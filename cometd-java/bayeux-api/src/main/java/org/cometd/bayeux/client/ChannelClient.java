@@ -1,4 +1,8 @@
-package org.cometd.bayeux;
+package org.cometd.bayeux.client;
+
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Client;
+import org.cometd.bayeux.MessageListener;
 
 
 

@@ -12,26 +12,24 @@
 // limitations under the License.
 //========================================================================
 
-package org.cometd.bayeux;
+package org.cometd.bayeux.server;
+
+import java.util.Queue;
+
+import org.cometd.bayeux.Client;
+import org.cometd.bayeux.Message;
+
 
 
 /**
- *
  */
-public interface QueueListener extends ServerSession.Listener
+public interface DeliverListener extends ServerSession.Listener
 {
     /* ------------------------------------------------------------ */
     /**
-     * Call back to notify if a message for a client will result in the
-     * message queue exceeding {@link Client#getMaxQueue()}.
-     * This is called with the client instance locked, so it is safe for the
-     * handler to manipulate the queue returned by {@link Client#getQueue()}, but 
-     * action in the callback that may result in another Client instance should be 
-     * avoided as that would risk deadlock.
-     * @param from Client message is published from
-     * @param to Client message is being delivered to
-     * @param message
-     * @return true if the message should be added to the client queue
+     * callback to notify that the queue is about to be sent to the
+     * client.  This is the last chance to process the queue and remove 
+     * duplicates or merge messages.
      */
-    public boolean queueMaxed(Client from, Client to, Message message);
+    public void deliver(Client client, Queue<Message> queue);
 }

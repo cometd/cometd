@@ -10,24 +10,26 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//========================================================================
+// ========================================================================
 
-package org.cometd.bayeux;
+package org.cometd.bayeux.server;
+
+import org.cometd.bayeux.Client;
 
 
 /**
- * Data filters are used to transform data as it is sent to a {@link Channel}.
+ * Remove Listener Interface.
  *
- * @version $Revision: 686 $ $Date: 2009-07-03 11:07:24 +0200 (Fri, 03 Jul 2009) $
+ * Objects implementing this interface may listen for client removal events
+ * by calling the {@link Client#addListener(SessionListener)}
+ *
  */
-public interface DataFilter
+public interface RemoveListener extends ServerSession.Listener
 {
     /**
-     * @param from the {@link Client} that sends the data
-     * @param channel the channel the data is being sent to
-     * @param data the data being sent
-     * @return the transformed data
-     * @throws IllegalStateException If the message should be aborted
+     * This method is called after a client is removed.
+     * @param clientId The clientId removed
+     * @param timeout True if the client was removed due to a timeout.
      */
-    public Object filter(Client from, Channel channel, Object data) throws IllegalStateException;
+    public void removed(String clientId, boolean timeout);
 }

@@ -12,7 +12,10 @@
 // limitations under the License.
 // ========================================================================
 
-package org.cometd.bayeux;
+package org.cometd.bayeux.server;
+
+import org.cometd.bayeux.Client;
+import org.cometd.bayeux.Message;
 
 /**
  * Pluggable security policy for Bayeux

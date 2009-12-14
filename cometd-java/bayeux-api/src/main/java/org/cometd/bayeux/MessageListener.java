@@ -1,5 +1,8 @@
 package org.cometd.bayeux;
 
+import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.server.ServerSession;
+
 
 /**
  * @version $Revision$ $Date: 2009-12-08 09:57:37 +1100 (Tue, 08 Dec 2009) $

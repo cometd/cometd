@@ -1,4 +1,6 @@
-package org.cometd.bayeux;
+package org.cometd.bayeux.client;
+
+import org.cometd.bayeux.Bayeux;
 
 public interface BayeuxClient extends Bayeux
 {
