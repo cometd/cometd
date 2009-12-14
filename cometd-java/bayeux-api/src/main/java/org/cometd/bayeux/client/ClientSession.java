@@ -11,7 +11,7 @@ import org.cometd.bayeux.Client;
  */
 public interface ClientSession extends Client
 {
-    ChannelSession getChannelSession(String channelName);
+    ChannelClient getChannel(String channelName);
 
     void batch(Runnable batch);
 
