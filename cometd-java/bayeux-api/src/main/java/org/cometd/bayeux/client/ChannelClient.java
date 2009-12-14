@@ -5,7 +5,6 @@ import org.cometd.bayeux.Client;
 import org.cometd.bayeux.MessageListener;
 
 
-
 public interface ChannelClient
 {
     Channel getChannel();

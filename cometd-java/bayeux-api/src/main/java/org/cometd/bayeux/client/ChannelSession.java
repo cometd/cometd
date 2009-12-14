@@ -5,7 +5,6 @@ import org.cometd.bayeux.Client;
 import org.cometd.bayeux.MessageListener;
 
 
-
 public interface ChannelSession extends Channel
 {
     ClientSession getClientSession();

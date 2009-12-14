@@ -4,4 +4,5 @@ public interface Channel
 {
     String getChannelId();
     boolean isMetaChannel();
+    boolean isServiceChannel();
 }
