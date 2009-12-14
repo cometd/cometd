@@ -1,4 +1,4 @@
-package org.cometd.bayeux;
+package org.cometd.bayeux.server;
 
 public interface SessionBayeuxListener extends BayeuxServer.Listener
 {

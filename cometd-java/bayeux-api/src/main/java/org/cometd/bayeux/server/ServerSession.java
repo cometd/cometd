@@ -1,6 +1,9 @@
-package org.cometd.bayeux;
+package org.cometd.bayeux.server;
 
 import java.util.EventListener;
+
+import org.cometd.bayeux.Client;
+import org.cometd.bayeux.Message;
 
 
 /**
