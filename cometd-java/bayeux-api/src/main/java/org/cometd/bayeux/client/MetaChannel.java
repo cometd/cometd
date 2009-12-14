@@ -26,5 +26,4 @@ public interface MetaChannel extends Channel
     
     interface Listener extends EventListener
     {}
-    
 }

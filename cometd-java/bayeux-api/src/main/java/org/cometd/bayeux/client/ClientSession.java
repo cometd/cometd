@@ -16,6 +16,7 @@ public interface ClientSession extends Client
     void batch(Runnable batch);
 
     void disconnect();
+        
     
     void addListener(Listener listener);
 
