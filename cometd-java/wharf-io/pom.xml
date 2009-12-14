@@ -8,16 +8,19 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>websocket-java-client</artifactId>
-    <name>CometD :: Java :: WebSocket Client</name>
+    <artifactId>wharf-io</artifactId>
+    <name>CometD :: Wharf IO</name>
 
     <dependencies>
         <dependency>
-            <groupId>org.cometd.java</groupId>
-            <artifactId>wharf-io</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.5.6</version>
+        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
