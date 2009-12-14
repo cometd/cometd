@@ -7,6 +7,9 @@ import org.cometd.bayeux.Message;
 
 public interface BayeuxServer extends Bayeux
 {
+    /** ServletContext attribute name used to obtain the Bayeux object */
+    public static final String ATTRIBUTE ="org.cometd.bayeux";
+    
     void addSessionListener(SessionBayeuxListener listener);
     LocalSession newLocalSession(String idHint);
     ServerChannel getChannel(String channelId);
@@ -19,4 +22,5 @@ public interface BayeuxServer extends Bayeux
     
     interface Listener extends EventListener
     {};
+    
 }
