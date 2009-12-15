@@ -35,7 +35,7 @@ import java.util.Set;
 public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
 {
     final Bucket<K,V>[] _entries;
-    final Immutable _immutable;
+    final Mutable _mutable;
     final ImmutableEntrySet _immutableSet;
     final MutableEntrySet _mutableSet;
     int _size;
@@ -53,7 +53,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         while (capacity < nominalSize) 
             capacity <<= 1;
         _entries=new Bucket[capacity];
-        _immutable=new Immutable();
+        _mutable=new Mutable();
         _immutableSet = new ImmutableEntrySet();
         _mutableSet = new MutableEntrySet();
     }
@@ -62,9 +62,9 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     /** Get the immutable API to this map.
      * @return an Immutable map backed by this map.
      */
-    public Map<K,V> asImmutable()
+    public Mutable asMutable()
     {
-        return _immutable;
+        return _mutable;
     }
     
     /* ------------------------------------------------------------ */
@@ -81,125 +81,23 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     @Override
     public Set<java.util.Map.Entry<K, V>> entrySet()
     {
-        return _mutableSet;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get an entry reference.
-     * The first [nominalSize] entries added are guarenteed never to
-     * be deleted from the map, so the references may be used as repeated
-     * quick lookups of the same key.
-     * @param key
-     * @return
-     */
-    public Map.Entry<K,V> getEntry(K key)
-    {
-        if (key == null)
-            throw new IllegalArgumentException();
-        
-        final int hash = key.hashCode();
-        final int index=hash & (_entries.length-1);
-        
-        for (Bucket<K,V> e = _entries[index]; e != null; e = e._next) 
-        {
-            if (e._hash == hash && key.equals(e._key)) 
-                return e._mutableEntry;
-        }
-        return null;
-    }    
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public V put(K key, V value) 
-    {
-        if (key == null)
-            throw new IllegalArgumentException();
-        
-        change(key);
-        
-        final int hash = key.hashCode();
-        final int index=hash & (_entries.length-1);
-        
-        Bucket<K,V> last = null;
-        for (Bucket<K,V> e = _entries[index]; e != null; e = e._next) 
-        {
-            if (e._hash == hash && key.equals(e._key)) 
-            {
-                V old=e._mutableEntry.setValue(value);
-                return old;
-            }
-            last=e;
-        }
-
-        Bucket<K,V> e = new Bucket<K,V>(this,hash,key,value);
-        if (last==null)
-            _entries[index]=e;
-        else
-            last._next=e;
-        return null;
+        return _immutableSet;
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public boolean containsKey(Object key)
     {
-        return _immutable.containsKey(key);
+        return _mutable.containsKey(key);
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public V get(Object key)
     {
-        return _immutable.get(key);
+        return _mutable.get(key);
     }
     
-    /* ------------------------------------------------------------ */
-    @Override
-    public void clear()
-    {
-        change(null);
-        
-        for (int i=_entries.length; i-->0;)
-        {
-            int depth=0;
-
-            for (Bucket<K,V> e = _entries[i]; e != null; e = e._next)
-            {
-                e._mutableEntry.setValue(null);
-                if (++depth>_entries.length)
-                {
-                    e._next=null;
-                    break;
-                }
-            }
-        }
-        _size=0;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public V remove(Object key)
-    {
-        if (key == null)
-            throw new IllegalArgumentException();
-
-        change((K)key);
-        
-        final int hash = key.hashCode();
-        final int index=hash & (_entries.length-1);
-        
-        for (Bucket<K,V> e = _entries[index]; e != null; e = e._next) 
-        {
-            if (e._hash == hash && key.equals(e._key)) 
-            {
-                V old=e._mutableEntry.setValue(null);
-                return old;
-            }
-        }
-
-        return null;
-    }
-
     /* ------------------------------------------------------------ */
     @Override
     public int size()
@@ -210,13 +108,18 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public class Immutable extends AbstractMap<K, V> implements Map<K,V>
+    public class Mutable extends AbstractMap<K, V> implements Map<K,V>
     {
+        public ImmutableHashMap<K,V> asImmutable()
+        {
+            return ImmutableHashMap.this;
+        }
+        
         /* ------------------------------------------------------------ */
         @Override
         public Set<java.util.Map.Entry<K, V>> entrySet()
         {
-            return _immutableSet;
+            return _mutableSet;
         }
 
         /* ------------------------------------------------------------ */
@@ -253,6 +156,108 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
                 if (e._hash == hash && key.equals(e._key)) 
                     return e._immutableEntry.getValue();
             }
+            return null;
+        }
+
+        /* ------------------------------------------------------------ */
+        /** Get an entry reference.
+         * The first [nominalSize] entries added are guarenteed never to
+         * be deleted from the map, so the references may be used as repeated
+         * quick lookups of the same key.
+         * @param key
+         * @return
+         */
+        public Map.Entry<K,V> getEntry(K key)
+        {
+            if (key == null)
+                throw new IllegalArgumentException();
+            
+            final int hash = key.hashCode();
+            final int index=hash & (_entries.length-1);
+            
+            for (Bucket<K,V> e = _entries[index]; e != null; e = e._next) 
+            {
+                if (e._hash == hash && key.equals(e._key)) 
+                    return e._mutableEntry;
+            }
+            return null;
+        }    
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public V put(K key, V value) 
+        {
+            if (key == null)
+                throw new IllegalArgumentException();
+            
+            change(key);
+            
+            final int hash = key.hashCode();
+            final int index=hash & (_entries.length-1);
+            
+            Bucket<K,V> last = null;
+            for (Bucket<K,V> e = _entries[index]; e != null; e = e._next) 
+            {
+                if (e._hash == hash && key.equals(e._key)) 
+                {
+                    V old=e._mutableEntry.setValue(value);
+                    return old;
+                }
+                last=e;
+            }
+
+            Bucket<K,V> e = new Bucket<K,V>(ImmutableHashMap.this,hash,key,value);
+            if (last==null)
+                _entries[index]=e;
+            else
+                last._next=e;
+            return null;
+        }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public void clear()
+        {
+            change(null);
+            
+            for (int i=_entries.length; i-->0;)
+            {
+                int depth=0;
+
+                for (Bucket<K,V> e = _entries[i]; e != null; e = e._next)
+                {
+                    e._mutableEntry.setValue(null);
+                    if (++depth>_entries.length)
+                    {
+                        e._next=null;
+                        break;
+                    }
+                }
+            }
+            _size=0;
+        }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public V remove(Object key)
+        {
+            if (key == null)
+                throw new IllegalArgumentException();
+
+            change((K)key);
+            
+            final int hash = key.hashCode();
+            final int index=hash & (_entries.length-1);
+            
+            for (Bucket<K,V> e = _entries[index]; e != null; e = e._next) 
+            {
+                if (e._hash == hash && key.equals(e._key)) 
+                {
+                    V old=e._mutableEntry.setValue(null);
+                    return old;
+                }
+            }
+
             return null;
         }
 
@@ -318,8 +323,8 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
 
             public V getValue()
             {
-                if (_value instanceof ImmutableHashMap)
-                    return (V)((ImmutableHashMap)_value).asImmutable();
+                if (_value instanceof ImmutableHashMap.Mutable)
+                    return (V)((ImmutableHashMap.Mutable)_value).asImmutable();
                 return _value;
             }
 
@@ -338,6 +343,8 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
 
             public V getValue()
             {
+                if (_value instanceof ImmutableHashMap)
+                    return (V)((ImmutableHashMap)_value).asMutable();
                 return _value;
             }
 

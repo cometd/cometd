@@ -15,7 +15,7 @@ public class TestImmutableHashMap
     @Test
     public void testMap()
     {
-        ImmutableHashMap<String,Object> map = new ImmutableHashMap<String,Object>(2);
+        Map<String,Object> map = new ImmutableHashMap<String,Object>(2).asMutable();
         
         Assert.assertTrue(map.isEmpty());
         Assert.assertEquals(0,map.size());
@@ -89,7 +89,7 @@ public class TestImmutableHashMap
     @Test
     public void testString()
     {
-        ImmutableHashMap<String,Object> map = new ImmutableHashMap<String,Object>(2);
+        Map<String,Object> map = new ImmutableHashMap<String,Object>(2).asMutable();
         
         map.put("A","1");
         map.put("B","2");
@@ -108,7 +108,7 @@ public class TestImmutableHashMap
     @Test
     public void testImmutable()
     {
-        ImmutableHashMap<String,Object> map = new ImmutableHashMap<String,Object>(2);
+        ImmutableHashMap<String,Object>.Mutable map = new ImmutableHashMap<String,Object>(2).asMutable();
         
         map.put("A","1");
         map.put("B","2");
@@ -116,10 +116,10 @@ public class TestImmutableHashMap
         map.put("D","4");
         map.put("E","5");
         
-        ImmutableHashMap<String,Object> map2 = new ImmutableHashMap<String,Object>(2);
+        ImmutableHashMap<String,Object>.Mutable map2 = new ImmutableHashMap<String,Object>(2).asMutable();
         map2.put("X","1");
         map2.put("Y","2");
-        map.put("2",map2);
+        map.put("2",map2.asImmutable());
         
         Map<String,Object> immutable = map.asImmutable();
         
