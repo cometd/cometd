@@ -12,8 +12,7 @@ import org.eclipse.jetty.util.ajax.JSON;
 
 public class ServerMessage extends AbstractMap<String,Object> implements Message, JSON.Generator
 {
-    
-    final ImmutableHashMap<String,Object> _immutable = new ImmutableHashMap<String, Object>(16)
+    private final ImmutableHashMap<String,Object> _immutable = new ImmutableHashMap<String, Object>(16)
     {
         @Override
         protected void change(String key) throws UnsupportedOperationException
@@ -21,23 +20,23 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
             _json=null;
         } ;
     };
-    final MutableMessage _mutable = new MutableMessage();
-    final Map.Entry<String,Object> _advice;
-    final Map.Entry<String,Object> _channelId;
-    final Map.Entry<String,Object> _clientId;
-    final Map.Entry<String,Object> _data;
-    final Map.Entry<String,Object> _ext;
-    final Map.Entry<String,Object> _id;
+    private final MutableMessage _mutable = new MutableMessage();
+    private final Map.Entry<String,Object> _advice;
+    private final Map.Entry<String,Object> _channelId;
+    private final Map.Entry<String,Object> _clientId;
+    private final Map.Entry<String,Object> _data;
+    private final Map.Entry<String,Object> _ext;
+    private final Map.Entry<String,Object> _id;
     
 
-    Message _associated;
-    String _json;
-    boolean _lazy=false;
+    private Message _associated;
+    private String _json;
+    private boolean _lazy=false;
     
-    final MessagePool _pool;
+    private final MessagePool _pool;
     
 
-    final AtomicInteger _refs=new AtomicInteger();
+    private final AtomicInteger _refs=new AtomicInteger();
 
     /* ------------------------------------------------------------ */
     public ServerMessage()
@@ -248,7 +247,7 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
     /* ------------------------------------------------------------ */
     class MutableMessage extends AbstractMap<String,Object> implements Message.Mutable
     {
-        final ImmutableHashMap<String,Object>.Mutable _mutable=_immutable.asMutable();
+        private final ImmutableHashMap<String,Object>.Mutable _mutable=_immutable.asMutable();
 
         public Message asImmutable()
         {
