@@ -344,34 +344,14 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
             return (String)_id.getValue();
         }
 
-        public int hashCode()
-        {
-            return _mutable.hashCode();
-        }  
-        
-        public boolean isEmpty()
-        {
-            return _mutable.isEmpty();
-        }
-
         public boolean isLazy()
         {
             return _lazy;
         }
 
-        public Set<String> keySet()
-        {
-            return _mutable.keySet();
-        }
-
         public Object put(String key, Object value)
         {
             return _mutable.put(key,value);
-        }
-        
-        public void putAll(Map t)
-        {
-            _mutable.putAll(t);
         }
 
         public Object remove(Object key)
