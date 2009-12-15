@@ -1,12 +1,13 @@
 package org.cometd.server;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public class MessageImpl extends FixedMap<String,Object> implements Message.Mutable, JSON.Generator
+public class MessageImpl extends ImmutableHashMap<String,Object> implements Message.Mutable, JSON.Generator
 {
     final Map.Entry<String,Object> _advice;
     Message _associated;
@@ -100,7 +101,7 @@ public class MessageImpl extends FixedMap<String,Object> implements Message.Muta
     public Map<String, Object> getAdvice(boolean create)
     {
         if (_advice.getValue()==null)
-            _advice.setValue(new FixedMap<String,Object>());
+            _advice.setValue(new HashMap<String,Object>());
         return (Map<String, Object>)_advice.getValue();
     }
 
@@ -152,7 +153,7 @@ public class MessageImpl extends FixedMap<String,Object> implements Message.Muta
         if (!create)
             return null;
 
-        ext=new FixedMap<String,Object>();
+        ext=new HashMap<String,Object>();
         _ext.setValue(ext);
         return (Map<String,Object>)ext;
     }

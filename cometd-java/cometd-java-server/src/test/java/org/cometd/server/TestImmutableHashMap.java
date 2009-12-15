@@ -9,13 +9,13 @@ import org.junit.Assert;
 import org.junit.Test;
 
 
-public class TestFixedHashMap 
+public class TestImmutableHashMap 
 {
 
     @Test
     public void testMap()
     {
-        FixedHashMap<String,Object> map = new FixedHashMap<String,Object>(2);
+        ImmutableHashMap<String,Object> map = new ImmutableHashMap<String,Object>(2);
         
         Assert.assertTrue(map.isEmpty());
         Assert.assertEquals(0,map.size());
@@ -89,7 +89,7 @@ public class TestFixedHashMap
     @Test
     public void testString()
     {
-        FixedHashMap<String,Object> map = new FixedHashMap<String,Object>(2);
+        ImmutableHashMap<String,Object> map = new ImmutableHashMap<String,Object>(2);
         
         map.put("A","1");
         map.put("B","2");
@@ -108,13 +108,18 @@ public class TestFixedHashMap
     @Test
     public void testImmutable()
     {
-        FixedHashMap<String,Object> map = new FixedHashMap<String,Object>(2);
+        ImmutableHashMap<String,Object> map = new ImmutableHashMap<String,Object>(2);
         
         map.put("A","1");
         map.put("B","2");
         map.put("C","3");
         map.put("D","4");
         map.put("E","5");
+        
+        ImmutableHashMap<String,Object> map2 = new ImmutableHashMap<String,Object>(2);
+        map2.put("X","1");
+        map2.put("Y","2");
+        map.put("2",map2);
         
         Map<String,Object> immutable = map.asImmutable();
         
@@ -123,5 +128,9 @@ public class TestFixedHashMap
         try { immutable.remove("A"); Assert.assertTrue(false); } catch (UnsupportedOperationException e) { Assert.assertTrue(true);}
         try { immutable.entrySet().clear(); Assert.assertTrue(false); } catch (UnsupportedOperationException e) { Assert.assertTrue(true);}
         try { Iterator i= immutable.entrySet().iterator(); i.next(); i.remove(); Assert.assertTrue(false); } catch (UnsupportedOperationException e) { Assert.assertTrue(true);}
+    
+
+        try { ((Map<String,Object>)immutable.get("2")).put("Z","3"); Assert.assertTrue(false); } catch (UnsupportedOperationException e) { Assert.assertTrue(true);}
+    
     }
 }
