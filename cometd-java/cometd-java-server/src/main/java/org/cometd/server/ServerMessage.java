@@ -275,11 +275,6 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
             return _mutable.entrySet();
         }
 
-        public boolean equals(Object o)
-        {
-            return _mutable.equals(o);
-        }
-
         public Object get(Object key)
         {
             return _mutable.get(key);
@@ -364,7 +359,7 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
             return _lazy;
         }
 
-        public Set keySet()
+        public Set<String> keySet()
         {
             return _mutable.keySet();
         }
@@ -398,17 +393,6 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
         {
             return _mutable.size();
         }
-
-        public String toString()
-        {
-            return _mutable.toString();
-        }
-
-        public Collection values()
-        {
-            return _mutable.values();
-        }
-
     }
     
 }
