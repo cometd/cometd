@@ -3,17 +3,19 @@ package org.cometd.server;
 import java.util.Iterator;
 import java.util.Map;
 
+import junit.framework.AssertionFailedError;
+
 import org.junit.Assert;
 import org.junit.Test;
 
 
-public class TestFixedMap 
+public class TestFixedHashMap 
 {
 
     @Test
     public void testMap()
     {
-        FixedMap<String,Object> map = new FixedMap<String,Object>(2);
+        FixedHashMap<String,Object> map = new FixedHashMap<String,Object>(2);
         
         Assert.assertTrue(map.isEmpty());
         Assert.assertEquals(0,map.size());
@@ -87,7 +89,7 @@ public class TestFixedMap
     @Test
     public void testString()
     {
-        FixedMap<String,Object> map = new FixedMap<String,Object>(2);
+        FixedHashMap<String,Object> map = new FixedHashMap<String,Object>(2);
         
         map.put("A","1");
         map.put("B","2");
@@ -101,5 +103,25 @@ public class TestFixedMap
         Assert.assertTrue(s.contains("C=3"));
         Assert.assertTrue(s.contains("D=4"));
         Assert.assertTrue(s.contains("E=5"));
+    }
+
+    @Test
+    public void testImmutable()
+    {
+        FixedHashMap<String,Object> map = new FixedHashMap<String,Object>(2);
+        
+        map.put("A","1");
+        map.put("B","2");
+        map.put("C","3");
+        map.put("D","4");
+        map.put("E","5");
+        
+        Map<String,Object> immutable = map.asImmutable();
+        
+        try { immutable.put("F","6"); Assert.assertTrue(false); } catch (UnsupportedOperationException e) { Assert.assertTrue(true);}
+        try { immutable.clear(); Assert.assertTrue(false); } catch (UnsupportedOperationException e) { Assert.assertTrue(true);}
+        try { immutable.remove("A"); Assert.assertTrue(false); } catch (UnsupportedOperationException e) { Assert.assertTrue(true);}
+        try { immutable.entrySet().clear(); Assert.assertTrue(false); } catch (UnsupportedOperationException e) { Assert.assertTrue(true);}
+        try { Iterator i= immutable.entrySet().iterator(); i.next(); i.remove(); Assert.assertTrue(false); } catch (UnsupportedOperationException e) { Assert.assertTrue(true);}
     }
 }
