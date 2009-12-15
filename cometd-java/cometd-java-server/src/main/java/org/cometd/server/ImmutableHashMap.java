@@ -9,12 +9,14 @@ import java.util.Set;
 
 
 /* ------------------------------------------------------------ */
-/** Fixed Map.
- * <p>FixedMap is a hash {@link Map} implementation that provides both
- * mutable and immutable APIs to the same data structure and uses a 
- * fixed size array of hash entries whose keys and hashes are retained
- * when removed from the map, which is  optimal for pooled maps
- * that will frequently contain the same key over and over.
+/** Immutable Hash Map.
+ * <p>FixedHashMap is a hash {@link Map} implementation that provides both
+ * mutable and immutable APIs to the same data structure.  The immutable
+ * API applies to deep structures of FixedHashMaps of FixedHashMaps.
+ * </p>
+ * <p>The implementation uses a fixed size array of hash entries whose keys 
+ * and hashes are retained when removed from the map, which is  optimal 
+ * for pooled maps that will frequently contain the same key over and over.
  * </p>
  * <p>FixedMap keys cannot be null.   FixedMap values may be null, but 
  * null values are treated exactly as if the entry is not added to the
@@ -28,7 +30,7 @@ import java.util.Set;
  * @param <K> The key type
  * @param <V> The key value
  */
-public class FixedHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
+public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
 {
     final Bucket<K,V>[] _entries;
     final Immutable _immutable;
@@ -37,13 +39,13 @@ public class FixedHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     int _size;
 
     /* ------------------------------------------------------------ */
-    FixedHashMap()
+    ImmutableHashMap()
     {
         this(8);
     }
 
     /* ------------------------------------------------------------ */
-    FixedHashMap(int nominalSize)
+    ImmutableHashMap(int nominalSize)
     {
         int capacity = 1;
         while (capacity < nominalSize) 
@@ -237,7 +239,7 @@ public class FixedHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             for (Bucket<K,V> e = _entries[index]; e != null; e = e._next) 
             {
                 if (e._hash == hash && key.equals(e._key)) 
-                    return e._value;
+                    return e._immutableEntry.getValue();
             }
             return null;
         }
@@ -289,7 +291,7 @@ public class FixedHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     /* ------------------------------------------------------------ */
     static class Bucket<K,V>
     {
-        final FixedHashMap<K,V> _map;
+        final ImmutableHashMap<K,V> _map;
         final K _key;
         final int _hash;
         V _value;
@@ -304,6 +306,8 @@ public class FixedHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
 
             public V getValue()
             {
+                if (_value instanceof ImmutableHashMap)
+                    return (V)((ImmutableHashMap)_value).asImmutable();
                 return _value;
             }
 
@@ -342,7 +346,7 @@ public class FixedHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         };
         
         
-        Bucket(FixedHashMap<K,V> map,int hash, K k, V v) 
+        Bucket(ImmutableHashMap<K,V> map,int hash, K k, V v) 
         {
             _map=map;
             _value = v;
