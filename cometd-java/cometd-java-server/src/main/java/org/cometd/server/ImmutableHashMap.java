@@ -26,6 +26,8 @@ import java.util.Set;
  * to Map.Entry instances that will not change for a given key and thus
  * may be used for direct access to the related value.
  * </p>
+ * <p>This map is not thread safe and multiple threads should not access
+ * the map without some synchronization</p>. 
  * 
  * @param <K> The key type
  * @param <V> The key value
@@ -57,6 +59,9 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     }
 
     /* ------------------------------------------------------------ */
+    /** Get the immutable API to this map.
+     * @return an Immutable map backed by this map.
+     */
     public Map<K,V> asImmutable()
     {
         return _immutable;
@@ -80,6 +85,13 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     }
 
     /* ------------------------------------------------------------ */
+    /** Get an entry reference.
+     * The first [nominalSize] entries added are guarenteed never to
+     * be deleted from the map, so the references may be used as repeated
+     * quick lookups of the same key.
+     * @param key
+     * @return
+     */
     public Map.Entry<K,V> getEntry(K key)
     {
         if (key == null)
