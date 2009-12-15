@@ -14,7 +14,7 @@ import org.eclipse.jetty.util.ajax.JSON;
 
 public class MessagePool
 {
-    final private ArrayQueue<MessageImpl> _messagePool;
+    final private ArrayQueue<ServerMessage> _messagePool;
     final private ArrayQueue<JSON.ReaderSource> _readerPool;
 
     /* ------------------------------------------------------------ */
@@ -26,7 +26,7 @@ public class MessagePool
     /* ------------------------------------------------------------ */
     public MessagePool(int capacity)
     {
-        _messagePool=new ArrayQueue<MessageImpl>(capacity,capacity);
+        _messagePool=new ArrayQueue<ServerMessage>(capacity,capacity);
         _readerPool=new ArrayQueue<JSON.ReaderSource>(capacity,capacity);
     }
 
@@ -92,24 +92,24 @@ public class MessagePool
     }
 
     /* ------------------------------------------------------------ */
-    public MessageImpl newMessage()
+    public ServerMessage newMessage()
     {
-        MessageImpl message=_messagePool.poll();
+        ServerMessage message=_messagePool.poll();
         if (message == null)
         {
-            message=new MessageImpl(this);
+            message=new ServerMessage(this);
         }
         message.incRef();
         return message;
     }
 
     /* ------------------------------------------------------------ */
-    public MessageImpl newMessage(Message associated)
+    public ServerMessage newMessage(Message associated)
     {
-        MessageImpl message=_messagePool.poll();
+        ServerMessage message=_messagePool.poll();
         if (message == null)
         {
-            message=new MessageImpl(this);
+            message=new ServerMessage(this);
         }
         message.incRef();
         if (associated != null)
@@ -118,7 +118,7 @@ public class MessagePool
     }
 
     /* ------------------------------------------------------------ */
-    void recycleMessage(MessageImpl message)
+    void recycleMessage(ServerMessage message)
     {
         message.clear();
         _messagePool.offer(message);
