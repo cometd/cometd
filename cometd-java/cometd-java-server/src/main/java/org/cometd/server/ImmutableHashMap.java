@@ -34,16 +34,16 @@ import java.util.Set;
  */
 public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
 {
-    final Bucket<K,V>[] _entries;
-    final Mutable _mutable;
-    final ImmutableEntrySet _immutableSet;
-    final MutableEntrySet _mutableSet;
-    int _size;
+    private final DualEntry<K,V>[] _entries;
+    private final Mutable _mutable;
+    private final ImmutableEntrySet _immutableSet;
+    private final MutableEntrySet _mutableSet;
+    private int _size;
 
     /* ------------------------------------------------------------ */
     ImmutableHashMap()
     {
-        this(8);
+        this(16);
     }
 
     /* ------------------------------------------------------------ */
@@ -52,7 +52,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         int capacity = 1;
         while (capacity < nominalSize) 
             capacity <<= 1;
-        _entries=new Bucket[capacity];
+        _entries=new DualEntry[capacity];
         _mutable=new Mutable();
         _immutableSet = new ImmutableEntrySet();
         _mutableSet = new MutableEntrySet();
@@ -132,7 +132,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             final int hash = key.hashCode();
             final int index=hash & (_entries.length-1);
 
-            for (Bucket<K,V> e = _entries[index]; e != null; e = e._next) 
+            for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
             {
                 if (e._hash == hash && key.equals(e._key)) 
                     return true;
@@ -151,7 +151,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             final int hash = key.hashCode();
             final int index=hash & (_entries.length-1);
 
-            for (Bucket<K,V> e = _entries[index]; e != null; e = e._next) 
+            for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
             {
                 if (e._hash == hash && key.equals(e._key)) 
                     return e._immutableEntry.getValue();
@@ -175,7 +175,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             final int hash = key.hashCode();
             final int index=hash & (_entries.length-1);
             
-            for (Bucket<K,V> e = _entries[index]; e != null; e = e._next) 
+            for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
             {
                 if (e._hash == hash && key.equals(e._key)) 
                     return e._mutableEntry;
@@ -195,8 +195,8 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             final int hash = key.hashCode();
             final int index=hash & (_entries.length-1);
             
-            Bucket<K,V> last = null;
-            for (Bucket<K,V> e = _entries[index]; e != null; e = e._next) 
+            DualEntry<K,V> last = null;
+            for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
             {
                 if (e._hash == hash && key.equals(e._key)) 
                 {
@@ -206,7 +206,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
                 last=e;
             }
 
-            Bucket<K,V> e = new Bucket<K,V>(ImmutableHashMap.this,hash,key,value);
+            DualEntry<K,V> e = new DualEntry<K,V>(ImmutableHashMap.this,hash,key,value);
             if (last==null)
                 _entries[index]=e;
             else
@@ -224,7 +224,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             {
                 int depth=0;
 
-                for (Bucket<K,V> e = _entries[i]; e != null; e = e._next)
+                for (DualEntry<K,V> e = _entries[i]; e != null; e = e._next)
                 {
                     e._mutableEntry.setValue(null);
                     if (++depth>_entries.length)
@@ -249,7 +249,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             final int hash = key.hashCode();
             final int index=hash & (_entries.length-1);
             
-            for (Bucket<K,V> e = _entries[index]; e != null; e = e._next) 
+            for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
             {
                 if (e._hash == hash && key.equals(e._key)) 
                 {
@@ -306,15 +306,15 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    static class Bucket<K,V>
+    static class DualEntry<K,V>
     {
-        final ImmutableHashMap<K,V> _map;
-        final K _key;
-        final int _hash;
-        V _value;
-        Bucket<K,V> _next;
+        private final ImmutableHashMap<K,V> _map;
+        private final K _key;
+        private final int _hash;
+        private V _value;
+        private DualEntry<K,V> _next;
         
-        Map.Entry<K,V> _immutableEntry = new Map.Entry<K,V>()
+        private Map.Entry<K,V> _immutableEntry = new Map.Entry<K,V>()
         {
             public K getKey()
             {
@@ -334,7 +334,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             }
         };
         
-        Map.Entry<K,V> _mutableEntry = new Map.Entry<K,V>()
+        private Map.Entry<K,V> _mutableEntry = new Map.Entry<K,V>()
         {
             public K getKey()
             {
@@ -364,8 +364,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             }
         };
         
-        
-        Bucket(ImmutableHashMap<K,V> map,int hash, K k, V v) 
+        DualEntry(ImmutableHashMap<K,V> map,int hash, K k, V v) 
         {
             _map=map;
             _value = v;
@@ -381,9 +380,9 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     /* ------------------------------------------------------------ */
     class EntryIterator 
     {
-        int _index=0;
-        Bucket<K,V> _entry;
-        Bucket<K,V> _last;
+        protected int _index=0;
+        protected DualEntry<K,V> _entry;
+        protected DualEntry<K,V> _last;
         
         EntryIterator()
         {
@@ -402,11 +401,11 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             return _entry!=null;
         }
 
-        protected Bucket<K, V> nextEntry()
+        protected DualEntry<K, V> nextEntry()
         {
             if (_entry==null)
                 throw new NoSuchElementException();
-            Bucket<K,V> entry=_entry;
+            DualEntry<K,V> entry=_entry;
             
             _entry=_entry._next;
             while(_entry!=null && _entry._value==null)
