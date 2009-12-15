@@ -8,7 +8,6 @@ public interface Channel
         CONNECT("/meta/connect"),
         SUBSCRIBE("/meta/subscribe"),
         UNSUBSCRIBE("/meta/unsubscribe"),
-        PUBLISH("/meta/publish"),
         DISCONNECT("/meta/disconnect");
 
         private final String _channelId;
