@@ -739,10 +739,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
             if (content.array()!=null)
                 _responseContent.append(content.array(),content.getIndex(),content.length());
             else
-            {
-                System.err.println("INEFFICIENT!!!!");
                 _responseContent.append(content.asArray(),0,content.length());
-            }
         }
 
         /* ------------------------------------------------------------ */
