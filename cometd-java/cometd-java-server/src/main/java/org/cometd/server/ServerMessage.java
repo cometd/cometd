@@ -20,7 +20,7 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
             _json=null;
         } ;
     };
-    private final MutableMessage _mutable = new MutableMessage();
+    private final MutableMessage _mutable;
     private final Map.Entry<String,Object> _advice;
     private final Map.Entry<String,Object> _channelId;
     private final Map.Entry<String,Object> _clientId;
@@ -49,18 +49,14 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
     {
         _pool=bayeux;
 
-        _mutable.put(Message.ADVICE_FIELD,null);
-        _mutable.put(Message.CHANNEL_FIELD,null);
-        _mutable.put(Message.CLIENT_FIELD,null);
-        _mutable.put(Message.DATA_FIELD,null);
-        _mutable.put(Message.EXT_FIELD,null);
-        _mutable.put(Message.ID_FIELD,null);
-        _advice=_mutable.getEntry(Message.ADVICE_FIELD);
-        _channelId=_mutable.getEntry(Message.CHANNEL_FIELD);
-        _clientId=_mutable.getEntry(Message.CLIENT_FIELD);
-        _data=_mutable.getEntry(Message.DATA_FIELD);
-        _ext=_mutable.getEntry(Message.EXT_FIELD);
-        _id=_mutable.getEntry(Message.ID_FIELD);
+        _mutable = new MutableMessage();
+        _advice=_immutable.getEntry(Message.ADVICE_FIELD);
+        _channelId=_immutable.getEntry(Message.CHANNEL_FIELD);
+        _clientId=_immutable.getEntry(Message.CLIENT_FIELD);
+        _data=_immutable.getEntry(Message.DATA_FIELD);
+        _ext=_immutable.getEntry(Message.EXT_FIELD);
+        _id=_immutable.getEntry(Message.ID_FIELD);
+        
     }
 
     /* ------------------------------------------------------------ */
@@ -76,12 +72,14 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean containsKey(Object key)
     {
         return _immutable.containsKey(key);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean containsValue(Object value)
     {
         return _immutable.containsValue(value);
@@ -101,12 +99,14 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Set<java.util.Map.Entry<String, Object>> entrySet()
     {
         return _immutable.entrySet();
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Object get(Object key)
     {
         return _immutable.get(key);
@@ -140,6 +140,12 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
     public Object getData()
     {
         return _data.getValue();
+    }
+
+    /* ------------------------------------------------------------ */
+    public Map<String,Object> getDataMap()
+    {
+        return (Map<String,Object>)_data.getValue();
     }
 
     /* ------------------------------------------------------------ */
@@ -232,6 +238,7 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public int size()
     {
         return _immutable.size();
@@ -248,8 +255,30 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
     class MutableMessage extends AbstractMap<String,Object> implements Message.Mutable
     {
         private final ImmutableHashMap<String,Object>.Mutable _mutable=_immutable.asMutable();
-
-        public Message asImmutable()
+        private final Map.Entry<String,Object> _advice;
+        private final Map.Entry<String,Object> _channelId;
+        private final Map.Entry<String,Object> _clientId;
+        private final Map.Entry<String,Object> _data;
+        private final Map.Entry<String,Object> _ext;
+        private final Map.Entry<String,Object> _id;
+        
+        MutableMessage()
+        {
+            _mutable.put(Message.ADVICE_FIELD,null);
+            _mutable.put(Message.CHANNEL_FIELD,null);
+            _mutable.put(Message.CLIENT_FIELD,null);
+            _mutable.put(Message.DATA_FIELD,null);
+            _mutable.put(Message.EXT_FIELD,null);
+            _mutable.put(Message.ID_FIELD,null);
+            _advice=_mutable.getEntry(Message.ADVICE_FIELD);
+            _channelId=_mutable.getEntry(Message.CHANNEL_FIELD);
+            _clientId=_mutable.getEntry(Message.CLIENT_FIELD);
+            _data=_mutable.getEntry(Message.DATA_FIELD);
+            _ext=_mutable.getEntry(Message.EXT_FIELD);
+            _id=_mutable.getEntry(Message.ID_FIELD);
+        }
+        
+        public ServerMessage asImmutable()
         {
             return ServerMessage.this;
         }
@@ -264,16 +293,19 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
             super.clear();
         }
 
+        @Override
         public boolean containsKey(Object key)
         {
             return _mutable.containsKey(key);
         }
 
-        public Set entrySet()
+        @Override
+        public Set<Map.Entry<String,Object>> entrySet()
         {
             return _mutable.entrySet();
         }
 
+        @Override
         public Object get(Object key)
         {
             return _mutable.get(key);
@@ -348,11 +380,13 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
             return _lazy;
         }
 
+        @Override
         public Object put(String key, Object value)
         {
             return _mutable.put(key,value);
         }
 
+        @Override
         public Object remove(Object key)
         {
             return _mutable.remove(key);
@@ -368,6 +402,7 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
             _lazy=lazy;
         }
 
+        @Override
         public int size()
         {
             return _mutable.size();

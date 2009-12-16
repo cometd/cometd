@@ -92,7 +92,7 @@ public class MessagePool
     }
 
     /* ------------------------------------------------------------ */
-    public ServerMessage newMessage()
+    public Message newMessage()
     {
         ServerMessage message=_messagePool.poll();
         if (message == null)
@@ -100,7 +100,7 @@ public class MessagePool
             message=new ServerMessage(this);
         }
         message.incRef();
-        return message;
+        return message.asMutable();
     }
 
     /* ------------------------------------------------------------ */
@@ -212,7 +212,7 @@ public class MessagePool
         @Override
         protected Map newMap()
         {
-            return new HashMap(8);
+            return new ImmutableHashMap<String, Object>().asMutable();
         }
 
         @Override
