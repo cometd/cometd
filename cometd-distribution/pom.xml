@@ -9,6 +9,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>cometd-distribution</artifactId>
+    <packaging>pom</packaging>
     <name>CometD :: Distribution</name>
 
     <build>
@@ -16,6 +17,7 @@
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
+                    <finalName>cometd-${project.version}</finalName>
                     <descriptors>
                         <descriptor>src/main/assembly/distribution.xml</descriptor>
                     </descriptors>
