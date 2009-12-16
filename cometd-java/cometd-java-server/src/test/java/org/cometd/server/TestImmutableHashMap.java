@@ -4,13 +4,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import junit.framework.AssertionFailedError;
 
 import org.eclipse.jetty.util.ArrayQueue;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -140,8 +143,8 @@ public class TestImmutableHashMap
     
     }
 
-    final static int THREADS=100;
-    final static int LOOPS=50000;
+    final static int THREADS=50;
+    final static int LOOPS=5000;
     
     public static void main(String[] arg) throws Exception
     {
@@ -156,65 +159,161 @@ public class TestImmutableHashMap
      
     static long immutableMapTest() throws Exception
     {
-        final CountDownLatch latch = new CountDownLatch(THREADS);
+        final CountDownLatch latch = new CountDownLatch(2*THREADS);
         final AtomicLong bigResult=new AtomicLong();
-        final ArrayQueue<Message> queue=new ArrayQueue<Message>(100,50);
-        
+        final ConcurrentLinkedQueue<Message> queue=new ConcurrentLinkedQueue<Message>();
+        final BlockingArrayQueue<Message>[] q = new BlockingArrayQueue[THREADS];
+        for (int i=0;i<THREADS;i++)
+            q[i]=new BlockingArrayQueue<Message>(THREADS*10,THREADS); 
         long start=System.currentTimeMillis();
         for (int i=0;i<THREADS;i++)
         {
+            final int index=i;
+            new Thread()
+            {
+                public void run()
+                {  
+
+                    long result=0;
+                    
+                    for (int m=0;m<LOOPS*THREADS;m++)
+                    {
+                        try
+                        {
+                            Message msg = q[index].poll(10,TimeUnit.SECONDS);
+                            // System.err.println("m="+msg);
+                            result += msg._id.getValue().hashCode();
+                            result += msg._channel.getValue().hashCode();
+                            HashMap<String, Object> data=(HashMap<String, Object>)msg._data.getValue();
+                            
+                            result += data.get("name").hashCode();
+                            result += data.get("chat").hashCode();
+                            
+                            if (msg._refs.decrementAndGet()==0)
+                            {
+                                msg._mutable.clear();
+                                if (!queue.offer(msg))
+                                    throw new RuntimeException();
+                            }
+                        }
+                        catch (InterruptedException e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    bigResult.addAndGet(result);
+                    latch.countDown();
+                }
+            }.start();
+        }
+        
+        for (int i=0;i<THREADS;i++)
+        {
+            final int index=i;
             new Thread()
             {
                 public void run()
                 {
-                    queue.add(new Message());
                     long result=0;
                     
                     for (int m=0;m<LOOPS;m++)
                     {
-                        final Message msg = queue.remove();
-                        //Message msg = new Message();
+                        Message msg = queue.poll();
+                        if (msg==null)
+                            msg=new Message();
                         
                         // pretend to parse the message.
                         msg._mutable.put("id","12345");
                         msg._mutable.put("channelid","/foo/bar/wibble");
-                        ImmutableHashMap<String, Object> data=new ImmutableHashMap<String, Object>();
-                        data.asMutable().put("name","gregw");
-                        data.asMutable().put("chat","Now is the time for all good men to come to the aid of the party");
+                        HashMap<String, Object> data=new HashMap<String, Object>();
+                        data.put("name","gregw");
+                        data.put("chat","Now is the time for all good men to come to the aid of the party");
                         msg._mutable.put("data",data);
-                        msg._mutable.put("timestamp","1970 Jan 1");
+                        msg._mutable.put("timestamp",new Long(System.currentTimeMillis()));
+                        msg._refs.incrementAndGet();
                         
                         // pretend to use the message
                         result += msg._id.getValue().hashCode();
                         result += msg._channel.getValue().hashCode();
-                        result += msg._id.getValue().hashCode();
-                        result += msg._channel.getValue().hashCode();
 
-                        data=(ImmutableHashMap<String, Object>)msg._data.getValue();
+                        for (int i=0;i<THREADS;i++)
+                        {
+                            msg._refs.incrementAndGet();
+                            q[i].offer(msg);
+                        }
                         
-                        result += data.get("name").hashCode();
-                        result += data.get("chat").hashCode();
-                        
-                        queue.add(msg);
+                        if (msg._refs.decrementAndGet()==0)
+                        {
+                            msg._mutable.clear();
+                            if (!queue.offer(msg))
+                                throw new RuntimeException();
+                        }
                         Thread.yield();
                     }
                     
                     bigResult.addAndGet(result);
                     latch.countDown();
-                    
                 }
             }.start();
         }
         latch.await();
+        //System.out.println(bigResult);
         return System.currentTimeMillis()-start;
         
     }
+    
+    
+    
+    
     static long mapTest() throws Exception
     {
-        final CountDownLatch latch = new CountDownLatch(THREADS);
+        final CountDownLatch latch = new CountDownLatch(THREADS*2);
         final AtomicLong bigResult=new AtomicLong();
+
+        final BlockingArrayQueue<HashMap>[] q = new BlockingArrayQueue[THREADS];
+        for (int i=0;i<THREADS;i++)
+            q[i]=new BlockingArrayQueue<HashMap>(THREADS*10,THREADS); 
         
         long start=System.currentTimeMillis();
+        
+
+        for (int i=0;i<THREADS;i++)
+        {
+            final int index=i;
+            new Thread()
+            {
+                public void run()
+                {  
+
+                    long result=0;
+                    
+                    for (int m=0;m<LOOPS*THREADS;m++)
+                    {
+                        try
+                        {
+                            HashMap msg = q[index].poll(10,TimeUnit.SECONDS);
+
+                            result += msg.get("id").hashCode();
+                            result += msg.get("channelid").hashCode();
+
+                            HashMap<String, Object> data=(HashMap<String, Object>)msg.get("data");
+                            
+                            result += data.get("name").hashCode();
+                            result += data.get("chat").hashCode();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    bigResult.addAndGet(result);
+                    latch.countDown();
+                }
+            }.start();
+        }
+        
         for (int i=0;i<THREADS;i++)
         {
             new Thread()
@@ -225,27 +324,27 @@ public class TestImmutableHashMap
                     
                     for (int m=0;m<LOOPS;m++)
                     {
-                        Map<String,Object> map = new HashMap<String, Object>();
+                        HashMap<String,Object> msg = new HashMap<String, Object>();
                         
                         // pretend to parse the message.
-                        map.put("id","12345");
-                        map.put("channelid","/foo/bar/wibble");
+                        msg.put("id","12345");
+                        msg.put("channelid","/foo/bar/wibble");
                         HashMap<String, Object> data=new HashMap<String, Object>();
                         data.put("name","gregw");
                         data.put("chat","Now is the time for all good men to come to the aid of the party");
-                        map.put("data",data);
-                        map.put("timestamp","1970 Jan 1");
+                        msg.put("data",data);
+                        msg.put("timestamp",new Long(System.currentTimeMillis()));
                         
                         // pretend to use the message
-                        result += map.get("id").hashCode();
-                        result += map.get("channelid").hashCode();
-                        result += map.get("id").hashCode();
-                        result += map.get("channelid").hashCode();
-
-                        data=(HashMap<String, Object>)map.get("data");
+                        result += msg.get("id").hashCode();
+                        result += msg.get("channelid").hashCode();
                         
-                        result += data.get("name").hashCode();
-                        result += data.get("chat").hashCode();
+
+                        for (int i=0;i<THREADS;i++)
+                        {
+                            q[i].offer(msg);
+                        }
+                        
                         Thread.yield();
                     }
                     
@@ -256,7 +355,9 @@ public class TestImmutableHashMap
             }.start();
         }
         latch.await();
+        //System.out.println(bigResult);
         return System.currentTimeMillis()-start;
+        
         
     }
     
