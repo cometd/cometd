@@ -14,7 +14,12 @@
 
 package org.cometd.client;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -41,6 +46,7 @@ import org.cometd.RemoveListener;
 import org.cometd.server.MessageImpl;
 import org.cometd.server.MessagePool;
 import org.eclipse.jetty.client.Address;
+import org.eclipse.jetty.client.CachedExchange;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
@@ -48,10 +54,13 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.BufferUtil;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.Utf8StringBuffer;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -685,21 +694,55 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /**
      * The base class for all bayeux exchanges.
      */
-    protected class Exchange extends ContentExchange
+    protected class Exchange extends CachedExchange
     {
         Message[] _responses;
         int _connectFailures;
         int _backoff = _backoffInterval;
         String _json;
+        private int _bufferSize = 1024;
+        Utf8StringBuffer _responseContent;
 
         /* ------------------------------------------------------------ */
         Exchange(String info)
         {
+            super(false);
             setMethod("POST");
             setScheme(HttpSchemes.HTTP_BUFFER);
             setAddress(_cometdAddress);
             setURI(_path + "/" + info);
             setRequestContentType(_formEncoded ? "application/x-www-form-urlencoded;charset=utf-8" : Bayeux.JSON_CONTENT_TYPE);
+        }
+
+        public String getResponseContent() throws UnsupportedEncodingException
+        {
+            if (_responseContent != null)
+                return _responseContent.toString();
+            return null;
+        }
+
+        @Override
+        protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+        {
+            if (_responseContent!=null)
+                _responseContent.reset();
+            super.onResponseStatus(version,status,reason);
+        }
+
+        @Override
+        protected void onResponseContent(Buffer content) throws IOException
+        {
+            super.onResponseContent(content);
+            if (_responseContent == null)
+                _responseContent = new Utf8StringBuffer(_bufferSize);
+            
+            if (content.array()!=null)
+                _responseContent.append(content.array(),content.getIndex(),content.length());
+            else
+            {
+                System.err.println("INEFFICIENT!!!!");
+                _responseContent.append(content.asArray(),0,content.length());
+            }
         }
 
         /* ------------------------------------------------------------ */
@@ -741,19 +784,18 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         }
 
         /* ------------------------------------------------------------ */
-        protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
-        {
-            super.onResponseStatus(version,status,reason);
-        }
-
-        /* ------------------------------------------------------------ */
         protected void onResponseHeader(Buffer name, Buffer value) throws IOException
         {
             super.onResponseHeader(name,value);
             if (!isRunning())
                 return;
 
-            if (HttpHeaders.CACHE.getOrdinal(name) == HttpHeaders.SET_COOKIE_ORDINAL)
+            int header=HttpHeaders.CACHE.getOrdinal(name);
+            if (header== HttpHeaders.CONTENT_LENGTH_ORDINAL)
+            {
+                _bufferSize = BufferUtil.toInt(value);
+            }
+            else if (header == HttpHeaders.SET_COOKIE_ORDINAL)
             {
                 String cname = null;
                 String cvalue = null;
@@ -831,7 +873,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                         extendIn(_responses[i]);
             }
         }
-
+        
         /* ------------------------------------------------------------ */
         protected void resend(boolean backoff)
         {
