@@ -1,10 +1,19 @@
 package org.cometd.client;
 
+import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
 import org.cometd.Bayeux;
@@ -18,6 +27,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -31,6 +41,7 @@ public class BayeuxClientTest extends TestCase
     Random _random = new Random();
     HttpClient _httpClient;
     AbstractBayeux _bayeux;
+    TestFilter _filter;
 
     protected void setUp() throws Exception
     {
@@ -48,6 +59,10 @@ public class BayeuxClientTest extends TestCase
         ServletContextHandler context = new ServletContextHandler(_server,"/");
         context.setBaseResource(Resource.newResource("./src/test"));
 
+        // Test Filter
+        _filter = new TestFilter();
+        context.addFilter(new FilterHolder(_filter),"/*",0);
+        
         // Cometd servlet
         _cometd=new ContinuationCometdServlet();
         ServletHolder cometd_holder = new ServletHolder(_cometd);
@@ -59,6 +74,8 @@ public class BayeuxClientTest extends TestCase
 
         context.addServlet(cometd_holder, "/cometd/*");
         context.addServlet(DefaultServlet.class, "/");
+        
+        
 
         _server.start();
 
@@ -218,6 +235,96 @@ public class BayeuxClientTest extends TestCase
         assertTrue(client.isStopped());
     }
 
+    /* ------------------------------------------------------------ */
+    public void testRetry() throws Exception
+    {
+        AbstractBayeux _bayeux = _cometd.getBayeux();
+
+        final Exchanger<Object> exchanger = new Exchanger<Object>();
+
+        BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_server.getConnectors()[0].getLocalPort()+"/cometd")
+        {
+            volatile boolean connected;
+            protected void metaConnect(boolean success, Message message)
+            {
+                super.metaConnect(success,message);
+                if (!connected)
+                {
+                    connected=true;
+                    try
+                    {
+                        ((MessageImpl)message).incRef();
+                        exchanger.exchange(message,1,TimeUnit.SECONDS);
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            protected void metaHandshake(boolean success, boolean reestablish, Message message)
+            {
+                _filter._code=0;
+                connected=false;
+                super.metaHandshake(success,reestablish,message);
+                try
+                {
+                    ((MessageImpl)message).incRef();
+                    exchanger.exchange(message,1,TimeUnit.SECONDS);
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+
+        };
+
+        client.addListener(new MessageListener(){
+            public void deliver(Client fromClient, Client toClient, Message message)
+            {
+                if (message.getData()!=null || Bayeux.META_SUBSCRIBE.equals(message.getChannel()) || Bayeux.META_DISCONNECT.equals(message.getChannel()))
+                {
+                    try
+                    {
+                        ((MessageImpl)message).incRef();
+                        exchanger.exchange(message,1,TimeUnit.SECONDS);
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+
+        _filter._code=503;
+        client.start();
+
+        MessageImpl message = (MessageImpl)exchanger.exchange(null,1,TimeUnit.SECONDS);
+        assertFalse(message.isSuccessful());        
+        message.decRef();
+
+        message = (MessageImpl)exchanger.exchange(null,20,TimeUnit.SECONDS);
+        assertTrue(message.isSuccessful());  
+        String id = client.getId();
+        assertTrue(id!=null);      
+        message.decRef();
+        
+        message = (MessageImpl)exchanger.exchange(null,1,TimeUnit.SECONDS);
+        assertEquals(Bayeux.META_CONNECT,message.getChannel());
+        assertTrue(message.isSuccessful());
+        message.decRef();
+        
+        client.disconnect();
+        message = (MessageImpl)exchanger.exchange(null,1,TimeUnit.SECONDS);
+        assertEquals(Bayeux.META_DISCONNECT,message.getChannel());
+        assertTrue(message.isSuccessful());
+        message.decRef();
+
+    }
+
     public void testCookies() throws Exception
     {
         BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_server.getConnectors()[0].getLocalPort()+"/cometd");
@@ -361,5 +468,27 @@ public class BayeuxClientTest extends TestCase
                 x.printStackTrace();
             }
         }
+    }
+    
+    private static class TestFilter implements Filter
+    {
+        volatile int _code=0;
+        
+        public void destroy()
+        {
+        }
+
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            if (_code!=0)
+                ((HttpServletResponse)response).sendError(_code);
+            else
+                chain.doFilter(request,response);
+        }
+
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+        }
+        
     }
 }
