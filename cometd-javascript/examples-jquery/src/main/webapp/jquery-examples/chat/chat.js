@@ -2,13 +2,16 @@
 {
     $(document).ready(function()
     {
-        var chat = new Chat();
+        // Check if there was a saved application state
+        var stateCookie = org.cometd.COOKIE.get('org.cometd.demo.state');
+        var state = stateCookie ? org.cometd.JSON.fromJSON(stateCookie) : null;
+        var chat = new Chat(state);
 
         // Setup UI
         $('#join').show();
         $('#joined').hide();
         $('#altServer').attr('autocomplete', 'off');
-        $('#joinButton').click(chat.join);
+        $('#joinButton').click(function() { chat.join($('#username').val()); });
         $('#sendButton').click(chat.send);
         $('#leaveButton').click(chat.leave);
         $('#username').attr('autocomplete', 'off').focus();
@@ -29,19 +32,21 @@
         });
     });
 
-    function Chat()
+    function Chat(state)
     {
         var _self = this;
+        var _wasConnected = false;
+        var _connected = false;
         var _username;
         var _lastUser;
         var _disconnecting;
         var _chatSubscription;
         var _membersSubscription;
 
-        this.join = function()
+        this.join = function(username)
         {
             _disconnecting = false;
-            _username = $('#username').val();
+            _username = username;
             if (!_username)
             {
                 alert('Please enter a username');
@@ -234,7 +239,6 @@
             });
         }
 
-        var _connected = false;
         function _metaConnect(message)
         {
             if (_disconnecting)
@@ -244,13 +248,13 @@
             }
             else
             {
-                var wasConnected = _connected;
+                _wasConnected = _connected;
                 _connected = message.successful === true;
-                if (!wasConnected && _connected)
+                if (!_wasConnected && _connected)
                 {
                     _connectionEstablished();
                 }
-                else if (wasConnected && !_connected)
+                else if (_wasConnected && !_connected)
                 {
                     _connectionBroken();
                 }
@@ -259,12 +263,32 @@
 
         $.cometd.addListener('/meta/connect', _metaConnect);
 
-        // Disconnect when the page unloads
-        $(window).unload(_self.leave);
+        // Restore the state, if present
+        if (state)
+        {
+            _connected = state.connected === true;
+            if (_connected)
+            {
+                setTimeout(function()
+                {
+                    _self.join(state.username);
+                    _connectionEstablished();
+                }, 0);
+            }
+        }
+
+        $(window).unload(function()
+        {
+            $.cometd.reload();
+            // Save the application state only if the user was chatting
+            if (_wasConnected && _username)
+            {
+                org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
+                    connected: _wasConnected,
+                    username: _username
+                }), { 'max-age': 5 });
+            }
+        });
     }
 
 })(jQuery);
-
-
-
-

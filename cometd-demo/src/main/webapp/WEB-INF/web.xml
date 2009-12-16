@@ -12,17 +12,18 @@
         <param-value>org.cometd.bayeux</param-value>
     </context-param>
 
+    <!-- Portability Filter, needed only to run on non Jetty or non Servlet-3.0 containers -->
+<!--
     <filter>
-        <!-- Portability Filter, needed only to run on non Jetty or non Servlet-3.0 containers -->
-        <filter-name>Continuation</filter-name>
+        <filter-name>continuation</filter-name>
         <filter-class>org.eclipse.jetty.continuation.ContinuationFilter</filter-class>
     </filter>
-    
     <filter-mapping>
-        <filter-name>Continuation</filter-name>
+        <filter-name>continuation</filter-name>
         <url-pattern>/cometd/*</url-pattern>
     </filter-mapping>
-        
+-->
+
     <servlet>
         <servlet-name>cometd</servlet-name>
         <servlet-class>org.cometd.server.continuation.ContinuationCometdServlet</servlet-class>
@@ -55,10 +56,6 @@
             <param-value>0</param-value>
         </init-param>
         <init-param>
-            <param-name>directDeliver</param-name>
-            <param-value>true</param-value>
-        </init-param>
-        <init-param>
             <param-name>refsThreshold</param-name>
             <param-value>10</param-value>
         </init-param>
@@ -75,7 +72,7 @@
         <servlet-class>org.cometd.examples.CometdDemoServlet</servlet-class>
         <load-on-startup>2</load-on-startup>
     </servlet>
-    
+
     <servlet>
         <servlet-name>oort</servlet-name>
         <servlet-class>org.cometd.oort.OortServlet</servlet-class>
@@ -84,7 +81,7 @@
             <param-value>http://localhost:8080/cometd</param-value>
         </init-param>
         <!-- Set oort.cloud to a coma separated list of other oort.urls in the cluster -->
-        <!--  
+        <!--
         <init-param>
             <param-name>oort.cloud</param-name>
             <param-value>http://localhost:8081/cometd</param-value>
@@ -92,7 +89,7 @@
         -->
         <load-on-startup>3</load-on-startup>
     </servlet>
-    
+
     <servlet>
         <servlet-name>seti</servlet-name>
         <servlet-class>org.cometd.oort.SetiServlet</servlet-class>
@@ -102,13 +99,12 @@
         </init-param>
         <load-on-startup>4</load-on-startup>
     </servlet>
-    
+
     <servlet>
         <servlet-name>auctionDemo</servlet-name>
         <servlet-class>org.webtide.demo.auction.AuctionServlet</servlet-class>
         <load-on-startup>5</load-on-startup>
     </servlet>
-
 
 </web-app>
 

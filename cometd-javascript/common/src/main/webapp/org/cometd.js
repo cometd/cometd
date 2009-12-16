@@ -808,13 +808,17 @@ org.cometd.Cometd = function(name)
                 _transport = newTransport;
             }
 
-            // Notify the listeners
+            // Notify the listeners before the connect below.
             // Here the new transport is in place, as well as the clientId, so
-            // the listener can perform a publish() if it wants, and the listeners
-            // are notified before the connect below.
+            // the listeners can perform a publish() if they want.
             message.reestablish = _reestablish;
             _reestablish = true;
             _notifyListeners('/meta/handshake', message);
+
+            // End the internal batch and allow held messages from the application
+            // to go to the server (see _handshake() where we start the internal batch).
+            _internalBatch = false;
+            _flushBatch();
 
             var action = _advice.reconnect ? _advice.reconnect : 'retry';
             switch (action)
@@ -890,13 +894,6 @@ org.cometd.Cometd = function(name)
 
         if (message.successful)
         {
-            // End the internal batch and allow held messages from the application
-            // to go to the server (see _handshake() where we start the internal batch).
-            // The internal batch is ended before notifying the listeners, so that
-            // listeners can batch other cometd operations
-            _internalBatch = false;
-            _flushBatch();
-
             // Notify the listeners after the status change but before the next connect
             _notifyListeners('/meta/connect', message);
 
@@ -1138,6 +1135,12 @@ org.cometd.Cometd = function(name)
 
     function _receive(message)
     {
+        message = _applyIncomingExtensions(message);
+        if (message === undefined || message === null)
+        {
+            return;
+        }
+
         if (message.advice)
         {
             _advice = message.advice;
@@ -1177,7 +1180,7 @@ org.cometd.Cometd = function(name)
     _handleResponse = function _handleResponse(request, response, longpoll)
     {
         var messages = _convertToMessages(response);
-        _debug('Received', messages);
+        _debug('Received', response, 'converted to', messages);
 
         // Signal the transport it can send other queued requests
         _transport.complete(request, true, longpoll);
@@ -1185,12 +1188,6 @@ org.cometd.Cometd = function(name)
         for (var i = 0; i < messages.length; ++i)
         {
             var message = messages[i];
-            message = _applyIncomingExtensions(message);
-            if (message === undefined || message === null)
-            {
-                continue;
-            }
-
             _receive(message);
         }
     };
@@ -1498,9 +1495,13 @@ org.cometd.Cometd = function(name)
     this.addListener = function(channel, scope, callback)
     {
         if (arguments.length < 2)
+        {
             throw 'Illegal arguments number: required 2, got ' + arguments.length;
+        }
         if (!_isString(channel))
+        {
             throw 'Illegal argument type: channel must be a string';
+        }
 
         return _addListener(channel, scope, callback, false);
     };
@@ -1513,7 +1514,9 @@ org.cometd.Cometd = function(name)
     this.removeListener = function(subscription)
     {
         if (!_isArray(subscription))
+        {
             throw 'Invalid argument: expected subscription, not ' + subscription;
+        }
 
         _removeListener(subscription);
     };
@@ -1539,9 +1542,17 @@ org.cometd.Cometd = function(name)
     this.subscribe = function(channel, scope, callback, subscribeProps)
     {
         if (arguments.length < 2)
+        {
             throw 'Illegal arguments number: required 2, got ' + arguments.length;
+        }
         if (!_isString(channel))
+        {
             throw 'Illegal argument type: channel must be a string';
+        }
+        if (_isDisconnected())
+        {
+            throw 'Illegal state: already disconnected';
+        }
 
         // Normalize arguments
         if (_isFunction(scope))
@@ -1578,6 +1589,15 @@ org.cometd.Cometd = function(name)
      */
     this.unsubscribe = function(subscription, unsubscribeProps)
     {
+        if (arguments.length < 1)
+        {
+            throw 'Illegal arguments number: required 1, got ' + arguments.length;
+        }
+        if (_isDisconnected())
+        {
+            throw 'Illegal state: already disconnected';
+        }
+
         // Remove the local listener before sending the message
         // This ensures that if the server fails, this client does not get notifications
         this.removeListener(subscription);
@@ -1613,9 +1633,17 @@ org.cometd.Cometd = function(name)
     this.publish = function(channel, content, publishProps)
     {
         if (arguments.length < 1)
+        {
             throw 'Illegal arguments number: required 1, got ' + arguments.length;
+        }
         if (!_isString(channel))
+        {
             throw 'Illegal argument type: channel must be a string';
+        }
+        if (_isDisconnected())
+        {
+            throw 'Illegal state: already disconnected';
+        }
 
         var bayeuxMessage = {
             channel: channel,
@@ -1696,9 +1724,13 @@ org.cometd.Cometd = function(name)
     this.registerExtension = function(name, extension)
     {
         if (arguments.length < 2)
+        {
             throw 'Illegal arguments number: required 2, got ' + arguments.length;
+        }
         if (!_isString(name))
+        {
             throw 'Illegal argument type: extension name must be a string';
+        }
 
         var existing = false;
         for (var i = 0; i < _extensions.length; ++i)
@@ -1742,7 +1774,9 @@ org.cometd.Cometd = function(name)
     this.unregisterExtension = function(name)
     {
         if (!_isString(name))
+        {
             throw 'Illegal argument type: extension name must be a string';
+        }
 
         var unregistered = false;
         for (var i = 0; i < _extensions.length; ++i)

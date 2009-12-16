@@ -110,6 +110,7 @@ org.cometd.ReloadExtension = function(configuration)
                         {
                             _state.handshakeResponse = oldState.handshakeResponse;
                             _state.subscriptions = oldState.subscriptions;
+                            _debug('Reload extension replaying handshake response', oldState.handshakeResponse);
                             _cometd.receive(oldState.handshakeResponse);
                         }, 0);
                         // This handshake is aborted, as we will replay the prior handshake response
@@ -131,9 +132,12 @@ org.cometd.ReloadExtension = function(configuration)
             // Are we already subscribed ?
             if (_state.subscriptions[message.subscription])
             {
+                _debug('Reload extension restoring subscription to', message.subscription);
+
                 // Consume the subscribe message, as we are already subscribed
                 setTimeout(function()
                 {
+                    _debug('Reload extension replaying subscription to', message.subscription);
                     _cometd.receive({
                         channel: '/meta/subscribe',
                         subscription: message.subscription,
@@ -141,7 +145,6 @@ org.cometd.ReloadExtension = function(configuration)
                     });
                 }, 0);
 
-                _debug('Reload extension will replay subscription to', message.subscription);
                 // This subscription is aborted, as we will replay a previous one
                 return null;
             }
@@ -162,14 +165,17 @@ org.cometd.ReloadExtension = function(configuration)
                 case '/meta/handshake':
                     // Save successful handshake response
                     _state.handshakeResponse = message;
+                    _debug('Reload extension tracked handshake response', message);
                     break;
                 case '/meta/subscribe':
                     // Track subscriptions
                     _state.subscriptions[message.subscription] = true;
+                    _debug('Reload extension tracked subscription', message);
                     break;
                 case '/meta/unsubscribe':
                     // Track unsubscriptions
                     delete _state.subscriptions[message.subscription];
+                    _debug('Reload extension tracked unsubscription', message);
                     break;
                 default:
                     break;
