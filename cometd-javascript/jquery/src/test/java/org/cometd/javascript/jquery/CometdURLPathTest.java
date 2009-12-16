@@ -25,14 +25,14 @@ public class CometdURLPathTest extends AbstractCometdJQueryTest
     public void testURLPath() throws Exception
     {
         defineClass(Latch.class);
-        evaluateScript("var latch = new Latch(1);");
-        Latch latch = get("latch");
+        evaluateScript("var connectLatch = new Latch(1);");
+        Latch connectLatch = get("connectLatch");
         evaluateScript("var handshake = undefined;");
         evaluateScript("var connect = undefined;");
         evaluateScript("$.cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
-        evaluateScript("$.cometd.addListener('/meta/connect', function(message) { connect = message; latch.countDown(); });");
+        evaluateScript("$.cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
         evaluateScript("$.cometd.init({url: '" + cometdURL + "/', logLevel: 'debug'})");
-        assertTrue(latch.await(1000));
+        assertTrue(connectLatch.await(1000));
 
         evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
         evaluateScript("window.assert(handshake.ext !== undefined, 'handshake without ext');");
@@ -44,12 +44,12 @@ public class CometdURLPathTest extends AbstractCometdJQueryTest
         String connectURI = evaluateScript("connect.ext.uri");
         assertTrue(connectURI.endsWith("/connect"));
 
-        evaluateScript("latch = new Latch(1);");
-        latch = get("latch");
+        evaluateScript("var disconnectLatch = new Latch(1);");
+        Latch disconnectLatch = get("disconnectLatch");
         evaluateScript("var disconnect = undefined;");
-        evaluateScript("$.cometd.addListener('/meta/disconnect', function(message) { disconnect = message; latch.countDown(); });");
+        evaluateScript("$.cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
         evaluateScript("$.cometd.disconnect();");
-        assertTrue(latch.await(1000));
+        assertTrue(disconnectLatch.await(1000));
 
         evaluateScript("window.assert(disconnect !== undefined, 'disconnect is undefined');");
         evaluateScript("window.assert(disconnect.ext !== undefined, 'disconnect without ext');");

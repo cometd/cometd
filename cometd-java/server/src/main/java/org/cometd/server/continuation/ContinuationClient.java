@@ -14,11 +14,8 @@
 
 package org.cometd.server.continuation;
 
-import org.cometd.server.AbstractBayeux;
-import org.cometd.server.AbstractCometdServlet;
 import org.cometd.server.ClientImpl;
 import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 
 /* ------------------------------------------------------------ */
@@ -97,37 +94,36 @@ public class ContinuationClient extends ClientImpl
             synchronized(this)
             {
                 // This is the end of a long poll
-                _continuation=null;
+                _continuation = null;
 
                 // Set timeout when to expect the next long poll
                 if (_intervalTimeoutTask != null)
-                    _bayeux.startTimeout(_intervalTimeoutTask,_bayeux.getMaxInterval());
+                    _bayeux.startTimeout(_intervalTimeoutTask, _bayeux.getMaxInterval());
             }
         }
         else
         {
             synchronized(this)
             {
-                // This is the start of a long poll
+                Continuation oldContinuation = _continuation;
+                _continuation = continuation;
 
-                // resume any prior continuation
-                Continuation old=_continuation;
-                _continuation=continuation;
-                if (old != null)
-                {
-                    try
-                    {
-                        old.resume();
-                    }
-                    catch(IllegalStateException e)
-                    {
-                        Log.warn(e);
-                    }
-                }
-
-                // Cancel timeout expecting the next long poll
                 _bayeux.cancelTimeout(_intervalTimeoutTask);
-                _accessed=_bayeux.getNow();
+                _accessed = _bayeux.getNow();
+
+                if (oldContinuation == null)
+                {
+                    // This is the start of a long poll
+                }
+                else
+                {
+                    // This is the reload case: there is an outstanding connect,
+                    // and the client issues a new connect.
+                    // We return the old connect via complete() since we do not
+                    // want to resume() otherwise the old connect will be
+                    // redispatched and will overwrite the new connect.
+                    oldContinuation.complete();
+                }
             }
         }
     }

@@ -22,8 +22,6 @@ if (typeof dojo!="undefined")
  * Messages are not acknowledged one by one, but instead a group of messages is
  * acknowledged when long poll returns.
  */
-
-
 org.cometd.AckExtension = function()
 {
     var _cometd;
@@ -53,7 +51,7 @@ org.cometd.AckExtension = function()
         if (channel == '/meta/handshake')
         {
             _serverSupportsAcks = message.ext && message.ext.ack;
-            _debug('AckExtension: server supports acks: {}', _serverSupportsAcks);
+            _debug('AckExtension: server supports acks', _serverSupportsAcks);
         }
         else if (_serverSupportsAcks && channel == '/meta/connect' && message.successful)
         {
@@ -61,7 +59,7 @@ org.cometd.AckExtension = function()
             if (ext && typeof ext.ack === 'number')
             {
                 _ackId = ext.ack;
-                _debug('AckExtension: server sent ack id {}', _ackId);
+                _debug('AckExtension: server sent ack id', _ackId);
             }
         }
         return message;
@@ -76,7 +74,7 @@ org.cometd.AckExtension = function()
             {
                 message.ext = {};
             }
-            message.ext.ack = _cometd && _cometd.ackEnabled!==false;
+            message.ext.ack = _cometd && _cometd.ackEnabled !== false;
             _ackId = -1;
         }
         else if (_serverSupportsAcks && channel == '/meta/connect')
@@ -86,7 +84,7 @@ org.cometd.AckExtension = function()
                 message.ext = {};
             }
             message.ext.ack = _ackId;
-            _debug('AckExtension: client sending ack id {}', _ackId);
+            _debug('AckExtension: client sending ack id', _ackId);
         }
         return message;
     };

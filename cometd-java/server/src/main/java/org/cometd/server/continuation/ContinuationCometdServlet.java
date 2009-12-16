@@ -110,7 +110,8 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
 
                     if (client == null)
                     {
-                        client=(ContinuationClient)_bayeux.getClient((String)message.get(AbstractBayeux.CLIENT_FIELD));
+                        String clientId = (String)message.get(AbstractBayeux.CLIENT_FIELD);
+                        client=(ContinuationClient)_bayeux.getClient(clientId);
 
                         // If no client, SHOULD be a handshake, so force a
                         // transport and handle
@@ -257,7 +258,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                                     int contentLength=contentBytes.length;
 
                                     String headerString="HTTP/1.1 200 OK\r\n" +
-                                            "Content-Type: " + Bayeux.JSON_CONTENT_TYPE + "\r\n" + 
+                                            "Content-Type: " + Bayeux.JSON_CONTENT_TYPE + "\r\n" +
                                             "Content-Length: " + contentLength + "\r\n" +
                                             "\r\n";
 

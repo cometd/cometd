@@ -275,26 +275,28 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
      */
     public String handle(ClientImpl client, Transport transport, Message message) throws IOException
     {
-        String channel_id=message.getChannel();
+        String channel_id = message.getChannel();
+        if (channel_id == null)
+            throw new IllegalArgumentException("Message without channel: "+message);
 
-        Handler handler=(Handler)_handlers.get(channel_id);
+        Handler handler = _handlers.get(channel_id);
         if (handler != null)
         {
             message=extendRcvMeta(client,message);
             handler.handle(client,transport,message);
-            _metaPublishHandler.handle(client,transport,message);
+            _metaPublishHandler.handle(client, transport, message);
         }
         else if (channel_id.startsWith(META_SLASH))
         {
-            message=extendRcvMeta(client,message);
-            _metaPublishHandler.handle(client,transport,message);
+            message = extendRcvMeta(client, message);
+            _metaPublishHandler.handle(client, transport, message);
         }
         else
         {
-            // non meta channel
-            handler=_publishHandler;
-            message=extendRcv(client,message);
-            handler.handle(client,transport,message);
+            // Non meta channel
+            handler = _publishHandler;
+            message = extendRcv(client,message);
+            handler.handle(client, transport, message);
         }
 
         return channel_id;
@@ -1243,8 +1245,16 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         @Override
         public void handle(ClientImpl client, Transport transport, Message message) throws IOException
         {
-            String channel_id=message.getChannel();
+            if (message == null)
+            {
+                Message reply = newMessage(message);
+                reply.put(SUCCESSFUL_FIELD, Boolean.FALSE);
+                reply.put(ERROR_FIELD, "404::Message deleted");
+                sendMetaReply(client, reply, transport);
+                return;
+            }
 
+            String channel_id=message.getChannel();
             if (client == null && message.containsKey(CLIENT_FIELD))
             {
                 unknownClient(transport,channel_id);
