@@ -66,7 +66,30 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     {
         return _mutable;
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /** Get an entry reference.
+     * The first [nominalSize] entries added are guaranteed never to
+     * be deleted from the map, so the references may be used as repeated
+     * quick lookups of the same key.
+     * @param key
+     * @return
+     */
+    public Map.Entry<K,V> getEntry(K key)
+    {
+        if (key == null)
+            throw new IllegalArgumentException();
+        
+        final int hash = key.hashCode();
+        final int index=hash & (_entries.length-1);
+        
+        for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
+        {
+            if (e._hash == hash && key.equals(e._key)) 
+                return e._immutableEntry;
+        }
+        return null;
+    }    
     /* ------------------------------------------------------------ */
     /** Called if the map is about to be changed.
      * @param key The key to be changed, or null if multiple keys.
@@ -95,7 +118,18 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     @Override
     public V get(Object key)
     {
-        return _mutable.get(key);
+        if (key == null)
+            throw new IllegalArgumentException();
+
+        final int hash = key.hashCode();
+        final int index=hash & (_entries.length-1);
+
+        for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
+        {
+            if (e._hash == hash && key.equals(e._key)) 
+                return e._immutableEntry.getValue();
+        }
+        return null;
     }
     
     /* ------------------------------------------------------------ */
@@ -154,7 +188,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
             {
                 if (e._hash == hash && key.equals(e._key)) 
-                    return e._immutableEntry.getValue();
+                    return e._mutableEntry.getValue();
             }
             return null;
         }
