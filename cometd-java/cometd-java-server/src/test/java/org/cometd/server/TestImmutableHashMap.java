@@ -186,7 +186,7 @@ public class TestImmutableHashMap
                             // System.err.println("m="+msg);
                             result += msg._id.getValue().hashCode();
                             result += msg._channel.getValue().hashCode();
-                            HashMap<String, Object> data=(HashMap<String, Object>)msg._data.getValue();
+                            Map<String, Object> data=(Map<String, Object>)msg._data.getValue();
                             
                             result += data.get("name").hashCode();
                             result += data.get("chat").hashCode();
@@ -228,7 +228,7 @@ public class TestImmutableHashMap
                         // pretend to parse the message.
                         msg._mutable.put("id","12345");
                         msg._mutable.put("channelid","/foo/bar/wibble");
-                        HashMap<String, Object> data=new HashMap<String, Object>();
+                        Map<String, Object> data=new ImmutableHashMap<String, Object>().asMutable();
                         data.put("name","gregw");
                         data.put("chat","Now is the time for all good men to come to the aid of the party");
                         msg._mutable.put("data",data);
@@ -292,7 +292,7 @@ public class TestImmutableHashMap
                             // System.err.println("m="+msg);
                             result += msg._id.getValue().hashCode();
                             result += msg._channel.getValue().hashCode();
-                            HashMap<String, Object> data=(HashMap<String, Object>)msg._data.getValue();
+                            Map<String, Object> data=(Map<String, Object>)msg._data.getValue();
                             
                             result += data.get("name").hashCode();
                             result += data.get("chat").hashCode();
@@ -326,7 +326,7 @@ public class TestImmutableHashMap
                         // pretend to parse the message.
                         msg._mutable.put("id","12345");
                         msg._mutable.put("channelid","/foo/bar/wibble");
-                        HashMap<String, Object> data=new HashMap<String, Object>();
+                        Map<String, Object> data=new ImmutableHashMap<String, Object>().asMutable();
                         data.put("name","gregw");
                         data.put("chat","Now is the time for all good men to come to the aid of the party");
                         msg._mutable.put("data",data);
