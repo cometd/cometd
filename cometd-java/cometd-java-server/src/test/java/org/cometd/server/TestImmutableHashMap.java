@@ -144,7 +144,7 @@ public class TestImmutableHashMap
     }
 
     final static int THREADS=50;
-    final static int LOOPS=5000;
+    final static int LOOPS=2000;
     
     public static void main(String[] arg) throws Exception
     {
@@ -153,15 +153,17 @@ public class TestImmutableHashMap
             Runtime.getRuntime().gc();
             System.err.println("map  "+mapTest());
             Runtime.getRuntime().gc();
-            System.err.println("pool "+immutableMapTest());
+            System.err.println("imut "+immutableMapTest());
+            Runtime.getRuntime().gc();
+            System.err.println("pool "+immutablePoolTest());
         }
     }
      
-    static long immutableMapTest() throws Exception
+    static long immutablePoolTest() throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(2*THREADS);
         final AtomicLong bigResult=new AtomicLong();
-        final ConcurrentLinkedQueue<Message> queue=new ConcurrentLinkedQueue<Message>();
+        final ConcurrentLinkedQueue<Message> pool=new ConcurrentLinkedQueue<Message>();
         final BlockingArrayQueue<Message>[] q = new BlockingArrayQueue[THREADS];
         for (int i=0;i<THREADS;i++)
             q[i]=new BlockingArrayQueue<Message>(THREADS*10,THREADS); 
@@ -192,7 +194,7 @@ public class TestImmutableHashMap
                             if (msg._refs.decrementAndGet()==0)
                             {
                                 msg._mutable.clear();
-                                if (!queue.offer(msg))
+                                if (!pool.offer(msg))
                                     throw new RuntimeException();
                             }
                         }
@@ -219,7 +221,7 @@ public class TestImmutableHashMap
                     
                     for (int m=0;m<LOOPS;m++)
                     {
-                        Message msg = queue.poll();
+                        Message msg = pool.poll();
                         if (msg==null)
                             msg=new Message();
                         
@@ -246,7 +248,7 @@ public class TestImmutableHashMap
                         if (msg._refs.decrementAndGet()==0)
                         {
                             msg._mutable.clear();
-                            if (!queue.offer(msg))
+                            if (!pool.offer(msg))
                                 throw new RuntimeException();
                         }
                         Thread.yield();
@@ -263,6 +265,94 @@ public class TestImmutableHashMap
         
     }
     
+
+    static long immutableMapTest() throws Exception
+    {
+        final CountDownLatch latch = new CountDownLatch(2*THREADS);
+        final AtomicLong bigResult=new AtomicLong();
+        final BlockingArrayQueue<Message>[] q = new BlockingArrayQueue[THREADS];
+        for (int i=0;i<THREADS;i++)
+            q[i]=new BlockingArrayQueue<Message>(THREADS*10,THREADS); 
+        long start=System.currentTimeMillis();
+        for (int i=0;i<THREADS;i++)
+        {
+            final int index=i;
+            new Thread()
+            {
+                public void run()
+                {  
+
+                    long result=0;
+                    
+                    for (int m=0;m<LOOPS*THREADS;m++)
+                    {
+                        try
+                        {
+                            Message msg = q[index].poll(10,TimeUnit.SECONDS);
+                            // System.err.println("m="+msg);
+                            result += msg._id.getValue().hashCode();
+                            result += msg._channel.getValue().hashCode();
+                            HashMap<String, Object> data=(HashMap<String, Object>)msg._data.getValue();
+                            
+                            result += data.get("name").hashCode();
+                            result += data.get("chat").hashCode();
+                            
+                        }
+                        catch (InterruptedException e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    bigResult.addAndGet(result);
+                    latch.countDown();
+                }
+            }.start();
+        }
+        
+        for (int i=0;i<THREADS;i++)
+        {
+            final int index=i;
+            new Thread()
+            {
+                public void run()
+                {
+                    long result=0;
+                    
+                    for (int m=0;m<LOOPS;m++)
+                    {
+                        Message msg=new Message();
+                        
+                        // pretend to parse the message.
+                        msg._mutable.put("id","12345");
+                        msg._mutable.put("channelid","/foo/bar/wibble");
+                        HashMap<String, Object> data=new HashMap<String, Object>();
+                        data.put("name","gregw");
+                        data.put("chat","Now is the time for all good men to come to the aid of the party");
+                        msg._mutable.put("data",data);
+                        msg._mutable.put("timestamp",new Long(System.currentTimeMillis()));
+                        
+                        // pretend to use the message
+                        result += msg._id.getValue().hashCode();
+                        result += msg._channel.getValue().hashCode();
+
+                        for (int i=0;i<THREADS;i++)
+                        {
+                            q[i].offer(msg);
+                        }
+                        Thread.yield();
+                    }
+                    
+                    bigResult.addAndGet(result);
+                    latch.countDown();
+                }
+            }.start();
+        }
+        latch.await();
+        //System.out.println(bigResult);
+        return System.currentTimeMillis()-start;
+        
+    }
     
     
     
