@@ -343,6 +343,7 @@ public class BayeuxClientTest extends TestCase
         
         client.disconnect();
 
+        Thread.sleep(500);
     }
 
     public void testCookies() throws Exception
