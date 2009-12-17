@@ -24,6 +24,15 @@
     </filter-mapping>
 -->
 
+    <filter>
+        <filter-name>cross-origin</filter-name>
+        <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>cross-origin</filter-name>
+        <url-pattern>/cometd/*</url-pattern>
+    </filter-mapping>
+
     <servlet>
         <servlet-name>cometd</servlet-name>
         <servlet-class>org.cometd.server.continuation.ContinuationCometdServlet</servlet-class>
@@ -61,7 +70,6 @@
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>
-
     <servlet-mapping>
         <servlet-name>cometd</servlet-name>
         <url-pattern>/cometd/*</url-pattern>
