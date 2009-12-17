@@ -30,18 +30,22 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.omg.CORBA._PolicyStub;
 
 public class BayeuxClientTest extends TestCase
 {
     private boolean _stress=Boolean.getBoolean("STRESS");
     Server _server;
+    SelectChannelConnector _connector;
     ContinuationCometdServlet _cometd;
     Random _random = new Random();
     HttpClient _httpClient;
     AbstractBayeux _bayeux;
     TestFilter _filter;
+    int _port;
 
     protected void setUp() throws Exception
     {
@@ -50,11 +54,11 @@ public class BayeuxClientTest extends TestCase
         // Manually contruct context to avoid hassles with webapp classloaders for now.
         _server = new Server();
 
-        SelectChannelConnector connector=new SelectChannelConnector();
+        _connector=new SelectChannelConnector();
         // SocketConnector connector=new SocketConnector();
-        connector.setPort(0);
-        connector.setMaxIdleTime(30000);
-        _server.addConnector(connector);
+        _connector.setPort(0);
+        _connector.setMaxIdleTime(30000);
+        _server.addConnector(_connector);
 
         ServletContextHandler context = new ServletContextHandler(_server,"/");
         context.setBaseResource(Resource.newResource("./src/test"));
@@ -83,6 +87,8 @@ public class BayeuxClientTest extends TestCase
         _httpClient.setMaxConnectionsPerAddress(20000);
         _httpClient.setIdleTimeout(15000);
         _httpClient.start();
+        
+        _port=_connector.getLocalPort();
     }
 
     /* ------------------------------------------------------------ */
@@ -240,7 +246,7 @@ public class BayeuxClientTest extends TestCase
     {
         AbstractBayeux _bayeux = _cometd.getBayeux();
 
-        final Exchanger<Object> exchanger = new Exchanger<Object>();
+        final BlockingArrayQueue<Object> queue = new BlockingArrayQueue<Object>(100,100);
 
         BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_server.getConnectors()[0].getLocalPort()+"/cometd")
         {
@@ -248,18 +254,15 @@ public class BayeuxClientTest extends TestCase
             protected void metaConnect(boolean success, Message message)
             {
                 super.metaConnect(success,message);
-                if (!connected)
+                connected|=success;
+                try
                 {
-                    connected=true;
-                    try
-                    {
-                        ((MessageImpl)message).incRef();
-                        exchanger.exchange(message,1,TimeUnit.SECONDS);
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
+                    ((MessageImpl)message).incRef();
+                    queue.offer(message);
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
                 }
             }
 
@@ -271,7 +274,7 @@ public class BayeuxClientTest extends TestCase
                 try
                 {
                     ((MessageImpl)message).incRef();
-                    exchanger.exchange(message,1,TimeUnit.SECONDS);
+                    queue.offer(message);
                 }
                 catch (Exception e)
                 {
@@ -289,7 +292,7 @@ public class BayeuxClientTest extends TestCase
                     try
                     {
                         ((MessageImpl)message).incRef();
-                        exchanger.exchange(message,1,TimeUnit.SECONDS);
+                        queue.offer(message);
                     }
                     catch (Exception e)
                     {
@@ -302,26 +305,43 @@ public class BayeuxClientTest extends TestCase
         _filter._code=503;
         client.start();
 
-        MessageImpl message = (MessageImpl)exchanger.exchange(null,1,TimeUnit.SECONDS);
+        MessageImpl message = (MessageImpl)queue.poll(1,TimeUnit.SECONDS);
         assertFalse(message.isSuccessful());        
         message.decRef();
-
-        message = (MessageImpl)exchanger.exchange(null,20,TimeUnit.SECONDS);
+        
+        message = (MessageImpl)queue.poll(1,TimeUnit.SECONDS);
         assertTrue(message.isSuccessful());  
         String id = client.getId();
         assertTrue(id!=null);      
         message.decRef();
-        
-        message = (MessageImpl)exchanger.exchange(null,1,TimeUnit.SECONDS);
+
+        message = (MessageImpl)queue.poll(1,TimeUnit.SECONDS);
         assertEquals(Bayeux.META_CONNECT,message.getChannel());
         assertTrue(message.isSuccessful());
         message.decRef();
         
+        _server.stop();
+
+        Thread.sleep(500);
+        
+        message=(MessageImpl)queue.poll();
+        assertFalse(message.isSuccessful());
+        
+        while ((message=(MessageImpl)queue.poll())!=null)
+        {
+            assertFalse(message.isSuccessful());
+        }
+        
+        _connector.setPort(_port);
+        _server.start();
+        
+        message=(MessageImpl)queue.poll(2,TimeUnit.SECONDS);
+        System.err.println(message);
+        
+        assertFalse(message.isSuccessful());
+        assertEquals("402::Unknown client",message.get("error"));
+        
         client.disconnect();
-        message = (MessageImpl)exchanger.exchange(null,1,TimeUnit.SECONDS);
-        assertEquals(Bayeux.META_DISCONNECT,message.getChannel());
-        assertTrue(message.isSuccessful());
-        message.decRef();
 
     }
 
