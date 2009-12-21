@@ -80,6 +80,10 @@ public class StandardClientBayeux implements ClientBayeux
     {
     }
 
+    public void removeExtension(Extension extension)
+    {
+    }
+
     public ChannelClient getChannel(String channelName)
     {
         return null;
