@@ -15,10 +15,10 @@ public class TestServerMessage
     {
         String json = "{\"id\":\"12345\", \"clientId\":\"jva73siaj92jdafa\", \"data\":{\"name\":\"value\"}, \"ext\":{\"name\":\"value\"}}";
         
-        MessagePool pool = new MessagePool();
+        ImmutableMessagePool pool = new ImmutableMessagePool();
         Message[] messages=pool.parse(json);
-        ServerMessage.MutableMessage mutable= (ServerMessage.MutableMessage)messages[0];
-        ServerMessage immutable= mutable.asImmutable();
+        ImmutableMessage.MutableMessage mutable= (ImmutableMessage.MutableMessage)messages[0];
+        ImmutableMessage immutable= mutable.asImmutable();
         
         String s=mutable.toString();
         Assert.assertTrue(s.contains("ext={name=value}"));
