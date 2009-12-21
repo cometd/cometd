@@ -10,12 +10,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public class ServerMessage extends AbstractMap<String,Object> implements Message, JSON.Generator
+public class ImmutableMessage extends AbstractMap<String,Object> implements Message, JSON.Generator
 {
     private final ImmutableHashMap<String,Object> _immutable = new ImmutableHashMap<String, Object>(16)
     {
         @Override
-        protected void change(String key) throws UnsupportedOperationException
+        protected void onChange(String key) throws UnsupportedOperationException
         {
             _json=null;
         } ;
@@ -33,19 +33,19 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
     private String _json;
     private boolean _lazy=false;
     
-    private final MessagePool _pool;
+    private final ImmutableMessagePool _pool;
     
 
     private final AtomicInteger _refs=new AtomicInteger();
 
     /* ------------------------------------------------------------ */
-    public ServerMessage()
+    public ImmutableMessage()
     {
         this(null);
     }
     
     /* ------------------------------------------------------------ */
-    public ServerMessage(MessagePool bayeux)
+    public ImmutableMessage(ImmutableMessagePool bayeux)
     {
         _pool=bayeux;
 
@@ -91,7 +91,7 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
         int r=_refs.decrementAndGet();
         if (r == 0 && _pool != null)
         {
-            clear();
+            _mutable.clear();
             _pool.recycleMessage(this);
         }
         else if (r < 0)
@@ -212,10 +212,10 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
         if (_associated != associated)
         {
             if (_associated != null)
-                ((ServerMessage)_associated).decRef();
+                ((ImmutableMessage)_associated).decRef();
             _associated=associated;
             if (_associated != null)
-                ((ServerMessage)_associated).incRef();
+                ((ImmutableMessage)_associated).incRef();
         }
     }
 
@@ -278,9 +278,9 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
             _id=_mutable.getEntry(Message.ID_FIELD);
         }
         
-        public ServerMessage asImmutable()
+        public ImmutableMessage asImmutable()
         {
-            return ServerMessage.this;
+            return ImmutableMessage.this;
         }
 
         @Override
@@ -316,11 +316,26 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
             return (Map<String, Object>)_advice.getValue();
         }
 
-        public Map<String, Object> getAdvice(boolean create)
+        public Map<String, Object> getMutableData()
         {
-            if (_advice.getValue()==null && create)
-                _advice.setValue(new ImmutableHashMap<String,Object>().asMutable());
-            return (Map<String, Object>)_advice.getValue();
+            Map<String, Object> data=(Map<String, Object>)_data.getValue();
+            if (data==null)
+            {
+                data=new ImmutableHashMap<String,Object>().asMutable();
+                _data.setValue(data);
+            }
+            return data;
+        }
+
+        public Map<String, Object> getMutableAdvice()
+        {
+            Map<String, Object> advice=(Map<String, Object>)_advice.getValue();
+            if (advice==null)
+            {
+                advice=new ImmutableHashMap<String,Object>().asMutable();
+                _advice.setValue(advice);
+            }
+            return advice;
         }
 
         public String getChannelId()
@@ -345,10 +360,10 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
 
         public Map<String, Object> getExt()
         {
-            return getExt(false);
+            return (Map<String, Object>)_ext.getValue();
         }
 
-        public Map<String,Object> getExt(boolean create)
+        public Map<String,Object> getMutableExt()
         {
             Object ext=_ext.getValue();
             if (ext instanceof Map)
@@ -361,9 +376,6 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
                 _ext.setValue(ext);
                 return (Map<String,Object>)ext;
             }
-
-            if (!create)
-                return null;
 
             ext=new HashMap<String,Object>();
             _ext.setValue(ext);
@@ -406,6 +418,16 @@ public class ServerMessage extends AbstractMap<String,Object> implements Message
         public int size()
         {
             return _mutable.size();
+        }
+
+        public Message getAssociated()
+        {
+            return ImmutableMessage.this.getAssociated();
+        }
+
+        public void setAssociated(Message message)
+        {
+            ImmutableMessage.this.setAssociated(message);
         }
     }
     

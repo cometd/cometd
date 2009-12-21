@@ -5,6 +5,7 @@ import java.io.Reader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -12,22 +13,22 @@ import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public class MessagePool
+public class ImmutableMessagePool
 {
-    final private ArrayQueue<ServerMessage> _messagePool;
-    final private ArrayQueue<JSON.ReaderSource> _readerPool;
+    final private ConcurrentLinkedQueue<ImmutableMessage> _messagePool;
+    final private ConcurrentLinkedQueue<JSON.ReaderSource> _readerPool;
 
     /* ------------------------------------------------------------ */
-    public MessagePool()
+    public ImmutableMessagePool()
     {
         this(50);
     }
 
     /* ------------------------------------------------------------ */
-    public MessagePool(int capacity)
+    public ImmutableMessagePool(int capacity)
     {
-        _messagePool=new ArrayQueue<ServerMessage>(capacity,capacity);
-        _readerPool=new ArrayQueue<JSON.ReaderSource>(capacity,capacity);
+        _messagePool=new ConcurrentLinkedQueue<ImmutableMessage>();
+        _readerPool=new ConcurrentLinkedQueue<JSON.ReaderSource>();
     }
 
     /* ------------------------------------------------------------ */
@@ -92,24 +93,24 @@ public class MessagePool
     }
 
     /* ------------------------------------------------------------ */
-    public Message newMessage()
+    public Message.Mutable newMessage()
     {
-        ServerMessage message=_messagePool.poll();
+        ImmutableMessage message=_messagePool.poll();
         if (message == null)
         {
-            message=new ServerMessage(this);
+            message=new ImmutableMessage(this);
         }
         message.incRef();
         return message.asMutable();
     }
 
     /* ------------------------------------------------------------ */
-    public ServerMessage newMessage(Message associated)
+    public ImmutableMessage newMessage(Message associated)
     {
-        ServerMessage message=_messagePool.poll();
+        ImmutableMessage message=_messagePool.poll();
         if (message == null)
         {
-            message=new ServerMessage(this);
+            message=new ImmutableMessage(this);
         }
         message.incRef();
         if (associated != null)
@@ -118,7 +119,7 @@ public class MessagePool
     }
 
     /* ------------------------------------------------------------ */
-    void recycleMessage(ServerMessage message)
+    void recycleMessage(ImmutableMessage message)
     {
         message.clear();
         _messagePool.offer(message);
@@ -175,7 +176,7 @@ public class MessagePool
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return "MessagePool:" + _messagePool.size() + "/" + _messagePool.getCapacity();
+        return "MessagePool:" + _messagePool.size();
 
     }
 

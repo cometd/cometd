@@ -63,10 +63,12 @@ public interface Message extends Map<String, Object>
  
     interface Mutable extends Message
     {
-        void setData(Object data);
-        Map<String, Object> getExt(boolean create);
-        Map<String, Object> getAdvice(boolean create);
+        Map<String, Object> getMutableData();
+        Map<String, Object> getMutableExt();
+        Map<String, Object> getMutableAdvice();
         boolean isLazy();
         void setLazy(boolean lazy);
+        Message getAssociated();
+        void setAssociated(Message message);
     }
 }
