@@ -45,5 +45,7 @@ public class StandardClientBayeuxTest
         assertEquals(MetaChannelType.HANDSHAKE, metaMessage.getMetaChannel().getType());
         assertTrue((Boolean)metaMessage.get(Message.SUCCESSFUL_FIELD));
         // TODO: check message fields
+
+        bayeux.disconnect();
     }
 }

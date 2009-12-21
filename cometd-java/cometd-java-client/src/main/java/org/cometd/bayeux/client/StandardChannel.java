@@ -1,42 +1,39 @@
 package org.cometd.bayeux.client;
 
-import bayeux.Channel;
-import bayeux.ChannelSubscription;
-import bayeux.Message;
-import bayeux.MessageListener;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @version $Revision$ $Date$
  */
 public class StandardChannel implements Channel
 {
-    private final IClient client;
+    private final List<MessageListener> subscribers = new CopyOnWriteArrayList<MessageListener>();
+    private final IClientSession session;
 
-    public StandardChannel(IClient client)
+    public StandardChannel(IClientSession session)
     {
-        this.client = client;
+        this.session = session;
     }
 
-    public ChannelSubscription subscribe(final MessageListener listener)
+    public void subscribe(MessageListener listener)
     {
-/*
-        listeners.add(listener);
-        Message message = null;
-        client.send(message);
-        return new ChannelSubscription()
-        {
-            public void unsubscribe()
-            {
-                StandardChannel.this.unsubscribe(listener);
-            }
-        };
-*/
-        return null;
+        boolean wasEmpty = subscribers.isEmpty();
+        subscribers.add(listener);
+        if (wasEmpty)
+            session.subscribe(this);
+    }
+
+    public void unsubscribe(MessageListener listener)
+    {
+        subscribers.remove(listener);
+        boolean isEmpty = subscribers.isEmpty();
+        if (isEmpty)
+            session.unsubscribe(this);
     }
 
     public void publish(Object data)
     {
-        Message message = null;
-        client.send(message);
+        session.publish(this, data);
     }
 }

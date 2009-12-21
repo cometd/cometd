@@ -1,12 +1,7 @@
-package org.cometd.bayeux;
+package org.cometd.bayeux.client;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.cometd.bayeux.client.MetaChannel;
-import org.cometd.bayeux.client.MetaChannelType;
-import org.cometd.bayeux.client.MetaMessage;
-import org.cometd.bayeux.client.MetaMessageListener;
 
 /**
  * @version $Revision$ $Date$

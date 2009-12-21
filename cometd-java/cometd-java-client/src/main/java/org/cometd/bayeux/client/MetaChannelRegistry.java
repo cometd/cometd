@@ -1,9 +1,6 @@
-package org.cometd.bayeux;
+package org.cometd.bayeux.client;
 
 import java.util.EnumMap;
-
-import org.cometd.bayeux.client.MetaChannel;
-import org.cometd.bayeux.client.MetaChannelType;
 
 /**
  * @version $Revision$ $Date$
@@ -16,11 +13,17 @@ public class MetaChannelRegistry
     {
         metaChannels.put(MetaChannelType.HANDSHAKE, new StandardMetaChannel(MetaChannelType.HANDSHAKE));
         // TODO: add other channels
-
+        metaChannels.put(MetaChannelType.DISCONNECT, new StandardMetaChannel(MetaChannelType.DISCONNECT));
     }
 
     public MetaChannel.Mutable from(MetaChannelType type)
     {
         return metaChannels.get(type);
+    }
+
+    public void notifySuscribers(MetaChannel.Mutable metaChannel, MetaMessage metaMessage)
+    {
+        // TODO: notify also globbed metachannels ?
+        metaChannel.notifySubscribers(metaMessage);
     }
 }

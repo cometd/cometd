@@ -11,7 +11,7 @@ public interface ClientSession extends Client
 {
     MetaChannel getMetaChannel(MetaChannelType meta);
 
-    ChannelClient getChannel(String channelName);
+    Channel getChannel(String channelName);
 
     void batch(Runnable batch);
 
