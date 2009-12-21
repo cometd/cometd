@@ -1,7 +1,6 @@
 package org.cometd.server;
 
 import java.util.AbstractMap;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -27,14 +26,14 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     private final Map.Entry<String,Object> _data;
     private final Map.Entry<String,Object> _ext;
     private final Map.Entry<String,Object> _id;
-    
+
 
     private Message _associated;
     private String _json;
     private boolean _lazy=false;
-    
+
     private final ImmutableMessagePool _pool;
-    
+
 
     private final AtomicInteger _refs=new AtomicInteger();
 
@@ -43,7 +42,7 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     {
         this(null);
     }
-    
+
     /* ------------------------------------------------------------ */
     public ImmutableMessage(ImmutableMessagePool bayeux)
     {
@@ -52,11 +51,11 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
         _mutable = new MutableMessage();
         _advice=_immutable.getEntry(Message.ADVICE_FIELD);
         _channelId=_immutable.getEntry(Message.CHANNEL_FIELD);
-        _clientId=_immutable.getEntry(Message.CLIENT_FIELD);
+        _clientId=_immutable.getEntry(Message.CLIENT_ID_FIELD);
         _data=_immutable.getEntry(Message.DATA_FIELD);
         _ext=_immutable.getEntry(Message.EXT_FIELD);
         _id=_immutable.getEntry(Message.ID_FIELD);
-        
+
     }
 
     /* ------------------------------------------------------------ */
@@ -191,7 +190,7 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     /* ------------------------------------------------------------ */
     /**
      * Lazy messages are queued but do not wake up waiting clients.
-     * 
+     *
      * @return true if message is lazy
      */
     public boolean isLazy()
@@ -228,7 +227,7 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     /* ------------------------------------------------------------ */
     /**
      * Lazy messages are queued but do not wake up waiting clients.
-     * 
+     *
      * @param lazy
      *            true if message is lazy
      */
@@ -249,7 +248,7 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     {
         return getJSON();
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     class MutableMessage extends AbstractMap<String,Object> implements Message.Mutable
@@ -261,23 +260,23 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
         private final Map.Entry<String,Object> _data;
         private final Map.Entry<String,Object> _ext;
         private final Map.Entry<String,Object> _id;
-        
+
         MutableMessage()
         {
             _mutable.put(Message.ADVICE_FIELD,null);
             _mutable.put(Message.CHANNEL_FIELD,null);
-            _mutable.put(Message.CLIENT_FIELD,null);
+            _mutable.put(Message.CLIENT_ID_FIELD,null);
             _mutable.put(Message.DATA_FIELD,null);
             _mutable.put(Message.EXT_FIELD,null);
             _mutable.put(Message.ID_FIELD,null);
             _advice=_mutable.getEntry(Message.ADVICE_FIELD);
             _channelId=_mutable.getEntry(Message.CHANNEL_FIELD);
-            _clientId=_mutable.getEntry(Message.CLIENT_FIELD);
+            _clientId=_mutable.getEntry(Message.CLIENT_ID_FIELD);
             _data=_mutable.getEntry(Message.DATA_FIELD);
             _ext=_mutable.getEntry(Message.EXT_FIELD);
             _id=_mutable.getEntry(Message.ID_FIELD);
         }
-        
+
         public ImmutableMessage asImmutable()
         {
             return ImmutableMessage.this;
@@ -368,7 +367,7 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
             Object ext=_ext.getValue();
             if (ext instanceof Map)
                 return (Map<String,Object>)ext;
-            
+
             if (ext instanceof JSON.Literal)
             {
                 JSON json=_pool == null?JSON.getDefault():_pool.getMsgJSON();
@@ -430,5 +429,5 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
             ImmutableMessage.this.setAssociated(message);
         }
     }
-    
+
 }
