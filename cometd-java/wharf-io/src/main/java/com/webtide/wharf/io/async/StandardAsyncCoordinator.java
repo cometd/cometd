@@ -2,22 +2,23 @@ package com.webtide.wharf.io.async;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.Selector;
 import java.util.concurrent.Executor;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @version $Revision$ $Date$
  */
 public class StandardAsyncCoordinator implements AsyncCoordinator
 {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final SelectorManager selector;
     private final Executor threadPool;
     private final Runnable reader = new Reader();
     private final Runnable writer = new Writer();
     private volatile AsyncEndpoint endpoint;
     private volatile AsyncInterpreter interpreter;
-    private volatile boolean reading = false;
-    private volatile boolean writing = true;
 
     public StandardAsyncCoordinator(SelectorManager selector, Executor threadPool)
     {
@@ -37,38 +38,19 @@ public class StandardAsyncCoordinator implements AsyncCoordinator
 
     public void readReady()
     {
-        System.out.println("SIMON");
-
-        // TODO: may need to synchronize here
-        // because the interpreter can issue a needsRead(true) from the reader thread T1
-        // that triggers a selector wakeup (also in T1), that may trigger a readReady() in thread T2
-        // before the reader thread T1 is completed; the assertion below will fail.
-        //  that gets dispatched before it can return
-        // TODO: to solve this issue we must have a single thread that ever reads, not dispatching to a threadpool !
-        // TODO: no to the above: 20k connections will have 20k threads waiting to read !
-        // But you got the point: it must be safe by design not because you remember to synchronize
-
-        // This method is called from the selector loop thread.
-        // We tell the reader processor to read and process the reads
-        // Only when it cannot read more, it reschedules itself for
-        // read with the selector
-        assert !reading;
-        reading = true;
-
         // Remove interest in further reads, otherwise the select loop will
-        // continue to notify us that there is data to read
+        // continue to notify us that it is ready to read
         needsRead(false);
-
+        // Dispatch the read to another thread
         threadPool.execute(reader);
     }
 
     public void writeReady()
     {
-        assert !writing;
-        writing = true;
-
+        // Remove interest in further writes, otherwise the select loop will
+        // continue to notify us that it is ready to write
         needsWrite(false);
-
+        // Dispatch the write to another thread
         threadPool.execute(writer);
     }
 
@@ -82,7 +64,6 @@ public class StandardAsyncCoordinator implements AsyncCoordinator
 
     public boolean needsWrite(boolean needsWrite)
     {
-        writing = false;
         boolean wakeup = endpoint.needsWrite(needsWrite);
         if (wakeup)
             selector.wakeup();
@@ -91,13 +72,11 @@ public class StandardAsyncCoordinator implements AsyncCoordinator
 
     public void readFrom(ByteBuffer buffer)
     {
-        assert reading;
         interpreter.readFrom(buffer);
     }
 
-    public void writeFrom(ByteBuffer buffer)
+    public void writeFrom(ByteBuffer buffer) throws ClosedChannelException
     {
-        assert writing;
         endpoint.writeFrom(buffer);
     }
 
@@ -109,9 +88,9 @@ public class StandardAsyncCoordinator implements AsyncCoordinator
             {
                 endpoint.readInto(interpreter.getReadBuffer());
             }
-            finally
+            catch (ClosedChannelException x)
             {
-                reading = false;
+                logger.debug("Could not read, endpoint has been closed", x);
             }
         }
     }
@@ -120,7 +99,14 @@ public class StandardAsyncCoordinator implements AsyncCoordinator
     {
         public void run()
         {
-            endpoint.writeFrom(interpreter.getWriteBuffer());
+            try
+            {
+                endpoint.writeFrom(interpreter.getWriteBuffer());
+            }
+            catch (ClosedChannelException x)
+            {
+                logger.debug("Could not write, endpoint has been closed", x);
+            }
         }
     }
 }

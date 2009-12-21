@@ -6,6 +6,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -13,13 +14,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import junit.framework.TestCase;
+import com.webtide.wharf.io.RuntimeIOException;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * @version $Revision$ $Date$
  */
-public class AsyncServerConnectorWriteZeroTest extends TestCase
+public class AsyncServerConnectorWriteZeroTest
 {
+    @Test
     public void testWriteZero() throws Exception
     {
         ExecutorService threadPool = Executors.newCachedThreadPool();
@@ -37,7 +41,14 @@ public class AsyncServerConnectorWriteZeroTest extends TestCase
                             ByteBuffer writeBuffer = getWriteBuffer();
                             writeBuffer.put(buffer);
                             writeBuffer.flip();
-                            coordinator.writeFrom(writeBuffer);
+                            try
+                            {
+                                coordinator.writeFrom(writeBuffer);
+                            }
+                            catch (ClosedChannelException x)
+                            {
+                                throw new RuntimeIOException(x);
+                            }
                         }
                     };
                 }
@@ -90,7 +101,7 @@ public class AsyncServerConnectorWriteZeroTest extends TestCase
                     return new StandardAsyncCoordinator(getSelector(), getThreadPool())
                     {
                         @Override
-                        public void writeFrom(ByteBuffer buffer)
+                        public void writeFrom(ByteBuffer buffer) throws ClosedChannelException
                         {
                             writes.incrementAndGet();
                             super.writeFrom(buffer);
@@ -116,14 +127,14 @@ public class AsyncServerConnectorWriteZeroTest extends TestCase
                     output.write(bytes);
                     output.flush();
 
-                    assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
+                    Assert.assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
 
                     // One write call from the interpreter
-                    assertEquals(1, writes.get());
+                    Assert.assertEquals(1, writes.get());
                     // Four needsWrite calls:
                     // after writing 0 bytes to enable the writes, then to disable;
                     // after writing 1 byte to enable the writes, then to disable
-                    assertEquals(4, needWrites.get());
+                    Assert.assertEquals(4, needWrites.get());
                 }
                 finally
                 {

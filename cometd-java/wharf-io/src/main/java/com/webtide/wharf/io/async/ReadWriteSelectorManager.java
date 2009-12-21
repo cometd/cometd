@@ -22,14 +22,12 @@ public class ReadWriteSelectorManager implements SelectorManager
 {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Queue<Registration> registrations = new ConcurrentLinkedQueue<Registration>();
-    private final Executor threadPool;
     private final Selector selector;
 
     public ReadWriteSelectorManager(Executor threadPool)
     {
         try
         {
-            this.threadPool = threadPool;
             this.selector = Selector.open();
             threadPool.execute(new SelectorLoop());
         }
@@ -60,11 +58,6 @@ public class ReadWriteSelectorManager implements SelectorManager
     public void wakeup()
     {
         selector.wakeup();
-    }
-
-    protected Executor getThreadPool()
-    {
-        return threadPool;
     }
 
     protected void processRegistrations()
@@ -163,7 +156,7 @@ public class ReadWriteSelectorManager implements SelectorManager
                     }
                     catch (IOException x)
                     {
-                        // TODO: cannot really exit this thread without closing the serverChannel
+                        close();
                         throw new RuntimeIOException(x);
                     }
                 }

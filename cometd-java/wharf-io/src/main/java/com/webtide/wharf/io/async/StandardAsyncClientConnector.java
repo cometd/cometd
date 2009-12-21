@@ -2,6 +2,7 @@ package com.webtide.wharf.io.async;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
@@ -16,20 +17,13 @@ import org.slf4j.LoggerFactory;
  */
 public class StandardAsyncClientConnector implements ClientConnector
 {
-    public static StandardAsyncClientConnector newInstance(InetSocketAddress address, AsyncConnectorListener listener, Executor threadPool)
-    {
-        StandardAsyncClientConnector result = new StandardAsyncClientConnector(listener, threadPool);
-        result.connect(address);
-        return result;
-    }
-
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     private final AsyncConnectorListener listener;
     private final Executor threadPool;
     private final SelectorManager selector;
     private final SocketChannel channel;
 
-    protected StandardAsyncClientConnector(AsyncConnectorListener listener, Executor threadPool)
+    public StandardAsyncClientConnector(AsyncConnectorListener listener, Executor threadPool)
     {
         try
         {
@@ -44,7 +38,7 @@ public class StandardAsyncClientConnector implements ClientConnector
         }
     }
 
-    protected void connect(InetSocketAddress address)
+    public void connect(InetSocketAddress address)
     {
         try
         {
@@ -52,6 +46,10 @@ public class StandardAsyncClientConnector implements ClientConnector
             channel.connect(address);
             logger.debug("ClientConnector {} connected to {}", this, address);
             connected(channel);
+        }
+        catch (AlreadyConnectedException x)
+        {
+            throw new IllegalStateException(x);
         }
         catch (IOException x)
         {

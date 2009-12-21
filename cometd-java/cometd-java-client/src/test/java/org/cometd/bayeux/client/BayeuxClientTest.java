@@ -1,22 +1,22 @@
 package org.cometd.bayeux.client;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import bayeux.ChannelSubscription;
 import bayeux.Extension;
 import bayeux.Message;
 import bayeux.MessageListener;
-import bayeux.MetaChannelType;
 import bayeux.MetaMessage;
 import bayeux.MetaMessageListener;
-import bayeux.ChannelSubscription;
 import bayeux.client.Client;
 import bayeux.client.Session;
+import org.junit.Test;
+
 import static junit.framework.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
-import org.junit.Test;
 
 /**
  * @version $Revision$ $Date$
@@ -25,7 +25,7 @@ public class BayeuxClientTest
 {
     public Client newClient() throws Exception
     {
-//        return new BayeuxClient();
+//        return new OldBayeuxClient();
         return null;
     }
 

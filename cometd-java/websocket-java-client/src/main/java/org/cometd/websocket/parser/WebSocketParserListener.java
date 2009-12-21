@@ -15,11 +15,6 @@ public interface WebSocketParserListener
 
     public void onMessage(Message message);
 
-    public interface Registration
-    {
-        void unregister();
-    }
-
     public static class Adapter implements WebSocketParserListener
     {
         public void onHandshakeRequest(String path, Map<String, String> headers)

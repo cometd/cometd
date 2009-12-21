@@ -15,10 +15,11 @@ public interface Listener
 
     void onClose();
 
-    public interface Registration
-    {
-        void unregister();
-    }
+    void onConnectException(Throwable x);
+
+    void onException(Throwable x);
+
+    void onProtocolError();
 
     public static class Adapter implements Listener
     {
@@ -31,6 +32,18 @@ public interface Listener
         }
 
         public void onClose()
+        {
+        }
+
+        public void onConnectException(Throwable x)
+        {
+        }
+
+        public void onException(Throwable x)
+        {
+        }
+
+        public void onProtocolError()
         {
         }
     }

@@ -1,6 +1,6 @@
 package org.cometd.bayeux.client.transport;
 
-import bayeux.MetaMessage;
+import org.cometd.bayeux.client.MetaMessage;
 
 /**
  * @version $Revision$ $Date$
@@ -26,7 +26,5 @@ public abstract class Exchange
         return requests;
     }
 
-    public abstract void success(MetaMessage[] responses);
-
-    public abstract void failure(TransportException reason);
+    public abstract void failed(TransportException reason);
 }

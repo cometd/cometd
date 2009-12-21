@@ -4,7 +4,7 @@ package org.cometd.bayeux.client;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Client;
 import org.cometd.bayeux.MessageListener;
-
+import org.cometd.bayeux.Subscription;
 
 public interface ChannelClient
 {
@@ -13,5 +13,5 @@ public interface ChannelClient
     Subscription subscribe(MessageListener listener);
     void publish(Object data);
 
-    
+
 }

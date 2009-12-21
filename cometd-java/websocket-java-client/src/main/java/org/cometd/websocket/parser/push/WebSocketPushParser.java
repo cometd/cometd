@@ -28,16 +28,14 @@ public class WebSocketPushParser implements WebSocketParser
     };
     private Message message;
 
-    public WebSocketParserListener.Registration registerListener(final WebSocketParserListener listener)
+    public void addListener(final WebSocketParserListener listener)
     {
         listeners.add(listener);
-        return new WebSocketParserListener.Registration()
-        {
-            public void unregister()
-            {
-                listeners.remove(listener);
-            }
-        };
+    }
+
+    public void removeListener(WebSocketParserListener listener)
+    {
+        listeners.remove(listener);
     }
 
     protected List<WebSocketParserListener> getListeners()

@@ -3,13 +3,15 @@ package org.cometd.websocket.client;
 /**
  * @version $Revision$ $Date$
  */
-public interface Client
+public interface Client extends Session
 {
-    Listener.Registration registerListener(Listener listener);
+    void addListener(Listener listener);
 
-    Session open();
+    void removeListener(Listener listener);
 
-    boolean open(OpenCallback callback);
+    boolean open();
+
+    void open(OpenCallback callback);
 
     interface OpenCallback
     {
