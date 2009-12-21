@@ -1,11 +1,10 @@
-package org.cometd.bayeux;
+package org.cometd.bayeux.client;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.cometd.bayeux.client.MetaChannel;
-import org.cometd.bayeux.client.MetaMessage;
+import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.ajax.JSON;
 
 /**

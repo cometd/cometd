@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.cometd.bayeux.BayeuxMetaMessage;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.MetaMessage;
 
@@ -50,6 +49,9 @@ public class LocalTransport extends AbstractTransport
                 case HANDSHAKE:
                     responses.add(processHandshake(metaMessage));
                     break;
+                case DISCONNECT:
+                    responses.add(processDisconnect(metaMessage));
+                    break;
                 default:
                     throw new TransportException();
             }
@@ -59,13 +61,24 @@ public class LocalTransport extends AbstractTransport
 
     private MetaMessage processHandshake(MetaMessage request)
     {
-        MetaMessage.Mutable response = new BayeuxMetaMessage();
+        MetaMessage.Mutable response = newMetaMessage(null);
         response.setAssociated(request);
         response.setMetaChannel(request.getMetaChannel());
         response.setSuccessful(true);
         response.setId(request.getId());
         response.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, request.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD));
         response.setClientId(String.valueOf(clientIds.incrementAndGet()));
+        return response;
+    }
+
+    private MetaMessage processDisconnect(MetaMessage request)
+    {
+        MetaMessage.Mutable response = newMetaMessage(null);
+        response.setAssociated(request);
+        response.setMetaChannel(request.getMetaChannel());
+        response.setSuccessful(true);
+        response.setId(request.getId());
+        response.setClientId(request.getClientId());
         return response;
     }
 }

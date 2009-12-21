@@ -5,7 +5,6 @@ import java.util.Arrays;
 import org.cometd.bayeux.BayeuxException;
 import org.cometd.bayeux.Extension;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.MetaChannelRegistry;
 import org.cometd.bayeux.client.transport.Transport;
 import org.cometd.bayeux.client.transport.TransportException;
 import org.cometd.bayeux.client.transport.TransportListener;
@@ -19,6 +18,7 @@ public class StandardClientBayeux implements ClientBayeux
     private static final String BAYEUX_VERSION = "1.0";
 
     private final MetaChannelRegistry metaChannels = new MetaChannelRegistry();
+    private final ChannelRegistry channels = new ChannelRegistry();
     private final TransportRegistry transports = new TransportRegistry();
     private final TransportListener transportListener = new Listener();
     private volatile State state = State.DISCONNECTED;
@@ -43,7 +43,7 @@ public class StandardClientBayeux implements ClientBayeux
 
     public void handshake()
     {
-        if (state != State.DISCONNECTED)
+        if (!isDisconnected())
             throw new IllegalStateException();
 
         asyncHandshake();
@@ -84,17 +84,26 @@ public class StandardClientBayeux implements ClientBayeux
     {
     }
 
-    public ChannelClient getChannel(String channelName)
+    public Channel getChannel(String channelName)
     {
-        return null;
+        return channels.from(channelName, true);
     }
 
     public void batch(Runnable batch)
     {
+
     }
 
     public void disconnect()
     {
+        if (isDisconnected())
+            throw new IllegalStateException();
+
+        MetaMessage.Mutable metaMessage = transport.newMetaMessage(null);
+        metaMessage.setMetaChannel(getMetaChannel(MetaChannelType.DISCONNECT));
+
+        state = State.DISCONNECTING;
+        send(metaMessage);
     }
 
     public String getClientId()
@@ -139,6 +148,11 @@ public class StandardClientBayeux implements ClientBayeux
 
                 break;
             }
+            case DISCONNECTING:
+            {
+                // TODO
+                break;
+            }
             default:
                 throw new BayeuxException();
         }
@@ -158,12 +172,10 @@ public class StandardClientBayeux implements ClientBayeux
             transport = lifecycleTransport(transport, newTransport);
         }
 
-        state = State.HANDSHAKEN;
+        state = State.CONNECTED;
         clientId = handshake.getClientId();
 
-        getMutableMetaChannel(MetaChannelType.HANDSHAKE).notifySubscribers(handshake);
-
-
+        metaChannels.notifySuscribers(getMutableMetaChannel(MetaChannelType.HANDSHAKE), handshake);
 
         // TODO: internal batch ?
 
@@ -172,7 +184,7 @@ public class StandardClientBayeux implements ClientBayeux
 
     protected void processUnsuccessful(MetaMessage metaMessage)
     {
-
+        // TODO
     }
 
     private class Listener extends TransportListener.Adapter
@@ -185,8 +197,13 @@ public class StandardClientBayeux implements ClientBayeux
         }
     }
 
+    private boolean isDisconnected()
+    {
+        return state == State.DISCONNECTED;
+    }
+
     private enum State
     {
-        HANDSHAKING, HANDSHAKEN, DISCONNECTED
+        HANDSHAKING, CONNECTED, DISCONNECTING, DISCONNECTED
     }
 }
