@@ -9,7 +9,7 @@ import org.eclipse.jetty.util.ajax.JSON;
 public class HashMapMessage extends HashMap<String,Object> implements Message.Mutable, JSON.Generator
 {
     // TODO non static json
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private static JSON __json=new JSON()
@@ -46,7 +46,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         @Override
         protected Object[] newArray(int size)
         {
-            return new Message[size]; 
+            return new Message[size];
         }
 
         @Override
@@ -61,18 +61,18 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
             return __msgJSON;
         }
     };
-    
+
     private Message _associated;
     private String _jsonString;
     private boolean _lazy=false;
-    
+
 
     /* ------------------------------------------------------------ */
     public HashMapMessage()
     {
         this(null);
     }
-    
+
     /* ------------------------------------------------------------ */
     public HashMapMessage(ImmutableMessagePool bayeux)
     {
@@ -114,7 +114,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     /* ------------------------------------------------------------ */
     public String getClientId()
     {
-        return (String)get(CLIENT_FIELD);
+        return (String)get(CLIENT_ID_FIELD);
     }
 
     /* ------------------------------------------------------------ */
@@ -196,7 +196,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     /* ------------------------------------------------------------ */
     /**
      * Lazy messages are queued but do not wake up waiting clients.
-     * 
+     *
      * @return true if message is lazy
      */
     public boolean isLazy()
@@ -218,7 +218,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         _jsonString=null;
         return super.put(key,value);
     }
-    
+
 
     /* ------------------------------------------------------------ */
     @Override
@@ -227,7 +227,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         _jsonString=null;
         return super.remove(key);
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setAssociated(Message associated)
     {
@@ -237,7 +237,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     /* ------------------------------------------------------------ */
     /**
      * Lazy messages are queued but do not wake up waiting clients.
-     * 
+     *
      * @param lazy
      *            true if message is lazy
      */

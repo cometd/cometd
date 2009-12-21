@@ -2,14 +2,12 @@ package org.cometd.server;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.ajax.JSON;
 
@@ -187,7 +185,7 @@ public class ImmutableMessagePool
     {
         _fieldStrings.put(Message.ADVICE_FIELD,Message.ADVICE_FIELD);
         _fieldStrings.put(Message.CHANNEL_FIELD,Message.CHANNEL_FIELD);
-        _fieldStrings.put(Message.CLIENT_FIELD,Message.CLIENT_FIELD);
+        _fieldStrings.put(Message.CLIENT_ID_FIELD,Message.CLIENT_ID_FIELD);
         _fieldStrings.put(Message.DATA_FIELD,Message.DATA_FIELD);
         _fieldStrings.put(Message.ERROR_FIELD,Message.ERROR_FIELD);
         _fieldStrings.put(Message.EXT_FIELD,Message.EXT_FIELD);
