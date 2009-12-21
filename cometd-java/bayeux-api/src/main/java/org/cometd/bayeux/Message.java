@@ -8,7 +8,7 @@ import java.util.Map;
 public interface Message extends Map<String, Object>
 {
     /**Field names inside Bayeux messages - clientId field*/
-    public static final String CLIENT_FIELD="clientId";
+    public static final String CLIENT_ID_FIELD ="clientId";
     /**Field names inside Bayeux messages - data field*/
     public static final String DATA_FIELD="data";
     /**Field names inside Bayeux messages - channel field*/
@@ -51,16 +51,14 @@ public interface Message extends Map<String, Object>
     public static final String NONE_RESPONSE = "none";
     /**Service channel names-starts with*/
     public static final String SERVICE="/service";
-    
-    
-    
+
     String getId();
     String getClientId();
     String getChannelId();
     Object getData();
     Map<String, Object> getExt();
     Map<String, Object> getAdvice();
- 
+
     interface Mutable extends Message
     {
         Map<String, Object> getMutableData();
