@@ -63,11 +63,12 @@ public class StandardAsyncServerConnector implements ServerConnector
 
     public void close()
     {
-        logger.debug("ServerConnector closing...");
+        logger.debug("ServerConnector {} closing", this);
         try
         {
             selector.close();
             serverChannel.close();
+            logger.debug("ServerConnector {} closed", this);
         }
         catch (IOException x)
         {
@@ -116,7 +117,7 @@ public class StandardAsyncServerConnector implements ServerConnector
         {
             try
             {
-                logger.info("Acceptor loop entered");
+                logger.info("ServerConnector {}, acceptor loop entered", this);
 
                 while (serverChannel.isOpen())
                 {
@@ -125,28 +126,28 @@ public class StandardAsyncServerConnector implements ServerConnector
                         // Do not use the selector for accept() operation, as it is more expensive
                         // (for each new connection needs to return from select, and then accept())
                         SocketChannel socketChannel = serverChannel.accept();
-                        logger.debug("Accepted socket " + socketChannel);
+                        logger.debug("ServerConnector {}, accepted socket {}", this, socketChannel);
                         accepted(socketChannel);
                     }
                     catch (SocketTimeoutException x)
                     {
-                        logger.debug("Ignoring timeout during accept");
+                        logger.debug("ServerConnector {}, ignoring timeout during accept", this);
                     }
                     catch (AsynchronousCloseException x)
                     {
-                        logger.debug("ServerConnector closed");
+                        logger.debug("ServerConnector {} closed asynchronously", this);
                         break;
                     }
                     catch (IOException x)
                     {
-                        // TODO: cannot really exit this thread without closing the serverChannel
+                        close();
                         throw new RuntimeIOException(x);
                     }
                 }
             }
             finally
             {
-                logger.info("Acceptor loop exited");
+                logger.info("ServerConnector {}, acceptor loop exited", this);
             }
         }
     }

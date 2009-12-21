@@ -1,5 +1,7 @@
 package com.webtide.wharf.io;
 
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -8,5 +10,7 @@ import java.nio.channels.SocketChannel;
  */
 public interface ClientConnector
 {
+    public void connect(InetSocketAddress address) throws ConnectException;
+
     public void close();
 }

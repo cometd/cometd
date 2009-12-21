@@ -13,13 +13,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.websocket.Message;
-import org.cometd.websocket.MessageType;
 import org.cometd.websocket.TextMessage;
 import org.junit.After;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$ $Date$
@@ -40,7 +40,7 @@ public class WebSocketClientTest
         threadPool.shutdown();
     }
 
-//    @Test
+    @Test @Ignore
     public void testClientHandshake() throws Exception
     {
         final ServerSocket serverSocket = new ServerSocket(0);
@@ -78,7 +78,7 @@ public class WebSocketClientTest
             URI uri = new URI("ws://localhost:" + port + "/");
             Client client = new StandardClient(uri, null, threadPool);
             final CountDownLatch latch = new CountDownLatch(1);
-            client.registerListener(new Listener.Adapter()
+            client.addListener(new Listener.Adapter()
             {
                 @Override
                 public void onOpen(Map<String, String> headers)
@@ -87,8 +87,8 @@ public class WebSocketClientTest
                 }
             });
 
-            Session session = client.open();
-            assertNotNull(session);
+            boolean opened = client.open();
+            assertTrue(opened);
             try
             {
 
@@ -96,7 +96,7 @@ public class WebSocketClientTest
             }
             finally
             {
-                session.close();
+                client.close();
             }
         }
         finally
@@ -129,9 +129,9 @@ public class WebSocketClientTest
                             "Connection: Upgrade\r\n" +
                             "\r\n").getBytes("UTF-8"));
                     output.flush();
-                    output.write(MessageType.TEXT.asByte());
-                    output.write("Hello".getBytes("UTF-8"));
-                    output.write(TextMessage.END);
+
+                    TextMessage message = new TextMessage("Hello!");
+                    output.write(message.encode());
                     output.flush();
                 }
                 catch (IOException x)
@@ -147,7 +147,7 @@ public class WebSocketClientTest
             URI uri = new URI("ws://localhost:" + port + "/");
             Client client = new StandardClient(uri, null, threadPool);
             final CountDownLatch latch = new CountDownLatch(1);
-            client.registerListener(new Listener.Adapter()
+            client.addListener(new Listener.Adapter()
             {
                 @Override
                 public void onMessage(Message message)
@@ -156,15 +156,15 @@ public class WebSocketClientTest
                 }
             });
 
-            Session session = client.open();
-            assertNotNull(session);
+            boolean opened = client.open();
+            assertTrue(opened);
             try
             {
                 assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
             }
             finally
             {
-                session.close();
+                client.close();
             }
         }
         finally

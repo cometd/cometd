@@ -15,13 +15,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import junit.framework.TestCase;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * @version $Revision$ $Date$
  */
-public class AsyncServerConnectorReadZeroTest extends TestCase
+public class AsyncServerConnectorReadZeroTest
 {
+    @Test
     public void testReadZero() throws Exception
     {
         ExecutorService threadPool = Executors.newCachedThreadPool();
@@ -104,18 +106,18 @@ public class AsyncServerConnectorReadZeroTest extends TestCase
                     output.write(bytes);
                     output.flush();
 
-                    assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
-                    assertNotNull(data.get());
+                    Assert.assertTrue(latch.await(10000, TimeUnit.MILLISECONDS));
+                    Assert.assertNotNull(data.get());
                     ByteBuffer buffer = data.get();
                     byte[] result = new byte[buffer.remaining()];
                     buffer.get(result);
-                    assertTrue(Arrays.equals(bytes, result));
+                    Assert.assertTrue(Arrays.equals(bytes, result));
                     // One read call, since with 0 bytes read we don't call it
-                    assertEquals(1, reads.get());
+                    Assert.assertEquals(1, reads.get());
                     // Three needsRead calls: at beginning to disable the reads,
                     // after reading 0 to re-enable the reads, and again to disable
                     // the reads when the bytes are read.
-                    assertEquals(3, needReads.get());
+                    Assert.assertEquals(3, needReads.get());
                 }
                 finally
                 {

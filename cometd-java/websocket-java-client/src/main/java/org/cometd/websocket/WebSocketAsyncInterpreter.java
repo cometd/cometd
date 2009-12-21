@@ -3,11 +3,11 @@ package org.cometd.websocket;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-import org.cometd.websocket.parser.WebSocketParser;
-import org.cometd.websocket.parser.WebSocketParserListener;
-import org.cometd.websocket.client.Listener;
 import com.webtide.wharf.io.async.AsyncCoordinator;
 import com.webtide.wharf.io.async.AsyncInterpreter;
+import org.cometd.websocket.client.Listener;
+import org.cometd.websocket.parser.WebSocketParser;
+import org.cometd.websocket.parser.WebSocketParserListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ public class WebSocketAsyncInterpreter implements AsyncInterpreter, WebSocketPar
     {
         this.coordinator = coordinator;
         this.parser = parser;
-        this.parser.registerListener(this);
+        this.parser.addListener(this);
         this.listener = listener;
         this.readBuffer = ByteBuffer.allocate(1024);
         this.writeBuffer = ByteBuffer.allocate(1024);
@@ -76,7 +76,8 @@ public class WebSocketAsyncInterpreter implements AsyncInterpreter, WebSocketPar
 
     public void onHandshakeRequest(String path, Map<String, String> headers)
     {
-        complete = true;
+        // We are on client side, this must not be called
+        throw new AssertionError();
     }
 
     public void onHandshakeResponse(int code, Map<String, String> headers)
@@ -88,7 +89,7 @@ public class WebSocketAsyncInterpreter implements AsyncInterpreter, WebSocketPar
         }
         else
         {
-            listener.onClose();
+            listener.onProtocolError();
         }
     }
 

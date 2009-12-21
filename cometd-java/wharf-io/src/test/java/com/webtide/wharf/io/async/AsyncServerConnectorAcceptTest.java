@@ -10,13 +10,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import com.webtide.wharf.io.ServerConnector;
-import junit.framework.TestCase;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * @version $Revision$ $Date$
  */
-public class AsyncServerConnectorAcceptTest extends TestCase
+public class AsyncServerConnectorAcceptTest
 {
+    @Test
     public void testBlockingAccept() throws Exception
     {
         ExecutorService threadPool = Executors.newCachedThreadPool();
@@ -38,7 +40,7 @@ public class AsyncServerConnectorAcceptTest extends TestCase
                 Socket socket = new Socket(address.getHostName(), serverConnector.getPort());
                 try
                 {
-                    assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+                    Assert.assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
                 }
                 finally
                 {
@@ -54,10 +56,5 @@ public class AsyncServerConnectorAcceptTest extends TestCase
         {
             threadPool.shutdown();
         }
-    }
-
-    public void testNonBlockingAccept() throws Exception
-    {
-        // TODO
     }
 }

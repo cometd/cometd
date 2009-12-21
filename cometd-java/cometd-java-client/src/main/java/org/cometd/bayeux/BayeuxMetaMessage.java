@@ -4,36 +4,80 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import bayeux.MetaChannel;
-import bayeux.MetaMessage;
+import org.cometd.bayeux.client.MetaChannel;
+import org.cometd.bayeux.client.MetaMessage;
 import org.eclipse.jetty.util.ajax.JSON;
 
 /**
  * @version $Revision$ $Date$
  */
-public class BayeuxMetaMessage implements MetaMessage, JSON.Convertible
+public class BayeuxMetaMessage implements MetaMessage.Mutable, JSON.Convertible
 {
     private static final AtomicInteger ids = new AtomicInteger();
 
-    private final Map<String, Object> fields = new HashMap<String, Object>();
-    private final MetaChannel metaChannel;
-    private String id;
-    private String clientId;
+    private final Map<String, Object> fields;
+    private MetaChannel metaChannel;
     private Map<String, Object> ext;
+    private MetaMessage associated;
 
-    public BayeuxMetaMessage(MetaChannel metaChannel)
+    public BayeuxMetaMessage()
     {
-        this.metaChannel = metaChannel;
+        this(new HashMap<String, Object>());
+    }
+
+    public BayeuxMetaMessage(Map<String, Object> fields)
+    {
+        this.fields = fields;
+    }
+
+    public MetaMessage getAssociated()
+    {
+        return associated;
+    }
+
+    public void setAssociated(MetaMessage associated)
+    {
+        this.associated = associated;
+    }
+
+    public Object get(String field)
+    {
+        return fields.get(field);
+    }
+
+    public void put(String name, Object value)
+    {
+        fields.put(name, value);
+    }
+
+    public boolean isSuccessful()
+    {
+        return (Boolean)get(Message.SUCCESSFUL_FIELD);
+    }
+
+    public void setSuccessful(boolean value)
+    {
+        put(Message.SUCCESSFUL_FIELD, value);
     }
 
     public String getId()
     {
-        return id;
+        return (String)get(Message.ID_FIELD);
+    }
+
+    public void setId(String id)
+    {
+        put(Message.ID_FIELD, id);
     }
 
     public String getClientId()
     {
-        return clientId;
+        return (String)get(Message.CLIENT_ID_FIELD);
+    }
+
+    public void setClientId(String clientId)
+    {
+        put(Message.CLIENT_ID_FIELD, clientId);
     }
 
     public MetaChannel getMetaChannel()
@@ -41,9 +85,9 @@ public class BayeuxMetaMessage implements MetaMessage, JSON.Convertible
         return metaChannel;
     }
 
-    public void put(String name, Object value)
+    public void setMetaChannel(MetaChannel metaChannel)
     {
-        fields.put(name, value);
+        this.metaChannel = metaChannel;
     }
 
     public Map<String, Object> getExt(boolean create)
@@ -62,8 +106,9 @@ public class BayeuxMetaMessage implements MetaMessage, JSON.Convertible
 
     public void toJSON(JSON.Output output)
     {
+        String id = getId();
         output.add("id", id == null ? nextId() : id);
-        output.add("channel", metaChannel.getName());
+        output.add("channel", metaChannel.getType().getName());
         output.add(fields);
         if (ext != null)
             output.add(ext);
@@ -71,5 +116,6 @@ public class BayeuxMetaMessage implements MetaMessage, JSON.Convertible
 
     public void fromJSON(Map object)
     {
+
     }
 }

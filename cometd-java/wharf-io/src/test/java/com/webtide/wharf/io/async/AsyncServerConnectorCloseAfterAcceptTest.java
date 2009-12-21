@@ -12,13 +12,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import com.webtide.wharf.io.ServerConnector;
-import junit.framework.TestCase;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * @version $Revision$ $Date$
  */
-public class AsyncServerConnectorCloseAfterAcceptTest extends TestCase
+public class AsyncServerConnectorCloseAfterAcceptTest
 {
+    @Test
     public void testCloseAfterAccept() throws Exception
     {
         ExecutorService threadPool = Executors.newCachedThreadPool();
@@ -71,7 +73,7 @@ public class AsyncServerConnectorCloseAfterAcceptTest extends TestCase
                 try
                 {
                     // Wait for the SelectorManager to register the endpoint
-                    assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+                    Assert.assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
 
                     // When the server side of a socket is closed, the client is not notified (although a TCP FIN packet arrives).
                     // Calling socket.isClosed() yields false, socket.isConnected() yields true, so no help.
@@ -81,7 +83,7 @@ public class AsyncServerConnectorCloseAfterAcceptTest extends TestCase
                     // The only reliable way is to read and check if we get -1.
 
                     int datum = socket.getInputStream().read();
-                    assertEquals(-1, datum);
+                    Assert.assertEquals(-1, datum);
                 }
                 finally
                 {

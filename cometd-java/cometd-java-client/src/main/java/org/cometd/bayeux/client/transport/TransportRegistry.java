@@ -1,9 +1,9 @@
 package org.cometd.bayeux.client.transport;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.ArrayList;
 
 /**
  * @version $Revision$ $Date$
@@ -18,7 +18,7 @@ public class TransportRegistry
             transports.add(transport);
     }
 
-    public Transport negotiate(String[] requestedTransports, String bayeuxVersion)
+    public Transport negotiate(String bayeuxVersion, String[] requestedTransports)
     {
         for (Transport transport : transports)
         {

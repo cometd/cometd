@@ -28,9 +28,9 @@ public interface AsyncEndpoint
 
     public boolean needsWrite(boolean needsWrite);
 
-    public void readInto(ByteBuffer buffer);
+    public void readInto(ByteBuffer buffer) throws ClosedChannelException;
 
-    public void writeFrom(ByteBuffer buffer);
+    public void writeFrom(ByteBuffer buffer) throws ClosedChannelException;
 
     public void close();
 }

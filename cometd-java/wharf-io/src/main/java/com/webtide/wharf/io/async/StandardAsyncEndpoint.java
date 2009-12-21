@@ -3,6 +3,7 @@ package com.webtide.wharf.io.async;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -20,6 +21,8 @@ public class StandardAsyncEndpoint implements AsyncEndpoint
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final SocketChannel channel;
     private final AsyncCoordinator coordinator;
+    private final int readAggressiveness;
+    private final int writeAggressiveness;
     private volatile SelectionKey selectionKey;
     private boolean writePending;
 
@@ -27,6 +30,9 @@ public class StandardAsyncEndpoint implements AsyncEndpoint
     {
         this.channel = channel;
         this.coordinator = coordinator;
+        // TODO: make aggressiveness configurable
+        this.readAggressiveness = 2;
+        this.writeAggressiveness = 2;
     }
 
     public void registerWith(Selector selector, int operations, SelectorManager.Listener listener) throws ClosedChannelException
@@ -74,7 +80,7 @@ public class StandardAsyncEndpoint implements AsyncEndpoint
         }
     }
 
-    public void readInto(ByteBuffer buffer)
+    public void readInto(ByteBuffer buffer) throws ClosedChannelException
     {
         buffer.clear();
         try
@@ -98,21 +104,20 @@ public class StandardAsyncEndpoint implements AsyncEndpoint
         }
         catch (ClosedChannelException x)
         {
-            logger.debug("Channel closed during read", x);
             close();
+            throw x;
         }
         catch (IOException x)
         {
-            logger.debug("Unexpected IOException", x);
             close();
+            throw new RuntimeIOException(x);
         }
     }
 
     protected int readAggressively(SocketChannel channel, ByteBuffer buffer) throws IOException
     {
-        // TODO: make aggressiveness configurable
         int result = 0;
-        for (int aggressiveness = 0; aggressiveness < 2; ++aggressiveness)
+        for (int aggressiveness = 0; aggressiveness < readAggressiveness; ++aggressiveness)
         {
             int read = this.channel.read(buffer);
             if (read < 0)
@@ -128,7 +133,7 @@ public class StandardAsyncEndpoint implements AsyncEndpoint
         return result;
     }
 
-    public void writeFrom(ByteBuffer buffer)
+    public void writeFrom(ByteBuffer buffer) throws ClosedChannelException
     {
         try
         {
@@ -185,24 +190,27 @@ public class StandardAsyncEndpoint implements AsyncEndpoint
         {
             logger.debug("Interrupted during pending write", x);
             close();
+            Thread.currentThread().interrupt();
+            throw new ClosedByInterruptException();
         }
         catch (ClosedChannelException x)
         {
             logger.debug("Channel closed during write", x);
             close();
+            throw x;
         }
         catch (IOException x)
         {
             logger.debug("Unexpected IOException", x);
             close();
+            throw new RuntimeIOException(x);
         }
     }
 
     protected int writeAggressively(SocketChannel channel, ByteBuffer buffer) throws IOException
     {
-        // TODO: make aggressiveness configurable
         int result = 0;
-        for (int aggressiveness = 0; aggressiveness < 2; ++aggressiveness)
+        for (int aggressiveness = 0; aggressiveness < writeAggressiveness; ++aggressiveness)
         {
             result += this.channel.write(buffer);
         }

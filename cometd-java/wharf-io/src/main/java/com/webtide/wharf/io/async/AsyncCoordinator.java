@@ -2,7 +2,6 @@ package com.webtide.wharf.io.async;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.Selector;
 
 /**
  * <p>{@link AsyncCoordinator} coordinates the activity between the {@link AsyncEndpoint},
@@ -66,5 +65,5 @@ public interface AsyncCoordinator extends SelectorManager.Listener
      * @param buffer the buffer to write bytes from
      * @see AsyncEndpoint#writeFrom(ByteBuffer)
      */
-    public void writeFrom(ByteBuffer buffer);
+    public void writeFrom(ByteBuffer buffer) throws ClosedChannelException;
 }

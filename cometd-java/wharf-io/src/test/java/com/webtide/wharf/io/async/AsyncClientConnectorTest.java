@@ -64,9 +64,10 @@ public class AsyncClientConnectorTest
 
         try
         {
-            ClientConnector clientConnector = StandardAsyncClientConnector.newInstance(new InetSocketAddress(loopback, serverConnector.getPort()), null, threadPool);
+            ClientConnector clientConnector = new StandardAsyncClientConnector(null, threadPool);
             try
             {
+                clientConnector.connect(new InetSocketAddress(loopback, serverConnector.getPort()));
                 Assert.assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
             }
             finally

@@ -1,7 +1,5 @@
 package org.cometd.bayeux.client;
 
-import java.util.EventListener;
-
 import org.cometd.bayeux.Client;
 
 
@@ -11,15 +9,11 @@ import org.cometd.bayeux.Client;
  */
 public interface ClientSession extends Client
 {
+    MetaChannel getMetaChannel(MetaChannelType meta);
+
     ChannelClient getChannel(String channelName);
 
     void batch(Runnable batch);
 
     void disconnect();
-        
-    
-    void addListener(Listener listener);
-
-    interface Listener extends EventListener
-    {};
 }
