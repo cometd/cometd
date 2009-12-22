@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.MetaChannelType;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -208,11 +208,11 @@ public class ImmutableMessagePool
         _fieldStrings.put(Message.TRANSPORT_FIELD,Message.TRANSPORT_FIELD);
         _fieldStrings.put("connectionType","connectionType");
 
-        _valueStrings.put(Channel.MetaType.CONNECT.getChannelId(),Channel.MetaType.CONNECT.getChannelId());
-        _valueStrings.put(Channel.MetaType.DISCONNECT.getChannelId(),Channel.MetaType.DISCONNECT.getChannelId());
-        _valueStrings.put(Channel.MetaType.HANDSHAKE.getChannelId(),Channel.MetaType.HANDSHAKE.getChannelId());
-        _valueStrings.put(Channel.MetaType.SUBSCRIBE.getChannelId(),Channel.MetaType.SUBSCRIBE.getChannelId());
-        _valueStrings.put(Channel.MetaType.UNSUBSCRIBE.getChannelId(),Channel.MetaType.UNSUBSCRIBE.getChannelId());
+        _valueStrings.put(MetaChannelType.CONNECT.getName(),MetaChannelType.CONNECT.getName());
+        _valueStrings.put(MetaChannelType.DISCONNECT.getName(),MetaChannelType.DISCONNECT.getName());
+        _valueStrings.put(MetaChannelType.HANDSHAKE.getName(),MetaChannelType.HANDSHAKE.getName());
+        _valueStrings.put(MetaChannelType.SUBSCRIBE.getName(),MetaChannelType.SUBSCRIBE.getName());
+        _valueStrings.put(MetaChannelType.UNSUBSCRIBE.getName(), MetaChannelType.UNSUBSCRIBE.getName());
         _valueStrings.put("long-polling","long-polling");
     }
 

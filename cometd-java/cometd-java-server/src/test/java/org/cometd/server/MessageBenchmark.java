@@ -9,59 +9,59 @@ import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 
 public class MessageBenchmark
-{   
+{
     public static void main(String[] arg) throws Exception
     {
         System.err.print("warmup :");
         long hash=hashMapMessageTest(10,2000);
         long imut=immutableMessageTest(10,2000);
         System.err.println();
-        
+
         System.err.print("20x4000:");
         Runtime.getRuntime().gc();
         hash=hashMapMessageTest(20,5000);
         Runtime.getRuntime().gc();
         imut=immutableMessageTest(20,5000);
         System.err.println("\thash="+hash+"\timutable="+imut+"\tgain="+((hash-imut)*100/hash)+"%");
-        
+
         System.err.print("30x6000:");
         Runtime.getRuntime().gc();
         hash=hashMapMessageTest(30,6000);
         Runtime.getRuntime().gc();
         imut=immutableMessageTest(30,6000);
         System.err.println("\thash="+hash+"\timutable="+imut+"\tgain="+((hash-imut)*100/hash)+"%");
-        
+
         System.err.print("40x8000:");
         Runtime.getRuntime().gc();
         hash=hashMapMessageTest(40,8000);
         Runtime.getRuntime().gc();
         imut=immutableMessageTest(40,8000);
         System.err.println("\thash="+hash+"\timutable="+imut+"\tgain="+((hash-imut)*100/hash)+"%");
-        
+
         System.err.print("50x10000:");
         Runtime.getRuntime().gc();
         hash=hashMapMessageTest(50,10000);
         Runtime.getRuntime().gc();
         imut=immutableMessageTest(50,10000);
         System.err.println("\thash="+hash+"\timutable="+imut+"\tgain="+((hash-imut)*100/hash)+"%");
-        
+
         System.err.print("100x10000:");
         Runtime.getRuntime().gc();
         hash=hashMapMessageTest(100,10000);
         Runtime.getRuntime().gc();
         imut=immutableMessageTest(100,10000);
         System.err.println("\thash="+hash+"\timutable="+imut+"\tgain="+((hash-imut)*100/hash)+"%");
-        
+
     }
-     
+
     static long hashMapMessageTest(final int threads,final int loops) throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(threads+1);
         final AtomicLong bigResult=new AtomicLong();
-        
+
         final BlockingArrayQueue<Message.Mutable>[] q = new BlockingArrayQueue[threads];
         for (int i=0;i<threads;i++)
-            q[i]=new BlockingArrayQueue<Message.Mutable>(threads*10,threads); 
+            q[i]=new BlockingArrayQueue<Message.Mutable>(threads*10,threads);
         long start=System.currentTimeMillis();
         for (int i=0;i<threads;i++)
         {
@@ -69,9 +69,9 @@ public class MessageBenchmark
             Thread t = new Thread()
             {
                 public void run()
-                {  
+                {
                     long result=0;
-                    
+
                     for (int m=0;m<loops;m++)
                     {
                         try
@@ -79,9 +79,9 @@ public class MessageBenchmark
                             Message msg = q[index].poll(10,TimeUnit.SECONDS);
                             // System.err.println("m="+msg);
                             result += msg.getId().hashCode();
-                            result += msg.getChannelId().hashCode();
+                            result += msg.getChannelName().hashCode();
                             Map<String, Object> data=(Map<String, Object>)msg.getData();
-                            
+
                             result += data.get("name").hashCode();
                             result += data.get("chat").hashCode();
                         }
@@ -102,7 +102,7 @@ public class MessageBenchmark
         long result=0;
 
         for (int m=0;m<loops;m++)
-        {   
+        {
             Message.Mutable msg = new HashMapMessage();
 
             // pretend to parse the message.
@@ -117,7 +117,7 @@ public class MessageBenchmark
 
             // pretend to use the message
             result += msg.getId().hashCode();
-            result += msg.getChannelId().hashCode();
+            result += msg.getChannelName().hashCode();
 
             for (int i=0;i<threads;i++)
                 q[i].offer(msg);
@@ -130,7 +130,7 @@ public class MessageBenchmark
         latch.await();
         System.err.print("\t"+bigResult);
         return System.currentTimeMillis()-start;
-        
+
     }
 
     static long immutableMessageTest(final int threads,final int loops) throws Exception
@@ -141,7 +141,7 @@ public class MessageBenchmark
 
         final BlockingArrayQueue<ImmutableMessage>[] q = new BlockingArrayQueue[threads];
         for (int i=0;i<threads;i++)
-            q[i]=new BlockingArrayQueue<ImmutableMessage>(threads*10,threads); 
+            q[i]=new BlockingArrayQueue<ImmutableMessage>(threads*10,threads);
         long start=System.currentTimeMillis();
         for (int i=0;i<threads;i++)
         {
@@ -149,7 +149,7 @@ public class MessageBenchmark
             Thread t=new Thread()
             {
                 public void run()
-                {  
+                {
 
                     long result=0;
 
@@ -160,7 +160,7 @@ public class MessageBenchmark
                             ImmutableMessage msg = q[index].poll(10,TimeUnit.SECONDS);
                             // System.err.println("m="+msg);
                             result += msg.getId().hashCode();
-                            result += msg.getChannelId().hashCode();
+                            result += msg.getChannelName().hashCode();
                             Map<String, Object> data=(Map<String, Object>)msg.getData();
 
                             result += data.get("name").hashCode();
@@ -184,7 +184,7 @@ public class MessageBenchmark
         long result=0;
 
         for (int m=0;m<loops;m++)
-        {   
+        {
             Message.Mutable msg = pool.newMessage();
 
             // pretend to parse the message.
@@ -199,7 +199,7 @@ public class MessageBenchmark
 
             // pretend to use the message
             result += msg.getId().hashCode();
-            result += msg.getChannelId().hashCode();
+            result += msg.getChannelName().hashCode();
 
             ImmutableMessage immutable = ((ImmutableMessage.MutableMessage)msg).asImmutable();
 

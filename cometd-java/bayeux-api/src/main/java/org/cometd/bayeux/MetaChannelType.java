@@ -1,4 +1,4 @@
-package org.cometd.bayeux.client;
+package org.cometd.bayeux;
 
 /**
  * @version $Revision$ $Date$

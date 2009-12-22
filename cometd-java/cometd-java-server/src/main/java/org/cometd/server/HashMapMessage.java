@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Struct;
 import org.eclipse.jetty.util.ajax.JSON;
 
 public class HashMapMessage extends HashMap<String,Object> implements Message.Mutable, JSON.Generator
@@ -94,9 +95,9 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     }
 
     /* ------------------------------------------------------------ */
-    public Map<String, Object> getAdvice()
+    public Struct.Mutable getAdvice()
     {
-        return (Map<String, Object>)get(ADVICE_FIELD);
+        return (Struct.Mutable)get(ADVICE_FIELD);
     }
 
     /* ------------------------------------------------------------ */
@@ -105,8 +106,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         return _associated;
     }
 
-    /* ------------------------------------------------------------ */
-    public String getChannelId()
+    public String getChannelName()
     {
         return (String)get(CHANNEL_FIELD);
     }
@@ -124,9 +124,9 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     }
 
     /* ------------------------------------------------------------ */
-    public Map<String, Object> getExt()
+    public Struct.Mutable getExt(boolean create)
     {
-        return (Map<String, Object>)get(EXT_FIELD);
+        return (Struct.Mutable)get(EXT_FIELD);
     }
 
     /* ------------------------------------------------------------ */
@@ -148,49 +148,6 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
             }
         }
         return _jsonString;
-    }
-
-    /* ------------------------------------------------------------ */
-    public Map<String, Object> getMutableAdvice()
-    {
-        Map<String, Object> advice=getAdvice();
-        if (advice==null)
-        {
-            advice = new HashMap<String,Object>();
-            put(ADVICE_FIELD,advice);
-        }
-        return advice;
-    }
-
-    /* ------------------------------------------------------------ */
-    public Map<String, Object> getMutableData()
-    {
-        Map<String, Object> data=(Map<String,Object>)getData();
-        if (data==null)
-        {
-            data = new HashMap<String,Object>();
-            put(DATA_FIELD,data);
-        }
-        return data;
-    }
-
-    /* ------------------------------------------------------------ */
-    public Map<String,Object> getMutableExt()
-    {
-        Object ext=getExt();
-        if (ext instanceof Map)
-            return (Map<String,Object>)ext;
-
-        if (ext instanceof JSON.Literal)
-        {
-            ext=__json.fromJSON(ext.toString());
-            put(EXT_FIELD,ext);
-            return (Map<String,Object>)ext;
-        }
-
-        ext=new HashMap<String,Object>();
-        put(EXT_FIELD,ext);
-        return (Map<String,Object>)ext;
     }
 
     /* ------------------------------------------------------------ */

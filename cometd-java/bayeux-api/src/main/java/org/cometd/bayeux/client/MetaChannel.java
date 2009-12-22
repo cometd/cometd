@@ -13,6 +13,8 @@
 
 package org.cometd.bayeux.client;
 
+import org.cometd.bayeux.MetaChannelType;
+
 public interface MetaChannel //extends Channel
 {
     void subscribe(MetaMessageListener listener);

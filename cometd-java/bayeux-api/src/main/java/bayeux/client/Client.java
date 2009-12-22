@@ -3,7 +3,7 @@ package bayeux.client;
 import bayeux.Extension;
 import bayeux.ExtensionRegistration;
 import bayeux.MetaChannel;
-import org.cometd.bayeux.client.MetaChannelType;
+import org.cometd.bayeux.MetaChannelType;
 
 /**
  * @version $Revision$ $Date$

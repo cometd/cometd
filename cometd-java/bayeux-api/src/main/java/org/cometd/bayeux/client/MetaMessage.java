@@ -1,12 +1,10 @@
 package org.cometd.bayeux.client;
 
-import java.util.Map;
+import org.cometd.bayeux.Struct;
 
-public interface MetaMessage //extends Message
+public interface MetaMessage extends Struct
 {
     MetaChannel getMetaChannel();
-
-    Object get(String field);
 
     boolean isSuccessful();
 
@@ -14,15 +12,13 @@ public interface MetaMessage //extends Message
 
     String getId();
 
-    Map<String, Object> getAdvice();
+    Struct getAdvice();
 
-    interface Mutable extends MetaMessage
+    interface Mutable extends MetaMessage, Struct.Mutable
     {
+        Struct.Mutable getAdvice();
+
         void setMetaChannel(MetaChannel metaChannel);
-
-        void put(String field, Object value);
-
-        void setAssociated(MetaMessage associated);
 
         void setClientId(String clientId);
 
@@ -30,6 +26,6 @@ public interface MetaMessage //extends Message
 
         void setId(String id);
 
-        void setAdvice(Map<String, Object> advice);
+        void setAdvice(Struct.Mutable advice);
     }
 }

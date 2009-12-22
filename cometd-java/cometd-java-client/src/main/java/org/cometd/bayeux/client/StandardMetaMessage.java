@@ -1,52 +1,29 @@
 package org.cometd.bayeux.client;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.StandardStruct;
+import org.cometd.bayeux.Struct;
 import org.eclipse.jetty.util.ajax.JSON;
 
 /**
  * @version $Revision$ $Date$
  */
-public class BayeuxMetaMessage implements MetaMessage.Mutable, JSON.Convertible
+public class StandardMetaMessage extends StandardStruct implements MetaMessage.Mutable, JSON.Convertible
 {
     private static final AtomicInteger ids = new AtomicInteger();
 
-    private final Map<String, Object> fields;
     private MetaChannel metaChannel;
-    private Map<String, Object> ext;
-    private MetaMessage associated;
 
-    public BayeuxMetaMessage()
+    public StandardMetaMessage()
     {
-        this(new HashMap<String, Object>());
     }
 
-    public BayeuxMetaMessage(Map<String, Object> fields)
+    public StandardMetaMessage(Map<String, Object> fields)
     {
-        this.fields = fields;
-    }
-
-    public MetaMessage getAssociated()
-    {
-        return associated;
-    }
-
-    public void setAssociated(MetaMessage associated)
-    {
-        this.associated = associated;
-    }
-
-    public Object get(String field)
-    {
-        return fields.get(field);
-    }
-
-    public void put(String name, Object value)
-    {
-        fields.put(name, value);
+        putAll(fields);
     }
 
     public boolean isSuccessful()
@@ -79,12 +56,12 @@ public class BayeuxMetaMessage implements MetaMessage.Mutable, JSON.Convertible
         put(Message.CLIENT_ID_FIELD, clientId);
     }
 
-    public Map<String, Object> getAdvice()
+    public Struct.Mutable getAdvice()
     {
-        return (Map<String, Object>)get(Message.ADVICE_FIELD);
+        return (Struct.Mutable)get(Message.ADVICE_FIELD);
     }
 
-    public void setAdvice(Map<String, Object> advice)
+    public void setAdvice(Struct.Mutable advice)
     {
         put(Message.ADVICE_FIELD, advice);
     }
@@ -99,15 +76,6 @@ public class BayeuxMetaMessage implements MetaMessage.Mutable, JSON.Convertible
         this.metaChannel = metaChannel;
     }
 
-    public Map<String, Object> getExt(boolean create)
-    {
-        if (ext == null && create)
-        {
-            ext = new HashMap<String, Object>();
-        }
-        return ext;
-    }
-
     protected static String nextId()
     {
         return String.valueOf(ids.incrementAndGet());
@@ -118,13 +86,11 @@ public class BayeuxMetaMessage implements MetaMessage.Mutable, JSON.Convertible
         String id = getId();
         output.add("id", id == null ? nextId() : id);
         output.add("channel", metaChannel.getType().getName());
-        output.add(fields);
-        if (ext != null)
-            output.add(ext);
+        output.add(this);
     }
 
     public void fromJSON(Map object)
     {
-
+        // TODO
     }
 }

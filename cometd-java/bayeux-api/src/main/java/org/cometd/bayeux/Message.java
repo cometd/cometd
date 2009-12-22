@@ -54,17 +54,16 @@ public interface Message extends Map<String, Object>
 
     String getId();
     String getClientId();
-    String getChannelId();
+    String getChannelName();
     Object getData();
-    Map<String, Object> getExt();
-    Map<String, Object> getAdvice();
+    Struct getExt(boolean create);
+    Struct getAdvice();
+    boolean isLazy();
 
     interface Mutable extends Message
     {
-        Map<String, Object> getMutableData();
-        Map<String, Object> getMutableExt();
-        Map<String, Object> getMutableAdvice();
-        boolean isLazy();
+        Struct.Mutable getExt(boolean create);
+        Struct.Mutable getAdvice();
         void setLazy(boolean lazy);
         Message getAssociated();
         void setAssociated(Message message);
