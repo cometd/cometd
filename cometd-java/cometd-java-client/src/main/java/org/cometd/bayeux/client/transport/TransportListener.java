@@ -7,7 +7,7 @@ import org.cometd.bayeux.client.MetaMessage;
  */
 public interface TransportListener
 {
-    void onMetaMessages(MetaMessage... metaMessages);
+    void onMetaMessages(MetaMessage.Mutable... metaMessages);
 
     void onConnectException(Throwable x);
 
@@ -19,7 +19,7 @@ public interface TransportListener
 
     public static class Adapter implements TransportListener
     {
-        public void onMetaMessages(MetaMessage... metaMessages)
+        public void onMetaMessages(MetaMessage.Mutable... metaMessages)
         {
         }
 

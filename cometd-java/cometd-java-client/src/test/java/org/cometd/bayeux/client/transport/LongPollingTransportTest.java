@@ -84,7 +84,7 @@ public class LongPollingTransportTest
                 transport.addListener(new TransportListener.Adapter()
                 {
                     @Override
-                    public void onMetaMessages(MetaMessage... metaMessages)
+                    public void onMetaMessages(MetaMessage.Mutable... metaMessages)
                     {
                         latch.countDown();
                     }

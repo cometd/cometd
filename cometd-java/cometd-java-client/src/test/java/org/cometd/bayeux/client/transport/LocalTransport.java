@@ -28,7 +28,7 @@ public class LocalTransport extends AbstractTransport
     {
     }
 
-    public void send(final MetaMessage... metaMessages)
+    public void send(final MetaMessage.Mutable... metaMessages)
     {
         new Thread(new Runnable()
         {
@@ -41,7 +41,7 @@ public class LocalTransport extends AbstractTransport
 
     private void process(MetaMessage... metaMessages)
     {
-        List<MetaMessage> responses = new ArrayList<MetaMessage>();
+        List<MetaMessage.Mutable> responses = new ArrayList<MetaMessage.Mutable>();
         for (MetaMessage metaMessage : metaMessages)
         {
             switch (metaMessage.getMetaChannel().getType())
@@ -56,10 +56,10 @@ public class LocalTransport extends AbstractTransport
                     throw new TransportException();
             }
         }
-        notifyMetaMessages(responses.toArray(new MetaMessage[responses.size()]));
+        notifyMetaMessages(responses.toArray(new MetaMessage.Mutable[responses.size()]));
     }
 
-    private MetaMessage processHandshake(MetaMessage request)
+    private MetaMessage.Mutable processHandshake(MetaMessage request)
     {
         MetaMessage.Mutable response = newMetaMessage(null);
         response.setAssociated(request);
@@ -71,7 +71,7 @@ public class LocalTransport extends AbstractTransport
         return response;
     }
 
-    private MetaMessage processDisconnect(MetaMessage request)
+    private MetaMessage.Mutable processDisconnect(MetaMessage request)
     {
         MetaMessage.Mutable response = newMetaMessage(null);
         response.setAssociated(request);

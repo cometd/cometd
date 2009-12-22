@@ -36,7 +36,7 @@ public class WebSocketTransport extends AbstractTransport
         accept = client.open();
     }
 
-    public void send(MetaMessage... messages)
+    public void send(MetaMessage.Mutable... messages)
     {
         String content = JSON.toString(messages);
         Message message = new TextMessage(content);
@@ -53,7 +53,7 @@ public class WebSocketTransport extends AbstractTransport
             String text = textMessage.getText();
             Object content = JSON.parse(text);
             // TODO: convert from map to MetaMessage
-            notifyMetaMessages((MetaMessage[])content);
+            notifyMetaMessages((MetaMessage.Mutable[])content);
         }
     }
 }

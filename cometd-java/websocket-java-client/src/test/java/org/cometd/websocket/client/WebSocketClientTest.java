@@ -141,7 +141,6 @@ public class WebSocketClientTest
             }
         });
 
-
         try
         {
             URI uri = new URI("ws://localhost:" + port + "/");
