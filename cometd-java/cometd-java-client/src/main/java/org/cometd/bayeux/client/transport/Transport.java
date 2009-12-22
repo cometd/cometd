@@ -27,5 +27,5 @@ public interface Transport
 
     MetaMessage.Mutable newMetaMessage(Map<String, Object> fields);
 
-    void send(MetaMessage... metaMessages);
+    void send(MetaMessage.Mutable... metaMessages);
 }

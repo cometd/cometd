@@ -38,7 +38,7 @@ public class LongPollingTransport extends AbstractTransport
     {
     }
 
-    public void send(MetaMessage... messages)
+    public void send(MetaMessage.Mutable... messages)
     {
         HttpExchange httpExchange = new TransportExchange();
         httpExchange.setMethod("POST");
@@ -71,17 +71,17 @@ public class LongPollingTransport extends AbstractTransport
             if (getResponseStatus() == 200)
             {
                 // TODO: this must be improved (in all transports)
-                MetaMessage[] result;
+                MetaMessage.Mutable[] result;
                 Object content = JSON.parse(getResponseContent());
                 if (content instanceof Map)
                 {
                     Map<String, Object> map = (Map<String, Object>)content;
-                    result = new MetaMessage[]{newMetaMessage(map)};
+                    result = new MetaMessage.Mutable[]{newMetaMessage(map)};
                 }
                 else if (content instanceof Object[])
                 {
                     Object[] maps = (Object[])content;
-                    result = new MetaMessage[maps.length];
+                    result = new MetaMessage.Mutable[maps.length];
                     for (int i = 0; i < maps.length; i++)
                     {
                         Map<String, Object> map = (Map<String, Object>)maps[i];
@@ -90,7 +90,7 @@ public class LongPollingTransport extends AbstractTransport
                 }
                 else
                 {
-                    result = new MetaMessage[0];
+                    result = new MetaMessage.Mutable[0];
                 }
                 notifyMetaMessages(result);
             }

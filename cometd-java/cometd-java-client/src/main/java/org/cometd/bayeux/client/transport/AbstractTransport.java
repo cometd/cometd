@@ -32,7 +32,7 @@ public abstract class AbstractTransport implements Transport
         listeners.remove(listener);
     }
 
-    protected void notifyMetaMessages(MetaMessage... metaMessages)
+    protected void notifyMetaMessages(MetaMessage.Mutable... metaMessages)
     {
         for (TransportListener listener : listeners)
             listener.onMetaMessages(metaMessages);

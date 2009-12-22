@@ -1,22 +1,7 @@
 package org.cometd.bayeux.client;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import bayeux.ChannelSubscription;
-import bayeux.Extension;
-import bayeux.Message;
-import bayeux.MessageListener;
-import bayeux.MetaMessage;
-import bayeux.MetaMessageListener;
 import bayeux.client.Client;
-import bayeux.client.Session;
 import org.junit.Test;
-
-import static junit.framework.Assert.assertTrue;
-import static org.junit.Assert.assertNotNull;
 
 /**
  * @version $Revision$ $Date$
@@ -33,6 +18,7 @@ public class BayeuxClientTest
     public void testNothing()
     {
     }
+/*
 
 //    @Test
     public void testHandshakeRequest() throws Exception
@@ -111,4 +97,5 @@ public class BayeuxClientTest
 
         session.disconnect();
     }
+*/
 }
