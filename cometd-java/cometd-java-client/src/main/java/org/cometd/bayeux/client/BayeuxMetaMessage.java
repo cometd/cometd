@@ -79,6 +79,16 @@ public class BayeuxMetaMessage implements MetaMessage.Mutable, JSON.Convertible
         put(Message.CLIENT_ID_FIELD, clientId);
     }
 
+    public Map<String, Object> getAdvice()
+    {
+        return (Map<String, Object>)get(Message.ADVICE_FIELD);
+    }
+
+    public void setAdvice(Map<String, Object> advice)
+    {
+        put(Message.ADVICE_FIELD, advice);
+    }
+
     public MetaChannel getMetaChannel()
     {
         return metaChannel;

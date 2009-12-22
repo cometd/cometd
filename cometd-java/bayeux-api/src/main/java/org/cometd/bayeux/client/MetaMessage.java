@@ -1,5 +1,7 @@
 package org.cometd.bayeux.client;
 
+import java.util.Map;
+
 public interface MetaMessage //extends Message
 {
     MetaChannel getMetaChannel();
@@ -11,6 +13,8 @@ public interface MetaMessage //extends Message
     String getClientId();
 
     String getId();
+
+    Map<String, Object> getAdvice();
 
     interface Mutable extends MetaMessage
     {
@@ -25,5 +29,7 @@ public interface MetaMessage //extends Message
         void setSuccessful(boolean value);
 
         void setId(String id);
+
+        void setAdvice(Map<String, Object> advice);
     }
 }

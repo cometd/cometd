@@ -44,11 +44,11 @@ public interface Message extends Map<String, Object>
     /**Field names inside Bayeux messages - interval field*/
     public static final String INTERVAL_FIELD = "interval";
     /**Field values inside Bayeux messages - retry response*/
-    public static final String RETRY_RESPONSE = "retry";
+    public static final String RECONNECT_RETRY_VALUE = "retry";
     /**Field values inside Bayeux messages - handshake response*/
-    public static final String HANDSHAKE_RESPONSE = "handshake";
+    public static final String RECONNECT_HANDSHAKE_VALUE = "handshake";
     /**Field values inside Bayeux messages - none response*/
-    public static final String NONE_RESPONSE = "none";
+    public static final String RECONNECT_NONE_VALUE = "none";
     /**Service channel names-starts with*/
     public static final String SERVICE="/service";
 

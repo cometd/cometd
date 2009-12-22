@@ -66,4 +66,10 @@ public abstract class AbstractTransport implements Transport
     {
         return fields == null ? new BayeuxMetaMessage() : new BayeuxMetaMessage(fields);
     }
+
+    @Override
+    public String toString()
+    {
+        return getType();
+    }
 }
