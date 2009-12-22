@@ -34,7 +34,6 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
 
     private final ImmutableMessagePool _pool;
 
-
     private final AtomicInteger _refs=new AtomicInteger();
 
     /* ------------------------------------------------------------ */

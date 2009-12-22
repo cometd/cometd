@@ -1,4 +1,5 @@
 package org.cometd.server;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -16,39 +17,46 @@ public class MessageBenchmark
         long imut=immutableMessageTest(10,2000);
         System.err.println();
         
-        System.err.print("20x2000:");
+        System.err.print("20x4000:");
         Runtime.getRuntime().gc();
-        hash=hashMapMessageTest(20,2000);
+        hash=hashMapMessageTest(20,5000);
         Runtime.getRuntime().gc();
-        imut=immutableMessageTest(20,2000);
+        imut=immutableMessageTest(20,5000);
         System.err.println("\thash="+hash+"\timutable="+imut+"\tgain="+((hash-imut)*100/hash)+"%");
         
-        System.err.print("30x3000:");
+        System.err.print("30x6000:");
         Runtime.getRuntime().gc();
-        hash=hashMapMessageTest(30,3000);
+        hash=hashMapMessageTest(30,6000);
         Runtime.getRuntime().gc();
-        imut=immutableMessageTest(30,3000);
+        imut=immutableMessageTest(30,6000);
         System.err.println("\thash="+hash+"\timutable="+imut+"\tgain="+((hash-imut)*100/hash)+"%");
         
-        System.err.print("40x4000:");
+        System.err.print("40x8000:");
         Runtime.getRuntime().gc();
-        hash=hashMapMessageTest(40,4000);
+        hash=hashMapMessageTest(40,8000);
         Runtime.getRuntime().gc();
-        imut=immutableMessageTest(40,4000);
+        imut=immutableMessageTest(40,8000);
         System.err.println("\thash="+hash+"\timutable="+imut+"\tgain="+((hash-imut)*100/hash)+"%");
         
-        System.err.print("50x5000:");
+        System.err.print("50x10000:");
         Runtime.getRuntime().gc();
-        hash=hashMapMessageTest(50,5000);
+        hash=hashMapMessageTest(50,10000);
         Runtime.getRuntime().gc();
-        imut=immutableMessageTest(50,5000);
+        imut=immutableMessageTest(50,10000);
+        System.err.println("\thash="+hash+"\timutable="+imut+"\tgain="+((hash-imut)*100/hash)+"%");
+        
+        System.err.print("100x10000:");
+        Runtime.getRuntime().gc();
+        hash=hashMapMessageTest(100,10000);
+        Runtime.getRuntime().gc();
+        imut=immutableMessageTest(100,10000);
         System.err.println("\thash="+hash+"\timutable="+imut+"\tgain="+((hash-imut)*100/hash)+"%");
         
     }
      
-    static long immutableMessageTest(final int threads,final int loops) throws Exception
+    static long hashMapMessageTest(final int threads,final int loops) throws Exception
     {
-        final CountDownLatch latch = new CountDownLatch(2*threads);
+        final CountDownLatch latch = new CountDownLatch(threads+1);
         final AtomicLong bigResult=new AtomicLong();
         
         final BlockingArrayQueue<Message.Mutable>[] q = new BlockingArrayQueue[threads];
@@ -58,13 +66,13 @@ public class MessageBenchmark
         for (int i=0;i<threads;i++)
         {
             final int index=i;
-            new Thread()
+            Thread t = new Thread()
             {
                 public void run()
                 {  
                     long result=0;
                     
-                    for (int m=0;m<loops*threads;m++)
+                    for (int m=0;m<loops;m++)
                     {
                         try
                         {
@@ -86,56 +94,48 @@ public class MessageBenchmark
                     bigResult.addAndGet(result);
                     latch.countDown();
                 }
-            }.start();
+            };
+            //t.setPriority(Thread.MAX_PRIORITY);
+            t.start();
         }
-        
-        for (int i=0;i<threads;i++)
-        {
-            final int index=i;
-            new Thread()
-            {
-                public void run()
-                {
-                    long result=0;
-                    
-                    for (int m=0;m<loops;m++)
-                    {   
-                        Message.Mutable msg = new HashMapMessage();
-                        
-                        // pretend to parse the message.
-                        msg.put(Message.ID_FIELD,"12345");
-                        msg.put(Message.CHANNEL_FIELD,"/foo/bar/wibble");
-                        Map<String, Object> data=msg.getMutableData();
-                        data.put("name","gregw");
-                        data.put("chat","Now is the time for all good men to come to the aid of the party");
-                        msg.put("timestamp",new Long(System.currentTimeMillis()));
-                        
-                        // pretend to use the message
-                        result += msg.getId().hashCode();
-                        result += msg.getChannelId().hashCode();
 
-                        
-                        for (int i=0;i<threads;i++)
-                        {
-                            q[i].offer(msg);
-                        }
-                        Thread.yield();
-                    }
-                    
-                    bigResult.addAndGet(result);
-                    latch.countDown();
-                }
-            }.start();
+        long result=0;
+
+        for (int m=0;m<loops;m++)
+        {   
+            Message.Mutable msg = new HashMapMessage();
+
+            // pretend to parse the message.
+            msg.put(Message.ID_FIELD,"12345");
+            msg.put(Message.CHANNEL_FIELD,"/foo/bar/wibble");
+            Map<String, Object> data=new HashMap<String, Object>();
+            msg.put("data",data);
+            data.put("name","gregw");
+            data.put("chat","Now is the time for all good men to come to the aid of the party");
+            msg.put("timestamp",new Long(System.currentTimeMillis()));
+            msg.put("something","else");
+
+            // pretend to use the message
+            result += msg.getId().hashCode();
+            result += msg.getChannelId().hashCode();
+
+            for (int i=0;i<threads;i++)
+                q[i].offer(msg);
+
+            Thread.yield();
         }
+
+        bigResult.addAndGet(result);
+        latch.countDown();
         latch.await();
         System.err.print("\t"+bigResult);
         return System.currentTimeMillis()-start;
         
     }
 
-    static long hashMapMessageTest(final int threads,final int loops) throws Exception
+    static long immutableMessageTest(final int threads,final int loops) throws Exception
     {
-        final CountDownLatch latch = new CountDownLatch(2*threads);
+        final CountDownLatch latch = new CountDownLatch(threads+1);
         final AtomicLong bigResult=new AtomicLong();
         final ImmutableMessagePool pool = new ImmutableMessagePool();
 
@@ -146,14 +146,14 @@ public class MessageBenchmark
         for (int i=0;i<threads;i++)
         {
             final int index=i;
-            new Thread()
+            Thread t=new Thread()
             {
                 public void run()
                 {  
 
                     long result=0;
 
-                    for (int m=0;m<loops*threads;m++)
+                    for (int m=0;m<loops;m++)
                     {
                         try
                         {
@@ -177,50 +177,43 @@ public class MessageBenchmark
                     bigResult.addAndGet(result);
                     latch.countDown();
                 }
-            }.start();
+            };
+            //t.setPriority(Thread.MAX_PRIORITY);
+            t.start();
         }
+        long result=0;
 
-        for (int i=0;i<threads;i++)
-        {
-            final int index=i;
-            new Thread()
+        for (int m=0;m<loops;m++)
+        {   
+            Message.Mutable msg = pool.newMessage();
+
+            // pretend to parse the message.
+            msg.put(Message.ID_FIELD,"12345");
+            msg.put(Message.CHANNEL_FIELD,"/foo/bar/wibble");
+            Map<String, Object> data=new HashMap<String, Object>();
+            msg.put("data",data);
+            data.put("name","gregw");
+            data.put("chat","Now is the time for all good men to come to the aid of the party");
+            msg.put("timestamp",new Long(System.currentTimeMillis()));
+            msg.put("something","else");
+
+            // pretend to use the message
+            result += msg.getId().hashCode();
+            result += msg.getChannelId().hashCode();
+
+            ImmutableMessage immutable = ((ImmutableMessage.MutableMessage)msg).asImmutable();
+
+            for (int i=0;i<threads;i++)
             {
-                public void run()
-                {
-                    long result=0;
-
-                    for (int m=0;m<loops;m++)
-                    {   
-                        Message.Mutable msg = pool.newMessage();
-
-                        // pretend to parse the message.
-                        msg.put(Message.ID_FIELD,"12345");
-                        msg.put(Message.CHANNEL_FIELD,"/foo/bar/wibble");
-                        Map<String, Object> data=msg.getMutableData();
-                        data.put("name","gregw");
-                        data.put("chat","Now is the time for all good men to come to the aid of the party");
-                        msg.put("timestamp",new Long(System.currentTimeMillis()));
-
-                        // pretend to use the message
-                        result += msg.getId().hashCode();
-                        result += msg.getChannelId().hashCode();
-
-                        ImmutableMessage immutable = ((ImmutableMessage.MutableMessage)msg).asImmutable();
-
-                        for (int i=0;i<threads;i++)
-                        {
-                            immutable.incRef();
-                            q[i].offer(immutable);
-                        }
-                        immutable.decRef();
-                        Thread.yield();
-                    }
-
-                    bigResult.addAndGet(result);
-                    latch.countDown();
-                }
-            }.start();
+                immutable.incRef();
+                q[i].offer(immutable);
+            }
+            immutable.decRef();
+            Thread.yield();
         }
+
+        bigResult.addAndGet(result);
+        latch.countDown();
         latch.await();
         System.err.print("\t"+bigResult);
         return System.currentTimeMillis()-start;
