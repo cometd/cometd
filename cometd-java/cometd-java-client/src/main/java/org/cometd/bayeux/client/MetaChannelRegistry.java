@@ -12,6 +12,7 @@ public class MetaChannelRegistry
     public MetaChannelRegistry()
     {
         metaChannels.put(MetaChannelType.HANDSHAKE, new StandardMetaChannel(MetaChannelType.HANDSHAKE));
+        metaChannels.put(MetaChannelType.CONNECT, new StandardMetaChannel(MetaChannelType.CONNECT));
         // TODO: add other channels
         metaChannels.put(MetaChannelType.DISCONNECT, new StandardMetaChannel(MetaChannelType.DISCONNECT));
     }

@@ -14,8 +14,8 @@ public interface Transport
     void removeListener(TransportListener listener);
 
     /**
-     * @return the type of the transport, such as "long-polling",
-     * to be used in bayeux handshake as connection type
+     * @return the type of the transport, such as "long-polling", to be used
+     * in bayeux handshake messages and connect messages as connection type
      */
     String getType();
 

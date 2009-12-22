@@ -3,7 +3,13 @@ package org.cometd.bayeux.client;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.BayeuxException;
 import org.cometd.bayeux.Extension;
@@ -28,14 +34,24 @@ public class StandardClientBayeux implements ClientBayeux
     private final TransportRegistry transports = new TransportRegistry();
     private final TransportListener transportListener = new Listener();
     private final List<Extension> extensions = new CopyOnWriteArrayList<Extension>();
+    private final AtomicInteger messageIds = new AtomicInteger();
+    private final ScheduledExecutorService scheduler;
     private volatile State state = State.DISCONNECTED;
     private volatile Transport transport;
     private volatile String clientId;
+    private volatile Map<String, Object> advice;
+    private volatile ScheduledFuture<?> scheduled; // TODO cancel this when appropriate (e.g. on disconnect)
 
     public StandardClientBayeux(Transport... transports)
     {
-        for (Transport t : transports)
-            this.transports.add(t);
+        this(Executors.newSingleThreadScheduledExecutor(), transports);
+    }
+
+    public StandardClientBayeux(ScheduledExecutorService scheduler, Transport... transports)
+    {
+        this.scheduler = scheduler;
+        for (Transport transport : transports)
+            this.transports.add(transport);
     }
 
     public MetaChannel getMetaChannel(MetaChannelType type)
@@ -61,14 +77,21 @@ public class StandardClientBayeux implements ClientBayeux
         String[] transports = this.transports.findTransportTypes(BAYEUX_VERSION);
         Transport newTransport = negotiateTransport(transports);
         transport = lifecycleTransport(transport, newTransport);
+        logger.debug("Handshaking with transport {}", transport);
 
         MetaMessage.Mutable request = transport.newMetaMessage(null);
         request.setMetaChannel(getMetaChannel(MetaChannelType.HANDSHAKE));
         request.put(Message.VERSION_FIELD, BAYEUX_VERSION);
         request.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, transports);
 
-        this.state = State.HANDSHAKING;
+        updateState(State.HANDSHAKING);
         send(request);
+    }
+
+    private void updateState(State newState)
+    {
+        logger.debug("State change: {} -> {}", state, newState);
+        this.state = newState;
     }
 
     private Transport lifecycleTransport(Transport oldTransport, Transport newTransport)
@@ -111,7 +134,7 @@ public class StandardClientBayeux implements ClientBayeux
         MetaMessage.Mutable metaMessage = transport.newMetaMessage(null);
         metaMessage.setMetaChannel(getMetaChannel(MetaChannelType.DISCONNECT));
 
-        state = State.DISCONNECTING;
+        updateState(State.DISCONNECTING);
         send(metaMessage);
     }
 
@@ -171,13 +194,20 @@ public class StandardClientBayeux implements ClientBayeux
     {
         MetaMessage.Mutable[] processed = applyIncomingExtensions(metaMessages);
 
-        for (MetaMessage.Mutable metaMessage : processed)
+        for (MetaMessage metaMessage : processed)
         {
-            switch (state)
+            advice = metaMessage.getAdvice();
+
+            MetaChannel metaChannel = metaMessage.getMetaChannel();
+            if (metaChannel == null)
+                // TODO: call a listener method ? Discard the message ?
+                throw new BayeuxException();
+
+            switch (metaChannel.getType())
             {
-                case HANDSHAKING:
+                case HANDSHAKE:
                 {
-                    if (metaMessage.getMetaChannel().getType() != MetaChannelType.HANDSHAKE)
+                    if (state != State.HANDSHAKING)
                         // TODO: call a listener method ? Discard the message ?
                         throw new BayeuxException();
 
@@ -188,13 +218,36 @@ public class StandardClientBayeux implements ClientBayeux
 
                     break;
                 }
-                case DISCONNECTING:
+                case CONNECT:
                 {
-                    // TODO
+                    if (state != State.CONNECTED && state != State.DISCONNECTING)
+                        // TODO: call a listener method ? Discard the message ?
+                        throw new BayeuxException();
+
+                    if (metaMessage.isSuccessful())
+                        processConnect(metaMessage);
+                    else
+                        processUnsuccessful(metaMessage);
+
+                    break;
+                }
+                case DISCONNECT:
+                {
+                    if (state != State.DISCONNECTING)
+                        // TODO: call a listener method ? Discard the message ?
+                        throw new BayeuxException();
+
+                    if (metaMessage.isSuccessful())
+                        processDisconnect(metaMessage);
+                    else
+                        processUnsuccessful(metaMessage);
+
                     break;
                 }
                 default:
+                {
                     throw new BayeuxException();
+                }
             }
         }
     }
@@ -242,19 +295,85 @@ public class StandardClientBayeux implements ClientBayeux
             transport = lifecycleTransport(transport, newTransport);
         }
 
-        state = State.CONNECTED;
+        updateState(State.CONNECTED);
         clientId = handshake.getClientId();
 
         metaChannels.notifySuscribers(getMutableMetaChannel(MetaChannelType.HANDSHAKE), handshake);
 
         // TODO: internal batch ?
 
-        // TODO: handle advice
+        followAdvice();
+    }
+
+    protected void processConnect(MetaMessage metaMessage)
+    {
+        metaChannels.notifySuscribers(getMutableMetaChannel(MetaChannelType.CONNECT), metaMessage);
+        followAdvice();
+    }
+
+    protected void processDisconnect(MetaMessage metaMessage)
+    {
+        metaChannels.notifySuscribers(getMutableMetaChannel(MetaChannelType.DISCONNECT), metaMessage);
     }
 
     protected void processUnsuccessful(MetaMessage metaMessage)
     {
         // TODO
+    }
+
+    private void followAdvice()
+    {
+        if (advice != null)
+        {
+            String action = (String)advice.get(Message.RECONNECT_FIELD);
+            if (Message.RECONNECT_RETRY_VALUE.equals(action))
+            {
+                // Must connect, follow timings in the advice
+                Number intervalNumber = (Number)advice.get(Message.INTERVAL_FIELD);
+                if (intervalNumber != null)
+                {
+                    long interval = intervalNumber.longValue();
+                    if (interval < 0L)
+                        interval = 0L;
+                    scheduled = scheduler.schedule(new Runnable()
+                    {
+                        public void run()
+                        {
+                            asyncConnect();
+                        }
+                    }, interval, TimeUnit.MILLISECONDS);
+                }
+            }
+            else if (Message.RECONNECT_HANDSHAKE_VALUE.equals(action))
+            {
+                // TODO:
+                throw new BayeuxException();
+            }
+            else if (Message.RECONNECT_NONE_VALUE.equals(action))
+            {
+                // Do nothing
+                // TODO: sure there is nothing more to do ?
+            }
+            else
+            {
+                logger.info("Reconnect action {} not supported in advice {}", action, advice);
+            }
+        }
+    }
+
+    private void asyncConnect()
+    {
+        MetaMessage.Mutable request = transport.newMetaMessage(null);
+        request.setMetaChannel(getMetaChannel(MetaChannelType.CONNECT));
+        request.put(Message.CONNECTION_TYPE_FIELD, transport.getType());
+        request.setClientId(clientId);
+        request.setId(newMessageId());
+        send(request);
+    }
+
+    private String newMessageId()
+    {
+        return String.valueOf(messageIds.incrementAndGet());
     }
 
     private class Listener extends TransportListener.Adapter
