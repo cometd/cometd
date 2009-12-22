@@ -3,6 +3,8 @@ package org.cometd.bayeux.client;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.cometd.bayeux.MetaChannelType;
+
 /**
  * @version $Revision$ $Date$
  */

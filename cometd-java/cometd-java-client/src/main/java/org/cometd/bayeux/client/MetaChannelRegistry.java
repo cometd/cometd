@@ -2,6 +2,8 @@ package org.cometd.bayeux.client;
 
 import java.util.EnumMap;
 
+import org.cometd.bayeux.MetaChannelType;
+
 /**
  * @version $Revision$ $Date$
  */

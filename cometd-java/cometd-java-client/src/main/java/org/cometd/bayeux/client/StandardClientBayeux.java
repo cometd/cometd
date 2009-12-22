@@ -3,7 +3,6 @@ package org.cometd.bayeux.client;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -14,6 +13,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.cometd.bayeux.BayeuxException;
 import org.cometd.bayeux.Extension;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.MetaChannelType;
+import org.cometd.bayeux.Struct;
 import org.cometd.bayeux.client.transport.Transport;
 import org.cometd.bayeux.client.transport.TransportException;
 import org.cometd.bayeux.client.transport.TransportListener;
@@ -39,7 +40,7 @@ public class StandardClientBayeux implements ClientBayeux
     private volatile State state = State.DISCONNECTED;
     private volatile Transport transport;
     private volatile String clientId;
-    private volatile Map<String, Object> advice;
+    private volatile Struct advice;
     private volatile ScheduledFuture<?> scheduled; // TODO cancel this when appropriate (e.g. on disconnect)
 
     public StandardClientBayeux(Transport... transports)
@@ -363,6 +364,7 @@ public class StandardClientBayeux implements ClientBayeux
 
     private void asyncConnect()
     {
+        logger.debug("Connecting with transport {}", transport);
         MetaMessage.Mutable request = transport.newMetaMessage(null);
         request.setMetaChannel(getMetaChannel(MetaChannelType.CONNECT));
         request.put(Message.CONNECTION_TYPE_FIELD, transport.getType());

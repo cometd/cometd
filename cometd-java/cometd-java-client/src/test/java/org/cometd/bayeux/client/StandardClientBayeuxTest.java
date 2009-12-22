@@ -1,10 +1,13 @@
 package org.cometd.bayeux.client;
 
+import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Extension;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.MetaChannelType;
 import org.cometd.bayeux.client.transport.LocalTransport;
 import org.junit.After;
 import org.junit.Assert;
@@ -35,6 +38,18 @@ public class StandardClientBayeuxTest
     {
         bayeux.disconnect();
     }
+
+/*
+    @Test
+    public void testHandshakeTimeout() throws Exception
+    {
+        // Handshake sent, but no reply from the server
+        // The client must timeout and notify listeners
+
+        bayeux.setMaxNetworkDelay(1000);
+        bayeux.handshake();
+    }
+*/
 
     @Test
     public void testHandshakeCallsHandshakeListener() throws Exception
@@ -77,5 +92,41 @@ public class StandardClientBayeuxTest
         });
         bayeux.handshake();
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testPublish() throws Exception
+    {
+        final String channelName = "/test";
+
+        final CountDownLatch handshakeLatch = new CountDownLatch(1);
+        final CountDownLatch latch = new CountDownLatch(1);
+        bayeux.addExtension(new Extension.Adapter()
+        {
+            @Override
+            public MetaMessage.Mutable metaIncoming(MetaMessage.Mutable metaMessage)
+            {
+                if (metaMessage.getMetaChannel().getType() == MetaChannelType.HANDSHAKE)
+                {
+                    handshakeLatch.countDown();
+                }
+                return metaMessage;
+            }
+
+            @Override
+            public Message.Mutable outgoing(Message.Mutable message)
+            {
+                if (channelName.equals(message.getChannelName()))
+                {
+                    latch.countDown();
+                }
+                return message;
+            }
+        });
+        bayeux.handshake();
+        assertTrue(handshakeLatch.await(1, TimeUnit.SECONDS));
+
+        bayeux.getChannel(channelName).publish(new HashMap<String, Object>());
+        assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 }

@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.cometd.bayeux.client.BayeuxMetaMessage;
 import org.cometd.bayeux.client.MetaMessage;
+import org.cometd.bayeux.client.StandardMetaMessage;
 
 /**
  * @version $Revision$ $Date$
@@ -64,7 +64,7 @@ public abstract class AbstractTransport implements Transport
 
     public MetaMessage.Mutable newMetaMessage(Map<String, Object> fields)
     {
-        return fields == null ? new BayeuxMetaMessage() : new BayeuxMetaMessage(fields);
+        return fields == null ? new StandardMetaMessage() : new StandardMetaMessage(fields);
     }
 
     @Override

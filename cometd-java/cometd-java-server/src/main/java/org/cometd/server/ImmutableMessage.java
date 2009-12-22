@@ -1,12 +1,12 @@
 package org.cometd.server;
 
 import java.util.AbstractMap;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Struct;
 import org.eclipse.jetty.util.ajax.JSON;
 
 public class ImmutableMessage extends AbstractMap<String,Object> implements Message, JSON.Generator
@@ -111,9 +111,9 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     }
 
     /* ------------------------------------------------------------ */
-    public Map<String, Object> getAdvice()
+    public Struct getAdvice()
     {
-        return (Map<String, Object>)_advice.getValue();
+        return (Struct)_advice.getValue();
     }
 
     /* ------------------------------------------------------------ */
@@ -122,10 +122,9 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
         return _associated;
     }
 
-    /* ------------------------------------------------------------ */
-    public String getChannelId()
+    public String getChannelName()
     {
-        return (String)_channelId.getValue();
+        return (String)get(CHANNEL_FIELD);
     }
 
     /* ------------------------------------------------------------ */
@@ -147,9 +146,9 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     }
 
     /* ------------------------------------------------------------ */
-    public Map<String, Object> getExt()
+    public Struct getExt(boolean create)
     {
-        return (Map<String, Object>)_ext.getValue();
+        return (Struct)_ext.getValue();
     }
 
     /* ------------------------------------------------------------ */
@@ -309,36 +308,14 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
             return _mutable.get(key);
         }
 
-        public Map<String, Object> getAdvice()
+        public Struct.Mutable getAdvice()
         {
-            return (Map<String, Object>)_advice.getValue();
+            return (Struct.Mutable)_advice.getValue();
         }
 
-        public Map<String, Object> getMutableData()
+        public String getChannelName()
         {
-            Map<String, Object> data=(Map<String, Object>)_data.getValue();
-            if (data==null)
-            {
-                data=new ImmutableHashMap<String,Object>().asMutable();
-                _data.setValue(data);
-            }
-            return data;
-        }
-
-        public Map<String, Object> getMutableAdvice()
-        {
-            Map<String, Object> advice=(Map<String, Object>)_advice.getValue();
-            if (advice==null)
-            {
-                advice=new ImmutableHashMap<String,Object>().asMutable();
-                _advice.setValue(advice);
-            }
-            return advice;
-        }
-
-        public String getChannelId()
-        {
-            return (String)_channelId.getValue();
+            return (String)get(CHANNEL_FIELD);
         }
 
         public String getClientId()
@@ -356,28 +333,9 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
             return _mutable.getEntry(key);
         }
 
-        public Map<String, Object> getExt()
+        public Struct.Mutable getExt(boolean create)
         {
-            return (Map<String, Object>)_ext.getValue();
-        }
-
-        public Map<String,Object> getMutableExt()
-        {
-            Object ext=_ext.getValue();
-            if (ext instanceof Map)
-                return (Map<String,Object>)ext;
-
-            if (ext instanceof JSON.Literal)
-            {
-                JSON json=_pool == null?JSON.getDefault():_pool.getMsgJSON();
-                ext=json.fromJSON(ext.toString());
-                _ext.setValue(ext);
-                return (Map<String,Object>)ext;
-            }
-
-            ext=new HashMap<String,Object>();
-            _ext.setValue(ext);
-            return (Map<String,Object>)ext;
+            return (Struct.Mutable)_ext.getValue();
         }
 
         public String getId()
