@@ -2,32 +2,30 @@ package org.cometd.server;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.ajax.JSON;
 
 public class ImmutableMessagePool
 {
-    final private ConcurrentLinkedQueue<ImmutableMessage> _messagePool;
+    final private BlockingArrayQueue<ImmutableMessage> _messagePool;
     final private ConcurrentLinkedQueue<JSON.ReaderSource> _readerPool;
 
     /* ------------------------------------------------------------ */
     public ImmutableMessagePool()
     {
-        this(50);
-    }
-
-    /* ------------------------------------------------------------ */
-    public ImmutableMessagePool(int capacity)
-    {
-        _messagePool=new ConcurrentLinkedQueue<ImmutableMessage>();
+        _messagePool=new BlockingArrayQueue<ImmutableMessage>(200,200);
         _readerPool=new ConcurrentLinkedQueue<JSON.ReaderSource>();
     }
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -93,27 +91,41 @@ public class ImmutableMessagePool
     /* ------------------------------------------------------------ */
     public Message.Mutable newMessage()
     {
-        ImmutableMessage message=_messagePool.poll();
-        if (message == null)
+        try
         {
-            message=new ImmutableMessage(this);
+            ImmutableMessage message = _messagePool.poll(10,TimeUnit.MICROSECONDS);
+            if (message == null)
+            {
+                message=new ImmutableMessage(this);
+            }
+            message.incRef();
+            return message.asMutable();
         }
-        message.incRef();
-        return message.asMutable();
+        catch(Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     /* ------------------------------------------------------------ */
     public ImmutableMessage newMessage(Message associated)
     {
-        ImmutableMessage message=_messagePool.poll();
-        if (message == null)
+        try
         {
-            message=new ImmutableMessage(this);
+            ImmutableMessage message = _messagePool.poll(10,TimeUnit.MICROSECONDS);
+            if (message == null)
+            {
+                message=new ImmutableMessage(this);
+            }
+            message.incRef();
+            if (associated != null)
+                message.setAssociated(associated);
+            return message;
         }
-        message.incRef();
-        if (associated != null)
-            message.setAssociated(associated);
-        return message;
+        catch(Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -211,7 +223,7 @@ public class ImmutableMessagePool
         @Override
         protected Map newMap()
         {
-            return new ImmutableHashMap<String, Object>().asMutable();
+            return new HashMap<String, Object>();
         }
 
         @Override

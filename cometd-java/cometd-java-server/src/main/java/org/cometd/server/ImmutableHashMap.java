@@ -2,6 +2,7 @@ package org.cometd.server;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -357,6 +358,8 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         {
             if (_value instanceof ImmutableHashMap.Mutable)
                 return (V)((ImmutableHashMap.Mutable)_value).asImmutable();
+            else if (_value instanceof Map)
+                return (V)Collections.unmodifiableMap((Map)_value);
             return _value;
         }
 
