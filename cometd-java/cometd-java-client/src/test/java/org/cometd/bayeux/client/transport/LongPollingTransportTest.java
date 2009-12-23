@@ -3,11 +3,12 @@ package org.cometd.bayeux.client.transport;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.cometd.bayeux.client.MetaMessage;
+import org.cometd.bayeux.CommonMessage;
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.Test;
 
@@ -84,7 +85,7 @@ public class LongPollingTransportTest
                 transport.addListener(new TransportListener.Adapter()
                 {
                     @Override
-                    public void onMetaMessages(MetaMessage.Mutable... metaMessages)
+                    public void onMessages(List<CommonMessage.Mutable> messages)
                     {
                         latch.countDown();
                     }

@@ -11,9 +11,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.BayeuxException;
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.CommonMessage;
 import org.cometd.bayeux.Extension;
+import org.cometd.bayeux.IMessage;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.MetaChannelType;
+import org.cometd.bayeux.MetaMessage;
 import org.cometd.bayeux.Struct;
 import org.cometd.bayeux.client.transport.Transport;
 import org.cometd.bayeux.client.transport.TransportException;
@@ -25,13 +29,13 @@ import org.slf4j.LoggerFactory;
 /**
  * @version $Revision$ $Date$
  */
-public class StandardClientBayeux implements ClientBayeux
+public class StandardClientBayeux implements ClientBayeux, IClientSession
 {
     private static final String BAYEUX_VERSION = "1.0";
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final MetaChannelRegistry metaChannels = new MetaChannelRegistry();
-    private final ChannelRegistry channels = new ChannelRegistry();
+    private final ChannelRegistry channels = new ChannelRegistry(this);
     private final TransportRegistry transports = new TransportRegistry();
     private final TransportListener transportListener = new Listener();
     private final List<Extension> extensions = new CopyOnWriteArrayList<Extension>();
@@ -80,13 +84,18 @@ public class StandardClientBayeux implements ClientBayeux
         transport = lifecycleTransport(transport, newTransport);
         logger.debug("Handshaking with transport {}", transport);
 
-        MetaMessage.Mutable request = transport.newMetaMessage(null);
-        request.setMetaChannel(getMetaChannel(MetaChannelType.HANDSHAKE));
+        MetaMessage.Mutable request = newMessage();
+        request.setChannelName(MetaChannelType.HANDSHAKE.getName());
         request.put(Message.VERSION_FIELD, BAYEUX_VERSION);
         request.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, transports);
 
         updateState(State.HANDSHAKING);
-        send(request);
+        send(request, true);
+    }
+
+    private IMessage.Mutable newMessage()
+    {
+        return transport.newMessage();
     }
 
     private void updateState(State newState)
@@ -119,6 +128,11 @@ public class StandardClientBayeux implements ClientBayeux
 
     public Channel getChannel(String channelName)
     {
+        return getMutableChannel(channelName);
+    }
+
+    private Channel.Mutable getMutableChannel(String channelName)
+    {
         return channels.from(channelName, true);
     }
 
@@ -132,11 +146,11 @@ public class StandardClientBayeux implements ClientBayeux
         if (isDisconnected())
             throw new IllegalStateException();
 
-        MetaMessage.Mutable metaMessage = transport.newMetaMessage(null);
-        metaMessage.setMetaChannel(getMetaChannel(MetaChannelType.DISCONNECT));
+        MetaMessage.Mutable message = newMessage();
+        message.setChannelName(MetaChannelType.DISCONNECT.getName());
 
         updateState(State.DISCONNECTING);
-        send(metaMessage);
+        send(message, true);
     }
 
     public String getClientId()
@@ -155,131 +169,137 @@ public class StandardClientBayeux implements ClientBayeux
         return transport;
     }
 
-    protected void send(MetaMessage.Mutable... metaMessages)
+    protected void send(CommonMessage.Mutable message, boolean meta)
     {
-        MetaMessage.Mutable[] processed = applyOutgoingExtensions(metaMessages);
-        if (processed.length > 0)
-            transport.send(processed);
+        message = applyOutgoingExtensions(message, meta);
+        if (message != null)
+        {
+            // TODO: handle batches
+            transport.send(message);
+        }
     }
 
-    private MetaMessage.Mutable[] applyOutgoingExtensions(MetaMessage.Mutable... metaMessages)
+    private CommonMessage.Mutable applyOutgoingExtensions(CommonMessage.Mutable message, boolean meta)
     {
-        List<MetaMessage.Mutable> result = new ArrayList<MetaMessage.Mutable>();
-        for (MetaMessage.Mutable metaMessage : metaMessages)
+        for (Extension extension : extensions)
         {
-            boolean processed = false;
-            for (Extension extension : extensions)
+            try
             {
-                processed = true;
-                try
+                if (meta)
+                    message = extension.metaOutgoing((MetaMessage.Mutable)message);
+                else
+                    message = extension.outgoing((Message.Mutable)message);
+
+                if (message == null)
                 {
-                    MetaMessage.Mutable processedMetaMessage = extension.metaOutgoing(metaMessage);
-                    if (processedMetaMessage != null)
-                        result.add(processedMetaMessage);
-                    else
-                        logger.debug("Extension {} signalled to skip metaMessage {}", extension, metaMessage);
-                }
-                catch (Exception x)
-                {
-                    logger.debug("Exception while invoking extension " + extension, x);
-                    result.add(metaMessage);
+                    logger.debug("Extension {} signalled to skip message {}", extension, message);
+                    return null;
                 }
             }
-            if (!processed)
-                result.add(metaMessage);
+            catch (Exception x)
+            {
+                logger.debug("Exception while invoking extension " + extension, x);
+            }
         }
-        return result.toArray(new MetaMessage.Mutable[result.size()]);
+        return message;
     }
 
-    protected void receive(MetaMessage.Mutable... metaMessages)
+    protected void receive(List<CommonMessage.Mutable> messages)
     {
-        MetaMessage.Mutable[] processed = applyIncomingExtensions(metaMessages);
+        List<CommonMessage.Mutable> processed = applyIncomingExtensions(messages);
 
-        for (MetaMessage metaMessage : processed)
+        for (CommonMessage message : processed)
         {
-            advice = metaMessage.getAdvice();
+            advice = message.getAdvice();
 
-            MetaChannel metaChannel = metaMessage.getMetaChannel();
-            if (metaChannel == null)
+            String channelName = message.getChannelName();
+            if (channelName == null)
                 // TODO: call a listener method ? Discard the message ?
                 throw new BayeuxException();
 
-            switch (metaChannel.getType())
+            MetaChannelType type = MetaChannelType.from(channelName);
+            if (type == null)
             {
-                case HANDSHAKE:
-                {
-                    if (state != State.HANDSHAKING)
-                        // TODO: call a listener method ? Discard the message ?
-                        throw new BayeuxException();
-
-                    if (metaMessage.isSuccessful())
-                        processHandshake(metaMessage);
-                    else
-                        processUnsuccessful(metaMessage);
-
-                    break;
-                }
-                case CONNECT:
-                {
-                    if (state != State.CONNECTED && state != State.DISCONNECTING)
-                        // TODO: call a listener method ? Discard the message ?
-                        throw new BayeuxException();
-
-                    if (metaMessage.isSuccessful())
-                        processConnect(metaMessage);
-                    else
-                        processUnsuccessful(metaMessage);
-
-                    break;
-                }
-                case DISCONNECT:
-                {
-                    if (state != State.DISCONNECTING)
-                        // TODO: call a listener method ? Discard the message ?
-                        throw new BayeuxException();
-
-                    if (metaMessage.isSuccessful())
-                        processDisconnect(metaMessage);
-                    else
-                        processUnsuccessful(metaMessage);
-
-                    break;
-                }
-                default:
-                {
+                Message msg = (Message)message;
+                Boolean successful = (Boolean)msg.get(Message.SUCCESSFUL_FIELD);
+                if (successful != null && successful)
+                    processMessage(msg);
+                else
+                    processUnsuccessful(message);
+            }
+            else if (type == MetaChannelType.HANDSHAKE)
+            {
+                if (state != State.HANDSHAKING)
+                    // TODO: call a listener method ? Discard the message ?
                     throw new BayeuxException();
-                }
+
+                MetaMessage metaMessage = (MetaMessage)message;
+                if (metaMessage.isSuccessful())
+                    processHandshake(metaMessage);
+                else
+                    processUnsuccessful(metaMessage);
+            }
+            else if (type == MetaChannelType.CONNECT)
+            {
+                if (state != State.CONNECTED && state != State.DISCONNECTING)
+                    // TODO: call a listener method ? Discard the message ?
+                    throw new BayeuxException();
+
+                MetaMessage metaMessage = (MetaMessage)message;
+                if (metaMessage.isSuccessful())
+                    processConnect(metaMessage);
+                else
+                    processUnsuccessful(metaMessage);
+            }
+            else if (type == MetaChannelType.DISCONNECT)
+            {
+                if (state != State.DISCONNECTING)
+                    // TODO: call a listener method ? Discard the message ?
+                    throw new BayeuxException();
+
+                MetaMessage metaMessage = (MetaMessage)message;
+                if (metaMessage.isSuccessful())
+                    processDisconnect(metaMessage);
+                else
+                    processUnsuccessful(metaMessage);
+            }
+            else
+            {
+                throw new BayeuxException();
             }
         }
     }
 
-    private MetaMessage.Mutable[] applyIncomingExtensions(MetaMessage.Mutable... metaMessages)
+    private List<CommonMessage.Mutable> applyIncomingExtensions(List<CommonMessage.Mutable> metaMessages)
     {
-        List<MetaMessage.Mutable> result = new ArrayList<MetaMessage.Mutable>();
-        for (MetaMessage.Mutable metaMessage : metaMessages)
+        // TODO: can be optimized by using the same list
+        List<CommonMessage.Mutable> result = new ArrayList<CommonMessage.Mutable>();
+        for (CommonMessage.Mutable message : metaMessages)
         {
-            boolean processed = false;
             for (Extension extension : extensions)
             {
-                processed = true;
                 try
                 {
-                    MetaMessage.Mutable processedMetaMessage = extension.metaIncoming(metaMessage);
-                    if (processedMetaMessage != null)
-                        result.add(processedMetaMessage);
-                    else
-                        logger.debug("Extension {} signalled to skip metaMessage {}", extension, metaMessage);
+                    if (message instanceof MetaMessage.Mutable)
+                        message = extension.metaIncoming((MetaMessage.Mutable)message);
+                    else if (message instanceof Message.Mutable)
+                        message = extension.incoming((Message.Mutable)message);
+
+                    if (message == null)
+                    {
+                        logger.debug("Extension {} signalled to skip message {}", extension, message);
+                        break;
+                    }
                 }
                 catch (Exception x)
                 {
                     logger.debug("Exception while invoking extension " + extension, x);
-                    result.add(metaMessage);
                 }
             }
-            if (!processed)
-                result.add(metaMessage);
+            if (message != null)
+                result.add(message);
         }
-        return result.toArray(new MetaMessage.Mutable[result.size()]);
+        return result;
     }
 
     protected void processHandshake(MetaMessage handshake)
@@ -312,12 +332,17 @@ public class StandardClientBayeux implements ClientBayeux
         followAdvice();
     }
 
+    protected void processMessage(Message message)
+    {
+        channels.notifySubscribers(getMutableChannel(message.getChannelName()), message);
+    }
+
     protected void processDisconnect(MetaMessage metaMessage)
     {
         metaChannels.notifySuscribers(getMutableMetaChannel(MetaChannelType.DISCONNECT), metaMessage);
     }
 
-    protected void processUnsuccessful(MetaMessage metaMessage)
+    protected void processUnsuccessful(CommonMessage metaMessage)
     {
         // TODO
     }
@@ -365,12 +390,12 @@ public class StandardClientBayeux implements ClientBayeux
     private void asyncConnect()
     {
         logger.debug("Connecting with transport {}", transport);
-        MetaMessage.Mutable request = transport.newMetaMessage(null);
-        request.setMetaChannel(getMetaChannel(MetaChannelType.CONNECT));
-        request.put(Message.CONNECTION_TYPE_FIELD, transport.getType());
-        request.setClientId(clientId);
+        MetaMessage.Mutable request = newMessage();
         request.setId(newMessageId());
-        send(request);
+        request.setClientId(clientId);
+        request.setChannelName(MetaChannelType.CONNECT.getName());
+        request.put(Message.CONNECTION_TYPE_FIELD, transport.getType());
+        send(request, true);
     }
 
     private String newMessageId()
@@ -381,15 +406,47 @@ public class StandardClientBayeux implements ClientBayeux
     private class Listener extends TransportListener.Adapter
     {
         @Override
-        public void onMetaMessages(MetaMessage.Mutable... metaMessages)
+        public void onMessages(List<CommonMessage.Mutable> messages)
         {
-            receive(metaMessages);
+            receive(messages);
         }
     }
 
     private boolean isDisconnected()
     {
         return state == State.DISCONNECTED;
+    }
+
+    public void subscribe(Channel channel)
+    {
+        logger.debug("Subscribing to channel {}", channel);
+        MetaMessage.Mutable request = newMessage();
+        request.setId(newMessageId());
+        request.setClientId(clientId);
+        request.setChannelName(MetaChannelType.SUBSCRIBE.getName());
+        request.put(Message.SUBSCRIPTION_FIELD, channel.getName());
+        send(request, true);
+    }
+
+    public void unsubscribe(Channel channel)
+    {
+        logger.debug("Unsubscribing from channel {}", channel);
+        MetaMessage.Mutable request = newMessage();
+        request.setId(newMessageId());
+        request.setClientId(clientId);
+        request.setChannelName(MetaChannelType.UNSUBSCRIBE.getName());
+        request.put(Message.SUBSCRIPTION_FIELD, channel.getName());
+        send(request, true);
+    }
+
+    public void publish(Channel channel, Object data)
+    {
+        Message.Mutable message = newMessage();
+        message.setId(newMessageId());
+        message.setClientId(clientId);
+        message.setChannelName(channel.getName());
+        message.setData(data);
+        send(message, false);
     }
 
     private enum State

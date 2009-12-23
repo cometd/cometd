@@ -1,5 +1,6 @@
 package org.cometd.bayeux.client;
 
+import org.cometd.bayeux.MetaMessage;
 
 public interface MetaMessageListener //extends MetaChannel.Listener
 {

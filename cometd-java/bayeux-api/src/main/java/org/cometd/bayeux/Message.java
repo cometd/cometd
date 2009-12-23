@@ -1,11 +1,9 @@
 package org.cometd.bayeux;
 
-import java.util.Map;
-
 /**
  * @version $Revision$ $Date: 2009-12-08 09:42:45 +1100 (Tue, 08 Dec 2009) $
  */
-public interface Message extends Map<String, Object>
+public interface Message extends CommonMessage
 {
     /**Field names inside Bayeux messages - clientId field*/
     public static final String CLIENT_ID_FIELD ="clientId";
@@ -52,20 +50,19 @@ public interface Message extends Map<String, Object>
     /**Service channel names-starts with*/
     public static final String SERVICE="/service";
 
-    String getId();
-    String getClientId();
-    String getChannelName();
     Object getData();
-    Struct getExt(boolean create);
-    Struct getAdvice();
-    boolean isLazy();
 
-    interface Mutable extends Message
+    interface Mutable extends CommonMessage.Mutable, Message
     {
-        Struct.Mutable getExt(boolean create);
-        Struct.Mutable getAdvice();
+        void setData(Object data);
+
+        boolean isLazy();
+
         void setLazy(boolean lazy);
+
+        // TODO: move to parent interface ?
         Message getAssociated();
+
         void setAssociated(Message message);
     }
 }

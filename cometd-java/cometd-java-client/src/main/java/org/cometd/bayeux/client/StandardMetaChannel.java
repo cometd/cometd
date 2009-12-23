@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.cometd.bayeux.MetaChannelType;
+import org.cometd.bayeux.MetaMessage;
 
 /**
  * @version $Revision$ $Date$

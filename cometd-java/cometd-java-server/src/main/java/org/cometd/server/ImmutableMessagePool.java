@@ -244,7 +244,7 @@ public class ImmutableMessagePool
         @Override
         protected Map newMap()
         {
-            return newMessage();
+            return (Map)newMessage();
         }
 
         @Override
@@ -272,7 +272,7 @@ public class ImmutableMessagePool
         @Override
         protected Map newMap()
         {
-            return newMessage();
+            return (Map)newMessage();
         }
 
         @Override

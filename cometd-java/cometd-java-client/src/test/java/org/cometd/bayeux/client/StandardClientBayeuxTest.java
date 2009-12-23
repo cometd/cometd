@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.Extension;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.MetaChannelType;
+import org.cometd.bayeux.MetaMessage;
 import org.cometd.bayeux.client.transport.LocalTransport;
 import org.junit.After;
 import org.junit.Assert;
@@ -68,7 +69,7 @@ public class StandardClientBayeuxTest
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
         MetaMessage metaMessage = metaMessageRef.get();
         assertNotNull(metaMessage);
-        assertEquals(MetaChannelType.HANDSHAKE, metaMessage.getMetaChannel().getType());
+        assertEquals(MetaChannelType.HANDSHAKE.getName(), metaMessage.getChannelName());
         assertTrue(metaMessage.isSuccessful());
 
         bayeux.disconnect();
@@ -83,7 +84,7 @@ public class StandardClientBayeuxTest
             @Override
             public MetaMessage.Mutable metaOutgoing(MetaMessage.Mutable metaMessage)
             {
-                if (metaMessage.getMetaChannel().getType() == MetaChannelType.CONNECT)
+                if (MetaChannelType.CONNECT.getName().equals(metaMessage.getChannelName()))
                 {
                     latch.countDown();
                 }
@@ -106,7 +107,7 @@ public class StandardClientBayeuxTest
             @Override
             public MetaMessage.Mutable metaIncoming(MetaMessage.Mutable metaMessage)
             {
-                if (metaMessage.getMetaChannel().getType() == MetaChannelType.HANDSHAKE)
+                if (MetaChannelType.HANDSHAKE.getName().equals(metaMessage.getChannelName()))
                 {
                     handshakeLatch.countDown();
                 }

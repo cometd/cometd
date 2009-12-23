@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.cometd.bayeux.client.MetaMessage;
-import org.cometd.bayeux.client.StandardMetaMessage;
+import org.cometd.bayeux.CommonMessage;
+import org.cometd.bayeux.IMessage;
+import org.cometd.bayeux.StandardMessage;
+import org.eclipse.jetty.util.ajax.JSON;
 
 /**
  * @version $Revision$ $Date$
@@ -32,10 +34,10 @@ public abstract class AbstractTransport implements Transport
         listeners.remove(listener);
     }
 
-    protected void notifyMetaMessages(MetaMessage.Mutable... metaMessages)
+    protected void notifyMessages(List<CommonMessage.Mutable> messages)
     {
         for (TransportListener listener : listeners)
-            listener.onMetaMessages(metaMessages);
+            listener.onMessages(messages);
     }
 
     protected void notifyConnectException(Throwable x)
@@ -62,14 +64,41 @@ public abstract class AbstractTransport implements Transport
             listener.onProtocolError();
     }
 
-    public MetaMessage.Mutable newMetaMessage(Map<String, Object> fields)
+    public IMessage.Mutable newMessage()
     {
-        return fields == null ? new StandardMetaMessage() : new StandardMetaMessage(fields);
+        return newMessage(null);
+    }
+
+    public IMessage.Mutable newMessage(Map<String, Object> fields)
+    {
+        return new StandardMessage(fields);
     }
 
     @Override
     public String toString()
     {
         return getType();
+    }
+
+    protected List<CommonMessage.Mutable> toMessages(String content)
+    {
+        // TODO: this must be improved
+        List<CommonMessage.Mutable> result = new ArrayList<CommonMessage.Mutable>();
+        Object object = JSON.parse(content);
+        if (object instanceof Map)
+        {
+            Map<String, Object> map = (Map<String, Object>)object;
+            result.add(newMessage(map));
+        }
+        else if (object instanceof Object[])
+        {
+            Object[] objects = (Object[])object;
+            for (Object obj : objects)
+            {
+                Map<String, Object> map = (Map<String, Object>)obj;
+                result.add(newMessage(map));
+            }
+        }
+        return result;
     }
 }
