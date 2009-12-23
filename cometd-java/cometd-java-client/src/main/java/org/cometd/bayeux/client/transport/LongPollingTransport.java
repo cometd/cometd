@@ -1,9 +1,9 @@
 package org.cometd.bayeux.client.transport;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.List;
 
-import org.cometd.bayeux.client.MetaMessage;
+import org.cometd.bayeux.CommonMessage;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
@@ -38,7 +38,7 @@ public class LongPollingTransport extends AbstractTransport
     {
     }
 
-    public void send(MetaMessage.Mutable... messages)
+    public void send(CommonMessage.Mutable... messages)
     {
         HttpExchange httpExchange = new TransportExchange();
         httpExchange.setMethod("POST");
@@ -70,29 +70,8 @@ public class LongPollingTransport extends AbstractTransport
         {
             if (getResponseStatus() == 200)
             {
-                // TODO: this must be improved (in all transports)
-                MetaMessage.Mutable[] result;
-                Object content = JSON.parse(getResponseContent());
-                if (content instanceof Map)
-                {
-                    Map<String, Object> map = (Map<String, Object>)content;
-                    result = new MetaMessage.Mutable[]{newMetaMessage(map)};
-                }
-                else if (content instanceof Object[])
-                {
-                    Object[] maps = (Object[])content;
-                    result = new MetaMessage.Mutable[maps.length];
-                    for (int i = 0; i < maps.length; i++)
-                    {
-                        Map<String, Object> map = (Map<String, Object>)maps[i];
-                        result[i] = newMetaMessage(map);
-                    }
-                }
-                else
-                {
-                    result = new MetaMessage.Mutable[0];
-                }
-                notifyMetaMessages(result);
+                List<CommonMessage.Mutable> messages = toMessages(getResponseContent());
+                notifyMessages(messages);
             }
             else
             {

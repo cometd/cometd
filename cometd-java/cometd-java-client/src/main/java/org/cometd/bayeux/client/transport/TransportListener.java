@@ -1,13 +1,15 @@
 package org.cometd.bayeux.client.transport;
 
-import org.cometd.bayeux.client.MetaMessage;
+import java.util.List;
+
+import org.cometd.bayeux.CommonMessage;
 
 /**
  * @version $Revision$ $Date$
  */
 public interface TransportListener
 {
-    void onMetaMessages(MetaMessage.Mutable... metaMessages);
+    void onMessages(List<CommonMessage.Mutable> metaMessages);
 
     void onConnectException(Throwable x);
 
@@ -19,7 +21,7 @@ public interface TransportListener
 
     public static class Adapter implements TransportListener
     {
-        public void onMetaMessages(MetaMessage.Mutable... metaMessages)
+        public void onMessages(List<CommonMessage.Mutable> metaMessages)
         {
         }
 

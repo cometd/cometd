@@ -100,6 +100,11 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         return (Struct.Mutable)get(ADVICE_FIELD);
     }
 
+    public void setAdvice(Struct.Mutable advice)
+    {
+        put(ADVICE_FIELD, advice);
+    }
+
     /* ------------------------------------------------------------ */
     public Message getAssociated()
     {
@@ -111,10 +116,20 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         return (String)get(CHANNEL_FIELD);
     }
 
+    public void setChannelName(String channelName)
+    {
+        put(CHANNEL_FIELD, channelName);
+    }
+
     /* ------------------------------------------------------------ */
     public String getClientId()
     {
         return (String)get(CLIENT_ID_FIELD);
+    }
+
+    public void setClientId(String clientId)
+    {
+        put(CLIENT_ID_FIELD, clientId);
     }
 
     /* ------------------------------------------------------------ */
@@ -123,16 +138,31 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         return get(DATA_FIELD);
     }
 
+    public void setData(Object data)
+    {
+        put(DATA_FIELD, data);
+    }
+
     /* ------------------------------------------------------------ */
     public Struct.Mutable getExt(boolean create)
     {
         return (Struct.Mutable)get(EXT_FIELD);
     }
 
+    public void setExt(Struct.Mutable ext)
+    {
+        put(EXT_FIELD, ext);
+    }
+
     /* ------------------------------------------------------------ */
     public String getId()
     {
         return (String)get(ID_FIELD);
+    }
+
+    public void setId(String id)
+    {
+        put(ID_FIELD, id);
     }
 
     /* ------------------------------------------------------------ */

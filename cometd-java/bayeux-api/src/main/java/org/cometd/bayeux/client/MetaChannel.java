@@ -14,6 +14,7 @@
 package org.cometd.bayeux.client;
 
 import org.cometd.bayeux.MetaChannelType;
+import org.cometd.bayeux.MetaMessage;
 
 public interface MetaChannel //extends Channel
 {

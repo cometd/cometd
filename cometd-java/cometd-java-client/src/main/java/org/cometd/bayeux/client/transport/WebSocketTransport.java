@@ -1,6 +1,8 @@
 package org.cometd.bayeux.client.transport;
 
-import org.cometd.bayeux.client.MetaMessage;
+import java.util.List;
+
+import org.cometd.bayeux.CommonMessage;
 import org.cometd.websocket.Message;
 import org.cometd.websocket.TextMessage;
 import org.cometd.websocket.client.Client;
@@ -36,7 +38,7 @@ public class WebSocketTransport extends AbstractTransport
         accept = client.open();
     }
 
-    public void send(MetaMessage.Mutable... messages)
+    public void send(CommonMessage.Mutable... messages)
     {
         String content = JSON.toString(messages);
         Message message = new TextMessage(content);
@@ -51,9 +53,8 @@ public class WebSocketTransport extends AbstractTransport
             // TODO: explicit cast to TextMessage
             TextMessage textMessage = (TextMessage)message;
             String text = textMessage.getText();
-            Object content = JSON.parse(text);
-            // TODO: convert from map to MetaMessage
-            notifyMetaMessages((MetaMessage.Mutable[])content);
+            List<CommonMessage.Mutable> messages = toMessages(text);
+            notifyMessages(messages);
         }
     }
 }

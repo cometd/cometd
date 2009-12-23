@@ -2,7 +2,8 @@ package org.cometd.bayeux.client.transport;
 
 import java.util.Map;
 
-import org.cometd.bayeux.client.MetaMessage;
+import org.cometd.bayeux.CommonMessage;
+import org.cometd.bayeux.IMessage;
 
 /**
  * @version $Revision$ $Date$
@@ -25,7 +26,9 @@ public interface Transport
 
     void destroy();
 
-    MetaMessage.Mutable newMetaMessage(Map<String, Object> fields);
+    IMessage.Mutable newMessage();
 
-    void send(MetaMessage.Mutable... metaMessages);
+    IMessage.Mutable newMessage(Map<String, Object> fields);
+
+    void send(CommonMessage.Mutable... metaMessages);
 }

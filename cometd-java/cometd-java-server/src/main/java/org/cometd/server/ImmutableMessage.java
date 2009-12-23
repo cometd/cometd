@@ -17,7 +17,7 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
         protected void onChange(String key) throws UnsupportedOperationException
         {
             _json=null;
-        } ;
+        }
     };
     private final MutableMessage _mutable;
     private final Map.Entry<String,Object> _advice;
@@ -313,14 +313,29 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
             return (Struct.Mutable)_advice.getValue();
         }
 
+        public void setAdvice(Struct.Mutable advice)
+        {
+            _advice.setValue(advice);
+        }
+
         public String getChannelName()
         {
             return (String)get(CHANNEL_FIELD);
         }
 
+        public void setChannelName(String channelName)
+        {
+            put(CHANNEL_FIELD, channelName);
+        }
+
         public String getClientId()
         {
             return (String)_clientId.getValue();
+        }
+
+        public void setClientId(String clientId)
+        {
+            _clientId.setValue(clientId);
         }
 
         public Object getData()
@@ -338,9 +353,19 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
             return (Struct.Mutable)_ext.getValue();
         }
 
+        public void setExt(Struct.Mutable ext)
+        {
+            _ext.setValue(ext);
+        }
+
         public String getId()
         {
             return (String)_id.getValue();
+        }
+
+        public void setId(String id)
+        {
+            _id.setValue(id);
         }
 
         public boolean isLazy()
@@ -386,5 +411,4 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
             ImmutableMessage.this.setAssociated(message);
         }
     }
-
 }

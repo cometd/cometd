@@ -14,8 +14,6 @@
 //
 package org.cometd.bayeux;
 
-import org.cometd.bayeux.client.MetaMessage;
-
 /**
  * @version $Revision$ $Date: 2009-12-07 23:42:45 +0100 (Mon, 07 Dec 2009) $
  */

@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.cometd.bayeux.CommonMessage;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.MetaChannelType;
+import org.cometd.bayeux.MetaMessage;
 import org.cometd.bayeux.StandardStruct;
 import org.cometd.bayeux.Struct;
-import org.cometd.bayeux.client.MetaMessage;
 
 /**
  * @version $Revision$ $Date$
@@ -30,46 +32,63 @@ public class LocalTransport extends AbstractTransport
     {
     }
 
-    public void send(final MetaMessage.Mutable... metaMessages)
+    public void send(final CommonMessage.Mutable... messages)
     {
         new Thread(new Runnable()
         {
             public void run()
             {
-                process(metaMessages);
+                process(messages);
             }
         }).start();
     }
 
-    private void process(MetaMessage... metaMessages)
+    private void process(CommonMessage... messages)
     {
-        List<MetaMessage.Mutable> responses = new ArrayList<MetaMessage.Mutable>();
-        for (MetaMessage metaMessage : metaMessages)
+        List<CommonMessage.Mutable> responses = new ArrayList<CommonMessage.Mutable>();
+        for (CommonMessage message : messages)
         {
-            switch (metaMessage.getMetaChannel().getType())
+            MetaChannelType type = MetaChannelType.from(message.getChannelName());
+            if (type == null)
             {
-                case HANDSHAKE:
-                    responses.add(processHandshake(metaMessage));
-                    break;
-                case CONNECT:
-                    responses.add(processConnect(metaMessage));
-                    break;
-                case DISCONNECT:
-                    responses.add(processDisconnect(metaMessage));
-                    break;
-                default:
-                    throw new TransportException();
+                Message.Mutable response = processPublish(message);
+                if (response != null)
+                    responses.add(response);
+            }
+            else if (type == MetaChannelType.HANDSHAKE)
+            {
+                responses.add(processHandshake(message));
+            }
+            else if (type == MetaChannelType.CONNECT)
+            {
+                responses.add(processConnect(message));
+            }
+            else if (type == MetaChannelType.SUBSCRIBE)
+            {
+                responses.add(processSubscribe(message));
+            }
+            else if (type == MetaChannelType.UNSUBSCRIBE)
+            {
+                responses.add(processUnsubscribe(message));
+            }
+            else if (type == MetaChannelType.DISCONNECT)
+            {
+                responses.add(processDisconnect(message));
+            }
+            else
+            {
+                throw new TransportException();
             }
         }
-        notifyMetaMessages(responses.toArray(new MetaMessage.Mutable[responses.size()]));
+        notifyMessages(responses);
     }
 
-    private MetaMessage.Mutable processHandshake(MetaMessage request)
+    private MetaMessage.Mutable processHandshake(CommonMessage request)
     {
-        MetaMessage.Mutable response = newMetaMessage(null);
-        response.setMetaChannel(request.getMetaChannel());
-        response.setSuccessful(true);
+        MetaMessage.Mutable response = newMessage(null);
         response.setId(request.getId());
+        response.setChannelName(request.getChannelName());
+        response.setSuccessful(true);
         response.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, request.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD));
         response.setClientId(String.valueOf(clientIds.incrementAndGet()));
         Struct.Mutable advice = new StandardStruct();
@@ -79,12 +98,12 @@ public class LocalTransport extends AbstractTransport
         return response;
     }
 
-    private MetaMessage.Mutable processConnect(MetaMessage request)
+    private MetaMessage.Mutable processConnect(CommonMessage request)
     {
-        MetaMessage.Mutable response = newMetaMessage(null);
-        response.setMetaChannel(request.getMetaChannel());
-        response.setSuccessful(true);
+        MetaMessage.Mutable response = newMessage(null);
         response.setId(request.getId());
+        response.setChannelName(request.getChannelName());
+        response.setSuccessful(true);
         Struct.Mutable advice = new StandardStruct();
         advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
         advice.put(Message.INTERVAL_FIELD, 5000L);
@@ -92,13 +111,45 @@ public class LocalTransport extends AbstractTransport
         return response;
     }
 
-    private MetaMessage.Mutable processDisconnect(MetaMessage request)
+    private MetaMessage.Mutable processSubscribe(CommonMessage request)
     {
-        MetaMessage.Mutable response = newMetaMessage(null);
-        response.setMetaChannel(request.getMetaChannel());
-        response.setSuccessful(true);
+        MetaMessage.Mutable response = newMessage(null);
         response.setId(request.getId());
         response.setClientId(request.getClientId());
+        response.setChannelName(request.getChannelName());
+        response.setSuccessful(true);
+        response.put(Message.SUBSCRIPTION_FIELD, request.get(Message.SUBSCRIPTION_FIELD));
+        return response;
+    }
+
+    private MetaMessage.Mutable processUnsubscribe(CommonMessage request)
+    {
+        MetaMessage.Mutable response = newMessage(null);
+        response.setId(request.getId());
+        response.setClientId(request.getClientId());
+        response.setChannelName(request.getChannelName());
+        response.setSuccessful(true);
+        response.put(Message.SUBSCRIPTION_FIELD, request.get(Message.SUBSCRIPTION_FIELD));
+        return response;
+    }
+
+    private Message.Mutable processPublish(CommonMessage request)
+    {
+        Message.Mutable response = newMessage();
+        response.setId(request.getId());
+        response.setClientId(request.getClientId());
+        response.setChannelName(request.getChannelName());
+        response.put(Message.SUCCESSFUL_FIELD, true);
+        return response;
+    }
+
+    private MetaMessage.Mutable processDisconnect(CommonMessage request)
+    {
+        MetaMessage.Mutable response = newMessage(null);
+        response.setId(request.getId());
+        response.setClientId(request.getClientId());
+        response.setChannelName(request.getChannelName());
+        response.setSuccessful(true);
         return response;
     }
 }
