@@ -5,9 +5,9 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
-import com.webtide.wharf.io.async.AsyncCoordinator;
 import org.cometd.websocket.Message;
 import org.cometd.websocket.WebSocketException;
+import org.cometd.wharf.async.AsyncCoordinator;
 
 /**
  * @version $Revision$ $Date$

@@ -54,10 +54,10 @@ public class ClientWebSocketPushParser extends WebSocketPushParser
     @Override
     public void parse(ByteBuffer buffer)
     {
-        if (!handshake)
+        if (handshake)
+            parseHandshakeResponse(buffer);
+        else
             super.parse(buffer);
-
-        parseHandshakeResponse(buffer);
     }
 
     private void parseHandshakeResponse(ByteBuffer buffer)
