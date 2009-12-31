@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
  */
 abstract class WebSocketPushScanner
 {
-    public abstract boolean scan(ByteBuffer buffer);
+    abstract boolean scan(ByteBuffer buffer);
 
     protected boolean isWhitespace(byte b)
     {

@@ -1,30 +1,36 @@
-package org.cometd.websocket.parser.push;
+package org.cometd.bwtp.parser.push;
 
 import java.nio.ByteBuffer;
 
-import org.cometd.websocket.WebSocketException;
+import org.cometd.bwtp.parser.ParseException;
 
 /**
- * @version $Revision$ $Date$
+ * @version $Revision: 849 $ $Date$
  */
-abstract class HeaderWebSocketPushScanner extends WebSocketPushScanner
+public abstract class HeadersBWTPPushScanner extends BWTPPushScanner
 {
-    private State state = State.BEFORE_NAME;
     private final Token name = new Token();
     private final Token value = new Token();
+    private State state = State.BEFORE_NAME;
+    private int count;
+    private byte firstEOL;
+    private byte secondEOL;
 
-    public boolean scan(ByteBuffer buffer)
+    @Override
+    public boolean scan(ByteBuffer buffer, int limit)
     {
         while (buffer.hasRemaining())
         {
             byte currByte = buffer.get();
+            ++count;
             switch (state)
             {
                 case BEFORE_NAME:
                     if (isWhitespace(currByte))
                     {
                         if (isLineSeparator(currByte))
-                            throw new WebSocketException();
+                            // No headers
+                            return done(true);
                     }
                     else
                     {
@@ -40,7 +46,7 @@ abstract class HeaderWebSocketPushScanner extends WebSocketPushScanner
                     else if (isWhitespace(currByte))
                     {
                         if (isLineSeparator(currByte))
-                            throw new WebSocketException();
+                            throw new ParseException();
                     }
                     else
                     {
@@ -51,7 +57,7 @@ abstract class HeaderWebSocketPushScanner extends WebSocketPushScanner
                     if (isWhitespace(currByte))
                     {
                         if (isLineSeparator(currByte))
-                            throw new WebSocketException();
+                            throw new ParseException();
                     }
                     else
                     {
@@ -63,7 +69,10 @@ abstract class HeaderWebSocketPushScanner extends WebSocketPushScanner
                     if (isLineSeparator(currByte))
                     {
                         state = State.AFTER_VALUE;
-                        onHeader(name.getByteBuffer(), value.getByteBuffer());
+                        firstEOL = currByte;
+                        onHeader(utf8Decode(name.getByteBuffer()), utf8Decode(value.getByteBuffer()));
+                        if (count == limit)
+                            return done(true);
                     }
                     else
                     {
@@ -75,7 +84,7 @@ abstract class HeaderWebSocketPushScanner extends WebSocketPushScanner
                     {
                         if (isLineSeparator(currByte))
                         {
-                            if (currByte == buffer.get(buffer.position() - 2))
+                            if (currByte == firstEOL)
                             {
                                 // We saw a EOL, here we see another and the 2 are equal, assume headers completed:
                                 // Host: localhost:8080\n
@@ -86,24 +95,28 @@ abstract class HeaderWebSocketPushScanner extends WebSocketPushScanner
                             {
                                 // We saw 2 different EOL characters, assume it's just EOL and loop
                                 state = State.EOL;
+                                secondEOL = currByte;
+                                if (count == limit)
+                                    return done(true);
                             }
                         }
                         else
                         {
-                            throw new WebSocketException();
+                            throw new ParseException();
                         }
                     }
                     else
                     {
                         reset();
-                        // Unget the character and loop
+                        // Push back the character and loop
                         buffer.position(buffer.position() - 1);
+                        --count;
                     }
                     break;
                 case EOL:
                     if (isLineSeparator(currByte))
                     {
-                        if (currByte == buffer.get(buffer.position() - 2))
+                        if (currByte == secondEOL)
                         {
                             // We saw 3 EOLs, of which the last 2 are equal, assume headers completed:
                             // Host: localhost:8080\r\n
@@ -118,8 +131,9 @@ abstract class HeaderWebSocketPushScanner extends WebSocketPushScanner
                     else
                     {
                         reset();
-                        // Unget the character and loop
+                        // Push back the character and loop
                         buffer.position(buffer.position() - 1);
+                        --count;
                     }
                     break;
                 case AFTER_EOL:
@@ -128,9 +142,9 @@ abstract class HeaderWebSocketPushScanner extends WebSocketPushScanner
                         // We saw the 4th EOL character, we are done
                         return done(true);
                     }
-                    throw new WebSocketException();
+                    throw new ParseException();
                 default:
-                    throw new WebSocketException();
+                    throw new ParseException();
             }
         }
         return done(false);
@@ -139,17 +153,22 @@ abstract class HeaderWebSocketPushScanner extends WebSocketPushScanner
     private boolean done(boolean result)
     {
         if (result)
+        {
             reset();
+            count = 0;
+        }
         return result;
     }
 
-    protected abstract void onHeader(ByteBuffer name, ByteBuffer value);
+    protected abstract void onHeader(String name, String value);
 
     private void reset()
     {
         name.reset();
         value.reset();
         state = State.BEFORE_NAME;
+        firstEOL = 0;
+        secondEOL = 0;
     }
 
     private enum State

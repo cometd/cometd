@@ -3,11 +3,11 @@ package org.cometd.websocket;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-import com.webtide.wharf.io.async.AsyncCoordinator;
-import com.webtide.wharf.io.async.AsyncInterpreter;
 import org.cometd.websocket.client.Listener;
 import org.cometd.websocket.parser.WebSocketParser;
 import org.cometd.websocket.parser.WebSocketParserListener;
+import org.cometd.wharf.async.AsyncCoordinator;
+import org.cometd.wharf.async.AsyncInterpreter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

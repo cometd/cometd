@@ -8,17 +8,17 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 
-import com.webtide.wharf.io.ClientConnector;
-import com.webtide.wharf.io.async.AsyncConnectorListener;
-import com.webtide.wharf.io.async.AsyncCoordinator;
-import com.webtide.wharf.io.async.AsyncInterpreter;
-import com.webtide.wharf.io.async.StandardAsyncClientConnector;
 import org.cometd.websocket.Message;
 import org.cometd.websocket.WebSocketAsyncInterpreter;
 import org.cometd.websocket.generator.StandardWebSocketGenerator;
 import org.cometd.websocket.generator.WebSocketGenerator;
 import org.cometd.websocket.parser.WebSocketParser;
 import org.cometd.websocket.parser.push.ClientWebSocketPushParser;
+import org.cometd.wharf.ClientConnector;
+import org.cometd.wharf.async.AsyncConnectorListener;
+import org.cometd.wharf.async.AsyncCoordinator;
+import org.cometd.wharf.async.AsyncInterpreter;
+import org.cometd.wharf.async.StandardAsyncClientConnector;
 
 /**
  * @version $Revision$ $Date$
