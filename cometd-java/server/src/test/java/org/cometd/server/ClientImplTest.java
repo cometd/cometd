@@ -25,7 +25,6 @@ public class ClientImplTest extends TestCase
     protected StandaloneClient _client;
     protected Message _message;
 
-
     protected void setUp() throws Exception
     {
         _client = new StandaloneClient();
@@ -149,6 +148,7 @@ public class ClientImplTest extends TestCase
         AbstractBayeux bayeux = new BayeuxStub();
         //bayeux.setNodeId("nodeid");
         _client = new StandaloneClient(bayeux);
+        bayeux.addClient(_client,null);
 
         // TODO
     }

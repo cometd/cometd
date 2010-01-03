@@ -47,7 +47,9 @@ public class ContinuationBayeux extends AbstractBayeux
     @Override
     public ClientImpl newRemoteClient()
     {
-        return new ContinuationClient(this);
+        ClientImpl client=new ContinuationClient(this);
+        addClient(client,null);
+        return client;
     }
 
     /* ------------------------------------------------------------ */

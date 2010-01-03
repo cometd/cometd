@@ -374,6 +374,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     public Client newClient(String idPrefix)
     {
         ClientImpl client=new ClientImpl(this,idPrefix);
+        addClient(client,idPrefix);
         return client;
     }
 
