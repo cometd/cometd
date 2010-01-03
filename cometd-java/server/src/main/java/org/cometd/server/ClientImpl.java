@@ -71,7 +71,6 @@ public class ClientImpl implements Client
     {
         _bayeux=bayeux;
         _maxQueue=bayeux.getMaxClientQueue();
-        _bayeux.addClient(this,null);
         if (_bayeux.isLogInfo())
             _bayeux.logInfo("newClient: " + this);
     }
@@ -81,8 +80,6 @@ public class ClientImpl implements Client
     {
         _bayeux=bayeux;
         _maxQueue=0;
-
-        _bayeux.addClient(this,idPrefix);
 
         if (_bayeux.isLogInfo())
             _bayeux.logInfo("newClient: " + this);
