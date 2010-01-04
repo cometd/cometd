@@ -52,22 +52,30 @@ public interface ServerChannel extends Channel
      */
     void setPersistent(boolean persistent);
 
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /**
+     */
     interface ServerChannelListener extends Channel.ChannelListener
     {}
 
     /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /**
+     */
     public interface PublishListener extends ServerChannelListener
     {
         void onMessage(ServerMessage.Mutable message);
     }
 
     /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /**
+     */
     public interface SubscriptionListener extends ServerChannelListener
     {
-        /* ------------------------------------------------------------ */
         public void subscribed(ServerSession client, Channel channel);
-
-        /* ------------------------------------------------------------ */
         public void unsubscribed(ServerSession client, Channel channel);
     }
 }
