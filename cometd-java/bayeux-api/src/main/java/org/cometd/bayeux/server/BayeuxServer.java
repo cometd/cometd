@@ -64,6 +64,16 @@ public interface BayeuxServer extends Bayeux
 
 
     /* ------------------------------------------------------------ */
+    /**
+     * Get the current transport for the current thread.
+     * A transport object will be: <ul>
+     * <li>A javax.servlet.http.HttpServletRequest instance for a HTTP transport
+     * <li>An org.eclipse.jetty.websocket.WebSocket instance for WebSocket transports
+     * </ul>
+     */
+    public Object getCurrentTransport();
+
+    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /**
      */
@@ -90,6 +100,7 @@ public interface BayeuxServer extends Bayeux
         public void sessionRemoved(BayeuxServer server, ServerSession channel,boolean timedout);
     }
 
+    /* ------------------------------------------------------------ */
     public interface SubscriptionListener extends ServerChannelListener
     {
         public void subscribed(ServerSession session, Channel channel);
