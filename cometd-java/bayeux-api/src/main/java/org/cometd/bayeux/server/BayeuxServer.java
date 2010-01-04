@@ -26,9 +26,9 @@ public interface BayeuxServer extends Bayeux
     ServerChannel getServerChannel(String channelId, boolean create);
     
     /* ------------------------------------------------------------ */
-    /**
-     * @param clientId
-     * @return
+    /** Get a server session my ID
+     * @param clientId the ID
+     * @return the server session or null if no such valid session exists.
      */
     ServerSession getServerSession(String clientId);
 
