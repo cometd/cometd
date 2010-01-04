@@ -14,39 +14,44 @@
 //
 package org.cometd.bayeux;
 
+
 /**
- * @version $Revision$ $Date: 2009-12-07 23:42:45 +0100 (Mon, 07 Dec 2009) $
+ * Cometd extension interface.
+ * <p>
+ * This interface is used both for server extensions and for client
+ * extensions.
+ * 
+ * @see Bayeux#addExtension(Extension)
+ * @see Session#addExtension(Extension)
+ *
  */
 public interface Extension
 {
-    Message.Mutable incoming(Message.Mutable message);
+    /**
+     * @param from
+     * @param message
+     * @return modified message or null to discard message
+     */
+    Message rcv(Session from, Message.Mutable message);
 
-    MetaMessage.Mutable metaIncoming(MetaMessage.Mutable metaMessage);
+    /**
+     * @param from
+     * @param message
+     * @return modified message
+     */
+    Message rcvMeta(Session from, Message.Mutable message);
 
-    Message.Mutable outgoing(Message.Mutable message);
+    /**
+     * @param from
+     * @param message
+     * @return modified message or null to discard message
+     */
+    Message send(Session from, Message.Mutable message);
 
-    MetaMessage.Mutable metaOutgoing(MetaMessage.Mutable metaMessage);
-
-    public static class Adapter implements Extension
-    {
-        public Message.Mutable incoming(Message.Mutable message)
-        {
-            return message;
-        }
-
-        public MetaMessage.Mutable metaIncoming(MetaMessage.Mutable metaMessage)
-        {
-            return metaMessage;
-        }
-
-        public Message.Mutable outgoing(Message.Mutable message)
-        {
-            return message;
-        }
-
-        public MetaMessage.Mutable metaOutgoing(MetaMessage.Mutable metaMessage)
-        {
-            return metaMessage;
-        }
-    }
+    /**
+     * @param from
+     * @param message
+     * @return modified message
+     */
+    Message sendMeta(Session from, Message.Mutable message);
 }

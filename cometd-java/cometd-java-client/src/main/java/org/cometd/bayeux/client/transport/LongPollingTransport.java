@@ -1,26 +1,24 @@
 package org.cometd.bayeux.client.transport;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.concurrent.TimeoutException;
 
-import org.cometd.bayeux.CommonMessage;
+import bayeux.MetaMessage;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 
 /**
  * @version $Revision$ $Date$
  */
-public class LongPollingTransport extends AbstractTransport
+public class LongPollingTransport implements Transport
 {
-    private final String uri;
     private final HttpClient httpClient;
 
-    public LongPollingTransport(String uri, HttpClient httpClient)
+    public LongPollingTransport(HttpClient httpClient)
     {
-        this.uri = uri;
         this.httpClient = httpClient;
     }
 
@@ -34,35 +32,38 @@ public class LongPollingTransport extends AbstractTransport
         return true;
     }
 
-    public void init()
+    public void send(Exchange exchange, boolean synchronous)
     {
-    }
-
-    public void send(CommonMessage.Mutable... messages)
-    {
-        HttpExchange httpExchange = new TransportExchange();
+        HttpExchange httpExchange = new TransportExchange(exchange);
         httpExchange.setMethod("POST");
         // TODO: handle extra path for handshake, connect and disconnect
-        httpExchange.setURL(uri);
+        httpExchange.setURL(exchange.getURI().toString());
 
-        String content = JSON.toString(messages);
-        httpExchange.setRequestContentType("application/json;charset=UTF-8");
+        String content = JSON.toString(exchange.getRequests());
+        httpExchange.setRequestContentType("application/json");
         try
         {
             httpExchange.setRequestContent(new ByteArrayBuffer(content, "UTF-8"));
             httpClient.send(httpExchange);
+
+            if (synchronous)
+                httpExchange.waitForDone();
         }
         catch (Exception x)
         {
-            notifyException(x);
+            // TODO: call exchange.failure(); instead
+            throw new TransportException(x);
         }
     }
 
     private class TransportExchange extends ContentExchange
     {
-        private TransportExchange()
+        private final Exchange exchange;
+
+        private TransportExchange(Exchange exchange)
         {
             super(true);
+            this.exchange = exchange;
         }
 
         @Override
@@ -70,31 +71,33 @@ public class LongPollingTransport extends AbstractTransport
         {
             if (getResponseStatus() == 200)
             {
-                List<CommonMessage.Mutable> messages = toMessages(getResponseContent());
-                notifyMessages(messages);
+                // TODO: parse JSON response into MetaMessages
+                MetaMessage[] responses = null;
+                exchange.success(responses);
             }
             else
             {
-                notifyProtocolError();
+                // TODO
+                exchange.failure(null);
             }
         }
 
         @Override
         protected void onConnectionFailed(Throwable x)
         {
-            notifyConnectException(x);
+            exchange.failure(new TransportException(x));
         }
 
         @Override
         protected void onException(Throwable x)
         {
-            notifyException(x);
+            exchange.failure(new TransportException(x));
         }
 
         @Override
         protected void onExpire()
         {
-            notifyExpire();
+            exchange.failure(new TransportException(new TimeoutException()));
         }
     }
 }

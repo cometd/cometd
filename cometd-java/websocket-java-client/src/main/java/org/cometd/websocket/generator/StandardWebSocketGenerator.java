@@ -3,11 +3,10 @@ package org.cometd.websocket.generator;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 
 import org.cometd.websocket.Message;
 import org.cometd.websocket.WebSocketException;
-import org.cometd.wharf.async.AsyncCoordinator;
+import com.webtide.wharf.io.async.AsyncCoordinator;
 
 /**
  * @version $Revision$ $Date$
@@ -23,7 +22,7 @@ public class StandardWebSocketGenerator implements WebSocketGenerator
         this.buffer = buffer;
     }
 
-    public void handshakeRequest(URI uri, String protocol) throws ClosedChannelException
+    public void handshakeRequest(URI uri, String protocol)
     {
         String scheme = uri.getScheme();
         if (!"ws".equals(scheme) && !"wss".equals(scheme))
@@ -48,7 +47,7 @@ public class StandardWebSocketGenerator implements WebSocketGenerator
         write(utf8Encode(handshake.toString()));
     }
 
-    private void write(byte[] bytes) throws ClosedChannelException
+    private void write(byte[] bytes)
     {
         int offset = 0;
         int count = Math.min(bytes.length, buffer.capacity());
@@ -62,9 +61,9 @@ public class StandardWebSocketGenerator implements WebSocketGenerator
         }
     }
 
-    public void send(Message message) throws ClosedChannelException
+    public void send(Message message)
     {
-        write(message.encode());
+        write(message.asBytes());
     }
 
     private byte[] utf8Encode(String value)

@@ -5,7 +5,5 @@ package org.cometd.websocket;
  */
 public interface Message
 {
-    MessageType getType();
-
-    byte[] encode();
+    byte[] asBytes();
 }
