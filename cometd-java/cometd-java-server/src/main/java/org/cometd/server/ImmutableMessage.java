@@ -1,12 +1,13 @@
 package org.cometd.server;
 
 import java.util.AbstractMap;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Struct;
 import org.eclipse.jetty.util.ajax.JSON;
 
 public class ImmutableMessage extends AbstractMap<String,Object> implements Message, JSON.Generator
@@ -17,22 +18,20 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
         protected void onChange(String key) throws UnsupportedOperationException
         {
             _json=null;
-        }
+        } ;
     };
     private final MutableMessage _mutable;
     private final Map.Entry<String,Object> _advice;
-    private final Map.Entry<String,Object> _channelId;
-    private final Map.Entry<String,Object> _clientId;
     private final Map.Entry<String,Object> _data;
     private final Map.Entry<String,Object> _ext;
-    private final Map.Entry<String,Object> _id;
-
+    
 
     private Message _associated;
     private String _json;
     private boolean _lazy=false;
-
+    
     private final ImmutableMessagePool _pool;
+    
 
     private final AtomicInteger _refs=new AtomicInteger();
 
@@ -41,7 +40,7 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     {
         this(null);
     }
-
+    
     /* ------------------------------------------------------------ */
     public ImmutableMessage(ImmutableMessagePool bayeux)
     {
@@ -49,12 +48,9 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
 
         _mutable = new MutableMessage();
         _advice=_immutable.getEntry(Message.ADVICE_FIELD);
-        _channelId=_immutable.getEntry(Message.CHANNEL_FIELD);
-        _clientId=_immutable.getEntry(Message.CLIENT_ID_FIELD);
         _data=_immutable.getEntry(Message.DATA_FIELD);
         _ext=_immutable.getEntry(Message.EXT_FIELD);
-        _id=_immutable.getEntry(Message.ID_FIELD);
-
+        
     }
 
     /* ------------------------------------------------------------ */
@@ -111,9 +107,9 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     }
 
     /* ------------------------------------------------------------ */
-    public Struct getAdvice()
+    public Map<String, Object> getAdvice()
     {
-        return (Struct)_advice.getValue();
+        return (Map<String, Object>)_mutable._advice.getValue();
     }
 
     /* ------------------------------------------------------------ */
@@ -122,15 +118,16 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
         return _associated;
     }
 
-    public String getChannelName()
+    /* ------------------------------------------------------------ */
+    public String getChannelId()
     {
-        return (String)get(CHANNEL_FIELD);
+        return (String)_mutable._channelId.getValue();
     }
 
     /* ------------------------------------------------------------ */
     public String getClientId()
     {
-        return (String)_clientId.getValue();
+        return (String)_mutable._clientId.getValue();
     }
 
     /* ------------------------------------------------------------ */
@@ -140,21 +137,21 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     }
 
     /* ------------------------------------------------------------ */
-    public Map<String,Object> getDataMap()
+    public Map<String,Object> getDataAsMap()
     {
         return (Map<String,Object>)_data.getValue();
     }
 
     /* ------------------------------------------------------------ */
-    public Struct getExt(boolean create)
+    public Map<String, Object> getExt()
     {
-        return (Struct)_ext.getValue();
+        return (Map<String, Object>)_ext.getValue();
     }
 
     /* ------------------------------------------------------------ */
     public String getId()
     {
-        return (String)_id.getValue();
+        return (String)_mutable._id.getValue();
     }
 
     /* ------------------------------------------------------------ */
@@ -188,7 +185,7 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     /* ------------------------------------------------------------ */
     /**
      * Lazy messages are queued but do not wake up waiting clients.
-     *
+     * 
      * @return true if message is lazy
      */
     public boolean isLazy()
@@ -225,7 +222,7 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     /* ------------------------------------------------------------ */
     /**
      * Lazy messages are queued but do not wake up waiting clients.
-     *
+     * 
      * @param lazy
      *            true if message is lazy
      */
@@ -246,7 +243,7 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     {
         return getJSON();
     }
-
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     class MutableMessage extends AbstractMap<String,Object> implements Message.Mutable
@@ -258,23 +255,23 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
         private final Map.Entry<String,Object> _data;
         private final Map.Entry<String,Object> _ext;
         private final Map.Entry<String,Object> _id;
-
+        
         MutableMessage()
         {
             _mutable.put(Message.ADVICE_FIELD,null);
             _mutable.put(Message.CHANNEL_FIELD,null);
-            _mutable.put(Message.CLIENT_ID_FIELD,null);
+            _mutable.put(Message.CLIENT_FIELD,null);
             _mutable.put(Message.DATA_FIELD,null);
             _mutable.put(Message.EXT_FIELD,null);
             _mutable.put(Message.ID_FIELD,null);
             _advice=_mutable.getEntry(Message.ADVICE_FIELD);
             _channelId=_mutable.getEntry(Message.CHANNEL_FIELD);
-            _clientId=_mutable.getEntry(Message.CLIENT_ID_FIELD);
+            _clientId=_mutable.getEntry(Message.CLIENT_FIELD);
             _data=_mutable.getEntry(Message.DATA_FIELD);
             _ext=_mutable.getEntry(Message.EXT_FIELD);
             _id=_mutable.getEntry(Message.ID_FIELD);
         }
-
+        
         public ImmutableMessage asImmutable()
         {
             return ImmutableMessage.this;
@@ -308,34 +305,47 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
             return _mutable.get(key);
         }
 
-        public Struct.Mutable getAdvice()
+        public Map<String, Object> getAdvice()
         {
-            return (Struct.Mutable)_advice.getValue();
+            return (Map<String, Object>)_advice.getValue();
         }
 
-        public void setAdvice(Struct.Mutable advice)
+        public Map<String, Object> getDataAsMap()
         {
-            _advice.setValue(advice);
+            Map<String, Object> data=(Map<String, Object>)_data.getValue();
+            return data;
+        }
+        
+        public Map<String, Object> getDataAsMap(boolean create)
+        {
+            Map<String, Object> data=(Map<String, Object>)_data.getValue();
+            if (create && data==null)
+            {
+                data=new ImmutableHashMap<String,Object>().asMutable();
+                _data.setValue(data);
+            }
+            return data;
         }
 
-        public String getChannelName()
+        public Map<String, Object> getAdvice(boolean create)
         {
-            return (String)get(CHANNEL_FIELD);
+            Map<String, Object> advice=(Map<String, Object>)_advice.getValue();
+            if (create && advice==null)
+            {
+                advice=new ImmutableHashMap<String,Object>().asMutable();
+                _advice.setValue(advice);
+            }
+            return advice;
         }
 
-        public void setChannelName(String channelName)
+        public String getChannelId()
         {
-            put(CHANNEL_FIELD, channelName);
+            return (String)_channelId.getValue();
         }
 
         public String getClientId()
         {
             return (String)_clientId.getValue();
-        }
-
-        public void setClientId(String clientId)
-        {
-            _clientId.setValue(clientId);
         }
 
         public Object getData()
@@ -348,24 +358,36 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
             return _mutable.getEntry(key);
         }
 
-        public Struct.Mutable getExt(boolean create)
+        public Map<String, Object> getExt()
         {
-            return (Struct.Mutable)_ext.getValue();
+            return (Map<String, Object>)_ext.getValue();
         }
 
-        public void setExt(Struct.Mutable ext)
+        public Map<String,Object> getExt(boolean create)
         {
+            Object ext=_ext.getValue();
+            if (ext==null && !create)
+                return null;
+            
+            if (ext instanceof Map)
+                return (Map<String,Object>)ext;
+            
+            if (ext instanceof JSON.Literal)
+            {
+                JSON json=_pool == null?JSON.getDefault():_pool.getMsgJSON();
+                ext=json.fromJSON(ext.toString());
+                _ext.setValue(ext);
+                return (Map<String,Object>)ext;
+            }
+
+            ext=new HashMap<String,Object>();
             _ext.setValue(ext);
+            return (Map<String,Object>)ext;
         }
 
         public String getId()
         {
             return (String)_id.getValue();
-        }
-
-        public void setId(String id)
-        {
-            _id.setValue(id);
         }
 
         public boolean isLazy()
@@ -410,5 +432,21 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
         {
             ImmutableMessage.this.setAssociated(message);
         }
+
+        public void setClientId(String clientId)
+        {
+            _clientId.setValue(clientId);
+        }
+
+        public void setId(String id)
+        {
+            _id.setValue(id);
+        }
+
+        public void setChannelId(String channelId)
+        {
+            _channelId.setValue(channelId);
+        }
     }
+    
 }

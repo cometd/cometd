@@ -1,7 +1,6 @@
 package org.cometd.websocket.generator;
 
 import java.net.URI;
-import java.nio.channels.ClosedChannelException;
 
 import org.cometd.websocket.Message;
 
@@ -10,7 +9,7 @@ import org.cometd.websocket.Message;
  */
 public interface WebSocketGenerator
 {
-    void handshakeRequest(URI uri, String protocol) throws ClosedChannelException;
+    void handshakeRequest(URI uri, String protocol);
 
-    void send(Message message) throws ClosedChannelException;
+    void send(Message message);
 }

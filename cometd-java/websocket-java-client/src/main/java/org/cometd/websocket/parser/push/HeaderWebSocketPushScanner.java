@@ -63,7 +63,6 @@ abstract class HeaderWebSocketPushScanner extends WebSocketPushScanner
                     if (isLineSeparator(currByte))
                     {
                         state = State.AFTER_VALUE;
-                        onHeader(name.getByteBuffer(), value.getByteBuffer());
                     }
                     else
                     {
@@ -71,6 +70,7 @@ abstract class HeaderWebSocketPushScanner extends WebSocketPushScanner
                     }
                     break;
                 case AFTER_VALUE:
+                    onHeader(name.getByteBuffer(), value.getByteBuffer());
                     if (isWhitespace(currByte))
                     {
                         if (isLineSeparator(currByte))

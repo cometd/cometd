@@ -7,9 +7,7 @@ import java.nio.ByteBuffer;
  */
 public interface WebSocketParser
 {
-    void addListener(WebSocketParserListener listener);
-
-    void removeListener(WebSocketParserListener listener);
+    WebSocketParserListener.Registration registerListener(WebSocketParserListener listener);
 
     void parse(ByteBuffer buffer);
 }

@@ -6,26 +6,30 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.MetaChannelType;
-import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.ajax.JSON;
 
 public class ImmutableMessagePool
 {
-    final private BlockingArrayQueue<ImmutableMessage> _messagePool;
+    final private ConcurrentLinkedQueue<ImmutableMessage> _messagePool;
     final private ConcurrentLinkedQueue<JSON.ReaderSource> _readerPool;
 
     /* ------------------------------------------------------------ */
     public ImmutableMessagePool()
     {
-        _messagePool=new BlockingArrayQueue<ImmutableMessage>(200,200);
-        _readerPool=new ConcurrentLinkedQueue<JSON.ReaderSource>();
+        this(50);
     }
 
+    /* ------------------------------------------------------------ */
+    public ImmutableMessagePool(int capacity)
+    {
+        _messagePool=new ConcurrentLinkedQueue<ImmutableMessage>();
+        _readerPool=new ConcurrentLinkedQueue<JSON.ReaderSource>();
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -91,41 +95,27 @@ public class ImmutableMessagePool
     /* ------------------------------------------------------------ */
     public Message.Mutable newMessage()
     {
-        try
+        ImmutableMessage message=_messagePool.poll();
+        if (message == null)
         {
-            ImmutableMessage message = _messagePool.poll(10,TimeUnit.MICROSECONDS);
-            if (message == null)
-            {
-                message=new ImmutableMessage(this);
-            }
-            message.incRef();
-            return message.asMutable();
+            message=new ImmutableMessage(this);
         }
-        catch(Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+        message.incRef();
+        return message.asMutable();
     }
 
     /* ------------------------------------------------------------ */
     public ImmutableMessage newMessage(Message associated)
     {
-        try
+        ImmutableMessage message=_messagePool.poll();
+        if (message == null)
         {
-            ImmutableMessage message = _messagePool.poll(10,TimeUnit.MICROSECONDS);
-            if (message == null)
-            {
-                message=new ImmutableMessage(this);
-            }
-            message.incRef();
-            if (associated != null)
-                message.setAssociated(associated);
-            return message;
+            message=new ImmutableMessage(this);
         }
-        catch(Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+        message.incRef();
+        if (associated != null)
+            message.setAssociated(associated);
+        return message;
     }
 
     /* ------------------------------------------------------------ */
@@ -197,7 +187,7 @@ public class ImmutableMessagePool
     {
         _fieldStrings.put(Message.ADVICE_FIELD,Message.ADVICE_FIELD);
         _fieldStrings.put(Message.CHANNEL_FIELD,Message.CHANNEL_FIELD);
-        _fieldStrings.put(Message.CLIENT_ID_FIELD,Message.CLIENT_ID_FIELD);
+        _fieldStrings.put(Message.CLIENT_FIELD,Message.CLIENT_FIELD);
         _fieldStrings.put(Message.DATA_FIELD,Message.DATA_FIELD);
         _fieldStrings.put(Message.ERROR_FIELD,Message.ERROR_FIELD);
         _fieldStrings.put(Message.EXT_FIELD,Message.EXT_FIELD);
@@ -208,11 +198,11 @@ public class ImmutableMessagePool
         _fieldStrings.put(Message.TRANSPORT_FIELD,Message.TRANSPORT_FIELD);
         _fieldStrings.put("connectionType","connectionType");
 
-        _valueStrings.put(MetaChannelType.CONNECT.getName(),MetaChannelType.CONNECT.getName());
-        _valueStrings.put(MetaChannelType.DISCONNECT.getName(),MetaChannelType.DISCONNECT.getName());
-        _valueStrings.put(MetaChannelType.HANDSHAKE.getName(),MetaChannelType.HANDSHAKE.getName());
-        _valueStrings.put(MetaChannelType.SUBSCRIBE.getName(),MetaChannelType.SUBSCRIBE.getName());
-        _valueStrings.put(MetaChannelType.UNSUBSCRIBE.getName(), MetaChannelType.UNSUBSCRIBE.getName());
+        _valueStrings.put(Channel.MetaChannelId.CONNECT.getChannelId(),Channel.MetaChannelId.CONNECT.getChannelId());
+        _valueStrings.put(Channel.MetaChannelId.DISCONNECT.getChannelId(),Channel.MetaChannelId.DISCONNECT.getChannelId());
+        _valueStrings.put(Channel.MetaChannelId.HANDSHAKE.getChannelId(),Channel.MetaChannelId.HANDSHAKE.getChannelId());
+        _valueStrings.put(Channel.MetaChannelId.SUBSCRIBE.getChannelId(),Channel.MetaChannelId.SUBSCRIBE.getChannelId());
+        _valueStrings.put(Channel.MetaChannelId.UNSUBSCRIBE.getChannelId(),Channel.MetaChannelId.UNSUBSCRIBE.getChannelId());
         _valueStrings.put("long-polling","long-polling");
     }
 
@@ -223,7 +213,7 @@ public class ImmutableMessagePool
         @Override
         protected Map newMap()
         {
-            return new HashMap<String, Object>();
+            return new ImmutableHashMap<String, Object>().asMutable();
         }
 
         @Override
@@ -244,7 +234,7 @@ public class ImmutableMessagePool
         @Override
         protected Map newMap()
         {
-            return (Map)newMessage();
+            return newMessage();
         }
 
         @Override
@@ -272,7 +262,7 @@ public class ImmutableMessagePool
         @Override
         protected Map newMap()
         {
-            return (Map)newMessage();
+            return newMessage();
         }
 
         @Override

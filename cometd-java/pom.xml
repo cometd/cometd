@@ -20,7 +20,6 @@
         <module>cometd-java-server</module>
         <module>wharf-io</module>
         <module>websocket-java-client</module>
-        <module>bwtp</module>
     </modules>
 
     <build>

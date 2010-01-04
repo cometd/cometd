@@ -40,7 +40,7 @@ public class TestServerMessage
         
         ((Map<String, Object>)mutable.get("data")).put("x","8");
         ((Map<String, Object>)mutable.getData()).put("y","9");
-        Assert.assertEquals("8",immutable.getDataMap().get("x"));
-        Assert.assertEquals("9",immutable.getDataMap().get("y"));
+        Assert.assertEquals("8",immutable.getDataAsMap().get("x"));
+        Assert.assertEquals("9",immutable.getDataAsMap().get("y"));
     }
 }

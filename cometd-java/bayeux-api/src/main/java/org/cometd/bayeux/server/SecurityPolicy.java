@@ -14,8 +14,7 @@
 
 package org.cometd.bayeux.server;
 
-import org.cometd.bayeux.Client;
-import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Session;
 
 /**
  * Pluggable security policy for Bayeux
@@ -25,43 +24,43 @@ import org.cometd.bayeux.Message;
 public interface SecurityPolicy
 {
     /**
-     * Test if a handshake message should be accepted.
-     *
-     * @param message A handshake message.
-     * @return True if the handshake message should be accepted and a {@link Client} instance created
-     */
-    boolean canHandshake(BayeuxServer server,Message message);
-
-    /**
      * Test if a message should be allowed to create a new Channel
      *
      * @param client  The client sending the message. The client may be
      *                null if an anonymous publish is attempted. Server clients are
-     *                indicated by {@link Client#isLocal()}
+     *                indicated by {@link Session#isLocal()}
      * @param message The message
      * @return true if the channel should be created
      */
-    boolean canCreate(BayeuxServer server,ServerSession client, Message message);
+    boolean canCreate(BayeuxServer server,ServerSession client, ServerMessage message);
 
     /**
-     * Test if a client is allowed to subscribe to a channel
+     * Test if a handshake message should be accepted.
      *
-     * @param client   The client sending the message. The client may be
-     *                 null if an anonymous publish is attempted. Server clients are
-     *                 indicated by {@link Client#isLocal()}
-     * @param messsage The message to /meta/subscribe
-     * @return true if the client can subscribe to the channel
+     * @param message A handshake message.
+     * @return True if the handshake message should be accepted and a {@link Session} instance created
      */
-    boolean canSubscribe(BayeuxServer server,ServerSession client, Message messsage);
+    boolean canHandshake(BayeuxServer server,ServerMessage message);
 
     /**
      * Test if a client can publish a message to a channel
      *
      * @param client   The client sending the message. The client may be
      *                 null if an anonymous publish is attempted. Server clients are
-     *                 indicated by {@link Client#isLocal()}
+     *                 indicated by {@link Session#isLocal()}
      * @param messsage The message to publish
      * @return true if the client can publish to the channel.
      */
-    boolean canPublish(BayeuxServer server,ServerSession client, Message messsage);
+    boolean canPublish(BayeuxServer server,ServerSession client, ServerMessage.Mutable messsage);
+
+    /**
+     * Test if a client is allowed to subscribe to a channel
+     *
+     * @param client   The client sending the message. The client may be
+     *                 null if an anonymous publish is attempted. Server clients are
+     *                 indicated by {@link Session#isLocal()}
+     * @param messsage The message to /meta/subscribe
+     * @return true if the client can subscribe to the channel
+     */
+    boolean canSubscribe(BayeuxServer server,ServerSession client, ServerMessage messsage);
 }

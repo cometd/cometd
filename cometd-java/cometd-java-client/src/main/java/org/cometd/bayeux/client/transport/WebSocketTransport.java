@@ -1,29 +1,13 @@
 package org.cometd.bayeux.client.transport;
 
-import java.util.List;
-
-import org.cometd.bayeux.CommonMessage;
-import org.cometd.websocket.Message;
-import org.cometd.websocket.TextMessage;
-import org.cometd.websocket.client.Client;
-import org.cometd.websocket.client.Listener;
-import org.eclipse.jetty.util.ajax.JSON;
-
 /**
  * @version $Revision$ $Date$
  */
-public class WebSocketTransport extends AbstractTransport
+public class WebSocketTransport implements Transport
 {
-    private final Client client;
     private volatile boolean accept = true;
 
-    public WebSocketTransport(Client client)
-    {
-        this.client = client;
-        this.client.addListener(new MessageListener());
-    }
-
-    public String getType()
+     public String getType()
     {
         return "websocket";
     }
@@ -33,28 +17,8 @@ public class WebSocketTransport extends AbstractTransport
         return accept;
     }
 
-    public void init()
+    public void send(Exchange exchange, boolean synchronous)
     {
-        accept = client.open();
-    }
-
-    public void send(CommonMessage.Mutable... messages)
-    {
-        String content = JSON.toString(messages);
-        Message message = new TextMessage(content);
-        client.send(message);
-    }
-
-    private class MessageListener extends Listener.Adapter
-    {
-        @Override
-        public void onMessage(Message message)
-        {
-            // TODO: explicit cast to TextMessage
-            TextMessage textMessage = (TextMessage)message;
-            String text = textMessage.getText();
-            List<CommonMessage.Mutable> messages = toMessages(text);
-            notifyMessages(messages);
-        }
+        
     }
 }

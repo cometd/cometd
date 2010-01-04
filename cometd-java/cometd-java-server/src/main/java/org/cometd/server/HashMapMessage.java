@@ -4,13 +4,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Struct;
 import org.eclipse.jetty.util.ajax.JSON;
 
 public class HashMapMessage extends HashMap<String,Object> implements Message.Mutable, JSON.Generator
 {
     // TODO non static json
-
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private static JSON __json=new JSON()
@@ -47,7 +46,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         @Override
         protected Object[] newArray(int size)
         {
-            return new Message[size];
+            return new Message[size]; 
         }
 
         @Override
@@ -62,18 +61,18 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
             return __msgJSON;
         }
     };
-
+    
     private Message _associated;
     private String _jsonString;
     private boolean _lazy=false;
-
+    
 
     /* ------------------------------------------------------------ */
     public HashMapMessage()
     {
         this(null);
     }
-
+    
     /* ------------------------------------------------------------ */
     public HashMapMessage(ImmutableMessagePool bayeux)
     {
@@ -95,14 +94,9 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     }
 
     /* ------------------------------------------------------------ */
-    public Struct.Mutable getAdvice()
+    public Map<String, Object> getAdvice()
     {
-        return (Struct.Mutable)get(ADVICE_FIELD);
-    }
-
-    public void setAdvice(Struct.Mutable advice)
-    {
-        put(ADVICE_FIELD, advice);
+        return (Map<String, Object>)get(ADVICE_FIELD);
     }
 
     /* ------------------------------------------------------------ */
@@ -111,25 +105,16 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         return _associated;
     }
 
-    public String getChannelName()
+    /* ------------------------------------------------------------ */
+    public String getChannelId()
     {
         return (String)get(CHANNEL_FIELD);
-    }
-
-    public void setChannelName(String channelName)
-    {
-        put(CHANNEL_FIELD, channelName);
     }
 
     /* ------------------------------------------------------------ */
     public String getClientId()
     {
-        return (String)get(CLIENT_ID_FIELD);
-    }
-
-    public void setClientId(String clientId)
-    {
-        put(CLIENT_ID_FIELD, clientId);
+        return (String)get(CLIENT_FIELD);
     }
 
     /* ------------------------------------------------------------ */
@@ -138,31 +123,22 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         return get(DATA_FIELD);
     }
 
-    public void setData(Object data)
+    /* ------------------------------------------------------------ */
+    public Map<String,Object> getDataAsMap()
     {
-        put(DATA_FIELD, data);
+        return (Map<String,Object>)get(DATA_FIELD);
     }
 
     /* ------------------------------------------------------------ */
-    public Struct.Mutable getExt(boolean create)
+    public Map<String, Object> getExt()
     {
-        return (Struct.Mutable)get(EXT_FIELD);
-    }
-
-    public void setExt(Struct.Mutable ext)
-    {
-        put(EXT_FIELD, ext);
+        return (Map<String, Object>)get(EXT_FIELD);
     }
 
     /* ------------------------------------------------------------ */
     public String getId()
     {
         return (String)get(ID_FIELD);
-    }
-
-    public void setId(String id)
-    {
-        put(ID_FIELD, id);
     }
 
     /* ------------------------------------------------------------ */
@@ -181,9 +157,55 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     }
 
     /* ------------------------------------------------------------ */
+    public Map<String, Object> getAdvice(boolean create)
+    {
+        Map<String, Object> advice=getAdvice();
+        if (create && advice==null)
+        {
+            advice = new HashMap<String,Object>();
+            put(ADVICE_FIELD,advice);
+        }
+        return advice;
+    }
+
+    /* ------------------------------------------------------------ */
+    public Map<String, Object> getDataAsMap(boolean create)
+    {
+        Map<String, Object> data=(Map<String,Object>)getData();
+        if (create && data==null)
+        {
+            data = new HashMap<String,Object>();
+            put(DATA_FIELD,data);
+        }
+        return data;
+    }
+
+    /* ------------------------------------------------------------ */
+    public Map<String,Object> getExt(boolean create)
+    {
+        Object ext=getExt();
+        if (ext==null && !create)
+            return null;
+        
+        if (ext instanceof Map)
+            return (Map<String,Object>)ext;
+
+        if (ext instanceof JSON.Literal)
+        {
+            ext=__json.fromJSON(ext.toString());
+            put(EXT_FIELD,ext);
+            return (Map<String,Object>)ext;
+        }
+
+        ext=new HashMap<String,Object>();
+        put(EXT_FIELD,ext);
+        return (Map<String,Object>)ext;
+    }
+
+    /* ------------------------------------------------------------ */
     /**
      * Lazy messages are queued but do not wake up waiting clients.
-     *
+     * 
      * @return true if message is lazy
      */
     public boolean isLazy()
@@ -205,7 +227,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         _jsonString=null;
         return super.put(key,value);
     }
-
+    
 
     /* ------------------------------------------------------------ */
     @Override
@@ -214,7 +236,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         _jsonString=null;
         return super.remove(key);
     }
-
+    
     /* ------------------------------------------------------------ */
     public void setAssociated(Message associated)
     {
@@ -224,7 +246,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     /* ------------------------------------------------------------ */
     /**
      * Lazy messages are queued but do not wake up waiting clients.
-     *
+     * 
      * @param lazy
      *            true if message is lazy
      */
@@ -237,6 +259,31 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     public String toString()
     {
         return getJSON();
+    }
+
+    public void setChannelId(String channelId)
+    {
+        put(CHANNEL_FIELD,channelId);
+    }
+
+    public void setClientId(String clientId)
+    {
+        put(CLIENT_FIELD,clientId);
+    }
+
+    public void setData(Object data)
+    {
+        put(DATA_FIELD,data);
+    }
+
+    public void setId(String id)
+    {
+        put(ID_FIELD,id);
+    }
+
+    public Message asImmutable()
+    {
+        return this;
     }
 
 }

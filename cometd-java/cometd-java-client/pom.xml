@@ -21,11 +21,6 @@
             <artifactId>bayeux-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.cometd.java</groupId>
-            <artifactId>websocket-java-client</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
