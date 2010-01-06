@@ -5,7 +5,6 @@ import java.util.Map;
 import junit.framework.Assert;
 
 import org.cometd.bayeux.Message;
-import org.cometd.common.ImmutableMessage;
 import org.junit.Test;
 
 

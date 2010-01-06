@@ -21,7 +21,8 @@ public class ServerSessionImpl implements ServerSession
     private final BayeuxServerImpl _bayeux;
     private final String _id;
     private final List<ServerSessionListener> _listeners = new CopyOnWriteArrayList<ServerSessionListener>();
-    private ArrayQueue<ServerMessage> _queue=new ArrayQueue<ServerMessage>(8,16,this);
+    private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
+    private final ArrayQueue<ServerMessage> _queue=new ArrayQueue<ServerMessage>(8,16,this);
     private int _maxQueue;
     private final AtomicInteger _batch=new AtomicInteger();
     private LocalSession _localSession;
@@ -52,6 +53,11 @@ public class ServerSessionImpl implements ServerSession
         
         _id=id.toString();
     }
+
+    public void addExtension(Extension extension)
+    {
+        _extensions.add(extension);
+    }
     
     public void batch(Runnable batch)
     {
@@ -78,22 +84,18 @@ public class ServerSessionImpl implements ServerSession
     
     void doDeliver(ServerSession from, ServerMessage message)
     {
-        
-        if (_maxQueue >=0 && _queue.size() >= _maxQueue)
+
+        for (ServerSessionListener listener : _listeners)
         {
-            for (ServerSessionListener listener : _listeners)
+            if (listener instanceof MaxQueueListener && _maxQueue >=0 && _queue.size() >= _maxQueue)
             {
-                if (listener instanceof MaxQueueListener)
-                {
-                    if (!((MaxQueueListener)listener).queueMaxed(from,this,message))
-                        return;
-                }
-                if (listener instanceof QueueListener)
-                {
-                    message = ((QueueListener)listener).onQueue(from,this,message);
-                    if (message==null)
-                        return;
-                }
+                if (!((MaxQueueListener)listener).queueMaxed(from,this,message))
+                    return;
+            }
+            if (listener instanceof QueueListener)
+            {
+                if (!((QueueListener)listener).onQueue(from,this,message))
+                    return;
             }
         }
 
