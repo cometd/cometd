@@ -3,7 +3,6 @@ package org.cometd.bayeux;
 import java.util.EventListener;
 
 
-
 /* ------------------------------------------------------------ */
 /** Bayeux Interface.
  * <p>
@@ -41,6 +40,16 @@ public interface Bayeux
      */
     void removeListener(BayeuxListener listener);
 
+
+    /* ------------------------------------------------------------ */
+    /** Create a new Message.
+     * <p>
+     * The message will be of a type suitable for the Bayeux implementation,
+     * so for a Bayeux server, it will be a ServerMessage etc.
+     * @return A new or recycled message instance.
+     */
+    Message.Mutable newMessage();
+    
     
     /* ------------------------------------------------------------ */
     /** BayeuxListener.

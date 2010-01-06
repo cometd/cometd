@@ -8,16 +8,18 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.util.ImmutableHashMap;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public class ImmutableMessage extends AbstractMap<String,Object> implements Message, JSON.Generator
+public class ServerMessageImpl extends AbstractMap<String,Object> implements ServerMessage, JSON.Generator
 {
     private final ImmutableHashMap<String,Object> _immutable = new ImmutableHashMap<String, Object>(16)
     {
         @Override
         protected void onChange(String key) throws UnsupportedOperationException
         {
-            _json=null;
+            _jsonString=null;
         } ;
     };
     private final MutableMessage _mutable;
@@ -27,34 +29,32 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     
 
     private Message _associated;
-    private String _json;
+    private String _jsonString;
     private boolean _lazy=false;
     
-    private final ImmutableMessagePool _pool;
+    private final ServerMessagePool _pool;
     
 
     private final AtomicInteger _refs=new AtomicInteger();
 
     /* ------------------------------------------------------------ */
-    public ImmutableMessage()
+    public ServerMessageImpl()
     {
         this(null);
     }
     
     /* ------------------------------------------------------------ */
-    public ImmutableMessage(ImmutableMessagePool bayeux)
+    public ServerMessageImpl(ServerMessagePool bayeux)
     {
         _pool=bayeux;
-
         _mutable = new MutableMessage();
         _advice=_immutable.getEntry(Message.ADVICE_FIELD);
         _data=_immutable.getEntry(Message.DATA_FIELD);
         _ext=_immutable.getEntry(Message.EXT_FIELD);
-        
     }
 
     /* ------------------------------------------------------------ */
-    public Message.Mutable asMutable()
+    public ServerMessage.Mutable asMutable()
     {
         return _mutable;
     }
@@ -157,17 +157,17 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     /* ------------------------------------------------------------ */
     public String getJSON()
     {
-        if (_json == null)
+        if (_jsonString == null)
         {
             JSON json=_pool == null?JSON.getDefault():_pool.getMsgJSON();
             StringBuffer buf=new StringBuffer(json.getStringBufferSize());
             synchronized(buf)
             {
                 json.appendMap(buf,this);
-                _json=buf.toString();
+                _jsonString=buf.toString();
             }
         }
-        return _json;
+        return _jsonString;
     }
 
     /* ------------------------------------------------------------ */
@@ -206,10 +206,10 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
         if (_associated != associated)
         {
             if (_associated != null)
-                ((ImmutableMessage)_associated).decRef();
+                ((ServerMessageImpl)_associated).decRef();
             _associated=associated;
             if (_associated != null)
-                ((ImmutableMessage)_associated).incRef();
+                ((ServerMessageImpl)_associated).incRef();
         }
     }
 
@@ -246,7 +246,7 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    class MutableMessage extends AbstractMap<String,Object> implements Message.Mutable
+    class MutableMessage extends AbstractMap<String,Object> implements ServerMessage.Mutable
     {
         private final ImmutableHashMap<String,Object>.Mutable _mutable=_immutable.asMutable();
         private final Map.Entry<String,Object> _advice;
@@ -271,10 +271,15 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
             _ext=_mutable.getEntry(Message.EXT_FIELD);
             _id=_mutable.getEntry(Message.ID_FIELD);
         }
-        
-        public ImmutableMessage asImmutable()
+
+        public ServerMessage.Mutable asMutable()
         {
-            return ImmutableMessage.this;
+            return this;
+        }
+        
+        public ServerMessageImpl asImmutable()
+        {
+            return ServerMessageImpl.this;
         }
 
         @Override
@@ -282,7 +287,7 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
         {
             setAssociated(null);
             _refs.set(0);
-            _json=null;
+            _jsonString=null;
             _lazy=false;
             super.clear();
         }
@@ -425,12 +430,12 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
 
         public Message getAssociated()
         {
-            return ImmutableMessage.this.getAssociated();
+            return ServerMessageImpl.this.getAssociated();
         }
 
         public void setAssociated(Message message)
         {
-            ImmutableMessage.this.setAssociated(message);
+            ServerMessageImpl.this.setAssociated(message);
         }
 
         public void setClientId(String clientId)
@@ -446,6 +451,21 @@ public class ImmutableMessage extends AbstractMap<String,Object> implements Mess
         public void setChannelId(String channelId)
         {
             _channelId.setValue(channelId);
+        }
+
+        public String getJSON()
+        {
+            return ServerMessageImpl.this.getJSON();
+        }
+
+        public void decRef()
+        {
+            ServerMessageImpl.this.decRef();
+        }
+
+        public void incRef()
+        {
+            ServerMessageImpl.this.incRef();
         }
     }
     

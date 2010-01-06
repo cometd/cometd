@@ -19,7 +19,7 @@ public interface Session
      * that identifies a session.
      * @return A string identifying the current session.
      */
-    String getClientId();
+    String getId();
 
     /* ------------------------------------------------------------ */
     /**
@@ -48,6 +48,6 @@ public interface Session
      */
     public interface MessageListener extends SessionListener
     {
-        void onMessage(Message message);
+        void onMessage(Session session, Message message);
     }
 }

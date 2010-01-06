@@ -28,7 +28,7 @@ public interface Channel
     /**
      * @return The channel ID
      */
-    String getChannelId();
+    String getId();
     
     /* ------------------------------------------------------------ */
     /**

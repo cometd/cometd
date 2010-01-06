@@ -45,6 +45,8 @@ public interface Message extends Map<String, Object>
     Map<String, Object> getDataAsMap();
     Map<String, Object> getExt();
     String getId();
+    
+    String getJSON();
 
     interface Mutable extends Message
     {
@@ -56,7 +58,5 @@ public interface Message extends Map<String, Object>
         void setClientId(String clientId);
         void setData(Object data);
         void setId(String id);
-
-        Message asImmutable();
     }
 }

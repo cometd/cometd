@@ -13,7 +13,7 @@ import org.cometd.bayeux.Session;
 public interface ServerSession extends Session
 {
     void batch(Runnable batch);
-    void deliver(ServerMessage msg);
+    void deliver(ServerSession from, ServerMessage msg);
 
     void disconnect();
     void endBatch();
@@ -21,6 +21,8 @@ public interface ServerSession extends Session
 
     boolean isLocalSession();
     LocalSession getLocalSession();
+    
+    Queue<ServerMessage> getQueue();
     
     public interface DeliverListener extends ServerSessionListener
     {
@@ -30,7 +32,7 @@ public interface ServerSession extends Session
          * client.  This is the last chance to process the queue and remove
          * duplicates or merge messages.
          */
-        public void deliver(ServerSession session, Queue<Message> queue);
+        public void deliver(ServerSession session);
     };
 
 

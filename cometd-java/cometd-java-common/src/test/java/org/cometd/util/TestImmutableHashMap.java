@@ -1,26 +1,14 @@
-package org.cometd.server;
+package org.cometd.util;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
-import junit.framework.AssertionFailedError;
-
-import org.eclipse.jetty.util.ArrayQueue;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;
 import org.junit.Test;
 
 
 public class TestImmutableHashMap 
 {
-
     @Test
     public void testMap()
     {

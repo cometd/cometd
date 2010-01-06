@@ -1,4 +1,4 @@
-package org.cometd.server;
+package org.cometd.util;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
@@ -42,13 +42,13 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     private int _size;
 
     /* ------------------------------------------------------------ */
-    ImmutableHashMap()
+    public ImmutableHashMap()
     {
         this(16);
     }
 
     /* ------------------------------------------------------------ */
-    ImmutableHashMap(int nominalSize)
+    public ImmutableHashMap(int nominalSize)
     {
         int capacity = 1;
         while (capacity < nominalSize) 
