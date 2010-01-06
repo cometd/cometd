@@ -23,7 +23,17 @@ public interface ServerSession extends Session
     void deliver(ServerSession from, ServerMessage msg);
 
     void disconnect();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @deprecated use {@link #batch(Runnable)}
+     */
     void endBatch();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @deprecated use {@link #batch(Runnable)}
+     */
     void startBatch();
 
     boolean isLocalSession();
