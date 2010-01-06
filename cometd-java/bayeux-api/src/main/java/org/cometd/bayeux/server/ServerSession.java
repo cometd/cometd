@@ -23,8 +23,26 @@ public interface ServerSession extends Session
     LocalSession getLocalSession();
     
     Queue<ServerMessage> getQueue();
-    
-    public interface DeliverListener extends ServerSessionListener
+
+
+    interface ServerSessionListener extends Session.SessionListener
+    {}
+
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /** Queue a message listener
+     * <p>
+     * Listener that allows per session customization of messages
+     */
+    public interface QueueListener extends ServerSessionListener
+    {
+        public ServerMessage onQueue(Session from, ServerSession session, ServerMessage message);
+    };
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    public interface DeQueueListener extends ServerSessionListener
     {
         /* ------------------------------------------------------------ */
         /**
@@ -32,15 +50,13 @@ public interface ServerSession extends Session
          * client.  This is the last chance to process the queue and remove
          * duplicates or merge messages.
          */
-        public void deliver(ServerSession session);
+        public void deQueue(ServerSession session);
     };
 
 
-    interface ServerSessionListener extends Session.SessionListener
-    {}
-
-
-    public interface QueueListener extends ServerSessionListener
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    public interface MaxQueueListener extends ServerSessionListener
     {
         /* ------------------------------------------------------------ */
         /**

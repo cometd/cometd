@@ -83,9 +83,15 @@ public class ServerSessionImpl implements ServerSession
         {
             for (ServerSessionListener listener : _listeners)
             {
+                if (listener instanceof MaxQueueListener)
+                {
+                    if (!((MaxQueueListener)listener).queueMaxed(from,this,message))
+                        return;
+                }
                 if (listener instanceof QueueListener)
                 {
-                    if (!((QueueListener)listener).queueMaxed(from,this,message))
+                    message = ((QueueListener)listener).onQueue(from,this,message);
+                    if (message==null)
                         return;
                 }
             }
