@@ -32,15 +32,16 @@ public interface SecurityPolicy
      * @param message The message
      * @return true if the channel should be created
      */
-    boolean canCreate(BayeuxServer server,ServerSession client, ServerMessage message);
+    boolean canCreate(BayeuxServer server,ServerSession session, ServerMessage message);
 
     /**
      * Test if a handshake message should be accepted.
      *
      * @param message A handshake message.
+     * @param client  The session (not yet added to the BayeuxServer) 
      * @return True if the handshake message should be accepted and a {@link Session} instance created
      */
-    boolean canHandshake(BayeuxServer server,ServerMessage message);
+    boolean canHandshake(BayeuxServer server,ServerSession session,ServerMessage message);
 
     /**
      * Test if a client can publish a message to a channel
