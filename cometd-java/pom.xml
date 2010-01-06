@@ -14,11 +14,15 @@
     <packaging>pom</packaging>
     <name>CometD :: Java</name>
 
+    <properties>
+        <jetty-version>7.0.1.v20091125</jetty-version>
+    </properties>
+
     <modules>
         <module>bayeux-api</module>
-        <module>cometd-java-client</module>
+        <module>cometd-java-common</module>
         <module>cometd-java-server</module>
-        <module>wharf-io</module>
+        <module>cometd-java-client</module>
         <module>websocket-java-client</module>
     </modules>
 

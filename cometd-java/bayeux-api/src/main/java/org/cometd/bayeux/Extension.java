@@ -30,28 +30,28 @@ public interface Extension
     /**
      * @param from
      * @param message
-     * @return modified message or null to discard message
+     * @return true if message processing should continue
      */
-    Message rcv(Session from, Message.Mutable message);
+    boolean rcv(Session from, Message.Mutable message);
 
     /**
      * @param from
      * @param message
-     * @return modified message
+     * @return true if message processing should continue
      */
-    Message rcvMeta(Session from, Message.Mutable message);
+    boolean rcvMeta(Session from, Message.Mutable message);
 
     /**
      * @param from
      * @param message
-     * @return modified message or null to discard message
+     * @return true if message processing should continue
      */
-    Message send(Session from, Message.Mutable message);
+    boolean send(Session from, Message.Mutable message);
 
     /**
      * @param from
      * @param message
-     * @return modified message
+     * @return true if message processing should continue
      */
-    Message sendMeta(Session from, Message.Mutable message);
+    boolean sendMeta(Session from, Message.Mutable message);
 }

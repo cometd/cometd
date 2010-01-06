@@ -5,20 +5,21 @@ import java.util.Map;
 import junit.framework.Assert;
 
 import org.cometd.bayeux.Message;
+import org.cometd.common.ImmutableMessage;
 import org.junit.Test;
 
 
-public class TestServerMessage
+public class TestImmutableServerMessage
 {
     @Test
     public void testGeneral() throws Exception
     {
         String json = "{\"id\":\"12345\", \"clientId\":\"jva73siaj92jdafa\", \"data\":{\"name\":\"value\"}, \"ext\":{\"name\":\"value\"}}";
         
-        ImmutableMessagePool pool = new ImmutableMessagePool();
+        ServerMessagePool pool = new ServerMessagePool();
         Message[] messages=pool.parse(json);
-        ImmutableMessage.MutableMessage mutable= (ImmutableMessage.MutableMessage)messages[0];
-        ImmutableMessage immutable= mutable.asImmutable();
+        ServerMessageImpl.MutableMessage mutable= (ServerMessageImpl.MutableMessage)messages[0];
+        ServerMessageImpl immutable= mutable.asImmutable();
         
         String s=mutable.toString();
         Assert.assertTrue(s.contains("ext={name=value}"));

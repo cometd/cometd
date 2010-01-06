@@ -40,6 +40,8 @@ public interface ServerMessage extends Message
      */
     void decRef();
 
+    /* ------------------------------------------------------------ */
+    ServerMessage.Mutable asMutable();
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -49,6 +51,7 @@ public interface ServerMessage extends Message
     {
         void setAssociated(Message message);
         void setLazy(boolean lazy);
-        
+
+        ServerMessage asImmutable();
     }
 }

@@ -42,19 +42,13 @@ public interface BayeuxServer extends Bayeux
      */
     LocalSession newLocalSession(String idHint);
     
+
     /* ------------------------------------------------------------ */
     /** Create a new Message.
-     * Return a message suitable for use with the {@link #publish(Message)} or
-     * {@link ServerSession#deliver(ServerMessage)} methods.
      * @return A new or recycled message instance.
      */
-    ServerMessage.Mutable newMessage();
+    ServerMessage.Mutable newServerMessage();
     
-    /* ------------------------------------------------------------ */
-    /**
-     * @param message
-     */
-    void publish(Message message);
     
     /* ------------------------------------------------------------ */
     /**
@@ -86,8 +80,8 @@ public interface BayeuxServer extends Bayeux
      */
     public interface ChannelListener extends BayeuxServerListener
     {
-        public void channelAdded(BayeuxServer server, Channel channel);
-        public void channelRemoved(BayeuxServer server, Channel channel);
+        public void channelAdded(ServerChannel channel);
+        public void channelRemoved(ServerChannel channel);
     };
 
     /* ------------------------------------------------------------ */
@@ -96,14 +90,14 @@ public interface BayeuxServer extends Bayeux
      */
     public interface SessionListener extends BayeuxServerListener
     {
-        public void sessionAdded(BayeuxServer server, ServerSession channel);
-        public void sessionRemoved(BayeuxServer server, ServerSession channel,boolean timedout);
+        public void sessionAdded(ServerSession session);
+        public void sessionRemoved(ServerSession session,boolean timedout);
     }
 
     /* ------------------------------------------------------------ */
     public interface SubscriptionListener extends ServerChannelListener
     {
-        public void subscribed(ServerSession session, Channel channel);
-        public void unsubscribed(ServerSession session, Channel channel);
+        public void subscribed(ServerSession session, ServerChannel channel);
+        public void unsubscribed(ServerSession session, ServerChannel channel);
     }
 }

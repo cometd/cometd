@@ -79,11 +79,11 @@ public class BayeuxUsage
         // Add a listener to notice new session
         _bayeux.addListener(new BayeuxServer.SessionListener()
         {            
-            public void sessionAdded(BayeuxServer server, ServerSession channel)
+            public void sessionAdded(ServerSession channel)
             {
                 
             }
-            public void sessionRemoved(BayeuxServer server, ServerSession channel, boolean timedout)
+            public void sessionRemoved(ServerSession channel, boolean timedout)
             {
             }
         });
@@ -91,11 +91,11 @@ public class BayeuxUsage
         // Add a listener to notice new channels
         _bayeux.addListener(new BayeuxServer.ChannelListener()
         {
-            public void channelRemoved(BayeuxServer server, Channel channel)
+            public void channelRemoved(ServerChannel channel)
             {                
             }
             
-            public void channelAdded(BayeuxServer server, Channel channel)
+            public void channelAdded(ServerChannel channel)
             {                
             }
         });
@@ -103,11 +103,11 @@ public class BayeuxUsage
         // Listen to all subscriptions on the server
         _bayeux.addListener(new BayeuxServer.SubscriptionListener()
         {
-            public void unsubscribed(ServerSession session, Channel channel)
+            public void unsubscribed(ServerSession session, ServerChannel channel)
             {
             }
             
-            public void subscribed(ServerSession session, Channel channel)
+            public void subscribed(ServerSession session, ServerChannel channel)
             {
             }
         });
@@ -135,10 +135,9 @@ public class BayeuxUsage
         // Listen and potentially CHANGE messages on a particular channel
         _bayeux.getChannel("/foo/bar").addListener(new ServerChannel.PublishListener()
         {
-            public void onMessage(ServerMessage.Mutable message)
+            public boolean onMessage(ServerMessage.Mutable message)
             {
-                // TODO Auto-generated method stub
-                
+                return true;
             }
         });
         
@@ -146,14 +145,14 @@ public class BayeuxUsage
         
         // batch the delivery of special message to an arbitrary client:
         final ServerSession session = _bayeux.getServerSession("123456789");
-        final ServerMessage.Mutable msg=_bayeux.newMessage();
+        final ServerMessage.Mutable msg=_bayeux.newServerMessage();
         msg.setChannelId("/foo/bar");
         msg.setData("something special");
         session.batch(new Runnable()
         {
             public void run()
             {
-                session.deliver(msg);
+                session.deliver(session,msg);
                 if (session.isLocalSession())
                     session.getLocalSession().getSessionChannel("/foo/bar").publish("Hello");        
             }

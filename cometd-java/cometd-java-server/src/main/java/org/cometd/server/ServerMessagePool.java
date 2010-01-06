@@ -9,25 +9,27 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.util.ImmutableHashMap;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public class ImmutableMessagePool
+public class ServerMessagePool
 {
-    final private ConcurrentLinkedQueue<ImmutableMessage> _messagePool;
+    final private ConcurrentLinkedQueue<ServerMessageImpl> _messagePool;
     final private ConcurrentLinkedQueue<JSON.ReaderSource> _readerPool;
 
     /* ------------------------------------------------------------ */
-    public ImmutableMessagePool()
+    public ServerMessagePool()
     {
         this(50);
     }
 
     /* ------------------------------------------------------------ */
-    public ImmutableMessagePool(int capacity)
+    public ServerMessagePool(int capacity)
     {
-        _messagePool=new ConcurrentLinkedQueue<ImmutableMessage>();
+        _messagePool=new ConcurrentLinkedQueue<ServerMessageImpl>();
         _readerPool=new ConcurrentLinkedQueue<JSON.ReaderSource>();
     }
 
@@ -93,36 +95,27 @@ public class ImmutableMessagePool
     }
 
     /* ------------------------------------------------------------ */
-    public Message.Mutable newMessage()
+    public ServerMessage.Mutable getServerMessage()
     {
-        ImmutableMessage message=_messagePool.poll();
+        ServerMessageImpl message=_messagePool.poll();
         if (message == null)
-        {
-            message=new ImmutableMessage(this);
-        }
-        message.incRef();
+            message=new ServerMessageImpl(this);
         return message.asMutable();
     }
-
+    
     /* ------------------------------------------------------------ */
-    public ImmutableMessage newMessage(Message associated)
+    void recycleMessage(ServerMessage message)
     {
-        ImmutableMessage message=_messagePool.poll();
-        if (message == null)
+        if (message instanceof ServerMessageImpl)
         {
-            message=new ImmutableMessage(this);
+            message.clear();
+            _messagePool.offer((ServerMessageImpl)message);
         }
-        message.incRef();
-        if (associated != null)
-            message.setAssociated(associated);
-        return message;
-    }
-
-    /* ------------------------------------------------------------ */
-    void recycleMessage(ImmutableMessage message)
-    {
-        message.clear();
-        _messagePool.offer(message);
+        else if (message instanceof ServerMessageImpl.MutableMessage)
+        {
+            message.clear();
+            _messagePool.offer((ServerMessageImpl)((ServerMessageImpl.Mutable)message).asImmutable());
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -234,7 +227,7 @@ public class ImmutableMessagePool
         @Override
         protected Map newMap()
         {
-            return newMessage();
+            return getServerMessage();
         }
 
         @Override
@@ -262,7 +255,7 @@ public class ImmutableMessagePool
         @Override
         protected Map newMap()
         {
-            return newMessage();
+            return getServerMessage();
         }
 
         @Override

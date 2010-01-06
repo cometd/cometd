@@ -14,7 +14,7 @@ import org.cometd.bayeux.Session;
  */
 public interface ServerChannel extends Channel
 {
-    Set<ServerSession> getSubscribers();
+    Set<? extends ServerSession> getSubscribers();
     
     boolean isBroadcast();  // !meta and !service;
     boolean isLazy();
@@ -54,6 +54,12 @@ public interface ServerChannel extends Channel
 
 
     /* ------------------------------------------------------------ */
+    /**
+     * @param message
+     */
+    void publish(ServerSession from, ServerMessage message);
+    
+    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /**
      */
@@ -66,7 +72,7 @@ public interface ServerChannel extends Channel
      */
     public interface PublishListener extends ServerChannelListener
     {
-        void onMessage(ServerMessage.Mutable message);
+        boolean onMessage(ServerMessage.Mutable message);
     }
 
     /* ------------------------------------------------------------ */

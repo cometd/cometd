@@ -1,4 +1,4 @@
-package org.cometd.server;
+package org.cometd.common;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,8 +8,6 @@ import org.eclipse.jetty.util.ajax.JSON;
 
 public class HashMapMessage extends HashMap<String,Object> implements Message.Mutable, JSON.Generator
 {
-    // TODO non static json
-    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private static JSON __json=new JSON()
@@ -63,20 +61,14 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     };
     
     private Message _associated;
-    private String _jsonString;
     private boolean _lazy=false;
     
 
     /* ------------------------------------------------------------ */
     public HashMapMessage()
     {
-        this(null);
     }
     
-    /* ------------------------------------------------------------ */
-    public HashMapMessage(ImmutableMessagePool bayeux)
-    {
-    }
 
     /* ------------------------------------------------------------ */
     public void addJSON(StringBuffer buffer)
@@ -88,7 +80,6 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     @Override
     public void clear()
     {
-        _jsonString=null;
         _lazy=false;
         super.clear();
     }
@@ -144,16 +135,12 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     /* ------------------------------------------------------------ */
     public String getJSON()
     {
-        if (_jsonString == null)
+        StringBuffer buf=new StringBuffer(__json.getStringBufferSize());
+        synchronized(buf)
         {
-            StringBuffer buf=new StringBuffer(__json.getStringBufferSize());
-            synchronized(buf)
-            {
-                __json.appendMap(buf,this);
-                _jsonString=buf.toString();
-            }
+            __json.appendMap(buf,this);
+            return buf.toString();
         }
-        return _jsonString;
     }
 
     /* ------------------------------------------------------------ */
@@ -218,23 +205,6 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     {
         Boolean bool=(Boolean)get(Message.SUCCESSFUL_FIELD);
         return bool != null && bool.booleanValue();
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Object put(String key, Object value)
-    {
-        _jsonString=null;
-        return super.put(key,value);
-    }
-    
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Object remove(Object key)
-    {
-        _jsonString=null;
-        return super.remove(key);
     }
     
     /* ------------------------------------------------------------ */
