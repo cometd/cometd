@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.common.ChannelId;
 import org.cometd.util.ImmutableHashMap;
 import org.eclipse.jetty.util.ajax.JSON;
 
@@ -191,6 +192,12 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     public boolean isLazy()
     {
         return _lazy;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public boolean isMeta()
+    {
+        return ChannelId.isMeta((String)_mutable._channelId.getValue());
     }
 
     /* ------------------------------------------------------------ */
@@ -400,6 +407,11 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             return _lazy;
         }
 
+        public boolean isMeta()
+        {
+            return ChannelId.isMeta((String)_channelId.getValue());
+        }
+        
         @Override
         public Object put(String key, Object value)
         {

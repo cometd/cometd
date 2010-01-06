@@ -181,4 +181,14 @@ public class ChannelId
             return null;
         return _segments[i];
     }
+
+    public static boolean isMeta(String channelId)
+    {
+        return channelId!=null && channelId.startsWith("/meta/");
+    }
+    
+    public static boolean isService(String channelId)
+    {
+        return channelId!=null && channelId.startsWith("/service/");
+    }
 }

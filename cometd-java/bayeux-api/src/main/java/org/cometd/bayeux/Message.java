@@ -41,6 +41,7 @@ public interface Message extends Map<String, Object>
     String getChannelId();
     String getClientId();
     Object getData();
+    boolean isMeta();
 
     Map<String, Object> getDataAsMap();
     Map<String, Object> getExt();

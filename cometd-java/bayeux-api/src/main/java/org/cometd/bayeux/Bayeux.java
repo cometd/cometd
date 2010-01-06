@@ -57,4 +57,50 @@ public interface Bayeux
      */
     interface BayeuxListener extends EventListener
     {};
+    
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /** Bayeux Extension.
+     * <p>
+     * A registered extension is called once for every message
+     * received and sent by the bayeux server.  Extensions may
+     * modify messages and all clients will see the results
+     * of those modifications.
+     * <p>
+     * Bayeux.Extension receive methods are called before 
+     * ServerSession.Extension receive methods.  
+     * ServerSession.Extension send methods are called 
+     * before Bayeux.Extension send methods.
+     */
+    public interface Extension
+    {
+        /**
+         * @param from
+         * @param message
+         * @return true if message processing should continue
+         */
+        boolean rcv(Session from, Message.Mutable message);
+
+        /**
+         * @param from
+         * @param message
+         * @return true if message processing should continue
+         */
+        boolean rcvMeta(Session from, Message.Mutable message);
+
+        /**
+         * @param from
+         * @param message
+         * @return true if message processing should continue
+         */
+        boolean send(Session from, Message.Mutable message);
+
+        /**
+         * @param from
+         * @param message
+         * @return true if message processing should continue
+         */
+        boolean sendMeta(Session from, Message.Mutable message);
+    }
 }

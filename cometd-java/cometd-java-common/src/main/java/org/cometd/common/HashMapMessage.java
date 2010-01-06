@@ -199,6 +199,16 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     {
         return _lazy;
     }
+    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if the message is for a Meta channel
+     */
+    public boolean isMeta()
+    {
+        return ChannelId.isMeta(getChannelId());
+    }
 
     /* ------------------------------------------------------------ */
     public boolean isSuccessful()
