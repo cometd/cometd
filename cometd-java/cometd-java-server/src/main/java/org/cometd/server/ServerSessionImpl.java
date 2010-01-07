@@ -214,4 +214,10 @@ public class ServerSessionImpl implements ServerSession
         // TODO Auto-generated method stub
 
     }
+
+    public boolean isConnected()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }

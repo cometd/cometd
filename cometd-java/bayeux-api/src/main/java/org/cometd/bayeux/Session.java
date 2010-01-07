@@ -33,6 +33,11 @@ public interface Session
      */
     void removeListener(SessionListener listener);
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if the session is connected
+     */
+    boolean isConnected();
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

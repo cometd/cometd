@@ -463,4 +463,10 @@ public class StandardBayeuxClient implements BayeuxClient
     {
         HANDSHAKING, CONNECTED, DISCONNECTING, DISCONNECTED
     }
+
+    public boolean isConnected()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }

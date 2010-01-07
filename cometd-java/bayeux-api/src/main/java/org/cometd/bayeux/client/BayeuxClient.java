@@ -25,10 +25,6 @@ public interface BayeuxClient extends Bayeux, ClientSession
      */
     void handshake(boolean async) throws IOException;
 
-    // TODO: review these, but they are not needed
-//    boolean isHandshook();
-//    boolean isConnected();
-
     /** All Bayeux Client Listeners are derived from this interface.
      */
     interface BayeuxClientListener extends Bayeux.BayeuxListener
