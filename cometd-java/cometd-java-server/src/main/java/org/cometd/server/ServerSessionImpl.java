@@ -18,7 +18,7 @@ import org.eclipse.jetty.util.log.Log;
 public class ServerSessionImpl implements ServerSession
 {
     private static final AtomicLong _idCount=new AtomicLong();
-    
+
     private final BayeuxServerImpl _bayeux;
     private final String _id;
     private final List<ServerSessionListener> _listeners = new CopyOnWriteArrayList<ServerSessionListener>();
@@ -33,11 +33,11 @@ public class ServerSessionImpl implements ServerSession
     {
         this(bayeux,null);
     }
-    
+
     protected ServerSessionImpl(BayeuxServerImpl bayeux,String idHint)
     {
         _bayeux=bayeux;
-        
+
         StringBuilder id=new StringBuilder(30);
         int len=20;
         if (idHint!=null)
@@ -47,12 +47,12 @@ public class ServerSessionImpl implements ServerSession
             id.append('_');
         }
         int index=id.length();
-        
+
         while (id.length()<len)
             id.append(Long.toString(_bayeux.randomLong(),36));
-            
+
         id.insert(index,Long.toString(_idCount.incrementAndGet(),36));
-        
+
         _id=id.toString();
     }
 
@@ -60,7 +60,7 @@ public class ServerSessionImpl implements ServerSession
     {
         _extensions.add(extension);
     }
-    
+
     public void batch(Runnable batch)
     {
         try
@@ -73,17 +73,17 @@ public class ServerSessionImpl implements ServerSession
             endBatch();
         }
     }
-    
+
     public void deliver(ServerSession from, ServerMessage message)
     {
         Message.Mutable mutable = ((ServerMessageImpl)message).asMutable();
-        
+
         if (!_bayeux.extendSend(from,mutable))
             return;
-        
+
         doDeliver(from,message);
     }
-    
+
     void doDeliver(ServerSession from, ServerMessage message)
     {
 
@@ -119,7 +119,7 @@ public class ServerSessionImpl implements ServerSession
             }
         }
 
-        
+
         if (_batch.get() == 0 && _queue.size() > 0)
         {
             if (message.isLazy())
@@ -127,13 +127,13 @@ public class ServerSessionImpl implements ServerSession
             else
                 dispatch();
         }
-        
+
     }
-    
+
     public void disconnect()
     {
         // TODO Auto-generated method stub
-        
+
     }
 
     public void endBatch()
@@ -182,12 +182,12 @@ public class ServerSessionImpl implements ServerSession
 
     protected void dispatch()
     {
-        
+
     }
-    
+
     protected void dispatchLazy()
     {
-        
+
     }
 
     public Object getAttribute(String name)
@@ -197,7 +197,9 @@ public class ServerSessionImpl implements ServerSession
 
     public Set<String> getAttributeNames()
     {
-        return _attributes.getAttributeNameSet();
+        // TODO: commented out because it does not compile
+//        return _attributes.getAttributeNameSet();
+        return null;
     }
 
     public Object removeAttribute(String name)
@@ -210,6 +212,6 @@ public class ServerSessionImpl implements ServerSession
     public void setAttribute(String name, Object value)
     {
         // TODO Auto-generated method stub
-        
+
     }
 }
