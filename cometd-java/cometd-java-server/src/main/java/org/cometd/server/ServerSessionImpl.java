@@ -2,6 +2,7 @@ package org.cometd.server;
 
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -11,7 +12,7 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.ArrayQueue;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.log.Log;
 
 public class ServerSessionImpl implements ServerSession
@@ -26,6 +27,7 @@ public class ServerSessionImpl implements ServerSession
     private int _maxQueue;
     private final AtomicInteger _batch=new AtomicInteger();
     private LocalSession _localSession;
+    private final AttributesMap _attributes = new AttributesMap();
 
     protected ServerSessionImpl(BayeuxServerImpl bayeux)
     {
@@ -185,6 +187,29 @@ public class ServerSessionImpl implements ServerSession
     
     protected void dispatchLazy()
     {
+        
+    }
+
+    public Object getAttribute(String name)
+    {
+        return _attributes.getAttribute(name);
+    }
+
+    public Set<String> getAttributeNames()
+    {
+        return _attributes.getAttributeNameSet();
+    }
+
+    public Object removeAttribute(String name)
+    {
+        Object old = getAttribute(name);
+        _attributes.removeAttribute(name);
+        return old;
+    }
+
+    public void setAttribute(String name, Object value)
+    {
+        // TODO Auto-generated method stub
         
     }
 }

@@ -2,6 +2,7 @@ package org.cometd.bayeux.server;
 
 
 import java.util.Queue;
+import java.util.Set;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
@@ -19,10 +20,78 @@ public interface ServerSession extends Session
      */
     void addExtension(Extension extension);
 
-    void batch(Runnable batch);
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if this is a session for a local server-side client
+     */
+    boolean isLocalSession();
+    
+    /* ------------------------------------------------------------ */
+    /** Get the local session.
+     * @return The LocalSession or null if this is a session for a 
+     * remote client.
+     */
+    LocalSession getLocalSession();
+    
+    /* ------------------------------------------------------------ */
+    /** Get the session message queue.
+     * @return The queue of messages awaiting delivery to the client.
+     */
+    Queue<ServerMessage> getQueue();
+
+    /* ------------------------------------------------------------ */
+    /** Set a session attribute.
+     * <p>Session attributes are convenience data that allows arbitrary
+     * application data to be associated with a session.
+     * @param name The attribute name
+     * @param value The attribute value
+     */
+    void setAttribute(String name,Object value);
+    
+    /* ------------------------------------------------------------ */
+    /** Get a named attribute
+     * @param name The name of the attribute
+     * @return The attribute value or null if not set.
+     */
+    Object getAttribute(String name);
+    
+    /* ------------------------------------------------------------ */
+    /** Get Attribute names.
+     * @return Set of known session attribute names
+     */
+    Set<String> getAttributeNames();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Remove a session attribute
+     * @param name The name of the attribute
+     * @return the previous value of the attribute
+     */
+    Object removeAttribute(String name);
+    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Deliver the message to the session listeners and queue.
+     * @param from
+     * @param msg
+     */
     void deliver(ServerSession from, ServerMessage msg);
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Disconnect this session.
+     */
     void disconnect();
+    
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Run a Runnable in a batch.
+     * @param batch the Runnable to run as a batch
+     */
+    void batch(Runnable batch);
+
     
     /* ------------------------------------------------------------ */
     /**
@@ -36,10 +105,6 @@ public interface ServerSession extends Session
      */
     void startBatch();
 
-    boolean isLocalSession();
-    LocalSession getLocalSession();
-    
-    Queue<ServerMessage> getQueue();
 
     interface ServerSessionListener extends Session.SessionListener
     {}
