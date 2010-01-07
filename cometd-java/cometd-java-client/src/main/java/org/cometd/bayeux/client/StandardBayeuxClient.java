@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.MetaChannelId;
 import org.cometd.bayeux.client.transport.Transport;
 import org.cometd.bayeux.client.transport.TransportException;
 import org.cometd.bayeux.client.transport.TransportListener;
@@ -70,6 +71,8 @@ public class StandardBayeuxClient implements BayeuxClient
 
     public void addListener(BayeuxListener listener) throws IllegalArgumentException
     {
+        // TODO review - there are no BayuexClientListeners!
+        
         if (!(listener instanceof BayeuxClientListener))
             throw new IllegalArgumentException("Wrong listener type, must be instance of " + BayeuxClientListener.class.getName());
         listeners.add(listener);
@@ -106,7 +109,7 @@ public class StandardBayeuxClient implements BayeuxClient
         logger.debug("Handshaking with transport {}", transport);
 
         Message.Mutable request = newMessage();
-        request.setChannelId(Channel.MetaChannelId.HANDSHAKE.getChannelId());
+        request.setChannelId(MetaChannelId.HANDSHAKE.getChannelId());
         request.put(Message.VERSION_FIELD, BAYEUX_VERSION);
         request.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, transports);
 
@@ -244,7 +247,7 @@ public class StandardBayeuxClient implements BayeuxClient
 
             Boolean successfulField = (Boolean)message.get(Message.SUCCESSFUL_FIELD);
             boolean successful = successfulField != null && successfulField;
-            Channel.MetaChannelId type = Channel.MetaChannelId.from(channelId);
+            MetaChannelId type = MetaChannelId.from(channelId);
             if (type == null)
             {
                 if (successful)
@@ -252,7 +255,7 @@ public class StandardBayeuxClient implements BayeuxClient
                 else
                     processUnsuccessful(message);
             }
-            else if (type == Channel.MetaChannelId.HANDSHAKE)
+            else if (type == MetaChannelId.HANDSHAKE)
             {
                 if (state != State.HANDSHAKING)
                     throw new IllegalStateException();
@@ -262,7 +265,7 @@ public class StandardBayeuxClient implements BayeuxClient
                 else
                     processUnsuccessful(message);
             }
-            else if (type == Channel.MetaChannelId.CONNECT)
+            else if (type == MetaChannelId.CONNECT)
             {
                 if (state != State.CONNECTED && state != State.DISCONNECTING)
                     // TODO: call a listener method ? Discard the message ?
@@ -273,7 +276,7 @@ public class StandardBayeuxClient implements BayeuxClient
                 else
                     processUnsuccessful(message);
             }
-            else if (type == Channel.MetaChannelId.DISCONNECT)
+            else if (type == MetaChannelId.DISCONNECT)
             {
                 if (state != State.DISCONNECTING)
                     // TODO: call a listener method ? Discard the message ?
@@ -301,7 +304,7 @@ public class StandardBayeuxClient implements BayeuxClient
                 try
                 {
                     boolean advance;
-                    Channel.MetaChannelId metaChannel = Channel.MetaChannelId.from(message.getChannelId());
+                    MetaChannelId metaChannel = MetaChannelId.from(message.getChannelId());
                     if (metaChannel != null)
                         advance = extension.rcvMeta(this, message);
                     else
@@ -327,12 +330,9 @@ public class StandardBayeuxClient implements BayeuxClient
 
     private void notifyMetaMessageListeners(Message message)
     {
+        // TODO review - there are no BayuexClientListeners!
         for (BayeuxListener listener : listeners)
         {
-            if (listener instanceof MetaMessageListener)
-            {
-                ((MetaMessageListener)listener).onMetaMessage(this, message);
-            }
         }
     }
 

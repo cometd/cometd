@@ -3,7 +3,6 @@ package org.cometd.bayeux.client;
 import java.io.IOException;
 
 import org.cometd.bayeux.Bayeux;
-import org.cometd.bayeux.Message;
 
 
 /**
@@ -34,13 +33,5 @@ public interface BayeuxClient extends Bayeux, ClientSession
      */
     interface BayeuxClientListener extends Bayeux.BayeuxListener
     {
-    }
-
-    /**
-     * Listener for all meta messages
-     */
-    public interface MetaMessageListener extends BayeuxClientListener
-    {
-        void onMetaMessage(BayeuxClient client, Message message);
     }
 }

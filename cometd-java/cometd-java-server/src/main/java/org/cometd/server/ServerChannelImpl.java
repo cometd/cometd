@@ -20,16 +20,24 @@ public class ServerChannelImpl implements ServerChannel
     private final Set<ServerSessionImpl> _subscribers = new CopyOnWriteArraySet<ServerSessionImpl>();
     private final List<ServerChannelListener> _listeners = new CopyOnWriteArrayList<ServerChannelListener>();
     private final ConcurrentMap<String,ServerChannelImpl> _children=new ConcurrentHashMap<String,ServerChannelImpl>();
+    private final boolean _meta;
+    private final boolean _broadcast;
+    private final boolean _service;
     private boolean _lazy;
     private boolean _persistent;
     private ServerChannelImpl _wild;
     private ServerChannelImpl _deepWild;
-    
+
+    /* ------------------------------------------------------------ */
     ServerChannelImpl(BayeuxServerImpl bayeux, ServerChannelImpl parent, ChannelId id)
     {
         _bayeux=bayeux;
         _parent=parent;
         _id=id;
+        _meta=_id.isMeta();
+        _service=_id.isService();
+        _broadcast=_meta||_service;
+        _persistent=_broadcast;
     }
 
     /* ------------------------------------------------------------ */
@@ -41,7 +49,7 @@ public class ServerChannelImpl implements ServerChannel
     /* ------------------------------------------------------------ */
     public boolean isBroadcast()
     {
-        return !isMeta() && !isService();
+        return _broadcast;
     }
 
     /* ------------------------------------------------------------ */
@@ -103,13 +111,13 @@ public class ServerChannelImpl implements ServerChannel
     /* ------------------------------------------------------------ */
     public boolean isMeta()
     {
-        return _id.isMeta();
+        return _meta;
     }
 
     /* ------------------------------------------------------------ */
     public boolean isService()
     {
-        return _id.isService();
+        return _service;
     }
 
     /* ------------------------------------------------------------ */
@@ -187,7 +195,8 @@ public class ServerChannelImpl implements ServerChannel
                         if (!((PublishListener)listener).onMessage(mutable))
                             return;
             
-                _bayeux.root().doDelivery(from,to,mutable);
+                if (isBroadcast())
+                    _bayeux.root().doSubscribers(from,to,mutable);
                 
                 break;
 
@@ -220,7 +229,7 @@ public class ServerChannelImpl implements ServerChannel
     
 
     /* ------------------------------------------------------------ */
-    void doDelivery(ServerSession from, ChannelId to, final ServerMessage.Mutable mutable)
+    void doSubscribers(ServerSession from, ChannelId to, final ServerMessage.Mutable mutable)
     {
         final ServerMessage message = mutable.asImmutable();
         if (!_bayeux.extendSend(from,mutable))
@@ -256,7 +265,7 @@ public class ServerChannelImpl implements ServerChannel
                 String next=to.getSegment(_id.depth());
                 ServerChannelImpl channel=_children.get(next);
                 if (channel != null)
-                    channel.doDelivery(from,to,mutable);
+                    channel.doSubscribers(from,to,mutable);
         }
     }
 }

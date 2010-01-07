@@ -191,11 +191,11 @@ public class ServerMessagePool
         _fieldStrings.put(Message.TRANSPORT_FIELD,Message.TRANSPORT_FIELD);
         _fieldStrings.put("connectionType","connectionType");
 
-        _valueStrings.put(Channel.MetaChannelId.CONNECT.getChannelId(),Channel.MetaChannelId.CONNECT.getChannelId());
-        _valueStrings.put(Channel.MetaChannelId.DISCONNECT.getChannelId(),Channel.MetaChannelId.DISCONNECT.getChannelId());
-        _valueStrings.put(Channel.MetaChannelId.HANDSHAKE.getChannelId(),Channel.MetaChannelId.HANDSHAKE.getChannelId());
-        _valueStrings.put(Channel.MetaChannelId.SUBSCRIBE.getChannelId(),Channel.MetaChannelId.SUBSCRIBE.getChannelId());
-        _valueStrings.put(Channel.MetaChannelId.UNSUBSCRIBE.getChannelId(),Channel.MetaChannelId.UNSUBSCRIBE.getChannelId());
+        _valueStrings.put(Channel.META_CONNECT,Channel.META_CONNECT);
+        _valueStrings.put(Channel.META_DISCONNECT,Channel.META_DISCONNECT);
+        _valueStrings.put(Channel.META_HANDSHAKE,Channel.META_HANDSHAKE);
+        _valueStrings.put(Channel.META_SUBSCRIBE,Channel.META_SUBSCRIBE);
+        _valueStrings.put(Channel.META_UNSUBSCRIBE,Channel.META_UNSUBSCRIBE);
         _valueStrings.put("long-polling","long-polling");
     }
 
