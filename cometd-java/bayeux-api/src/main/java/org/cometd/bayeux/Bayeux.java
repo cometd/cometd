@@ -99,31 +99,5 @@ public interface Bayeux
          * @return true if message processing should continue, false if it should stop
          */
         boolean sendMeta(Session session, Message.Mutable message);
-
-        /**
-         * Adapter for the {@link Extension} interface that always returns true from callback methods.
-         */
-        public static class Adapter implements Extension
-        {
-            public boolean rcv(Session session, Message.Mutable message)
-            {
-                return true;
-            }
-
-            public boolean rcvMeta(Session session, Message.Mutable message)
-            {
-                return true;
-            }
-
-            public boolean send(Session session, Message.Mutable message)
-            {
-                return true;
-            }
-
-            public boolean sendMeta(Session session, Message.Mutable message)
-            {
-                return true;
-            }
-        }
     }
 }

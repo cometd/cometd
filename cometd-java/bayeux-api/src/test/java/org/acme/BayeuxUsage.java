@@ -21,6 +21,40 @@ public class BayeuxUsage
     public void clientUsage() throws IOException
     {
 
+        /*  thoughts on configuring BayeuxClient
+         
+         
+         The simple default case should be:
+         
+         
+            BayeuxClient client = new StandardBayexClient();
+            ClientSession session = client.newSession();
+            session.handshake("acme.com/cometd");
+            
+        If you want to configure a set of transports,
+        extensions and fail overs you can do
+        
+            BayeuxClient client = new StandardBayexClient();
+            client.setTransports(Arrays.asList(new Transport[] { new WebSocketTransport(options), new JsonpTransport(options), new XDLongPollTrasport(options), new LongPollTransport()}));
+            client.addExtension(new MySpecialAuth(options));
+            ClientSession session = client.newSession();
+            session.handshake("acme1.com/cometd","acme2.com/cometd");
+            
+            
+        Alternately if for the simple case, the  transports have different paths:
+        
+        
+            BayeuxClient client = new StandardBayexClient();
+            ClientSession session = client.newSession();
+            session.handshake("ws@acme.com:81/ws/cometd","jsonp@acme.com/json/cometd","acme.com/cometd");
+         
+         
+         */
+        
+        
+        
+        
+        
         // Add listeners for meta messages
         _client.getChannel("/meta/*").addListener(new Channel.MetaListener()
         {
