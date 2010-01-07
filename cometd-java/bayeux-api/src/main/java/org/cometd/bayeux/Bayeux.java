@@ -2,105 +2,136 @@ package org.cometd.bayeux;
 
 import java.util.EventListener;
 
-
-/* ------------------------------------------------------------ */
-/** Bayeux Interface.
- * <p>
- * This interface represents the prime interface for a bayeux implementation
- * for non session related configuration, extensions and listeners.
- * Both client and server interfaces are derived from this common interface.
+/**
+ * <p>The Bayeux interface represents the API for non session related configuration, extensions and listeners.</p>
+ * <p>Both client and server Bayeux interfaces are derived from this common interface.</p>
  */
 public interface Bayeux
 {
-    /* ------------------------------------------------------------ */
-    /** Add and extension to this bayeux implementation.
-     * @param extension
+    /**
+     * Adds the given extension to this bayeux object.
+     * @param extension the extension to add
+     * @see #removeExtension(Extension)
      */
     void addExtension(Extension extension);
 
-    /* ------------------------------------------------------------ */
-    /** Get a channel,
-     * @param channelId
-     * @return A Channel instance, which may be an {@link org.cometd.bayeux.client.SessionChannel}
-     * or a {@link org.cometd.bayeux.server.ServerChannel} depending on the actual actual implementation.
+    /**
+     * Removes the given extension from this bayeux object.
+     * @param extension the extension to remove
+     * @see #addExtension(Extension)
+     */
+    void removeExtension(Extension extension);
+
+    /**
+     * <p>Returns a {@link Channel} with the given channelId. <br/>
+     * The actual implementation class will depend on the (client or server) {@link Bayeux} implementation.</p>
+     * @param channelId the channel identifier
+     * @return a {@link Channel} instance with the given identifier
      */
     Channel getChannel(String channelId);
 
-    /* ------------------------------------------------------------ */
-    /** Add a listeners
+    /**
+     * <p>Adds the given listener to this bayeux object.</p>
+     * <p>The listener class must extend from {@link BayeuxListener}, and be
+     * suitable for the (client or server) {@link Bayeux} implementation.</p>
      * @throws IllegalArgumentException if the type of the listener is not supported
-     * @param listener A listener derived from {@link BayeuxListener}, that must also be 
-     * suitable for the derived {@link Bayeux} implementation.
+     * @param listener the listener to be added
+     * @see #removeListener(BayeuxListener)
      */
-    void addListener(BayeuxListener listener);
-    
-    /* ------------------------------------------------------------ */
-    /** Remove a listener
-     * @param listener The listener to be removed.
+    void addListener(BayeuxListener listener) throws IllegalArgumentException;
+
+    /**
+     * Removes the given listener from this bayeux object.
+     * @param listener the listener to be removed.
+     * @see #addListener(BayeuxListener)
      */
     void removeListener(BayeuxListener listener);
 
-
-    /* ------------------------------------------------------------ */
-    /** Create a new Message.
-     * <p>
-     * The message will be of a type suitable for the Bayeux implementation,
-     * so for a Bayeux server, it will be a ServerMessage etc.
-     * @return A new or recycled message instance.
+    /**
+     * <p>Creates a new mutable {@link Message}.</p>
+     * <p>The message will be of a type suitable for the (client or server) {@link Bayeux} implementation.
+     * @return a new or recycled message instance.
      */
-    Message.Mutable newMessage();
-    
-    
-    /* ------------------------------------------------------------ */
-    /** BayeuxListener.
-     * All Bayeux Listeners are derived from this interface.
+    // TODO: review this, but clients do not need it, only server do, and there already is BayeuxServer.getServerMessage()
+//    Message.Mutable newMessage();
+
+    /**
+     * <p>The base interface for listeners interested in Bayeux events. <br/>
+     * All Bayeux listener interfaces are derived from this interface.</p>
      */
     interface BayeuxListener extends EventListener
-    {};
-    
+    {
+    }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /** Bayeux Extension.
-     * <p>
-     * A registered extension is called once for every message
-     * received and sent by the bayeux server.  Extensions may
-     * modify messages and all clients will see the results
-     * of those modifications.
-     * <p>
-     * Bayeux.Extension receive methods are called before 
-     * ServerSession.Extension receive methods.  
-     * ServerSession.Extension send methods are called 
-     * before Bayeux.Extension send methods.
+    /**
+     * <p>Extension API for bayeux messages.</p>
+     * <p>Implementations of this interface allow to modify incoming and outgoing messages
+     * respectively just before and just after they are handled by the implementation,
+     * either on client side or server side.</p>
+     * <p>Extensions are be registered in order and one extension may allow subsequent
+     * extensions to process the message by returning true from the callback method, or
+     * forbid further processing by returning false.</p>
+     *
+     * @see Bayeux#addExtension(Extension)
      */
     public interface Extension
     {
         /**
-         * @param from
-         * @param message
-         * @return true if message processing should continue
+         * Callback method invoked every time a normal message is incoming.
+         * @param session the session object
+         * @param message the incoming message
+         * @return true if message processing should continue, false if it should stop
          */
-        boolean rcv(Session from, Message.Mutable message);
+        boolean rcv(Session session, Message.Mutable message);
 
         /**
-         * @param from
-         * @param message
-         * @return true if message processing should continue
+         * Callback method invoked every time a meta message is incoming.
+         * @param session the session object
+         * @param message the incoming meta message
+         * @return true if message processing should continue, false if it should stop
          */
-        boolean rcvMeta(Session from, Message.Mutable message);
+        boolean rcvMeta(Session session, Message.Mutable message);
 
         /**
-         * @param from
-         * @param message
-         * @return true if message processing should continue
+         * Callback method invoked every time a normal message is outgoing.
+         * @param session the session object
+         * @param message the outgoing message
+         * @return true if message processing should continue, false if it should stop
          */
-        boolean send(Session from, Message.Mutable message);
+        boolean send(Session session, Message.Mutable message);
 
         /**
-         * @param from
-         * @param message
-         * @return true if message processing should continue
+         * Callback method invoked every time a meta message is outgoing.
+         * @param session the session object
+         * @param message the outgoing meta message
+         * @return true if message processing should continue, false if it should stop
          */
-        boolean sendMeta(Session from, Message.Mutable message);
+        boolean sendMeta(Session session, Message.Mutable message);
+
+        /**
+         * Adapter for the {@link Extension} interface that always returns true from callback methods.
+         */
+        public static class Adapter implements Extension
+        {
+            public boolean rcv(Session session, Message.Mutable message)
+            {
+                return true;
+            }
+
+            public boolean rcvMeta(Session session, Message.Mutable message)
+            {
+                return true;
+            }
+
+            public boolean send(Session session, Message.Mutable message)
+            {
+                return true;
+            }
+
+            public boolean sendMeta(Session session, Message.Mutable message)
+            {
+                return true;
+            }
+        }
     }
 }

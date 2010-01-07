@@ -7,11 +7,11 @@ import java.util.Map;
  * The API of a bayeux message, which consists mainly of convenience methods
  * to access the known fields of the message map.
  * <p>
- * This interface comes in both an Immutable and Mutable variation. Mutability 
+ * This interface comes in both an Immutable and Mutable variation. Mutability
  * may be deeply enforced by an implementation, so that it is not correct
  * to cast a passed Message, to a Message.Mutable, even if the implementation
  * allows this.
- *  
+ *
  */
 public interface Message extends Map<String, Object>
 {
@@ -32,9 +32,9 @@ public interface Message extends Map<String, Object>
     public static final String SUPPORTED_CONNECTION_TYPES_FIELD ="supportedConnectionTypes";
     public static final String RECONNECT_FIELD = "reconnect";
     public static final String INTERVAL_FIELD = "interval";
-    public static final String RETRY_RESPONSE = "retry";
-    public static final String HANDSHAKE_RESPONSE = "handshake";
-    public static final String NONE_RESPONSE = "none";
+    public static final String RECONNECT_RETRY_VALUE = "retry";
+    public static final String RECONNECT_HANDSHAKE_VALUE = "handshake";
+    public static final String RECONNECT_NONE_VALUE = "none";
     public static final String SERVICE="/service";
 
     Map<String, Object> getAdvice();
@@ -46,7 +46,7 @@ public interface Message extends Map<String, Object>
     Map<String, Object> getDataAsMap();
     Map<String, Object> getExt();
     String getId();
-    
+
     String getJSON();
 
     interface Mutable extends Message

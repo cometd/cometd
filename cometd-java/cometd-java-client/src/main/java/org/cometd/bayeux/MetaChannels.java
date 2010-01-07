@@ -1,15 +1,11 @@
 package org.cometd.bayeux;
 
-import java.util.EnumMap;
-
-import bayeux.MetaChannel;
-import bayeux.MetaChannelType;
-
 /**
  * @version $Revision$ $Date$
  */
 public class MetaChannels
 {
+/*
     private final static EnumMap<MetaChannelType, MetaChannel> metaChannels = new EnumMap<MetaChannelType, MetaChannel>(MetaChannelType.class);
 
     static
@@ -22,4 +18,5 @@ public class MetaChannels
     {
         return metaChannels.get(type);
     }
+*/
 }

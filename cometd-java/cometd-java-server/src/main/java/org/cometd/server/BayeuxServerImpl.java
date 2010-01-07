@@ -26,7 +26,7 @@ public class BayeuxServerImpl implements BayeuxServer
     private final ConcurrentMap<String, ServerSessionImpl> _sessions = new ConcurrentHashMap<String, ServerSessionImpl>();
     private final ConcurrentMap<String, ServerChannelImpl> _channels = new ConcurrentHashMap<String, ServerChannelImpl>();
     private SecurityPolicy _policy;
-    
+
     /* ------------------------------------------------------------ */
     int randomInt()
     {
@@ -50,7 +50,7 @@ public class BayeuxServerImpl implements BayeuxServer
     {
         return _root;
     }
-    
+
     /* ------------------------------------------------------------ */
     public Object getCurrentTransport()
     {
@@ -102,7 +102,7 @@ public class BayeuxServerImpl implements BayeuxServer
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public LocalSession newLocalSession(String idHint)
     {
@@ -111,17 +111,11 @@ public class BayeuxServerImpl implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public Message.Mutable newMessage()
-    {
-        return _pool.getServerMessage();
-    }
-
-    /* ------------------------------------------------------------ */
     public ServerMessage.Mutable newServerMessage()
     {
         return _pool.getServerMessage();
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setSecurityPolicy(SecurityPolicy securityPolicy)
     {
@@ -132,6 +126,11 @@ public class BayeuxServerImpl implements BayeuxServer
     public void addExtension(Extension extension)
     {
         _extensions.add(extension);
+    }
+
+    public void removeExtension(Extension extension)
+    {
+        _extensions.remove(extension);
     }
 
     /* ------------------------------------------------------------ */
@@ -171,7 +170,7 @@ public class BayeuxServerImpl implements BayeuxServer
                 return false;
         return true;
     }
-    
+
     /* ------------------------------------------------------------ */
     protected boolean extendSend(ServerSession from, Message.Mutable message)
     {
@@ -203,5 +202,5 @@ public class BayeuxServerImpl implements BayeuxServer
         }
     }
 
-    
+
 }

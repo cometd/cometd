@@ -1,18 +1,11 @@
 package org.cometd.bayeux;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import bayeux.MetaChannel;
-import bayeux.MetaMessage;
-import org.eclipse.jetty.util.ajax.JSON;
-
 /**
  * @version $Revision$ $Date$
  */
-public class BayeuxMetaMessage implements MetaMessage, JSON.Convertible
+public class BayeuxMetaMessage //implements MetaMessage, JSON.Convertible
 {
+/*
     private static final AtomicInteger ids = new AtomicInteger();
 
     private final Map<String, Object> fields = new HashMap<String, Object>();
@@ -72,4 +65,5 @@ public class BayeuxMetaMessage implements MetaMessage, JSON.Convertible
     public void fromJSON(Map object)
     {
     }
+*/
 }

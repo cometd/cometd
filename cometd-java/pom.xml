@@ -23,7 +23,6 @@
         <module>cometd-java-common</module>
         <module>cometd-java-server</module>
         <module>cometd-java-client</module>
-        <module>websocket-java-client</module>
     </modules>
 
     <build>

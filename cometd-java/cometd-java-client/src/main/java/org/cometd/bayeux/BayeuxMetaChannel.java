@@ -1,15 +1,11 @@
 package org.cometd.bayeux;
 
-import bayeux.MetaChannel;
-import bayeux.MetaChannelType;
-import bayeux.ChannelSubscription;
-import bayeux.MetaMessageListener;
-
 /**
  * @version $Revision$ $Date$
  */
-public class BayeuxMetaChannel implements MetaChannel
+public class BayeuxMetaChannel// implements MetaChannel
 {
+/*
     private final MetaChannelType type;
 
     public BayeuxMetaChannel(MetaChannelType type)
@@ -26,4 +22,5 @@ public class BayeuxMetaChannel implements MetaChannel
     {
         return type.getName();
     }
+*/
 }

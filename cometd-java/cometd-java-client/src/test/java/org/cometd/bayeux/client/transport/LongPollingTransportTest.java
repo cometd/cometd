@@ -3,16 +3,18 @@ package org.cometd.bayeux.client.transport;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import bayeux.MetaMessage;
+import org.cometd.bayeux.Message;
 import org.eclipse.jetty.client.HttpClient;
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import org.junit.Test;
 
 /**
  * @version $Revision$ $Date$
@@ -22,30 +24,19 @@ public class LongPollingTransportTest
     @Test
     public void testType()
     {
-        Transport transport = new LongPollingTransport(null);
+        Transport transport = new LongPollingTransport(null, null);
         assertEquals("long-polling", transport.getType());
     }
 
     @Test
     public void testAccept()
     {
-        Transport transport = new LongPollingTransport(null);
+        Transport transport = new LongPollingTransport(null, null);
         assertTrue(transport.accept("1.0"));
     }
 
     @Test
-    public void testSyncSendWithResponse200() throws Exception
-    {
-        testSendWithResponse200(true);
-    }
-
-    @Test
-    public void testAsyncSendWithResponse200() throws Exception
-    {
-        testSendWithResponse200(false);
-    }
-
-    public void testSendWithResponse200(boolean synchronous) throws Exception
+    public void testSendWithResponse200() throws Exception
     {
         final long processingTime = 500;
         final ServerSocket serverSocket = new ServerSocket(0);
@@ -65,7 +56,7 @@ public class LongPollingTransportTest
                     output.write((
                             "HTTP/1.1 200 OK\r\n" +
                             "Connection: close\r\n" +
-                            "Content-Type: application/json\r\n" +
+                            "Content-Type: application/json;charset=UTF-8\r\n" +
                             "Content-Length: 2\r\n" +
                             "\r\n" +
                             "[]").getBytes("UTF-8"));
@@ -80,6 +71,7 @@ public class LongPollingTransportTest
             }
         };
         serverThread.start();
+        final String serverURI = "http://localhost:" + serverSocket.getLocalPort();
 
         try
         {
@@ -88,30 +80,22 @@ public class LongPollingTransportTest
 
             try
             {
-                Transport transport = new LongPollingTransport(httpClient);
-
                 final CountDownLatch latch = new CountDownLatch(1);
-                Exchange exchange = new Exchange("http://localhost:" + serverSocket.getLocalPort())
+                Transport transport = new LongPollingTransport(serverURI, httpClient);
+                transport.addListener(new TransportListener.Adapter()
                 {
-                    public void success(MetaMessage[] responses)
+                    @Override
+                    public void onMessages(List<Message.Mutable> messages)
                     {
                         latch.countDown();
                     }
-
-                    public void failure(TransportException reason)
-                    {
-                    }
-                };
+                });
 
                 long start = System.nanoTime();
-                transport.send(exchange, synchronous);
+                transport.send();
                 long end = System.nanoTime();
 
-                if (synchronous)
-                    assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) >= processingTime);
-                else
-                    assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
-
+                assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
                 assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
             }
             finally
@@ -128,7 +112,7 @@ public class LongPollingTransportTest
     }
 
     @Test
-    public void testAsyncSendWithResponse500() throws Exception
+    public void testSendWithResponse500() throws Exception
     {
         final long processingTime = 500;
         final ServerSocket serverSocket = new ServerSocket(0);
@@ -160,6 +144,7 @@ public class LongPollingTransportTest
             }
         };
         serverThread.start();
+        String serverURI = "http://localhost:" + serverSocket.getLocalPort();
 
         try
         {
@@ -168,26 +153,22 @@ public class LongPollingTransportTest
 
             try
             {
-                Transport transport = new LongPollingTransport(httpClient);
-
+                Transport transport = new LongPollingTransport(serverURI, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                Exchange exchange = new Exchange("http://localhost:" + serverSocket.getLocalPort())
+                transport.addListener(new TransportListener.Adapter()
                 {
-                    public void success(MetaMessage[] responses)
-                    {
-                    }
-
-                    public void failure(TransportException reason)
+                    @Override
+                    public void onProtocolError()
                     {
                         latch.countDown();
                     }
-                };
+                });
 
                 long start = System.nanoTime();
-                transport.send(exchange, false);
+                transport.send();
                 long end = System.nanoTime();
-                assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
 
+                assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
                 assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
             }
             finally
@@ -204,33 +185,30 @@ public class LongPollingTransportTest
     }
 
     @Test
-    public void testAsyncSendWithServerDown() throws Exception
+    public void testSendWithServerDown() throws Exception
     {
         ServerSocket serverSocket = new ServerSocket(0);
         int port = serverSocket.getLocalPort();
         serverSocket.close();
+        String serverURI = "http://localhost:" + port;
 
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
         try
         {
-            Transport transport = new LongPollingTransport(httpClient);
-
+            Transport transport = new LongPollingTransport(serverURI, httpClient);
             final CountDownLatch latch = new CountDownLatch(1);
-            Exchange exchange = new Exchange("http://localhost:" + port)
+            transport.addListener(new TransportListener.Adapter()
             {
-                public void success(MetaMessage[] responses)
-                {
-                }
-
-                public void failure(TransportException reason)
+                @Override
+                public void onConnectException(Throwable x)
                 {
                     latch.countDown();
                 }
-            };
+            });
 
-            transport.send(exchange, false);
+            transport.send();
 
             assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
         }
@@ -241,7 +219,7 @@ public class LongPollingTransportTest
     }
 
     @Test
-    public void testAsyncSendWithServerCrash() throws Exception
+    public void testSendWithServerCrash() throws Exception
     {
         final long processingTime = 500;
         final ServerSocket serverSocket = new ServerSocket(0);
@@ -266,6 +244,7 @@ public class LongPollingTransportTest
             }
         };
         serverThread.start();
+        String serverURI = "http://localhost:" + serverSocket.getLocalPort();
 
         try
         {
@@ -274,26 +253,22 @@ public class LongPollingTransportTest
 
             try
             {
-                Transport transport = new LongPollingTransport(httpClient);
-
+                Transport transport = new LongPollingTransport(serverURI, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                Exchange exchange = new Exchange("http://localhost:" + serverSocket.getLocalPort())
+                transport.addListener(new TransportListener.Adapter()
                 {
-                    public void success(MetaMessage[] responses)
-                    {
-                    }
-
-                    public void failure(TransportException reason)
+                    @Override
+                    public void onException(Throwable x)
                     {
                         latch.countDown();
                     }
-                };
+                });
 
                 long start = System.nanoTime();
-                transport.send(exchange, false);
+                transport.send();
                 long end = System.nanoTime();
-                assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
 
+                assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
                 assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
             }
             finally
@@ -310,7 +285,7 @@ public class LongPollingTransportTest
     }
 
     @Test
-    public void testAsyncSendWithServerExpire() throws Exception
+    public void testSendWithServerExpire() throws Exception
     {
         final long timeout = 1000;
         final ServerSocket serverSocket = new ServerSocket(0);
@@ -330,7 +305,7 @@ public class LongPollingTransportTest
                     output.write((
                             "HTTP/1.1 200 OK\r\n" +
                             "Connection: close\r\n" +
-                            "Content-Type: application/json\r\n" +
+                            "Content-Type: application/json;charset=UTF-8\r\n" +
                             "Content-Length: 2\r\n" +
                             "\r\n" +
                             "[]").getBytes("UTF-8"));
@@ -345,6 +320,7 @@ public class LongPollingTransportTest
             }
         };
         serverThread.start();
+        String serverURI = "http://localhost:" + serverSocket.getLocalPort();
 
         try
         {
@@ -354,22 +330,18 @@ public class LongPollingTransportTest
 
             try
             {
-                Transport transport = new LongPollingTransport(httpClient);
-
+                Transport transport = new LongPollingTransport(serverURI, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                Exchange exchange = new Exchange("http://localhost:" + serverSocket.getLocalPort())
+                transport.addListener(new TransportListener.Adapter()
                 {
-                    public void success(MetaMessage[] responses)
-                    {
-                    }
-
-                    public void failure(TransportException reason)
+                    @Override
+                    public void onExpire()
                     {
                         latch.countDown();
                     }
-                };
+                });
 
-                transport.send(exchange, false);
+                transport.send();
 
                 assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
             }
