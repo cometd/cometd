@@ -22,9 +22,9 @@ public class BayeuxUsage
     {
 
         // Add listeners for meta messages
-        _client.addListener(new BayeuxClient.MetaMessageListener()
+        _client.getChannel("/meta/*").addListener(new Channel.MetaListener()
         {
-            public void onMetaMessage(BayeuxClient client, Message message)
+            public void onMetaMessage(Bayeux bayeux, Channel channel, Message message, boolean successful, String error)
             {
             }
         });

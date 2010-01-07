@@ -48,14 +48,6 @@ public interface Bayeux
     void removeListener(BayeuxListener listener);
 
     /**
-     * <p>Creates a new mutable {@link Message}.</p>
-     * <p>The message will be of a type suitable for the (client or server) {@link Bayeux} implementation.
-     * @return a new or recycled message instance.
-     */
-    // TODO: review this, but clients do not need it, only server do, and there already is BayeuxServer.getServerMessage()
-//    Message.Mutable newMessage();
-
-    /**
      * <p>The base interface for listeners interested in Bayeux events. <br/>
      * All Bayeux listener interfaces are derived from this interface.</p>
      */

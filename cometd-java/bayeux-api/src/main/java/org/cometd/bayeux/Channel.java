@@ -1,9 +1,6 @@
 package org.cometd.bayeux;
 
-import java.util.HashMap;
-import java.util.Map;
 
-import org.cometd.bayeux.client.BayeuxClient.BayeuxClientListener;
 
 /** A Bayeux Channel.
  * <p>
@@ -23,6 +20,12 @@ import org.cometd.bayeux.client.BayeuxClient.BayeuxClientListener;
  */
 public interface Channel
 {
+    public final static String META_HANDSHAKE="/meta/handshake";
+    public final static String META_CONNECT="/meta/connect";
+    public final static String META_SUBSCRIBE="/meta/subscribe";
+    public final static String META_UNSUBSCRIBE="/meta/unsubscribe";
+    public final static String META_DISCONNECT="/meta/disconnect";
+    
     /**
      * @return The channel ID
      */
@@ -63,41 +66,8 @@ public interface Channel
     /**
      * Listener for all meta messages on a channel
      */
-    public interface MetaListener extends BayeuxClientListener
+    public interface MetaListener extends ChannelListener
     {
         void onMetaMessage(Bayeux bayeux, Channel channel, Message message,boolean successful,String error);
-    }
-
-    // TODO: move this to a separate class ?
-    public enum MetaChannelId
-    {
-        HANDSHAKE("/meta/handshake"),
-        CONNECT("/meta/connect"),
-        SUBSCRIBE("/meta/subscribe"),
-        UNSUBSCRIBE("/meta/unsubscribe"),
-        DISCONNECT("/meta/disconnect");
-
-        private final String _channelId;
-
-        private MetaChannelId(String channelId)
-        {
-            _channelId = channelId;
-            MetaChannelIds.values.put(channelId, this);
-        }
-
-        public String getChannelId()
-        {
-            return _channelId;
-        }
-
-        public static MetaChannelId from(String channelId)
-        {
-            return MetaChannelIds.values.get(channelId);
-        }
-
-        private static class MetaChannelIds
-        {
-            private static Map<String, MetaChannelId> values = new HashMap<String, MetaChannelId>();
-        }
     }
 }
