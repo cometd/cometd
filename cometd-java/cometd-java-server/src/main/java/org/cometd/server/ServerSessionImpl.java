@@ -91,12 +91,12 @@ public class ServerSessionImpl implements ServerSession
         {
             if (listener instanceof MaxQueueListener && _maxQueue >=0 && _queue.size() >= _maxQueue)
             {
-                if (!((MaxQueueListener)listener).queueMaxed(from,this,message))
+                if (!((MaxQueueListener)listener).queueMaxed(this,from,message))
                     return;
             }
-            if (listener instanceof QueueListener)
+            if (listener instanceof MessageListener)
             {
-                if (!((QueueListener)listener).onQueue(from,this,message))
+                if (!((MessageListener)listener).onMessage(this,from,message))
                     return;
             }
         }
@@ -110,7 +110,7 @@ public class ServerSessionImpl implements ServerSession
             {
                 try
                 {
-                    ((MessageListener)listener).onMessage(this,message);
+                    ((MessageListener)listener).onMessage(this,from,message);
                 }
                 catch(Exception e)
                 {
@@ -157,10 +157,8 @@ public class ServerSessionImpl implements ServerSession
         _batch.incrementAndGet();
     }
 
-    public void addListener(SessionListener listener)
+    public void addListener(ServerSessionListener listener)
     {
-        if (!(listener instanceof ServerSessionListener))
-            throw new IllegalArgumentException("!ServerSessionListener");
         _listeners.add((ServerSessionListener)listener);
     }
 
@@ -174,7 +172,7 @@ public class ServerSessionImpl implements ServerSession
         return _queue;
     }
 
-    public void removeListener(SessionListener listener)
+    public void removeListener(ServerSessionListener listener)
     {
         _listeners.remove(listener);
     }

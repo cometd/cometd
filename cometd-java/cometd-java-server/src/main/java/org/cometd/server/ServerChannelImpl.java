@@ -89,10 +89,8 @@ public class ServerChannelImpl implements ServerChannel
     }
 
     /* ------------------------------------------------------------ */
-    public void addListener(ChannelListener listener)
+    public void addListener(ServerChannelListener listener)
     {
-        if (!(listener instanceof ServerChannelListener))
-            throw new IllegalArgumentException("!ServerChannelListener");
         _listeners.add((ServerChannelListener)listener);
     }
 
@@ -121,7 +119,7 @@ public class ServerChannelImpl implements ServerChannel
     }
 
     /* ------------------------------------------------------------ */
-    public void removeListener(ChannelListener listener)
+    public void removeListener(ServerChannelListener listener)
     {
         _listeners.remove(listener);
     }
@@ -169,11 +167,11 @@ public class ServerChannelImpl implements ServerChannel
     /* ------------------------------------------------------------ */
     public void publish(ServerSession from, ServerMessage msg)
     {
-        _bayeux.root().doListeners(from,_id,msg.asMutable());
+        _bayeux.root().doListeners(from,this,msg.asMutable());
     }
 
     /* ------------------------------------------------------------ */
-    void doListeners(ServerSession from, ChannelId to, final ServerMessage.Mutable mutable)
+    void doListeners(ServerSession from, ServerChannelImpl to, final ServerMessage.Mutable mutable)
     {
         // Deeply apply all the listeners, so that they may perform all
         // mutable changes before any deliveries take place.
@@ -181,7 +179,7 @@ public class ServerChannelImpl implements ServerChannel
         // listener at /foo/bar/wibble, then the /foo/** subscribe will
         // see the mutated message.
         
-        int tail=to.depth() - _id.depth();
+        int tail=to._id.depth() - _id.depth();
         final ServerChannelImpl wild=_wild;
         final ServerChannelImpl deepwild=_deepWild;
 
@@ -191,12 +189,12 @@ public class ServerChannelImpl implements ServerChannel
                 if (_lazy)
                     mutable.setLazy(true);
                 for (ServerChannelListener listener : _listeners)
-                    if (listener instanceof PublishListener)
-                        if (!((PublishListener)listener).onMessage(mutable))
+                    if (listener instanceof MessageListener)
+                        if (!((MessageListener)listener).onMessage(from,to,mutable))
                             return;
             
                 if (isBroadcast())
-                    _bayeux.root().doSubscribers(from,to,mutable);
+                    _bayeux.root().doSubscribers(from,to._id,mutable);
                 
                 break;
 
@@ -208,8 +206,8 @@ public class ServerChannelImpl implements ServerChannel
                         mutable.setLazy(true);
                     
                     for (ServerChannelListener listener : wild._listeners)
-                        if (listener instanceof PublishListener)
-                            if (!((PublishListener)listener).onMessage(mutable))
+                        if (listener instanceof MessageListener)
+                            if (!((MessageListener)listener).onMessage(from,to,mutable))
                                 return;
                 }
                 // fall through to default
@@ -220,8 +218,8 @@ public class ServerChannelImpl implements ServerChannel
                     if (wild._lazy)
                         mutable.setLazy(true);
                     for (ServerChannelListener listener : deepwild._listeners)
-                        if (listener instanceof PublishListener)
-                            if (!((PublishListener)listener).onMessage(mutable))
+                        if (listener instanceof MessageListener)
+                            if (!((MessageListener)listener).onMessage(from,to,mutable))
                                 return;
                 }
         }

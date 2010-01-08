@@ -4,9 +4,10 @@ package org.cometd.bayeux.server;
 import java.util.Queue;
 import java.util.Set;
 
+import org.cometd.bayeux.BayeuxListener;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
-import org.cometd.bayeux.Bayeux.Extension;
+import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
 
 
 /**
@@ -54,39 +55,21 @@ public interface ServerSession extends Session
     void disconnect();
     
     
-    
     /* ------------------------------------------------------------ */
-    /** Run a Runnable in a batch.
-     * @param batch the Runnable to run as a batch
-     */
-    void batch(Runnable batch);
-
-    
     /* ------------------------------------------------------------ */
-    /**
-     * @deprecated use {@link #batch(Runnable)}
-     */
-    void endBatch();
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated use {@link #batch(Runnable)}
-     */
-    void startBatch();
-
-
-    interface ServerSessionListener extends Session.SessionListener
+    interface ServerSessionListener extends BayeuxListener
     {}
 
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /** Queue a message listener
      * <p>
      * Listener called before each message is queued.
      */
-    public interface QueueListener extends ServerSessionListener
+    public interface MessageListener extends ServerSessionListener
     {
-        public boolean onQueue(Session from, ServerSession session, ServerMessage message);
+        public boolean onMessage(ServerSession session, Session from, ServerMessage message);
     };
 
     /* ------------------------------------------------------------ */
@@ -115,12 +98,12 @@ public interface ServerSession extends Session
          * handler to manipulate the queue returned by {@link Session#getQueue()}, but
          * action in the callback that may result in another Client instance should be
          * avoided as that would risk deadlock.
+         * @param session Client message is being delivered to
          * @param from Client message is published from
-         * @param to Client message is being delivered to
          * @param message
          * @return true if the message should be added to the client queue
          */
-        public boolean queueMaxed(Session from, ServerSession to, Message message);
+        public boolean queueMaxed(ServerSession session, Session from, Message message);
     }
     
 
@@ -141,31 +124,31 @@ public interface ServerSession extends Session
     public interface Extension
     {
         /**
-         * @param from
+         * @param session
          * @param message
          * @return true if message processing should continue
          */
-        boolean rcv(ServerSession from, ServerMessage.Mutable message);
+        boolean rcv(ServerSession session, ServerMessage.Mutable message);
 
         /**
-         * @param from
+         * @param session
          * @param message
          * @return true if message processing should continue
          */
-        boolean rcvMeta(ServerSession from, ServerMessage.Mutable message);
+        boolean rcvMeta(ServerSession session, ServerMessage.Mutable message);
 
         /**
-         * @param from
+         * @param session
          * @param message
          * @return The message to send for this session (may be a new message or null to discard).
          */
-        ServerMessage send(ServerSession from, ServerSession to, ServerMessage message);
+        ServerMessage send(ServerSession session, ServerSession to, ServerMessage message);
 
         /**
-         * @param from
+         * @param session
          * @param message
          * @return true if message processing should continue
          */
-        boolean sendMeta(Session to, ServerMessage.Mutable message);
+        boolean sendMeta(Session session, ServerMessage.Mutable message);
     }
 }

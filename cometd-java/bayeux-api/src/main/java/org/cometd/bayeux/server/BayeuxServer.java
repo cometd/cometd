@@ -1,36 +1,58 @@
 package org.cometd.bayeux.server;
 
-import org.cometd.bayeux.Bayeux;
-import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Session;
-import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
+import java.util.EventListener;
 
-public interface BayeuxServer extends Bayeux
+import org.cometd.bayeux.BayeuxListener;
+import org.cometd.bayeux.Message;
+
+public interface BayeuxServer 
 {
+    /* ------------------------------------------------------------ */
     /** ServletContext attribute name used to obtain the Bayeux object */
     public static final String ATTRIBUTE ="org.cometd.bayeux";
 
+
     /* ------------------------------------------------------------ */
     /**
+     * Adds the given extension to this bayeux object.
+     * @param extension the extension to add
+     * @see #removeExtension(Extension)
+     */
+    void addExtension(Extension extension);
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param listener
+     */
+    void addListener(BayeuxServerListener listener);
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param listener
+     */
+    void removeListener(BayeuxServerListener listener);
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param channelId
      * @return
      */
-    public SecurityPolicy getSecurityPolicy();
-
+    ServerChannel getChannel(String channelId);
+    
     /* ------------------------------------------------------------ */
     /**
      * @param channelId
      * @param create
      * @return
      */
-    ServerChannel getServerChannel(String channelId, boolean create);
+    ServerChannel getChannel(String channelId, boolean create);
     
     /* ------------------------------------------------------------ */
     /** Get a server session my ID
      * @param clientId the ID
      * @return the server session or null if no such valid session exists.
      */
-    ServerSession getServerSession(String clientId);
+    ServerSession getSession(String clientId);
 
 
     /* ------------------------------------------------------------ */
@@ -47,9 +69,15 @@ public interface BayeuxServer extends Bayeux
     /** Create a new Message.
      * @return A new or recycled message instance.
      */
-    ServerMessage.Mutable newServerMessage();
+    ServerMessage.Mutable newMessage();
     
-    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return
+     */
+    public SecurityPolicy getSecurityPolicy();
+
     /* ------------------------------------------------------------ */
     /**
      * @param securityPolicy
@@ -71,7 +99,7 @@ public interface BayeuxServer extends Bayeux
     /* ------------------------------------------------------------ */
     /**
      */
-    interface BayeuxServerListener extends Bayeux.BayeuxListener
+    interface BayeuxServerListener extends BayeuxListener
     {}
 
     /* ------------------------------------------------------------ */
@@ -95,9 +123,59 @@ public interface BayeuxServer extends Bayeux
     }
 
     /* ------------------------------------------------------------ */
-    public interface SubscriptionListener extends ServerChannelListener
+    /* ------------------------------------------------------------ */
+    public interface SubscriptionListener extends BayeuxServerListener
     {
         public void subscribed(ServerSession session, ServerChannel channel);
         public void unsubscribed(ServerSession session, ServerChannel channel);
+    }
+    
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /**
+     * <p>Extension API for bayeux server.</p>
+     * <p>Implementations of this interface allow to modify incoming and outgoing messages
+     * respectively just before and just after they are handled by the implementation,
+     * either on client side or server side.</p>
+     * <p>Extensions are be registered in order and one extension may allow subsequent
+     * extensions to process the message by returning true from the callback method, or
+     * forbid further processing by returning false.</p>
+     *
+     * @see BayeuxServer#addExtension(Extension)
+     */
+    public interface Extension
+    {
+        /**
+         * Callback method invoked every time a normal message is incoming.
+         * @param session the session object
+         * @param message the incoming message
+         * @return true if message processing should continue, false if it should stop
+         */
+        boolean rcv(ServerSession session, Message.Mutable message);
+
+        /**
+         * Callback method invoked every time a meta message is incoming.
+         * @param session the session object
+         * @param message the incoming meta message
+         * @return true if message processing should continue, false if it should stop
+         */
+        boolean rcvMeta(ServerSession session, Message.Mutable message);
+
+        /**
+         * Callback method invoked every time a normal message is outgoing.
+         * @param session the session object
+         * @param message the outgoing message
+         * @return true if message processing should continue, false if it should stop
+         */
+        boolean send(ServerSession session, Message.Mutable message);
+
+        /**
+         * Callback method invoked every time a meta message is outgoing.
+         * @param session the session object
+         * @param message the outgoing meta message
+         * @return true if message processing should continue, false if it should stop
+         */
+        boolean sendMeta(ServerSession session, Message.Mutable message);
     }
 }

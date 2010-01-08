@@ -65,7 +65,7 @@ public class BayeuxServerImpl implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public ServerChannel getServerChannel(String channelId, boolean create)
+    public ServerChannel getChannel(String channelId, boolean create)
     {
         ServerChannelImpl channel = _channels.get(channelId);
         if (channel==null && create)
@@ -74,7 +74,7 @@ public class BayeuxServerImpl implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public ServerSession getServerSession(String clientId)
+    public ServerSession getSession(String clientId)
     {
         return _sessions.get(clientId);
     }
@@ -111,7 +111,7 @@ public class BayeuxServerImpl implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public ServerMessage.Mutable newServerMessage()
+    public ServerMessage.Mutable newMessage()
     {
         return _pool.getServerMessage();
     }
@@ -134,7 +134,7 @@ public class BayeuxServerImpl implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public void addListener(BayeuxListener listener)
+    public void addListener(BayeuxServerListener listener)
     {
         if (!(listener instanceof BayeuxServerListener))
             throw new IllegalArgumentException("!BayeuxServerListener");
@@ -142,13 +142,13 @@ public class BayeuxServerImpl implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public Channel getChannel(String channelId)
+    public ServerChannel getChannel(String channelId)
     {
         return _channels.get(channelId);
     }
 
     /* ------------------------------------------------------------ */
-    public void removeListener(BayeuxListener listener)
+    public void removeListener(BayeuxServerListener listener)
     {
         _listeners.remove(listener);
     }

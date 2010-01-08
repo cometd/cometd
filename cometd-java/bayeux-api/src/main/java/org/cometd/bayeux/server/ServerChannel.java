@@ -2,9 +2,11 @@ package org.cometd.bayeux.server;
 
 import java.util.Set;
 
+import org.cometd.bayeux.BayeuxListener;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
+import org.cometd.bayeux.client.ClientChannel.ClientChannelListener;
 
 
 
@@ -14,29 +16,43 @@ import org.cometd.bayeux.Session;
  */
 public interface ServerChannel extends Channel
 {
+    /* ------------------------------------------------------------ */
+    /**
+     * @param listener
+     */
+    void addListener(ServerChannelListener listener);
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param listener
+     */
+    void removeListener(ServerChannelListener listener);
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return
+     */
     Set<? extends ServerSession> getSubscribers();
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @return
+     */
     boolean isBroadcast();  // !meta and !service;
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return
+     */
     boolean isLazy();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return
+     */
     boolean isPersistent();
     
-    /* ------------------------------------------------------------ */
-    /**
-     * The ServerChannel is wild if it was obtained via an ID ending
-     * with "/*".  Wild channels apply to all direct children of the
-     * channel before the "/*".
-     * @return true if the channel is wild.
-     */
-    boolean isWild();
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * The ServerChannel is deeply wild if it was obtained via an ID ending
-     * with "/**".  Deeply Wild channels apply to all descendants of the
-     * channel before the "/**".
-     * @return true if the channel is deeply wild.
-     */
-    boolean isDeepWild();
     
     /* ------------------------------------------------------------ */
     /** Set lazy channel
@@ -63,18 +79,18 @@ public interface ServerChannel extends Channel
     /* ------------------------------------------------------------ */
     /**
      */
-    interface ServerChannelListener extends Channel.ChannelListener
+    interface ServerChannelListener extends BayeuxListener
     {}
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /**
      */
-    public interface PublishListener extends ServerChannelListener
+    public interface MessageListener extends ServerChannelListener
     {
-        boolean onMessage(ServerMessage.Mutable message);
+        boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message);
     }
-
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /**
