@@ -1,5 +1,7 @@
 package org.cometd.bayeux;
 
+import java.util.Set;
+
 
 /* ------------------------------------------------------------ */
 /** A Bayeux Session
@@ -39,6 +41,43 @@ public interface Session
      */
     boolean isConnected();
 
+    /* ------------------------------------------------------------ */
+    /** Disconnect the session
+     * 
+     */
+    void disconnect();
+    
+
+    /* ------------------------------------------------------------ */
+    /** Set a session attribute.
+     * <p>Session attributes are convenience data that allows arbitrary
+     * application data to be associated with a session.
+     * @param name The attribute name
+     * @param value The attribute value
+     */
+    void setAttribute(String name,Object value);
+    
+    /* ------------------------------------------------------------ */
+    /** Get a named attribute
+     * @param name The name of the attribute
+     * @return The attribute value or null if not set.
+     */
+    Object getAttribute(String name);
+    
+    /* ------------------------------------------------------------ */
+    /** Get Attribute names.
+     * @return Set of known session attribute names
+     */
+    Set<String> getAttributeNames();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Remove a session attribute
+     * @param name The name of the attribute
+     * @return the previous value of the attribute
+     */
+    Object removeAttribute(String name);
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /**

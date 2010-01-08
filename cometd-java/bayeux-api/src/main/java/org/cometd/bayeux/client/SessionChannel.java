@@ -7,7 +7,7 @@ import org.cometd.bayeux.Session;
 
 public interface SessionChannel extends Channel
 {
-    Session getSession();
+    ClientSession getSession();
 
     void publish(Object data);
     void subscribe(MessageListener listener);
