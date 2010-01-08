@@ -28,6 +28,11 @@ public class BayeuxServerImpl implements BayeuxServer
     private SecurityPolicy _policy;
 
     /* ------------------------------------------------------------ */
+    BayeuxServerImpl()
+    {
+    }
+    
+    /* ------------------------------------------------------------ */
     int randomInt()
     {
         return _random.nextInt();
@@ -200,6 +205,12 @@ public class BayeuxServerImpl implements BayeuxServer
             if (listener instanceof BayeuxServer.ChannelListener)
             ((ChannelListener)listener).channelAdded(channel);
         }
+    }
+    
+    /* ------------------------------------------------------------ */
+    List<BayeuxServerListener> getListeners()
+    {
+        return _listeners;
     }
 
 
