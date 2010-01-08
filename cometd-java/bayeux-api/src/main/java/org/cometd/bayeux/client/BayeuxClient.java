@@ -1,33 +1,55 @@
 package org.cometd.bayeux.client;
 
-import java.io.IOException;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.cometd.bayeux.Bayeux;
 
 
 /**
- * The Bayeux client interface represents both the static state of the
- * client via the {@link Bayeux} interface, and the dynamic
- * state of the client via the {@link ClientSession} interface.
+ * The Bayeux client interface represents  the static state of the
+ * client via the {@link Bayeux} interface
  */
-public interface BayeuxClient extends Bayeux, ClientSession
+public interface BayeuxClient extends Bayeux
 {
-    /**
-     * <p>Initiates the bayeux protocol handshake with the server.</p>
-     * <p>The handshake can be synchronous or asynchronous. <br/>
-     * A synchronous handshake will wait for the server's response (or lack thereof) before returning
-     * to the caller. <br/>
-     * An asynchronous handshake will not wait for the server and the caller may be notified via a
-     * {@link MetaMessageListener}.</p>
-     *
-     * @param async true if the handshake must be asynchronous, false otherwise.
-     * @throws IOException if a synchronous handshake fails
+    /* ------------------------------------------------------------ */
+    /** Create a new session
+     * @param servers A list of servers to try in turn to connect 
+     * to, each in the format "host[:port]/path"
+     * @return
      */
-    void handshake(boolean async) throws IOException;
+    ClientSession newSession(String... servers);
 
-    /** All Bayeux Client Listeners are derived from this interface.
+    /* ------------------------------------------------------------ */
+    /** 
+     * @return The set of know transport names
      */
-    interface BayeuxClientListener extends Bayeux.BayeuxListener
-    {
-    }
+    Set<String> getKnownTransports();
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Get transport options
+     * @param transport transport name or "*" for common transport options
+     * @return Mutable Map of transport options or null if unknown transport
+     */
+    Map<String,Object> getTransportOptions(String transport);
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return List of transports to be used for sessions in the order 
+     * they will be tried.
+     */
+    List<String> getAllowedTransports();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param transports List of transports to be used for sessions in the order 
+     * they will be tried.
+     */
+    void setAllowedTransports(String... transports);
+    
+    
 }

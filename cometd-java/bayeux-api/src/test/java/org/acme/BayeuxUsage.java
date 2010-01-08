@@ -5,7 +5,9 @@ import java.io.IOException;
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.BayeuxClient;
+import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
@@ -20,65 +22,39 @@ public class BayeuxUsage
 
     public void clientUsage() throws IOException
     {
+        
+        
+        
+        // configure the transport options
+        _client.getTransportOptions("websocket").put("port",81);
+        _client.getTransportOptions("jsonp").put("callback","jsonp_deliver");
+        _client.getTransportOptions("*").put("backoffMs",1000);
+        _client.setAllowedTransports("websocket","xdlongpoll","jsonp","longpoll");
+        
 
-        /*  thoughts on configuring BayeuxClient
-         
-         
-         The simple default case should be:
-         
-         
-            BayeuxClient client = new StandardBayexClient();
-            ClientSession session = client.newSession();
-            session.handshake("acme.com/cometd");
-            
-        If you want to configure a set of transports,
-        extensions and fail overs you can do
-        
-            BayeuxClient client = new StandardBayexClient();
-            client.setTransports(Arrays.asList(new Transport[] { new WebSocketTransport(options), new JsonpTransport(options), new XDLongPollTrasport(options), new LongPollTransport()}));
-            client.addExtension(new MySpecialAuth(options));
-            ClientSession session = client.newSession();
-            session.handshake("acme1.com/cometd","acme2.com/cometd");
-            
-            
-        Alternately if for the simple case, the  transports have different paths:
-        
-        
-            BayeuxClient client = new StandardBayexClient();
-            ClientSession session = client.newSession();
-            session.handshake("ws@acme.com:81/ws/cometd","jsonp@acme.com/json/cometd","acme.com/cometd");
-         
-         
-         */
-        
-        
-        
-        
-        
-        // Add listeners for meta messages
+        // Add listeners for meta messages for all sessions
         _client.getChannel("/meta/*").addListener(new Channel.MetaListener()
         {
             public void onMetaMessage(Bayeux bayeux, Channel channel, Message message, boolean successful, String error)
             {
             }
         });
-
-
-        // Listen to all messages on a particular channel
-        // THIS DOES *NOT* SEND A SUBSCRIPTION!
-        _client.getChannel("/foo/bar").addListener(new Channel.MessageListener()
-        {
-            public void onMessage(Bayeux bayeux, Channel channel, Message message)
-            {
-            }
-        });
-
-
-        // start the client
-        _client.handshake(false);
+        
+        
+        // Initialize a session
+        ClientSession session = _client.newSession("www1.acme.com/cometd","www2.acme.com/cometd");
+        session.handshake(true);
+        
+        
+        // Initialize another session
+        ClientSession session2 = _client.newSession("ws.google.com/cometd");
+        session2.addExtension(new GoogleWsAuthenticationExtension());
+        session2.handshake(true);
+        
+       
 
         // Get a Channel scoped by the Session
-        SessionChannel channel = _client.getSessionChannel("/foo/bar");
+        SessionChannel channel = session.getChannel("/foo/bar");
 
         // subscribe to all messages on a particular channel
         // THIS DOES SEND A SUBSCRIPTION!
@@ -92,11 +68,6 @@ public class BayeuxUsage
 
         // publish a message
         channel.publish("hello world");
-
-
-        // because this is a client, the get channel methods are aliases and
-        // all channels are scoped by the BayeuxClient
-        assert (SessionChannel)_client.getChannel("/foo/bar") == _client.getSessionChannel("/foo/bar");
 
 
     }
@@ -183,7 +154,7 @@ public class BayeuxUsage
             {
                 session.deliver(session,msg);
                 if (session.isLocalSession())
-                    session.getLocalSession().getSessionChannel("/foo/bar").publish("Hello");
+                    session.getLocalSession().getChannel("/foo/bar").publish("Hello");
             }
         });
 
@@ -192,7 +163,7 @@ public class BayeuxUsage
 
         // Create a new Local Session
         final LocalSession local = _bayeux.newLocalSession("testui");
-        final SessionChannel channel=local.getSessionChannel("/foo/bar");
+        final SessionChannel channel=local.getChannel("/foo/bar");
 
         // Subscribe to a channel for a local session
         channel.subscribe(new Channel.MessageListener()
@@ -211,13 +182,30 @@ public class BayeuxUsage
                 channel.publish("world");
             }
         });
-
-
-
-
-
-
     }
 
+    
+    
+    static class GoogleWsAuthenticationExtension implements ClientSession.Extension
+    {
+        public boolean rcv(ClientSession session, Mutable message)
+        {
+            return false;
+        }
 
+        public boolean rcvMeta(ClientSession session, Mutable message)
+        {
+            return false;
+        }
+
+        public boolean send(ClientSession session, Mutable message)
+        {
+            return false;
+        }
+
+        public boolean sendMeta(ClientSession session, Mutable message)
+        {
+            return false;
+        }
+    }
 }
