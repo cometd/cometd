@@ -1,5 +1,7 @@
 package org.cometd.bayeux;
 
+import java.util.EventListener;
+
 
 
 /** A Bayeux Channel.
@@ -25,49 +27,40 @@ public interface Channel
     public final static String META_SUBSCRIBE="/meta/subscribe";
     public final static String META_UNSUBSCRIBE="/meta/unsubscribe";
     public final static String META_DISCONNECT="/meta/disconnect";
-    
+
+    /* ------------------------------------------------------------ */
     /**
      * @return The channel ID
      */
     String getId();
 
+    /* ------------------------------------------------------------ */
     /**
      * @return true if the channel is a meta channel
      */
     boolean isMeta();
 
+    /* ------------------------------------------------------------ */
     /**
      * @return true if the channel is a service channel
      */
     boolean isService();
-
-    /** Add a channel listener
-     * @param listener A Listener for events on this channel
-     */
-    void addListener(ChannelListener listener);
-
-    /** Remove a channel listener
-     * @param listener A Listener for events on this channel
-     */
-    void removeListener(ChannelListener listener);
-
-    interface ChannelListener extends  Bayeux.BayeuxListener
-    {
-    }
-
+    
+    /* ------------------------------------------------------------ */
     /**
-     * Listener for all messages on a channel
+     * The ServerChannel is wild if it was obtained via an ID ending
+     * with "/*".  Wild channels apply to all direct children of the
+     * channel before the "/*".
+     * @return true if the channel is wild.
      */
-    public interface MessageListener extends ChannelListener
-    {
-        void onMessage(Bayeux bayeux, Channel channel, Message message);
-    }
-
+    boolean isWild();
+    
+    /* ------------------------------------------------------------ */
     /**
-     * Listener for all meta messages on a channel
+     * The ServerChannel is deeply wild if it was obtained via an ID ending
+     * with "/**".  Deeply Wild channels apply to all descendants of the
+     * channel before the "/**".
+     * @return true if the channel is deeply wild.
      */
-    public interface MetaListener extends ChannelListener
-    {
-        void onMetaMessage(Bayeux bayeux, Channel channel, Message message,boolean successful,String error);
-    }
+    boolean isDeepWild();
 }

@@ -2,13 +2,14 @@ package org.acme;
 
 import java.io.IOException;
 
-import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.BayeuxClient;
+import org.cometd.bayeux.client.ClientChannel;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.client.ClientChannel.ClientChannelListener;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
@@ -33,9 +34,9 @@ public class BayeuxUsage
         
 
         // Add listeners for meta messages for all sessions
-        _client.getChannel("/meta/*").addListener(new Channel.MetaListener()
+        _client.getChannel("/meta/*").addListener(new ClientChannel.MetaListener()
         {
-            public void onMetaMessage(Bayeux bayeux, Channel channel, Message message, boolean successful, String error)
+            public void onMetaMessage(BayeuxClient bayeux, ClientChannel channel, Message message, boolean successful, String error)
             {
             }
         });
@@ -51,16 +52,15 @@ public class BayeuxUsage
         session2.addExtension(new GoogleWsAuthenticationExtension());
         session2.handshake(true);
         
-       
-
+      
         // Get a Channel scoped by the Session
         SessionChannel channel = session.getChannel("/foo/bar");
 
         // subscribe to all messages on a particular channel
         // THIS DOES SEND A SUBSCRIPTION!
-        channel.subscribe(new Channel.MessageListener()
+        channel.subscribe(new ClientSession.MessageListener()
         {
-            public void onMessage(Bayeux bayeux, Channel channel, Message message)
+            public void onMessage(ClientSession session, Message message)
             {
             }
         });
@@ -125,27 +125,30 @@ public class BayeuxUsage
         });
 
         // Listen to all messages on a particular channel
-        _bayeux.getChannel("/foo/bar").addListener(new Channel.MessageListener()
+        _bayeux.getChannel("/foo/bar").addListener(new ServerChannel.MessageListener()
         {
-            public void onMessage(Bayeux bayeux, Channel channel, Message message)
+            public boolean onMessage(ServerSession from, ServerChannel to, ServerMessage.Mutable message)
             {
+                return false;
             }
         });
 
         // Listen and potentially CHANGE messages on a particular channel
-        _bayeux.getChannel("/foo/bar").addListener(new ServerChannel.PublishListener()
+        _bayeux.getChannel("/foo/bar").addListener(new ServerChannel.MessageListener()
         {
-            public boolean onMessage(ServerMessage.Mutable message)
+
+            public boolean onMessage(ServerSession from, ServerChannel channel, org.cometd.bayeux.server.ServerMessage.Mutable message)
             {
-                return true;
+                // TODO Auto-generated method stub
+                return false;
             }
         });
 
 
 
         // batch the delivery of special message to an arbitrary client:
-        final ServerSession session = _bayeux.getServerSession("123456789");
-        final ServerMessage.Mutable msg=_bayeux.newServerMessage();
+        final ServerSession session = _bayeux.getSession("123456789");
+        final ServerMessage.Mutable msg=_bayeux.newMessage();
         msg.setChannelId("/foo/bar");
         msg.setData("something special");
         session.batch(new Runnable()
@@ -158,17 +161,14 @@ public class BayeuxUsage
             }
         });
 
-
-
-
         // Create a new Local Session
         final LocalSession local = _bayeux.newLocalSession("testui");
         final SessionChannel channel=local.getChannel("/foo/bar");
 
         // Subscribe to a channel for a local session
-        channel.subscribe(new Channel.MessageListener()
+        channel.subscribe(new ClientSession.MessageListener()
         {
-            public void onMessage(Bayeux bayeux, Channel channel, Message message)
+            public void onMessage(ClientSession session, Message message)
             {
             }
         });
@@ -186,7 +186,7 @@ public class BayeuxUsage
 
     
     
-    static class GoogleWsAuthenticationExtension implements ClientSession.Extension
+    static class GoogleWsAuthenticationExtension implements BayeuxClient.Extension
     {
         public boolean rcv(ClientSession session, Mutable message)
         {

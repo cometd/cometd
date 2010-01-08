@@ -1,5 +1,6 @@
 package org.cometd.bayeux;
 
+import java.util.EventListener;
 import java.util.Set;
 
 
@@ -22,18 +23,6 @@ public interface Session
      * @return A string identifying the current session.
      */
     String getId();
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param listener
-     */
-    void addListener(SessionListener listener);
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param listener
-     */
-    void removeListener(SessionListener listener);
 
     /* ------------------------------------------------------------ */
     /**
@@ -77,23 +66,24 @@ public interface Session
      * @return the previous value of the attribute
      */
     Object removeAttribute(String name);
+
+    /* ------------------------------------------------------------ */
+    /** Run a Runnable in a batch.
+     * @param batch the Runnable to run as a batch
+     */
+    void batch(Runnable batch);
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @deprecated use {@link #batch(Runnable)}
+     */
+    void endBatch();
     
     /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /**
+     * @deprecated use {@link #batch(Runnable)}
      */
-    interface SessionListener extends Bayeux.BayeuxListener
-    {};
-
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    public interface MessageListener extends SessionListener
-    {
-        void onMessage(Session session, Message message);
-    }
+    void startBatch();
     
     
 }

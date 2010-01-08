@@ -2,7 +2,6 @@ package org.cometd.bayeux.client;
 
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Session;
 
 
 public interface SessionChannel extends Channel
@@ -10,8 +9,9 @@ public interface SessionChannel extends Channel
     ClientSession getSession();
 
     void publish(Object data);
-    void subscribe(MessageListener listener);
+    void subscribe(ClientSession.MessageListener listener);
 
-    void unsubscribe(MessageListener listener);
+    void unsubscribe(ClientSession.MessageListener listener);
     void unsubscribe();
+    
 }
