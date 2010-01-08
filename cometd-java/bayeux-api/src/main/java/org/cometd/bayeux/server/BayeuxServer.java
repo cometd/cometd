@@ -109,7 +109,7 @@ public interface BayeuxServer
     public interface ChannelListener extends BayeuxServerListener
     {
         public void channelAdded(ServerChannel channel);
-        public void channelRemoved(ServerChannel channel);
+        public void channelRemoved(String channelId);
     };
 
     /* ------------------------------------------------------------ */

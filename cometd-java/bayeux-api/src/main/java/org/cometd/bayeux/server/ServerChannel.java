@@ -97,7 +97,7 @@ public interface ServerChannel extends Channel
      */
     public interface SubscriptionListener extends ServerChannelListener
     {
-        public void subscribed(ServerSession client, Channel channel);
-        public void unsubscribed(ServerSession client, Channel channel);
+        public void subscribed(ServerSession session, ServerChannel channel);
+        public void unsubscribed(ServerSession session, ServerChannel channel);
     }
 }

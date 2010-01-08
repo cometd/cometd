@@ -41,7 +41,7 @@ public class ChannelId
         else
         {
             if (name.charAt(name.length() - 1) == '/')
-                throw new IllegalArgumentException(name);
+                name=name.substring(0,name.length() - 1);
 
             _segments=name.substring(1).split("/");
         }
@@ -84,30 +84,24 @@ public class ChannelId
 
         if (obj instanceof ChannelId)
         {
-            ChannelId other=(ChannelId)obj;
-            if (isWild())
+            ChannelId id = (ChannelId)obj;
+            if (id.depth()==depth())
             {
-                if (other.isWild())
-                    return _name.equals(other._name);
-                return matches(other);
+                for (int i=id.depth();i-->0;)
+                    if (!id.getSegment(i).equals(getSegment(i)))
+                        return false;
+                return true;
             }
-            else
-            {
-                if (other.isWild())
-                    return other.matches(this);
-                return _name.equals(other._name);
-            }
-        }
-        else if (obj instanceof String)
-        {
-            if (isWild())
-                return matches((String)obj);
-            return _name.equals(obj);
         }
 
         return false;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Match channel IDs with wildcard support
+     * @param name
+     * @return
+     */
     public boolean matches(ChannelId name)
     {
         if (name.isWild())
@@ -134,15 +128,6 @@ public class ChannelId
                 return true;
         }
         return false;
-    }
-
-    public boolean matches(String name)
-    {
-        if (_wild == 0)
-            return _name.equals(name);
-
-        // TODO more efficient?
-        return matches(new ChannelId(name));
     }
 
     @Override

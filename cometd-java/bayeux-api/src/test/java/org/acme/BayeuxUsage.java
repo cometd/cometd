@@ -91,7 +91,7 @@ public class BayeuxUsage
         // Add a listener to notice new channels
         _bayeux.addListener(new BayeuxServer.ChannelListener()
         {
-            public void channelRemoved(ServerChannel channel)
+            public void channelRemoved(String channel)
             {
             }
 
@@ -115,11 +115,11 @@ public class BayeuxUsage
         // Listen to all subscriptions on a particular channel
         _bayeux.getChannel("/foo/bar").addListener(new ServerChannel.SubscriptionListener()
         {
-            public void unsubscribed(ServerSession client, Channel channel)
+            public void unsubscribed(ServerSession client, ServerChannel channel)
             {
             }
 
-            public void subscribed(ServerSession client, Channel channel)
+            public void subscribed(ServerSession client, ServerChannel channel)
             {
             }
         });

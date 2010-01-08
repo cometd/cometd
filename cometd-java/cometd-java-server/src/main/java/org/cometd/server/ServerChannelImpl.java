@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -40,6 +41,32 @@ public class ServerChannelImpl implements ServerChannel
         _persistent=_broadcast;
     }
 
+    /* ------------------------------------------------------------ */
+    void subscribe(ServerSessionImpl session)
+    {
+        _subscribers.add(session);
+        for (ServerChannelListener listener : _listeners)
+            if (listener instanceof SubscriptionListener)
+                ((SubscriptionListener)listener).subscribed(session,this);
+        for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
+            if (listener instanceof BayeuxServer.SubscriptionListener)
+                ((BayeuxServer.SubscriptionListener)listener).subscribed(session,this);
+    }
+
+    /* ------------------------------------------------------------ */
+    void unsubscribe(ServerSessionImpl session)
+    {
+        if(_subscribers.remove(session))
+        {
+            for (ServerChannelListener listener : _listeners)
+                if (listener instanceof SubscriptionListener)
+                    ((SubscriptionListener)listener).unsubscribed(session,this);
+            for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
+                if (listener instanceof BayeuxServer.SubscriptionListener)
+                    ((BayeuxServer.SubscriptionListener)listener).unsubscribed(session,this);
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     public Set<? extends ServerSession> getSubscribers()
     {
