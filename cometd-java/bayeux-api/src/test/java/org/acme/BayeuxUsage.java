@@ -1,9 +1,11 @@
 package org.acme;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.BayeuxClient;
 import org.cometd.bayeux.client.ClientChannel;
@@ -23,17 +25,15 @@ public class BayeuxUsage
 
     public void clientUsage() throws IOException
     {
-        
         // configure the transport options
-        _client.getTransportOptions("*").put("backoffMs",1000);
-        _client.getTransportOptions("*").put("port",8080);
-        if (_client.getKnownTransports().contains("websocket"))
-        {
-            _client.getTransportOptions("websocket").put("port",81);
-            _client.setAllowedTransports("websocket","xdlongpoll","jsonp","longpoll");
-        }
-        if (_client.getKnownTransports().contains("jsonp"))
-            _client.getTransportOptions("jsonp").put("callback","jsonp_deliver");
+        _client.getTransport("*").getOptions().put("backoffMs",1000);
+        _client.getTransport("*").getOptions().put("port",8080);
+        if (_client.getKnownTransportNames().contains("websocket"))
+            _client.getTransport("websocket").getOptions().put("port",81);
+        if (_client.getKnownTransportNames().contains("jsonp"))
+            _client.getTransport("jsonp").getOptions().put("callback","jsonp_deliver");
+
+        _client.setAllowedTransports("websocket","xdlongpoll","jsonp","longpoll");
         
 
         // Add listeners for meta messages for all sessions
@@ -211,4 +211,5 @@ public class BayeuxUsage
             return false;
         }
     }
+    
 }
