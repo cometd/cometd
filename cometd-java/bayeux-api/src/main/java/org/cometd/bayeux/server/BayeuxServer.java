@@ -1,11 +1,10 @@
 package org.cometd.bayeux.server;
 
-import java.util.EventListener;
-
+import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.BayeuxListener;
 import org.cometd.bayeux.Message;
 
-public interface BayeuxServer 
+public interface BayeuxServer extends Bayeux
 {
     /* ------------------------------------------------------------ */
     /** ServletContext attribute name used to obtain the Bayeux object */
