@@ -239,7 +239,7 @@ public class BayeuxServerImpl implements BayeuxServer
         else
         {
             for (Extension ext : _extensions)
-                if (!ext.send(to,message))
+                if (!ext.send(message))
                     return false;
         }
         

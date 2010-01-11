@@ -11,7 +11,6 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.common.ChannelId;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
@@ -98,8 +97,17 @@ public class ServerSessionImpl implements ServerSession
 
     void doDeliver(ServerSession from, ServerMessage message)
     {
-        if(!extendSend(message.asMutable()))
-            return;
+        if (message.isMeta())
+        {
+            if(!extendSendMeta(message.asMutable()))
+                return;
+        }
+        else
+        {
+            message=extendSend(message);
+            if (message==null)
+                return;
+        }
 
         for (ServerSessionListener listener : _listeners)
         {
@@ -267,22 +275,25 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    protected boolean extendSend(ServerMessage.Mutable message)
+    protected boolean extendSendMeta(ServerMessage.Mutable message)
     {
-        if (message.isMeta())
+        for (Extension ext : _extensions)
+            if (!ext.sendMeta(this,message))
+                return false;
+        return true;
+    }
+
+    /* ------------------------------------------------------------ */
+    protected ServerMessage extendSend(ServerMessage message)
+    {
+        for (Extension ext : _extensions)
         {
-            for (Extension ext : _extensions)
-                if (!ext.sendMeta(this,message))
-                    return false;
-        }
-        else
-        {
-            for (Extension ext : _extensions)
-                if (!ext.send(this,message))
-                    return false;
+            message=ext.send(this,message);
+            if (message==null)
+                return null;
         }
         
-        return true;
+        return message;
     }
 
 }

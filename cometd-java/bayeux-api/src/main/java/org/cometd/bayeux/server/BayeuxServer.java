@@ -151,7 +151,7 @@ public interface BayeuxServer extends Bayeux
          * @param message the incoming message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean rcv(ServerSession from, Message.Mutable message);
+        boolean rcv(ServerSession from, ServerMessage.Mutable message);
 
         /**
          * Callback method invoked every time a meta message is incoming.
@@ -159,15 +159,15 @@ public interface BayeuxServer extends Bayeux
          * @param message the incoming meta message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean rcvMeta(ServerSession from, Message.Mutable message);
+        boolean rcvMeta(ServerSession from, ServerMessage.Mutable message);
 
         /**
          * Callback method invoked every time a normal message is outgoing.
-         * @param to the session receiving the message
+         * @param to the session receiving the message, or null for a publish
          * @param message the outgoing message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean send(ServerSession to, Message.Mutable message);
+        boolean send(ServerMessage.Mutable message);
 
         /**
          * Callback method invoked every time a meta message is outgoing.
@@ -175,6 +175,6 @@ public interface BayeuxServer extends Bayeux
          * @param message the outgoing meta message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean sendMeta(ServerSession to, Message.Mutable message);
+        boolean sendMeta(ServerSession to, ServerMessage.Mutable message);
     }
 }
