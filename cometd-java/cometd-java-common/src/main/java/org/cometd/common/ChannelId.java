@@ -100,7 +100,8 @@ public class ChannelId
     /* ------------------------------------------------------------ */
     /** Match channel IDs with wildcard support
      * @param name
-     * @return
+     * @return true if this channelID matches the passed channel ID. If this channel is wild, then matching is wild. 
+     * If the passed channel is wild, then it is the same as an equals call.
      */
     public boolean matches(ChannelId name)
     {

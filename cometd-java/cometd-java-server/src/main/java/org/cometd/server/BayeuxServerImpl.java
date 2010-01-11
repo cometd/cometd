@@ -2,6 +2,7 @@ package org.cometd.server;
 
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -10,12 +11,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Transport;
+import org.cometd.bayeux.client.BayeuxClient.Extension;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.common.ChannelId;
 
 public class BayeuxServerImpl implements BayeuxServer
@@ -27,11 +30,22 @@ public class BayeuxServerImpl implements BayeuxServer
     private final ServerChannelImpl _root=new ServerChannelImpl(this,null,new ChannelId("/"));
     private final ConcurrentMap<String, ServerSessionImpl> _sessions = new ConcurrentHashMap<String, ServerSessionImpl>();
     private final ConcurrentMap<String, ServerChannelImpl> _channels = new ConcurrentHashMap<String, ServerChannelImpl>();
-    private SecurityPolicy _policy;
+    private SecurityPolicy _policy=new DefaultSecurityPolicy();
 
     /* ------------------------------------------------------------ */
     BayeuxServerImpl()
     {
+        getChannel(Channel.META_SUBSCRIBE,true).addListener(new SubscribeHandler());
+        getChannel(Channel.META_UNSUBSCRIBE,true).addListener(new UnsubscribeHandler());
+    }
+    
+    /* ------------------------------------------------------------ */
+    ChannelId newChannelId(String id)
+    {
+        ServerChannelImpl channel = _channels.get(id);
+        if (channel!=null)
+            return channel.getChannelId();
+        return new ChannelId(id);
     }
     
     /* ------------------------------------------------------------ */
@@ -111,10 +125,17 @@ public class BayeuxServerImpl implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
+    protected ServerSessionImpl newServerSession()
+    {
+        ServerSessionImpl session =new ServerSessionImpl(this);
+        addServerSession(session);
+        return session;
+    }
+
+    /* ------------------------------------------------------------ */
     public LocalSession newLocalSession(String idHint)
     {
-        // TODO Auto-generated method stub
-        return null;
+        return new LocalSessionImpl(this,idHint);
     }
 
     /* ------------------------------------------------------------ */
@@ -133,11 +154,6 @@ public class BayeuxServerImpl implements BayeuxServer
     public void addExtension(Extension extension)
     {
         _extensions.add(extension);
-    }
-
-    public void removeExtension(Extension extension)
-    {
-        _extensions.remove(extension);
     }
 
     /* ------------------------------------------------------------ */
@@ -160,39 +176,73 @@ public class BayeuxServerImpl implements BayeuxServer
         _listeners.remove(listener);
     }
 
+
     /* ------------------------------------------------------------ */
-    protected boolean extendRecv(ServerSession from, Message.Mutable message)
+    protected void handle(ServerSessionImpl session, ServerMessage.Mutable message)
     {
-        for (Extension ext: _extensions)
-            if (!ext.rcv(from,message))
-                return false;
+        String channelId=message.getChannelId();
+       
+        ServerChannel channel = getChannel(channelId,false);
+        if (channel==null && _policy.canCreate(this,session,channelId,message))
+            channel = getChannel(channelId,true);
+        else
+        {
+            // TODO error response ???
+        }
+        
+        if (channel!=null)
+        {
+            extendRecv(session,message);
+            session.extendRecv(message);
+            
+            if (channel.isMeta()||_policy.canPublish(this,session,channel,message))                               
+                channel.publish(session,message);
+            
+            ServerMessage reply = message.getAssociated();
+            
+            if (reply!=null)
+            {
+                ServerMessage.Mutable mutable = reply.asMutable();
+                session.extendSend(mutable);
+                extendSend(session,mutable);
+            }
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected boolean extendRecv(ServerSessionImpl from, ServerMessage.Mutable message)
+    {
+        if (message.isMeta())
+        {
+            for (Extension ext: _extensions)
+                if (!ext.rcvMeta(from,message))
+                    return false;
+        }
+        else
+        {
+            for (Extension ext: _extensions)
+                if (!ext.rcv(from,message))
+                    return false;
+        }
         return true;
     }
 
     /* ------------------------------------------------------------ */
-    protected boolean extendRecvMeta(ServerSession from, Message.Mutable message)
+    protected boolean extendSend(ServerSessionImpl to, ServerMessage.Mutable message)
     {
-        for (Extension ext: _extensions)
-            if (!ext.rcv(from,message))
-                return false;
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
-    protected boolean extendSend(ServerSession from, Message.Mutable message)
-    {
-        for (Extension ext: _extensions)
-            if (!ext.rcv(from,message))
-                return false;
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
-    protected boolean extendSendMeta(ServerSession from, Message.Mutable message)
-    {
-        for (Extension ext: _extensions)
-            if (!ext.rcv(from,message))
-                return false;
+        if (message.isMeta())
+        {
+            for (Extension ext : _extensions)
+                if (!ext.sendMeta(to,message))
+                    return false;
+        }
+        else
+        {
+            for (Extension ext : _extensions)
+                if (!ext.send(to,message))
+                    return false;
+        }
+        
         return true;
     }
 
@@ -207,6 +257,21 @@ public class BayeuxServerImpl implements BayeuxServer
             if (listener instanceof BayeuxServer.ChannelListener)
             ((ChannelListener)listener).channelAdded(channel);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    boolean removeServerChannel(ServerChannelImpl channel)
+    {
+        if(_channels.remove(channel.getId(),channel))
+        {
+            for (BayeuxServerListener listener : _listeners)
+            {
+                if (listener instanceof BayeuxServer.ChannelListener)
+                    ((ChannelListener)listener).channelRemoved(channel.getId());
+            }
+            return true;
+        }
+        return false;
     }
     
     /* ------------------------------------------------------------ */
@@ -240,8 +305,88 @@ public class BayeuxServerImpl implements BayeuxServer
     public void setAllowedTransports(String... transports)
     {
         // TODO Auto-generated method stub
-        
     }
 
 
+    abstract class HandlerListener implements ServerChannel.ServerChannelListener
+    {
+        public abstract void onMessage(final ServerSession from, final Mutable message);
+        
+        protected void error(ServerMessage.Mutable message, String error)
+        {
+            message.put(Message.ERROR_FIELD,error);
+            message.put(Message.SUCCESSFUL_FIELD,Boolean.FALSE);
+        }
+    }
+    
+    class SubscribeHandler extends HandlerListener
+    {
+        public void onMessage(final ServerSession from, final Mutable message)
+        {
+            String subscribe_id=(String)message.get(Message.SUBSCRIPTION_FIELD);
+         
+            ServerMessage.Mutable reply=newMessage();
+            message.setAssociated(reply);
+            reply.setAssociated(message);
+            
+            reply.setChannelId(Channel.META_SUBSCRIBE);
+            String id=message.getId();
+            if (id != null)
+                reply.setId(id);
+            
+            if (subscribe_id==null)
+                error(reply,"403::cannot create");
+            else
+            {
+                reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);
+                ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscribe_id);
+                if (channel==null && getSecurityPolicy().canCreate(BayeuxServerImpl.this,from,subscribe_id,message))
+                    channel = (ServerChannelImpl)getChannel(subscribe_id,true);
+                
+                if (channel==null)
+                    error(reply,"403::cannot create");
+                else if (!getSecurityPolicy().canSubscribe(BayeuxServerImpl.this,from,channel,message))
+                    error(reply,"403::cannot subscribe");
+                else
+                {
+                    channel.subscribe((ServerSessionImpl)from);
+                    reply.put(Message.SUCCESSFUL_FIELD,Boolean.TRUE);
+                }
+            }
+        }
+    }
+
+    
+    class UnsubscribeHandler extends HandlerListener
+    {
+        public void onMessage(final ServerSession from, final Mutable message)
+        {
+            String subscribe_id=(String)message.get(Message.SUBSCRIPTION_FIELD);
+         
+            ServerMessage.Mutable reply=newMessage();
+            message.setAssociated(reply);
+            reply.setAssociated(message);
+            
+            reply.setChannelId(Channel.META_UNSUBSCRIBE);
+            String id=message.getId();
+            if (id != null)
+                reply.setId(id);
+            
+            if (subscribe_id==null)
+                error(reply,"400::no channel");
+            else
+            {
+                reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);
+                
+                ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscribe_id);
+                if (channel==null)
+                    error(reply,"400::no channel");
+                else
+                {
+                    channel.unsubscribe((ServerSessionImpl)from);
+                    reply.put(Message.SUCCESSFUL_FIELD,Boolean.TRUE);
+                }
+            }
+        }
+    }
 }

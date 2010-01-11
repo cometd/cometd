@@ -15,7 +15,7 @@
     <name>CometD :: Java</name>
 
     <properties>
-        <jetty-version>7.0.1.v20091125</jetty-version>
+        <jetty-version>7.0.2-SNAPSHOT</jetty-version>
     </properties>
 
     <modules>

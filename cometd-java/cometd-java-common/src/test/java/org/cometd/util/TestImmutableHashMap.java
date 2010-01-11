@@ -12,46 +12,50 @@ public class TestImmutableHashMap
     @Test
     public void testMap()
     {
-        Map<String,Object> map = new ImmutableHashMap<String,Object>(2).asMutable();
+        ImmutableHashMap<String,Object>.Mutable mutable = new ImmutableHashMap<String,Object>(2).asMutable();
         
-        Assert.assertTrue(map.isEmpty());
-        Assert.assertEquals(0,map.size());
+        Assert.assertTrue(mutable.isEmpty());
+        Assert.assertEquals(0,mutable.size());
         
-        map.put("A","one");
-        map.put("B","2");
-        map.put("C","3");
-        map.put("A","1");
-        map.put("D","4");
+        mutable.put("A","one");
+        mutable.put("B","2");
+        mutable.put("C","3");
+        mutable.put("A","1");
+        mutable.put("D","4");
        
-        Assert.assertFalse(map.isEmpty());
-        Assert.assertEquals(4,map.size());
-        Assert.assertEquals("1",map.get("A"));
-        Assert.assertEquals("2",map.get("B"));
-        Assert.assertEquals("3",map.get("C"));
-        Assert.assertEquals("4",map.get("D"));
+        Assert.assertFalse(mutable.isEmpty());
+        Assert.assertEquals(4,mutable.size());
+        Assert.assertEquals("1",mutable.get("A"));
+        Assert.assertEquals("2",mutable.get("B"));
+        Assert.assertEquals("3",mutable.get("C"));
+        Assert.assertEquals("4",mutable.get("D"));
+        Assert.assertTrue(mutable.containsKey("D"));
+        Assert.assertFalse(mutable.containsKey("E"));
+        Assert.assertEquals("D",mutable.getEntry("D").getKey()); 
+        Assert.assertEquals("4",mutable.getEntry("D").getValue());  
         
         
         boolean[] keys={false,false,false,false};
-        for (String s: map.keySet())
+        for (String s: mutable.keySet())
             keys[s.charAt(0)-'A']=true;
         for (boolean b:keys)
             Assert.assertTrue(b);
         
-        map.remove("A"); 
-        Assert.assertEquals(3,map.size());
-        Assert.assertEquals(null,map.get("A"));
-        Assert.assertEquals("2",map.get("B"));
-        Assert.assertEquals("3",map.get("C"));
-        Assert.assertEquals("4",map.get("D"));
+        mutable.remove("A"); 
+        Assert.assertEquals(3,mutable.size());
+        Assert.assertEquals(null,mutable.get("A"));
+        Assert.assertEquals("2",mutable.get("B"));
+        Assert.assertEquals("3",mutable.get("C"));
+        Assert.assertEquals("4",mutable.get("D"));
 
-        map.put("B",null); 
-        Assert.assertEquals(2,map.size());
-        Assert.assertEquals(null,map.get("A"));
-        Assert.assertEquals(null,map.get("B"));
-        Assert.assertEquals("3",map.get("C"));
-        Assert.assertEquals("4",map.get("D"));
+        mutable.put("B",null); 
+        Assert.assertEquals(2,mutable.size());
+        Assert.assertEquals(null,mutable.get("A"));
+        Assert.assertEquals(null,mutable.get("B"));
+        Assert.assertEquals("3",mutable.get("C"));
+        Assert.assertEquals("4",mutable.get("D"));
 
-        Iterator<Map.Entry<String,Object>> iter = map.entrySet().iterator();
+        Iterator<Map.Entry<String,Object>> iter = mutable.entrySet().iterator();
         while (iter.hasNext())
         {
             Map.Entry<String,Object> e=iter.next();
@@ -59,28 +63,40 @@ public class TestImmutableHashMap
                 iter.remove();
         }
             
-        Assert.assertEquals(1,map.size());
-        Assert.assertEquals(null,map.get("A"));
-        Assert.assertEquals(null,map.get("B"));
-        Assert.assertEquals("3",map.get("C"));
-        Assert.assertEquals(null,map.get("D"));
+        Assert.assertEquals(1,mutable.size());
+        Assert.assertEquals(null,mutable.get("A"));
+        Assert.assertEquals(null,mutable.get("B"));
+        Assert.assertEquals("3",mutable.get("C"));
+        Assert.assertEquals(null,mutable.get("D"));
         
-        map.keySet().clear();
-        Assert.assertTrue(map.isEmpty());
-        Assert.assertEquals(0,map.size());
+        mutable.keySet().clear();
+        Assert.assertTrue(mutable.isEmpty());
+        Assert.assertEquals(0,mutable.size());
 
-        map.put("A","1");
-        map.put("B","2");
-        map.put("C","3");
-        map.put("D","4");
-        map.put("E","5");
+        mutable.put("A","1");
+        mutable.put("B","2");
+        mutable.put("C","3");
+        mutable.put("D","4");
+        mutable.put("E","5");
 
-        Assert.assertFalse(map.isEmpty());
-        Assert.assertEquals(5,map.size());
-        map.clear();
-        Assert.assertTrue(map.isEmpty());
-        Assert.assertEquals(0,map.size());
-        
+        Assert.assertFalse(mutable.isEmpty());
+        Assert.assertEquals(5,mutable.size());
+        mutable.clear();
+        Assert.assertTrue(mutable.isEmpty());
+        Assert.assertEquals(0,mutable.size());
+
+        mutable.getEntry("D").setValue("four");
+        Assert.assertEquals("four",mutable.getEntry("D").getValue());  
+
+        try
+        {
+            mutable.asImmutable().getEntry("D").setValue("IV");
+            Assert.assertTrue(false);
+        }
+        catch(UnsupportedOperationException e)
+        {
+            Assert.assertTrue(true);
+        }
     }
     
     @Test

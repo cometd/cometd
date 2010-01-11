@@ -91,6 +91,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         }
         return null;
     }    
+    
     /* ------------------------------------------------------------ */
     /** Called if the map is about to be changed.
      * @param key The key to be changed, or null if multiple keys.

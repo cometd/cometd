@@ -1,12 +1,14 @@
 package org.cometd.server;
 
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.cometd.bayeux.client.BayeuxClient.Extension;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -37,8 +39,8 @@ public class ServerChannelImpl implements ServerChannel
         _id=id;
         _meta=_id.isMeta();
         _service=_id.isService();
-        _broadcast=_meta||_service;
-        _persistent=_broadcast;
+        _broadcast=!isMeta()&&!isService();
+        setPersistent(!_broadcast);
     }
 
     /* ------------------------------------------------------------ */
@@ -64,6 +66,10 @@ public class ServerChannelImpl implements ServerChannel
             for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
                 if (listener instanceof BayeuxServer.SubscriptionListener)
                     ((BayeuxServer.SubscriptionListener)listener).unsubscribed(session,this);
+            
+            // TODO this is a race!
+            if (!isPersistent() && _subscribers.size()==0 && _children.size()==0)
+                remove();
         }
     }
     
@@ -194,7 +200,11 @@ public class ServerChannelImpl implements ServerChannel
     /* ------------------------------------------------------------ */
     public void publish(ServerSession from, ServerMessage msg)
     {
-        _bayeux.root().doListeners(from,this,msg.asMutable());
+        if (isWild())
+            throw new IllegalStateException("Wild publish");
+        ServerMessage.Mutable mutable = msg.asMutable();
+        _bayeux.extendSend(null,mutable);
+        _bayeux.root().doListeners(from,this,mutable);
     }
 
     /* ------------------------------------------------------------ */
@@ -222,6 +232,10 @@ public class ServerChannelImpl implements ServerChannel
             
                 if (isBroadcast())
                     _bayeux.root().doSubscribers(from,to._id,mutable);
+                else if (isMeta())
+                    for (ServerChannelListener listener : _listeners)
+                        if (listener instanceof BayeuxServerImpl.HandlerListener)
+                            ((BayeuxServerImpl.HandlerListener)listener).onMessage(from,mutable);
                 
                 break;
 
@@ -240,15 +254,20 @@ public class ServerChannelImpl implements ServerChannel
                 // fall through to default
                 
             default:
-                if (wild != null)
+                if (deepwild != null)
                 {
-                    if (wild._lazy)
+                    if (deepwild._lazy)
                         mutable.setLazy(true);
                     for (ServerChannelListener listener : deepwild._listeners)
                         if (listener instanceof MessageListener)
                             if (!((MessageListener)listener).onMessage(from,to,mutable))
                                 return;
                 }
+
+                String next=to._id.getSegment(_id.depth());
+                ServerChannelImpl channel=_children.get(next);
+                if (channel != null)
+                    channel.doListeners(from,to,mutable);
         }
     }
     
@@ -257,8 +276,6 @@ public class ServerChannelImpl implements ServerChannel
     void doSubscribers(ServerSession from, ChannelId to, final ServerMessage.Mutable mutable)
     {
         final ServerMessage message = mutable.asImmutable();
-        if (!_bayeux.extendSend(from,mutable))
-            return;
         
         int tail=to.depth() - _id.depth();
         final ServerChannelImpl wild=_wild;
@@ -292,6 +309,27 @@ public class ServerChannelImpl implements ServerChannel
                 if (channel != null)
                     channel.doSubscribers(from,to,mutable);
         }
+    }
+
+    public void remove()
+    {
+        for (ServerChannelImpl child : _children.values())
+            child.remove();
+        
+        if (_bayeux.removeServerChannel(this))
+        {
+            if (isDeepWild() && _parent._deepWild==this)
+                _parent._deepWild=null;
+            else if (isWild() && _parent._wild==this)
+                _parent._wild=null;
+            
+            if (_parent._children.remove(_id.getSegment(_id.depth()-1),this))
+            {
+                for (ServerSessionImpl session : _subscribers)
+                    unsubscribe(session);
+            }
+        }
+        
     }
 }
 

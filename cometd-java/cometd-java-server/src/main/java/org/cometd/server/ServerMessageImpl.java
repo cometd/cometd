@@ -29,7 +29,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     private final Map.Entry<String,Object> _ext;
     
 
-    private Message _associated;
+    private ServerMessage _associated;
     private String _jsonString;
     private boolean _lazy=false;
     
@@ -114,7 +114,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     }
 
     /* ------------------------------------------------------------ */
-    public Message getAssociated()
+    public ServerMessage getAssociated()
     {
         return _associated;
     }
@@ -208,15 +208,15 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     }
 
     /* ------------------------------------------------------------ */
-    public void setAssociated(Message associated)
+    public void setAssociated(ServerMessage associated)
     {
         if (_associated != associated)
         {
             if (_associated != null)
-                ((ServerMessageImpl)_associated).decRef();
+                _associated.decRef();
             _associated=associated;
             if (_associated != null)
-                ((ServerMessageImpl)_associated).incRef();
+                _associated.incRef();
         }
     }
 
@@ -440,12 +440,12 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             return _mutable.size();
         }
 
-        public Message getAssociated()
+        public ServerMessage getAssociated()
         {
             return ServerMessageImpl.this.getAssociated();
         }
 
-        public void setAssociated(Message message)
+        public void setAssociated(ServerMessage message)
         {
             ServerMessageImpl.this.setAssociated(message);
         }
