@@ -7,11 +7,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.common.ChannelId;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.log.Log;
@@ -95,7 +93,7 @@ public class ServerSessionImpl implements ServerSession
         doDeliver(from,message);
     }
 
-    void doDeliver(ServerSession from, ServerMessage message)
+    protected void doDeliver(ServerSession from, ServerMessage message)
     {
         if (message.isMeta())
         {

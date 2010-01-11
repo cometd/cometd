@@ -1,11 +1,8 @@
 package org.cometd.bayeux.client;
 
-import java.util.Set;
-
 import org.cometd.bayeux.BayeuxListener;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Session;
 
 
 

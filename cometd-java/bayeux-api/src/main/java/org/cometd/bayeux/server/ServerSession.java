@@ -2,13 +2,10 @@ package org.cometd.bayeux.server;
 
 
 import java.util.Queue;
-import java.util.Set;
 
 import org.cometd.bayeux.BayeuxListener;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
-import org.cometd.bayeux.server.BayeuxServer.Extension;
-import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
 
 
 /**

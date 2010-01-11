@@ -2,7 +2,6 @@ package org.cometd.server;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -11,7 +10,6 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.util.ImmutableHashMap;
-import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.ajax.JSON;
 

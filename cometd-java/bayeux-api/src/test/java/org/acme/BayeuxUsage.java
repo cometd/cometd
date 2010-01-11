@@ -1,17 +1,13 @@
 package org.acme;
 
 import java.io.IOException;
-import java.util.Map;
 
-import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.BayeuxClient;
 import org.cometd.bayeux.client.ClientChannel;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
-import org.cometd.bayeux.client.ClientChannel.ClientChannelListener;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
