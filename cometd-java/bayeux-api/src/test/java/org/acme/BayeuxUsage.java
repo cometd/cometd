@@ -33,7 +33,7 @@ public class BayeuxUsage
         if (_client.getKnownTransportNames().contains("jsonp"))
             _client.getTransport("jsonp").getOptions().put("callback","jsonp_deliver");
 
-        _client.setAllowedTransports("websocket","xdlongpoll","jsonp","longpoll");
+        // _client.setAllowedTransports("websocket","xdlongpoll","jsonp","longpoll");
         
 
         // Add listeners for meta messages for all sessions

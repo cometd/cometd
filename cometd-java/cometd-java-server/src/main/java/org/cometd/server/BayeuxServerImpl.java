@@ -59,7 +59,7 @@ public class BayeuxServerImpl implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public Object getCurrentTransport()
+    public Transport getCurrentTransport()
     {
         // TODO Auto-generated method stub
         return null;
@@ -215,24 +215,28 @@ public class BayeuxServerImpl implements BayeuxServer
         return _listeners;
     }
 
+    /* ------------------------------------------------------------ */
     public List<String> getAllowedTransports()
     {
         // TODO Auto-generated method stub
         return null;
     }
 
+    /* ------------------------------------------------------------ */
     public Set<String> getKnownTransportNames()
     {
         // TODO Auto-generated method stub
         return null;
     }
 
+    /* ------------------------------------------------------------ */
     public Transport getTransport(String transport)
     {
         // TODO Auto-generated method stub
         return null;
     }
 
+    /* ------------------------------------------------------------ */
     public void setAllowedTransports(String... transports)
     {
         // TODO Auto-generated method stub
