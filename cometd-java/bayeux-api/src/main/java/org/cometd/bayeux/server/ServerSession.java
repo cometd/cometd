@@ -108,4 +108,38 @@ public interface ServerSession extends Session
     }
     
 
+    public interface Extension
+    {
+        /**
+         * Callback method invoked every time a normal message is incoming.
+         * @param from the session that sent the message
+         * @param message the incoming message
+         * @return true if message processing should continue, false if it should stop
+         */
+        boolean rcv(ServerSession from, ServerMessage.Mutable message);
+
+        /**
+         * Callback method invoked every time a meta message is incoming.
+         * @param from the session that sent the message
+         * @param message the incoming meta message
+         * @return true if message processing should continue, false if it should stop
+         */
+        boolean rcvMeta(ServerSession from, ServerMessage.Mutable message);
+
+        /**
+         * Callback method invoked every time a normal message is outgoing.
+         * @param to the session receiving the message, or null for a publish
+         * @param message the outgoing message
+         * @return The message to send or null to not send the message
+         */
+        ServerMessage send(ServerSession to, Message message);
+
+        /**
+         * Callback method invoked every time a meta message is outgoing.
+         * @param to the session receiving the message
+         * @param message the outgoing meta message
+         * @return true if message processing should continue, false if it should stop
+         */
+        boolean sendMeta(ServerSession to, ServerMessage.Mutable message);
+    }
 }
