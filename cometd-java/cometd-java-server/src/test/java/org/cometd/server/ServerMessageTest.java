@@ -8,7 +8,7 @@ import org.cometd.bayeux.Message;
 import org.junit.Test;
 
 
-public class TestImmutableServerMessage
+public class ServerMessageTest
 {
     @Test
     public void testGeneral() throws Exception

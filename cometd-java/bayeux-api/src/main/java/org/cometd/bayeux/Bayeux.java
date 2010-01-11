@@ -26,10 +26,4 @@ public interface Bayeux
      */
     List<String> getAllowedTransports();
     
-    /* ------------------------------------------------------------ */
-    /**
-     * @param transports List of transports to be used for sessions in the order 
-     * they will be tried.  Unknown transports in this list are silently ignored.
-     */
-    void setAllowedTransports(String... transports);
 }
