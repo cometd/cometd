@@ -2,12 +2,14 @@ package org.cometd.server;
 
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.SecurityPolicy;
@@ -211,6 +213,30 @@ public class BayeuxServerImpl implements BayeuxServer
     List<BayeuxServerListener> getListeners()
     {
         return _listeners;
+    }
+
+    public List<String> getAllowedTransports()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public Set<String> getKnownTransportNames()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public Transport getTransport(String transport)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public void setAllowedTransports(String... transports)
+    {
+        // TODO Auto-generated method stub
+        
     }
 
 
