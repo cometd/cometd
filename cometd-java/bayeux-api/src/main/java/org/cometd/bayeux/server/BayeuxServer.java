@@ -2,7 +2,6 @@ package org.cometd.bayeux.server;
 
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.BayeuxListener;
-import org.cometd.bayeux.Message;
 
 public interface BayeuxServer extends Bayeux
 {

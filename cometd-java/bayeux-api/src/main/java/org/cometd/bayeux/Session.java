@@ -1,6 +1,5 @@
 package org.cometd.bayeux;
 
-import java.util.EventListener;
 import java.util.Set;
 
 

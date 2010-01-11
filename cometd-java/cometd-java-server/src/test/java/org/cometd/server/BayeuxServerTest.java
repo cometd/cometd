@@ -1,7 +1,5 @@
 package org.cometd.server;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -13,7 +11,6 @@ import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
-import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.junit.Before;
 import org.junit.Test;

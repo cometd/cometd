@@ -1,13 +1,8 @@
 package org.cometd.bayeux.client;
 
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Transport;
 
 
 /**

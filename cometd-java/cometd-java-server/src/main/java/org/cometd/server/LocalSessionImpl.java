@@ -1,13 +1,11 @@
 package org.cometd.server;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.WeakHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.cometd.bayeux.Channel;
@@ -16,7 +14,6 @@ import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.BayeuxClient.Extension;
 import org.cometd.bayeux.server.LocalSession;
-import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.ChannelId;
