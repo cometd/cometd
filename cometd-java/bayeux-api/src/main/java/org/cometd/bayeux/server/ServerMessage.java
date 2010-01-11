@@ -14,7 +14,7 @@ public interface ServerMessage extends Message
      * this is a meta message that the current message is being sent in response
      * to. 
      */
-    Message getAssociated();
+    ServerMessage getAssociated();
     
     /* ------------------------------------------------------------ */
     /**
@@ -49,7 +49,7 @@ public interface ServerMessage extends Message
      */
     public interface Mutable extends ServerMessage,Message.Mutable
     {
-        void setAssociated(Message message);
+        void setAssociated(ServerMessage message);
         void setLazy(boolean lazy);
 
         ServerMessage asImmutable();

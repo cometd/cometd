@@ -26,13 +26,13 @@ public interface SecurityPolicy
     /**
      * Test if a message should be allowed to create a new Channel
      *
-     * @param client  The client sending the message. The client may be
-     *                null if an anonymous publish is attempted. Server clients are
-     *                indicated by {@link Session#isLocal()}
-     * @param message The message
+     * @param session The client sending the message. The client may be
+     *                null if an anonymous publish is attempted. 
+     * @param channelId The channel to be created
+     * @param message The message trying to create the chanmel
      * @return true if the channel should be created
      */
-    boolean canCreate(BayeuxServer server,ServerSession session, ServerMessage message);
+    boolean canCreate(BayeuxServer server,ServerSession session, String channelId, ServerMessage message);
 
     /**
      * Test if a handshake message should be accepted.
@@ -52,7 +52,7 @@ public interface SecurityPolicy
      * @param messsage The message to publish
      * @return true if the client can publish to the channel.
      */
-    boolean canPublish(BayeuxServer server,ServerSession client, ServerMessage.Mutable messsage);
+    boolean canPublish(BayeuxServer server,ServerSession client, ServerChannel channel, ServerMessage messsage);
 
     /**
      * Test if a client is allowed to subscribe to a channel
@@ -63,5 +63,5 @@ public interface SecurityPolicy
      * @param messsage The message to /meta/subscribe
      * @return true if the client can subscribe to the channel
      */
-    boolean canSubscribe(BayeuxServer server,ServerSession client, ServerMessage messsage);
+    boolean canSubscribe(BayeuxServer server,ServerSession client, ServerChannel channel, ServerMessage messsage);
 }

@@ -74,6 +74,13 @@ public interface ServerChannel extends Channel
      * @param message
      */
     void publish(ServerSession from, ServerMessage message);
+
+
+    /* ------------------------------------------------------------ */
+    /** Remove a channel
+     */
+    void remove();
+    
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

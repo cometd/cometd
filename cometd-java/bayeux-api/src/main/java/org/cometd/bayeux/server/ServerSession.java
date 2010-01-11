@@ -7,6 +7,7 @@ import java.util.Set;
 import org.cometd.bayeux.BayeuxListener;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
+import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
 
 
@@ -107,48 +108,4 @@ public interface ServerSession extends Session
     }
     
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /** Server Session Extension.
-     * <p>
-     * A registered extension is called once for every message
-     * received and sent by the server session.  Extensions may
-     * modify messages except for non-meta sends (which are shared
-     * by multiple sessions). 
-     * <p>
-     * Bayeux.Extension receive methods are called before 
-     * ServerSession.Extension receive methods.  
-     * ServerSession.Extension send methods are called 
-     * before Bayeux.Extension send methods.
-     */
-    public interface Extension
-    {
-        /**
-         * @param session
-         * @param message
-         * @return true if message processing should continue
-         */
-        boolean rcv(ServerSession session, ServerMessage.Mutable message);
-
-        /**
-         * @param session
-         * @param message
-         * @return true if message processing should continue
-         */
-        boolean rcvMeta(ServerSession session, ServerMessage.Mutable message);
-
-        /**
-         * @param session
-         * @param message
-         * @return The message to send for this session (may be a new message or null to discard).
-         */
-        ServerMessage send(ServerSession session, ServerSession to, ServerMessage message);
-
-        /**
-         * @param session
-         * @param message
-         * @return true if message processing should continue
-         */
-        boolean sendMeta(Session session, ServerMessage.Mutable message);
-    }
 }

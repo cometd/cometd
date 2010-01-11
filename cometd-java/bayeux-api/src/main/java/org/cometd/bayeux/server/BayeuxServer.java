@@ -147,34 +147,34 @@ public interface BayeuxServer extends Bayeux
     {
         /**
          * Callback method invoked every time a normal message is incoming.
-         * @param session the session object
+         * @param from the session that sent the message
          * @param message the incoming message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean rcv(ServerSession session, Message.Mutable message);
+        boolean rcv(ServerSession from, Message.Mutable message);
 
         /**
          * Callback method invoked every time a meta message is incoming.
-         * @param session the session object
+         * @param from the session that sent the message
          * @param message the incoming meta message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean rcvMeta(ServerSession session, Message.Mutable message);
+        boolean rcvMeta(ServerSession from, Message.Mutable message);
 
         /**
          * Callback method invoked every time a normal message is outgoing.
-         * @param session the session object
+         * @param to the session receiving the message
          * @param message the outgoing message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean send(ServerSession session, Message.Mutable message);
+        boolean send(ServerSession to, Message.Mutable message);
 
         /**
          * Callback method invoked every time a meta message is outgoing.
-         * @param session the session object
+         * @param to the session receiving the message
          * @param message the outgoing meta message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean sendMeta(ServerSession session, Message.Mutable message);
+        boolean sendMeta(ServerSession to, Message.Mutable message);
     }
 }
