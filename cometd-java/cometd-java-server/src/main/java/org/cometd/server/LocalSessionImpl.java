@@ -3,7 +3,6 @@ package org.cometd.server;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;

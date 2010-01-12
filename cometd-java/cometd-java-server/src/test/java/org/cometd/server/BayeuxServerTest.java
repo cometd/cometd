@@ -1,19 +1,14 @@
 package org.cometd.server;
 
-import java.util.List;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import junit.framework.Assert;
 
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.BayeuxClient;
-import org.cometd.bayeux.client.ClientChannel;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
-import org.cometd.bayeux.client.BayeuxClient.Extension;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
@@ -328,7 +323,6 @@ public class BayeuxServerTest extends Assert
             {
                 return true;
             }
-
         });
 
         
