@@ -246,7 +246,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return getJSON();
+        return "|"+super.toString()+"|";
     }
     
     /* ------------------------------------------------------------ */

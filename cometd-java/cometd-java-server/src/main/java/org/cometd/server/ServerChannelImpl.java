@@ -199,8 +199,8 @@ public class ServerChannelImpl implements ServerChannel
         if (isWild())
             throw new IllegalStateException("Wild publish");
         ServerMessage.Mutable mutable = msg.asMutable();
-        _bayeux.extendSend(null,mutable);
-        _bayeux.root().doPublish((ServerSessionImpl)from,this,mutable);
+        if(_bayeux.extendSend(null,mutable))
+            _bayeux.root().doPublish((ServerSessionImpl)from,this,mutable);
     }
 
     /* ------------------------------------------------------------ */

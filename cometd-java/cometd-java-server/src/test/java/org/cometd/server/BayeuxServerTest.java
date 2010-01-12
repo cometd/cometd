@@ -1,16 +1,23 @@
 package org.cometd.server;
 
+import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import junit.framework.Assert;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Transport;
+import org.cometd.bayeux.client.BayeuxClient;
+import org.cometd.bayeux.client.ClientChannel;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.client.BayeuxClient.Extension;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.junit.Before;
@@ -240,8 +247,8 @@ public class BayeuxServerTest extends Assert
             
             public boolean send(Mutable message)
             {
-                if ("two".equals(message.getData()))
-                    message.setData("three");
+                if ("three".equals(message.getData()))
+                    message.setData("four");
                 return !"ignoreSend".equals(message.getData());
             }
             
@@ -263,6 +270,68 @@ public class BayeuxServerTest extends Assert
         final LocalSession session1 = _bayeux.newLocalSession("s1");
         session1.handshake(true);
         
+        session0.addExtension(new BayeuxClient.Extension()
+        {
+            public boolean sendMeta(ClientSession session, org.cometd.bayeux.Message.Mutable message)
+            {
+                return true;
+            }
+            
+            public boolean send(ClientSession session, org.cometd.bayeux.Message.Mutable message)
+            {
+                if ("zero".equals(message.getData()))
+                    message.setData("one");
+                return true;
+            }
+            
+            public boolean rcvMeta(ClientSession session, org.cometd.bayeux.Message.Mutable message)
+            {
+                return true;
+            }
+            
+            public boolean rcv(ClientSession session, org.cometd.bayeux.Message.Mutable message)
+            {
+                if ("five".equals(message.getData()))
+                    message.setData("six");
+                return true;
+            }
+        });
+        
+        
+        session0.getServerSession().addExtension(new ServerSession.Extension()
+        {
+            public boolean rcv(ServerSession from, Mutable message)
+            {
+                if ("two".equals(message.getData()))
+                    message.setData("three");
+                return true;
+            }
+
+            public boolean rcvMeta(ServerSession from, Mutable message)
+            {
+                return true;
+            }
+
+            public ServerMessage send(ServerSession to, ServerMessage message)
+            {
+                if (message.isMeta())
+                    new Throwable().printStackTrace();
+                if ("four".equals(message.getData()))
+                {
+                    message=_bayeux.newMessage(message);
+                    message.asMutable().setData("five");
+                }
+                return message;
+            }
+
+            public boolean sendMeta(ServerSession to, Mutable message)
+            {
+                return true;
+            }
+
+        });
+
+        
         ClientSession.MessageListener listener = new ClientSession.MessageListener()
         {
             public void onMessage(ClientSession session, Message message)
@@ -275,9 +344,15 @@ public class BayeuxServerTest extends Assert
         session0.getChannel("/foo/bar").subscribe(listener);
         session1.getChannel("/foo/bar").subscribe(listener);
         
-        session0.getChannel("/foo/bar").publish("one");
+        session0.getChannel("/foo/bar").publish("zero");
         session0.getChannel("/foo/bar").publish("ignoreSend");
         session0.getChannel("/foo/bar").publish("ignoreRcv");
+        
+        assertEquals(session0.getId(),events.poll());
+        assertEquals("six",events.poll());
+        assertEquals(session1.getId(),events.poll());
+        assertEquals("four",events.poll());
+        assertEquals(null,events.poll());
         
     }
     

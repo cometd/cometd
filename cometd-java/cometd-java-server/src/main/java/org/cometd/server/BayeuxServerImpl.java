@@ -154,6 +154,15 @@ public class BayeuxServerImpl implements BayeuxServer
     {
         return _pool.getServerMessage();
     }
+    
+    /* ------------------------------------------------------------ */
+    public ServerMessage.Mutable newMessage(ServerMessage tocopy)
+    {
+        ServerMessage.Mutable mutable = _pool.getServerMessage();
+        for (String key : tocopy.keySet())
+            mutable.put(key,tocopy.get(key));
+        return mutable;
+    }
 
     /* ------------------------------------------------------------ */
     public void setSecurityPolicy(SecurityPolicy securityPolicy)
@@ -219,7 +228,7 @@ public class BayeuxServerImpl implements BayeuxServer
         }
         else if (_policy.canPublish(this,session,channel,message))                               
         {
-            root().doPublish(session,(ServerChannelImpl)channel,message);
+            channel.publish(session,message);
             reply = createReply(message);
             reply.setSuccessful(true);
         }

@@ -106,17 +106,9 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     protected void doDeliver(ServerSession from, ServerMessage message)
     {
-        if (message.isMeta())
-        {
-            if(!extendSendMeta(message.asMutable()))
-                return;
-        }
-        else
-        {
-            message=extendSend(message);
-            if (message==null)
-                return;
-        }
+        message=extendSend(message);
+        if (message==null)
+            return;
 
         for (ServerSessionListener listener : _listeners)
         {
@@ -315,22 +307,22 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    protected boolean extendSendMeta(ServerMessage.Mutable message)
-    {
-        for (Extension ext : _extensions)
-            if (!ext.sendMeta(this,message))
-                return false;
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
     protected ServerMessage extendSend(ServerMessage message)
     {
-        for (Extension ext : _extensions)
+        if (message.isMeta())
         {
-            message=ext.send(this,message);
-            if (message==null)
-                return null;
+            for (Extension ext : _extensions)
+                if (!ext.sendMeta(this,message.asMutable()))
+                    return null;
+        }
+        else
+        {
+            for (Extension ext : _extensions)
+            {
+                message=ext.send(this,message);
+                if (message==null)
+                    return null;
+            }
         }
         
         return message;
