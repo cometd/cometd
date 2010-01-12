@@ -228,13 +228,18 @@ public class BayeuxServerImpl implements BayeuxServer
             reply = createReply(message);
             error(reply,session==null?"402::unknown client":"403:Cannot publish");
         }
-
-        if (reply!=null)
-        {
-            session.extendSend(reply);
-            extendSend(session,reply);
-        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected ServerMessage extendReply(ServerSessionImpl session, ServerMessage reply)
+    {
+        ServerMessage msg = session.extendSend(reply);
+        if (msg==null) 
+            return null;
         
+        if(extendSend(session,reply.asMutable()))
+            return reply;
+        return null;
     }
     
     /* ------------------------------------------------------------ */

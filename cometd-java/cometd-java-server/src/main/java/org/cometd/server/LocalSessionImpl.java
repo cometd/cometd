@@ -315,7 +315,11 @@ public class LocalSessionImpl implements LocalSession
         ServerMessage reply = message.getAssociated();
 
         if (reply!=null)
-            receive(reply);
+        {
+            _bayeux.extendReply(session,reply);
+            if (reply!=null)
+                receive(reply);
+        }
     }
     
 
