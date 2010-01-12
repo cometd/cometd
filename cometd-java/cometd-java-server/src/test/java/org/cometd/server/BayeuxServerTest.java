@@ -58,8 +58,11 @@ public class BayeuxServerTest extends Assert
         assertEquals(wibble.getId(),_events.poll());
         
         ServerSessionImpl session0 = _bayeux.newServerSession();
+        _bayeux.addServerSession(session0);
         ServerSessionImpl session1 = _bayeux.newServerSession();
+        _bayeux.addServerSession(session1);
         ServerSessionImpl session2 = _bayeux.newServerSession();
+        _bayeux.addServerSession(session2);
 
         assertEquals("sessionAdded",_events.poll());
         assertEquals(session0,_events.poll());

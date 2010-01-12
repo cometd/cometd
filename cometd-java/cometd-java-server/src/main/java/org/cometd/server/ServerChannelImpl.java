@@ -154,7 +154,6 @@ public class ServerChannelImpl implements ServerChannel
     {
         _listeners.remove(listener);
     }
-
     
     /* ------------------------------------------------------------ */
     public ServerChannelImpl getChild(ChannelId id,boolean create)
@@ -167,7 +166,6 @@ public class ServerChannelImpl implements ServerChannel
         }
     
         String next=id.getSegment(_id.depth());
-
         ServerChannelImpl child = _children.get(next);
         
         if (child==null)
@@ -202,11 +200,11 @@ public class ServerChannelImpl implements ServerChannel
             throw new IllegalStateException("Wild publish");
         ServerMessage.Mutable mutable = msg.asMutable();
         _bayeux.extendSend(null,mutable);
-        _bayeux.root().doListeners(from,this,mutable);
+        _bayeux.root().doPublish((ServerSessionImpl)from,this,mutable);
     }
 
     /* ------------------------------------------------------------ */
-    void doListeners(ServerSession from, ServerChannelImpl to, final ServerMessage.Mutable mutable)
+    void doPublish(ServerSessionImpl from, ServerChannelImpl to, final ServerMessage.Mutable mutable)
     {
         // Deeply apply all the listeners, so that they may perform all
         // mutable changes before any deliveries take place.
@@ -234,11 +232,9 @@ public class ServerChannelImpl implements ServerChannel
                     for (ServerChannelListener listener : _listeners)
                         if (listener instanceof BayeuxServerImpl.HandlerListener)
                             ((BayeuxServerImpl.HandlerListener)listener).onMessage(from,mutable);
-                
                 break;
 
             case 1:
-                
                 if (wild != null)
                 {
                     if (wild._lazy)
@@ -265,13 +261,12 @@ public class ServerChannelImpl implements ServerChannel
                 String next=to._id.getSegment(_id.depth());
                 ServerChannelImpl channel=_children.get(next);
                 if (channel != null)
-                    channel.doListeners(from,to,mutable);
+                    channel.doPublish(from,to,mutable);
         }
     }
     
-
     /* ------------------------------------------------------------ */
-    void doSubscribers(ServerSession from, ChannelId to, final ServerMessage.Mutable mutable)
+    void doSubscribers(ServerSessionImpl from, ChannelId to, final ServerMessage.Mutable mutable)
     {
         final ServerMessage message = mutable.asImmutable();
         
