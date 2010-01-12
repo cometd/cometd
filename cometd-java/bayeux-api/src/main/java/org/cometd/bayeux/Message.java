@@ -42,6 +42,7 @@ public interface Message extends Map<String, Object>
     String getClientId();
     Object getData();
     boolean isMeta();
+    boolean isSuccessful();
 
     Map<String, Object> getDataAsMap();
     Map<String, Object> getExt();
@@ -59,5 +60,6 @@ public interface Message extends Map<String, Object>
         void setClientId(String clientId);
         void setData(Object data);
         void setId(String id);
+        void setSuccessful(boolean success);
     }
 }

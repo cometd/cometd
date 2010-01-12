@@ -2,6 +2,7 @@ package org.cometd.server;
 
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -18,6 +19,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.common.ChannelId;
+import org.eclipse.jetty.util.ajax.JSON;
 
 public class BayeuxServerImpl implements BayeuxServer
 {
@@ -30,11 +32,16 @@ public class BayeuxServerImpl implements BayeuxServer
     private final ConcurrentMap<String, ServerChannelImpl> _channels = new ConcurrentHashMap<String, ServerChannelImpl>();
     private SecurityPolicy _policy=new DefaultSecurityPolicy();
 
+    private Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
+
     /* ------------------------------------------------------------ */
     BayeuxServerImpl()
     {
+        getChannel(Channel.META_HANDSHAKE,true).addListener(new HandshakeHandler());
+        getChannel(Channel.META_CONNECT,true).addListener(new ConnectHandler());
         getChannel(Channel.META_SUBSCRIBE,true).addListener(new SubscribeHandler());
         getChannel(Channel.META_UNSUBSCRIBE,true).addListener(new UnsubscribeHandler());
+        getChannel(Channel.META_DISCONNECT,true).addListener(new DisconnectHandler());
     }
     
     /* ------------------------------------------------------------ */
@@ -125,9 +132,13 @@ public class BayeuxServerImpl implements BayeuxServer
     /* ------------------------------------------------------------ */
     protected ServerSessionImpl newServerSession()
     {
-        ServerSessionImpl session =new ServerSessionImpl(this);
-        addServerSession(session);
-        return session;
+        return new ServerSessionImpl(this);
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected ServerSessionImpl newServerSession(LocalSessionImpl local, String idHint)
+    {
+        return new ServerSessionImpl(this,local,idHint);
     }
 
     /* ------------------------------------------------------------ */
@@ -174,37 +185,54 @@ public class BayeuxServerImpl implements BayeuxServer
         _listeners.remove(listener);
     }
 
-
     /* ------------------------------------------------------------ */
-    protected void handle(ServerSessionImpl session, ServerMessage.Mutable message)
+    protected void recvMessage(ServerSessionImpl session, ServerMessage.Mutable message)
     {
+        if (!extendRecv(session,message))
+            return;
+        if (!session.extendRecv(message))
+            return;
+        
         String channelId=message.getChannelId();
        
-        ServerChannel channel = getChannel(channelId,false);
-        if (channel==null && _policy.canCreate(this,session,channelId,message))
-            channel = getChannel(channelId,true);
+        ServerChannel channel=null;
+        if (channelId!=null)
+        {
+            channel = getChannel(channelId,false);
+            if (channel==null && _policy.canCreate(this,session,channelId,message))
+                channel = getChannel(channelId,true);
+        }
+
+        ServerMessage.Mutable reply=null;
+       
+        if (channel==null)
+        { 
+            reply = createReply(message);
+            error(reply,channelId==null?"402::no channel":"403:Cannot create");
+        }
+        else if (channel.isMeta())
+        {
+            root().doPublish(session,(ServerChannelImpl)channel,message);
+            reply = message.getAssociated().asMutable();
+        }
+        else if (_policy.canPublish(this,session,channel,message))                               
+        {
+            root().doPublish(session,(ServerChannelImpl)channel,message);
+            reply = createReply(message);
+            reply.setSuccessful(true);
+        }
         else
         {
-            // TODO error response ???
+            reply = createReply(message);
+            error(reply,session==null?"402::unknown client":"403:Cannot publish");
+        }
+
+        if (reply!=null)
+        {
+            session.extendSend(reply);
+            extendSend(session,reply);
         }
         
-        if (channel!=null)
-        {
-            extendRecv(session,message);
-            session.extendRecv(message);
-            
-            if (channel.isMeta()||_policy.canPublish(this,session,channel,message))                               
-                channel.publish(session,message);
-            
-            ServerMessage reply = message.getAssociated();
-            
-            if (reply!=null)
-            {
-                ServerMessage.Mutable mutable = reply.asMutable();
-                session.extendSend(mutable);
-                extendSend(session,mutable);
-            }
-        }
     }
     
     /* ------------------------------------------------------------ */
@@ -306,31 +334,114 @@ public class BayeuxServerImpl implements BayeuxServer
     }
 
 
+    /* ------------------------------------------------------------ */
+    protected void error(ServerMessage.Mutable reply, String error)
+    {
+        reply.put(Message.ERROR_FIELD,error);
+        reply.setSuccessful(false);
+    }
+
+    /* ------------------------------------------------------------ */
+    protected ServerMessage.Mutable createReply(ServerMessage.Mutable message)
+    {
+        ServerMessage.Mutable reply=newMessage();
+        message.setAssociated(reply);
+        
+        reply.setChannelId(message.getChannelId());
+        String id=message.getId();
+        if (id != null)
+            reply.setId(id);
+        return reply;
+    }
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     abstract class HandlerListener implements ServerChannel.ServerChannelListener
     {
-        public abstract void onMessage(final ServerSession from, final Mutable message);
+        public abstract void onMessage(final ServerSessionImpl from, final ServerMessage.Mutable message);
         
-        protected void error(ServerMessage.Mutable message, String error)
+    }
+    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    class HandshakeHandler extends HandlerListener
+    {
+        public void onMessage(ServerSessionImpl session, final Mutable message)
         {
-            message.put(Message.ERROR_FIELD,error);
-            message.put(Message.SUCCESSFUL_FIELD,Boolean.FALSE);
+            if (session==null)
+                session = newServerSession();
+
+            ServerMessage.Mutable reply=createReply(message);
+            
+            if (_policy != null && !_policy.canHandshake(BayeuxServerImpl.this,session,message))
+            {
+                error(reply,"403::Handshake denied");
+                return;
+            }
+
+            addServerSession(session);
+            
+            reply.setSuccessful(true);
+            reply.put(Message.CLIENT_FIELD,session.getId());
+            reply.put(Message.VERSION_FIELD,"1.0");
+            reply.put(Message.MIN_VERSION_FIELD,"1.0");
+            reply.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD,getAllowedTransports());
+            
+            Object advice = session.getAdvice();
+            if (advice!=null)
+                reply.put(Message.ADVICE_FIELD,advice);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    class ConnectHandler extends HandlerListener
+    {
+        public void onMessage(final ServerSessionImpl session, final Mutable message)
+        {
+            ServerMessage.Mutable reply=createReply(message);
+
+            if (session == null)
+            {
+                error(reply,"402::Unknown client");
+                reply.put(Message.ADVICE_FIELD,_handshakeAdvice);
+                return;
+            }
+
+            // receive advice
+            Object advice=message.get(Message.ADVICE_FIELD);
+            if (advice != null)
+            {
+                Long timeout=((Map<String,Long>)advice).get("timeout");
+                session.setTimeout(timeout==null?0:timeout.longValue());
+
+                Long interval=((Map<String,Long>)advice).get("interval");
+                session.setInterval(interval==null?0:interval.longValue());
+            }
+
+            // send advice
+            advice = session.getAdvice();
+            if (advice!=null)
+                reply.put(Message.ADVICE_FIELD,advice);
+            
+            reply.setSuccessful(true);
         }
     }
     
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     class SubscribeHandler extends HandlerListener
     {
-        public void onMessage(final ServerSession from, final Mutable message)
+        public void onMessage(final ServerSessionImpl from, final Mutable message)
         {
-            String subscribe_id=(String)message.get(Message.SUBSCRIPTION_FIELD);
-         
-            ServerMessage.Mutable reply=newMessage();
-            message.setAssociated(reply);
-            reply.setAssociated(message);
+            ServerMessage.Mutable reply=createReply(message);
+            if (from == null)
+            {
+                error(reply,"402::Unknown client");
+                reply.put(Message.ADVICE_FIELD,_handshakeAdvice);
+                return;
+            }
             
-            reply.setChannelId(Channel.META_SUBSCRIBE);
-            String id=message.getId();
-            if (id != null)
-                reply.setId(id);
+            String subscribe_id=(String)message.get(Message.SUBSCRIPTION_FIELD);
             
             if (subscribe_id==null)
                 error(reply,"403::cannot create");
@@ -348,27 +459,27 @@ public class BayeuxServerImpl implements BayeuxServer
                 else
                 {
                     channel.subscribe((ServerSessionImpl)from);
-                    reply.put(Message.SUCCESSFUL_FIELD,Boolean.TRUE);
+                    reply.setSuccessful(true);
                 }
             }
         }
     }
 
-    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     class UnsubscribeHandler extends HandlerListener
     {
-        public void onMessage(final ServerSession from, final Mutable message)
+        public void onMessage(final ServerSessionImpl from, final Mutable message)
         {
-            String subscribe_id=(String)message.get(Message.SUBSCRIPTION_FIELD);
-         
-            ServerMessage.Mutable reply=newMessage();
-            message.setAssociated(reply);
-            reply.setAssociated(message);
+            ServerMessage.Mutable reply=createReply(message);
+            if (from == null)
+            {
+                error(reply,"402::Unknown client");
+                reply.put(Message.ADVICE_FIELD,_handshakeAdvice);
+                return;
+            }
             
-            reply.setChannelId(Channel.META_UNSUBSCRIBE);
-            String id=message.getId();
-            if (id != null)
-                reply.setId(id);
+            String subscribe_id=(String)message.get(Message.SUBSCRIPTION_FIELD);
             
             if (subscribe_id==null)
                 error(reply,"400::no channel");
@@ -386,5 +497,20 @@ public class BayeuxServerImpl implements BayeuxServer
                 }
             }
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    class DisconnectHandler extends HandlerListener
+    {
+        public void onMessage(final ServerSessionImpl from, final Mutable message)
+        {
+            ServerMessage.Mutable reply=createReply(message);
+            if (from == null)
+            {
+                error(reply,"402::Unknown client");
+                return;
+            }
+        }    
     }
 }

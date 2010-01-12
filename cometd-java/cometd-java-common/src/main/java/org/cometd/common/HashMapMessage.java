@@ -261,6 +261,12 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         put(ID_FIELD,id);
     }
 
+    public void setSuccessful(boolean success)
+    {
+        put(SUCCESSFUL_FIELD,success?Boolean.TRUE:Boolean.FALSE);
+    }
+
+
     public Message asImmutable()
     {
         return this;

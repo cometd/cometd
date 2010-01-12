@@ -160,13 +160,16 @@ public class ServerChannelTest extends Assert
         });
         
         ServerSessionImpl session0 = _bayeux.newServerSession();
+        _bayeux.addServerSession(session0);
         
         // this is a private API - not a normal subscribe!!
         foobar.subscribe(session0);
       
         ServerSessionImpl session1 = _bayeux.newServerSession();
+        _bayeux.addServerSession(session1);
         foostar.subscribe(session1);
         ServerSessionImpl session2 = _bayeux.newServerSession();
+        _bayeux.addServerSession(session2);
         starstar.subscribe(session2);
         
         ServerMessage.Mutable msg = _bayeux.newMessage();

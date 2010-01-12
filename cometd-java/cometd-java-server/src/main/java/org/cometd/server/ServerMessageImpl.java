@@ -478,6 +478,16 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
         {
             ServerMessageImpl.this.incRef();
         }
+
+        public boolean isSuccessful()
+        {
+            return ServerMessageImpl.this.isSuccessful();
+        }
+
+        public void setSuccessful(boolean success)
+        {
+            put(SUCCESSFUL_FIELD,success?Boolean.TRUE:Boolean.FALSE);
+        }
     }
     
 }

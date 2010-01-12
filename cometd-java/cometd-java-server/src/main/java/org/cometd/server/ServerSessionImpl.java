@@ -1,6 +1,7 @@
 package org.cometd.server;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -215,7 +216,7 @@ public class ServerSessionImpl implements ServerSession
                 ServerMessage msg=_queue.poll();
                 if (msg!=null)
                 {           
-                    _localSession.deliver(msg);
+                    _localSession.recvFromServer(msg);
                 }
             }   
         }
@@ -292,6 +293,23 @@ public class ServerSessionImpl implements ServerSession
         }
         
         return message;
+    }
+
+    /* ------------------------------------------------------------ */
+    public Object getAdvice()
+    {
+        // TODO
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setTimeout(long timeoutMS)
+    {   
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setInterval(long intervalMS)
+    {   
     }
 
 }
