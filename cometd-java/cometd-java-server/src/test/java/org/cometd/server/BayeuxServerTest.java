@@ -12,6 +12,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -224,6 +225,60 @@ public class BayeuxServerTest extends Assert
         session2.getServerSession().disconnect();
         assertFalse(session2.isConnected());
         assertFalse(ss2.isConnected());
+    }
+
+    @Test
+    public void testExtensions() throws Exception
+    {
+        final Queue<String> events = new ConcurrentLinkedQueue<String>();
+        _bayeux.addExtension(new BayeuxServer.Extension()
+        {
+            public boolean sendMeta(ServerSession to, Mutable message)
+            {
+                return true;
+            }
+            
+            public boolean send(Mutable message)
+            {
+                if ("two".equals(message.getData()))
+                    message.setData("three");
+                return !"ignoreSend".equals(message.getData());
+            }
+            
+            public boolean rcvMeta(ServerSession from, Mutable message)
+            {
+                return true;
+            }
+            
+            public boolean rcv(ServerSession from, Mutable message)
+            {
+                if ("one".equals(message.getData()))
+                    message.setData("two");
+                return !"ignoreRcv".equals(message.getData());
+            }
+        });
+        
+        final LocalSession session0 = _bayeux.newLocalSession("s0");
+        session0.handshake(true);
+        final LocalSession session1 = _bayeux.newLocalSession("s1");
+        session1.handshake(true);
+        
+        ClientSession.MessageListener listener = new ClientSession.MessageListener()
+        {
+            public void onMessage(ClientSession session, Message message)
+            {
+                events.add(session.getId());
+                events.add(message.getData().toString());
+            }
+        };
+        
+        session0.getChannel("/foo/bar").subscribe(listener);
+        session1.getChannel("/foo/bar").subscribe(listener);
+        
+        session0.getChannel("/foo/bar").publish("one");
+        session0.getChannel("/foo/bar").publish("ignoreSend");
+        session0.getChannel("/foo/bar").publish("ignoreRcv");
+        
     }
     
     class CListener implements BayeuxServer.ChannelListener
