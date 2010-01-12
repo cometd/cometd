@@ -103,7 +103,7 @@ public class LocalSessionImpl implements LocalSession
         doSend(session,message);
         
         ServerMessage reply = message.getAssociated();
-        if (reply.isSuccessful())
+        if (reply!=null && reply.isSuccessful())
         {   
             _session=session;
             
