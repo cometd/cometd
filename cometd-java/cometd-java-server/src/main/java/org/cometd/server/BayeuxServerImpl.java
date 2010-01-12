@@ -126,6 +126,8 @@ public class BayeuxServerImpl implements BayeuxServer
                 if (listener instanceof BayeuxServer.SessionListener)
                     ((SessionListener)listener).sessionRemoved(session,timedout);
             }
+            
+            session.removed(timedout);
         }
     }
 
@@ -406,6 +408,9 @@ public class BayeuxServerImpl implements BayeuxServer
                 reply.put(Message.ADVICE_FIELD,_handshakeAdvice);
                 return;
             }
+            
+            session.connect();
+            
 
             // receive advice
             Object advice=message.get(Message.ADVICE_FIELD);
@@ -442,6 +447,7 @@ public class BayeuxServerImpl implements BayeuxServer
             }
             
             String subscribe_id=(String)message.get(Message.SUBSCRIPTION_FIELD);
+            reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);            
             
             if (subscribe_id==null)
                 error(reply,"403::cannot create");
@@ -480,7 +486,7 @@ public class BayeuxServerImpl implements BayeuxServer
             }
             
             String subscribe_id=(String)message.get(Message.SUBSCRIPTION_FIELD);
-            
+            reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);            
             if (subscribe_id==null)
                 error(reply,"400::no channel");
             else
@@ -493,7 +499,7 @@ public class BayeuxServerImpl implements BayeuxServer
                 else
                 {
                     channel.unsubscribe((ServerSessionImpl)from);
-                    reply.put(Message.SUCCESSFUL_FIELD,Boolean.TRUE);
+                    reply.setSuccessful(true);
                 }
             }
         }
@@ -503,14 +509,18 @@ public class BayeuxServerImpl implements BayeuxServer
     /* ------------------------------------------------------------ */
     class DisconnectHandler extends HandlerListener
     {
-        public void onMessage(final ServerSessionImpl from, final Mutable message)
+        public void onMessage(final ServerSessionImpl session, final Mutable message)
         {
             ServerMessage.Mutable reply=createReply(message);
-            if (from == null)
+            if (session == null)
             {
                 error(reply,"402::Unknown client");
                 return;
             }
+            
+            removeServerSession(session,false);
+            
+            reply.setSuccessful(true);
         }    
     }
 }

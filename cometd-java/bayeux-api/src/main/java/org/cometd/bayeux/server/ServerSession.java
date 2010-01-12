@@ -58,6 +58,16 @@ public interface ServerSession extends Session
     interface ServerSessionListener extends BayeuxListener
     {}
 
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /** Queue a message listener
+     * <p>
+     * Listener called after a session is removed
+     */
+    public interface RemoveListener extends ServerSessionListener
+    {
+        public boolean removed(ServerSession session, boolean timeout);
+    };
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

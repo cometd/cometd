@@ -97,7 +97,9 @@ public class ServerMessagePool
     {
         ServerMessageImpl message=_messagePool.poll();
         if (message == null)
+        {
             message=new ServerMessageImpl(this);
+        }
         return message.asMutable();
     }
     
@@ -106,7 +108,7 @@ public class ServerMessagePool
     {
         if (message instanceof ServerMessageImpl)
         {
-            message.clear();
+            message.asMutable().clear();
             _messagePool.offer((ServerMessageImpl)message);
         }
         else if (message instanceof ServerMessageImpl.MutableMessage)
