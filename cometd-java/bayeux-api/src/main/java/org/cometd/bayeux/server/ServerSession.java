@@ -139,7 +139,7 @@ public interface ServerSession extends Session
          * @param message the outgoing message
          * @return The message to send or null to not send the message
          */
-        ServerMessage send(ServerSession to, Message message);
+        ServerMessage send(ServerSession to, ServerMessage message);
 
         /**
          * Callback method invoked every time a meta message is outgoing.
