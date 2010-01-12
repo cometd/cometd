@@ -219,7 +219,7 @@ public class ServerChannelImpl implements ServerChannel
         switch(tail)
         {
             case 0:
-                if (_lazy)
+                if (isLazy())
                     mutable.setLazy(true);
                 for (ServerChannelListener listener : _listeners)
                     if (listener instanceof MessageListener)
@@ -237,7 +237,7 @@ public class ServerChannelImpl implements ServerChannel
             case 1:
                 if (wild != null)
                 {
-                    if (wild._lazy)
+                    if (wild.isLazy())
                         mutable.setLazy(true);
                     
                     for (ServerChannelListener listener : wild._listeners)
@@ -250,7 +250,7 @@ public class ServerChannelImpl implements ServerChannel
             default:
                 if (deepwild != null)
                 {
-                    if (deepwild._lazy)
+                    if (deepwild.isLazy())
                         mutable.setLazy(true);
                     for (ServerChannelListener listener : deepwild._listeners)
                         if (listener instanceof MessageListener)

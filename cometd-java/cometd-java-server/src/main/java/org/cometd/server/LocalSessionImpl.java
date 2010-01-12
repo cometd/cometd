@@ -5,8 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -30,6 +33,8 @@ public class LocalSessionImpl implements LocalSession
     private final List<ClientSessionListener> _listeners = new CopyOnWriteArrayList<ClientSessionListener>();
     private final AttributesMap _attributes = new AttributesMap();
     private final Map<String, LocalChannel> _channels = new HashMap<String, LocalChannel>();
+    private final AtomicInteger _batch = new AtomicInteger();
+    private final Queue<ServerMessage.Mutable> _queue = new ConcurrentLinkedQueue<ServerMessage.Mutable>();
     
     private ServerSessionImpl _session;
     
@@ -74,11 +79,12 @@ public class LocalSessionImpl implements LocalSession
             throw new IllegalStateException();
         
         ServerMessage.Mutable message = _bayeux.newMessage();
+        message.incRef();
         message.setChannelId(Channel.META_HANDSHAKE);
         
         ServerSessionImpl session = new ServerSessionImpl(_bayeux,this,_idHint);
         
-        sendToServer(session,Channel.META_HANDSHAKE,message);
+        doSend(session,Channel.META_HANDSHAKE,message);
         
         ServerMessage reply = message.getAssociated();
         if (reply.isSuccessful())
@@ -90,11 +96,12 @@ public class LocalSessionImpl implements LocalSession
             message.setClientId(_session.getId());
             message.put(Message.ADVICE_FIELD,LOCAL_ADVICE);
 
-            sendToServer(session,Channel.META_HANDSHAKE,message);
+            doSend(session,Channel.META_HANDSHAKE,message);
             reply = message.getAssociated();
             if (!reply.isSuccessful())
                 _session=null;
         }
+        message.decRef();
     }
 
     public void removeListener(ClientSessionListener listener)
@@ -102,10 +109,36 @@ public class LocalSessionImpl implements LocalSession
         _listeners.remove(listener);
     }
 
+    public void startBatch()
+    {
+        _batch.incrementAndGet();
+    }
+    
+    public void endBatch()
+    {  
+        if (_batch.decrementAndGet()==0)
+        {
+            int size=_queue.size();
+            while(size-->0)
+            {
+                ServerMessage.Mutable message = _queue.poll();
+                doSend(_session,message.getChannelId(),message);
+                message.decRef();
+            }
+        }
+    }
+    
     public void batch(Runnable batch)
     {
-        // TODO Auto-generated method stub
-        
+        startBatch();
+        try
+        {
+            batch.run();
+        }
+        finally
+        {
+            endBatch();
+        }
     }
 
     public void disconnect()
@@ -114,11 +147,6 @@ public class LocalSessionImpl implements LocalSession
         if (_session!=null)
             _session.disconnect();
         _session=null;
-    }
-
-    public void endBatch()
-    {
-        // TODO Auto-generated method stub     
     }
 
     public Object getAttribute(String name)
@@ -155,17 +183,12 @@ public class LocalSessionImpl implements LocalSession
         _attributes.setAttribute(name,value);
     }
 
-    public void startBatch()
-    {
-        // TODO Auto-generated method stub
-    }
-
     public String toString()
     {
         return "LocalSession{"+(_session==null?(_idHint+"?"):_session.getId())+"}";
     }
 
-    protected void recvFromServer(ServerMessage message)
+    protected void receive(ServerMessage message)
     {
         if (message.isMeta())
         {
@@ -186,17 +209,32 @@ public class LocalSessionImpl implements LocalSession
                 ((ClientSession.MessageListener)listener).onMessage(this,message);
         }
         
-        ChannelId channelId=_bayeux.newChannelId(message.getChannelId());    
-        LocalChannel channel = _channels.get(channelId.toString());
-        
-        if (channel!=null && (channel.isMeta() || message.getData()!=null))
+        String id=message.getChannelId();
+        if (id!=null)
         {
-            for (MessageListener listener : channel._subscriptions)
-                listener.onMessage(this,message);
+            ChannelId channelId=_bayeux.newChannelId(id); 
+            LocalChannel channel = _channels.get(channelId.toString());
+
+            if (channel!=null && (channel.isMeta() || message.getData()!=null))
+            {
+                for (MessageListener listener : channel._subscriptions)
+                    listener.onMessage(this,message);
+            }
         }
     }
-
-    protected void sendToServer(ServerSessionImpl session,String channelId,ServerMessage.Mutable message)
+    
+    protected void send(ServerSessionImpl session,String channelId,ServerMessage.Mutable message)
+    {
+        if (_batch.get()>0)
+        {
+            message.incRef();
+            _queue.add(message);
+        }
+        else
+            doSend(session,channelId,message);
+    }
+    
+    protected void doSend(ServerSessionImpl session,String channelId,ServerMessage.Mutable message)
     {
         if (message.isMeta())
         {
@@ -216,7 +254,7 @@ public class LocalSessionImpl implements LocalSession
         ServerMessage reply = message.getAssociated();
 
         if (reply!=null)
-            recvFromServer(reply);
+            receive(reply);
     }
     
     class LocalChannel implements SessionChannel
@@ -237,11 +275,13 @@ public class LocalSessionImpl implements LocalSession
         public void publish(Object data)
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
+            message.incRef();
             message.setChannelId(_id.toString());
             message.setClientId(LocalSessionImpl.this.getId());
             message.setData(data);
             
-            sendToServer(_session,_id.toString(),message);
+            send(_session,_id.toString(),message);
+            message.decRef();
         }
 
         public void subscribe(MessageListener listener)
@@ -250,11 +290,13 @@ public class LocalSessionImpl implements LocalSession
             if (_subscriptions.size()==1)
             {
                 ServerMessage.Mutable message = _bayeux.newMessage();
+                message.incRef();
                 message.setChannelId(Channel.META_SUBSCRIBE);
                 message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
                 message.setClientId(LocalSessionImpl.this.getId());
 
-                sendToServer(_session,Channel.META_SUBSCRIBE,message);
+                send(_session,Channel.META_SUBSCRIBE,message);
+                message.decRef();
             }
         }
 
@@ -263,11 +305,13 @@ public class LocalSessionImpl implements LocalSession
             if (_subscriptions.remove(listener) && _subscriptions.size()==0)
             {
                 ServerMessage.Mutable message = _bayeux.newMessage();
+                message.incRef();
                 message.setChannelId(Channel.META_UNSUBSCRIBE);
                 message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
                 message.setClientId(LocalSessionImpl.this.getId());
 
-                sendToServer(_session,Channel.META_UNSUBSCRIBE,message);
+                send(_session,Channel.META_UNSUBSCRIBE,message);
+                message.decRef();
             }
         }
 

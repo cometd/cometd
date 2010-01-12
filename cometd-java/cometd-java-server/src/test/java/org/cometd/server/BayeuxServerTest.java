@@ -120,9 +120,9 @@ public class BayeuxServerTest extends Assert
         session0.handshake(true);
         assertTrue(session0.toString().indexOf("s0_")>=0);
         
-        LocalSession session1 = _bayeux.newLocalSession("s1");
+        final LocalSession session1 = _bayeux.newLocalSession("s1");
         session1.handshake(true);
-        LocalSession session2 = _bayeux.newLocalSession("s2");
+        final LocalSession session2 = _bayeux.newLocalSession("s2");
         session2.handshake(true);
         
         final Queue<String> events = new ConcurrentLinkedQueue<String>();
@@ -170,9 +170,60 @@ public class BayeuxServerTest extends Assert
         assertEquals(session0.getId(),events.poll());
         assertEquals("hello",events.poll());
         
+        
+        session1.batch(new Runnable()
+        {
+            public void run()
+            {
+                SessionChannel foobar1=session1.getChannel("/foo/bar");
+                foobar1.publish("part1");
+                assertEquals(null,events.poll());
+                foobar1.publish("part2");
+            }
+        });
+
+        assertEquals(session1.getId(),events.poll());
+        assertEquals("part1",events.poll());
+        assertEquals(session2.getId(),events.poll());
+        assertEquals("part1",events.poll());
+        assertEquals(session0.getId(),events.poll());
+        assertEquals("part1",events.poll());
+        assertEquals(session0.getId(),events.poll());
+        assertEquals("part1",events.poll());
+        assertEquals(session1.getId(),events.poll());
+        assertEquals("part2",events.poll());
+        assertEquals(session2.getId(),events.poll());
+        assertEquals("part2",events.poll());
+        assertEquals(session0.getId(),events.poll());
+        assertEquals("part2",events.poll());
+        assertEquals(session0.getId(),events.poll());
+        assertEquals("part2",events.poll());
+        
+        
         foobar0.unsubscribe();
         assertEquals(2,_bayeux.getChannel("/foo/bar").getSubscribers().size());
+
+        assertTrue(session0.isConnected());
+        assertTrue(session1.isConnected());
+        assertTrue(session2.isConnected());
+        ServerSession ss0=session0.getServerSession();
+        ServerSession ss1=session1.getServerSession();
+        ServerSession ss2=session2.getServerSession();
+        assertTrue(ss0.isConnected());
+        assertTrue(ss1.isConnected());
+        assertTrue(ss2.isConnected());
         
+        session0.disconnect();
+        assertFalse(session0.isConnected());
+        assertFalse(ss0.isConnected());
+        
+        session1.getServerSession().disconnect();
+        assertFalse(session1.isConnected());
+        assertFalse(ss1.isConnected());
+        
+        session2.getServerSession().disconnect();
+        assertFalse(session2.isConnected());
+        assertFalse(ss2.isConnected());
     }
     
     class CListener implements BayeuxServer.ChannelListener

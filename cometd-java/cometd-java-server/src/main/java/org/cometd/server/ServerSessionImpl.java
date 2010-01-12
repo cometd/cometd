@@ -8,6 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -24,22 +25,27 @@ public class ServerSessionImpl implements ServerSession
     private final List<ServerSessionListener> _listeners = new CopyOnWriteArrayList<ServerSessionListener>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
     private final ArrayQueue<ServerMessage> _queue=new ArrayQueue<ServerMessage>(8,16,this);
-    private int _maxQueue;
     private final AtomicInteger _batch=new AtomicInteger();
     private final LocalSessionImpl _localSession;
     private final AttributesMap _attributes = new AttributesMap();
     
+    private int _maxQueue;
+    private volatile boolean _connected;
+    
 
+    /* ------------------------------------------------------------ */
     protected ServerSessionImpl(BayeuxServerImpl bayeux)
     {
         this(bayeux,null,null);
     }
-    
+
+    /* ------------------------------------------------------------ */
     protected List<Extension> getExtensions()
     {
         return _extensions;
     }
 
+    /* ------------------------------------------------------------ */
     protected ServerSessionImpl(BayeuxServerImpl bayeux,LocalSessionImpl localSession, String idHint)
     {
         _bayeux=bayeux;
@@ -66,11 +72,13 @@ public class ServerSessionImpl implements ServerSession
         _id=id.toString();
     }
 
+    /* ------------------------------------------------------------ */
     public void addExtension(Extension extension)
     {
         _extensions.add(extension);
     }
 
+    /* ------------------------------------------------------------ */
     public void batch(Runnable batch)
     {
         try
@@ -84,9 +92,10 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
+    /* ------------------------------------------------------------ */
     public void deliver(ServerSession from, ServerMessage message)
     {
-        ServerMessage.Mutable mutable = ((ServerMessageImpl)message).asMutable();
+        ServerMessage.Mutable mutable = message.asMutable();
 
         if (!_bayeux.extendSend((ServerSessionImpl)from,mutable))
             return;
@@ -94,6 +103,7 @@ public class ServerSessionImpl implements ServerSession
         doDeliver(from,message);
     }
 
+    /* ------------------------------------------------------------ */
     protected void doDeliver(ServerSession from, ServerMessage message)
     {
         if (message.isMeta())
@@ -151,56 +161,81 @@ public class ServerSessionImpl implements ServerSession
 
     }
 
+    /* ------------------------------------------------------------ */
+    protected void connect()
+    {
+        _connected=true;
+    }
+
+    /* ------------------------------------------------------------ */
     public void disconnect()
     {
-        // TODO Auto-generated method stub
-
+        if (_connected)
+        {
+            ServerMessage.Mutable message = _bayeux.newMessage();
+            message.incRef();
+            message.setClientId(getId());
+            message.setChannelId(Channel.META_DISCONNECT);
+            message.setSuccessful(true);
+            deliver(this,message);
+            if (_queue.size()>0)
+                dispatch();
+        }
         _bayeux.removeServerSession(this,false);
     }
     
 
+    /* ------------------------------------------------------------ */
     public void endBatch()
     {
         if (_batch.decrementAndGet()==0 && _queue.size()>0)
             dispatch();
     }
 
+    /* ------------------------------------------------------------ */
     public LocalSession getLocalSession()
     {
         return _localSession;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isLocalSession()
     {
         return _localSession!=null;
     }
 
+    /* ------------------------------------------------------------ */
     public void startBatch()
     {
         _batch.incrementAndGet();
     }
 
+    /* ------------------------------------------------------------ */
     public void addListener(ServerSessionListener listener)
     {
         _listeners.add((ServerSessionListener)listener);
     }
 
+    /* ------------------------------------------------------------ */
     public String getId()
     {
         return _id;
     }
 
+    /* ------------------------------------------------------------ */
     public Queue<ServerMessage> getQueue()
     {
         return _queue;
     }
 
+    /* ------------------------------------------------------------ */
     public void removeListener(ServerSessionListener listener)
     {
         _listeners.remove(listener);
     }
 
 
+    /* ------------------------------------------------------------ */
     protected void dispatch()
     {
         if (_localSession!=null && _queue.size()>0)
@@ -216,27 +251,32 @@ public class ServerSessionImpl implements ServerSession
                 ServerMessage msg=_queue.poll();
                 if (msg!=null)
                 {           
-                    _localSession.recvFromServer(msg);
+                    _localSession.receive(msg);
                 }
             }   
         }
     }
 
+    /* ------------------------------------------------------------ */
     protected void dispatchLazy()
     {
+        /* ------------------------------------------------------------ */
 
     }
 
+    /* ------------------------------------------------------------ */
     public Object getAttribute(String name)
     {
         return _attributes.getAttribute(name);
     }
 
+    /* ------------------------------------------------------------ */
     public Set<String> getAttributeNames()
     {
         return _attributes.getAttributeNameSet();
     }
 
+    /* ------------------------------------------------------------ */
     public Object removeAttribute(String name)
     {
         Object old = getAttribute(name);
@@ -244,15 +284,16 @@ public class ServerSessionImpl implements ServerSession
         return old;
     }
 
+    /* ------------------------------------------------------------ */
     public void setAttribute(String name, Object value)
     {
         _attributes.setAttribute(name,value);
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isConnected()
     {
-        // TODO Auto-generated method stub
-        return false;
+        return _connected;
     }
 
     /* ------------------------------------------------------------ */
@@ -310,6 +351,17 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public void setInterval(long intervalMS)
     {   
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void removed(boolean timedout)
+    {
+        _connected=false;
+        for (ServerSessionListener listener : _listeners)
+        {
+            if (listener instanceof ServerSession.RemoveListener)
+                ((ServerSession.RemoveListener)listener).removed(this,timedout);
+        }
     }
 
 }

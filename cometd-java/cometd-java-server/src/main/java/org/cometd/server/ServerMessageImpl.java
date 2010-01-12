@@ -85,7 +85,6 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
         int r=_refs.decrementAndGet();
         if (r == 0 && _pool != null)
         {
-            _mutable.clear();
             _pool.recycleMessage(this);
         }
         else if (r < 0)
@@ -292,7 +291,6 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
         public void clear()
         {
             setAssociated(null);
-            _refs.set(0);
             _jsonString=null;
             _lazy=false;
             super.clear();
