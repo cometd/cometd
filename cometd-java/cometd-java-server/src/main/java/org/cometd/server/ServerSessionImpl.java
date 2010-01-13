@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.LocalSession;
@@ -28,6 +29,8 @@ public class ServerSessionImpl implements ServerSession
     private final LocalSessionImpl _localSession;
     private final AttributesMap _attributes = new AttributesMap();
     
+    private ServerTransport.Dispatcher _dispatcher;
+
     private int _maxQueue;
     private volatile boolean _connected;
     
@@ -141,7 +144,6 @@ public class ServerSessionImpl implements ServerSession
             }
         }
 
-
         if (_batch.get() == 0 && _queue.size() > 0)
         {
             if (message.isLazy())
@@ -227,16 +229,58 @@ public class ServerSessionImpl implements ServerSession
 
 
     /* ------------------------------------------------------------ */
+    public boolean setDispatcher(ServerTransport.Dispatcher dispatcher)
+    {
+        synchronized(_queue)
+        {
+            if (dispatcher == null)
+            {
+                // This is the end of a connect
+                if (_dispatcher!=null)
+                    startIntervalTimeout();
+                _dispatcher = null;
+                return true;
+            }
+
+            if (_dispatcher!=null)
+            {
+                // This is the reload case: there is an outstanding connect,
+                // and the client issues a new connect.
+                _dispatcher.cancel();
+            }
+
+            if (_queue.size()>0)
+                return false;
+
+            _dispatcher=dispatcher;
+            cancelIntervalTimeout(); 
+            return true;
+        }
+    }
+
+    /* ------------------------------------------------------------ */
     protected void dispatch()
     {
-        if (_localSession!=null && _queue.size()>0)
+        synchronized (_queue)
+        {
+            if (_dispatcher!=null)
+            {
+                _dispatcher.dispatch();
+                _dispatcher=null;
+                startIntervalTimeout();
+                return;
+            }
+        }
+        
+        // do local delivery
+        if  (_localSession!=null && _queue.size()>0)
         {
             for (ServerSessionListener listener : _listeners)
             {
                 if (listener instanceof ServerSession.DeQueueListener)
                     ((ServerSession.DeQueueListener)listener).deQueue(this);
             }
-           
+
             for (int s=_queue.size();s-->0;)
             {
                 ServerMessage msg=_queue.poll();
@@ -251,8 +295,20 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     protected void dispatchLazy()
     {
-        /* ------------------------------------------------------------ */
+    }
 
+    /* ------------------------------------------------------------ */
+    protected void cancelIntervalTimeout()
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void startIntervalTimeout()
+    {
+        // TODO Auto-generated method stub
+        
     }
 
     /* ------------------------------------------------------------ */

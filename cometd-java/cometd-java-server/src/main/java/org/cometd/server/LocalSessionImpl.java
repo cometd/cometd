@@ -116,6 +116,7 @@ public class LocalSessionImpl implements LocalSession
             if (!reply.isSuccessful())
                 _session=null;
         }
+        message.setAssociated(null);
         message.decRef();
     }
 
@@ -350,6 +351,7 @@ public class LocalSessionImpl implements LocalSession
             message.setData(data);
             
             send(_session,message);
+            message.setAssociated(null);
             message.decRef();
         }
 
@@ -365,6 +367,7 @@ public class LocalSessionImpl implements LocalSession
                 message.setClientId(LocalSessionImpl.this.getId());
 
                 send(_session,message);
+                message.setAssociated(null);
                 message.decRef();
             }
         }
@@ -380,6 +383,7 @@ public class LocalSessionImpl implements LocalSession
                 message.setClientId(LocalSessionImpl.this.getId());
 
                 send(_session,message);
+                message.setAssociated(null);
                 message.decRef();
             }
         }
