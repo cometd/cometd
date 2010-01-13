@@ -1,6 +1,9 @@
 package org.cometd.server;
 
 import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,6 +33,8 @@ public class BayeuxServerImpl implements BayeuxServer
     private final ServerChannelImpl _root=new ServerChannelImpl(this,null,new ChannelId("/"));
     private final ConcurrentMap<String, ServerSessionImpl> _sessions = new ConcurrentHashMap<String, ServerSessionImpl>();
     private final ConcurrentMap<String, ServerChannelImpl> _channels = new ConcurrentHashMap<String, ServerChannelImpl>();
+    private final ConcurrentMap<String, Transport> _transports = new ConcurrentHashMap<String, Transport>();
+    private final List<String> _allowedTransports = new CopyOnWriteArrayList<String>();
     private SecurityPolicy _policy=new DefaultSecurityPolicy();
 
     private Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
@@ -45,7 +50,7 @@ public class BayeuxServerImpl implements BayeuxServer
     }
     
     /* ------------------------------------------------------------ */
-    ChannelId newChannelId(String id)
+    public ChannelId newChannelId(String id)
     {
         ServerChannelImpl channel = _channels.get(id);
         if (channel!=null)
@@ -54,31 +59,37 @@ public class BayeuxServerImpl implements BayeuxServer
     }
     
     /* ------------------------------------------------------------ */
-    int randomInt()
+    public int randomInt()
     {
         return _random.nextInt();
     }
 
     /* ------------------------------------------------------------ */
-    int randomInt(int n)
+    public int randomInt(int n)
     {
         return _random.nextInt(n);
     }
 
     /* ------------------------------------------------------------ */
-    long randomLong()
+    public long randomLong()
     {
         return _random.nextLong();
     }
 
     /* ------------------------------------------------------------ */
-    ServerChannelImpl root()
+    public ServerChannelImpl root()
     {
         return _root;
     }
+    
+    /* ------------------------------------------------------------ */
+    public ServerMessagePool getServerMessagePool()
+    {
+        return _pool;
+    }
 
     /* ------------------------------------------------------------ */
-    public Transport getCurrentTransport()
+    public ServerTransport getCurrentTransport()
     {
         // TODO Auto-generated method stub
         return null;
@@ -102,6 +113,8 @@ public class BayeuxServerImpl implements BayeuxServer
     /* ------------------------------------------------------------ */
     public ServerSession getSession(String clientId)
     {
+        if (clientId==null)
+            return null;
         return _sessions.get(clientId);
     }
 
@@ -197,8 +210,11 @@ public class BayeuxServerImpl implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    protected void recvMessage(ServerSessionImpl session, ServerMessage.Mutable message)
+    public void recvMessage(ServerSessionImpl session, ServerMessage.Mutable message)
     {
+        if (session==null)
+            session=(ServerSessionImpl)getSession(message.getClientId());
+            
         if (!extendRecv(session,message))
             return;
         if (!session.extendRecv(message))
@@ -240,7 +256,7 @@ public class BayeuxServerImpl implements BayeuxServer
     }
     
     /* ------------------------------------------------------------ */
-    protected ServerMessage extendReply(ServerSessionImpl session, ServerMessage reply)
+    public ServerMessage extendReply(ServerSessionImpl session, ServerMessage reply)
     {
         ServerMessage msg = session.extendSend(reply);
         if (msg==null) 
@@ -272,6 +288,7 @@ public class BayeuxServerImpl implements BayeuxServer
     /* ------------------------------------------------------------ */
     protected boolean extendSend(ServerSessionImpl to, ServerMessage.Mutable message)
     {
+        // TODO use reverse iteration
         if (message.isMeta())
         {
             for (Extension ext : _extensions)
@@ -325,30 +342,43 @@ public class BayeuxServerImpl implements BayeuxServer
     /* ------------------------------------------------------------ */
     public List<String> getAllowedTransports()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return Collections.unmodifiableList(_allowedTransports);
     }
 
     /* ------------------------------------------------------------ */
     public Set<String> getKnownTransportNames()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return _transports.keySet();
     }
 
     /* ------------------------------------------------------------ */
     public Transport getTransport(String transport)
     {
-        // TODO Auto-generated method stub
-        return null;
+        return _transports.get(transport);
     }
 
     /* ------------------------------------------------------------ */
-    public void setAllowedTransports(String... transports)
+    public void addTransport(Transport transport)
     {
-        // TODO Auto-generated method stub
+        _transports.put(transport.getName(),transport);
     }
 
+    /* ------------------------------------------------------------ */
+    public void setAllowedTransports(String... allowed)
+    {
+        setAllowedTransports(Arrays.asList(allowed));
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setAllowedTransports(List<String> allowed)
+    {
+        _allowedTransports.clear();
+        for (String transport : allowed)
+        {
+            if (!_transports.containsKey(transport))
+                _allowedTransports.add(transport);
+        }
+    }
 
     /* ------------------------------------------------------------ */
     protected void error(ServerMessage.Mutable reply, String error)
@@ -362,6 +392,7 @@ public class BayeuxServerImpl implements BayeuxServer
     {
         ServerMessage.Mutable reply=newMessage();
         message.setAssociated(reply);
+        reply.setAssociated(message);
         
         reply.setChannelId(message.getChannelId());
         String id=message.getId();
@@ -369,6 +400,7 @@ public class BayeuxServerImpl implements BayeuxServer
             reply.setId(id);
         return reply;
     }
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     abstract class HandlerListener implements ServerChannel.ServerChannelListener

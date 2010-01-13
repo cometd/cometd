@@ -97,9 +97,7 @@ public class ServerMessagePool
     {
         ServerMessageImpl message=_messagePool.poll();
         if (message == null)
-        {
             message=new ServerMessageImpl(this);
-        }
         return message.asMutable();
     }
     
@@ -119,7 +117,7 @@ public class ServerMessagePool
     }
 
     /* ------------------------------------------------------------ */
-    public Message[] parse(Reader reader) throws IOException
+    public ServerMessage.Mutable[] parse(Reader reader) throws IOException
     {
         JSON.ReaderSource source=_readerPool.poll();
         if (source == null)
@@ -131,23 +129,23 @@ public class ServerMessagePool
         _readerPool.offer(source);
 
         if (batch == null)
-            return new Message[0];
+            return new ServerMessage.Mutable[0];
         if (batch.getClass().isArray())
-            return (Message[])batch;
-        return new Message[]
-        {(Message)batch};
+            return (ServerMessage.Mutable[])batch;
+        return new ServerMessage.Mutable[]
+        {(ServerMessage.Mutable)batch};
     }
 
     /* ------------------------------------------------------------ */
-    public Message[] parse(String s) throws IOException
+    public ServerMessage.Mutable[] parse(String s) throws IOException
     {
         Object batch=_batchJSON.parse(new JSON.StringSource(s));
         if (batch == null)
-            return new Message[0];
+            return new ServerMessage.Mutable[0];
         if (batch.getClass().isArray())
-            return (Message[])batch;
-        return new Message[]
-        {(Message)batch};
+            return (ServerMessage.Mutable[])batch;
+        return new ServerMessage.Mutable[]
+        {(ServerMessage.Mutable)batch};
     }
 
     /* ------------------------------------------------------------ */
@@ -261,7 +259,7 @@ public class ServerMessagePool
         @Override
         protected Object[] newArray(int size)
         {
-            return new Message[size]; // todo recycle
+            return new ServerMessage.Mutable[size];
         }
 
         @Override

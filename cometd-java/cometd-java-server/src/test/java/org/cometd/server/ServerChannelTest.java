@@ -62,7 +62,7 @@ public class ServerChannelTest extends Assert
         ServerChannelImpl channel = (ServerChannelImpl)_bayeux.getChannel("/foo/bar",true);
         SubListener csubl = new SubListener();
         channel.addListener(csubl);
-        ServerSessionImpl session0 = new ServerSessionImpl(_bayeux);
+        ServerSessionImpl session0 = _bayeux.newServerSession();
         
         channel.subscribe(session0);
         assertEquals(1,channel.getSubscribers().size());
@@ -75,14 +75,14 @@ public class ServerChannelTest extends Assert
         assertEquals(session0,csubl._session);
         assertEquals(2,_chanl._calls);
         
-        ServerSessionImpl session1 = new ServerSessionImpl(_bayeux);
+        ServerSessionImpl session1 = _bayeux.newServerSession();
         ((ServerChannelImpl)_bayeux.getChannel("/foo/*",true)).subscribe(session1);
         assertEquals("subscribed",_subl._method);
         assertEquals("/foo/*",_subl._channel.getId());
         assertEquals(session1,_subl._session);
         assertEquals(3,_chanl._calls);
         
-        ServerSessionImpl session2 = new ServerSessionImpl(_bayeux);
+        ServerSessionImpl session2 = _bayeux.newServerSession();
         ((ServerChannelImpl)_bayeux.getChannel("/**",true)).subscribe(session2);
         assertEquals("subscribed",_subl._method);
         assertEquals("/**",_subl._channel.getId());
