@@ -17,14 +17,23 @@ import org.cometd.server.ServerTransport;
 
 public abstract class HttpTransport extends ServerTransport
 {
-    public final static String BROWSER_ID="BAYEUX_BROWSER";
     public static final String MESSAGE_PARAM="message";
+    protected final static String BROWSER_ID_OPTION="browserId";
+    protected String _browserId="BAYEUX_BROWSER";
     
-    protected HttpTransport(BayeuxServerImpl bayeux, String name)
+    protected HttpTransport(BayeuxServerImpl bayeux, DefaultTransport dftTransport,String name)
     {
-        super(bayeux,name);
+        super(bayeux,dftTransport,name);
+        _mutable.addAll(dftTransport.getMutableOptions());
     }
     
+    @Override
+    protected void init()
+    {
+        super.init();
+        _browserId=getOption(BROWSER_ID_OPTION,_browserId);
+    }
+
     public abstract void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
     
     protected String findBrowserId(HttpServletRequest request)
@@ -34,7 +43,7 @@ public abstract class HttpTransport extends ServerTransport
         {
             for (Cookie cookie : cookies)
             {
-                if (BROWSER_ID.equals(cookie.getName()))
+                if (_browserId.equals(cookie.getName()))
                     return cookie.getValue();
             }
         }
@@ -45,7 +54,7 @@ public abstract class HttpTransport extends ServerTransport
     {
         String browser_id=Long.toHexString(request.getRemotePort()) + Long.toString(_bayeux.randomLong(),36) + Long.toString(System.currentTimeMillis(),36)
                 + Long.toString(request.getRemotePort(),36);
-        Cookie cookie=new Cookie(BROWSER_ID,browser_id);
+        Cookie cookie=new Cookie(_browserId,browser_id);
         cookie.setPath("/");
         cookie.setMaxAge(-1);
         response.addCookie(cookie);

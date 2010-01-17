@@ -6,7 +6,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.LocalSession;
@@ -14,6 +13,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 
 public class ServerSessionImpl implements ServerSession
@@ -30,21 +30,18 @@ public class ServerSessionImpl implements ServerSession
     private final AttributesMap _attributes = new AttributesMap();
     
     private ServerTransport.Dispatcher _dispatcher;
+    private transient ServerTransport _adviceTransport;
 
     private int _maxQueue;
     private volatile boolean _connected;
-    
+    private long _timeout=-1;
+    private long _interval=-1;
+    private boolean _metaConnectDelivery;
 
     /* ------------------------------------------------------------ */
     protected ServerSessionImpl(BayeuxServerImpl bayeux)
     {
         this(bayeux,null,null);
-    }
-
-    /* ------------------------------------------------------------ */
-    protected List<Extension> getExtensions()
-    {
-        return _extensions;
     }
 
     /* ------------------------------------------------------------ */
@@ -72,6 +69,12 @@ public class ServerSessionImpl implements ServerSession
         id.insert(index,Long.toString(_idCount.incrementAndGet(),36));
 
         _id=id.toString();
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected List<Extension> getExtensions()
+    {
+        return _extensions;
     }
 
     /* ------------------------------------------------------------ */
@@ -247,13 +250,18 @@ public class ServerSessionImpl implements ServerSession
                 // This is the reload case: there is an outstanding connect,
                 // and the client issues a new connect.
                 _dispatcher.cancel();
+                _dispatcher=null;
             }
 
+            cancelIntervalTimeout(); 
+            
             if (_queue.size()>0)
+            {
+                startIntervalTimeout();
                 return false;
+            }
 
             _dispatcher=dispatcher;
-            cancelIntervalTimeout(); 
             return true;
         }
     }
@@ -383,21 +391,49 @@ public class ServerSessionImpl implements ServerSession
         return message;
     }
 
+    
     /* ------------------------------------------------------------ */
-    public Object getAdvice()
+    public Object takeAdvice()
     {
-        // TODO
+        final ServerTransport transport = _bayeux.getCurrentTransport();
+        
+        if (transport!=null && transport!=_adviceTransport)
+        {
+            _adviceTransport=transport;
+            return new JSON.Literal("{\"reconnect\":\"retry\",\"interval\":" + 
+                    (_interval==-1?transport.getInterval():_interval) + 
+                    ",\"timeout\":" + 
+                    (_timeout==-1?transport.getTimeout():_timeout) + "}");
+        }
+        
+        // advice has not changed, so return null.
         return null;
     }
 
     /* ------------------------------------------------------------ */
+    public long getTimeout()
+    {   
+        return _timeout;
+    }
+
+    /* ------------------------------------------------------------ */
+    public long getInterval()
+    {   
+        return _interval;
+    }
+    
+    /* ------------------------------------------------------------ */
     public void setTimeout(long timeoutMS)
     {   
+        _timeout=timeoutMS;
+        _adviceTransport=null;
     }
 
     /* ------------------------------------------------------------ */
     public void setInterval(long intervalMS)
     {   
+        _interval=intervalMS;
+        _adviceTransport=null;
     }
 
     /* ------------------------------------------------------------ */
@@ -409,6 +445,18 @@ public class ServerSessionImpl implements ServerSession
             if (listener instanceof ServerSession.RemoveListener)
                 ((ServerSession.RemoveListener)listener).removed(this,timedout);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setMetaConnectDelivery(boolean meta)
+    {
+        _metaConnectDelivery=meta;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isMetaConnectDelivery()
+    {
+        return _metaConnectDelivery;
     }
 
 }

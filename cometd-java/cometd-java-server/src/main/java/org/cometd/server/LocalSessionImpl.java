@@ -310,9 +310,7 @@ public class LocalSessionImpl implements LocalSession
                     return;
         }
         
-        _bayeux.recvMessage(session,message);
-        
-        ServerMessage reply = message.getAssociated();
+        ServerMessage reply = _bayeux.handle(session,message);
 
         if (reply!=null)
         {

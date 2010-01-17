@@ -14,9 +14,9 @@ public class CallbackPollingHttpTransport extends HttpTransport
     public final static String NAME="callback-polling";
     public final static String CALLBACK_PARAMETER_OPTION="callbackParameter";
     
-    public CallbackPollingHttpTransport(BayeuxServerImpl bayeux)
+    public CallbackPollingHttpTransport(BayeuxServerImpl bayeux,DefaultTransport dftTransport)
     {
-        super(bayeux,NAME);
+        super(bayeux,dftTransport,NAME);
         getOptions().put(CALLBACK_PARAMETER_OPTION,"jsonp");
     }
 

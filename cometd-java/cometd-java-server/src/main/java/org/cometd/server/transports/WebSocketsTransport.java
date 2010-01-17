@@ -14,9 +14,9 @@ public class WebSocketsTransport extends HttpTransport
 {
     public final static String NAME="websockets";
     
-    public WebSocketsTransport(BayeuxServerImpl bayeux)
+    public WebSocketsTransport(BayeuxServerImpl bayeux, DefaultTransport dftTransport)
     {
-        super(bayeux,NAME);
+        super(bayeux,dftTransport,NAME);
     
     }
 

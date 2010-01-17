@@ -14,29 +14,22 @@
 
 package org.cometd.examples;
 
-
-import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
-
-import org.cometd.server.AbstractBayeux;
-import org.cometd.server.ChannelImpl;
-import org.cometd.server.MessageImpl;
-import org.cometd.server.continuation.ContinuationCometdServlet;
-
-import org.cometd.Client;
-import org.cometd.Extension;
-import org.cometd.Message;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.server.CometdServlet;
+import org.cometd.server.DefaultSecurityPolicy;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.MovedContextHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -50,7 +43,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  */
 public class CometdDemo
 {
-    private static int _testHandshakeFailure;
+    private static int _testHandshakeFailure=0;
 
     /* ------------------------------------------------------------ */
     /**
@@ -82,6 +75,7 @@ public class CometdDemo
         server.addConnector(bconnector);
 
 
+        /* 
         SslSelectChannelConnector ssl_connector=new SslSelectChannelConnector();
         ssl_connector.setPort(port-80+443);
         ssl_connector.setKeystore(base+"/examples/src/test/resources/keystore");
@@ -90,6 +84,7 @@ public class CometdDemo
         ssl_connector.setTruststore(base+"/examples/src/test/resources/keystore");
         ssl_connector.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         server.addConnector(ssl_connector);
+        */
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
@@ -99,83 +94,84 @@ public class CometdDemo
 
         ServletContextHandler context = new ServletContextHandler(contexts,"/cometd",ServletContextHandler.SESSIONS);
 
-        // Search for demo webapp
-        Resource target = Resource.newResource("../../cometd-demo/target");
-        Resource webdir = null;
-        for (String item : target.list())
-        {
-            if (item.startsWith("cometd-demo-"))
-            {
-                Resource dir = target.addPath(item);
-                if (dir.isDirectory())
-                    webdir=dir;
-            }
-        }
-        assert webdir!=null;
-        context.setBaseResource(new ResourceCollection(new Resource[]
-        {
-            webdir,
-        }));
+        context.setBaseResource(
+                new ResourceCollection(new Resource[]
+                {
+                        Resource.newResource("src/test/webapp"),
+                        Resource.newResource("src/main/webapp")}
+                        ));
 
 
         // Cometd servlet
 
         ServletHolder dftServlet = context.addServlet(DefaultServlet.class, "/");
+       
         dftServlet.setInitOrder(1);
 
-        ServletHolder comet = context.addServlet(ContinuationCometdServlet.class, "/cometd/*");
-        comet.setInitParameter("filters","/WEB-INF/filters.json");
+        ServletHolder comet = context.addServlet(CometdServlet.class, "/cometd/*");
         comet.setInitParameter("timeout","20000");
         comet.setInitParameter("interval","50");
         comet.setInitParameter("maxInterval","20000");
         comet.setInitParameter("multiFrameInterval","5000");
         comet.setInitParameter("logLevel","0");
         comet.setInitOrder(2);
+        
 
 
+        /*
         ServletHolder demo=context.addServlet(CometdDemoServlet.class, "/demo");
         demo.setInitOrder(3);
-
+        */
+        
         server.start();
 
-        final AbstractBayeux bayeux = ((ContinuationCometdServlet)comet.getServlet()).getBayeux();
-        bayeux.setRequestAvailable(true);
+        final BayeuxServer bayeux = ((CometdServlet)comet.getServlet()).getBayeux();
 
-        bayeux.setSecurityPolicy(new AbstractBayeux.DefaultPolicy()
+        bayeux.setSecurityPolicy(new DefaultSecurityPolicy()
         {
-            public boolean canHandshake(Message message)
+            
+            @Override
+            public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
             {
                 if (_testHandshakeFailure<0)
                 {
                     _testHandshakeFailure++;
                     return false;
                 }
-                return true;
+                return super.canHandshake(server,session,message);
             }
+
         });
 
         // Demo lazy messages
         if (Boolean.getBoolean("LAZY"))
         {
-            bayeux.addExtension(new Extension()
+            bayeux.addExtension(new BayeuxServer.Extension()
             {
-                public Message rcv(Client from, Message message)
+                
+                public boolean sendMeta(ServerSession to, Mutable message)
                 {
-                    if (message.getChannel().startsWith("/chat/") && message.getData()!=null && message.getData().toString().indexOf("lazy")>=0)
-                        ((MessageImpl)message).setLazy(true);
-                    return message;
+                    // TODO Auto-generated method stub
+                    return false;
                 }
-                public Message rcvMeta(Client from, Message message)
+                
+                public boolean send(Mutable message)
                 {
-                    return message;
+                    // TODO Auto-generated method stub
+                    return false;
                 }
-                public Message send(Client from, Message message)
+                
+                public boolean rcvMeta(ServerSession from, Mutable message)
                 {
-                    return message;
+                    // TODO Auto-generated method stub
+                    return false;
                 }
-                public Message sendMeta(Client from, Message message)
+                
+                public boolean rcv(ServerSession from, Mutable message)
                 {
-                    return message;
+                    if (message.getChannelId().startsWith("/chat/") && message.getData()!=null && message.getData().toString().indexOf("lazy")>=0)
+                        (message).setLazy(true);
+                    return true;
                 }
             });
         }
@@ -183,18 +179,9 @@ public class CometdDemo
         // Demo lazy messages
         if (Boolean.getBoolean("LAZYCHAT"))
         {
-            final ChannelImpl chat_demo = (ChannelImpl)bayeux.getChannel("/chat/demo",true);
+            final ServerChannel chat_demo = bayeux.getChannel("/chat/demo",true);
             chat_demo.setLazy(true);
             chat_demo.setPersistent(true);
-
-            Timer timer = new Timer();
-            timer.schedule(new TimerTask()
-            {
-                public void run()
-                {
-                    chat_demo.publish(null,new JSON.Literal("{\"user\":\"TICK\",\"chat\":\""+new Date()+"\"}"),null);
-                }
-            },2000,2000);
         }
 
     }

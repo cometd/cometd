@@ -27,7 +27,7 @@ public class DefaultTransport extends AbstractTransport
     public DefaultTransport()
     {
         super("*");
-        _options.put(TIMEOUT_OPTION,30000);
+        _options.put(TIMEOUT_OPTION,10000);
         _options.put(INTERVAL_OPTION,0);
         _options.put(MAX_INTERVAL_OPTION,10000);
         _options.put(MAX_LAZY_OPTION,2000);

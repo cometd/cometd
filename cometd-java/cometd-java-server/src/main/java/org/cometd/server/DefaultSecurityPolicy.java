@@ -22,7 +22,7 @@ public class DefaultSecurityPolicy implements SecurityPolicy
 
     public boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage messsage)
     {
-        return channel.isBroadcast();
+        return !channel.isMeta();
     }
 
     public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage messsage)
