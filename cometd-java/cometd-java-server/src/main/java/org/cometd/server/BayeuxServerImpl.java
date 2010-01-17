@@ -3,7 +3,6 @@ package org.cometd.server;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,6 +21,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.common.ChannelId;
+import org.cometd.server.transports.HttpTransport;
 import org.eclipse.jetty.util.ajax.JSON;
 
 public class BayeuxServerImpl implements BayeuxServer
@@ -35,7 +35,9 @@ public class BayeuxServerImpl implements BayeuxServer
     private final ConcurrentMap<String, ServerChannelImpl> _channels = new ConcurrentHashMap<String, ServerChannelImpl>();
     private final ConcurrentMap<String, Transport> _transports = new ConcurrentHashMap<String, Transport>();
     private final List<String> _allowedTransports = new CopyOnWriteArrayList<String>();
+    private final ThreadLocal<ServerTransport> _currentTransport = new ThreadLocal<ServerTransport>();
     private SecurityPolicy _policy=new DefaultSecurityPolicy();
+    
 
     private Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
 
@@ -89,10 +91,15 @@ public class BayeuxServerImpl implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
+    public void setCurrentTransport(ServerTransport transport)
+    {
+        _currentTransport.set(transport);
+    }
+    
+    /* ------------------------------------------------------------ */
     public ServerTransport getCurrentTransport()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return _currentTransport.get();
     }
 
     /* ------------------------------------------------------------ */
@@ -210,15 +217,12 @@ public class BayeuxServerImpl implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public void recvMessage(ServerSessionImpl session, ServerMessage.Mutable message)
+    public ServerMessage handle(ServerSessionImpl session, ServerMessage.Mutable message)
     {
-        if (session==null)
-            session=(ServerSessionImpl)getSession(message.getClientId());
-            
         if (!extendRecv(session,message))
-            return;
-        if (!session.extendRecv(message))
-            return;
+            return null;
+        if (session!=null && !session.extendRecv(message))
+            return null;
         
         String channelId=message.getChannelId();
        
@@ -253,6 +257,8 @@ public class BayeuxServerImpl implements BayeuxServer
             reply = createReply(message);
             error(reply,session==null?"402::unknown client":"403:Cannot publish");
         }
+        
+        return reply;
     }
     
     /* ------------------------------------------------------------ */
@@ -375,7 +381,7 @@ public class BayeuxServerImpl implements BayeuxServer
         _allowedTransports.clear();
         for (String transport : allowed)
         {
-            if (!_transports.containsKey(transport))
+            if (_transports.containsKey(transport))
                 _allowedTransports.add(transport);
         }
     }
@@ -434,7 +440,7 @@ public class BayeuxServerImpl implements BayeuxServer
             reply.put(Message.MIN_VERSION_FIELD,"1.0");
             reply.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD,getAllowedTransports());
             
-            Object advice = session.getAdvice();
+            Object advice = session.takeAdvice();
             if (advice!=null)
                 reply.put(Message.ADVICE_FIELD,advice);
         }
@@ -470,7 +476,7 @@ public class BayeuxServerImpl implements BayeuxServer
             }
 
             // send advice
-            advice = session.getAdvice();
+            advice = session.takeAdvice();
             if (advice!=null)
                 reply.put(Message.ADVICE_FIELD,advice);
             
@@ -569,4 +575,5 @@ public class BayeuxServerImpl implements BayeuxServer
             reply.setSuccessful(true);
         }    
     }
+    
 }

@@ -39,7 +39,7 @@ public class AbstractTransport implements Transport
         @Override
         public Object put(String key, Object value)
         {
-            if (!_mutable.contains(key))
+            if (containsKey(key) && !_mutable.contains(key))
                 throw new UnsupportedOperationException("!mutable: "+key);
             _mutable.add(key);
             return super.put(key,value);

@@ -14,19 +14,14 @@
 
 package org.cometd.server;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -38,8 +33,6 @@ import org.cometd.server.transports.DefaultTransport;
 import org.cometd.server.transports.HttpTransport;
 import org.cometd.server.transports.LongPollingHttpTransport;
 import org.cometd.server.transports.WebSocketsTransport;
-import org.eclipse.jetty.util.ajax.JSON;
-import org.eclipse.jetty.util.log.Log;
 
 /**
  */
@@ -54,9 +47,9 @@ public class CometdServlet extends GenericServlet
     private final BayeuxServerImpl _bayeux = new BayeuxServerImpl();
     private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<HttpServletRequest>();
     private final DefaultTransport _dftTransport = new DefaultTransport();
-    private final LongPollingHttpTransport _lpTransport = new LongPollingHttpTransport(_bayeux);
-    private final CallbackPollingHttpTransport _cbTransport = new CallbackPollingHttpTransport(_bayeux);
-    private final WebSocketsTransport _wsTransport = new WebSocketsTransport(_bayeux);
+    private final LongPollingHttpTransport _lpTransport = new LongPollingHttpTransport(_bayeux,_dftTransport);
+    private final CallbackPollingHttpTransport _cbTransport = new CallbackPollingHttpTransport(_bayeux,_dftTransport);
+    private final WebSocketsTransport _wsTransport = new WebSocketsTransport(_bayeux,_dftTransport);
     private String _transportParameter;
     private String _callbackParameter;
     private boolean _useWS;
@@ -136,6 +129,10 @@ public class CometdServlet extends GenericServlet
                         transport.getOptions().put(option,value);
                 }
             }
+            
+            if (transport instanceof ServerTransport)
+                ((ServerTransport)transport).init();
+            
         }
         
         _transportParameter=(String)_dftTransport.getOptions().get(DefaultTransport.TRANSPORT_PARAMETER_OPTION);
@@ -165,45 +162,42 @@ public class CometdServlet extends GenericServlet
 
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
+        HttpTransport transport=null;
+        
         // handle forced transport
         if (_transportParameter!=null)
         {
             String transport_name=request.getParameter(_transportParameter);
             if (transport_name!=null)
-            {
-                Transport transport= _bayeux.getTransport(transport_name);
-                if (!(transport instanceof HttpTransport))
-                    response.sendError(400,"bad transport");
-                else
-                    ((HttpTransport)transport).handle(request,response);
-                return;
-            }
+                transport= (HttpTransport)_bayeux.getTransport(transport_name);
         }
         
-        if (_useCB)
+        if (transport==null && _useCB)
         {
             String callback=request.getParameter(_callbackParameter);
             if (callback!=null)
-            {
-                _cbTransport.handle(request,response);
-                return;
-            }
+                transport=_cbTransport;
         }
 
-        if (_useWS && "WebSocket".equals(request.getHeader("Upgrade")))
-        {
-            _wsTransport.handle(request,response);
-            return;
-        }
-        
-        if (_useLP)
-        {
-            _lpTransport.handle(request,response);
-            return;
-        }
+        if (transport==null && _useWS && "WebSocket".equals(request.getHeader("Upgrade")))
+            transport=_wsTransport;
+        else if (_useLP)
+            transport=_lpTransport;
             
-        response.sendError(400,"bad transport");
-        
+        if (transport==null)         
+            response.sendError(400,"bad transport");
+        else
+        {
+            try
+            {
+                _bayeux.setCurrentTransport(transport);
+                transport.handle(request,response);
+            }
+            finally
+            {
+                _bayeux.setCurrentTransport(null);  
+            }
+        }
     }
 
 
