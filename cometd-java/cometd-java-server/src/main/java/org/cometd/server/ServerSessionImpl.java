@@ -104,7 +104,9 @@ public class ServerSessionImpl implements ServerSession
             }
         };
         
-        _bayeux.startTimeout(_intervalTask,((HttpTransport)_bayeux.getCurrentTransport()).getMaxInterval());
+        HttpTransport transport=(HttpTransport)_bayeux.getCurrentTransport();
+        if (transport!=null)
+            _bayeux.startTimeout(_intervalTask,transport.getMaxInterval());
     }
     
     /* ------------------------------------------------------------ */
@@ -204,27 +206,30 @@ public class ServerSessionImpl implements ServerSession
             {
                 HttpTransport transport=(HttpTransport)_bayeux.getCurrentTransport();
                 
-                _maxQueue=transport.getOption("maxQueue",-1);
-                                
-                _maxInterval=_interval>=0?(_interval+transport.getMaxInterval()-transport.getInterval()):transport.getMaxInterval();
-                _maxLazy=transport.getMaxLazyTimeout();
-                
-                if (_maxLazy>0)
+                if (transport!=null)
                 {
-                    _lazyTask=new Timeout.Task()
-                    {
-                        @Override
-                        protected void expired()
-                        {
-                            dispatch();
-                        }
+                    _maxQueue=transport.getOption("maxQueue",-1);
 
-                        @Override
-                        public String toString()
+                    _maxInterval=_interval>=0?(_interval+transport.getMaxInterval()-transport.getInterval()):transport.getMaxInterval();
+                    _maxLazy=transport.getMaxLazyTimeout();
+
+                    if (_maxLazy>0)
+                    {
+                        _lazyTask=new Timeout.Task()
                         {
-                            return "LazyTask@"+getId();
-                        }
-                    };
+                            @Override
+                            protected void expired()
+                            {
+                                dispatch();
+                            }
+
+                            @Override
+                            public String toString()
+                            {
+                                return "LazyTask@"+getId();
+                            }
+                        };
+                    }
                 }
                 
             }
@@ -529,6 +534,19 @@ public class ServerSessionImpl implements ServerSession
     public boolean isMetaConnectDeliveryOnly()
     {
         return _metaConnectDelivery;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void dequeue()
+    {
+        synchronized (_queue)
+        {
+            for (ServerSessionListener listener : _listeners)
+            {
+                if (listener instanceof ServerSession.DeQueueListener)
+                    ((ServerSession.DeQueueListener)listener).deQueue(this);
+            }
+        }
     }
 
 }

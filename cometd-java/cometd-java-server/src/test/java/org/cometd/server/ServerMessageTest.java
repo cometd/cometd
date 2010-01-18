@@ -21,10 +21,10 @@ public class ServerMessageTest
         ServerMessageImpl immutable= mutable.asImmutable();
         
         String s=mutable.toString();
-        Assert.assertTrue(s.contains("ext={name=value}"));
-        Assert.assertTrue(s.contains("clientId=jva73siaj92jdafa"));
-        Assert.assertTrue(s.contains("data={name=value}"));
-        Assert.assertTrue(s.contains("id=12345"));
+        Assert.assertTrue(s.contains("\"ext\":{\"name\":\"value\"}"));
+        Assert.assertTrue(s.contains("\"clientId\":\"jva73siaj92jdafa\""));
+        Assert.assertTrue(s.contains("\"data\":{\"name\":\"value\"}"));
+        Assert.assertTrue(s.contains("\"id\":\"12345\""));
         
         Assert.assertEquals("12345",mutable.getId());
         Assert.assertEquals("12345",immutable.getId());

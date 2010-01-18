@@ -217,19 +217,7 @@ public class CometdServlet extends GenericServlet
                 return _bayeux.getServerMessagePool().parse(fodder);
             }
 
-            List<ServerMessage.Mutable> messages=new ArrayList<ServerMessage.Mutable>();
-            for (int i=0; i < batches.length; i++)
-            {
-                if (batches[i] == null)
-                    continue;
-
-                fodder=batches[i];
-                // TODO
-                // _bayeux.parseTo(fodder,messages);
-
-            }
-
-            return messages.toArray(new ServerMessage.Mutable[messages.size()]);
+            throw new IllegalStateException();
         }
         catch(IOException e)
         {

@@ -14,6 +14,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.bayeux.server.BayeuxServer.SessionListener;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ServerTransport;
@@ -180,7 +182,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                 Queue<ServerMessage> queue = session.getQueue();
                                 synchronized (queue)
                                 {
-                                    // TODO call the dequeue listener 
+                                    session.dequeue();
                                     for (int i=queue.size();i-->0;)
                                     {
                                         ServerMessage m=queue.poll();
@@ -258,7 +260,7 @@ public abstract class LongPollingTransport extends HttpTransport
             PrintWriter writer=null;
             synchronized (queue)
             {
-                // TODO call the dequeue listener 
+                session.dequeue();
                 for (int i=queue.size();i-->0;)
                 {
                     ServerMessage m=queue.poll();
