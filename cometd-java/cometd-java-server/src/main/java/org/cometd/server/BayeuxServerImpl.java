@@ -4,6 +4,7 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
@@ -380,17 +381,18 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     protected boolean extendSend(ServerSessionImpl to, ServerMessage.Mutable message)
     {
-        // TODO use reverse iteration
         if (message.isMeta())
         {
-            for (Extension ext : _extensions)
-                if (!ext.sendMeta(to,message))
+            ListIterator<Extension> i = _extensions.listIterator(_extensions.size());
+            while(i.hasPrevious())
+                if (!i.previous().sendMeta(to,message))
                     return false;
         }
         else
         {
-            for (Extension ext : _extensions)
-                if (!ext.send(message))
+            ListIterator<Extension> i = _extensions.listIterator(_extensions.size());
+            while(i.hasPrevious())
+                if (!i.previous().send(message))
                     return false;
         }
         
