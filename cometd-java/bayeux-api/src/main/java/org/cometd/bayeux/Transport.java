@@ -1,6 +1,5 @@
 package org.cometd.bayeux;
 
-import java.util.Map;
 import java.util.Set;
 
 public interface Transport
@@ -13,15 +12,12 @@ public interface Transport
     String getName();
     
     /* ------------------------------------------------------------ */
-    /**
-     * @return Map of transport options
-     */
-    Map<String,Object> getOptions();
+    Object getOption(String name);
     
     /* ------------------------------------------------------------ */
-    /**
-     * @return the set of options that may be changed after the construction 
-     * of the transport. 
-     */
-    Set<String> getMutableOptions();
+    Set<String> getOptionNames();
+
+    /* ------------------------------------------------------------ */
+    String getOptionPrefix();
+    
 }

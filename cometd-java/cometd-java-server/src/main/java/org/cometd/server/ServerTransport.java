@@ -1,24 +1,35 @@
 package org.cometd.server;
 
+import java.util.Map;
+import java.util.Set;
+
 import org.cometd.common.AbstractTransport;
-import org.cometd.server.transports.DefaultTransport;
 import org.eclipse.jetty.util.ajax.JSON;
 
 public class ServerTransport extends AbstractTransport
 {
+    public final static String TIMEOUT_OPTION="timeout";
+    public final static String INTERVAL_OPTION="interval";
+    public final static String MAX_INTERVAL_OPTION="maxInterval";
+    public final static String MAX_LAZY_OPTION="maxLazyTimeout";
+    
     final protected BayeuxServerImpl _bayeux;
-    final protected DefaultTransport _defaultTransport;
     protected long _interval=0;
     protected long _maxInterval=10000;
     protected long _timeout=10000;
+    protected long _maxLazyTimeout=5000;
     protected Object _advice;
 
     /* ------------------------------------------------------------ */
-    protected ServerTransport(BayeuxServerImpl bayeux, DefaultTransport dftTransport, String name)
+    protected ServerTransport(BayeuxServerImpl bayeux, String name,Map<String,Object> options)
     {
-        super(name);
+        super(name,options);
         _bayeux=bayeux;
-        _defaultTransport=dftTransport;
+
+        setOption(TIMEOUT_OPTION,_timeout);
+        setOption(INTERVAL_OPTION,_interval);
+        setOption(MAX_INTERVAL_OPTION,_maxInterval);
+        setOption(MAX_LAZY_OPTION,_maxLazyTimeout);
     }
 
     /* ------------------------------------------------------------ */
@@ -38,51 +49,27 @@ public class ServerTransport extends AbstractTransport
      */
     protected void init()
     {
-        _mutable.clear();
-        _interval=getOption(DefaultTransport.INTERVAL_OPTION,_interval);
-        _maxInterval=getOption(DefaultTransport.INTERVAL_OPTION,_maxInterval);
-        _timeout=getOption(DefaultTransport.TIMEOUT_OPTION,_timeout);
+        _interval=getOption(INTERVAL_OPTION,_interval);
+        _maxInterval=getOption(MAX_INTERVAL_OPTION,_maxInterval);
+        _timeout=getOption(TIMEOUT_OPTION,_timeout);
+        _maxLazyTimeout=getOption(MAX_LAZY_OPTION,_maxLazyTimeout);
 
         _advice=new JSON.Literal("{\"reconnect\":\"retry\",\"interval\":" + _interval + ",\"timeout\":" + _timeout + "}");
     }
     
-
-
     /* ------------------------------------------------------------ */
-    /** Get an option with default resolution.
-     * <p>
-     * Get an option from this transports options, else from the default
-     * transport passed to {@link #init(DefaultTransport)} else from the 
-     * dftValue argument passed.
-     * @param option
-     * @param dftValue
-     * @return The option value as a string.
+    /**
+     * @see org.cometd.common.AbstractTransport#getOptionNames()
      */
-    public String getOption(String option, String dftValue)
+    @Override
+    public Set<String> getOptionNames()
     {
-        Object value = getOptions().get(option);
-        if (value==null && _defaultTransport!=null)
-            value = _defaultTransport.getOptions().get(option);
-        
-        return (value==null)?dftValue:value.toString();
-    }
-    /* ------------------------------------------------------------ */
-    /** Get an option with default resolution.
-     * <p>
-     * Get an option from this transports options, else from the default
-     * transport passed to {@link #init(DefaultTransport)} else from the 
-     * dftValue argument passed.
-     * @param option
-     * @param dftValue
-     * @return The option value as a long.
-     */
-    public long getOption(String option, long dftValue)
-    {
-        Object value = getOptions().get(option);
-        if (value==null && _defaultTransport!=null)
-            value = _defaultTransport.getOptions().get(option);
-        
-        return (value==null)?dftValue:Long.parseLong(value.toString());
+        Set<String> names = super.getOptionNames();
+        names.add(INTERVAL_OPTION);
+        names.add(MAX_INTERVAL_OPTION);
+        names.add(TIMEOUT_OPTION);
+        names.add(MAX_LAZY_OPTION);
+        return names;
     }
 
     /* ------------------------------------------------------------ */
@@ -112,6 +99,15 @@ public class ServerTransport extends AbstractTransport
         return _timeout;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Get the max time before dispatching lazy message.
+     * @return the max lazy timeout in MS
+     */
+    public long getMaxLazyTimeout()
+    {
+        return _maxLazyTimeout;
+    }
+    
     /* ------------------------------------------------------------ */
     public Object getAdvice()
     {
