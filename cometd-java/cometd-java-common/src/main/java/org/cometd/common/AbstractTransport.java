@@ -1,8 +1,8 @@
 package org.cometd.common;
 
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,17 +11,13 @@ import org.cometd.bayeux.Transport;
 public class AbstractTransport implements Transport
 {
     private final String _name;
-    protected final Set<String> _mutable = new HashSet<String>();
-    protected final OptionMap _options = new OptionMap();
+    private final Map<String,Object> _options;
+    protected final List<String> _prefix=new ArrayList<String>();
     
-    protected AbstractTransport(String name)
+    protected AbstractTransport(String name, Map<String,Object> options)
     {
         _name=name;
-    }
-
-    public Set<String> getMutableOptions()
-    {
-        return Collections.unmodifiableSet(_mutable);
+        _options=options;
     }
 
     public String getName()
@@ -29,29 +25,65 @@ public class AbstractTransport implements Transport
         return _name;
     }
 
-    public Map<String, Object> getOptions()
+    public Object getOption(String name)
     {
-        return _options;
+        Object value = _options.get(name);
+        
+        String prefix=null;
+        for (String segment:_prefix)
+        {
+            prefix = prefix==null?segment:(prefix+"."+segment);
+            String key=prefix+"."+name;
+            if (_options.containsKey(key))
+                value=_options.get(key);
+        }
+        return value;
+    }
+
+    public void setOption(String name, Object value)
+    {
+        String prefix=getOptionPrefix();
+        _options.put(prefix==null?name:(prefix+"."+name),value);
     }
     
-    protected class OptionMap extends HashMap<String,Object>
+    public String getOptionPrefix()
     {
-        @Override
-        public Object put(String key, Object value)
-        {
-            if (containsKey(key) && !_mutable.contains(key))
-                throw new UnsupportedOperationException("!mutable: "+key);
-            _mutable.add(key);
-            return super.put(key,value);
-        }
-
-        @Override
-        public Object remove(Object key)
-        {
-            if (!_mutable.contains(key))
-                throw new UnsupportedOperationException("!mutable: "+key);
-            return super.remove(key);
-        }
+        String prefix=null;
+        for (String segment:_prefix)
+            prefix = prefix==null?segment:(prefix+"."+segment);
+        return prefix;
+    }
+    
+    public Set<String> getOptionNames()
+    {
+        Set<String> names = new HashSet<String>();
+        return names;
     }
 
+
+    public String getOption(String option, String dftValue)
+    {
+        Object value = getOption(option);
+        return (value==null)?dftValue:value.toString();
+    }
+    
+    public long getOption(String option, long dftValue)
+    {
+        Object value = getOption(option);
+        if (value==null)
+            return -1;
+        if (value instanceof Number)
+            return ((Number)value).longValue();
+        return Long.parseLong(value.toString());
+    }
+    
+    public int getOption(String option, int dftValue)
+    {
+        Object value = getOption(option);
+        if (value==null)
+            return -1;
+        if (value instanceof Number)
+            return ((Number)value).intValue();
+        return Integer.parseInt(value.toString());
+    }
 }

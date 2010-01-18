@@ -108,7 +108,10 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     /* ------------------------------------------------------------ */
     public Map<String, Object> getAdvice()
     {
-        return (Map<String, Object>)_mutable._advice.getValue();
+        Object advice=_mutable._advice.getValue();
+        if (advice instanceof JSON.Literal)
+            return (Map<String, Object>)JSON.parse(advice.toString());
+        return (Map<String, Object>)advice;
     }
 
     /* ------------------------------------------------------------ */
@@ -317,7 +320,13 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
 
         public Map<String, Object> getAdvice()
         {
-            return (Map<String, Object>)_advice.getValue();
+            Object advice=_advice.getValue();
+            if (advice instanceof JSON.Literal)
+            {
+                advice =JSON.parse(advice.toString());
+                _advice.setValue(advice);
+            }
+            return (Map<String, Object>)advice;
         }
 
         public Map<String, Object> getDataAsMap()
@@ -339,13 +348,18 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
 
         public Map<String, Object> getAdvice(boolean create)
         {
-            Map<String, Object> advice=(Map<String, Object>)_advice.getValue();
+            Object advice=_advice.getValue();
+            if (advice instanceof JSON.Literal)
+            {
+                advice =JSON.parse(advice.toString());
+                _advice.setValue(advice);
+            }
             if (create && advice==null)
             {
                 advice=new ImmutableHashMap<String,Object>().asMutable();
                 _advice.setValue(advice);
             }
-            return advice;
+            return (Map<String, Object>)advice;
         }
 
         public String getChannelId()

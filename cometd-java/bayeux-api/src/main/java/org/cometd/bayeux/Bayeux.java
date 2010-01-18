@@ -26,4 +26,14 @@ public interface Bayeux
      */
     List<String> getAllowedTransports();
     
+
+    /* ------------------------------------------------------------ */
+    Object getOption(String qualifiedName);
+    
+    /* ------------------------------------------------------------ */
+    void setOption(String qualifiedName,Object value);
+    
+    /* ------------------------------------------------------------ */
+    Set<String> getOptionNames();
+
 }

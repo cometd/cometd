@@ -11,10 +11,15 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.transports.HttpTransport;
+import org.cometd.server.transports.LongPollingTransport;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.thread.Timeout;
+import org.eclipse.jetty.util.thread.Timeout.Task;
+import org.omg.stub.java.rmi._Remote_Stub;
 
 public class ServerSessionImpl implements ServerSession
 {
@@ -32,11 +37,20 @@ public class ServerSessionImpl implements ServerSession
     private ServerTransport.Dispatcher _dispatcher;
     private transient ServerTransport _adviceTransport;
 
-    private int _maxQueue;
-    private volatile boolean _connected;
+    private int _maxQueue=-1;
+    private boolean _connected;
     private long _timeout=-1;
     private long _interval=-1;
+    private long _maxInterval;
+    private long _maxLazy=-1;
     private boolean _metaConnectDelivery;
+    private long _accessed=-1;
+
+    private Task _intervalTask;
+
+    private boolean _lazyDispatch;
+
+    private Task _lazyTask;
 
     /* ------------------------------------------------------------ */
     protected ServerSessionImpl(BayeuxServerImpl bayeux)
@@ -69,6 +83,28 @@ public class ServerSessionImpl implements ServerSession
         id.insert(index,Long.toString(_idCount.incrementAndGet(),36));
 
         _id=id.toString();
+        
+
+        _intervalTask=new Timeout.Task()
+        {
+            @Override
+            protected void expired()
+            {   
+                synchronized (_queue)
+                {
+                    if (_dispatcher!=null)
+                        _dispatcher.cancel();
+                }
+                _bayeux.removeServerSession(ServerSessionImpl.this,true);
+            }
+            
+            public String toString()
+            {
+                return "IntervalTask@"+getId();
+            }
+        };
+        
+        _bayeux.startTimeout(_intervalTask,((HttpTransport)_bayeux.getCurrentTransport()).getMaxInterval());
     }
     
     /* ------------------------------------------------------------ */
@@ -154,13 +190,46 @@ public class ServerSessionImpl implements ServerSession
             else
                 dispatch();
         }
-
     }
 
     /* ------------------------------------------------------------ */
-    protected void connect()
+    protected void connect(long timestamp)
     {
-        _connected=true;
+        synchronized (_queue)
+        {
+            cancelIntervalTimeout(); 
+            _connected=true;
+            
+            if (_accessed==-1)
+            {
+                HttpTransport transport=(HttpTransport)_bayeux.getCurrentTransport();
+                
+                _maxQueue=transport.getOption("maxQueue",-1);
+                                
+                _maxInterval=_interval>=0?(_interval+transport.getMaxInterval()-transport.getInterval()):transport.getMaxInterval();
+                _maxLazy=transport.getMaxLazyTimeout();
+                
+                if (_maxLazy>0)
+                {
+                    _lazyTask=new Timeout.Task()
+                    {
+                        @Override
+                        protected void expired()
+                        {
+                            dispatch();
+                        }
+
+                        @Override
+                        public String toString()
+                        {
+                            return "LazyTask@"+getId();
+                        }
+                    };
+                }
+                
+            }
+            _accessed=timestamp;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -239,8 +308,6 @@ public class ServerSessionImpl implements ServerSession
             if (dispatcher == null)
             {
                 // This is the end of a connect
-                if (_dispatcher!=null)
-                    startIntervalTimeout();
                 _dispatcher = null;
                 return true;
             }
@@ -253,13 +320,8 @@ public class ServerSessionImpl implements ServerSession
                 _dispatcher=null;
             }
 
-            cancelIntervalTimeout(); 
-            
             if (_queue.size()>0)
-            {
-                startIntervalTimeout();
                 return false;
-            }
 
             _dispatcher=dispatcher;
             return true;
@@ -271,11 +333,13 @@ public class ServerSessionImpl implements ServerSession
     {
         synchronized (_queue)
         {
+            if (_lazyDispatch && _lazyTask!=null)
+                _bayeux.cancelTimeout(_lazyTask);
+            
             if (_dispatcher!=null)
             {
                 _dispatcher.dispatch();
                 _dispatcher=null;
-                startIntervalTimeout();
                 return;
             }
         }
@@ -303,20 +367,28 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     protected void dispatchLazy()
     {
+        synchronized (_queue)
+        {
+            if (_maxLazy==0)
+                dispatch();
+            else if (_maxLazy>0 && !_lazyDispatch)
+            {
+                _lazyDispatch=true;
+                _bayeux.startTimeout(_lazyTask,_accessed%_maxLazy);
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
-    protected void cancelIntervalTimeout()
+    public void cancelIntervalTimeout()
     {
-        // TODO Auto-generated method stub
-        
+        _bayeux.cancelTimeout(_intervalTask);
     }
 
     /* ------------------------------------------------------------ */
-    protected void startIntervalTimeout()
+    public void startIntervalTimeout()
     {
-        // TODO Auto-generated method stub
-        
+        _bayeux.startTimeout(_intervalTask,_maxInterval);
     }
 
     /* ------------------------------------------------------------ */
@@ -454,7 +526,7 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isMetaConnectDelivery()
+    public boolean isMetaConnectDeliveryOnly()
     {
         return _metaConnectDelivery;
     }

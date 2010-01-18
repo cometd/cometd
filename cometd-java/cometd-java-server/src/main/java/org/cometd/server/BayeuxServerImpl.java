@@ -6,6 +6,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -23,8 +26,10 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.common.ChannelId;
 import org.cometd.server.transports.HttpTransport;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.thread.Timeout;
 
-public class BayeuxServerImpl implements BayeuxServer
+public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer 
 {
     private final SecureRandom _random = new SecureRandom();
     private final List<BayeuxServerListener> _listeners = new CopyOnWriteArrayList<BayeuxServerListener>();
@@ -36,9 +41,12 @@ public class BayeuxServerImpl implements BayeuxServer
     private final ConcurrentMap<String, Transport> _transports = new ConcurrentHashMap<String, Transport>();
     private final List<String> _allowedTransports = new CopyOnWriteArrayList<String>();
     private final ThreadLocal<ServerTransport> _currentTransport = new ThreadLocal<ServerTransport>();
-    private SecurityPolicy _policy=new DefaultSecurityPolicy();
+    private final Map<String,Object> _options = new TreeMap<String, Object>();
+    private final Timeout _timeout = new Timeout();
     
 
+    private SecurityPolicy _policy=new DefaultSecurityPolicy();
+    private Timer _timer = new Timer();
     private Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
 
     /* ------------------------------------------------------------ */
@@ -50,6 +58,51 @@ public class BayeuxServerImpl implements BayeuxServer
         getChannel(Channel.META_UNSUBSCRIBE,true).addListener(new UnsubscribeHandler());
         getChannel(Channel.META_DISCONNECT,true).addListener(new DisconnectHandler());
     }
+
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
+     */
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        _timer=new Timer("BayeuxServer@" +hashCode(),true);
+        _timer.schedule(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                _timeout.tick(System.currentTimeMillis());
+            }
+        },137L,137L);
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
+     */
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        _timer.cancel();
+        _timer=null;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void startTimeout(Timeout.Task task, long interval)
+    {
+        _timeout.schedule(task,interval);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void cancelTimeout(Timeout.Task task)
+    {
+        task.cancel();
+    }
     
     /* ------------------------------------------------------------ */
     public ChannelId newChannelId(String id)
@@ -59,7 +112,40 @@ public class BayeuxServerImpl implements BayeuxServer
             return channel.getChannelId();
         return new ChannelId(id);
     }
+
+    /* ------------------------------------------------------------ */
+    public Map<String,Object> getOptions()
+    {
+        return _options;
+    }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.bayeux.Bayeux#getOption(java.lang.String)
+     */
+    public Object getOption(String qualifiedName)
+    {
+        return _options.get(qualifiedName);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.bayeux.Bayeux#getOptionNames()
+     */
+    public Set<String> getOptionNames()
+    {
+        return _options.keySet();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.bayeux.Bayeux#setOption(java.lang.String, java.lang.Object)
+     */
+    public void setOption(String qualifiedName, Object value)
+    {
+        _options.put(qualifiedName,value);   
+    }
+
     /* ------------------------------------------------------------ */
     public int randomInt()
     {
@@ -461,9 +547,8 @@ public class BayeuxServerImpl implements BayeuxServer
                 return;
             }
             
-            session.connect();
+            session.connect(_timeout.getNow());
             
-
             // receive advice
             Object advice=message.get(Message.ADVICE_FIELD);
             if (advice != null)

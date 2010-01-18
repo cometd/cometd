@@ -16,7 +16,9 @@ package org.cometd.server;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
@@ -28,10 +30,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.server.transports.CallbackPollingHttpTransport;
-import org.cometd.server.transports.DefaultTransport;
+import org.cometd.server.transports.JSONPTransport;
 import org.cometd.server.transports.HttpTransport;
-import org.cometd.server.transports.LongPollingHttpTransport;
+import org.cometd.server.transports.JSONTransport;
 import org.cometd.server.transports.WebSocketsTransport;
 
 /**
@@ -45,16 +46,16 @@ public class CometdServlet extends GenericServlet
     public static final String HTTP_CLIENT_ID="BAYEUX_HTTP_CLIENT";
 
     private final BayeuxServerImpl _bayeux = new BayeuxServerImpl();
+    private final JSONTransport _lpTransport = new JSONTransport(_bayeux,_bayeux.getOptions());
+    private final JSONPTransport _cbTransport = new JSONPTransport(_bayeux,_bayeux.getOptions());
+    private final WebSocketsTransport _wsTransport = new WebSocketsTransport(_bayeux,_bayeux.getOptions());
     private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<HttpServletRequest>();
-    private final DefaultTransport _dftTransport = new DefaultTransport();
-    private final LongPollingHttpTransport _lpTransport = new LongPollingHttpTransport(_bayeux,_dftTransport);
-    private final CallbackPollingHttpTransport _cbTransport = new CallbackPollingHttpTransport(_bayeux,_dftTransport);
-    private final WebSocketsTransport _wsTransport = new WebSocketsTransport(_bayeux,_dftTransport);
     private String _transportParameter;
     private String _callbackParameter;
     private boolean _useWS;
     private boolean _useLP;
     private boolean _useCB;
+    private int _logLevel;
     
     
     public BayeuxServerImpl getBayeux()
@@ -64,11 +65,10 @@ public class CometdServlet extends GenericServlet
 
     protected void initializeBayeux(BayeuxServerImpl bayeux)
     {
-        bayeux.addTransport(_dftTransport);
         bayeux.addTransport(_wsTransport);
         bayeux.addTransport(_lpTransport);
         bayeux.addTransport(_cbTransport);
-        bayeux.setAllowedTransports(WebSocketsTransport.NAME,LongPollingHttpTransport.NAME,CallbackPollingHttpTransport.NAME);
+        bayeux.setAllowedTransports(WebSocketsTransport.NAME,JSONTransport.NAME,JSONPTransport.NAME);
     }
 
     @Override
@@ -77,71 +77,63 @@ public class CometdServlet extends GenericServlet
         initializeBayeux(_bayeux);
         getServletContext().setAttribute(BayeuxServer.ATTRIBUTE,_bayeux);
         
-        // get the default options as init parameters
-        Transport dft = _bayeux.getTransport("*");
-        for (String option : dft.getMutableOptions())
-        {
-            String value=getServletContext().getInitParameter(option);
-            if (value!=null)
-            {
-                
-                Object old=dft.getOptions().get(option);
-                if (old==null)
-                    dft.getOptions().put(option,value);
-                else if (old instanceof Integer)
-                    dft.getOptions().put(option,Integer.parseInt(value));
-                else if (old instanceof Long)
-                    dft.getOptions().put(option,Long.parseLong(value));
-                else if (old instanceof Double)
-                    dft.getOptions().put(option,Double.parseDouble(value));
-                else if (old instanceof Boolean)
-                    dft.getOptions().put(option,Boolean.parseBoolean(value));
-                else if ("none".equals(value))
-                    dft.getOptions().remove(option);
-                else
-                    dft.getOptions().put(option,value);
-            }
-        }
+        if (getServletConfig().getInitParameter("logLevel")!=null)
+            _logLevel=Integer.parseInt(getServletConfig().getInitParameter("logLevel"));
         
         // Get any specific options as init paramters
+        HashSet<String> qualified_names = new HashSet<String>();
         for (String name :_bayeux.getKnownTransportNames())
         {
             Transport transport = _bayeux.getTransport(name);
-            for (String option : transport.getMutableOptions())
             {
-                String value=getServletContext().getInitParameter(transport.getName()+"."+option);
-                if (value!=null)
+                for (String option : transport.getOptionNames())
                 {
-                    Object old=transport.getOptions().get(option);
-                    if (old==null)
-                        transport.getOptions().put(option,value);
-                    else if (old instanceof Integer)
-                        transport.getOptions().put(option,Integer.parseInt(value));
-                    else if (old instanceof Long)
-                        transport.getOptions().put(option,Long.parseLong(value));
-                    else if (old instanceof Double)
-                        transport.getOptions().put(option,Double.parseDouble(value));
-                    else if (old instanceof Boolean)
-                        transport.getOptions().put(option,Boolean.parseBoolean(value));
-                    else if ("none".equals(value))
-                        dft.getOptions().remove(option);
-                    else
-                        transport.getOptions().put(option,value);
+                    qualified_names.add(option);
+                    String prefix=transport.getOptionPrefix();
+                    while (prefix!=null)
+                    {
+                        qualified_names.add(prefix+"."+option);
+                        int dot=prefix.lastIndexOf('.');
+                        prefix=dot<0?null:prefix.substring(0,dot);
+                    }
                 }
             }
-            
-            if (transport instanceof ServerTransport)
-                ((ServerTransport)transport).init();
-            
         }
         
-        _transportParameter=(String)_dftTransport.getOptions().get(DefaultTransport.TRANSPORT_PARAMETER_OPTION);
-        _useLP=_bayeux.getAllowedTransports().contains(LongPollingHttpTransport.NAME);
-        _useCB=_bayeux.getAllowedTransports().contains(CallbackPollingHttpTransport.NAME);
-        _useWS=_bayeux.getAllowedTransports().contains(CallbackPollingHttpTransport.NAME);
-        _callbackParameter=(String)_cbTransport.getOptions().get(CallbackPollingHttpTransport.CALLBACK_PARAMETER_OPTION);
-    }
+        for (String option : qualified_names)
+        {
+            Object value = getServletContext().getInitParameter(option);
+            if (value!=null)
+                _bayeux.setOption(option,value);
+        }
 
+        for (String name :_bayeux.getKnownTransportNames())
+        {
+            Transport transport = _bayeux.getTransport(name);
+            if (transport instanceof ServerTransport)
+                ((ServerTransport)transport).init();
+        }
+        
+        if (_logLevel>0)
+        {
+            for (Map.Entry<String, Object> entry : _bayeux.getOptions().entrySet())
+                getServletContext().log(entry.getKey()+"="+entry.getValue());
+        }
+        
+        _useLP=_bayeux.getAllowedTransports().contains(JSONTransport.NAME);
+        _useCB=_bayeux.getAllowedTransports().contains(JSONPTransport.NAME);
+        _useWS=_bayeux.getAllowedTransports().contains(JSONPTransport.NAME);
+        _callbackParameter=(String)_cbTransport.getCallbackParameter();
+        
+        try
+        {
+            _bayeux.start();
+        }
+        catch(Exception e)
+        {
+            throw new ServletException(e);
+        }
+    }
 
     @Override
     public void service(ServletRequest req, ServletResponse resp) throws ServletException, IOException
@@ -172,17 +164,15 @@ public class CometdServlet extends GenericServlet
                 transport= (HttpTransport)_bayeux.getTransport(transport_name);
         }
         
-        if (transport==null && _useCB)
+        if (transport==null)
         {
-            String callback=request.getParameter(_callbackParameter);
-            if (callback!=null)
+            if (_useCB && request.getParameter(_callbackParameter)!=null)
                 transport=_cbTransport;
+            else if (_useWS && "WebSocket".equals(request.getHeader("Upgrade")))
+                transport=_wsTransport;
+            else if (_useLP)
+                transport=_lpTransport;
         }
-
-        if (transport==null && _useWS && "WebSocket".equals(request.getHeader("Upgrade")))
-            transport=_wsTransport;
-        else if (_useLP)
-            transport=_lpTransport;
             
         if (transport==null)         
             response.sendError(400,"bad transport");
@@ -191,11 +181,13 @@ public class CometdServlet extends GenericServlet
             try
             {
                 _bayeux.setCurrentTransport(transport);
+                transport.setCurrentRequest(request);
                 transport.handle(request,response);
             }
             finally
             {
                 _bayeux.setCurrentTransport(null);  
+                transport.setCurrentRequest(null);
             }
         }
     }

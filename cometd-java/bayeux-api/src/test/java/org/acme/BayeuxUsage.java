@@ -21,17 +21,6 @@ public class BayeuxUsage
 
     public void clientUsage() throws IOException
     {
-        // configure the transport options
-        _client.getTransport("*").getOptions().put("backoffMs",1000);
-        _client.getTransport("*").getOptions().put("port",8080);
-        if (_client.getKnownTransportNames().contains("websocket"))
-            _client.getTransport("websocket").getOptions().put("port",81);
-        if (_client.getKnownTransportNames().contains("jsonp"))
-            _client.getTransport("jsonp").getOptions().put("callback","jsonp_deliver");
-
-        // _client.setAllowedTransports("websocket","xdlongpoll","jsonp","longpoll");
-        
-
         // Add listeners for meta messages for all sessions
         _client.getChannel("/meta/*").addListener(new ClientChannel.MetaListener()
         {
