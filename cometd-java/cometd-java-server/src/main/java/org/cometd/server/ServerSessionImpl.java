@@ -11,6 +11,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
 import org.cometd.server.transports.HttpTransport;
 import org.cometd.server.transports.LongPollingTransport;
 import org.eclipse.jetty.util.ArrayQueue;
@@ -155,35 +156,28 @@ public class ServerSessionImpl implements ServerSession
 
         for (ServerSessionListener listener : _listeners)
         {
-            if (listener instanceof MaxQueueListener && _maxQueue >=0 && _queue.size() >= _maxQueue)
+            try
             {
-                if (!((MaxQueueListener)listener).queueMaxed(this,from,message))
-                    return;
+                if (listener instanceof MaxQueueListener && _maxQueue >=0 && _queue.size() >= _maxQueue)
+                {
+                    if (!((MaxQueueListener)listener).queueMaxed(this,from,message))
+                        return;
+                }
+                if (listener instanceof MessageListener)
+                {
+                    if (!((MessageListener)listener).onMessage(this,from,message))
+                        return; 
+                }
             }
-            if (listener instanceof MessageListener)
+            catch(Exception e)
             {
-                if (!((MessageListener)listener).onMessage(this,from,message))
-                    return;
+                Log.warn(e);
             }
         }
 
         message.incRef();
         _queue.add(message);
 
-        for (ServerSessionListener listener : _listeners)
-        {
-            if (listener instanceof MessageListener)
-            {
-                try
-                {
-                    ((MessageListener)listener).onMessage(this,from,message);
-                }
-                catch(Exception e)
-                {
-                    Log.warn(e);
-                }
-            }
-        }
 
         if (_batch.get() == 0 && _queue.size() > 0)
         {
@@ -525,7 +519,7 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    public void setMetaConnectDelivery(boolean meta)
+    public void setMetaConnectDeliveryOnly(boolean meta)
     {
         _metaConnectDelivery=meta;
     }
@@ -549,4 +543,32 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
+    /* ------------------------------------------------------------ */
+    protected void dump(StringBuilder b,String indent)
+    {
+        b.append(toString());
+        b.append('\n');
+        
+        for (ServerSessionListener child : _listeners)
+        {
+            b.append(indent);
+            b.append(" +-");
+            b.append(child);
+            b.append('\n');
+        }
+        
+        if (isLocalSession())
+        {
+            b.append(indent);
+            b.append(" +-");
+            _localSession.dump(b,indent+"   ");
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
+    {
+        return _id;
+    }
 }

@@ -21,6 +21,18 @@ public interface ServerSession extends Session
 
     /* ------------------------------------------------------------ */
     /**
+     * @param listener
+     */
+    void addListener(ServerSessionListener listener);
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param listener
+     */
+    void removeListener(ServerSessionListener listener);
+
+    /* ------------------------------------------------------------ */
+    /**
      * @return True if this is a session for a local server-side client
      */
     boolean isLocalSession();
@@ -66,7 +78,7 @@ public interface ServerSession extends Session
      */
     public interface RemoveListener extends ServerSessionListener
     {
-        public boolean removed(ServerSession session, boolean timeout);
+        public void removed(ServerSession session, boolean timeout);
     };
     
     /* ------------------------------------------------------------ */
@@ -77,7 +89,7 @@ public interface ServerSession extends Session
      */
     public interface MessageListener extends ServerSessionListener
     {
-        public boolean onMessage(ServerSession session, Session from, ServerMessage message);
+        public boolean onMessage(ServerSession to, ServerSession from, ServerMessage message);
     };
 
     /* ------------------------------------------------------------ */
@@ -119,19 +131,19 @@ public interface ServerSession extends Session
     {
         /**
          * Callback method invoked every time a normal message is incoming.
-         * @param from the session that sent the message
+         * @param session the session that sent the message
          * @param message the incoming message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean rcv(ServerSession from, ServerMessage.Mutable message);
+        boolean rcv(ServerSession session, ServerMessage.Mutable message);
 
         /**
          * Callback method invoked every time a meta message is incoming.
-         * @param from the session that sent the message
+         * @param session the session that is sent the message
          * @param message the incoming meta message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean rcvMeta(ServerSession from, ServerMessage.Mutable message);
+        boolean rcvMeta(ServerSession session, ServerMessage.Mutable message);
 
         /**
          * Callback method invoked every time a normal message is outgoing.
@@ -143,10 +155,10 @@ public interface ServerSession extends Session
 
         /**
          * Callback method invoked every time a meta message is outgoing.
-         * @param to the session receiving the message
+         * @param session the session receiving the message
          * @param message the outgoing meta message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean sendMeta(ServerSession to, ServerMessage.Mutable message);
+        boolean sendMeta(ServerSession session, ServerMessage.Mutable message);
     }
 }

@@ -17,4 +17,12 @@ import org.cometd.bayeux.client.ClientSession;
 public interface LocalSession extends ClientSession
 {
     ServerSession getServerSession();
+    
+    /* ------------------------------------------------------------ */
+    /** Handshake the session.
+     * This method is equivalent to calling {@link #handshake(boolean)}
+     * passing false and ignoring exceptions.
+     */
+    void handshake();
+    
 }

@@ -19,6 +19,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
 import org.cometd.common.ChannelId;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -57,6 +58,8 @@ public class LocalSessionImpl implements LocalSession
     /* ------------------------------------------------------------ */
     public ServerSession getServerSession()
     {
+        if (_session==null)
+            throw new IllegalStateException("!handshake");
         return _session;
     }
 
@@ -79,8 +82,6 @@ public class LocalSessionImpl implements LocalSession
         if (channel==null)
         {
             ChannelId id = _bayeux.newChannelId(channelId);
-            if (id.isWild())
-                throw new IllegalStateException();
             channel=new LocalChannel(id);
             _channels.put(channelId,channel);
         }
@@ -88,7 +89,7 @@ public class LocalSessionImpl implements LocalSession
     }
 
     /* ------------------------------------------------------------ */
-    public void handshake(boolean async) throws IOException
+    public void handshake()
     {
         if (_session!=null)
             throw new IllegalStateException();
@@ -118,6 +119,12 @@ public class LocalSessionImpl implements LocalSession
         }
         message.setAssociated(null);
         message.decRef();
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void handshake(boolean async) throws IOException
+    {
+        handshake();
     }
 
     /* ------------------------------------------------------------ */
@@ -218,9 +225,10 @@ public class LocalSessionImpl implements LocalSession
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
-        return "LocalSession{"+(_session==null?(_idHint+"?"):_session.getId())+"}";
+        return "L:"+(_session==null?(_idHint+"?"):_session.getId());
     }
 
     /* ------------------------------------------------------------ */
@@ -322,6 +330,30 @@ public class LocalSessionImpl implements LocalSession
     
 
     /* ------------------------------------------------------------ */
+    protected void dump(StringBuilder b,String indent)
+    {
+        b.append(toString());
+        b.append('\n');
+
+        int leaves=_channels.size()+_listeners.size();
+        int i=0;
+        for (LocalChannel child : _channels.values())
+        {
+            b.append(indent);
+            b.append(" +-");
+            child.dump(b,indent+((++i==leaves)?"   ":" | "));
+        }
+       
+        for (ClientSessionListener child : _listeners)
+        {
+            b.append(indent);
+            b.append(" +-");
+            b.append(child);
+            b.append('\n');
+        }
+    }
+
+    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /** A SessionChannel scoped to this LocalChannel
      */
@@ -342,6 +374,9 @@ public class LocalSessionImpl implements LocalSession
         
         public void publish(Object data)
         {
+            if (_session==null)
+                throw new IllegalStateException("!handshake");
+            
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.incRef();
             message.setChannelId(_id.toString());
@@ -355,6 +390,9 @@ public class LocalSessionImpl implements LocalSession
 
         public void subscribe(MessageListener listener)
         {
+            if (_session==null)
+                throw new IllegalStateException("!handshake");
+            
             _subscriptions.add(listener);
             if (_subscriptions.size()==1)
             {
@@ -372,6 +410,9 @@ public class LocalSessionImpl implements LocalSession
 
         public void unsubscribe(MessageListener listener)
         {
+            if (_session==null)
+                throw new IllegalStateException("!handshake");
+            
             if (_subscriptions.remove(listener) && _subscriptions.size()==0)
             {
                 ServerMessage.Mutable message = _bayeux.newMessage();
@@ -417,6 +458,36 @@ public class LocalSessionImpl implements LocalSession
             return _id.isWild();
         }
         
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public String toString()
+        {
+            return _id+"@"+LocalSessionImpl.this.toString();
+        }
+        
+        /* ------------------------------------------------------------ */
+        protected void dump(StringBuilder b,String indent)
+        {
+            b.append(toString());
+            b.append('\n');
+           
+            for (ClientSessionListener child : _listeners)
+            {
+                b.append(indent);
+                b.append(" +-");
+                b.append(child);
+                b.append('\n');
+            }
+            for (ClientSessionListener child : _subscriptions)
+            {
+                b.append(indent);
+                b.append(" +-");
+                b.append(child);
+                b.append('\n');
+            }
+        }
+
     }
 
 }

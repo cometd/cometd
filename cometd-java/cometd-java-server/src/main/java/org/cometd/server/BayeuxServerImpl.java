@@ -28,10 +28,13 @@ import org.cometd.common.ChannelId;
 import org.cometd.server.transports.HttpTransport;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 
 public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer 
 {
+    private final Logger _logger;
     private final SecureRandom _random = new SecureRandom();
     private final List<BayeuxServerListener> _listeners = new CopyOnWriteArrayList<BayeuxServerListener>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
@@ -45,21 +48,28 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final Map<String,Object> _options = new TreeMap<String, Object>();
     private final Timeout _timeout = new Timeout();
     
-
     private SecurityPolicy _policy=new DefaultSecurityPolicy();
     private Timer _timer = new Timer();
     private Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
 
+    
     /* ------------------------------------------------------------ */
-    BayeuxServerImpl()
+    protected BayeuxServerImpl()
     {
         getChannel(Channel.META_HANDSHAKE,true).addListener(new HandshakeHandler());
         getChannel(Channel.META_CONNECT,true).addListener(new ConnectHandler());
         getChannel(Channel.META_SUBSCRIBE,true).addListener(new SubscribeHandler());
         getChannel(Channel.META_UNSUBSCRIBE,true).addListener(new UnsubscribeHandler());
         getChannel(Channel.META_DISCONNECT,true).addListener(new DisconnectHandler());
+        
+        _logger=Log.getLogger("bayeux@"+hashCode());
     }
-
+    
+    /* ------------------------------------------------------------ */
+    public Logger getLogger()
+    {
+        return _logger;
+    }
     
     /* ------------------------------------------------------------ */
     /**
@@ -304,60 +314,97 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
+    /** Extend and handle in incoming message.
+     * @param session The session if known
+     * @param message The message.
+     * @return An unextended reply message
+     */
     public ServerMessage handle(ServerSessionImpl session, ServerMessage.Mutable message)
     {
-        if (!extendRecv(session,message))
-            return null;
-        if (session!=null && !session.extendRecv(message))
-            return null;
-        
-        String channelId=message.getChannelId();
-       
-        ServerChannel channel=null;
-        if (channelId!=null)
-        {
-            channel = getChannel(channelId,false);
-            if (channel==null && _policy.canCreate(this,session,channelId,message))
-                channel = getChannel(channelId,true);
-        }
-
         ServerMessage.Mutable reply=null;
-       
-        if (channel==null)
-        { 
-            reply = createReply(message);
-            error(reply,channelId==null?"402::no channel":"403:Cannot create");
-        }
-        else if (channel.isMeta())
+        
+        if (_logger.isDebugEnabled())
+            _logger.debug(">  "+message);
+        
+        if (!extendRecv(session,message) || session!=null && !session.extendRecv(message))
         {
-            root().doPublish(session,(ServerChannelImpl)channel,message);
-            reply = message.getAssociated().asMutable();
-        }
-        else if (_policy.canPublish(this,session,channel,message))                               
-        {
-            channel.publish(session,message);
-            reply = createReply(message);
-            reply.setSuccessful(true);
+            reply=createReply(message);
+            reply.setSuccessful(false);
+            reply.put(Message.ERROR_FIELD,"404::Message deleted");
         }
         else
         {
-            reply = createReply(message);
-            error(reply,session==null?"402::unknown client":"403:Cannot publish");
+            if (_logger.isDebugEnabled())
+                _logger.debug(">> "+message);
+            String channelId=message.getChannelId();
+
+            ServerChannel channel=null;
+            if (channelId!=null)
+            {
+                channel = getChannel(channelId,false);
+                if (channel==null && _policy.canCreate(this,session,channelId,message))
+                    channel = getChannel(channelId,true);
+            }
+
+            if (channel==null)
+            { 
+                reply = createReply(message);
+                error(reply,channelId==null?"402::no channel":"403::Cannot create");
+            }
+            else if (channel.isMeta())
+            {
+                root().doPublish(session,(ServerChannelImpl)channel,message);
+                reply = message.getAssociated().asMutable();
+            }
+            else if (_policy.canPublish(this,session,channel,message))                               
+            {
+                // This is a normal publish, 
+
+                // if this is not a local client, lets create a new message as we 
+                // don't trust what else was in their message.
+                if (session.isLocalSession() || channel.isService())
+                {
+                    message.setClientId(null);
+                    channel.publish(session,message);
+                }
+                else
+                {
+                    ServerMessage.Mutable out = newMessage();
+                    out.setChannelId(message.getChannelId());
+                    out.setData(message.getData());
+                    out.setId(message.getId());
+                    out.incRef();
+                    channel.publish(session,out);
+                    out.decRef();
+                }
+
+                reply = createReply(message);
+                reply.setSuccessful(true);
+            }
+            else
+            {
+                reply = createReply(message);
+                error(reply,session==null?"402::unknown client":"403::Cannot publish");
+            }
         }
-        
+
+        if (_logger.isDebugEnabled())
+            _logger.debug("<< "+reply);
         return reply;
     }
     
     /* ------------------------------------------------------------ */
     public ServerMessage extendReply(ServerSessionImpl session, ServerMessage reply)
     {
-        ServerMessage msg = session.extendSend(reply);
-        if (msg==null) 
-            return null;
+        if (session!=null)
+            reply = session.extendSend(reply);
+        if (reply!=null && !extendSend(session,reply.asMutable()))
+            reply=null;
+
+        if (_logger.isDebugEnabled())
+            _logger.debug("<  "+reply);
         
-        if(extendSend(session,reply.asMutable()))
-            return reply;
-        return null;
+        return reply;
     }
     
     /* ------------------------------------------------------------ */
@@ -494,6 +541,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             reply.setId(id);
         return reply;
     }
+    
+    /* ------------------------------------------------------------ */
+    public String dump()
+    {
+        StringBuilder b = new StringBuilder();
+        _root.dump(b,"");
+        return b.toString();
+    }    
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
