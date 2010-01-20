@@ -1,6 +1,6 @@
 /**
  * Dual licensed under the Apache License 2.0 and the MIT license.
- * $Revision$ $Date: 2010-01-21 08:49:48 +1100 (Thu, 21 Jan 2010) $
+ * $Revision$ $Date: 2010-01-21 10:40:51 +1100 (Thu, 21 Jan 2010) $
  */
 
 // Dojo loader support
@@ -2245,6 +2245,7 @@ org.cometd.Cometd = function(name)
                 webSocket.onopen = function()
                 {
                     _state = WebSocket.OPEN;
+                    _webSocket = webSocket;
                     self.webSocketSend(envelope, request);
                 };
                 webSocket.onclose = function()
