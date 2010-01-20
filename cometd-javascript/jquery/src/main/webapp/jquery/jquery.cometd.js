@@ -83,6 +83,7 @@
     $.cometd.CallbackPollingTransport.prototype = new org.cometd.CallbackPollingTransport();
     $.cometd.CallbackPollingTransport.prototype.constructor = $.cometd.CallbackPollingTransport;
 
+    $.cometd.registerTransport('websocket', new org.cometd.WebSocketTransport());
     $.cometd.registerTransport('long-polling', new $.cometd.LongPollingTransport());
     $.cometd.registerTransport('callback-polling', new $.cometd.CallbackPollingTransport());
 

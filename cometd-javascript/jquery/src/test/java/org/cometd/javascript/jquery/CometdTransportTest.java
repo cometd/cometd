@@ -9,11 +9,17 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
     {
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         Object[] transportTypes = (Object[])jsToJava(evaluateScript("$.cometd.getTransportTypes()"));
-        assertEquals("long-polling", transportTypes[0]);
-        assertEquals("callback-polling", transportTypes[1]);
+        // The spec requires at least these 2 transports
+        assertTrue(Arrays.asList(transportTypes).contains("long-polling"));
+        assertTrue(Arrays.asList(transportTypes).contains("callback-polling"));
 
-        evaluateScript("var originalTransport = $.cometd.unregisterTransport('long-polling');");
-        assertNotNull(get("originalTransport"));
+        // Remove all transports
+        evaluateScript("" +
+                "var types = $.cometd.getTransportTypes();" +
+                "for (var i = 0; i < types.length; ++i)" +
+                "{" +
+                "   $.cometd.unregisterTransport(types[i]);" +
+                "};");
 
         String localTransport =
                 "function LocalTransport()" +
@@ -88,6 +94,7 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
         evaluateScript(localTransport);
 
         evaluateScript("var localTransport = new LocalTransport();");
+        // The server does not support a 'local' transport, so use 'long-polling'
         assertTrue((Boolean)evaluateScript("$.cometd.registerTransport('long-polling', localTransport);"));
 
         evaluateScript("$.cometd.handshake();");
