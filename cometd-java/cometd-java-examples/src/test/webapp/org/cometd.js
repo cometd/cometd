@@ -1,6 +1,6 @@
 /**
  * Dual licensed under the Apache License 2.0 and the MIT license.
- * $Revision$ $Date: 2009-12-17 03:59:25 +1100 (Thu, 17 Dec 2009) $
+ * $Revision$ $Date: 2010-01-21 08:49:48 +1100 (Thu, 21 Jan 2010) $
  */
 
 // Dojo loader support
@@ -2214,4 +2214,86 @@ org.cometd.Cometd = function(name)
     };
     org.cometd.CallbackPollingTransport.prototype = new org.cometd.Transport();
     org.cometd.CallbackPollingTransport.prototype.constructor = org.cometd.CallbackPollingTransport;
+
+    org.cometd.WebSocketTransport = function()
+    {
+        // By default, support WebSocket
+        var _supportsWebSocket = true;
+        var _webSocket;
+        var _state;
+
+        this.accept = function(version, crossDomain)
+        {
+            return _supportsWebSocket && typeof WebSocket === "function";
+        };
+
+        this.transportSend = function(envelope, request)
+        {
+            if (_state === WebSocket.OPEN)
+            {
+                this.webSocketSend(envelope, request);
+            }
+            else
+            {
+                _state = WebSocket.CLOSED;
+
+                // Mangle the URL, changing the scheme from 'http' to 'ws'
+                var url = envelope.url.replace(/^http/, 'ws');
+
+                var self = this;
+                var webSocket = new WebSocket(url);
+                webSocket.onopen = function()
+                {
+                    _state = WebSocket.OPEN;
+                    self.webSocketSend(envelope, request);
+                };
+                webSocket.onclose = function()
+                {
+                    if (_state !== WebSocket.OPEN)
+                    {
+                        _supportsWebSocket = false;
+                        self.transportFailure(envelope, request, 'error');
+                    }
+                    else
+                    {
+                        _state = WebSocket.CLOSED;
+                    }
+                };
+                webSocket.onmessage = function(message)
+                {
+                    if (_state === WebSocket.OPEN)
+                    {
+                        self.transportSuccess(envelope, request, message.data);
+                    }
+                    else
+                    {
+                        self.transportFailure(envelope, request, 'error');
+                    }
+                };
+            }
+        };
+
+        this.webSocketSend = function(envelope, request)
+        {
+            var self = this;
+            var data = org.cometd.JSON.toJSON(envelope.messages);
+            var result = _webSocket.send(data);
+            if (!result)
+            {
+                // Keep the semantic of calling response callbacks asynchronously after the request
+                _setTimeout(function()
+                {
+                    self.transportFailure(envelope, request, 'error');
+                }, 0);
+            }
+        };
+
+        this.reset = function()
+        {
+            org.cometd.WebSocketTransport.prototype.reset();
+            _supportsWebSocket = true;
+        };
+    };
+    org.cometd.WebSocketTransport.prototype = new org.cometd.Transport();
+    org.cometd.WebSocketTransport.prototype.constructor = org.cometd.WebSocketTransport;
 };

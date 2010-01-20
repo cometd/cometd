@@ -35,7 +35,7 @@ public class ClientSessionImpl implements ClientSession
     private volatile ClientTransport _transport;
 
     
-    protected ClientSessionImpl(BayeuxClientImpl bayeux)
+    protected ClientSessionImpl(BayeuxClientImpl bayeux, String... servers)
     {
         _bayeux=bayeux;
     }

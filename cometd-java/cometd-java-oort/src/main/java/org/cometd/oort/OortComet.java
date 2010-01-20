@@ -6,14 +6,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.cometd.Channel;
-import org.cometd.Client;
-import org.cometd.Message;
-import org.cometd.MessageListener;
-import org.cometd.client.BayeuxClient;
-import org.cometd.server.MessageImpl;
-import org.eclipse.jetty.util.log.Log;
-
 /**
  * Oort Comet client.
  * <p>

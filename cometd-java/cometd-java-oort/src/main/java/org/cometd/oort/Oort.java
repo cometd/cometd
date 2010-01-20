@@ -10,12 +10,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 
-import org.cometd.Bayeux;
-import org.cometd.Client;
-import org.cometd.Extension;
-import org.cometd.Message;
-import org.cometd.MessageListener;
-import org.cometd.RemoveListener;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -44,7 +39,7 @@ public class Oort extends AbstractLifeCycle
     
     protected String _url;
     protected String _secret;
-    protected Bayeux _bayeux;
+    protected BayeuxServer _bayeux;
     protected HttpClient _httpClient=new HttpClient();
     protected Timer _timer=new Timer();
     protected Random _random=new SecureRandom();

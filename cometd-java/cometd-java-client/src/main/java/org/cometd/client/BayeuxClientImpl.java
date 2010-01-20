@@ -26,7 +26,7 @@ public class BayeuxClientImpl implements org.cometd.bayeux.client.BayeuxClient
     private final ConcurrentMap<String, ClientChannelImpl> _channels = new ConcurrentHashMap<String, ClientChannelImpl>();
     private final TransportRegistry _transports = new TransportRegistry();    
     private final ScheduledExecutorService _scheduler;
-
+    
     public BayeuxClientImpl(ClientTransport... transports)
     {
         this(Executors.newSingleThreadScheduledExecutor(), transports);
@@ -62,22 +62,40 @@ public class BayeuxClientImpl implements org.cometd.bayeux.client.BayeuxClient
     @Override
     public ClientSession newSession(String... servers)
     {
-        // TODO Auto-generated method stub
-        return null;
+        
+        return new ClientSessionImpl(this,servers);
     }
 
     @Override
     public List<String> getAllowedTransports()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return _transports.getAllowedTransports();
     }
 
     @Override
     public Set<String> getKnownTransportNames()
     {
+        return _transports.getKnownTransports();
+    }
+
+    @Override
+    public Transport getTransport(String transport)
+    {
         // TODO Auto-generated method stub
         return null;
+    }
+
+
+    
+    private ClientTransport negotiateTransport(String[] requestedTransports)
+    {
+        ClientTransport transport = _transports.negotiate(requestedTransports, BAYEUX_VERSION);
+        if (transport == null)
+            throw new TransportException("Could not negotiate transport: requested " +
+                    Arrays.toString(requestedTransports) +
+                    ", available " +
+                    Arrays.toString(_transports.findTransportTypes(BAYEUX_VERSION)));
+        return transport;
     }
 
     @Override
@@ -95,28 +113,9 @@ public class BayeuxClientImpl implements org.cometd.bayeux.client.BayeuxClient
     }
 
     @Override
-    public Transport getTransport(String transport)
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
     public void setOption(String qualifiedName, Object value)
     {
         // TODO Auto-generated method stub
         
-    }
-
-    
-    private ClientTransport negotiateTransport(String[] requestedTransports)
-    {
-        ClientTransport transport = _transports.negotiate(requestedTransports, BAYEUX_VERSION);
-        if (transport == null)
-            throw new TransportException("Could not negotiate transport: requested " +
-                    Arrays.toString(requestedTransports) +
-                    ", available " +
-                    Arrays.toString(_transports.findTransportTypes(BAYEUX_VERSION)));
-        return transport;
     }
 }
