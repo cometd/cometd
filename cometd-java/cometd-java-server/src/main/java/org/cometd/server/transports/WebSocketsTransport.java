@@ -23,13 +23,13 @@ import org.eclipse.jetty.websocket.WebSocketFactory;
 
 public class WebSocketsTransport extends HttpTransport
 {
-    public final static String NAME="websockets";
+    public final static String NAME="websocket";
     public final static String PROTOCOL_OPTION="protocol";
     public final static String BUFFER_SIZE_OPTION="bufferSize";
     
     private final WebSocketFactory _factory = new WebSocketFactory();
     
-    private String _protocol="bayeux";
+    private String _protocol="";
     
     public WebSocketsTransport(BayeuxServerImpl bayeux, Map<String,Object> options)
     {
@@ -57,7 +57,7 @@ public class WebSocketsTransport extends HttpTransport
         String origin=request.getHeader("Origin");
         origin=checkOrigin(request,host,origin);
         
-        if (origin==null /*|| !_protocol.equals(protocol)*/)
+        if (origin==null || _protocol!=null && _protocol.length()>0 && !_protocol.equals(protocol))
         {
             response.sendError(403);
             return;
@@ -98,67 +98,70 @@ public class WebSocketsTransport extends HttpTransport
         {
             System.err.println("WS onMessage "+data);
             boolean batch=false;
-            ServerMessage.Mutable message = null;
             try
             {
-                message = _bayeux.getServerMessagePool().parseMessage(data);
-                
-                // reference it (this should make ref=1)
-                message.incRef();
-                
-                // Get the session from the message
-                if (_session==null)
-                    _session=(ServerSessionImpl)_bayeux.getSession(message.getClientId());
-                if (_session!=null && !message.isMeta())
-                {
-                    // start a batch to group all resulting messages into a single response.
-                    batch=true;
-                    _session.startBatch();
-                }
-                
-                // remember the connected status
-                boolean was_connected=_session!=null && _session.isConnected();
-                boolean connect = Channel.META_CONNECT.equals(message.getChannelId());
+                ServerMessage.Mutable[] messages = null;
+                messages = _bayeux.getServerMessagePool().parseMessages(data);
 
-                // handle the message
-                // the actual reply is return from the call, but other messages may
-                // also be queued on the session.
-                ServerMessage reply = _bayeux.handle(_session,message);
-
-                // Do we have a reply
-                if (reply!=null)
+                for (ServerMessage.Mutable message : messages)
                 {
+                    // reference it (this should make ref=1)
+                    message.incRef();
+
+                    // Get the session from the message
                     if (_session==null)
-                        // This must be a handshake
-                        // extract a session from the reply (if we don't already know it
-                        _session=(ServerSessionImpl)_bayeux.getSession(reply.getClientId());
-                    else if (connect && reply.isSuccessful())
+                        _session=(ServerSessionImpl)_bayeux.getSession(message.getClientId());
+                    if (_session!=null && !message.isMeta())
                     {
-                        // If this is a connect or we can send messages with any response 
-                        if (isMetaConnectDeliveryOnly())
-                        {
-                            _connectReply=reply;
-                            reply=null;
-                            _bayeux.startTimeout(this,_session.getTimeout());
-                        }
-                        if (!was_connected || !_session.setDispatcher(this))
-                            dispatch();
+                        // start a batch to group all resulting messages into a single response.
+                        batch=true;
+                        _session.startBatch();
                     }
-                    
-                    reply=_bayeux.extendReply(_session,reply);
+
+                    // remember the connected status
+                    boolean was_connected=_session!=null && _session.isConnected();
+                    boolean connect = Channel.META_CONNECT.equals(message.getChannelId());
+
+                    // handle the message
+                    // the actual reply is return from the call, but other messages may
+                    // also be queued on the session.
+                    ServerMessage reply = _bayeux.handle(_session,message);
+
+                    // Do we have a reply
                     if (reply!=null)
-                        send(reply);
+                    {
+                        if (_session==null)
+                            // This must be a handshake
+                            // extract a session from the reply (if we don't already know it
+                            _session=(ServerSessionImpl)_bayeux.getSession(reply.getClientId());
+                        else if (connect && reply.isSuccessful())
+                        {
+                            // If this is a connect or we can send messages with any response 
+                            if (isMetaConnectDeliveryOnly())
+                            {
+                                _connectReply=reply;
+                                reply=null;
+                                _bayeux.startTimeout(this,_session.getTimeout());
+                            }
+                            if (!was_connected || !_session.setDispatcher(this))
+                                dispatch();
+                        }
+
+                        reply=_bayeux.extendReply(_session,reply);
+                        if (reply!=null)
+                            send(reply);
+                    }
+
+                    // disassociate the reply
+                    message.setAssociated(null);
+                    // dec our own ref, this should be to 0 unless message was ref'd elsewhere.
+                    message.decRef();
                 }
-                
-                // disassociate the reply
-                message.setAssociated(null);
-                // dec our own ref, this should be to 0 unless message was ref'd elsewhere.
-                message.decRef();
 
             }
             catch(IOException e)
             {
-                _bayeux.getLogger().warn(""+message,e);
+                _bayeux.getLogger().warn("",e);
             }
             finally
             {
