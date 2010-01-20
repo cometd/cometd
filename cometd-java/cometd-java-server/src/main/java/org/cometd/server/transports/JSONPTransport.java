@@ -27,6 +27,8 @@ public class JSONPTransport extends LongPollingTransport
         
         setOption(CALLBACK_PARAMETER_OPTION,_callbackParam);
         setOption(MIME_TYPE_OPTION,_mimeType);
+        _metaConnectDeliveryOnly=true;
+        setOption(META_CONNECT_DELIVERY_OPTION,_metaConnectDeliveryOnly);
     }
 
     /* ------------------------------------------------------------ */
@@ -45,16 +47,6 @@ public class JSONPTransport extends LongPollingTransport
     public String getCallbackParameter()
     {
         return _callbackParam;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.server.transports.JSONTransport#isMetaConnectDeliveryOnly()
-     */
-    @Override
-    public boolean isMetaConnectDeliveryOnly()
-    {
-        return true;
     }
 
     /* ------------------------------------------------------------ */

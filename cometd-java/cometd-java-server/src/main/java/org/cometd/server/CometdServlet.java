@@ -210,7 +210,7 @@ public class CometdServlet extends GenericServlet
             // Get message batches either as JSON body or as message parameters
             if (request.getContentType() != null && !request.getContentType().startsWith("application/x-www-form-urlencoded"))
             {
-                return _bayeux.getServerMessagePool().parse(request.getReader());
+                return _bayeux.getServerMessagePool().parseMessages(request.getReader());
             }
 
             String[] batches=request.getParameterValues(MESSAGE_PARAM);
@@ -221,7 +221,7 @@ public class CometdServlet extends GenericServlet
             if (batches.length == 0)
             {
                 fodder=batches[0];
-                return _bayeux.getServerMessagePool().parse(fodder);
+                return _bayeux.getServerMessagePool().parseMessages(fodder);
             }
 
             throw new IllegalStateException();

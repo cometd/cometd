@@ -117,7 +117,7 @@ public class ServerMessagePool
     }
 
     /* ------------------------------------------------------------ */
-    public ServerMessage.Mutable[] parse(Reader reader) throws IOException
+    public ServerMessage.Mutable[] parseMessages(Reader reader) throws IOException
     {
         JSON.ReaderSource source=_readerPool.poll();
         if (source == null)
@@ -137,7 +137,7 @@ public class ServerMessagePool
     }
 
     /* ------------------------------------------------------------ */
-    public ServerMessage.Mutable[] parse(String s) throws IOException
+    public ServerMessage.Mutable[] parseMessages(String s) throws IOException
     {
         Object batch=_batchJSON.parse(new JSON.StringSource(s));
         if (batch == null)
@@ -149,19 +149,9 @@ public class ServerMessagePool
     }
 
     /* ------------------------------------------------------------ */
-    public void parseTo(String fodder, List<Message> messages)
+    public ServerMessage.Mutable parseMessage(String s) throws IOException
     {
-        Object batch=_batchJSON.parse(new JSON.StringSource(fodder));
-        if (batch == null)
-            return;
-        if (batch.getClass().isArray())
-        {
-            Message[] msgs=(Message[])batch;
-            for (int m=0; m < msgs.length; m++)
-                messages.add(msgs[m]);
-        }
-        else
-            messages.add((Message)batch);
+        return (ServerMessage.Mutable)_msgJSON.parse(new JSON.StringSource(s));
     }
 
     /* ------------------------------------------------------------ */

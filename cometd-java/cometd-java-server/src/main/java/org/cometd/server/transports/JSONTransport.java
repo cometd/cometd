@@ -34,6 +34,7 @@ public class JSONTransport extends LongPollingTransport
         super(bayeux,NAME,options);
         _prefix.add("json");
         setOption(MIME_TYPE_OPTION,_mimeType);
+        _metaConnectDeliveryOnly=false;
     }
     
     @Override

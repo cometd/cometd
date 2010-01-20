@@ -276,8 +276,6 @@ public abstract class LongPollingTransport extends HttpTransport
             complete(writer);
         }
     }
-    
-    public abstract boolean isMetaConnectDeliveryOnly();
 
     abstract protected PrintWriter send(HttpServletRequest request,HttpServletResponse response,PrintWriter writer, ServerMessage message) throws IOException;
     
