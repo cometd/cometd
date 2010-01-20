@@ -1,6 +1,6 @@
 /**
  * Dual licensed under the Apache License 2.0 and the MIT license.
- * $Revision$ $Date: 2009-12-11 22:19:36 +1100 (Fri, 11 Dec 2009) $
+ * $Revision$ $Date: 2010-01-21 08:49:48 +1100 (Thu, 21 Jan 2010) $
  */
 (function($)
 {
@@ -83,6 +83,7 @@
     $.cometd.CallbackPollingTransport.prototype = new org.cometd.CallbackPollingTransport();
     $.cometd.CallbackPollingTransport.prototype.constructor = $.cometd.CallbackPollingTransport;
 
+    $.cometd.registerTransport('websocket', new org.cometd.WebSocketTransport());
     $.cometd.registerTransport('long-polling', new $.cometd.LongPollingTransport());
     $.cometd.registerTransport('callback-polling', new $.cometd.CallbackPollingTransport());
 

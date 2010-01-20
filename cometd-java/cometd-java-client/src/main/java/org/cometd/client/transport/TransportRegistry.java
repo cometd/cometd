@@ -1,7 +1,10 @@
 package org.cometd.client.transport;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.ArrayList;
 
@@ -10,25 +13,39 @@ import java.util.ArrayList;
  */
 public class TransportRegistry
 {
-    private final Set<ClientTransport> transports = new LinkedHashSet<ClientTransport>();
+    private final Map<String,ClientTransport> _transports = new HashMap<String,ClientTransport>();
+    private final List<String> _allowed = new ArrayList<String>();
 
     public void add(ClientTransport transport)
     {
         if (transport != null)
-            transports.add(transport);
+        {
+            _transports.put(transport.getName(),transport);
+            _allowed.add(transport.getName());
+        }
     }
 
+    public Set<String> getKnownTransports()
+    {
+        return Collections.unmodifiableSet(_transports.keySet());
+    }
+
+    public List<String> getAllowedTransports()
+    {
+        return Collections.unmodifiableList(_allowed);
+    }
+    
     public ClientTransport negotiate(String[] requestedTransports, String bayeuxVersion)
     {
-        for (ClientTransport transport : transports)
+        for (String transport : _allowed)
         {
             for (String requestedTransport : requestedTransports)
             {
-                if (requestedTransport.equals(transport.getName()))
+                if (requestedTransport.equals(transport))
                 {
-                    if (transport.accept(bayeuxVersion))
+                    if (_transports.get(transport).accept(bayeuxVersion))
                     {
-                        return transport;
+                        return _transports.get(transport);
                     }
                 }
             }
@@ -39,8 +56,9 @@ public class TransportRegistry
     public String[] findTransportTypes(String bayeuxVersion)
     {
         List<String> result = new ArrayList<String>();
-        for (ClientTransport transport : transports)
+        for (String name : _allowed)
         {
+            ClientTransport transport=_transports.get(name);
             if (transport.accept(bayeuxVersion))
             {
                 result.add(transport.getName());

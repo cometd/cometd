@@ -50,21 +50,24 @@ public class WebSocketsTransport extends HttpTransport
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
+        System.err.println("WS handle "+request);
         String protocol=request.getHeader("WebSocket-Protocol");
 
         String host=request.getHeader("Host");
         String origin=request.getHeader("Origin");
         origin=checkOrigin(request,host,origin);
         
-        if (origin==null || !_protocol.equals(protocol))
+        if (origin==null /*|| !_protocol.equals(protocol)*/)
         {
             response.sendError(403);
             return;
         }
         
         WebSocket websocket = new BayeuxWebSocket();
-        
+
+        System.err.println("WS  "+websocket);
         _factory.upgrade(request,response,websocket,origin,protocol);
+        System.err.println("WS FAILED !!!! ");
     }
 
     protected String checkOrigin(HttpServletRequest request, String host, String origin)
@@ -93,6 +96,7 @@ public class WebSocketsTransport extends HttpTransport
 
         public void onMessage(byte frame, String data)
         {
+            System.err.println("WS onMessage "+data);
             boolean batch=false;
             ServerMessage.Mutable message = null;
             try
@@ -228,7 +232,9 @@ public class WebSocketsTransport extends HttpTransport
 
         protected void send(ServerMessage message) throws IOException
         {
-            _outbound.sendMessage(WebSocket.SENTINEL_FRAME,message.getJSON());
+            String data = message.getJSON();
+            System.err.println("WS send "+data);
+            _outbound.sendMessage(WebSocket.SENTINEL_FRAME,data);
         }
     };
 }

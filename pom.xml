@@ -9,8 +9,17 @@
     <packaging>pom</packaging>
     <name>CometD</name>
 
+    <properties>
+        <jetty-version>7.0.2-SNAPSHOT</jetty-version>
+        <dojo-version>1.3.2</dojo-version>
+        <maven-wagon-version>1.0-beta-2</maven-wagon-version>
+    </properties>
+
     <modules>
         <module>cometd-java</module>
+        <module>cometd-javascript</module>
+        <module>cometd-demo</module>
+        <module>cometd-distribution</module>
     </modules>
 
 </project>
