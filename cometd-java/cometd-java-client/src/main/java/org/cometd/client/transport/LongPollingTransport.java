@@ -24,6 +24,7 @@ public class LongPollingTransport extends AbstractTransport
         this.httpClient = httpClient;
     }
 
+    @Override
     public String getName()
     {
         return "long-polling";

@@ -6,6 +6,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.ClientChannel;
@@ -22,7 +24,20 @@ public class BayeuxClientImpl implements org.cometd.bayeux.client.BayeuxClient
     
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
     private final ConcurrentMap<String, ClientChannelImpl> _channels = new ConcurrentHashMap<String, ClientChannelImpl>();
-    private final TransportRegistry _transports = new TransportRegistry();
+    private final TransportRegistry _transports = new TransportRegistry();    
+    private final ScheduledExecutorService _scheduler;
+
+    public BayeuxClientImpl(ClientTransport... transports)
+    {
+        this(Executors.newSingleThreadScheduledExecutor(), transports);
+    }
+
+    public BayeuxClientImpl(ScheduledExecutorService scheduler, ClientTransport... transports)
+    {
+        this._scheduler = scheduler;
+        for (ClientTransport transport : transports)
+            this._transports.add(transport);
+    }
     
     @Override
     public void addExtension(Extension extension)
