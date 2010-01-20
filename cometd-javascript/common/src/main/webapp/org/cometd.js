@@ -2245,6 +2245,7 @@ org.cometd.Cometd = function(name)
                 webSocket.onopen = function()
                 {
                     _state = WebSocket.OPEN;
+                    _webSocket = webSocket;
                     self.webSocketSend(envelope, request);
                 };
                 webSocket.onclose = function()
