@@ -12,6 +12,8 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.ChannelId;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 
 public class ServerChannelImpl implements ServerChannel
 {
@@ -226,9 +228,8 @@ public class ServerChannelImpl implements ServerChannel
                         if (!((MessageListener)listener).onMessage(from,to,mutable))
                             return;
             
-                if (isBroadcast())
-                    _bayeux.root().doSubscribers(from,to._id,mutable);
-                else if (isMeta())
+                _bayeux.root().doSubscribers(from,to._id,mutable);
+                if (isMeta())
                     for (ServerChannelListener listener : _listeners)
                         if (listener instanceof BayeuxServerImpl.HandlerListener)
                             ((BayeuxServerImpl.HandlerListener)listener).onMessage(from,mutable);
@@ -323,6 +324,43 @@ public class ServerChannelImpl implements ServerChannel
             }
         }
         
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void dump(StringBuilder b,String indent)
+    {
+        b.append(toString());
+        b.append(isLazy()?" lazy":"");
+        b.append('\n');
+        
+        int leaves=_children.size()+_subscribers.size()+_listeners.size();
+        int i=0;
+        for (ServerChannelImpl child : _children.values())
+        {
+            b.append(indent);
+            b.append(" +-");
+            child.dump(b,indent+((++i==leaves)?"   ":" | "));
+        }
+        for (ServerSessionImpl child : _subscribers)
+        {
+            b.append(indent);
+            b.append(" +-");
+            child.dump(b,indent+((++i==leaves)?"   ":" | "));
+        }
+        for (ServerChannelListener child : _listeners)
+        {
+            b.append(indent);
+            b.append(" +-");
+            b.append(child);
+            b.append('\n');
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
+    {
+        return _id.toString();
     }
 }
 

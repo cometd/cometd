@@ -39,6 +39,9 @@ import org.cometd.server.transports.WebSocketsTransport;
  */
 public class CometdServlet extends GenericServlet
 {
+    public static final int CONFIG_LEVEL=1;
+    public static final int INFO_LEVEL=2;
+    public static final int DEBUG_LEVEL=3;
     public static final String CLIENT_ATTR="org.cometd.server.client";
     public static final String TRANSPORT_ATTR="org.cometd.server.transport";
     public static final String MESSAGE_PARAM="message";
@@ -74,11 +77,15 @@ public class CometdServlet extends GenericServlet
     @Override
     public void init() throws ServletException
     {
+        if (getServletConfig().getInitParameter("logLevel")!=null)
+        {
+            _logLevel=Integer.parseInt(getServletConfig().getInitParameter("logLevel"));
+            if (_logLevel>=DEBUG_LEVEL)
+                _bayeux.getLogger().setDebugEnabled(true);
+        }
+        
         initializeBayeux(_bayeux);
         getServletContext().setAttribute(BayeuxServer.ATTRIBUTE,_bayeux);
-        
-        if (getServletConfig().getInitParameter("logLevel")!=null)
-            _logLevel=Integer.parseInt(getServletConfig().getInitParameter("logLevel"));
         
         // Get any specific options as init paramters
         HashSet<String> qualified_names = new HashSet<String>();
@@ -114,7 +121,7 @@ public class CometdServlet extends GenericServlet
                 ((ServerTransport)transport).init();
         }
         
-        if (_logLevel>0)
+        if (_logLevel>=CONFIG_LEVEL)
         {
             for (Map.Entry<String, Object> entry : _bayeux.getOptions().entrySet())
                 getServletContext().log(entry.getKey()+"="+entry.getValue());
