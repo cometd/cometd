@@ -77,6 +77,11 @@ public class ClientSessionImpl implements ClientSession
         
         doSend(message);
         
+        if (!async)
+        {
+            // wait for response
+        }
+        
     }
 
     @Override
