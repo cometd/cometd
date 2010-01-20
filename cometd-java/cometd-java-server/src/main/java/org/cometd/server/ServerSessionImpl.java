@@ -12,6 +12,7 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
+import org.cometd.server.ServerTransport.Dispatcher;
 import org.cometd.server.transports.HttpTransport;
 import org.cometd.server.transports.LongPollingTransport;
 import org.eclipse.jetty.util.ArrayQueue;
@@ -307,8 +308,9 @@ public class ServerSessionImpl implements ServerSession
             if (dispatcher == null)
             {
                 // This is the end of a connect
+                Dispatcher old=_dispatcher;
                 _dispatcher = null;
-                return true;
+                return old!=null;
             }
 
             if (_dispatcher!=null)
@@ -337,8 +339,9 @@ public class ServerSessionImpl implements ServerSession
             
             if (_dispatcher!=null)
             {
-                _dispatcher.dispatch();
+                Dispatcher dispatcher=_dispatcher;
                 _dispatcher=null;
+                dispatcher.dispatch();
                 return;
             }
         }

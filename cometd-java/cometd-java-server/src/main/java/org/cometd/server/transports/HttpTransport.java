@@ -45,7 +45,7 @@ public abstract class HttpTransport extends ServerTransport
 
         // Get message batches either as JSON body or as message parameters
         if (content_type!=null && !content_type.startsWith("application/x-www-form-urlencoded"))
-            return _bayeux.getServerMessagePool().parse(request.getReader());
+            return _bayeux.getServerMessagePool().parseMessages(request.getReader());
         
         String[] batches=request.getParameterValues(MESSAGE_PARAM);
         
@@ -53,14 +53,14 @@ public abstract class HttpTransport extends ServerTransport
             return null;
 
         if (batches.length == 1)
-            return _bayeux.getServerMessagePool().parse(batches[0]);
+            return _bayeux.getServerMessagePool().parseMessages(batches[0]);
 
         List<ServerMessage.Mutable> messages=new ArrayList<ServerMessage.Mutable>();
         for (int i=0; i < batches.length; i++)
         {
             if (batches[i] == null)
                 continue;
-            messages.addAll(Arrays.asList(_bayeux.getServerMessagePool().parse(batches[i])));
+            messages.addAll(Arrays.asList(_bayeux.getServerMessagePool().parseMessages(batches[i])));
         }
         return messages.toArray(new ServerMessage.Mutable[messages.size()]);
     }

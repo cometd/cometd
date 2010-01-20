@@ -86,4 +86,14 @@ public class AbstractTransport implements Transport
             return ((Number)value).intValue();
         return Integer.parseInt(value.toString());
     }
+    
+    public boolean getOption(String option, boolean dftValue)
+    {
+        Object value = getOption(option);
+        if (value==null)
+            return false;
+        if (value instanceof Boolean)
+            return ((Boolean)value).booleanValue();
+        return Boolean.parseBoolean(value.toString());
+    }
 }

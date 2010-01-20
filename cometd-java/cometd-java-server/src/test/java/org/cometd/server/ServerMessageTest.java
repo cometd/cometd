@@ -16,7 +16,7 @@ public class ServerMessageTest
         String json = "{\"id\":\"12345\", \"clientId\":\"jva73siaj92jdafa\", \"data\":{\"name\":\"value\"}, \"ext\":{\"name\":\"value\"}}";
         
         ServerMessagePool pool = new ServerMessagePool();
-        Message[] messages=pool.parse(json);
+        Message[] messages=pool.parseMessages(json);
         ServerMessageImpl.MutableMessage mutable= (ServerMessageImpl.MutableMessage)messages[0];
         ServerMessageImpl immutable= mutable.asImmutable();
         
