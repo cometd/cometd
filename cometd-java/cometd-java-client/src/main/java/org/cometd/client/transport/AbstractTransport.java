@@ -1,7 +1,8 @@
-package org.cometd.bayeux.client.transport;
+package org.cometd.client.transport;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.cometd.bayeux.Message;
 import org.cometd.common.HashMapMessage;
@@ -10,7 +11,7 @@ import org.eclipse.jetty.util.ajax.JSON;
 /**
  * @version $Revision: 902 $ $Date$
  */
-public abstract class AbstractTransport implements Transport
+public abstract class AbstractTransport implements ClientTransport
 {
     private final List<TransportListener> listeners = new ArrayList<TransportListener>();
 
@@ -70,7 +71,7 @@ public abstract class AbstractTransport implements Transport
     @Override
     public String toString()
     {
-        return getType();
+        return getName();
     }
 
     protected List<Message.Mutable> toMessages(String content)
@@ -94,4 +95,51 @@ public abstract class AbstractTransport implements Transport
         }
         return result;
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.bayeux.Transport#getName()
+     */
+    @Override
+    public String getName()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.bayeux.Transport#getOption(java.lang.String)
+     */
+    @Override
+    public Object getOption(String name)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.bayeux.Transport#getOptionNames()
+     */
+    @Override
+    public Set<String> getOptionNames()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.bayeux.Transport#getOptionPrefix()
+     */
+    @Override
+    public String getOptionPrefix()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    
+    
+    
 }

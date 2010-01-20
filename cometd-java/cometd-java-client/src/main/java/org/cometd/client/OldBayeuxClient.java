@@ -1,10 +1,11 @@
-package org.cometd.bayeux.client;
+package org.cometd.client;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -14,83 +15,61 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.MetaChannelId;
-import org.cometd.bayeux.client.transport.Transport;
-import org.cometd.bayeux.client.transport.TransportException;
-import org.cometd.bayeux.client.transport.TransportListener;
-import org.cometd.bayeux.client.transport.TransportRegistry;
+import org.cometd.bayeux.client.BayeuxClient;
+import org.cometd.bayeux.client.ClientChannel;
+import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.client.transport.ClientTransport;
+import org.cometd.client.transport.TransportException;
+import org.cometd.client.transport.TransportListener;
+import org.cometd.client.transport.TransportRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * @version $Revision$ $Date$
  */
-public class StandardBayeuxClient implements BayeuxClient
+public class OldBayeuxClient implements BayeuxClient
 {
     private static final String BAYEUX_VERSION = "1.0";
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final List<Extension> extensions = new CopyOnWriteArrayList<Extension>();
-    private final List<BayeuxListener> listeners = new CopyOnWriteArrayList<BayeuxListener>();
-    private final TransportRegistry transports = new TransportRegistry();
-    private final TransportListener transportListener = new Listener();
-    private final AtomicInteger messageIds = new AtomicInteger();
-    private final ScheduledExecutorService scheduler;
-    private volatile State state = State.DISCONNECTED;
-    private volatile Transport transport;
-    private volatile String clientId;
-    private volatile Map<String,Object> advice;
-    private volatile ScheduledFuture<?> task;
+    private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
+    private final TransportRegistry _transports = new TransportRegistry();
+    private final TransportListener _transportListener = new Listener();
+    private final AtomicInteger _messageIds = new AtomicInteger();
+    private final ScheduledExecutorService _scheduler;
+    private volatile State _state = State.DISCONNECTED;
+    private volatile ClientTransport _transport;
+    private volatile String _clientId;
+    private volatile Map<String,Object> _advice;
+    private volatile ScheduledFuture<?> _task;
 
-    public StandardBayeuxClient(Transport... transports)
+    public OldBayeuxClient(ClientTransport... transports)
     {
         this(Executors.newSingleThreadScheduledExecutor(), transports);
     }
 
-    public StandardBayeuxClient(ScheduledExecutorService scheduler, Transport... transports)
+    public OldBayeuxClient(ScheduledExecutorService scheduler, ClientTransport... transports)
     {
-        this.scheduler = scheduler;
-        for (Transport transport : transports)
-            this.transports.add(transport);
+        this._scheduler = scheduler;
+        for (ClientTransport transport : transports)
+            this._transports.add(transport);
     }
 
     public String getId()
     {
-        return clientId;
+        return _clientId;
     }
 
     public void addExtension(Extension extension)
     {
-        extensions.add(extension);
+        _extensions.add(extension);
     }
 
     public void removeExtension(Extension extension)
     {
-        extensions.remove(extension);
-    }
-
-    public void addListener(BayeuxListener listener) throws IllegalArgumentException
-    {
-        // TODO review - there are no BayuexClientListeners!
-        
-        if (!(listener instanceof BayeuxClientListener))
-            throw new IllegalArgumentException("Wrong listener type, must be instance of " + BayeuxClientListener.class.getName());
-        listeners.add(listener);
-    }
-
-    public void removeListener(BayeuxListener listener)
-    {
-        listeners.remove(listener);
-    }
-
-    public void addListener(SessionListener listener)
-    {
-        // TODO
-    }
-
-    public void removeListener(SessionListener listener)
-    {
-        // TODO
+        _extensions.remove(extension);
     }
 
     public void handshake(boolean async) throws IOException
@@ -103,13 +82,13 @@ public class StandardBayeuxClient implements BayeuxClient
 
     protected void asyncHandshake()
     {
-        String[] transports = this.transports.findTransportTypes(BAYEUX_VERSION);
-        Transport newTransport = negotiateTransport(transports);
-        transport = lifecycleTransport(transport, newTransport);
-        logger.debug("Handshaking with transport {}", transport);
+        String[] transports = this._transports.findTransportTypes(BAYEUX_VERSION);
+        ClientTransport newTransport = negotiateTransport(transports);
+        _transport = lifecycleTransport(_transport, newTransport);
+        logger.debug("Handshaking with transport {}", _transport);
 
         Message.Mutable request = newMessage();
-        request.setChannelId(MetaChannelId.HANDSHAKE.getChannelId());
+        request.setChannelId(Channel.META_HANDSHAKE);
         request.put(Message.VERSION_FIELD, BAYEUX_VERSION);
         request.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, transports);
 
@@ -125,33 +104,33 @@ public class StandardBayeuxClient implements BayeuxClient
 
     private void updateState(State newState)
     {
-        logger.debug("State change: {} -> {}", state, newState);
-        this.state = newState;
+        logger.debug("State change: {} -> {}", _state, newState);
+        this._state = newState;
     }
 
     private Message.Mutable newMessage()
     {
-        return transport.newMessage();
+        return _transport.newMessage();
     }
 
-    protected void send(Message.Mutable message, boolean meta)
+    protected void send(Message.Mutable message)
     {
-        boolean result = applyOutgoingExtensions(message, meta);
+        boolean result = applyOutgoingExtensions(message);
         if (result)
         {
             // TODO: handle batches
-            transport.send(message);
+            _transport.send(message);
         }
     }
 
-    private boolean applyOutgoingExtensions(Message.Mutable message, boolean meta)
+    private boolean applyOutgoingExtensions(Message.Mutable message)
     {
-        for (Extension extension : extensions)
+        for (Extension extension : _extensions)
         {
             try
             {
                 boolean advance;
-                if (meta)
+                if (message.isMeta())
                     advance = extension.sendMeta(this, message);
                 else
                     advance = extension.send(this, message);
@@ -170,26 +149,26 @@ public class StandardBayeuxClient implements BayeuxClient
         return true;
     }
 
-    private Transport lifecycleTransport(Transport oldTransport, Transport newTransport)
+    private ClientTransport lifecycleTransport(ClientTransport oldTransport, ClientTransport newTransport)
     {
         if (oldTransport != null)
         {
-            oldTransport.removeListener(transportListener);
+            oldTransport.removeListener(_transportListener);
             oldTransport.destroy();
         }
-        newTransport.addListener(transportListener);
+        newTransport.addListener(_transportListener);
         newTransport.init();
         return newTransport;
     }
 
-    private Transport negotiateTransport(String[] requestedTransports)
+    private ClientTransport negotiateTransport(String[] requestedTransports)
     {
-        Transport transport = transports.negotiate(requestedTransports, BAYEUX_VERSION);
+        ClientTransport transport = _transports.negotiate(requestedTransports, BAYEUX_VERSION);
         if (transport == null)
             throw new TransportException("Could not negotiate transport: requested " +
                     Arrays.toString(requestedTransports) +
                     ", available " +
-                    Arrays.toString(transports.findTransportTypes(BAYEUX_VERSION)));
+                    Arrays.toString(_transports.findTransportTypes(BAYEUX_VERSION)));
         return transport;
     }
 
@@ -198,35 +177,11 @@ public class StandardBayeuxClient implements BayeuxClient
         return null;
     }
 
-    public Channel getChannel(String channelId)
+    public ClientChannel getChannel(String channelId)
     {
         return null;
     }
 
-    public void startBatch()
-    {
-    }
-
-    public void endBatch()
-    {
-    }
-
-    public void batch(Runnable batch)
-    {
-        startBatch();
-        try
-        {
-            batch.run();
-        }
-        finally
-        {
-            endBatch();
-        }
-    }
-
-    public void disconnect()
-    {
-    }
 
     protected void receive(List<Message.Mutable> incomingMessages)
     {
@@ -236,7 +191,7 @@ public class StandardBayeuxClient implements BayeuxClient
         {
             Map<String, Object> advice = message.getAdvice();
             if (advice != null)
-                this.advice = advice;
+                this._advice = advice;
 
             String channelId = message.getChannelId();
             if (channelId == null)
@@ -247,17 +202,10 @@ public class StandardBayeuxClient implements BayeuxClient
 
             Boolean successfulField = (Boolean)message.get(Message.SUCCESSFUL_FIELD);
             boolean successful = successfulField != null && successfulField;
-            MetaChannelId type = MetaChannelId.from(channelId);
-            if (type == null)
+            
+            if (Channel.META_HANDSHAKE.equals(channelId))
             {
-                if (successful)
-                    processMessage(message);
-                else
-                    processUnsuccessful(message);
-            }
-            else if (type == MetaChannelId.HANDSHAKE)
-            {
-                if (state != State.HANDSHAKING)
+                if (_state != State.HANDSHAKING)
                     throw new IllegalStateException();
 
                 if (successful)
@@ -265,9 +213,9 @@ public class StandardBayeuxClient implements BayeuxClient
                 else
                     processUnsuccessful(message);
             }
-            else if (type == MetaChannelId.CONNECT)
+            else if (Channel.META_CONNECT.equals(channelId))
             {
-                if (state != State.CONNECTED && state != State.DISCONNECTING)
+                if (_state != State.CONNECTED && _state != State.DISCONNECTING)
                     // TODO: call a listener method ? Discard the message ?
                     throw new UnsupportedOperationException();
 
@@ -276,9 +224,9 @@ public class StandardBayeuxClient implements BayeuxClient
                 else
                     processUnsuccessful(message);
             }
-            else if (type == MetaChannelId.DISCONNECT)
+            else if (Channel.META_DISCONNECT.equals(channelId))
             {
-                if (state != State.DISCONNECTING)
+                if (_state != State.DISCONNECTING)
                     // TODO: call a listener method ? Discard the message ?
                     throw new UnsupportedOperationException();
 
@@ -289,7 +237,10 @@ public class StandardBayeuxClient implements BayeuxClient
             }
             else
             {
-                throw new UnsupportedOperationException();
+                if (successful)
+                    processMessage(message);
+                else
+                    processUnsuccessful(message);
             }
         }
     }
@@ -299,13 +250,13 @@ public class StandardBayeuxClient implements BayeuxClient
         List<Message.Mutable> result = new ArrayList<Message.Mutable>();
         for (Message.Mutable message : messages)
         {
-            for (Extension extension : extensions)
+            for (Extension extension : _extensions)
             {
                 try
                 {
                     boolean advance;
-                    MetaChannelId metaChannel = MetaChannelId.from(message.getChannelId());
-                    if (metaChannel != null)
+
+                    if (message.isMeta())
                         advance = extension.rcvMeta(this, message);
                     else
                         advance = extension.rcv(this, message);
@@ -328,14 +279,6 @@ public class StandardBayeuxClient implements BayeuxClient
         return result;
     }
 
-    private void notifyMetaMessageListeners(Message message)
-    {
-        // TODO review - there are no BayuexClientListeners!
-        for (BayeuxListener listener : listeners)
-        {
-        }
-    }
-
     protected void processHandshake(Message handshake)
     {
         Boolean successfulField = (Boolean)handshake.get(Message.SUCCESSFUL_FIELD);
@@ -344,21 +287,19 @@ public class StandardBayeuxClient implements BayeuxClient
         if (successful)
         {
             // Renegotiate transport
-            Transport newTransport = transports.negotiate((String[])handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD), BAYEUX_VERSION);
+            ClientTransport newTransport = _transports.negotiate((String[])handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD), BAYEUX_VERSION);
             if (newTransport == null)
             {
                 // TODO: notify and stop
                 throw new UnsupportedOperationException();
             }
-            else if (newTransport != transport)
+            else if (newTransport != _transport)
             {
-                transport = lifecycleTransport(transport, newTransport);
+                _transport = lifecycleTransport(_transport, newTransport);
             }
 
             updateState(State.CONNECTED);
-            clientId = handshake.getClientId();
-
-            notifyMetaMessageListeners(handshake);
+            _clientId = handshake.getClientId();
 
             // TODO: internal batch ?
 
@@ -393,7 +334,7 @@ public class StandardBayeuxClient implements BayeuxClient
 
     private void followAdvice()
     {
-        Map<String, Object> advice = this.advice;
+        Map<String, Object> advice = this._advice;
         if (advice != null)
         {
             String action = (String)advice.get(Message.RECONNECT_FIELD);
@@ -406,7 +347,7 @@ public class StandardBayeuxClient implements BayeuxClient
                     long interval = intervalNumber.longValue();
                     if (interval < 0L)
                         interval = 0L;
-                    task = scheduler.schedule(new Runnable()
+                    _task = _scheduler.schedule(new Runnable()
                     {
                         public void run()
                         {
@@ -447,7 +388,7 @@ public class StandardBayeuxClient implements BayeuxClient
 
     private String newMessageId()
     {
-        return String.valueOf(messageIds.incrementAndGet());
+        return String.valueOf(_messageIds.incrementAndGet());
     }
 
     private class Listener extends TransportListener.Adapter
@@ -468,5 +409,54 @@ public class StandardBayeuxClient implements BayeuxClient
     {
         // TODO Auto-generated method stub
         return false;
+    }
+
+    @Override
+    public ClientSession newSession(String... servers)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public List<String> getAllowedTransports()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Set<String> getKnownTransportNames()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Object getOption(String qualifiedName)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Set<String> getOptionNames()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public org.cometd.bayeux.Transport getTransport(String transport)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void setOption(String qualifiedName, Object value)
+    {
+        // TODO Auto-generated method stub
+        
     }
 }

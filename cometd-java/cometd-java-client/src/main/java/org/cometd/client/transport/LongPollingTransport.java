@@ -1,4 +1,4 @@
-package org.cometd.bayeux.client.transport;
+package org.cometd.client.transport;
 
 import java.io.IOException;
 import java.util.List;
@@ -24,7 +24,7 @@ public class LongPollingTransport extends AbstractTransport
         this.httpClient = httpClient;
     }
 
-    public String getType()
+    public String getName()
     {
         return "long-polling";
     }
@@ -38,7 +38,7 @@ public class LongPollingTransport extends AbstractTransport
     {
     }
 
-    public void send(Message.Mutable... messages)
+    public void send(Message... messages)
     {
         HttpExchange httpExchange = new TransportExchange();
         httpExchange.setMethod("POST");

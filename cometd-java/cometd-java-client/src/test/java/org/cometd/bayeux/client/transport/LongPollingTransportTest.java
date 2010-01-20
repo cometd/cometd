@@ -9,6 +9,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
+import org.cometd.client.transport.ClientTransport;
+import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.client.transport.TransportListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.Test;
 
@@ -24,14 +27,14 @@ public class LongPollingTransportTest
     @Test
     public void testType()
     {
-        Transport transport = new LongPollingTransport(null, null);
-        assertEquals("long-polling", transport.getType());
+        ClientTransport transport = new LongPollingTransport(null, null);
+        assertEquals("long-polling", transport.getName());
     }
 
     @Test
     public void testAccept()
     {
-        Transport transport = new LongPollingTransport(null, null);
+        ClientTransport transport = new LongPollingTransport(null, null);
         assertTrue(transport.accept("1.0"));
     }
 
@@ -81,7 +84,7 @@ public class LongPollingTransportTest
             try
             {
                 final CountDownLatch latch = new CountDownLatch(1);
-                Transport transport = new LongPollingTransport(serverURI, httpClient);
+                ClientTransport transport = new LongPollingTransport(serverURI, httpClient);
                 transport.addListener(new TransportListener.Adapter()
                 {
                     @Override
@@ -153,7 +156,7 @@ public class LongPollingTransportTest
 
             try
             {
-                Transport transport = new LongPollingTransport(serverURI, httpClient);
+                ClientTransport transport = new LongPollingTransport(serverURI, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.addListener(new TransportListener.Adapter()
                 {
@@ -197,7 +200,7 @@ public class LongPollingTransportTest
 
         try
         {
-            Transport transport = new LongPollingTransport(serverURI, httpClient);
+            ClientTransport transport = new LongPollingTransport(serverURI, httpClient);
             final CountDownLatch latch = new CountDownLatch(1);
             transport.addListener(new TransportListener.Adapter()
             {
@@ -253,7 +256,7 @@ public class LongPollingTransportTest
 
             try
             {
-                Transport transport = new LongPollingTransport(serverURI, httpClient);
+                ClientTransport transport = new LongPollingTransport(serverURI, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.addListener(new TransportListener.Adapter()
                 {
@@ -330,7 +333,7 @@ public class LongPollingTransportTest
 
             try
             {
-                Transport transport = new LongPollingTransport(serverURI, httpClient);
+                ClientTransport transport = new LongPollingTransport(serverURI, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.addListener(new TransportListener.Adapter()
                 {

@@ -1,4 +1,4 @@
-package org.cometd.bayeux.client.transport;
+package org.cometd.client.transport;
 
 import java.util.List;
 
