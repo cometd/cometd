@@ -12,7 +12,6 @@
     <name>CometD :: Java :: Bayeux Client</name>
 
     <properties>
-        <jetty-version>7.0.1.v20091125</jetty-version>
     </properties>
 
     <dependencies>

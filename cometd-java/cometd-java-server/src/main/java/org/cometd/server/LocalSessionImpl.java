@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -42,7 +44,7 @@ public class LocalSessionImpl implements LocalSession
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
     private final List<ClientSessionListener> _listeners = new CopyOnWriteArrayList<ClientSessionListener>();
     private final AttributesMap _attributes = new AttributesMap();
-    private final Map<String, LocalChannel> _channels = new HashMap<String, LocalChannel>();
+    private final ConcurrentMap<String, LocalChannel> _channels = new ConcurrentHashMap<String, LocalChannel>();
     private final AtomicInteger _batch = new AtomicInteger();
     private final Queue<ServerMessage.Mutable> _queue = new ConcurrentLinkedQueue<ServerMessage.Mutable>();
     
@@ -82,8 +84,10 @@ public class LocalSessionImpl implements LocalSession
         if (channel==null)
         {
             ChannelId id = _bayeux.newChannelId(channelId);
-            channel=new LocalChannel(id);
-            _channels.put(channelId,channel);
+            LocalChannel new_channel=new LocalChannel(id);
+            channel=_channels.putIfAbsent(channelId,new_channel);
+            if (channel==null)
+                channel=new_channel;
         }
         return channel;
     }

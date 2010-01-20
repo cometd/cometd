@@ -1,4 +1,4 @@
-package org.cometd.bayeux.client.transport;
+package org.cometd.client.transport;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -10,21 +10,21 @@ import java.util.ArrayList;
  */
 public class TransportRegistry
 {
-    private final Set<Transport> transports = new LinkedHashSet<Transport>();
+    private final Set<ClientTransport> transports = new LinkedHashSet<ClientTransport>();
 
-    public void add(Transport transport)
+    public void add(ClientTransport transport)
     {
         if (transport != null)
             transports.add(transport);
     }
 
-    public Transport negotiate(String[] requestedTransports, String bayeuxVersion)
+    public ClientTransport negotiate(String[] requestedTransports, String bayeuxVersion)
     {
-        for (Transport transport : transports)
+        for (ClientTransport transport : transports)
         {
             for (String requestedTransport : requestedTransports)
             {
-                if (requestedTransport.equals(transport.getType()))
+                if (requestedTransport.equals(transport.getName()))
                 {
                     if (transport.accept(bayeuxVersion))
                     {
@@ -39,11 +39,11 @@ public class TransportRegistry
     public String[] findTransportTypes(String bayeuxVersion)
     {
         List<String> result = new ArrayList<String>();
-        for (Transport transport : transports)
+        for (ClientTransport transport : transports)
         {
             if (transport.accept(bayeuxVersion))
             {
-                result.add(transport.getType());
+                result.add(transport.getName());
             }
         }
         return result.toArray(new String[result.size()]);
