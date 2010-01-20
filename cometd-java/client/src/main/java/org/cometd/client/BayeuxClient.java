@@ -14,11 +14,7 @@
 
 package org.cometd.client;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.ParseException;
@@ -47,7 +43,6 @@ import org.cometd.server.MessageImpl;
 import org.cometd.server.MessagePool;
 import org.eclipse.jetty.client.Address;
 import org.eclipse.jetty.client.CachedExchange;
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
@@ -59,7 +54,6 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuffer;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -735,7 +729,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
             super.onResponseContent(content);
             if (_responseContent == null)
                 _responseContent = new Utf8StringBuffer(_bufferSize);
-            
+
             if (content.array()!=null)
                 _responseContent.append(content.array(),content.getIndex(),content.length());
             else
@@ -870,7 +864,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                         extendIn(_responses[i]);
             }
         }
-        
+
         /* ------------------------------------------------------------ */
         protected void resend(boolean backoff)
         {
@@ -1592,12 +1586,16 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         if (_extensions!=null)
         {
             Message m = message;
-            if (m.getChannel().startsWith(Bayeux.META_SLASH))
-                for (int i=0;m!=null && i<_extensions.length;i++)
-                    m=_extensions[i].sendMeta(this,m);
-            else
-                for (int i=0;m!=null && i<_extensions.length;i++)
-                    m=_extensions[i].send(this,m);
+            String channelId = m.getChannel();
+            if (channelId != null)
+            {
+                if (channelId.startsWith(Bayeux.META_SLASH))
+                    for (int i=0;m!=null && i<_extensions.length;i++)
+                        m=_extensions[i].sendMeta(this,m);
+                else
+                    for (int i=0;m!=null && i<_extensions.length;i++)
+                        m=_extensions[i].send(this,m);
+            }
 
             if (message!=m)
             {
@@ -1620,12 +1618,16 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         if (_extensions!=null)
         {
             Message m = message;
-            if (m.getChannel().startsWith(Bayeux.META_SLASH))
-                for (int i=_extensions.length;m!=null && i-->0;)
-                    m=_extensions[i].rcvMeta(this,m);
-            else
-                for (int i=_extensions.length;m!=null && i-->0;)
-                    m=_extensions[i].rcv(this,m);
+            String channelId = m.getChannel();
+            if (channelId != null)
+            {
+                if (channelId.startsWith(Bayeux.META_SLASH))
+                    for (int i=_extensions.length;m!=null && i-->0;)
+                        m=_extensions[i].rcvMeta(this,m);
+                else
+                    for (int i=_extensions.length;m!=null && i-->0;)
+                        m=_extensions[i].rcv(this,m);
+            }
 
             if (message!=m)
             {
