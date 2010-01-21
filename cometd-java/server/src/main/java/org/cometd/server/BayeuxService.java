@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,27 +35,27 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * remote Bayeux clients. The class provides a Bayeux {@link Client} and
  * {@link Listener} together with convenience methods to map subscriptions to
  * methods on the derived class and to send responses to those methods.
- * 
+ *
  * <p>
  * If a {@link #set_threadPool(ThreadPool)} is set, then messages are handled in
  * their own threads. This is desirable if the handling of a message can take
  * considerable time and it is desired not to hold up the delivering thread
  * (typically a HTTP request handling thread).
- * 
+ *
  * <p>
  * If the BayeuxService is constructed asynchronously (the default), then
  * messages are delivered unsynchronized and multiple simultaneous calls to
  * handling methods may occur.
- * 
+ *
  * <p>
  * If the BayeuxService is constructed as a synchronous service, then message
  * delivery is synchronized on the internal {@link Client} instances used and
  * only a single call will be made to the handler method (unless a thread pool
  * is used).
- * 
+ *
  * @see MessageListener
  * @author gregw
- * 
+ *
  */
 public abstract class BayeuxService
 {
@@ -71,7 +71,7 @@ public abstract class BayeuxService
     /**
      * Instantiate the service. Typically the derived constructor will call @
      * #subscribe(String, String)} to map subscriptions to methods.
-     * 
+     *
      * @param bayeux
      *            The bayeux instance.
      * @param name
@@ -86,7 +86,7 @@ public abstract class BayeuxService
     /**
      * Instantiate the service. Typically the derived constructor will call @
      * #subscribe(String, String)} to map subscriptions to methods.
-     * 
+     *
      * @param bayeux
      *            The bayeux instance.
      * @param name
@@ -103,7 +103,7 @@ public abstract class BayeuxService
     /**
      * Instantiate the service. Typically the derived constructor will call @
      * #subscribe(String, String)} to map subscriptions to methods.
-     * 
+     *
      * @param bayeux
      *            The bayeux instance.
      * @param name
@@ -147,7 +147,7 @@ public abstract class BayeuxService
     /**
      * Set the threadpool. If the {@link ThreadPool} is a {@link LifeCycle},
      * then it is started by this method.
-     * 
+     *
      * @param pool
      */
     public void setThreadPool(ThreadPool pool)
@@ -189,7 +189,7 @@ public abstract class BayeuxService
      * <code>myMethod(Client fromClient,String channel,Object data,String id)</code>
      * </li>
      * </li>
-     * 
+     *
      * The data parameter can be typed if the type of the data object published
      * by the client is known (typically Map<String,Object>). If the type of the
      * data parameter is {@link Message} then the message object itself is
@@ -198,7 +198,7 @@ public abstract class BayeuxService
      * Typically a service will subscribe to a channel in the "/service/**"
      * space which is not a broadcast channel. Messages published to these
      * channels are only delivered to server side clients like this service.
-     * 
+     *
      * <p>
      * Any object returned by a mapped subscription method is delivered to the
      * calling client and not broadcast. If the method returns void or null,
@@ -207,8 +207,8 @@ public abstract class BayeuxService
      * message(s) to different clients and/or channels. It may also publish
      * methods via the normal {@link Bayeux} API.
      * <p>
-     * 
-     * 
+     *
+     *
      * @param channelId
      *            The channel to subscribe to
      * @param methodName
@@ -271,7 +271,7 @@ public abstract class BayeuxService
      * response(s) to channels other than the subscribed channel. If the
      * response is to be sent to the subscribed channel, then the data can
      * simply be returned from the subscription method.
-     * 
+     *
      * @param toClient
      *            The target client
      * @param onChannel
@@ -290,7 +290,7 @@ public abstract class BayeuxService
     /**
      * Handle Exception. This method is called when a mapped subscription method
      * throws and exception while handling a message.
-     * 
+     *
      * @param fromClient
      * @param toClient
      * @param msg
@@ -339,7 +339,11 @@ public abstract class BayeuxService
             try
             {
                 Class<?>[] args=method.getParameterTypes();
-                Object arg=Message.class.isAssignableFrom(args[1])?msg:data;
+                Object arg;
+                if (args.length == 4)
+                    arg=Message.class.isAssignableFrom(args[2])?msg:data;
+                else
+                    arg=Message.class.isAssignableFrom(args[1])?msg:data;
 
                 Object reply=null;
                 switch(method.getParameterTypes().length)
