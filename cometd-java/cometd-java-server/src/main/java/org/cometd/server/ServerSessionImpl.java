@@ -19,6 +19,7 @@ import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.util.thread.Timeout.Task;
 import org.omg.stub.java.rmi._Remote_Stub;
@@ -28,6 +29,7 @@ public class ServerSessionImpl implements ServerSession
     private static final AtomicLong _idCount=new AtomicLong();
 
     private final BayeuxServerImpl _bayeux;
+    private final Logger _logger;
     private final String _id;
     private final List<ServerSessionListener> _listeners = new CopyOnWriteArrayList<ServerSessionListener>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
@@ -64,6 +66,7 @@ public class ServerSessionImpl implements ServerSession
     protected ServerSessionImpl(BayeuxServerImpl bayeux,LocalSessionImpl localSession, String idHint)
     {
         _bayeux=bayeux;
+        _logger=bayeux.getLogger();
         _localSession=localSession;
 
         StringBuilder id=new StringBuilder(30);
@@ -92,10 +95,12 @@ public class ServerSessionImpl implements ServerSession
             @Override
             protected void expired()
             {   
+                if (_logger.isDebugEnabled())
+                    _logger.debug("Expired interval "+ServerSessionImpl.this);
                 synchronized (_queue)
                 {
                     if (_dispatcher!=null)
-                        _dispatcher.cancel();
+                        _dispatcher.cancelDispatch();
                 }
                 _bayeux.removeServerSession(ServerSessionImpl.this,true);
             }
@@ -317,7 +322,7 @@ public class ServerSessionImpl implements ServerSession
             {
                 // This is the reload case: there is an outstanding connect,
                 // and the client issues a new connect.
-                _dispatcher.cancel();
+                _dispatcher.cancelDispatch();
                 _dispatcher=null;
             }
 
@@ -465,6 +470,17 @@ public class ServerSessionImpl implements ServerSession
         return message;
     }
 
+    /* ------------------------------------------------------------ */
+    public Object getAdvice()
+    {
+        final ServerTransport transport = _bayeux.getCurrentTransport();
+        if (transport==null)
+            return null;
+        return new JSON.Literal("{\"reconnect\":\"retry\",\"interval\":" + 
+                (_interval==-1?transport.getInterval():_interval) + 
+                ",\"timeout\":" + 
+                (_timeout==-1?transport.getTimeout():_timeout) + "}");
+    }
     
     /* ------------------------------------------------------------ */
     public Object takeAdvice()
@@ -474,10 +490,7 @@ public class ServerSessionImpl implements ServerSession
         if (transport!=null && transport!=_adviceTransport)
         {
             _adviceTransport=transport;
-            return new JSON.Literal("{\"reconnect\":\"retry\",\"interval\":" + 
-                    (_interval==-1?transport.getInterval():_interval) + 
-                    ",\"timeout\":" + 
-                    (_timeout==-1?transport.getTimeout():_timeout) + "}");
+            return getAdvice();
         }
         
         // advice has not changed, so return null.

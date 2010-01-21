@@ -576,6 +576,23 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
 
             addServerSession(session);
+
+            // receive advice
+            Object advice=message.get(Message.ADVICE_FIELD);
+            if (advice != null)
+            {
+                Long timeout=((Map<String,Long>)advice).get("timeout");
+                session.setTimeout(timeout==null?0:timeout.longValue());
+
+                Long interval=((Map<String,Long>)advice).get("interval");
+                session.setInterval(interval==null?0:interval.longValue());
+            }
+
+            // send advice
+            advice = session.getAdvice();
+            if (advice!=null)
+                reply.put(Message.ADVICE_FIELD,advice);
+            
             
             reply.setSuccessful(true);
             reply.put(Message.CLIENT_FIELD,session.getId());
@@ -583,9 +600,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             reply.put(Message.MIN_VERSION_FIELD,"1.0");
             reply.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD,getAllowedTransports());
             
-            Object advice = session.takeAdvice();
-            if (advice!=null)
-                reply.put(Message.ADVICE_FIELD,advice);
         }
     }
 
@@ -593,6 +607,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     class ConnectHandler extends HandlerListener
     {
+        @Override
         public void onMessage(final ServerSessionImpl session, final Mutable message)
         {
             ServerMessage.Mutable reply=createReply(message);

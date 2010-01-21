@@ -39,7 +39,7 @@ public class ServerTransport extends AbstractTransport
     public interface Dispatcher
     {
         void dispatch();
-        void cancel();
+        void cancelDispatch();
     }
     /* ------------------------------------------------------------ */
     /** Initialise the transport.
