@@ -23,8 +23,10 @@ import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
 
 import junit.framework.TestCase;
-import org.cometd.server.AbstractBayeux;
-import org.cometd.server.continuation.ContinuationCometdServlet;
+
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -73,11 +75,10 @@ public abstract class AbstractCometdTest extends TestCase
         context.addServlet(DefaultServlet.class, "/");
 
         // Setup comet servlet
-        ContinuationCometdServlet cometServlet = new ContinuationCometdServlet();
+        CometdServlet cometServlet = new CometdServlet();
         ServletHolder cometServletHolder = new ServletHolder(cometServlet);
         cometServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
         cometServletHolder.setInitParameter("logLevel", "2");
-        cometServletHolder.setInitParameter("requestAvailable", "true");
         context.addServlet(cometServletHolder, cometServletPath + "/*");
 
         // Setup bayeux listener
@@ -150,7 +151,7 @@ public abstract class AbstractCometdTest extends TestCase
 
     protected abstract void customizeContext(ServletContextHandler context) throws Exception;
 
-    protected void customizeBayeux(AbstractBayeux bayeux)
+    protected void customizeBayeux(BayeuxServerImpl bayeux)
     {
     }
 
@@ -230,10 +231,10 @@ public abstract class AbstractCometdTest extends TestCase
     {
         public void attributeAdded(ServletContextAttributeEvent event)
         {
-            if (event.getName().equals(Bayeux.ATTRIBUTE))
+            if (event.getName().equals(BayeuxServer.ATTRIBUTE))
             {
-                Bayeux bayeux = (Bayeux) event.getValue();
-                customizeBayeux((AbstractBayeux)bayeux);
+                BayeuxServerImpl bayeux = (BayeuxServerImpl) event.getValue();
+                customizeBayeux(bayeux);
             }
         }
 

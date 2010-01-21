@@ -18,27 +18,4 @@ public interface TransportListener
     void onExpire();
 
     void onProtocolError();
-
-    public static class Adapter implements TransportListener
-    {
-        public void onMessages(List<Message.Mutable> metaMessages)
-        {
-        }
-
-        public void onConnectException(Throwable x)
-        {
-        }
-
-        public void onException(Throwable x)
-        {
-        }
-
-        public void onExpire()
-        {
-        }
-
-        public void onProtocolError()
-        {
-        }
-    }
 }

@@ -83,7 +83,7 @@
         </dependency>
         <dependency>
             <groupId>org.cometd.java</groupId>
-            <artifactId>cometd-api</artifactId>
+            <artifactId>bayeux-api</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

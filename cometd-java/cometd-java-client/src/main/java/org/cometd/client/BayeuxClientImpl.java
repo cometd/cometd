@@ -24,8 +24,9 @@ public class BayeuxClientImpl implements org.cometd.bayeux.client.BayeuxClient
     
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
     private final ConcurrentMap<String, ClientChannelImpl> _channels = new ConcurrentHashMap<String, ClientChannelImpl>();
-    private final TransportRegistry _transports = new TransportRegistry();    
-    private final ScheduledExecutorService _scheduler;
+
+    protected final TransportRegistry _transports = new TransportRegistry();    
+    protected final ScheduledExecutorService _scheduler;
     
     public BayeuxClientImpl(ClientTransport... transports)
     {
@@ -62,7 +63,6 @@ public class BayeuxClientImpl implements org.cometd.bayeux.client.BayeuxClient
     @Override
     public ClientSession newSession(String... servers)
     {
-        
         return new ClientSessionImpl(this,servers);
     }
 

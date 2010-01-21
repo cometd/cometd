@@ -9,9 +9,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
+import org.cometd.client.transport.AbstractTransportListener;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.client.transport.TransportListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.Test;
 
@@ -27,14 +27,14 @@ public class LongPollingTransportTest
     @Test
     public void testType()
     {
-        ClientTransport transport = new LongPollingTransport(null, null);
+        ClientTransport transport = new LongPollingTransport(null);
         assertEquals("long-polling", transport.getName());
     }
 
     @Test
     public void testAccept()
     {
-        ClientTransport transport = new LongPollingTransport(null, null);
+        ClientTransport transport = new LongPollingTransport(null);
         assertTrue(transport.accept("1.0"));
     }
 
@@ -84,8 +84,8 @@ public class LongPollingTransportTest
             try
             {
                 final CountDownLatch latch = new CountDownLatch(1);
-                ClientTransport transport = new LongPollingTransport(serverURI, httpClient);
-                transport.addListener(new TransportListener.Adapter()
+                ClientTransport transport = new LongPollingTransport(httpClient);
+                transport.addListener(new AbstractTransportListener()
                 {
                     @Override
                     public void onMessages(List<Message.Mutable> messages)
@@ -95,7 +95,7 @@ public class LongPollingTransportTest
                 });
 
                 long start = System.nanoTime();
-                transport.send();
+                transport.send(serverURI);
                 long end = System.nanoTime();
 
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
@@ -156,9 +156,9 @@ public class LongPollingTransportTest
 
             try
             {
-                ClientTransport transport = new LongPollingTransport(serverURI, httpClient);
+                ClientTransport transport = new LongPollingTransport(httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                transport.addListener(new TransportListener.Adapter()
+                transport.addListener(new AbstractTransportListener()
                 {
                     @Override
                     public void onProtocolError()
@@ -168,7 +168,7 @@ public class LongPollingTransportTest
                 });
 
                 long start = System.nanoTime();
-                transport.send();
+                transport.send(serverURI);
                 long end = System.nanoTime();
 
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
@@ -200,9 +200,9 @@ public class LongPollingTransportTest
 
         try
         {
-            ClientTransport transport = new LongPollingTransport(serverURI, httpClient);
+            ClientTransport transport = new LongPollingTransport(httpClient);
             final CountDownLatch latch = new CountDownLatch(1);
-            transport.addListener(new TransportListener.Adapter()
+            transport.addListener(new AbstractTransportListener()
             {
                 @Override
                 public void onConnectException(Throwable x)
@@ -211,7 +211,7 @@ public class LongPollingTransportTest
                 }
             });
 
-            transport.send();
+            transport.send(serverURI);
 
             assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
         }
@@ -256,9 +256,9 @@ public class LongPollingTransportTest
 
             try
             {
-                ClientTransport transport = new LongPollingTransport(serverURI, httpClient);
+                ClientTransport transport = new LongPollingTransport(httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                transport.addListener(new TransportListener.Adapter()
+                transport.addListener(new AbstractTransportListener()
                 {
                     @Override
                     public void onException(Throwable x)
@@ -268,7 +268,7 @@ public class LongPollingTransportTest
                 });
 
                 long start = System.nanoTime();
-                transport.send();
+                transport.send(serverURI);
                 long end = System.nanoTime();
 
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
@@ -333,9 +333,9 @@ public class LongPollingTransportTest
 
             try
             {
-                ClientTransport transport = new LongPollingTransport(serverURI, httpClient);
+                ClientTransport transport = new LongPollingTransport(httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                transport.addListener(new TransportListener.Adapter()
+                transport.addListener(new AbstractTransportListener()
                 {
                     @Override
                     public void onExpire()
@@ -344,7 +344,7 @@ public class LongPollingTransportTest
                     }
                 });
 
-                transport.send();
+                transport.send(serverURI);
 
                 assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
             }
