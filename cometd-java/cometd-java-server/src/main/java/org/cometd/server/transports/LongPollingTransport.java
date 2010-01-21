@@ -299,7 +299,7 @@ public abstract class LongPollingTransport extends HttpTransport
             _browserId=browserId;
         }
 
-        public void cancel()
+        public void cancelDispatch()
         {
             _continuation.complete();
         }
