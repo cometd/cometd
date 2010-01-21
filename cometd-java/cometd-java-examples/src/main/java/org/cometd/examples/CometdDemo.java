@@ -97,9 +97,15 @@ public class CometdDemo
         context.setBaseResource(
                 new ResourceCollection(new Resource[]
                 {
-                        Resource.newResource("src/test/webapp"),
-                        Resource.newResource("src/main/webapp")}
-                        ));
+                        Resource.newResource("../../cometd-demo/src/main/webapp/"),
+                        
+                        Resource.newResource("../../cometd-javascript/common/src/main/webapp/"),
+                        Resource.newResource("../../cometd-javascript/jquery/src/main/webapp/"),
+                        Resource.newResource("../../cometd-javascript/examples-jquery/src/main/webapp/"),
+
+                        Resource.newResource("../../cometd-javascript/dojo/src/main/webapp/"),
+                        Resource.newResource("../../cometd-javascript/examples-dojo/src/main/webapp/"),
+                }));
 
 
         // Cometd servlet
