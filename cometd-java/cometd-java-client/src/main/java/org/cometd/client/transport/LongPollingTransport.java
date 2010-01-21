@@ -15,12 +15,10 @@ import org.eclipse.jetty.util.ajax.JSON;
  */
 public class LongPollingTransport extends AbstractTransport
 {
-    private final String uri;
     private final HttpClient httpClient;
 
-    public LongPollingTransport(String uri, HttpClient httpClient)
+    public LongPollingTransport(HttpClient httpClient)
     {
-        this.uri = uri;
         this.httpClient = httpClient;
     }
 
@@ -39,7 +37,7 @@ public class LongPollingTransport extends AbstractTransport
     {
     }
 
-    public void send(Message... messages)
+    public void send(String uri, Message... messages)
     {
         HttpExchange httpExchange = new TransportExchange();
         httpExchange.setMethod("POST");

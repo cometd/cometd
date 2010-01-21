@@ -27,8 +27,8 @@ public interface BayeuxClient extends Bayeux
     
     /* ------------------------------------------------------------ */
     /** Create a new session
-     * @param servers A list of servers to try in turn to connect 
-     * to, each in the format "host[:port]/path"
+     * @param servers A list of server URIs to try in turn to connect 
+     * to, each in the format "[protocol:]host[:port]/path"
      * @return
      */
     ClientSession newSession(String... servers);

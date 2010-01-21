@@ -20,5 +20,5 @@ public interface ClientTransport extends Transport
 
     Message.Mutable newMessage();
 
-    void send(Message... messages);
+    void send(String uri, Message... messages);
 }
