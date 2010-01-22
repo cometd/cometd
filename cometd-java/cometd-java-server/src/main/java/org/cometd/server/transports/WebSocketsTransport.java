@@ -97,7 +97,8 @@ public class WebSocketsTransport extends HttpTransport
         public void onDisconnect()
         {
             System.err.println("WS Disconnected!");
-            _bayeux.removeServerSession(_session,false);
+            if (_session!=null)
+                _bayeux.removeServerSession(_session,false);
         }
 
         public void onMessage(byte frame, String data)
@@ -135,11 +136,11 @@ public class WebSocketsTransport extends HttpTransport
                     // also be queued on the session.
                     ServerMessage reply = _bayeux.handle(_session,message);
 
-                    if (connect)
+                    if (connect && reply.isSuccessful())
                     {
                         _session.startIntervalTimeout();
 
-                        if (!was_connected && reply.isSuccessful())
+                        if (!was_connected)
                         {
                             // set the dispatcher initially, and it will reset itself
                             // on each dispatch.

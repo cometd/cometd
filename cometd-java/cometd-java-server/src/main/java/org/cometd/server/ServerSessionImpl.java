@@ -486,7 +486,7 @@ public class ServerSessionImpl implements ServerSession
     public Object takeAdvice()
     {
         final ServerTransport transport = _bayeux.getCurrentTransport();
-        
+                
         if (transport!=null && transport!=_adviceTransport)
         {
             _adviceTransport=transport;

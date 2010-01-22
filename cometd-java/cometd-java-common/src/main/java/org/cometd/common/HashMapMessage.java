@@ -127,7 +127,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     }
 
     /* ------------------------------------------------------------ */
-    public String getId()
+    public Object getId()
     {
         return (String)get(ID_FIELD);
     }
@@ -256,7 +256,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         put(DATA_FIELD,data);
     }
 
-    public void setId(String id)
+    public void setId(Object id)
     {
         put(ID_FIELD,id);
     }
