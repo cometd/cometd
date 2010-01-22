@@ -577,6 +577,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             addServerSession(session);
 
+            /*
             // receive advice
             Object advice=message.get(Message.ADVICE_FIELD);
             if (advice != null)
@@ -592,7 +593,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             advice = session.getAdvice();
             if (advice!=null)
                 reply.put(Message.ADVICE_FIELD,advice);
-            
+            */
             
             reply.setSuccessful(true);
             reply.put(Message.CLIENT_FIELD,session.getId());

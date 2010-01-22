@@ -562,7 +562,7 @@ org.cometd.Cometd = function(name)
             {
                 try
                 {
-                    _handleMessages.call(self, request, responses, longpoll);
+                    _handleMessages.call(self, request, responses, request.longpoll);
                 }
                 catch (x)
                 {
@@ -573,7 +573,7 @@ org.cometd.Cometd = function(name)
             {
                 try
                 {
-                    _handleFailure.call(self, request, messages, reason, exception, longpoll);
+                    _handleFailure.call(self, request, messages, reason, exception, request.longpoll);
                 }
                 catch (x)
                 {
@@ -1994,7 +1994,7 @@ org.cometd.Cometd = function(name)
         {
             var requestId = request.id;
         	_debug('longpoll complete ',requestId);
-            if (_longpollRequest !== null && _longpollRequest !== request)
+            if (_longpollRequest !== null && _longpollRequest.id !== requestId)
             {
                 throw 'Longpoll request mismatch, completing request ' + requestId;
             }
@@ -2227,7 +2227,8 @@ org.cometd.Cometd = function(name)
         var _supportsWebSocket = true;
         var _webSocket;
         var _state;
-        var _longpollId;
+        var _longpollMessageId;
+        var _longpollRequestId;
 
         this.accept = function(version, crossDomain)
         {
@@ -2237,9 +2238,11 @@ org.cometd.Cometd = function(name)
         this.transportSend = function(envelope, request)
         {
         	if (request.longpoll)
-        		_longpollId=request.id;
-        	else
-        		_longpollId=null;
+        	{
+        		_longpollRequestId=request.id;
+        		_longpollMessageId=envelope.messages[0].id;
+        	}
+        	_debug("send",request,_longpollMessageId,_longpollRequestId);
         	
             if (_state === WebSocket.OPEN)
             {
@@ -2288,15 +2291,16 @@ org.cometd.Cometd = function(name)
                     if (_state === WebSocket.OPEN)
                     {
                         var responses= self.convertToMessages(message.data);
-                        if (_longpollId)
+                        if (_longpollMessageId)
                         {
                         	for (var i = 0; i < responses.length; ++i)
                         	{
-                        		if (responses[i].id==_longpollId)
+                        		if (responses[i].id==_longpollMessageId)
                         		{
-                        			fakeReq.id=responses[i].id;
+                        			fakeReq.id=_longpollRequestId;
                         			fakeReq.longpoll=true;
-                        			_longpollId=null;
+                        			_longpollMessageId=null;
+                        			_longpollRequestId=null;
                         			break;
                         		}
                         	}
