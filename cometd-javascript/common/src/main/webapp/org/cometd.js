@@ -422,40 +422,6 @@ org.cometd.Cometd = function(name)
         return message;
     }
 
-    /**
-     * Converts the given response into an array of bayeux messages
-     * @param response the response to convert
-     * @return an array of bayeux messages obtained by converting the response
-     */
-    function _convertToMessages(response)
-    {
-        if (_isString(response))
-        {
-            try
-            {
-                return org.cometd.JSON.fromJSON(response);
-            }
-            catch(x)
-            {
-                _debug('Could not convert to JSON the following string', '"' + response + '"');
-                throw x;
-            }
-        }
-        if (_isArray(response))
-        {
-            return response;
-        }
-        if (response === undefined || response === null)
-        {
-            return [];
-        }
-        if (response instanceof Object)
-        {
-            return [response];
-        }
-        throw 'Conversion Error ' + response + ', typeof ' + (typeof response);
-    }
-
     function _notify(channel, message)
     {
         var subscriptions = _listeners[channel];
@@ -482,25 +448,25 @@ org.cometd.Cometd = function(name)
 
     function _notifyListeners(channel, message)
     {
-        // Notify direct listeners
-        _notify(channel, message);
+    	// Notify direct listeners
+    	_notify(channel, message);
 
-        // Notify the globbing listeners
-        var channelParts = channel.split("/");
-        var last = channelParts.length - 1;
-        for (var i = last; i > 0; --i)
-        {
-            var channelPart = channelParts.slice(0, i).join('/') + '/*';
-            // We don't want to notify /foo/* if the channel is /foo/bar/baz,
-            // so we stop at the first non recursive globbing
-            if (i == last)
-            {
-                _notify(channelPart, message);
-            }
-            // Add the recursive globber and notify
-            channelPart += '*';
-            _notify(channelPart, message);
-        }
+    	// Notify the globbing listeners
+    	var channelParts = channel.split("/");
+    	var last = channelParts.length - 1;
+    	for (var i = last; i > 0; --i)
+    	{
+    		var channelPart = channelParts.slice(0, i).join('/') + '/*';
+    		// We don't want to notify /foo/* if the channel is /foo/bar/baz,
+    		// so we stop at the first non recursive globbing
+    		if (i == last)
+    		{
+    			_notify(channelPart, message);
+    		}
+    		// Add the recursive globber and notify
+    		channelPart += '*';
+    		_notify(channelPart, message);
+    	}
     }
 
     function _setTimeout(funktion, delay)
@@ -535,11 +501,12 @@ org.cometd.Cometd = function(name)
         {
             delay += _advice.interval;
         }
+        _debug('schedule ',operation,' in ',delay);
         _scheduledSend = _setTimeout(operation, delay);
     }
 
     // Needed to break cyclic dependencies between function definitions
-    var _handleResponse;
+    var _handleMessages;
     var _handleFailure;
 
     /**
@@ -591,11 +558,11 @@ org.cometd.Cometd = function(name)
         var envelope = {
             url: url,
             messages: messages,
-            onSuccess: function(request, response)
+            onSuccess: function(request, responses)
             {
                 try
                 {
-                    _handleResponse.call(self, request, response, longpoll);
+                    _handleMessages.call(self, request, responses, longpoll);
                 }
                 catch (x)
                 {
@@ -887,6 +854,7 @@ org.cometd.Cometd = function(name)
     function _connectResponse(message)
     {
         var action = _isDisconnected() ? 'none' : (_advice.reconnect ? _advice.reconnect : 'retry');
+        
         if (!_isDisconnected())
         {
             _setStatus(action == 'retry' ? 'connecting' : 'disconnecting');
@@ -894,24 +862,24 @@ org.cometd.Cometd = function(name)
 
         if (message.successful)
         {
-            // Notify the listeners after the status change but before the next connect
-            _notifyListeners('/meta/connect', message);
+        	// Notify the listeners after the status change but before the next connect
+        	_notifyListeners('/meta/connect', message);
 
-            // Connect was successful.
-            // Normally, the advice will say "reconnect: 'retry', interval: 0"
-            // and the server will hold the request, so when a response returns
-            // we immediately call the server again (long polling)
-            switch (action)
-            {
-                case 'retry':
-                    _resetBackoff();
-                    _delayedConnect();
-                    break;
-                default:
-                    _resetBackoff();
-                    _setStatus('disconnected');
-                    break;
-            }
+        	// Connect was successful.
+        	// Normally, the advice will say "reconnect: 'retry', interval: 0"
+        	// and the server will hold the request, so when a response returns
+        	// we immediately call the server again (long polling)
+        	switch (action)
+        	{
+        	  case 'retry':
+        		_resetBackoff();
+        		_delayedConnect();
+        		break;
+        	  default:
+        		_resetBackoff();
+        	    _setStatus('disconnected');
+        	    break;
+        	}
         }
         else
         {
@@ -1144,6 +1112,7 @@ org.cometd.Cometd = function(name)
         if (message.advice)
         {
             _advice = message.advice;
+        	_debug("New advice",_advice);
         }
 
         var channel = message.channel;
@@ -1177,10 +1146,9 @@ org.cometd.Cometd = function(name)
      */
     this.receive = _receive;
 
-    _handleResponse = function _handleResponse(request, response, longpoll)
+    _handleMessages = function _handleMessages(request, messages, longpoll)
     {
-        var messages = _convertToMessages(response);
-        _debug('Received', response, 'converted to', messages);
+        _debug('Received',request,'messages', messages,"longpoll",longpoll);
 
         // Signal the transport it can send other queued requests
         _transport.complete(request, true, longpoll);
@@ -1284,7 +1252,7 @@ org.cometd.Cometd = function(name)
         // holds the callback to be called and its scope.
 
         var delegate = _resolveScopedCallback(scope, callback);
-        _debug('Listener scope', delegate.scope, 'and callback', delegate.method);
+        _debug('adding listener on',channel,'with scope', delegate.scope, 'and callback', delegate.method);
 
         var subscription = {
             scope: delegate.scope,
@@ -1298,6 +1266,7 @@ org.cometd.Cometd = function(name)
             subscriptions = [];
             _listeners[channel] = subscriptions;
         }
+        
         // Pushing onto an array appends at the end and returns the id associated with the element increased by 1.
         // Note that if:
         // a.push('a'); var hb=a.push('b'); delete a[hb-1]; var hc=a.push('c');
@@ -1884,6 +1853,42 @@ org.cometd.Cometd = function(name)
             _type = null;
         };
 
+
+        /**
+         * Converts the given response into an array of bayeux messages
+         * @param response the response to convert
+         * @return an array of bayeux messages obtained by converting the response
+         */
+        this.convertToMessages = function (response)
+        {
+            if (_isString(response))
+            {
+                try
+                {
+                    return org.cometd.JSON.fromJSON(response);
+                }
+                catch(x)
+                {
+                    _debug('Could not convert to JSON the following string', '"' + response + '"');
+                    throw x;
+                }
+            }
+            if (_isArray(response))
+            {
+                return response;
+            }
+            if (response === undefined || response === null)
+            {
+                return [];
+            }
+            if (response instanceof Object)
+            {
+                return [response];
+            }
+            throw 'Conversion Error ' + response + ', typeof ' + (typeof response);
+        }
+
+        
         /**
          * Returns whether this transport can work for the given version and cross domain communication case.
          * @param version a string indicating the transport version
@@ -1906,12 +1911,12 @@ org.cometd.Cometd = function(name)
             throw 'Abstract';
         };
 
-        this.transportSuccess = function(envelope, request, response)
+        this.transportSuccess = function(envelope, request, responses)
         {
             if (!request.expired)
             {
                 clearTimeout(request.timeout);
-                envelope.onSuccess(request, response);
+                envelope.onSuccess(request, responses);
             }
         };
 
@@ -1954,7 +1959,7 @@ org.cometd.Cometd = function(name)
         {
             if (_longpollRequest !== null)
             {
-                throw 'Concurrent longpoll requests not allowed, request ' + _longpollRequest.id + ' not yet completed';
+                throw 'Concurrent longpoll requests not allowed, request id=' + _longpollRequest.id + ' not yet completed';
             }
 
             var requestId = ++_requestIds;
@@ -1988,6 +1993,7 @@ org.cometd.Cometd = function(name)
         function _longpollComplete(request)
         {
             var requestId = request.id;
+        	_debug('longpoll complete ',requestId);
             if (_longpollRequest !== null && _longpollRequest !== request)
             {
                 throw 'Longpoll request mismatch, completing request ' + requestId;
@@ -2109,9 +2115,9 @@ org.cometd.Cometd = function(name)
                     url: envelope.url,
                     headers: _requestHeaders,
                     body: org.cometd.JSON.toJSON(envelope.messages),
-                    onSuccess: function(response)
+                    onSuccess: function(responses)
                     {
-                        self.transportSuccess(envelope, request, response);
+                        self.transportSuccess(envelope, request, self.convertToMessages(responses));
                     },
                     onError: function(reason, exception)
                     {
@@ -2191,9 +2197,9 @@ org.cometd.Cometd = function(name)
                         url: envelope.url,
                         headers: _requestHeaders,
                         body: messages,
-                        onSuccess: function(response)
+                        onSuccess: function(responses)
                         {
-                            self.transportSuccess(envelope, request, response);
+                            self.transportSuccess(envelope, request, self.convertToMessages(responses));
                         },
                         onError: function(reason, exception)
                         {
@@ -2221,6 +2227,7 @@ org.cometd.Cometd = function(name)
         var _supportsWebSocket = true;
         var _webSocket;
         var _state;
+        var _longpollId;
 
         this.accept = function(version, crossDomain)
         {
@@ -2229,6 +2236,11 @@ org.cometd.Cometd = function(name)
 
         this.transportSend = function(envelope, request)
         {
+        	if (request.longpoll)
+        		_longpollId=request.id;
+        	else
+        		_longpollId=null;
+        	
             if (_state === WebSocket.OPEN)
             {
                 this.webSocketSend(envelope, request);
@@ -2262,13 +2274,39 @@ org.cometd.Cometd = function(name)
                 };
                 webSocket.onmessage = function(message)
                 {
+                	var fakeReq =
+                	{
+                		id: -1,
+                		longpoll: false
+                	};
+                	var fakeEnv =
+                	{
+                        onSuccess: envelope.onSuccess,
+                        onFailure: envelope.onFailure
+                	};
+                	
                     if (_state === WebSocket.OPEN)
                     {
-                        self.transportSuccess(envelope, request, message.data);
+                        var responses= self.convertToMessages(message.data);
+                        if (_longpollId)
+                        {
+                        	for (var i = 0; i < responses.length; ++i)
+                        	{
+                        		if (responses[i].id==_longpollId)
+                        		{
+                        			fakeReq.id=responses[i].id;
+                        			fakeReq.longpoll=true;
+                        			_longpollId=null;
+                        			break;
+                        		}
+                        	}
+                        }
+                    	_debug("WS ",fakeEnv,fakeReq,responses);
+                        self.transportSuccess(fakeEnv, fakeReq, responses);
                     }
                     else
                     {
-                        self.transportFailure(envelope, request, 'error');
+                        self.transportFailure(fakeEnv, fakeReq, 'error');
                     }
                 };
             }

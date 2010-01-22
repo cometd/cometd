@@ -144,10 +144,9 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     }
 
     /* ------------------------------------------------------------ */
-    public String getId()
+    public Object getId()
     {
-        Object id = _mutable._id.getValue();
-        return (id==null)?null:id.toString();
+        return _mutable._id.getValue();
     }
 
     /* ------------------------------------------------------------ */
@@ -402,10 +401,9 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             return (Map<String,Object>)ext;
         }
 
-        public String getId()
+        public Object getId()
         {
-            Object id=_id.getValue();
-            return id==null?null:id.toString();
+            return _id.getValue();
         }
 
         public boolean isLazy()
@@ -461,7 +459,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             _clientId.setValue(clientId);
         }
 
-        public void setId(String id)
+        public void setId(Object id)
         {
             _id.setValue(id);
         }

@@ -536,7 +536,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         reply.setAssociated(message);
         
         reply.setChannelId(message.getChannelId());
-        String id=message.getId();
+        Object id=message.getId();
         if (id != null)
             reply.setId(id);
         return reply;

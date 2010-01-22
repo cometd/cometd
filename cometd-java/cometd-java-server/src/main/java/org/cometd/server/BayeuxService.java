@@ -267,7 +267,7 @@ public abstract class BayeuxService
      * @param id
      *            The id of the message (or null for a random id).
      */
-    protected void send(ServerSession toClient, String onChannel, Object data, String id)
+    protected void send(ServerSession toClient, String onChannel, Object data, Object id)
     {
         ServerMessage.Mutable message = _bayeux.newMessage();
         message.setChannelId(onChannel);
@@ -324,7 +324,7 @@ public abstract class BayeuxService
     {
         String channel=msg.getChannelId();
         Object data=msg.getData();
-        String id=msg.getId();
+        Object id=msg.getId();
 
         if (method != null)
         {

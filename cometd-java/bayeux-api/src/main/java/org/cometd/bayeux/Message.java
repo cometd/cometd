@@ -46,7 +46,7 @@ public interface Message extends Map<String, Object>
 
     Map<String, Object> getDataAsMap();
     Map<String, Object> getExt();
-    String getId();
+    Object getId();
 
     String getJSON();
 
@@ -59,7 +59,7 @@ public interface Message extends Map<String, Object>
 
         void setClientId(String clientId);
         void setData(Object data);
-        void setId(String id);
+        void setId(Object id);
         void setSuccessful(boolean success);
     }
 }
