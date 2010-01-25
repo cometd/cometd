@@ -369,7 +369,7 @@ org.cometd.Cometd = function(name)
         return ++_messageId;
     }
 
-    function _applyExtension(name, callback, message)
+    function _applyExtension(name, callback, message, outgoing)
     {
         try
         {
@@ -378,17 +378,17 @@ org.cometd.Cometd = function(name)
         catch (x)
         {
             _debug('Exception during execution of extension', name, x);
-            var errorCallback = _cometd.onExtensionError;
-            if (_isFunction(errorCallback))
+            var exceptionCallback = _cometd.onExtensionException;
+            if (_isFunction(exceptionCallback))
             {
-                _debug('Invoking extension error callback', name, x);
+                _debug('Invoking extension exception callback', name, x);
                 try
                 {
-                    errorCallback.call(_cometd, x, name, message);
+                    exceptionCallback.call(_cometd, x, name, outgoing, message);
                 }
                 catch(xx)
                 {
-                    _debug('Exception during execution of error callback in extension', name, xx);
+                    _info('Exception during execution of exception callback in extension', name, xx);
                 }
             }
             return message;
@@ -409,7 +409,7 @@ org.cometd.Cometd = function(name)
             var callback = extension.extension.incoming;
             if (_isFunction(callback))
             {
-                var result = _applyExtension(extension.name, callback, message);
+                var result = _applyExtension(extension.name, callback, message, false);
                 message = result === undefined ? message : result;
             }
         }
@@ -429,7 +429,7 @@ org.cometd.Cometd = function(name)
             var callback = extension.extension.outgoing;
             if (_isFunction(callback))
             {
-                var result = _applyExtension(extension.name, callback, message);
+                var result = _applyExtension(extension.name, callback, message, true);
                 message = result === undefined ? message : result;
             }
         }
