@@ -344,7 +344,7 @@ org.cometd.Cometd = function(name)
             for (var i = 0; i < subscriptions.length; ++i)
             {
                 var subscription = subscriptions[i];
-                if (subscription && subscription.subscription)
+                if (subscription && !subscription.listener)
                 {
                     delete subscriptions[i];
                     _debug('Removed subscription', subscription, 'for channel', channel);
@@ -487,7 +487,20 @@ org.cometd.Cometd = function(name)
                     }
                     catch (x)
                     {
-                        _warn('Exception during notification', subscription, message, x);
+                        _debug('Exception during notification', subscription, message, x);
+                        var listenerCallback = _cometd.onListenerException;
+                        if (_isFunction(listenerCallback))
+                        {
+                            _debug('Invoking listener exception callback', subscription, x);
+                            try
+                            {
+                                listenerCallback.call(_cometd, x, subscription.handle, subscription.listener, message);
+                            }
+                            catch (xx)
+                            {
+                                _info('Exception during execution of listener callback', subscription, xx);
+                            }
+                        }
                     }
                 }
             }
@@ -1291,7 +1304,7 @@ org.cometd.Cometd = function(name)
         return delegate;
     }
 
-    function _addListener(channel, scope, callback, isSubscription)
+    function _addListener(channel, scope, callback, isListener)
     {
         // The data structure is a map<channel, subscription[]>, where each subscription
         // holds the callback to be called and its scope.
@@ -1300,9 +1313,10 @@ org.cometd.Cometd = function(name)
         _debug('Listener scope', delegate.scope, 'and callback', delegate.method);
 
         var subscription = {
+            channel: channel,
             scope: delegate.scope,
             callback: delegate.method,
-            subscription: isSubscription === true
+            listener: isListener
         };
 
         var subscriptions = _listeners[channel];
@@ -1317,11 +1331,13 @@ org.cometd.Cometd = function(name)
         // then:
         // hc==3, a.join()=='a',,'c', a.length==3
         var subscriptionID = subscriptions.push(subscription) - 1;
+        subscription.id = subscriptionID;
+        subscription.handle = [channel, subscriptionID];
 
         _debug('Added listener', subscription, 'for channel', channel, 'having id =', subscriptionID);
 
         // The subscription to allow removal of the listener is made of the channel and the index
-        return [channel, subscriptionID];
+        return subscription.handle;
     }
 
     function _removeListener(subscription)
@@ -1516,7 +1532,7 @@ org.cometd.Cometd = function(name)
             throw 'Illegal argument type: channel must be a string';
         }
 
-        return _addListener(channel, scope, callback, false);
+        return _addListener(channel, scope, callback, true);
     };
 
     /**
@@ -1578,7 +1594,7 @@ org.cometd.Cometd = function(name)
         // Only send the message to the server if this clientId has not yet subscribed to the channel
         var send = !_hasSubscriptions(channel);
 
-        var subscription = _addListener(channel, scope, callback, true);
+        var subscription = _addListener(channel, scope, callback, false);
 
         if (send)
         {
