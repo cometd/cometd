@@ -66,6 +66,9 @@ public class CometdMaxNetworkDelayLongPollTest extends AbstractCometdJQueryTest
         // canceling the request.
         assertTrue(connectListener.await(longPollingPeriod + 2 * maxNetworkDelay));
         assertTrue(failures.get().toString(), failures.get().isEmpty());
+
+        evaluateScript("$.cometd.disconnect();");
+        Thread.sleep(500);
     }
 
     public static class Listener extends ScriptableObject
