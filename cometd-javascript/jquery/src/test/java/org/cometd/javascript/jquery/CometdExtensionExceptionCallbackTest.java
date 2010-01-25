@@ -24,10 +24,13 @@ public class CometdExtensionExceptionCallbackTest extends AbstractCometdJQueryTe
                 "   outgoing: function(message) { throw 'test'; }" +
                 "});" +
                 "" +
-                "$.cometd.onExtensionError = function(exception, extensionName, message) " +
+                "$.cometd.onExtensionException = function(exception, extensionName, outgoing, message) " +
                 "{" +
-                "   this.unregisterExtension(extensionName);" +
-                "   latch.countDown(); " +
+                "   if (exception === 'test' && extensionName === 'testext' && outgoing === true)" +
+                "   {" +
+                "       this.unregisterExtension(extensionName);" +
+                "       latch.countDown();" +
+                "   }" +
                 "};" +
                 "" +
                 "$.cometd.handshake();");
@@ -53,10 +56,13 @@ public class CometdExtensionExceptionCallbackTest extends AbstractCometdJQueryTe
                 "   incoming: function(message) { throw 'test'; }" +
                 "});" +
                 "" +
-                "$.cometd.onExtensionError = function(exception, extensionName, message) " +
+                "$.cometd.onExtensionException = function(exception, extensionName, outgoing, message) " +
                 "{" +
-                "   this.unregisterExtension(extensionName);" +
-                "   latch.countDown(); " +
+                "   if (exception === 'test' && extensionName === 'testext' && outgoing === false)" +
+                "   {" +
+                "       this.unregisterExtension(extensionName);" +
+                "       latch.countDown();" +
+                "   }" +
                 "};" +
                 "" +
                 "$.cometd.handshake();");
