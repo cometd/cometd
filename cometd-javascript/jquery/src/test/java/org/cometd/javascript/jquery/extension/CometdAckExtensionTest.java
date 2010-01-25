@@ -2,9 +2,8 @@ package org.cometd.javascript.jquery.extension;
 
 import java.net.URL;
 
-import org.cometd.Bayeux;
 import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
-import org.cometd.server.AbstractBayeux;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.BayeuxService;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 
@@ -16,7 +15,7 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
     private AckService ackService;
 
     @Override
-    protected void customizeBayeux(AbstractBayeux bayeux)
+    protected void customizeBayeux(BayeuxServerImpl bayeux)
     {
         bayeux.addExtension(new AcknowledgedMessagesExtension());
         ackService = new AckService(bayeux);
@@ -108,7 +107,7 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
 
     private static class AckService extends BayeuxService
     {
-        private AckService(Bayeux bayeux)
+        private AckService(BayeuxServerImpl bayeux)
         {
             super(bayeux, "ack-test");
         }

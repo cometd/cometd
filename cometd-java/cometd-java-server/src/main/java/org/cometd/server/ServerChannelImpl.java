@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -196,11 +197,28 @@ public class ServerChannelImpl implements ServerChannel
     }
     
     /* ------------------------------------------------------------ */
-    public void publish(ServerSession from, ServerMessage msg)
+    public void publish(Session from, ServerMessage msg)
     {
         if (isWild())
             throw new IllegalStateException("Wild publish");
         ServerMessage.Mutable mutable = msg.asMutable();
+        if(_bayeux.extendSend(null,mutable))
+            _bayeux.root().doPublish((ServerSessionImpl)from,this,mutable);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void publish(Session from, Object data, Object id)
+    {
+        if (isWild())
+            throw new IllegalStateException("Wild publish");
+        
+        ServerMessage.Mutable mutable = _bayeux.newMessage();
+        mutable.setChannelId(getId());
+        if(from!=null)
+            mutable.setClientId(from.getId());
+        mutable.setData(data);
+        mutable.setId(id);
+        
         if(_bayeux.extendSend(null,mutable))
             _bayeux.root().doPublish((ServerSessionImpl)from,this,mutable);
     }

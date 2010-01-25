@@ -12,7 +12,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.cometd.Bayeux;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -154,8 +156,11 @@ public class CometdHandshakeDynamicPropsTest extends AbstractCometdJQueryTest
                     }
                     // Remove the client, so that the CometD implementation will send
                     // "unknown client" and the JavaScript will re-handshake
-                    Bayeux bayeux = (Bayeux)request.getSession().getServletContext().getAttribute(Bayeux.ATTRIBUTE);
-                    bayeux.removeClient(clientId);
+                    BayeuxServerImpl bayeux = (BayeuxServerImpl)request.getSession().getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+                    
+                    ServerSession session = bayeux.getSession(clientId);
+                    if (session!=null)
+                        bayeux.removeServerSession(session,false);
                 }
             }
             else

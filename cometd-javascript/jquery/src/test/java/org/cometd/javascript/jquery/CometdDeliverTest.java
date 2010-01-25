@@ -4,9 +4,9 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.Bayeux;
-import org.cometd.Client;
-import org.cometd.server.AbstractBayeux;
+import org.cometd.bayeux.Session;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.BayeuxService;
 import org.mozilla.javascript.ScriptableObject;
 
@@ -17,7 +17,7 @@ public class CometdDeliverTest extends AbstractCometdJQueryTest
 {
     private DeliverService service;
 
-    protected void customizeBayeux(AbstractBayeux bayeux)
+    protected void customizeBayeux(BayeuxServerImpl bayeux)
     {
         service = new DeliverService(bayeux);
     }
@@ -83,13 +83,13 @@ public class CometdDeliverTest extends AbstractCometdJQueryTest
 
     public static class DeliverService extends BayeuxService
     {
-        public DeliverService(Bayeux bayeux)
+        public DeliverService(BayeuxServerImpl bayeux)
         {
             super(bayeux, "deliver");
             subscribe("/deliver", "deliver");
         }
 
-        public void deliver(Client remote, String channel, Object messageData, String messageId)
+        public void deliver(ServerSession remote, String channel, Object messageData, String messageId)
         {
             Map<String, ?> data = (Map<String,?>)messageData;
             Boolean deliver = (Boolean) data.get("deliver");

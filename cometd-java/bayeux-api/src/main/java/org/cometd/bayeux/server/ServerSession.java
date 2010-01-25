@@ -56,7 +56,13 @@ public interface ServerSession extends Session
      * @param from
      * @param msg
      */
-    void deliver(ServerSession from, ServerMessage msg);
+    void deliver(Session from, ServerMessage msg);
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Deliver the message to the session listeners and queue.
+     */
+    void deliver(Session from, String channel, Object data, Object id);
 
     /* ------------------------------------------------------------ */
     /**

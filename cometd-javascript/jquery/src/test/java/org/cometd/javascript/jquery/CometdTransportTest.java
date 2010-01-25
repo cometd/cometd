@@ -1,5 +1,7 @@
 package org.cometd.javascript.jquery;
 
+import java.util.Arrays;
+
 /**
  * @version $Revision$ $Date$
  */

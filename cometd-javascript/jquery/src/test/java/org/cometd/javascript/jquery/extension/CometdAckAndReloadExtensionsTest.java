@@ -4,9 +4,9 @@ import java.net.URL;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.Bayeux;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
-import org.cometd.server.AbstractBayeux;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.BayeuxService;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.mozilla.javascript.ScriptableObject;
@@ -19,7 +19,7 @@ public class CometdAckAndReloadExtensionsTest extends AbstractCometdJQueryTest
     private AckService ackService;
 
     @Override
-    protected void customizeBayeux(AbstractBayeux bayeux)
+    protected void customizeBayeux(BayeuxServerImpl bayeux)
     {
         bayeux.addExtension(new AcknowledgedMessagesExtension());
         ackService = new AckService(bayeux);
@@ -106,7 +106,7 @@ public class CometdAckAndReloadExtensionsTest extends AbstractCometdJQueryTest
 
     private static class AckService extends BayeuxService
     {
-        private AckService(Bayeux bayeux)
+        private AckService(BayeuxServerImpl bayeux)
         {
             super(bayeux, "ack-test");
         }

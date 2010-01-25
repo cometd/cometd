@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.cometd.bayeux.BayeuxListener;
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Session;
 
 
 
@@ -70,7 +71,13 @@ public interface ServerChannel extends Channel
     /**
      * @param message
      */
-    void publish(ServerSession from, ServerMessage message);
+    void publish(Session from, ServerMessage message);
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param data 
+     */
+    void publish(Session from, Object data, Object id);
 
 
     /* ------------------------------------------------------------ */

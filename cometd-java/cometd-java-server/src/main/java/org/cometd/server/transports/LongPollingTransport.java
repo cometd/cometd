@@ -217,11 +217,12 @@ public abstract class LongPollingTransport extends HttpTransport
                                             // a message was already added - so handle it now;
                                             continuation.complete();
                                             dispatcher=null;
-                                            session.startIntervalTimeout();
+                                            if (session.isConnected())
+                                                session.startIntervalTimeout();
                                         }
                                     }
                                 }
-                                else
+                                else if (session.isConnected())
                                     session.startIntervalTimeout();
                             }
                         }
@@ -253,7 +254,8 @@ public abstract class LongPollingTransport extends HttpTransport
         {
             // Get the resumed session
             ServerSessionImpl session=dispatcher.getSession();
-            session.startIntervalTimeout();
+            if (session.isConnected())
+                session.startIntervalTimeout();
 
             // Send the message queue
             Queue<ServerMessage> queue = session.getQueue();

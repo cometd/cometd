@@ -4,10 +4,12 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.Client;
-import org.cometd.Message;
-import org.cometd.SecurityPolicy;
-import org.cometd.server.AbstractBayeux;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.SecurityPolicy;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.BayeuxServerImpl;
 import org.mozilla.javascript.ScriptableObject;
 
 /**
@@ -17,7 +19,7 @@ import org.mozilla.javascript.ScriptableObject;
 public class CometdHandshakePropsTest extends AbstractCometdJQueryTest
 {
     @Override
-    protected void customizeBayeux(AbstractBayeux bayeux)
+    protected void customizeBayeux(BayeuxServerImpl bayeux)
     {
         bayeux.setSecurityPolicy(new TokenSecurityPolicy());
     }
@@ -90,25 +92,31 @@ public class CometdHandshakePropsTest extends AbstractCometdJQueryTest
 
     private class TokenSecurityPolicy implements SecurityPolicy
     {
-        public boolean canHandshake(Message message)
+
+        @Override
+        public boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message)
         {
-            Map<String, Object> ext = message.getExt(false);
+            return true;
+        }
+
+        @Override
+        public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
+        {
+            Map<String, Object> ext = message.getExt();
             return ext != null && ext.containsKey("token");
         }
 
-        public boolean canCreate(Client client, String s, Message message)
+        @Override
+        public boolean canPublish(BayeuxServer server, ServerSession client, ServerChannel channel, ServerMessage messsage)
         {
             return true;
         }
 
-        public boolean canSubscribe(Client client, String s, Message message)
+        @Override
+        public boolean canSubscribe(BayeuxServer server, ServerSession client, ServerChannel channel, ServerMessage messsage)
         {
             return true;
         }
-
-        public boolean canPublish(Client client, String s, Message message)
-        {
-            return true;
-        }
+        
     }
 }

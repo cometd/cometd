@@ -558,22 +558,22 @@ org.cometd.Cometd = function(name)
         var envelope = {
             url: url,
             messages: messages,
-            onSuccess: function(request, responses)
+            onSuccess: function(rcvdMessages)
             {
                 try
                 {
-                    _handleMessages.call(self, request, responses, request.longpoll);
+                    _handleMessages.call(self, rcvdMessages);
                 }
                 catch (x)
                 {
                     _debug('Exception during handling of response', x);
                 }
             },
-            onFailure: function(request, reason, exception)
+            onFailure: function(conduit, reason, exception)
             {
                 try
                 {
-                    _handleFailure.call(self, request, messages, reason, exception, request.longpoll);
+                    _handleFailure.call(self, conduit, messages, reason, exception);
                 }
                 catch (x)
                 {
@@ -1146,28 +1146,20 @@ org.cometd.Cometd = function(name)
      */
     this.receive = _receive;
 
-    _handleMessages = function _handleMessages(request, messages, longpoll)
+    _handleMessages = function _handleMessages(rcvdMessages)
     {
-        _debug('Received',request,'messages', messages,"longpoll",longpoll);
+        _debug('Received', rcvdMessages);
 
-        // Signal the transport it can send other queued requests
-        _transport.complete(request, true, longpoll);
-
-        for (var i = 0; i < messages.length; ++i)
+        for (var i = 0; i < rcvdMessages.length; ++i)
         {
-            var message = messages[i];
+            var message = rcvdMessages[i];
             _receive(message);
         }
     };
 
-    _handleFailure = function _handleFailure(request, messages, reason, exception, longpoll)
+    _handleFailure = function _handleFailure(conduit, messages, reason, exception)
     {
-        var xhr = request.xhr;
-
         _debug('Failed', messages);
-
-        // Signal the transport it can send other queued requests
-        _transport.complete(request, false, longpoll);
 
         for (var i = 0; i < messages.length; ++i)
         {
@@ -1176,22 +1168,22 @@ org.cometd.Cometd = function(name)
             switch (channel)
             {
                 case '/meta/handshake':
-                    _handshakeFailure(xhr, message);
+                    _handshakeFailure(conduit, message);
                     break;
                 case '/meta/connect':
-                    _connectFailure(xhr, message);
+                    _connectFailure(conduit, message);
                     break;
                 case '/meta/disconnect':
-                    _disconnectFailure(xhr, message);
+                    _disconnectFailure(conduit, message);
                     break;
                 case '/meta/subscribe':
-                    _subscribeFailure(xhr, message);
+                    _subscribeFailure(conduit, message);
                     break;
                 case '/meta/unsubscribe':
-                    _unsubscribeFailure(xhr, message);
+                    _unsubscribeFailure(conduit, message);
                     break;
                 default:
-                    _messageFailure(xhr, message);
+                    _messageFailure(conduit, message);
                     break;
             }
         }
@@ -1818,27 +1810,14 @@ org.cometd.Cometd = function(name)
         return _transport;
     };
 
+    
     /**
-     * Base object with the common functionality for transports.
-     * The key responsibility is to allow at most 2 outstanding requests to the server,
-     * to avoid that requests are sent behind a long poll.
-     * To achieve this, we have one reserved request for the long poll, and all other
-     * requests are serialized one after the other.
+     * Base transport object with the common functionality for all transports.
      */
     org.cometd.Transport = function()
     {
         var _type;
-        var _requestIds = 0;
-        var _longpollRequest = null;
-        var _requests = [];
-        var _envelopes = [];
-
-        /**
-         * Function invoked just after a transport has been successfully registered.
-         * @param type the type of transport (for example 'long-polling')
-         * @param cometd the cometd object this transport has been registered to
-         * @see #unregistered()
-         */
+        
         this.registered = function(type, cometd)
         {
             _type = type;
@@ -1852,14 +1831,14 @@ org.cometd.Cometd = function(name)
         {
             _type = null;
         };
-
+        
 
         /**
          * Converts the given response into an array of bayeux messages
          * @param response the response to convert
          * @return an array of bayeux messages obtained by converting the response
          */
-        this.convertToMessages = function (response)
+        this._convertToMessages = function (response)
         {
             if (_isString(response))
             {
@@ -1888,7 +1867,6 @@ org.cometd.Cometd = function(name)
             throw 'Conversion Error ' + response + ', typeof ' + (typeof response);
         }
 
-        
         /**
          * Returns whether this transport can work for the given version and cross domain communication case.
          * @param version a string indicating the transport version
@@ -1898,17 +1876,51 @@ org.cometd.Cometd = function(name)
          */
         this.accept = function(version, crossDomain)
         {
-            throw 'Abstract';
+            throw 'Abstract accept';
+        };
+     
+        /**
+         * Returns the type of this transport.
+         * @see #registered(type, cometd)
+         */
+        this.getType = function()
+        {
+            return _type;
         };
 
+        this.send = function(envelope, metaConnect)
+        {
+        	throw "Abstract send";
+        };
+        
+        this.reset = function()
+        {
+            throw 'Abstract reset';
+        };
+    }
+    
+    /**
+     * Base object with the common functionality for transports based on Requests.
+     * The key responsibility is to allow at most 2 outstanding requests to the server,
+     * to avoid that requests are sent behind a long poll.
+     * To achieve this, we have one reserved request for the long poll, and all other
+     * requests are serialized one after the other.
+     */
+    org.cometd.RequestTransport = function()
+    {
+        var _requestIds = 0;
+        var _metaConnectRequest = null;
+        var _requests = [];
+        var _envelopes = [];
+        
         /**
          * Performs the actual send depending on the transport type details.
          * @param envelope the envelope to send
          * @param request the request information
          */
-        this.transportSend = function(envelope, request)
+        this._doSend = function(envelope, request)
         {
-            throw 'Abstract';
+            throw 'Abstract _doSend';
         };
 
         this.transportSuccess = function(envelope, request, responses)
@@ -1916,7 +1928,11 @@ org.cometd.Cometd = function(name)
             if (!request.expired)
             {
                 clearTimeout(request.timeout);
-                envelope.onSuccess(request, responses);
+                if (request.metaConnect)
+                	_metaConnectComplete(request);
+                else
+                	_complete(request,true);
+                envelope.onSuccess(responses);
             }
         };
 
@@ -1925,20 +1941,24 @@ org.cometd.Cometd = function(name)
             if (!request.expired)
             {
                 clearTimeout(request.timeout);
-                envelope.onFailure(request, reason, exception);
+                if (request.metaConnect)
+                	_metaConnectComplete(request);
+                else
+                	_complete(request,false);
+                envelope.onFailure(request.xhr, reason, exception);
             }
         };
-
+        
         function _transportSend(envelope, request)
         {
             var self = this;
 
-            this.transportSend(envelope, request);
+            this._doSend(envelope, request);
 
             request.expired = false;
 
             var delay = _maxNetworkDelay;
-            if (request.longpoll === true)
+            if (request.metaConnect === true)
             {
                 delay +=_advice && typeof _advice.timeout === 'number' ? _advice.timeout : 0;
             }
@@ -1955,20 +1975,20 @@ org.cometd.Cometd = function(name)
             }, delay);
         }
 
-        function _longpollSend(envelope)
+        function _metaConnectSend(envelope)
         {
-            if (_longpollRequest !== null)
+            if (_metaConnectRequest !== null)
             {
-                throw 'Concurrent longpoll requests not allowed, request id=' + _longpollRequest.id + ' not yet completed';
+                throw 'Concurrent metaConnect requests not allowed, request id=' + _metaConnectRequest.id + ' not yet completed';
             }
 
             var requestId = ++_requestIds;
             var request = {
                 id: requestId,
-                longpoll: true
+                metaConnect: true
             };
             _transportSend.call(this, envelope, request);
-            _longpollRequest = request;
+            _metaConnectRequest = request;
         }
 
         function _queueSend(envelope)
@@ -1976,9 +1996,9 @@ org.cometd.Cometd = function(name)
             var requestId = ++_requestIds;
             var request = {
                 id: requestId,
-                longpoll: false
+                metaConnect: false
             };
-            // Consider the longpoll requests which should always be present
+            // Consider the metaConnect requests which should always be present
             if (_requests.length < _maxConnections - 1)
             {
                 _transportSend.call(this, envelope, request);
@@ -1990,17 +2010,17 @@ org.cometd.Cometd = function(name)
             }
         }
 
-        function _longpollComplete(request)
+        function _metaConnectComplete(request)
         {
             var requestId = request.id;
-        	_debug('longpoll complete ',requestId);
-            if (_longpollRequest !== null && _longpollRequest.id !== requestId)
+        	_debug('metaConnect complete ',requestId);
+            if (_metaConnectRequest !== null && _metaConnectRequest.id !== requestId)
             {
                 throw 'Longpoll request mismatch, completing request ' + requestId;
             }
 
-            // Reset longpoll request
-            _longpollRequest = null;
+            // Reset metaConnect request
+            _metaConnectRequest = null;
         }
 
         function _complete(request, success)
@@ -2027,36 +2047,15 @@ org.cometd.Cometd = function(name)
             }
         }
 
-        /**
-         * Returns the type of this transport.
-         * @see #registered(type, cometd)
-         */
-        this.getType = function()
+        this.send = function(envelope, metaConnect)
         {
-            return _type;
-        };
-
-        this.send = function(envelope, longpoll)
-        {
-            if (longpoll)
+            if (metaConnect)
             {
-                _longpollSend.call(this, envelope);
+                _metaConnectSend.call(this, envelope);
             }
             else
             {
                 _queueSend.call(this, envelope);
-            }
-        };
-
-        this.complete = function(request, success, longpoll)
-        {
-            if (longpoll)
-            {
-                _longpollComplete.call(this, request);
-            }
-            else
-            {
-                _complete.call(this, request, success);
             }
         };
 
@@ -2071,12 +2070,12 @@ org.cometd.Cometd = function(name)
                     request.xhr.abort();
                 }
             }
-            if (_longpollRequest)
+            if (_metaConnectRequest)
             {
-                _debug('Aborting longpoll request', _longpollRequest);
-                if (_longpollRequest.xhr)
+                _debug('Aborting metaConnect request', _metaConnectRequest);
+                if (_metaConnectRequest.xhr)
                 {
-                    _longpollRequest.xhr.abort();
+                    _metaConnectRequest.xhr.abort();
                 }
             }
             this.reset();
@@ -2084,12 +2083,16 @@ org.cometd.Cometd = function(name)
 
         this.reset = function()
         {
-            _longpollRequest = null;
+            _metaConnectRequest = null;
             _requests = [];
             _envelopes = [];
         };
     };
+    org.cometd.RequestTransport.prototype = new org.cometd.Transport();
+    org.cometd.RequestTransport.prototype.constructor = org.cometd.RequestTransport;
 
+    
+    
     org.cometd.LongPollingTransport = function()
     {
         // By default, support cross domain
@@ -2102,10 +2105,10 @@ org.cometd.Cometd = function(name)
 
         this.xhrSend = function(packet)
         {
-            throw 'Abstract';
+            throw 'Abstract xhrSend';
         };
 
-        this.transportSend = function(envelope, request)
+        this._doSend = function(envelope, request)
         {
             var self = this;
             try
@@ -2117,7 +2120,7 @@ org.cometd.Cometd = function(name)
                     body: org.cometd.JSON.toJSON(envelope.messages),
                     onSuccess: function(responses)
                     {
-                        self.transportSuccess(envelope, request, self.convertToMessages(responses));
+                        self.transportSuccess(envelope, request, self._convertToMessages(responses));
                     },
                     onError: function(reason, exception)
                     {
@@ -2143,7 +2146,7 @@ org.cometd.Cometd = function(name)
             _supportsCrossDomain = true;
         };
     };
-    org.cometd.LongPollingTransport.prototype = new org.cometd.Transport();
+    org.cometd.LongPollingTransport.prototype = new org.cometd.RequestTransport();
     org.cometd.LongPollingTransport.prototype.constructor = org.cometd.LongPollingTransport;
 
     org.cometd.CallbackPollingTransport = function()
@@ -2157,10 +2160,10 @@ org.cometd.Cometd = function(name)
 
         this.jsonpSend = function(packet)
         {
-            throw 'Abstract';
+            throw 'Abstract jspnpSend';
         };
 
-        this.transportSend = function(envelope, request)
+        this._doSend = function(envelope, request)
         {
             var self = this;
 
@@ -2199,7 +2202,7 @@ org.cometd.Cometd = function(name)
                         body: messages,
                         onSuccess: function(responses)
                         {
-                            self.transportSuccess(envelope, request, self.convertToMessages(responses));
+                            self.transportSuccess(envelope, request, self._convertToMessages(responses));
                         },
                         onError: function(reason, exception)
                         {
@@ -2218,35 +2221,43 @@ org.cometd.Cometd = function(name)
             }
         };
     };
-    org.cometd.CallbackPollingTransport.prototype = new org.cometd.Transport();
+    org.cometd.CallbackPollingTransport.prototype = new org.cometd.RequestTransport();
     org.cometd.CallbackPollingTransport.prototype.constructor = org.cometd.CallbackPollingTransport;
 
+    
     org.cometd.WebSocketTransport = function()
     {
         // By default, support WebSocket
         var _supportsWebSocket = true;
-        var _webSocket;
+        var _envelope;
+        var _metaConnectEnvelope;
         var _state;
-        var _longpollMessageId;
-        var _longpollRequestId;
 
         this.accept = function(version, crossDomain)
         {
             return _supportsWebSocket && typeof WebSocket === "function";
         };
-
-        this.transportSend = function(envelope, request)
+        
+        
+        this.send = function(envelope,metaConnect)
         {
-        	if (request.longpoll)
-        	{
-        		_longpollRequestId=request.id;
-        		_longpollMessageId=envelope.messages[0].id;
-        	}
-        	_debug("send",request,_longpollMessageId,_longpollRequestId);
+        	_debug("ws doSend",envelope,metaConnect);
+        	
+        	if (metaConnect)
+        		_metaConnectEnvelope=envelope;
+        	else
+        		_envelope=envelope;
         	
             if (_state === WebSocket.OPEN)
             {
-                this.webSocketSend(envelope, request);
+                if (!_webSocket.send(org.cometd.JSON.toJSON(envelope.messages)))
+                {
+                    // Keep the semantic of calling response callbacks asynchronously after the request
+                    _setTimeout(function()
+                    {    
+                    	envelope.onFailure(_webSocket, "timeout", null);
+                    }, 0);
+                }
             }
             else
             {
@@ -2261,14 +2272,24 @@ org.cometd.Cometd = function(name)
                 {
                     _state = WebSocket.OPEN;
                     _webSocket = webSocket;
-                    self.webSocketSend(envelope, request);
+                    
+                    if (!_webSocket.send(org.cometd.JSON.toJSON(envelope.messages)))
+                    {
+                        // Keep the semantic of calling response callbacks asynchronously after the request
+                        _setTimeout(function()
+                        {    
+                        	envelope.onFailure(_webSocket, "timeout", null);
+                        }, 0);
+                    }
+                    
                 };
+                
                 webSocket.onclose = function()
                 {
                     if (_state !== WebSocket.OPEN)
                     {
                         _supportsWebSocket = false;
-                        self.transportFailure(envelope, request, 'error');
+                    	envelope.onFailure(_webSocket, "can't open", null);
                     }
                     else
                     {
@@ -2276,64 +2297,29 @@ org.cometd.Cometd = function(name)
                     }
                 };
                 webSocket.onmessage = function(message)
-                {
-                	var fakeReq =
-                	{
-                		id: -1,
-                		longpoll: false
-                	};
-                	var fakeEnv =
-                	{
-                        onSuccess: envelope.onSuccess,
-                        onFailure: envelope.onFailure
-                	};
-                	
+                {	
                     if (_state === WebSocket.OPEN)
                     {
-                        var responses= self.convertToMessages(message.data);
-                        if (_longpollMessageId)
-                        {
-                        	for (var i = 0; i < responses.length; ++i)
-                        	{
-                        		if (responses[i].id==_longpollMessageId)
-                        		{
-                        			fakeReq.id=_longpollRequestId;
-                        			fakeReq.longpoll=true;
-                        			_longpollMessageId=null;
-                        			_longpollRequestId=null;
-                        			break;
-                        		}
-                        	}
-                        }
-                    	_debug("WS ",fakeEnv,fakeReq,responses);
-                        self.transportSuccess(fakeEnv, fakeReq, responses);
+                    	var rcvdMessages= self._convertToMessages(message.data);
+                    	var mc=false;
+                    	for (var i = 0; i < rcvdMessages.length; ++i)
+                    	{
+                    		if ("/meta/connect"==rcvdMessages[i].channelId)
+                    			mc=true;
+                    	}
+
+                    	(mc?_metaConnectEnvelope:_envelope).onSuccess(rcvdMessages);   
                     }
                     else
                     {
-                        self.transportFailure(fakeEnv, fakeReq, 'error');
+                    	envelope.onFailure(_webSocket, "closed", null);
                     }
                 };
             }
         };
 
-        this.webSocketSend = function(envelope, request)
-        {
-            var self = this;
-            var data = org.cometd.JSON.toJSON(envelope.messages);
-            var result = _webSocket.send(data);
-            if (!result)
-            {
-                // Keep the semantic of calling response callbacks asynchronously after the request
-                _setTimeout(function()
-                {
-                    self.transportFailure(envelope, request, 'error');
-                }, 0);
-            }
-        };
-
         this.reset = function()
         {
-            org.cometd.WebSocketTransport.prototype.reset();
             _supportsWebSocket = true;
         };
     };
