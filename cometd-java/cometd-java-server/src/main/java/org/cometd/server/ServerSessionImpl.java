@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -143,14 +144,27 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    public void deliver(ServerSession from, ServerMessage message)
+    public void deliver(Session from, ServerMessage message)
     {
         ServerMessage.Mutable mutable = message.asMutable();
 
         if (!_bayeux.extendSend((ServerSessionImpl)from,mutable))
             return;
+        
+        if (from instanceof LocalSession)
+            doDeliver(((LocalSession)from).getServerSession(),message);
+        else
+            doDeliver((ServerSession)from,message);
+    }
 
-        doDeliver(from,message);
+    /* ------------------------------------------------------------ */
+    public void deliver(Session from, String channelId, Object data, Object id)
+    {
+        ServerMessage.Mutable mutable = _bayeux.newMessage();
+        mutable.setChannelId(channelId);
+        mutable.setData(data);
+        mutable.setId(id);
+        deliver(from,mutable);
     }
 
     /* ------------------------------------------------------------ */
@@ -385,7 +399,7 @@ public class ServerSessionImpl implements ServerSession
             }
         }
     }
-
+    
     /* ------------------------------------------------------------ */
     public void cancelIntervalTimeout()
     {

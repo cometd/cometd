@@ -17,7 +17,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.cometd.server.AbstractBayeux;
+import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -31,7 +31,7 @@ public class CometdMaxNetworkDelayTest extends AbstractCometdJQueryTest
     private final long maxNetworkDelay = 2000;
 
     @Override
-    protected void customizeBayeux(AbstractBayeux bayeux)
+    protected void customizeBayeux(BayeuxServerImpl bayeux)
     {
     }
 

@@ -234,7 +234,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public void removeServerSession(ServerSessionImpl session,boolean timedout)
+    public void removeServerSession(ServerSession session,boolean timedout)
     {
         if(_sessions.remove(session.getId())==session)
         {
@@ -244,7 +244,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     ((SessionListener)listener).sessionRemoved(session,timedout);
             }
             
-            session.removed(timedout);
+            ((ServerSessionImpl)session).removed(timedout);
         }
     }
 
@@ -362,7 +362,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
                 // if this is not a local client, lets create a new message as we 
                 // don't trust what else was in their message.
-                if (session.isLocalSession() || channel.isService())
+                if (session!=null && session.isLocalSession() || channel.isService())
                 {
                     message.setClientId(null);
                     channel.publish(session,message);
@@ -727,8 +727,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 error(reply,"402::Unknown client");
                 return;
             }
-            
+
             removeServerSession(session,false);
+            session.dispatch();
             
             reply.setSuccessful(true);
         }    
