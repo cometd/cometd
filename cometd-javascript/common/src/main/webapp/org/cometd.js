@@ -141,6 +141,7 @@ org.cometd.TransportRegistry = function()
 // Failing to pass JSLint may result in shrinkers/minifiers to create an unusable file.
 org.cometd.Cometd = function(name)
 {
+    var _cometd = this;
     var _name = name || 'default';
     var _logLevel; // 'warn','info','debug'
     var _url;
@@ -377,6 +378,19 @@ org.cometd.Cometd = function(name)
         catch (x)
         {
             _debug('Exception during execution of extension', name, x);
+            var errorCallback = _cometd.onExtensionError;
+            if (_isFunction(errorCallback))
+            {
+                _debug('Invoking extension error callback', name, x);
+                try
+                {
+                    errorCallback.call(_cometd, x, name, message);
+                }
+                catch(xx)
+                {
+                    _debug('Exception during execution of error callback in extension', name, xx);
+                }
+            }
             return message;
         }
     }
@@ -587,7 +601,6 @@ org.cometd.Cometd = function(name)
             url = url + extraPath;
         }
 
-        var self = this;
         var envelope = {
             url: url,
             messages: messages,
@@ -595,7 +608,7 @@ org.cometd.Cometd = function(name)
             {
                 try
                 {
-                    _handleResponse.call(self, request, response, longpoll);
+                    _handleResponse.call(_cometd, request, response, longpoll);
                 }
                 catch (x)
                 {
@@ -606,7 +619,7 @@ org.cometd.Cometd = function(name)
             {
                 try
                 {
-                    _handleFailure.call(self, request, messages, reason, exception, longpoll);
+                    _handleFailure.call(_cometd, request, messages, reason, exception, longpoll);
                 }
                 catch (x)
                 {
