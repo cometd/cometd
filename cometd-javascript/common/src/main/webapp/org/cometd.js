@@ -1929,9 +1929,9 @@ org.cometd.Cometd = function(name)
             {
                 clearTimeout(request.timeout);
                 if (request.metaConnect)
-                	_metaConnectComplete(request);
+                	_metaConnectComplete.call(this,request);
                 else
-                	_complete(request,true);
+                	_complete.call(this,request,true);
                 envelope.onSuccess(responses);
             }
         };
@@ -1942,9 +1942,9 @@ org.cometd.Cometd = function(name)
             {
                 clearTimeout(request.timeout);
                 if (request.metaConnect)
-                	_metaConnectComplete(request);
+                	_metaConnectComplete.call(this,request);
                 else
-                	_complete(request,false);
+                	_complete.call(this,request,false);
                 envelope.onFailure(request.xhr, reason, exception);
             }
         };
@@ -1954,7 +1954,6 @@ org.cometd.Cometd = function(name)
             var self = this;
 
             this._doSend(envelope, request);
-
             request.expired = false;
 
             var delay = _maxNetworkDelay;
@@ -2233,7 +2232,7 @@ org.cometd.Cometd = function(name)
     	var _webSocket;
         var _supportsWebSocket = true;
         var _envelope;
-        var _state;
+        var _state = WebSocket.CLOSED;
         var _metaConnectEnvelope;
         var _timeout=[];
 
@@ -2292,8 +2291,7 @@ org.cometd.Cometd = function(name)
             }
             else
             {
-            	// No create new websocket
-                _state = WebSocket.CLOSED;
+            	// No, so create new websocket
 
                 // Mangle the URL, changing the scheme from 'http' to 'ws'
                 var url = envelope.url.replace(/^http/, 'ws');
@@ -2303,6 +2301,7 @@ org.cometd.Cometd = function(name)
                 
                 webSocket.onopen = function()
                 {
+                	_debug("Opened ",webSocket);
                 	// once the websocket is open, send the envelope.
                     _state = WebSocket.OPEN;
                     _webSocket = webSocket;
@@ -2311,10 +2310,11 @@ org.cometd.Cometd = function(name)
                 
                 webSocket.onclose = function()
                 {
+                	_debug("Closed ",webSocket);
                     if (_state !== WebSocket.OPEN)
                     {
                         _supportsWebSocket = false;
-                    	envelope.onFailure(_webSocket, "can't open", null);
+                    	envelope.onFailure(webSocket, "can't open", null);
                     }
                     else
                     {
@@ -2344,19 +2344,23 @@ org.cometd.Cometd = function(name)
                     		if ("/meta/connect"==message.channelId)
                     			mc=true;
                     		
-                    		// cancel and delete any pending timeouts
-                    		if (message.id && _timeout[message.id])
+                    		// cancel and delete any pending timeouts for meta messages and publish responses
+                    		if (!message.data && message.id && _timeout[message.id])
                     		{
                     			clearTimeout(_timeout[message.id]);
                     			delete _timeout[message.id];
                     		}
+                    		
+                    		// check for disconnect
+                    		if ("/meta/disconnect"==message.channel && message.successful)
+                    			webSocket.close();
                     	}
 
                     	(mc?_metaConnectEnvelope:_envelope).onSuccess(rcvdMessages);   
                     }
                     else
                     {
-                    	envelope.onFailure(_webSocket, "closed", null);
+                    	envelope.onFailure(webSocket, "closed", null);
                     }
                 };
             }
@@ -2364,7 +2368,13 @@ org.cometd.Cometd = function(name)
 
         this.reset = function()
         {
+        	_debug("reset ",_webSocket);
+        	if (_webSocket)
+        		_webSocket.close();
             _supportsWebSocket = true;
+            _state = WebSocket.CLOSED;
+            _envelope=null;
+            _metaConnectEnvelope=null;
         };
     };
     org.cometd.WebSocketTransport.prototype = new org.cometd.Transport();

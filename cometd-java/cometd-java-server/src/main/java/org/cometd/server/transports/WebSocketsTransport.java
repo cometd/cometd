@@ -41,9 +41,9 @@ public class WebSocketsTransport extends HttpTransport
         setOption(BUFFER_SIZE_OPTION,_factory.getBufferSize());
         _metaConnectDeliveryOnly=false;
         setOption(META_CONNECT_DELIVERY_OPTION,_metaConnectDeliveryOnly);
-        _timeout=0;
+        _timeout=10000;
         setOption(TIMEOUT_OPTION,_timeout);
-        _interval=5000;
+        _interval=10000;
         setOption(INTERVAL_OPTION,_interval);
         _maxInterval=15000;
         setOption(MAX_INTERVAL_OPTION,_maxInterval);
@@ -88,6 +88,17 @@ public class WebSocketsTransport extends HttpTransport
     {
         protected ServerSessionImpl _session;
         protected Outbound _outbound;
+        protected ServerMessage _connectReply;
+        protected final Timeout.Task _timeoutTask = new Timeout.Task()
+        {
+            @Override
+            public void expired()
+            {
+                // send the meta connect response after timeout.
+                if (_session!=null && _session.setDispatcher(null))
+                    dispatch();
+            }
+        };
         
         public void onConnect(Outbound outbound)
         {
@@ -98,7 +109,11 @@ public class WebSocketsTransport extends HttpTransport
         {
             System.err.println("WS Disconnected!");
             if (_session!=null)
+            {
+                _session.cancelIntervalTimeout(); 
+                _bayeux.cancelTimeout(_timeoutTask);
                 _bayeux.removeServerSession(_session,false);
+            }
         }
 
         public void onMessage(byte frame, String data)
@@ -138,25 +153,39 @@ public class WebSocketsTransport extends HttpTransport
 
                     if (connect && reply.isSuccessful())
                     {
-                        _session.startIntervalTimeout();
-
-                        if (!was_connected)
+                        _session.setDispatcher(this);
+                        
+                        long timeout=_session.getTimeout();
+                        if (timeout<0) 
+                            timeout=_timeout;
+                        
+                        if (_session.setDispatcher(this) && timeout>0 && was_connected)
                         {
-                            // set the dispatcher initially, and it will reset itself
-                            // on each dispatch.
-                            _session.setDispatcher(this);
+                            // delay sending connect reply until dispatch or timeout.
+                            _bayeux.startTimeout(_timeoutTask,timeout);
+                            _connectReply=reply;
+                            _connectReply.incRef();
+                            reply=null;
                         }
+                        else if (!was_connected)
+                        {
+                            _session.startIntervalTimeout();
+                        }   
                     }
                     
-                    reply=_bayeux.extendReply(_session,reply);
-                                        
-                    if (batch)
+                    // send the reply (if not delayed)
+                    if (reply!=null)
                     {
-                        reply.incRef();
-                        _session.getQueue().add(reply);
+                        reply=_bayeux.extendReply(_session,reply);
+
+                        if (batch)
+                        {
+                            reply.incRef();
+                            _session.getQueue().add(reply);
+                        }
+                        else
+                            send(reply);
                     }
-                    else
-                        send(reply);
                     
 
                     // disassociate the reply
@@ -197,15 +226,22 @@ public class WebSocketsTransport extends HttpTransport
 
         public void dispatch()
         {
-            if (_session!=null)
+            while (_session!=null)
             {
                 Queue<ServerMessage> queue = _session.getQueue();
                 synchronized (queue)
                 {
                     _session.dequeue();
+                    if (_connectReply!=null)
+                    {
+                        queue.add(_bayeux.extendReply(_session,_connectReply));
+                        _connectReply=null;
+                        _session.startIntervalTimeout();
+                    }
                     try
                     {
-                        send(queue);   
+                        if (queue.size()>0)
+                            send(queue);   
                     }
                     catch(IOException e)
                     {
@@ -216,8 +252,8 @@ public class WebSocketsTransport extends HttpTransport
                     queue.clear();
                 }
 
-                if (!_session.setDispatcher(this))
-                    throw new IllegalSelectorException();
+                if (isMetaConnectDeliveryOnly() || _session.setDispatcher(this))
+                    break;
             }
         }
         
@@ -239,133 +275,4 @@ public class WebSocketsTransport extends HttpTransport
     };
     
     
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    protected class MetaConnectOnly extends WebSocketDispatcher
-    {
-        protected ServerMessage _connectReply;
-        protected final Timeout.Task _timeoutTask = new Timeout.Task()
-        {
-            @Override
-            public void expired()
-            {
-                System.err.println("timeout "+_session);
-                if (_session!=null && _session.setDispatcher(null))
-                    dispatch();
-            }
-        };
-
-        public void onMessage(byte frame, String data)
-        {
-            System.err.println("WS>>>"+data);
-            boolean batch=false;
-            try
-            {
-                _bayeux.setCurrentTransport(WebSocketsTransport.this);
-                
-                ServerMessage.Mutable[] messages = _bayeux.getServerMessagePool().parseMessages(data);
-
-                for (ServerMessage.Mutable message : messages)
-                {
-                    // reference it (this should make ref=1)
-                    message.incRef();
-                    boolean connect = Channel.META_CONNECT.equals(message.getChannelId());
-         
-                    // Get the session from the message
-                    if (_session==null)
-                        _session=(ServerSessionImpl)_bayeux.getSession(message.getClientId());
-                    
-                    if (!batch && _session!=null && !connect)
-                    {
-                        // start a batch to group all resulting messages into a single response.
-                        batch=true;
-                        _session.startBatch();
-                    }
-
-                    // remember the connected status
-                    boolean was_connected=_session!=null && _session.isConnected();
-
-                    // handle the message
-                    // the actual reply is return from the call, but other messages may
-                    // also be queued on the session.
-                    ServerMessage reply = _bayeux.handle(_session,message);
-
-                    if (connect)
-                    {
-                        if (reply.isSuccessful() && was_connected)
-                        {
-                            if (_session.setDispatcher(this))
-                            {
-                                long timeout=_session.getTimeout();
-                                _bayeux.startTimeout(_timeoutTask,timeout==-1?_timeout:timeout);
-                                _connectReply=reply;
-                                _connectReply.incRef();
-                                reply=null;
-                            }
-                            else
-                                _session.startIntervalTimeout();
-                        }
-                        else
-                            _session.startIntervalTimeout();   
-                    }
-                    
-                    if (reply!=null)
-                    {
-                        reply=_bayeux.extendReply(_session,reply);
-
-                        if (batch)
-                        {
-                            reply.incRef();
-                            _session.getQueue().add(reply);
-                        }
-                        else
-                            send(reply);
-                    }
-
-                    // disassociate the reply
-                    message.setAssociated(null);
-                    // dec our own ref, this should be to 0 unless message was ref'd elsewhere.
-                    message.decRef();
-                }
-
-            }
-            catch(IOException e)
-            {
-                _bayeux.getLogger().warn("",e);
-            }
-            finally
-            {
-                _bayeux.setCurrentTransport(null);
-                // if we started a batch - end it now
-                if (batch)
-                    _session.endBatch();
-            }
-        }
-
-        public void dispatch()
-        {
-            if (_session!=null)
-            {
-                Queue<ServerMessage> queue = _session.getQueue();
-                synchronized (queue)
-                {
-                    _session.dequeue();
-                    try
-                    {
-                        queue.add(_bayeux.extendReply(_session,_connectReply));
-                        _connectReply=null;
-                        send(queue);   
-                    }
-                    catch(IOException e)
-                    {
-                        _bayeux.getLogger().warn("io ",e);
-                    }
-                    for (ServerMessage message:queue)
-                        message.decRef();
-                    queue.clear();
-                }
-            }
-        }
-        
-    };
 }
