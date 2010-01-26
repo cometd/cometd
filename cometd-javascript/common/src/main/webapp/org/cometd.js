@@ -1959,9 +1959,8 @@ org.cometd.Cometd = function(name)
 
             var delay = _maxNetworkDelay;
             if (request.metaConnect === true)
-            {
                 delay +=_advice && typeof _advice.timeout === 'number' ? _advice.timeout : 0;
-            }
+            
             request.timeout = _setTimeout(function()
             {
                 request.expired = true;
@@ -2042,7 +2041,10 @@ org.cometd.Cometd = function(name)
                 else
                 {
                     // Keep the semantic of calling response callbacks asynchronously after the request
-                    setTimeout(function() { envelope[0].onFailure(envelope[1], 'error'); }, 0);
+                    setTimeout(function() 
+                    { 
+                    	envelope[0].onFailure(envelope[1], 'error'); 
+                    }, 0);
                 }
             }
         }
@@ -2228,39 +2230,69 @@ org.cometd.Cometd = function(name)
     org.cometd.WebSocketTransport = function()
     {
         // By default, support WebSocket
+    	var _webSocket;
         var _supportsWebSocket = true;
         var _envelope;
-        var _metaConnectEnvelope;
         var _state;
+        var _metaConnectEnvelope;
+        var _timeout=[];
 
+        function _doSend(envelope,metaConnect)
+        {
+            if (_webSocket.send(org.cometd.JSON.toJSON(envelope.messages)))
+            {
+                var delay = _maxNetworkDelay;
+                if (metaConnect)
+                    delay +=(_advice && typeof _advice.timeout === 'number') ? _advice.timeout : 0;
+                
+            	for (var i = 0; i < envelope.messages.length; ++i)
+            	{
+            		var message=envelope.messages[i];
+            		if (message.id)
+            		{
+                        _timeout[message.id] = _setTimeout(function()
+                        {
+                            var errorMessage = 'Transport timeout exceeded ' + delay + 'ms';
+                            _debug(errorMessage);
+                            envelope.onFailure(_webSocket, 'timeout', errorMessage);
+                        }, delay);
+            		}
+            	}
+            }
+            else
+            {
+                // Keep the semantic of calling response callbacks asynchronously after the request
+                _setTimeout(function()
+                {    
+                	envelope.onFailure(_webSocket, "failed", null);
+                },0);
+            }
+        }
+        
         this.accept = function(version, crossDomain)
         {
             return _supportsWebSocket && typeof WebSocket === "function";
         };
         
-        
         this.send = function(envelope,metaConnect)
         {
         	_debug("ws doSend",envelope,metaConnect);
         	
+        	// remember the envelope
         	if (metaConnect)
         		_metaConnectEnvelope=envelope;
         	else
         		_envelope=envelope;
         	
+        	// do we have an open websocket?
             if (_state === WebSocket.OPEN)
             {
-                if (!_webSocket.send(org.cometd.JSON.toJSON(envelope.messages)))
-                {
-                    // Keep the semantic of calling response callbacks asynchronously after the request
-                    _setTimeout(function()
-                    {    
-                    	envelope.onFailure(_webSocket, "timeout", null);
-                    }, 0);
-                }
+            	// yes - use it
+            	_doSend(envelope,metaConnect);
             }
             else
             {
+            	// No create new websocket
                 _state = WebSocket.CLOSED;
 
                 // Mangle the URL, changing the scheme from 'http' to 'ws'
@@ -2268,20 +2300,13 @@ org.cometd.Cometd = function(name)
 
                 var self = this;
                 var webSocket = new WebSocket(url);
+                
                 webSocket.onopen = function()
                 {
+                	// once the websocket is open, send the envelope.
                     _state = WebSocket.OPEN;
                     _webSocket = webSocket;
-                    
-                    if (!_webSocket.send(org.cometd.JSON.toJSON(envelope.messages)))
-                    {
-                        // Keep the semantic of calling response callbacks asynchronously after the request
-                        _setTimeout(function()
-                        {    
-                        	envelope.onFailure(_webSocket, "timeout", null);
-                        }, 0);
-                    }
-                    
+                    _doSend(envelope,metaConnect);
                 };
                 
                 webSocket.onclose = function()
@@ -2294,18 +2319,37 @@ org.cometd.Cometd = function(name)
                     else
                     {
                         _state = WebSocket.CLOSED;
+                        // clear all timeouts
+                        for (var i in _timeout)
+                        {
+                        	clearTimeout(_timeout[i]);
+                        	delete _timeout[i];
+                        }
                     }
                 };
+                
                 webSocket.onmessage = function(message)
                 {	
                     if (_state === WebSocket.OPEN)
                     {
                     	var rcvdMessages= self._convertToMessages(message.data);
                     	var mc=false;
+                    	
+                    	// scan messages
                     	for (var i = 0; i < rcvdMessages.length; ++i)
                     	{
-                    		if ("/meta/connect"==rcvdMessages[i].channelId)
+                    		var message = rcvdMessages[i];
+                    		
+                    		// is this coming with a meta connect response?
+                    		if ("/meta/connect"==message.channelId)
                     			mc=true;
+                    		
+                    		// cancel and delete any pending timeouts
+                    		if (message.id && _timeout[message.id])
+                    		{
+                    			clearTimeout(_timeout[message.id]);
+                    			delete _timeout[message.id];
+                    		}
                     	}
 
                     	(mc?_metaConnectEnvelope:_envelope).onSuccess(rcvdMessages);   
