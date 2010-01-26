@@ -4,6 +4,7 @@ package org.cometd.bayeux.client;
 import java.io.IOException;
 
 import org.cometd.bayeux.BayeuxListener;
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.client.BayeuxClient.Extension;
@@ -15,18 +16,6 @@ import org.cometd.bayeux.client.BayeuxClient.Extension;
  */
 public interface ClientSession extends Session
 {
-    /* ------------------------------------------------------------ */
-    /**
-     * @param listener
-     */
-    void addListener(ClientSessionListener listener);
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param listener
-     */
-    void removeListener(ClientSessionListener listener);
-
     /* ------------------------------------------------------------ */
     /** Add and extension to this session.
      * @param extension
@@ -55,24 +44,5 @@ public interface ClientSession extends Session
      */
     SessionChannel getChannel(String channelName);
 
-
     
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    interface ClientSessionListener extends BayeuxListener
-    {};
-
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    public interface MessageListener extends ClientSessionListener
-    {
-        void onMessage(ClientSession session, Message message);
-    }
-    
-
 }

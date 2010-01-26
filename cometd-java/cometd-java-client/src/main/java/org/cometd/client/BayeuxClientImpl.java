@@ -14,6 +14,7 @@ import org.cometd.bayeux.client.ClientChannel;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.BayeuxClient.Extension;
 import org.cometd.client.transport.ClientTransport;
+import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.client.transport.TransportException;
 import org.cometd.client.transport.TransportRegistry;
 
@@ -27,7 +28,12 @@ public class BayeuxClientImpl implements org.cometd.bayeux.client.BayeuxClient
 
     protected final TransportRegistry _transports = new TransportRegistry();    
     protected final ScheduledExecutorService _scheduler;
-    
+
+    public BayeuxClientImpl()
+    {
+        this(Executors.newSingleThreadScheduledExecutor(), new LongPollingTransport());
+    }
+
     public BayeuxClientImpl(ClientTransport... transports)
     {
         this(Executors.newSingleThreadScheduledExecutor(), transports);
