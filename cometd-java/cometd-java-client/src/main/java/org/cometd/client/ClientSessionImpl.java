@@ -19,6 +19,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.BayeuxClient.Extension;
+import org.cometd.bayeux.client.SessionChannel.SessionChannelListener;
 import org.cometd.client.transport.AbstractTransportListener;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.TransportListener;
@@ -38,11 +39,11 @@ public class ClientSessionImpl implements ClientSession
     private final BayeuxClientImpl _bayeux;
     private final String[] _servers;
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
-    private final List<ClientSessionListener> _listeners = new CopyOnWriteArrayList<ClientSessionListener>();
     private final Queue<Message> _queue = new ConcurrentLinkedQueue<Message>();
    
     private final AttributesMap _attributes = new AttributesMap();
     private final ConcurrentMap<String, ClientSessionChannel> _channels = new ConcurrentHashMap<String, ClientSessionChannel>();
+    private final List<ClientSessionChannel> _wild = new CopyOnWriteArrayList<ClientSessionChannel>();
     private final AtomicInteger _batch = new AtomicInteger();
     private final TransportListener _transportListener = new Listener();   
     private final AtomicInteger _messageIds = new AtomicInteger();
@@ -67,12 +68,6 @@ public class ClientSessionImpl implements ClientSession
         _extensions.add(extension);
     }
 
-    @Override
-    public void addListener(ClientSessionListener listener)
-    {
-        _listeners.add(listener);
-    }
-
     private void updateState(State newState)
     {
         Log.debug("State change: {} -> {}", _state, newState);
@@ -90,6 +85,9 @@ public class ClientSessionImpl implements ClientSession
             if (channel==null)
                 channel=new_channel;
         }
+        
+        if (channel.isWild())
+            _wild.add(channel);
         return channel;
     }
 
@@ -110,12 +108,6 @@ public class ClientSessionImpl implements ClientSession
             // wait for response
         }
         
-    }
-
-    @Override
-    public void removeListener(ClientSessionListener listener)
-    {
-        _listeners.remove(listener);
     }
 
     @Override
@@ -438,19 +430,36 @@ public class ClientSessionImpl implements ClientSession
     protected class ClientSessionChannel implements SessionChannel
     {
         private final ChannelId _id;
-        private CopyOnWriteArrayList<MessageListener> _subscriptions = new CopyOnWriteArrayList<MessageListener>();
+        private CopyOnWriteArrayList<SubscriptionListener> _subscriptions = new CopyOnWriteArrayList<SubscriptionListener>();
+        private CopyOnWriteArrayList<SessionChannelListener> _listeners = new CopyOnWriteArrayList<SessionChannelListener>();
         
         protected ClientSessionChannel(String channelId)
         {
             _id=new ChannelId(channelId);
         }
 
+        /* ------------------------------------------------------------ */
         @Override
         public ClientSession getSession()
         {
             return ClientSessionImpl.this;
         }
+       
+        /* ------------------------------------------------------------ */
+        @Override
+        public void addListener(SessionChannelListener listener)
+        {
+            _listeners.add(listener);
+        }
 
+        /* ------------------------------------------------------------ */
+        @Override
+        public void removeListener(SessionChannelListener listener)
+        {
+            _listeners.remove(listener);
+        }
+
+        /* ------------------------------------------------------------ */
         @Override
         public void publish(Object data)
         {
@@ -466,7 +475,7 @@ public class ClientSessionImpl implements ClientSession
         }
 
         @Override
-        public void subscribe(MessageListener listener)
+        public void subscribe(SubscriptionListener listener)
         {
             if (_clientId==null)
                 throw new IllegalStateException("!handshake");
@@ -483,7 +492,7 @@ public class ClientSessionImpl implements ClientSession
         }
 
         @Override
-        public void unsubscribe(MessageListener listener)
+        public void unsubscribe(SubscriptionListener listener)
         {
             if (_clientId==null)
                 throw new IllegalStateException("!handshake");
