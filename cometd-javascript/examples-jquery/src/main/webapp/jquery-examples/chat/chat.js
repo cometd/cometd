@@ -3,7 +3,7 @@
     $(document).ready(function()
     {
         // Check if there was a saved application state
-        var stateCookie = org.cometd.COOKIE.get('org.cometd.demo.state');
+        var stateCookie = org.cometd.COOKIE?org.cometd.COOKIE.get('org.cometd.demo.state'):null;
         var state = stateCookie ? org.cometd.JSON.fromJSON(stateCookie) : null;
         var chat = new Chat(state);
 
@@ -19,7 +19,7 @@
         {
             if (e.keyCode == 13)
             {
-                chat.join();
+                chat.join($('#username').val());
             }
         });
         $('#phrase').attr('autocomplete', 'off');
@@ -279,14 +279,17 @@
 
         $(window).unload(function()
         {
-            $.cometd.reload();
-            // Save the application state only if the user was chatting
-            if (_wasConnected && _username)
-            {
-                org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
-                    connected: _wasConnected,
-                    username: _username
-                }), { 'max-age': 5 });
+        	if ($.cometd.reload)
+        	{
+        		$.cometd.reload();
+        		// Save the application state only if the user was chatting
+        		if (_wasConnected && _username)
+        		{
+        			org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
+        				connected: _wasConnected,
+        				username: _username
+        			}), { 'max-age': 5 });
+        		}
             }
         });
     }

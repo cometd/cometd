@@ -332,7 +332,7 @@ public class ServerSessionImpl implements ServerSession
                 return old!=null;
             }
 
-            if (_dispatcher!=null)
+            if (_dispatcher!=null && _dispatcher!=dispatcher)
             {
                 // This is the reload case: there is an outstanding connect,
                 // and the client issues a new connect.
