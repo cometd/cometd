@@ -17,6 +17,8 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.BayeuxClient.Extension;
+import org.cometd.bayeux.client.SessionChannel.SessionChannelListener;
+import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
@@ -42,11 +44,11 @@ public class LocalSessionImpl implements LocalSession
     private final BayeuxServerImpl _bayeux;
     private final String _idHint;
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
-    private final List<ClientSessionListener> _listeners = new CopyOnWriteArrayList<ClientSessionListener>();
     private final AttributesMap _attributes = new AttributesMap();
     private final ConcurrentMap<String, LocalChannel> _channels = new ConcurrentHashMap<String, LocalChannel>();
     private final AtomicInteger _batch = new AtomicInteger();
     private final Queue<ServerMessage.Mutable> _queue = new ConcurrentLinkedQueue<ServerMessage.Mutable>();
+    private final List<LocalChannel> _wild = new CopyOnWriteArrayList<LocalChannel>();
     
     private ServerSessionImpl _session;
 
@@ -72,12 +74,6 @@ public class LocalSessionImpl implements LocalSession
     }
 
     /* ------------------------------------------------------------ */
-    public void addListener(ClientSessionListener listener)
-    {
-        _listeners.add(listener);
-    }
-
-    /* ------------------------------------------------------------ */
     public SessionChannel getChannel(String channelId)
     {
         LocalChannel channel = _channels.get(channelId);
@@ -89,6 +85,8 @@ public class LocalSessionImpl implements LocalSession
             if (channel==null)
                 channel=new_channel;
         }
+        if (channel.isWild())
+            _wild.add(channel);
         return channel;
     }
 
@@ -129,12 +127,6 @@ public class LocalSessionImpl implements LocalSession
     public void handshake(boolean async) throws IOException
     {
         handshake();
-    }
-
-    /* ------------------------------------------------------------ */
-    public void removeListener(ClientSessionListener listener)
-    {
-        _listeners.remove(listener);
     }
 
     /* ------------------------------------------------------------ */
@@ -242,44 +234,76 @@ public class LocalSessionImpl implements LocalSession
      * the subscribed MessageListeners.
      * @param message the message to receive.
      */
-    protected void receive(ServerMessage message)
+    protected void receive(final ServerMessage message)
     {
+        final String id=message.getChannelId();
+        final ChannelId channelId=id==null?null:_bayeux.newChannelId(id); 
+        final LocalChannel channel= channelId==null?null:_channels.get(channelId.toString());
+
+
+        
         if (message.isMeta())
         {
             for (Extension extension : _extensions)
                 if (!extension.rcvMeta(this,message.asMutable()))
                     return;
+
+            String error = (String)message.get(Message.ERROR_FIELD);
+            boolean successful = message.isSuccessful();
+            
+            if (channel!=null)
+            {
+                for (LocalChannel wild : _wild)
+                {       
+                    if (wild._id.matches(channel._id))
+                    {
+                        for (SessionChannel.SessionChannelListener listener : wild._listeners)
+                        {
+                            if (listener instanceof SessionChannel.ChannelMetaListener)
+                                ((SessionChannel.ChannelMetaListener)listener).onMetaMessage(channel,message,successful,error);
+                            if (listener instanceof SessionChannel.MessageListener)
+                                ((SessionChannel.MessageListener)listener).onMessage(this,message);
+                        }
+                    }
+                }
+                
+                for (SessionChannel.SessionChannelListener listener : channel._listeners)
+                {
+                    if (listener instanceof SessionChannel.ChannelMetaListener)
+                        ((SessionChannel.ChannelMetaListener)listener).onMetaMessage(channel,message,message.isSuccessful(),error);
+                }
+            }
         }
         else
         {
             for (Extension extension : _extensions)
                 if (!extension.rcv(LocalSessionImpl.this,message.asMutable()))
                     return;
-        }
-        
-        for (ClientSessionListener listener : _listeners)
-        {
-            if (listener instanceof ClientSession.MessageListener)
-                ((ClientSession.MessageListener)listener).onMessage(this,message);
-        }
-        
-        String id=message.getChannelId();
-        if (id!=null)
-        {
-            ChannelId channelId=_bayeux.newChannelId(id); 
-            LocalChannel channel = _channels.get(channelId.toString());
 
-            if (channel!=null && (channel.isMeta() || message.getData()!=null))
+            if (channel!=null)
             {
-                for (MessageListener listener : channel._subscriptions)
-                    listener.onMessage(this,message);
+                for (LocalChannel wild : _wild)
+                {       
+                    if (wild._id.matches(channel._id))
+                    {
+                        for (SessionChannel.SessionChannelListener listener : wild._listeners)
+                        {
+                            if (listener instanceof SessionChannel.MessageListener)
+                                ((SessionChannel.MessageListener)listener).onMessage(this,message);
+                        }
+                    }
+                }
             }
-            
-            if (Channel.META_DISCONNECT.equals(id) && message.isSuccessful())
-                _session=null;
         }
         
-        
+        if (channel!=null && (channel.isMeta() || message.getData()!=null))
+        {
+            for (SubscriptionListener listener : channel._subscriptions)
+                listener.onMessage(channel,message);
+        }
+
+        if (Channel.META_DISCONNECT.equals(id) && message.isSuccessful())
+            _session=null;
     }
     
     /* ------------------------------------------------------------ */
@@ -339,21 +363,13 @@ public class LocalSessionImpl implements LocalSession
         b.append(toString());
         b.append('\n');
 
-        int leaves=_channels.size()+_listeners.size();
+        int leaves=_channels.size();
         int i=0;
         for (LocalChannel child : _channels.values())
         {
             b.append(indent);
             b.append(" +-");
             child.dump(b,indent+((++i==leaves)?"   ":" | "));
-        }
-       
-        for (ClientSessionListener child : _listeners)
-        {
-            b.append(indent);
-            b.append(" +-");
-            b.append(child);
-            b.append('\n');
         }
     }
 
@@ -364,18 +380,34 @@ public class LocalSessionImpl implements LocalSession
     class LocalChannel implements SessionChannel
     {
         private final ChannelId _id;
-        private CopyOnWriteArrayList<MessageListener> _subscriptions = new CopyOnWriteArrayList<MessageListener>();
-        
+        private CopyOnWriteArrayList<SubscriptionListener> _subscriptions = new CopyOnWriteArrayList<SubscriptionListener>();
+        private CopyOnWriteArrayList<SessionChannelListener> _listeners = new CopyOnWriteArrayList<SessionChannelListener>();
+
+        /* ------------------------------------------------------------ */
         LocalChannel(ChannelId id)
         {
             _id=id;
         }
-        
+
+        /* ------------------------------------------------------------ */
         public ClientSession getSession()
         {
             return LocalSessionImpl.this;
         }
         
+        /* ------------------------------------------------------------ */
+        public void addListener(SessionChannelListener listener)
+        {
+            _listeners.add(listener);
+        }
+
+        /* ------------------------------------------------------------ */
+        public void removeListener(SessionChannelListener listener)
+        {
+            _listeners.remove(listener);
+        }
+
+        /* ------------------------------------------------------------ */
         public void publish(Object data)
         {
             if (_session==null)
@@ -392,7 +424,8 @@ public class LocalSessionImpl implements LocalSession
             message.decRef();
         }
 
-        public void subscribe(MessageListener listener)
+        /* ------------------------------------------------------------ */
+        public void subscribe(SubscriptionListener listener)
         {
             if (_session==null)
                 throw new IllegalStateException("!handshake");
@@ -412,7 +445,8 @@ public class LocalSessionImpl implements LocalSession
             }
         }
 
-        public void unsubscribe(MessageListener listener)
+        /* ------------------------------------------------------------ */
+        public void unsubscribe(SubscriptionListener listener)
         {
             if (_session==null)
                 throw new IllegalStateException("!handshake");
@@ -431,38 +465,43 @@ public class LocalSessionImpl implements LocalSession
             }
         }
 
+        /* ------------------------------------------------------------ */
         public void unsubscribe()
         {
-            for (MessageListener listener : _subscriptions)
+            for (SubscriptionListener listener : _subscriptions)
                 unsubscribe(listener);
         }
 
+        /* ------------------------------------------------------------ */
         public String getId()
         {
             return _id.toString();
         }
 
+        /* ------------------------------------------------------------ */
         public boolean isDeepWild()
         {
             return _id.isDeepWild();
         }
 
+        /* ------------------------------------------------------------ */
         public boolean isMeta()
         {
             return _id.isMeta();
         }
 
+        /* ------------------------------------------------------------ */
         public boolean isService()
         {
             return _id.isService();
         }
 
+        /* ------------------------------------------------------------ */
         public boolean isWild()
         {
             return _id.isWild();
         }
         
-
         /* ------------------------------------------------------------ */
         @Override
         public String toString()
@@ -476,14 +515,14 @@ public class LocalSessionImpl implements LocalSession
             b.append(toString());
             b.append('\n');
            
-            for (ClientSessionListener child : _listeners)
+            for (SessionChannelListener child : _listeners)
             {
                 b.append(indent);
                 b.append(" +-");
                 b.append(child);
                 b.append('\n');
             }
-            for (ClientSessionListener child : _subscriptions)
+            for (SubscriptionListener child : _subscriptions)
             {
                 b.append(indent);
                 b.append(" +-");

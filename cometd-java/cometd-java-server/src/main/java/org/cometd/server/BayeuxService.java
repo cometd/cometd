@@ -21,6 +21,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
@@ -69,7 +70,7 @@ public abstract class BayeuxService
     private final Map<String,Method> _methods=new ConcurrentHashMap<String,Method>();
     private final Map<ChannelId,Method> _wild=new ConcurrentHashMap<ChannelId,Method>();
     private final ServerSession.ServerSessionListener _serverListener;
-    private final ClientSession.MessageListener _clientListener;
+    private final SubscriptionListener _clientListener;
     
     private ThreadPool _threadPool;
     private boolean _seeOwn=false;
@@ -233,6 +234,7 @@ public abstract class BayeuxService
         if (!Session.class.isAssignableFrom(method.getParameterTypes()[0]))
             throw new IllegalArgumentException("Method '" + methodName + "' does not have Session as first parameter");
 
+        
         SessionChannel channel=_session.getChannel(channelId);
         
         if (channel.isWild())
@@ -240,7 +242,6 @@ public abstract class BayeuxService
         else
             _methods.put(channelId,method);
             
-        
         channel.subscribe(_clientListener);
         
     }
@@ -394,9 +395,9 @@ public abstract class BayeuxService
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private class ClientListener implements org.cometd.bayeux.client.ClientSession.MessageListener
+    private class ClientListener implements SubscriptionListener
     {
-        public void onMessage(ClientSession session, Message message)
+        public void onMessage(SessionChannel session, Message message)
         {
         }   
     }

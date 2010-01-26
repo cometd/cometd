@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.BayeuxClient;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.util.ajax.JSON;
 
@@ -13,10 +14,13 @@ import org.eclipse.jetty.util.ajax.JSON;
  */
 public abstract class AbstractTransport implements ClientTransport
 {
+    protected BayeuxClient _bayeux;
     private final List<TransportListener> listeners = new ArrayList<TransportListener>();
 
-    public void init()
+    @Override
+    public void init(BayeuxClient bayeux)
     {
+        _bayeux=bayeux;
     }
 
     public void destroy()

@@ -9,6 +9,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.BayeuxClient;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
@@ -130,11 +131,11 @@ public class BayeuxServerTest extends Assert
         
         final Queue<String> events = new ConcurrentLinkedQueue<String>();
         
-        ClientSession.MessageListener listener = new ClientSession.MessageListener()
+        SubscriptionListener listener = new SubscriptionListener()
         {
-            public void onMessage(ClientSession session, Message message)
+            public void onMessage(SessionChannel channel, Message message)
             {
-                events.add(session.getId());
+                events.add(channel.getSession().getId());
                 events.add(message.getData().toString());
             }
         };
@@ -324,13 +325,12 @@ public class BayeuxServerTest extends Assert
                 return true;
             }
         });
-
         
-        ClientSession.MessageListener listener = new ClientSession.MessageListener()
+        SubscriptionListener listener = new SubscriptionListener()
         {
-            public void onMessage(ClientSession session, Message message)
+            public void onMessage(SessionChannel channel, Message message)
             {
-                events.add(session.getId());
+                events.add(channel.getSession().getId());
                 events.add(message.getData().toString());
             }
         };

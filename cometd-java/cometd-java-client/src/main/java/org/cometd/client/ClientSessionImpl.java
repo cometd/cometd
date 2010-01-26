@@ -353,7 +353,7 @@ public class ClientSessionImpl implements ClientSession
             oldTransport.destroy();
         }
         newTransport.addListener(_transportListener);
-        newTransport.init();
+        newTransport.init(_bayeux);
         return newTransport;
     }
     

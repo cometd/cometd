@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.BayeuxClient;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
@@ -15,11 +16,16 @@ import org.eclipse.jetty.util.ajax.JSON;
  */
 public class LongPollingTransport extends AbstractTransport
 {
-    private final HttpClient httpClient;
+    private final HttpClient _httpClient;
 
+    public LongPollingTransport()
+    {
+        _httpClient = new HttpClient();
+    }
+    
     public LongPollingTransport(HttpClient httpClient)
     {
-        this.httpClient = httpClient;
+        _httpClient = httpClient;
     }
 
     @Override
@@ -33,8 +39,10 @@ public class LongPollingTransport extends AbstractTransport
         return true;
     }
 
-    public void init()
+    @Override
+    public void init(BayeuxClient bayeux)
     {
+        super.init(bayeux);
     }
 
     public void send(String uri, Message... messages)
@@ -49,7 +57,7 @@ public class LongPollingTransport extends AbstractTransport
         try
         {
             httpExchange.setRequestContent(new ByteArrayBuffer(content, "UTF-8"));
-            httpClient.send(httpExchange);
+            _httpClient.send(httpExchange);
         }
         catch (Exception x)
         {

@@ -19,13 +19,6 @@ public interface BayeuxClient extends Bayeux
     
     
     /* ------------------------------------------------------------ */
-    /**
-     * @param channel
-     * @return
-     */
-    ClientChannel getChannel(String channel);
-    
-    /* ------------------------------------------------------------ */
     /** Create a new session
      * @param servers A list of server URIs to try in turn to connect 
      * to, each in the format "[protocol:]host[:port]/path"
