@@ -10,7 +10,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.cometd.bayeux.Transport;
-import org.cometd.bayeux.client.ClientChannel;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.BayeuxClient.Extension;
 import org.cometd.client.transport.ClientTransport;
@@ -24,7 +23,6 @@ public class BayeuxClientImpl implements org.cometd.bayeux.client.BayeuxClient
     public static final String BAYEUX_VERSION = "1.0";
     
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
-    private final ConcurrentMap<String, ClientChannelImpl> _channels = new ConcurrentHashMap<String, ClientChannelImpl>();
 
     protected final TransportRegistry _transports = new TransportRegistry();    
     protected final ScheduledExecutorService _scheduler;
@@ -52,19 +50,6 @@ public class BayeuxClientImpl implements org.cometd.bayeux.client.BayeuxClient
         _extensions.add(extension);
     }
 
-    @Override
-    public ClientChannel getChannel(String id)
-    {
-        ClientChannelImpl channel = _channels.get(id);
-        if (channel==null)
-        {
-            ClientChannelImpl new_channel=new ClientChannelImpl(id);
-            channel=_channels.putIfAbsent(id,new_channel);
-            if (channel==null)
-                channel=new_channel;
-        }
-        return channel;
-    }
 
     @Override
     public ClientSession newSession(String... servers)
