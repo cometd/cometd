@@ -20,7 +20,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
-import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.ajax.JSON;
 
 /* ------------------------------------------------------------ */

@@ -15,9 +15,7 @@
 package org.cometd.server;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.GenericServlet;
@@ -30,8 +28,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.server.transports.JSONPTransport;
 import org.cometd.server.transports.HttpTransport;
+import org.cometd.server.transports.JSONPTransport;
 import org.cometd.server.transports.JSONTransport;
 import org.cometd.server.transports.WebSocketsTransport;
 

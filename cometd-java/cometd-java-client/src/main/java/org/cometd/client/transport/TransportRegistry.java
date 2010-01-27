@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.ArrayList;
 
+import org.cometd.bayeux.Transport;
+
 /**
  * @version $Revision$ $Date$
  */
@@ -35,8 +37,10 @@ public class TransportRegistry
         return Collections.unmodifiableList(_allowed);
     }
     
-    public ClientTransport negotiate(String[] requestedTransports, String bayeuxVersion)
+    public List<ClientTransport> negotiate(String[] requestedTransports, String bayeuxVersion)
     {
+        List<ClientTransport> list = new ArrayList<ClientTransport>();
+        
         for (String transport : _allowed)
         {
             for (String requestedTransport : requestedTransports)
@@ -45,12 +49,12 @@ public class TransportRegistry
                 {
                     if (_transports.get(transport).accept(bayeuxVersion))
                     {
-                        return _transports.get(transport);
+                        list.add(_transports.get(transport));
                     }
                 }
             }
         }
-        return null;
+        return list;
     }
 
     public String[] findTransportTypes(String bayeuxVersion)
@@ -65,5 +69,10 @@ public class TransportRegistry
             }
         }
         return result.toArray(new String[result.size()]);
+    }
+
+    public ClientTransport getTransport(String transport)
+    {
+        return _transports.get(transport);
     }
 }

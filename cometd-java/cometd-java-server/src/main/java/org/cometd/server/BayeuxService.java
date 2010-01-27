@@ -13,13 +13,14 @@
 //========================================================================
 package org.cometd.server;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
-import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -112,7 +113,14 @@ public abstract class BayeuxService
         _session=_bayeux.newLocalSession(name);
         _serverListener=new ServerListener();
         _clientListener=new ClientListener();
-        _session.handshake();
+        try
+        {
+            _session.handshake();
+        }
+        catch(IOException e)
+        {
+            throw new RuntimeException(e);
+        }
         _session.getServerSession().addListener(_serverListener);
     }
 

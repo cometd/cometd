@@ -12,10 +12,8 @@ import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
 import org.cometd.server.ServerTransport.Dispatcher;
 import org.cometd.server.transports.HttpTransport;
-import org.cometd.server.transports.LongPollingTransport;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -23,7 +21,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.util.thread.Timeout.Task;
-import org.omg.stub.java.rmi._Remote_Stub;
 
 public class ServerSessionImpl implements ServerSession
 {

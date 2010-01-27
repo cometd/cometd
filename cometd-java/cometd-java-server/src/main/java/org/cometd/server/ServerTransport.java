@@ -1,12 +1,15 @@
 package org.cometd.server;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.cometd.common.AbstractTransport;
+import org.cometd.bayeux.Transport;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public class ServerTransport extends AbstractTransport
+public class ServerTransport implements Transport
 {
     public final static String TIMEOUT_OPTION="timeout";
     public final static String INTERVAL_OPTION="interval";
@@ -22,10 +25,16 @@ public class ServerTransport extends AbstractTransport
     protected boolean _metaConnectDeliveryOnly=false;
     protected Object _advice;
 
+    private final String _name;
+    private final Map<String,Object> _options;
+    protected final List<String> _prefix=new ArrayList<String>();
+    
+
     /* ------------------------------------------------------------ */
     protected ServerTransport(BayeuxServerImpl bayeux, String name,Map<String,Object> options)
     {
-        super(name,options);
+        _name=name;
+        _options=options;
         _bayeux=bayeux;
 
         setOption(TIMEOUT_OPTION,_timeout);
@@ -36,11 +45,143 @@ public class ServerTransport extends AbstractTransport
     }
 
     /* ------------------------------------------------------------ */
-    public interface Dispatcher
+    public Object getAdvice()
     {
-        void dispatch();
-        void cancelDispatch();
+        return _advice;
     }
+
+    /* ------------------------------------------------------------ */
+    /** Get the interval.
+     * @return the interval
+     */
+    public long getInterval()
+    {
+        return _interval;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Get the maxInterval.
+     * @return the maxInterval
+     */
+    public long getMaxInterval()
+    {
+        return _maxInterval;
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /** Get the max time before dispatching lazy message.
+     * @return the max lazy timeout in MS
+     */
+    public long getMaxLazyTimeout()
+    {
+        return _maxLazyTimeout;
+    }
+    
+    public String getName()
+    {
+        return _name;
+    }
+    
+    public Object getOption(String name)
+    {
+        Object value = _options.get(name);
+        
+        String prefix=null;
+        for (String segment:_prefix)
+        {
+            prefix = prefix==null?segment:(prefix+"."+segment);
+            String key=prefix+"."+name;
+            if (_options.containsKey(key))
+                value=_options.get(key);
+        }
+        return value;
+    }
+    
+    public boolean getOption(String option, boolean dftValue)
+    {
+        Object value = getOption(option);
+        if (value==null)
+            return false;
+        if (value instanceof Boolean)
+            return ((Boolean)value).booleanValue();
+        return Boolean.parseBoolean(value.toString());
+    }
+    
+    public int getOption(String option, int dftValue)
+    {
+        Object value = getOption(option);
+        if (value==null)
+            return -1;
+        if (value instanceof Number)
+            return ((Number)value).intValue();
+        return Integer.parseInt(value.toString());
+    }
+
+    public long getOption(String option, long dftValue)
+    {
+        Object value = getOption(option);
+        if (value==null)
+            return -1;
+        if (value instanceof Number)
+            return ((Number)value).longValue();
+        return Long.parseLong(value.toString());
+    }
+    public String getOption(String option, String dftValue)
+    {
+        Object value = getOption(option);
+        return (value==null)?dftValue:value.toString();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.common.AbstractTransport#getOptionNames()
+     */
+    public Set<String> getOptionNames()
+    {
+        Set<String> names = new HashSet<String>();
+        names.add(INTERVAL_OPTION);
+        names.add(MAX_INTERVAL_OPTION);
+        names.add(TIMEOUT_OPTION);
+        names.add(MAX_LAZY_OPTION);
+        return names;
+    }
+
+    public String getOptionPrefix()
+    {
+        String prefix=null;
+        for (String segment:_prefix)
+            prefix = prefix==null?segment:(prefix+"."+segment);
+        return prefix;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Get the timeout.
+     * @return the timeout
+     */
+    public long getTimeout()
+    {
+        return _timeout;
+    }
+
+    public boolean isMetaConnectDeliveryOnly()
+    {
+        return _metaConnectDeliveryOnly;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setMetaConnectDeliveryOnly(boolean meta)
+    {
+        _metaConnectDeliveryOnly=meta;
+    }
+    /* ------------------------------------------------------------ */
+
+    public void setOption(String name, Object value)
+    {
+        String prefix=getOptionPrefix();
+        _options.put(prefix==null?name:(prefix+"."+name),value);
+    }
+
     /* ------------------------------------------------------------ */
     /** Initialise the transport.
      * Initialise the transport, resolving default and direct options.
@@ -59,73 +200,11 @@ public class ServerTransport extends AbstractTransport
 
         _advice=new JSON.Literal("{\"reconnect\":\"retry\",\"interval\":" + _interval + ",\"timeout\":" + _timeout + "}");
     }
-
-    /* ------------------------------------------------------------ */
-    public void setMetaConnectDeliveryOnly(boolean meta)
-    {
-        _metaConnectDeliveryOnly=meta;
-    }
-    /* ------------------------------------------------------------ */
-
-    public boolean isMetaConnectDeliveryOnly()
-    {
-        return _metaConnectDeliveryOnly;
-    }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.common.AbstractTransport#getOptionNames()
-     */
-    @Override
-    public Set<String> getOptionNames()
+    public interface Dispatcher
     {
-        Set<String> names = super.getOptionNames();
-        names.add(INTERVAL_OPTION);
-        names.add(MAX_INTERVAL_OPTION);
-        names.add(TIMEOUT_OPTION);
-        names.add(MAX_LAZY_OPTION);
-        return names;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get the interval.
-     * @return the interval
-     */
-    public long getInterval()
-    {
-        return _interval;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get the maxInterval.
-     * @return the maxInterval
-     */
-    public long getMaxInterval()
-    {
-        return _maxInterval;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get the timeout.
-     * @return the timeout
-     */
-    public long getTimeout()
-    {
-        return _timeout;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get the max time before dispatching lazy message.
-     * @return the max lazy timeout in MS
-     */
-    public long getMaxLazyTimeout()
-    {
-        return _maxLazyTimeout;
-    }
-    
-    /* ------------------------------------------------------------ */
-    public Object getAdvice()
-    {
-        return _advice;
+        void cancelDispatch();
+        void dispatch();
     }
 }

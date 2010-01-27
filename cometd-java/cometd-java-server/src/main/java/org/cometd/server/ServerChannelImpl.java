@@ -13,8 +13,6 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.ChannelId;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 
 public class ServerChannelImpl implements ServerChannel
 {
