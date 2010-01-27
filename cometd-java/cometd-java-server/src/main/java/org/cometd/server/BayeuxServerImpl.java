@@ -337,7 +337,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             if (_logger.isDebugEnabled())
                 _logger.debug(">> "+message);
-            String channelId=message.getChannelId();
+            String channelId=message.getChannel();
 
             ServerChannel channel=null;
             if (channelId!=null)
@@ -371,7 +371,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 else
                 {
                     ServerMessage.Mutable out = newMessage();
-                    out.setChannelId(message.getChannelId());
+                    out.setChannel(message.getChannel());
                     out.setData(message.getData());
                     out.setId(message.getId());
                     out.incRef();
@@ -536,7 +536,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         message.setAssociated(reply);
         reply.setAssociated(message);
         
-        reply.setChannelId(message.getChannelId());
+        reply.setChannel(message.getChannel());
         Object id=message.getId();
         if (id != null)
             reply.setId(id);

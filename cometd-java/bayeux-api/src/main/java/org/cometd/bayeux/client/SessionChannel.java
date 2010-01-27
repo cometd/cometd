@@ -47,7 +47,7 @@ public interface SessionChannel extends Channel
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    interface ChannelMetaListener extends SessionChannelListener
+    interface MetaChannelListener extends SessionChannelListener
     {
         void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error);
     }

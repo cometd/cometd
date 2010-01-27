@@ -79,6 +79,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     {
         this(url, Executors.newSingleThreadScheduledExecutor(),httpClient);
     }
+    /* ------------------------------------------------------------ */
+    public BayeuxClient(HttpClient httpClient, String url)
+    {
+        this(url, Executors.newSingleThreadScheduledExecutor(),httpClient);
+    }
 
     /* ------------------------------------------------------------ */
     public BayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport... transports)
@@ -139,7 +144,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     @Override
     protected ChannelId newChannelId(String channelId)
     {
-        AbstractSessionChannel channel = (AbstractSessionChannel)getChannel(channelId);
+        AbstractSessionChannel channel = (AbstractSessionChannel)_channels.get(channelId);
         return (channel==null)?new ChannelId(channelId):channel.getChannelId();
     }
 
@@ -233,7 +238,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         List<String> allowed = getAllowedTransports();
         
         Message.Mutable message = newMessage();
-        message.setChannelId(Channel.META_HANDSHAKE);
+        message.setChannel(Channel.META_HANDSHAKE);
         message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD,allowed);
         message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
         
@@ -383,7 +388,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         Message.Mutable request = newMessage();
         request.setId(newMessageId());
         request.setClientId(_clientId);
-        request.setChannelId(Channel.META_CONNECT);
+        request.setChannel(Channel.META_CONNECT);
         request.put(Message.CONNECTION_TYPE_FIELD, _transport.getName());
         send(request);
     }
@@ -485,7 +490,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
                 throw new IllegalStateException("!handshake");
             
             Message.Mutable message = newMessage();
-            message.setChannelId(_id.toString());
+            message.setChannel(_id.toString());
             message.setClientId(_clientId);
             message.setData(data);
             
@@ -500,7 +505,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         protected void sendSubscribe()
         {
             Message.Mutable message = newMessage();
-            message.setChannelId(Channel.META_SUBSCRIBE);
+            message.setChannel(Channel.META_SUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
             message.setClientId(_clientId);
             send(message);
@@ -514,13 +519,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         protected void sendUnSubscribe()
         {
             Message.Mutable message = newMessage();
-            message.setChannelId(Channel.META_UNSUBSCRIBE);
+            message.setChannel(Channel.META_UNSUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
             message.setClientId(_clientId);
 
             send(message);
         }
-
     }
     
     private class Listener implements TransportListener
@@ -535,28 +539,24 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         public void onConnectException(Throwable x)
         {
             // TODO Auto-generated method stub
-            
         }
 
         @Override
         public void onException(Throwable x)
         {
             // TODO Auto-generated method stub
-            
         }
 
         @Override
         public void onExpire()
         {
             // TODO Auto-generated method stub
-            
         }
 
         @Override
         public void onProtocolError()
         {
             // TODO Auto-generated method stub
-            
         }
     }
     

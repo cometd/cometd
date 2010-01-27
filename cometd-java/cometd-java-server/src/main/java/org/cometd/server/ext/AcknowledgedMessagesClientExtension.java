@@ -39,7 +39,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
     public boolean rcvMeta(ServerSession session, Mutable message)
     {
         
-        if (Channel.META_CONNECT.equals(message.getChannelId()))
+        if (Channel.META_CONNECT.equals(message.getChannel()))
         {
             Map<String,Object> ext=message.getExt(false);
             if (ext != null)
@@ -114,7 +114,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
     /* ------------------------------------------------------------ */
     public boolean sendMeta(ServerSession to, Mutable message)
     {
-        if (message.getChannelId().equals(Channel.META_CONNECT))
+        if (message.getChannel().equals(Channel.META_CONNECT))
         {
             synchronized(_session)
             {

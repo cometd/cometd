@@ -129,7 +129,7 @@ public class WebSocketsTransport extends HttpTransport
                 {
                     // reference it (this should make ref=1)
                     message.incRef();
-                    boolean connect = Channel.META_CONNECT.equals(message.getChannelId());
+                    boolean connect = Channel.META_CONNECT.equals(message.getChannel());
          
                     // Get the session from the message
                     if (_session==null)

@@ -211,7 +211,7 @@ public class ServerChannelImpl implements ServerChannel
             throw new IllegalStateException("Wild publish");
         
         ServerMessage.Mutable mutable = _bayeux.newMessage();
-        mutable.setChannelId(getId());
+        mutable.setChannel(getId());
         if(from!=null)
             mutable.setClientId(from.getId());
         mutable.setData(data);

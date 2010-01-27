@@ -279,7 +279,7 @@ public abstract class BayeuxService
     protected void send(ServerSession toClient, String onChannel, Object data, Object id)
     {
         ServerMessage.Mutable message = _bayeux.newMessage();
-        message.setChannelId(onChannel);
+        message.setChannel(onChannel);
         message.setData(data);
         message.setId(id);
         message.setClientId(_session.getId());
@@ -331,7 +331,7 @@ public abstract class BayeuxService
     /* ------------------------------------------------------------ */
     private void doInvoke(Method method, ServerSession fromClient, ServerMessage msg)
     {
-        String channel=msg.getChannelId();
+        String channel=msg.getChannel();
         Object data=msg.getData();
         Object id=msg.getId();
 
@@ -381,7 +381,7 @@ public abstract class BayeuxService
             if (_seeOwn || from != getClient().getServerSession())
             {
                 // tunnel the from field on the message
-                String channel=message.getChannelId();
+                String channel=message.getChannel();
                 Method method=_methods.get(channel);
                 if (method!=null)
                     invoke(method,from,message);

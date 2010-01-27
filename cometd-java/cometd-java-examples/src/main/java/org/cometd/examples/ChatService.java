@@ -86,7 +86,7 @@ public class ChatService extends BayeuxService
             chat.put("user", data.get("user"));
             chat.put("scope", "private");
             ServerMessage.Mutable forward = getBayeux().newMessage();
-            forward.setChannelId(room);
+            forward.setChannel(room);
             forward.setId(message.getId());
             forward.setData(chat);
             

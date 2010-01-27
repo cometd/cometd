@@ -171,7 +171,7 @@ public class CometdDemo
                 
                 public boolean rcv(ServerSession from, Mutable message)
                 {
-                    if (message.getChannelId().startsWith("/chat/") && message.getData()!=null && message.getData().toString().indexOf("lazy")>=0)
+                    if (message.getChannel().startsWith("/chat/") && message.getData()!=null && message.getData().toString().indexOf("lazy")>=0)
                         (message).setLazy(true);
                     return true;
                 }

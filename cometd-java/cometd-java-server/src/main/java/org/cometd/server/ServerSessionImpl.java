@@ -158,7 +158,7 @@ public class ServerSessionImpl implements ServerSession
     public void deliver(Session from, String channelId, Object data, Object id)
     {
         ServerMessage.Mutable mutable = _bayeux.newMessage();
-        mutable.setChannelId(channelId);
+        mutable.setChannel(channelId);
         mutable.setData(data);
         mutable.setId(id);
         deliver(from,mutable);
@@ -256,7 +256,7 @@ public class ServerSessionImpl implements ServerSession
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.incRef();
             message.setClientId(getId());
-            message.setChannelId(Channel.META_DISCONNECT);
+            message.setChannel(Channel.META_DISCONNECT);
             message.setSuccessful(true);
             deliver(this,message);
             if (_queue.size()>0)

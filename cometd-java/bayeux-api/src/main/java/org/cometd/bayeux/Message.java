@@ -38,7 +38,7 @@ public interface Message extends Map<String, Object>
     public static final String SERVICE="/service";
 
     Map<String, Object> getAdvice();
-    String getChannelId();
+    String getChannel();
     String getClientId();
     Object getData();
     boolean isMeta();
@@ -55,7 +55,7 @@ public interface Message extends Map<String, Object>
         Map<String, Object> getAdvice(boolean create);
         Map<String, Object> getDataAsMap(boolean create);
         Map<String, Object> getExt(boolean create);
-        void setChannelId(String channelId);
+        void setChannel(String channelId);
 
         void setClientId(String clientId);
         void setData(Object data);

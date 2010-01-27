@@ -133,7 +133,7 @@ public abstract class AbstractClientSession implements ClientSession
      */
     public void receive(final Message message, final Message.Mutable mutable)
     {
-        final String id=message.getChannelId();
+        final String id=message.getChannel();
         final ChannelId channelId=id==null?null:newChannelId(id); 
         final AbstractSessionChannel channel= channelId==null?null:_channels.get(channelId.toString());
         
@@ -154,8 +154,8 @@ public abstract class AbstractClientSession implements ClientSession
                     {
                         for (SessionChannel.SessionChannelListener listener : wild._listeners)
                         {
-                            if (listener instanceof SessionChannel.ChannelMetaListener)
-                                ((SessionChannel.ChannelMetaListener)listener).onMetaMessage(channel,message,successful,error);
+                            if (listener instanceof SessionChannel.MetaChannelListener)
+                                ((SessionChannel.MetaChannelListener)listener).onMetaMessage(channel,message,successful,error);
                             if (listener instanceof SessionChannel.MessageListener)
                                 ((SessionChannel.MessageListener)listener).onMessage(this,message);
                         }
@@ -164,8 +164,8 @@ public abstract class AbstractClientSession implements ClientSession
                 
                 for (SessionChannel.SessionChannelListener listener : channel._listeners)
                 {
-                    if (listener instanceof SessionChannel.ChannelMetaListener)
-                        ((SessionChannel.ChannelMetaListener)listener).onMetaMessage(channel,message,message.isSuccessful(),error);
+                    if (listener instanceof SessionChannel.MetaChannelListener)
+                        ((SessionChannel.MetaChannelListener)listener).onMetaMessage(channel,message,message.isSuccessful(),error);
                 }
             }
         }
