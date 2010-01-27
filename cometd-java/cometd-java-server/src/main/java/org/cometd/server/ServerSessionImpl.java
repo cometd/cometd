@@ -376,7 +376,7 @@ public class ServerSessionImpl implements ServerSession
                 ServerMessage msg=_queue.poll();
                 if (msg!=null)
                 {           
-                    _localSession.receive(msg);
+                    _localSession.receive(msg,msg.asMutable());
                 }
             }   
         }

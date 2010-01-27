@@ -24,17 +24,16 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.ClientSession;
-import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.client.transport.TransportException;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.client.transport.TransportRegistry;
+import org.cometd.common.AbstractClientSession;
 import org.cometd.common.ChannelId;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.log.Log;
 
 
@@ -45,7 +44,7 @@ import org.eclipse.jetty.util.log.Log;
  * call to start will block until either a successful handshake or
  * all known servers have been tried.
  */
-public class BayeuxClient implements Bayeux, ClientSession
+public class BayeuxClient extends AbstractClientSession implements Bayeux, ClientSession
 {
     public static final String BAYEUX_VERSION = "1.0";
 
@@ -58,10 +57,7 @@ public class BayeuxClient implements Bayeux, ClientSession
     private final Queue<Message> _queue = new ConcurrentLinkedQueue<Message>();
    
     protected final ScheduledExecutorService _scheduler;    
-    private final AttributesMap _attributes = new AttributesMap();
 
-    private final ConcurrentMap<String, ClientSessionChannel> _channels = new ConcurrentHashMap<String, ClientSessionChannel>();
-    private final List<ClientSessionChannel> _wild = new CopyOnWriteArrayList<ClientSessionChannel>();
     private final AtomicInteger _batch = new AtomicInteger();
     private final TransportListener _transportListener = new Listener();
     private final AtomicInteger _messageIds = new AtomicInteger();   
@@ -113,49 +109,64 @@ public class BayeuxClient implements Bayeux, ClientSession
         this(url,Executors.newSingleThreadScheduledExecutor());
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public void addExtension(Extension extension)
-    {
-        _extensions.add(extension);
-    }
+    
     
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.common.AbstractClientSession#doDisconnected()
+     */
     @Override
-    public void batch(Runnable batch)
+    protected void doDisconnected()
     {
-        startBatch();
-        try
+        // TODO Auto-generated method stub
+        
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.common.AbstractClientSession#newChannel(org.cometd.common.ChannelId)
+     */
+    @Override
+    protected AbstractSessionChannel newChannel(ChannelId channelId)
+    {
+        return new ClientSessionChannel(channelId);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.common.AbstractClientSession#newChannelId(java.lang.String)
+     */
+    @Override
+    protected ChannelId newChannelId(String channelId)
+    {
+        AbstractSessionChannel channel = (AbstractSessionChannel)getChannel(channelId);
+        return (channel==null)?new ChannelId(channelId):channel.getChannelId();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.common.AbstractClientSession#sendBatch()
+     */
+    @Override
+    protected void sendBatch()
+    {
+        int size=_queue.size();
+        while(size-->0)
         {
-            batch.run();
-        }
-        finally
-        {
-            endBatch();
+            Message message = _queue.poll();
+            doSend(message);
         }
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.bayeux.Session#disconnect()
+     */
     @Override
     public void disconnect()
     {
         // TODO Auto-generated method stub
-
-    }
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public void endBatch()
-    {
-        if (_batch.decrementAndGet()==0)
-        {
-            int size=_queue.size();
-            while(size-->0)
-            {
-                Message message = _queue.poll();
-                doSend(message);
-            }
-        }
+        
     }
 
     /* ------------------------------------------------------------ */
@@ -163,39 +174,6 @@ public class BayeuxClient implements Bayeux, ClientSession
     public List<String> getAllowedTransports()
     {
         return _transportRegistry.getAllowedTransports();
-    }
-
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Object getAttribute(String name)
-    {
-        return _attributes.getAttribute(name);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Set<String> getAttributeNames()
-    {
-        return _attributes.getAttributeNameSet();
-    }
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public SessionChannel getChannel(String channelId)
-    {
-        ClientSessionChannel channel = _channels.get(channelId);
-        if (channel==null)
-        {
-            ClientSessionChannel new_channel=new ClientSessionChannel(channelId);
-            channel=_channels.putIfAbsent(channelId,new_channel);
-            if (channel==null)
-                channel=new_channel;
-        }
-        
-        if (channel.isWild())
-            _wild.add(channel);
-        return channel;
     }
 
     /* ------------------------------------------------------------ */
@@ -275,22 +253,6 @@ public class BayeuxClient implements Bayeux, ClientSession
     }
 
     /* ------------------------------------------------------------ */
-    @Override
-    public Object removeAttribute(String name)
-    {
-        Object value = _attributes.getAttribute(name);
-        _attributes.removeAttribute(name);
-        return value;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void setAttribute(String name, Object value)
-    {
-        _attributes.setAttribute(name,value);
-    }
-
-    /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.bayeux.Bayeux#setOption(java.lang.String, java.lang.Object)
      */
@@ -298,13 +260,6 @@ public class BayeuxClient implements Bayeux, ClientSession
     public void setOption(String qualifiedName, Object value)
     {
         _options.put(qualifiedName,value);   
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void startBatch()
-    {
-        _batch.incrementAndGet();
     }
 
     
@@ -374,19 +329,6 @@ public class BayeuxClient implements Bayeux, ClientSession
     }
 
     /* ------------------------------------------------------------ */
-    protected void processConnect(Message connect)
-    {
-//        metaChannels.notifySuscribers(getMutableMetaChannel(MetaChannelType.CONNECT), connect);
-//        followAdvice();
-    }
-
-    /* ------------------------------------------------------------ */
-    protected void processDisconnect(Message disconnect)
-    {
-//        metaChannels.notifySuscribers(getMutableMetaChannel(MetaChannelType.DISCONNECT), disconnect);
-    }
-
-    /* ------------------------------------------------------------ */
     protected void processHandshake(Message handshake)
     {
         Boolean successfulField = (Boolean)handshake.get(Message.SUCCESSFUL_FIELD);
@@ -394,7 +336,6 @@ public class BayeuxClient implements Bayeux, ClientSession
 
         if (successful)
         {
-            // Renegotiate transport
             ClientTransport transport = _transportRegistry.negotiate((String[])handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD), BayeuxClient.BAYEUX_VERSION).get(0);
             if (transport == null)
             {
@@ -408,7 +349,6 @@ public class BayeuxClient implements Bayeux, ClientSession
             updateState(State.CONNECTED);
             _clientId = handshake.getClientId();
 
-            // TODO: internal batch ?
 
             followAdvice();
         }
@@ -418,79 +358,13 @@ public class BayeuxClient implements Bayeux, ClientSession
         }
     }
 
-    /* ------------------------------------------------------------ */
-    protected void processMessage(Message message)
-    {
-//        channels.notifySubscribers(getMutableChannel(message.getChannelName()), message);
-    }
-
-    /* ------------------------------------------------------------ */
-    protected void processUnsuccessful(Message message)
-    {
-        // TODO
-    }
     
     /* ------------------------------------------------------------ */
     protected void receive(List<Message.Mutable> incomingMessages)
     {
         List<Message.Mutable> messages = applyIncomingExtensions(incomingMessages);
-
         for (Message message : messages)
-        {
-            Map<String, Object> advice = message.getAdvice();
-            if (advice != null)
-                this._advice = advice;
-
-            String channelId = message.getChannelId();
-            if (channelId == null)
-            {
-                Log.info("Ignoring invalid bayeux message, missing channel: {}", message);
-                continue;
-            }
-
-            Boolean successfulField = (Boolean)message.get(Message.SUCCESSFUL_FIELD);
-            boolean successful = successfulField != null && successfulField;
-            
-            if (Channel.META_HANDSHAKE.equals(channelId))
-            {
-                if (_state != State.HANDSHAKING)
-                    throw new IllegalStateException();
-
-                if (successful)
-                    processHandshake(message);
-                else
-                    processUnsuccessful(message);
-            }
-            else if (Channel.META_CONNECT.equals(channelId))
-            {
-                if (_state != State.CONNECTED && _state != State.DISCONNECTING)
-                    // TODO: call a listener method ? Discard the message ?
-                    throw new UnsupportedOperationException();
-
-                if (successful)
-                    processConnect(message);
-                else
-                    processUnsuccessful(message);
-            }
-            else if (Channel.META_DISCONNECT.equals(channelId))
-            {
-                if (_state != State.DISCONNECTING)
-                    // TODO: call a listener method ? Discard the message ?
-                    throw new UnsupportedOperationException();
-
-                if (successful)
-                    processDisconnect(message);
-                else
-                    processUnsuccessful(message);
-            }
-            else
-            {
-                if (successful)
-                    processMessage(message);
-                else
-                    processUnsuccessful(message);
-            }
-        }
+            receive(message,(Message.Mutable)message);               
     }
     
     /* ------------------------------------------------------------ */
@@ -582,15 +456,11 @@ public class BayeuxClient implements Bayeux, ClientSession
     }
     
     /* ------------------------------------------------------------ */
-    protected class ClientSessionChannel implements SessionChannel
+    protected class ClientSessionChannel extends AbstractSessionChannel
     {
-        private final ChannelId _id;
-        private CopyOnWriteArrayList<SubscriptionListener> _subscriptions = new CopyOnWriteArrayList<SubscriptionListener>();
-        private CopyOnWriteArrayList<SessionChannelListener> _listeners = new CopyOnWriteArrayList<SessionChannelListener>();
-        
-        protected ClientSessionChannel(String channelId)
+        protected ClientSessionChannel(ChannelId id)
         {
-            _id=new ChannelId(channelId);
+            super(id);
         }
 
         /* ------------------------------------------------------------ */
@@ -601,54 +471,12 @@ public class BayeuxClient implements Bayeux, ClientSession
         }
 
         /* ------------------------------------------------------------ */
-        public ChannelId getChannelId()
-        {
-            return _id;
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public String getId()
-        {
-            return _id.toString();
-        }
-
-        /* ------------------------------------------------------------ */
         @Override
         public ClientSession getSession()
         {
             return BayeuxClient.this;
         }
 
-        /* ------------------------------------------------------------ */
-        @Override
-        public boolean isDeepWild()
-        {
-            return _id.isDeepWild();
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public boolean isMeta()
-        {
-            return _id.isMeta();
-        }
-
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public boolean isService()
-        {
-            return _id.isService();
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public boolean isWild()
-        {
-            return _id.isWild();
-        }
-        
         /* ------------------------------------------------------------ */
         @Override
         public void publish(Object data)
@@ -665,54 +493,32 @@ public class BayeuxClient implements Bayeux, ClientSession
         }
 
         /* ------------------------------------------------------------ */
+        /**
+         * @see org.cometd.common.AbstractClientSession.AbstractSessionChannel#sendSubscribe()
+         */
         @Override
-        public void removeListener(SessionChannelListener listener)
+        protected void sendSubscribe()
         {
-            _listeners.remove(listener);
+            Message.Mutable message = newMessage();
+            message.setChannelId(Channel.META_SUBSCRIBE);
+            message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
+            message.setClientId(_clientId);
+            send(message);
         }
 
         /* ------------------------------------------------------------ */
+        /**
+         * @see org.cometd.common.AbstractClientSession.AbstractSessionChannel#sendUnSubscribe()
+         */
         @Override
-        public void subscribe(SubscriptionListener listener)
+        protected void sendUnSubscribe()
         {
-            if (_clientId==null)
-                throw new IllegalStateException("!handshake");
-            
-            _subscriptions.add(listener);
-            if (_subscriptions.size()==1)
-            {
-                Message.Mutable message = newMessage();
-                message.setChannelId(Channel.META_SUBSCRIBE);
-                message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
-                message.setClientId(_clientId);
-                send(message);
-            }
-        }
+            Message.Mutable message = newMessage();
+            message.setChannelId(Channel.META_UNSUBSCRIBE);
+            message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
+            message.setClientId(_clientId);
 
-        /* ------------------------------------------------------------ */
-        @Override
-        public void unsubscribe()
-        {
-            // TODO Auto-generated method stub
-            
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public void unsubscribe(SubscriptionListener listener)
-        {
-            if (_clientId==null)
-                throw new IllegalStateException("!handshake");
-            
-            if (_subscriptions.remove(listener) && _subscriptions.size()==0)
-            {
-                Message.Mutable message = newMessage();
-                message.setChannelId(Channel.META_UNSUBSCRIBE);
-                message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
-                message.setClientId(_clientId);
-
-                send(message);
-            }
+            send(message);
         }
 
     }
