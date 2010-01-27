@@ -113,9 +113,9 @@ public class CometdURLPathTest extends AbstractCometdJQueryTest
         @Override
         public boolean sendMeta(ServerSession to, Mutable message)
         {
-            if (Channel.META_HANDSHAKE.equals(message.getChannelId()) ||
-                Channel.META_CONNECT.equals(message.getChannelId()) ||
-                Channel.META_DISCONNECT.equals(message.getChannelId()))
+            if (Channel.META_HANDSHAKE.equals(message.getChannel()) ||
+                Channel.META_CONNECT.equals(message.getChannel()) ||
+                Channel.META_DISCONNECT.equals(message.getChannel()))
             {
                 HttpTransport transport = (HttpTransport)bayeux.getCurrentTransport();
                 HttpServletRequest request = transport.getCurrentRequest();

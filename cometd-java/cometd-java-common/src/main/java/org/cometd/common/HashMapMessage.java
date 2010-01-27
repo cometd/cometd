@@ -97,7 +97,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     }
 
     /* ------------------------------------------------------------ */
-    public String getChannelId()
+    public String getChannel()
     {
         return (String)get(CHANNEL_FIELD);
     }
@@ -207,7 +207,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
      */
     public boolean isMeta()
     {
-        return ChannelId.isMeta(getChannelId());
+        return ChannelId.isMeta(getChannel());
     }
 
     /* ------------------------------------------------------------ */
@@ -241,7 +241,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         return getJSON();
     }
 
-    public void setChannelId(String channelId)
+    public void setChannel(String channelId)
     {
         put(CHANNEL_FIELD,channelId);
     }

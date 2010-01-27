@@ -1,6 +1,7 @@
 package org.cometd.common;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,7 @@ public class AbstractTransport implements Transport
     protected AbstractTransport(String name, Map<String,Object> options)
     {
         _name=name;
-        _options=options;
+        _options=options==null?new HashMap<String, Object>():options;
     }
 
     public String getName()

@@ -48,7 +48,7 @@ public class AcknowledgedMessagesExtension implements Extension
     /* ------------------------------------------------------------ */
     public boolean sendMeta(ServerSession to, Mutable message)
     {
-        String channel = message.getChannelId();
+        String channel = message.getChannel();
         if (channel == null)
             return true;
 

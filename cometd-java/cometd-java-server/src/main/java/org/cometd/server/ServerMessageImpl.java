@@ -113,7 +113,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     }
 
     /* ------------------------------------------------------------ */
-    public String getChannelId()
+    public String getChannel()
     {
         return (String)_mutable._channelId.getValue();
     }
@@ -353,7 +353,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             return (Map<String, Object>)advice;
         }
 
-        public String getChannelId()
+        public String getChannel()
         {
             return (String)_channelId.getValue();
         }
@@ -463,7 +463,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             _id.setValue(id);
         }
 
-        public void setChannelId(String channelId)
+        public void setChannel(String channelId)
         {
             _channelId.setValue(channelId);
         }

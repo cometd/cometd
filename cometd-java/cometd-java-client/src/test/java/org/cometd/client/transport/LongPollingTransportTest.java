@@ -3,16 +3,22 @@ package org.cometd.client.transport;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.xml.ws.ServiceMode;
+
 import org.cometd.bayeux.Message;
-import org.cometd.client.transport.AbstractTransportListener;
+import org.cometd.bayeux.Message.Mutable;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.http.HttpURI;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -24,6 +30,14 @@ import static org.junit.Assert.assertTrue;
  */
 public class LongPollingTransportTest
 {
+    Map<String,Object> _options;
+    
+    @Before
+    public void setup()
+    {
+        _options=new HashMap<String, Object>();
+    }
+    
     @Test
     public void testType()
     {
@@ -74,7 +88,7 @@ public class LongPollingTransportTest
             }
         };
         serverThread.start();
-        final String serverURI = "http://localhost:" + serverSocket.getLocalPort();
+        final HttpURI serverURI=new HttpURI("http://localhost:" + serverSocket.getLocalPort());
 
         try
         {
@@ -84,8 +98,8 @@ public class LongPollingTransportTest
             try
             {
                 final CountDownLatch latch = new CountDownLatch(1);
-                ClientTransport transport = new LongPollingTransport(httpClient);
-                transport.addListener(new AbstractTransportListener()
+                ClientTransport transport = new LongPollingTransport(_options,httpClient);
+                transport.init(null,serverURI,new AbstractTransportListener()
                 {
                     @Override
                     public void onMessages(List<Message.Mutable> messages)
@@ -95,7 +109,7 @@ public class LongPollingTransportTest
                 });
 
                 long start = System.nanoTime();
-                transport.send(serverURI);
+                transport.send();
                 long end = System.nanoTime();
 
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
@@ -147,7 +161,7 @@ public class LongPollingTransportTest
             }
         };
         serverThread.start();
-        String serverURI = "http://localhost:" + serverSocket.getLocalPort();
+        HttpURI serverURI = new HttpURI("http://localhost:" + serverSocket.getLocalPort());
 
         try
         {
@@ -156,9 +170,9 @@ public class LongPollingTransportTest
 
             try
             {
-                ClientTransport transport = new LongPollingTransport(httpClient);
+                ClientTransport transport = new LongPollingTransport(_options,httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                transport.addListener(new AbstractTransportListener()
+                transport.init(null,serverURI,new AbstractTransportListener()
                 {
                     @Override
                     public void onProtocolError()
@@ -168,7 +182,7 @@ public class LongPollingTransportTest
                 });
 
                 long start = System.nanoTime();
-                transport.send(serverURI);
+                transport.send();
                 long end = System.nanoTime();
 
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
@@ -191,18 +205,17 @@ public class LongPollingTransportTest
     public void testSendWithServerDown() throws Exception
     {
         ServerSocket serverSocket = new ServerSocket(0);
-        int port = serverSocket.getLocalPort();
         serverSocket.close();
-        String serverURI = "http://localhost:" + port;
+        final HttpURI serverURI=new HttpURI("http://localhost:" + serverSocket.getLocalPort());
 
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
         try
         {
-            ClientTransport transport = new LongPollingTransport(httpClient);
+            ClientTransport transport = new LongPollingTransport(_options,httpClient);
             final CountDownLatch latch = new CountDownLatch(1);
-            transport.addListener(new AbstractTransportListener()
+            transport.init(null,serverURI,new AbstractTransportListener()
             {
                 @Override
                 public void onConnectException(Throwable x)
@@ -211,7 +224,7 @@ public class LongPollingTransportTest
                 }
             });
 
-            transport.send(serverURI);
+            transport.send();
 
             assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
         }
@@ -247,7 +260,7 @@ public class LongPollingTransportTest
             }
         };
         serverThread.start();
-        String serverURI = "http://localhost:" + serverSocket.getLocalPort();
+        final HttpURI serverURI=new HttpURI("http://localhost:" + serverSocket.getLocalPort());
 
         try
         {
@@ -256,9 +269,9 @@ public class LongPollingTransportTest
 
             try
             {
-                ClientTransport transport = new LongPollingTransport(httpClient);
+                ClientTransport transport = new LongPollingTransport(_options,httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                transport.addListener(new AbstractTransportListener()
+                transport.init(null,serverURI,new AbstractTransportListener()
                 {
                     @Override
                     public void onException(Throwable x)
@@ -268,7 +281,7 @@ public class LongPollingTransportTest
                 });
 
                 long start = System.nanoTime();
-                transport.send(serverURI);
+                transport.send();
                 long end = System.nanoTime();
 
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
@@ -323,7 +336,7 @@ public class LongPollingTransportTest
             }
         };
         serverThread.start();
-        String serverURI = "http://localhost:" + serverSocket.getLocalPort();
+        final HttpURI serverURI=new HttpURI("http://localhost:" + serverSocket.getLocalPort());
 
         try
         {
@@ -333,9 +346,9 @@ public class LongPollingTransportTest
 
             try
             {
-                ClientTransport transport = new LongPollingTransport(httpClient);
+                ClientTransport transport = new LongPollingTransport(_options,httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                transport.addListener(new AbstractTransportListener()
+                transport.init(null,serverURI,new AbstractTransportListener()
                 {
                     @Override
                     public void onExpire()
@@ -344,7 +357,7 @@ public class LongPollingTransportTest
                     }
                 });
 
-                transport.send(serverURI);
+                transport.send();
 
                 assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
             }
@@ -359,5 +372,35 @@ public class LongPollingTransportTest
             assertNull(serverException.get());
             serverSocket.close();
         }
+    }
+    
+    protected class AbstractTransportListener implements TransportListener
+    {
+
+        @Override
+        public void onConnectException(Throwable x)
+        {
+        }
+
+        @Override
+        public void onException(Throwable x)
+        {
+        }
+
+        @Override
+        public void onExpire()
+        {
+        }
+
+        @Override
+        public void onMessages(List<Mutable> metaMessages)
+        {
+        }
+
+        @Override
+        public void onProtocolError()
+        {
+        }
+        
     }
 }

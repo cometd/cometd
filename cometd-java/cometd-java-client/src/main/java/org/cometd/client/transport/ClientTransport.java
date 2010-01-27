@@ -1,17 +1,13 @@
 package org.cometd.client.transport;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.cometd.bayeux.Message;
 import org.cometd.client.BayeuxClient;
 import org.cometd.common.AbstractTransport;
 import org.cometd.common.HashMapMessage;
-import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.ajax.JSON;
 

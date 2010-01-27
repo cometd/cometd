@@ -101,7 +101,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         
         ServerMessage.Mutable message = _bayeux.newMessage();
         message.incRef();
-        message.setChannelId(Channel.META_HANDSHAKE);
+        message.setChannel(Channel.META_HANDSHAKE);
         
         ServerSessionImpl session = new ServerSessionImpl(_bayeux,this,_idHint);
         
@@ -113,7 +113,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             _session=session;
             
             message.clear();
-            message.setChannelId(Channel.META_CONNECT);
+            message.setChannel(Channel.META_CONNECT);
             message.setClientId(_session.getId());
             message.put(Message.ADVICE_FIELD,LOCAL_ADVICE);
 
@@ -134,7 +134,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.incRef();
             message.setClientId(getId());
-            message.setChannelId(Channel.META_DISCONNECT);
+            message.setChannel(Channel.META_DISCONNECT);
             send(_session,message);
             message.decRef();
             while (_batch.get()>0)
@@ -256,7 +256,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.incRef();
-            message.setChannelId(_id.toString());
+            message.setChannel(_id.toString());
             message.setClientId(LocalSessionImpl.this.getId());
             message.setData(data);
             
@@ -299,7 +299,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.incRef();
-            message.setChannelId(Channel.META_SUBSCRIBE);
+            message.setChannel(Channel.META_SUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
             message.setClientId(LocalSessionImpl.this.getId());
 
@@ -313,7 +313,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.incRef();
-            message.setChannelId(Channel.META_UNSUBSCRIBE);
+            message.setChannel(Channel.META_UNSUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
             message.setClientId(LocalSessionImpl.this.getId());
 

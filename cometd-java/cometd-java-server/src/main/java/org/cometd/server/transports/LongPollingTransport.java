@@ -157,7 +157,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
                     // remember the connected status
                     boolean was_connected=session!=null && session.isConnected();
-                    boolean connect = Channel.META_CONNECT.equals(message.getChannelId());
+                    boolean connect = Channel.META_CONNECT.equals(message.getChannel());
 
                     // handle the message
                     // the actual reply is return from the call, but other messages may
