@@ -3,11 +3,8 @@ package org.cometd.bayeux.client;
 
 import java.io.IOException;
 
-import org.cometd.bayeux.BayeuxListener;
-import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
-import org.cometd.bayeux.client.BayeuxClient.Extension;
 
 
 
@@ -24,17 +21,10 @@ public interface ClientSession extends Session
 
     
     /**
-     * <p>Initiates the bayeux protocol handshake with the server.</p>
-     * <p>The handshake can be synchronous or asynchronous. <br/>
-     * A synchronous handshake will wait for the server's response (or lack thereof) before returning
-     * to the caller. <br/>
-     * An asynchronous handshake will not wait for the server and the caller may be notified via a
-     * {@link MetaMessageListener}.</p>
-     *
-     * @param async true if the handshake must be asynchronous, false otherwise.
-     * @throws IOException if a synchronous handshake fails
+     * <p>Initiates the bayeux protocol handshake with the server(s).</p>
+     * @throws IOException if a handshake fails
      */
-    void handshake(boolean async) throws IOException;
+    void handshake() throws IOException;
     
 
     /* ------------------------------------------------------------ */
@@ -44,5 +34,47 @@ public interface ClientSession extends Session
      */
     SessionChannel getChannel(String channelName);
 
+    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /**
+     * <p>Extension API for client session.</p>
+     *
+     * @see ClientSession#addExtension(Extension)
+     */
+    public interface Extension
+    {
+        /**
+         * Callback method invoked every time a normal message is incoming.
+         * @param session the session object
+         * @param message the incoming message
+         * @return true if message processing should continue, false if it should stop
+         */
+        boolean rcv(ClientSession session, Message.Mutable message);
+
+        /**
+         * Callback method invoked every time a meta message is incoming.
+         * @param session the session object
+         * @param message the incoming meta message
+         * @return true if message processing should continue, false if it should stop
+         */
+        boolean rcvMeta(ClientSession session, Message.Mutable message);
+
+        /**
+         * Callback method invoked every time a normal message is outgoing.
+         * @param session the session object
+         * @param message the outgoing message
+         * @return true if message processing should continue, false if it should stop
+         */
+        boolean send(ClientSession session, Message.Mutable message);
+
+        /**
+         * Callback method invoked every time a meta message is outgoing.
+         * @param session the session object
+         * @param message the outgoing meta message
+         * @return true if message processing should continue, false if it should stop
+         */
+        boolean sendMeta(ClientSession session, Message.Mutable message);
+    }
     
 }

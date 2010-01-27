@@ -11,7 +11,7 @@ import org.cometd.bayeux.Transport;
 public class AbstractTransport implements Transport
 {
     private final String _name;
-    private final Map<String,Object> _options;
+    protected Map<String,Object> _options;
     protected final List<String> _prefix=new ArrayList<String>();
     
     protected AbstractTransport(String name, Map<String,Object> options)

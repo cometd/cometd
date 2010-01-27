@@ -2,36 +2,34 @@ package org.cometd.client.transport;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.BayeuxClient;
+import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.ajax.JSON;
 
 /**
  * @version $Revision$ $Date$
  */
-public class LongPollingTransport extends AbstractTransport
+public class LongPollingTransport extends ClientTransport
 {
     private final HttpClient _httpClient;
 
-    public LongPollingTransport()
+    public LongPollingTransport(Map<String,Object> options)
     {
+        super("long-polling",options);
         _httpClient = new HttpClient();
     }
     
-    public LongPollingTransport(HttpClient httpClient)
+    public LongPollingTransport(Map<String,Object> options, HttpClient httpClient)
     {
+        super("long-polling",options);
         _httpClient = httpClient;
-    }
-
-    @Override
-    public String getName()
-    {
-        return "long-polling";
     }
 
     public boolean accept(String bayeuxVersion)
@@ -40,17 +38,18 @@ public class LongPollingTransport extends AbstractTransport
     }
 
     @Override
-    public void init(BayeuxClient bayeux)
+    public void init(BayeuxClient bayeux, HttpURI uri, TransportListener listener)
     {
-        super.init(bayeux);
+        super.init(bayeux, uri, listener);
     }
 
-    public void send(String uri, Message... messages)
+    public void send(Message... messages)
     {
         HttpExchange httpExchange = new TransportExchange();
         httpExchange.setMethod("POST");
+        
         // TODO: handle extra path for handshake, connect and disconnect
-        httpExchange.setURL(uri);
+        httpExchange.setURL(_uri.toString());
 
         String content = JSON.toString(messages);
         httpExchange.setRequestContentType("application/json;charset=UTF-8");
@@ -103,5 +102,12 @@ public class LongPollingTransport extends AbstractTransport
         {
             notifyExpire();
         }
+    }
+
+    @Override
+    public void reset()
+    {
+        // TODO Auto-generated method stub
+        
     }
 }

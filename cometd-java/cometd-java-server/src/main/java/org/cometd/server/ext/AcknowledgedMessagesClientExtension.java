@@ -1,8 +1,6 @@
 package org.cometd.server.ext;
 
 import java.util.Map;
-import java.util.Queue;
-
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.ServerMessage;

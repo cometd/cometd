@@ -1,9 +1,7 @@
 package org.cometd.server;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,14 +14,11 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
-import org.cometd.bayeux.client.BayeuxClient.Extension;
-import org.cometd.bayeux.client.SessionChannel.SessionChannelListener;
 import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
 import org.cometd.common.ChannelId;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -121,12 +116,6 @@ public class LocalSessionImpl implements LocalSession
         }
         message.setAssociated(null);
         message.decRef();
-    }
-    
-    /* ------------------------------------------------------------ */
-    public void handshake(boolean async) throws IOException
-    {
-        handshake();
     }
 
     /* ------------------------------------------------------------ */

@@ -6,7 +6,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import junit.framework.Assert;
 
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.BayeuxClient;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
@@ -93,7 +92,7 @@ public class BayeuxServerTest extends Assert
     public void testSessionAttributes() throws Exception
     {
         LocalSession local = _bayeux.newLocalSession("s0");
-        local.handshake(true);
+        local.handshake();
         ServerSession session = local.getServerSession();
         
         local.setAttribute("foo","bar");
@@ -121,13 +120,13 @@ public class BayeuxServerTest extends Assert
     {
         LocalSession session0 = _bayeux.newLocalSession("s0");
         assertTrue(session0.toString().indexOf("s0?")>=0);
-        session0.handshake(true);
+        session0.handshake();
         assertTrue(session0.toString().indexOf("s0_")>=0);
         
         final LocalSession session1 = _bayeux.newLocalSession("s1");
-        session1.handshake(true);
+        session1.handshake();
         final LocalSession session2 = _bayeux.newLocalSession("s2");
-        session2.handshake(true);
+        session2.handshake();
         
         final Queue<String> events = new ConcurrentLinkedQueue<String>();
         
@@ -262,11 +261,11 @@ public class BayeuxServerTest extends Assert
         });
         
         final LocalSession session0 = _bayeux.newLocalSession("s0");
-        session0.handshake(true);
+        session0.handshake();
         final LocalSession session1 = _bayeux.newLocalSession("s1");
-        session1.handshake(true);
+        session1.handshake();
         
-        session0.addExtension(new BayeuxClient.Extension()
+        session0.addExtension(new ClientSession.Extension()
         {
             public boolean sendMeta(ClientSession session, org.cometd.bayeux.Message.Mutable message)
             {

@@ -2,7 +2,6 @@ package org.cometd.server.transports;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.channels.IllegalSelectorException;
 import java.util.Map;
 import java.util.Queue;
 
