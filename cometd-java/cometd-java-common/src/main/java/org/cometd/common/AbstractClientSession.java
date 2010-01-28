@@ -1,27 +1,20 @@
 package org.cometd.common;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
-import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.LocalSession;
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerSession;
-import org.cometd.common.ChannelId;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.log.Log;
 
 
 /* ------------------------------------------------------------ */
@@ -32,6 +25,7 @@ public abstract class AbstractClientSession implements ClientSession
     protected final ConcurrentMap<String, AbstractSessionChannel> _channels = new ConcurrentHashMap<String, AbstractSessionChannel>();
     protected final AtomicInteger _batch = new AtomicInteger();
     protected final List<AbstractSessionChannel> _wild = new CopyOnWriteArrayList<AbstractSessionChannel>();
+    protected final AtomicInteger _idGen = new AtomicInteger(0);
     
 
     /* ------------------------------------------------------------ */
@@ -134,8 +128,11 @@ public abstract class AbstractClientSession implements ClientSession
     public void receive(final Message message, final Message.Mutable mutable)
     {
         final String id=message.getChannel();
-        final ChannelId channelId=id==null?null:newChannelId(id); 
-        final AbstractSessionChannel channel= channelId==null?null:_channels.get(channelId.toString());
+        final AbstractSessionChannel channel=id==null?null:(AbstractSessionChannel)getChannel(id);
+        final ChannelId channelId=channel==null?null:channel.getChannelId();
+        
+        if (channel!=null && channel._handler!=null)
+            channel._handler.handle(this,mutable);
         
         if (message.isMeta())
         {
@@ -146,26 +143,40 @@ public abstract class AbstractClientSession implements ClientSession
             String error = (String)message.get(Message.ERROR_FIELD);
             boolean successful = message.isSuccessful();
             
-            if (channel!=null)
+            if (channelId!=null)
             {
                 for (AbstractSessionChannel wild : _wild)
                 {       
-                    if (wild._id.matches(channel._id))
+                    if (wild._id.matches(channelId))
                     {
                         for (SessionChannel.SessionChannelListener listener : wild._listeners)
                         {
-                            if (listener instanceof SessionChannel.MetaChannelListener)
-                                ((SessionChannel.MetaChannelListener)listener).onMetaMessage(channel,message,successful,error);
-                            if (listener instanceof SessionChannel.MessageListener)
-                                ((SessionChannel.MessageListener)listener).onMessage(this,message);
+                            try
+                            {
+                                if (listener instanceof SessionChannel.MetaChannelListener)
+                                    ((SessionChannel.MetaChannelListener)listener).onMetaMessage(channel,message,successful,error);
+                                if (listener instanceof SessionChannel.MessageListener)
+                                    ((SessionChannel.MessageListener)listener).onMessage(this,message);
+                            }
+                            catch(Exception e)
+                            {
+                                Log.warn(e);
+                            }
                         }
                     }
                 }
                 
                 for (SessionChannel.SessionChannelListener listener : channel._listeners)
                 {
-                    if (listener instanceof SessionChannel.MetaChannelListener)
-                        ((SessionChannel.MetaChannelListener)listener).onMetaMessage(channel,message,message.isSuccessful(),error);
+                    try
+                    {
+                        if (listener instanceof SessionChannel.MetaChannelListener)
+                            ((SessionChannel.MetaChannelListener)listener).onMetaMessage(channel,message,message.isSuccessful(),error);
+                    }
+                    catch(Exception e)
+                    {
+                        Log.warn(e);
+                    }
                 }
             }
         }
@@ -175,26 +186,42 @@ public abstract class AbstractClientSession implements ClientSession
                 if (!extension.rcv(AbstractClientSession.this,mutable))
                     return;
 
-            if (channel!=null)
+            if (channelId!=null)
             {
                 for (AbstractSessionChannel wild : _wild)
                 {       
-                    if (wild._id.matches(channel._id))
+                    try
                     {
-                        for (SessionChannel.SessionChannelListener listener : wild._listeners)
+                        if (wild._id.matches(channel._id))
                         {
-                            if (listener instanceof SessionChannel.MessageListener)
-                                ((SessionChannel.MessageListener)listener).onMessage(this,message);
+                            for (SessionChannel.SessionChannelListener listener : wild._listeners)
+                            {
+                                if (listener instanceof SessionChannel.MessageListener)
+                                    ((SessionChannel.MessageListener)listener).onMessage(this,message);
+                            }
                         }
+                    }
+                    catch(Exception e)
+                    {
+                        Log.warn(e);
                     }
                 }
             }
         }
-        
+
         if (channel!=null && (channel.isMeta() || message.getData()!=null))
         {
             for (SubscriptionListener listener : channel._subscriptions)
-                listener.onMessage(channel,message);
+            {
+                try
+                {
+                    listener.onMessage(channel,message);
+                }
+                catch(Exception e)
+                {
+                    Log.warn(e);
+                }
+            }
         }
 
         if (Channel.META_DISCONNECT.equals(id) && message.isSuccessful())
@@ -206,6 +233,13 @@ public abstract class AbstractClientSession implements ClientSession
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
+    protected interface Handler
+    {
+        void handle(AbstractClientSession session, Message.Mutable mutable);   
+    }
+    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     /** A SessionChannel scoped to this LocalChannel
      */
     protected abstract static class AbstractSessionChannel implements SessionChannel
@@ -213,7 +247,8 @@ public abstract class AbstractClientSession implements ClientSession
         protected final ChannelId _id;
         protected CopyOnWriteArrayList<SubscriptionListener> _subscriptions = new CopyOnWriteArrayList<SubscriptionListener>();
         protected CopyOnWriteArrayList<SessionChannelListener> _listeners = new CopyOnWriteArrayList<SessionChannelListener>();
-
+        protected Handler _handler;
+        
         /* ------------------------------------------------------------ */
         protected AbstractSessionChannel(ChannelId id)
         {
@@ -296,6 +331,12 @@ public abstract class AbstractClientSession implements ClientSession
         public boolean isWild()
         {
             return _id.isWild();
+        }
+
+        /* ------------------------------------------------------------ */
+        public void setHandler(Handler handler)
+        {
+            _handler=handler;
         }
      
     }
