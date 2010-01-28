@@ -102,6 +102,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         ServerMessage.Mutable message = _bayeux.newMessage();
         message.incRef();
         message.setChannel(Channel.META_HANDSHAKE);
+        message.setId(_idGen.incrementAndGet());
         
         ServerSessionImpl session = new ServerSessionImpl(_bayeux,this,_idHint);
         
@@ -116,6 +117,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             message.setChannel(Channel.META_CONNECT);
             message.setClientId(_session.getId());
             message.put(Message.ADVICE_FIELD,LOCAL_ADVICE);
+            message.setId(_idGen.incrementAndGet());
 
             doSend(session,message);
             reply = message.getAssociated();
@@ -135,6 +137,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             message.incRef();
             message.setClientId(getId());
             message.setChannel(Channel.META_DISCONNECT);
+            message.setId(_idGen.incrementAndGet());
             send(_session,message);
             message.decRef();
             while (_batch.get()>0)
@@ -302,6 +305,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             message.setChannel(Channel.META_SUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
             message.setClientId(LocalSessionImpl.this.getId());
+            message.setId(_idGen.incrementAndGet());
 
             send(_session,message);
             message.setAssociated(null);
@@ -316,6 +320,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             message.setChannel(Channel.META_UNSUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
             message.setClientId(LocalSessionImpl.this.getId());
+            message.setId(_idGen.incrementAndGet());
 
             send(_session,message);
             message.setAssociated(null);

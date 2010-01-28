@@ -1,5 +1,9 @@
 package org.cometd.client.transport;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -10,20 +14,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.xml.ws.ServiceMode;
-
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
-import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpURI;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$ $Date$

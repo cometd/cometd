@@ -1,14 +1,11 @@
 package org.cometd.client.transport;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.ArrayList;
-
-import org.cometd.bayeux.Transport;
 
 /**
  * @version $Revision$ $Date$
@@ -37,13 +34,13 @@ public class TransportRegistry
         return Collections.unmodifiableList(_allowed);
     }
     
-    public List<ClientTransport> negotiate(String[] requestedTransports, String bayeuxVersion)
+    public List<ClientTransport> negotiate(Object[] requestedTransports, String bayeuxVersion)
     {
         List<ClientTransport> list = new ArrayList<ClientTransport>();
         
         for (String transport : _allowed)
         {
-            for (String requestedTransport : requestedTransports)
+            for (Object requestedTransport : requestedTransports)
             {
                 if (requestedTransport.equals(transport))
                 {

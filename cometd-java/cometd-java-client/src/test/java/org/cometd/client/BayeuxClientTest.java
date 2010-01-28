@@ -18,6 +18,7 @@ import junit.framework.TestCase;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.SessionChannel.MetaChannelListener;
 import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
@@ -64,9 +65,9 @@ public class BayeuxClientTest extends TestCase
         ServletHolder cometd_holder = new ServletHolder(cometd);
         cometd_holder.setInitParameter("timeout","10000");
         cometd_holder.setInitParameter("interval","100");
-        cometd_holder.setInitParameter("maxInterval","10000");
+        cometd_holder.setInitParameter("maxInterval","100000");
         cometd_holder.setInitParameter("multiFrameInterval","2000");
-        cometd_holder.setInitParameter("logLevel","0");
+        cometd_holder.setInitParameter("logLevel","3");
 
         context.addServlet(cometd_holder, "/cometd/*");
         context.addServlet(DefaultServlet.class, "/");
@@ -105,35 +106,33 @@ public class BayeuxClientTest extends TestCase
         BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_port+"/cometd");
         
         final AtomicBoolean connected = new AtomicBoolean();
-
-        client.getChannel("/meta/connect").addListener(new MetaChannelListener()
+        
+        client.getChannel(Channel.META_CONNECT).addListener(new MetaChannelListener()
         {
             @Override
             public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
             {
-                if (!connected.get())
-                {
-                    connected.set(true);
-                    try
-                    {
-                        exchanger.exchange(message,1,TimeUnit.SECONDS);
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
+                connected.set(successful);
             }
         });
         
-        client.getChannel("/meta/handshake").addListener(new MetaChannelListener()
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new MetaChannelListener()
         {
             @Override
             public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
             {
                 connected.set(false);
+            }
+        });
+        
+        client.getChannel("/meta/*").addListener(new MetaChannelListener()
+        {
+            @Override
+            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            {
                 try
                 {
+                    System.out.println("<<"+message+" @ "+channel);
                     exchanger.exchange(message,1,TimeUnit.SECONDS);
                 }
                 catch (Exception e)
@@ -162,6 +161,7 @@ public class BayeuxClientTest extends TestCase
             {
                 try
                 {
+                    System.out.println("a<"+message+" @ "+channel);
                     exchanger.exchange(message,1,TimeUnit.SECONDS);
                 }
                 catch (Exception e)
