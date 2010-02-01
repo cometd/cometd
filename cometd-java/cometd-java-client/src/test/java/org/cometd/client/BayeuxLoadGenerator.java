@@ -14,18 +14,17 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.cometd.Bayeux;
-import org.cometd.Client;
-import org.cometd.ClientListener;
-import org.cometd.Message;
-import org.cometd.MessageListener;
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.SessionChannel;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class BayeuxLoadGenerator
 {
-    private final List<LoadBayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<LoadBayeuxClient>());
+    private final List<BayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<BayeuxClient>());
     private final Map<Integer, Integer> rooms = new HashMap<Integer, Integer>();
     private final AtomicLong start = new AtomicLong();
     private final AtomicLong end = new AtomicLong();
@@ -34,9 +33,9 @@ public class BayeuxLoadGenerator
     private final AtomicLong maxLatency = new AtomicLong();
     private final AtomicLong totLatency = new AtomicLong();
     private final ConcurrentMap<Long, AtomicLong> latencies = new ConcurrentHashMap<Long, AtomicLong>();
-    private final ClientListener subscribeListener = new SubscribeListener();
-    private final ClientListener latencyListener = new LatencyListener();
-    private final ClientListener disconnectListener = new DisconnectListener();
+    private final HandshakeListener handshakeListener = new HandshakeListener();
+    private final LatencyListener latencyListener = new LatencyListener();
+    private final DisconnectListener disconnectListener = new DisconnectListener();
     private final HttpClient httpClient;
 
     public static void main(String[] args) throws Exception
@@ -139,9 +138,10 @@ public class BayeuxLoadGenerator
                 for (int i = 0; i < clients - currentClients; ++i)
                 {
                     LoadBayeuxClient client = new LoadBayeuxClient(httpClient, url);
-                    client.addListener(subscribeListener);
-                    client.addListener(latencyListener);
-                    client.start();
+                    client.getChannel(Channel.META_HANDSHAKE).addListener(handshakeListener);
+                    client.getChannel(Channel.META_DISCONNECT).addListener(disconnectListener);
+                    client.getChannel("/**").addListener(latencyListener);
+                    client.handshake();
 
                     client.startBatch();
                     for (int j = 0; j < roomsPerClient; ++j)
@@ -163,9 +163,7 @@ public class BayeuxLoadGenerator
             {
                 for (int i = 0; i < currentClients - clients; ++i)
                 {
-                    LoadBayeuxClient client = bayeuxClients.get(i);
-                    client.addListener(disconnectListener);
-                    client.destroy();
+                    LoadBayeuxClient client = (LoadBayeuxClient)bayeuxClients.get(i);
                 }
             }
 
@@ -245,7 +243,7 @@ public class BayeuxLoadGenerator
                         room = random.nextInt(rooms);
                         clientsPerRoom = this.rooms.get(room);
                     }
-                    client.publish(channel + "/" + room, message, "" + System.nanoTime());
+                    client.getChannel(channel + "/" + room).publish(message, "" + System.nanoTime());
                     expected += clientsPerRoom;
                 }
                 client.endBatch();
@@ -382,40 +380,36 @@ public class BayeuxLoadGenerator
         totLatency.set(0L);
     }
 
-    private class SubscribeListener implements MessageListener
+    private class HandshakeListener implements SessionChannel.MetaChannelListener
     {
-        public void deliver(Client fromClient, Client toClient, Message message)
+        @Override
+        public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
         {
-            if (Bayeux.META_SUBSCRIBE.equals(message.get(Bayeux.CHANNEL_FIELD)) &&
-                (Boolean)message.get(Bayeux.SUCCESSFUL_FIELD))
-            {
-                toClient.removeListener(this);
-                bayeuxClients.add((LoadBayeuxClient)toClient);
-            }
+            if (successful)
+                bayeuxClients.add((BayeuxClient)channel.getSession());   
         }
     }
 
-    private class DisconnectListener implements MessageListener
+    private class DisconnectListener implements SessionChannel.MetaChannelListener
     {
-        public void deliver(Client fromClient, Client toClient, Message message)
+        @Override
+        public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
         {
-            if (Bayeux.META_DISCONNECT.equals(message.get(Bayeux.CHANNEL_FIELD)) &&
-                (Boolean)message.get(Bayeux.SUCCESSFUL_FIELD))
-            {
-                toClient.removeListener(this);
-                bayeuxClients.remove(toClient);
-            }
+            if (successful)
+                bayeuxClients.remove((BayeuxClient)channel.getSession());
+                
         }
     }
 
-    private class LatencyListener implements MessageListener
+    private class LatencyListener implements SessionChannel.MessageListener
     {
-        public void deliver(Client fromClient, Client toClient, Message message)
+        @Override
+        public void onMessage(ClientSession session, Message message)
         {
-            Object data = message.get(Bayeux.DATA_FIELD);
+            Object data = message.getData();
             if (data != null)
             {
-                String msgId = (String)message.get(Bayeux.ID_FIELD);
+                Object msgId = message.getId();
                 if (msgId != null)
                 {
                     long arrivalTime = System.nanoTime();
@@ -423,7 +417,7 @@ public class BayeuxLoadGenerator
                         start.set(arrivalTime);
                     end.set(arrivalTime);
                     messages.incrementAndGet();
-                    updateLatencies(Long.parseLong(msgId), arrivalTime);
+                    updateLatencies(Long.parseLong(msgId.toString()), arrivalTime);
                 }
             }
         }
@@ -440,7 +434,13 @@ public class BayeuxLoadGenerator
 
         public void init(String channel, int room)
         {
-            subscribe(channel + "/" + room);
+            getChannel(channel + "/" + room).subscribe(new SessionChannel.SubscriptionListener()
+            {
+                @Override
+                public void onMessage(SessionChannel channel, Message message)
+                {
+                }
+            });
 
             Integer clientsPerRoom = rooms.get(room);
             if (clientsPerRoom == null) clientsPerRoom = 0;

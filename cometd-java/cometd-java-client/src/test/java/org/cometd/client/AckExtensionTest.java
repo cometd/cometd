@@ -27,11 +27,9 @@ import javax.servlet.ServletContextListener;
 
 import junit.framework.TestCase;
 
-import org.cometd.Bayeux;
-import org.cometd.Channel;
 import org.cometd.client.ChatRoomClient.Msg;
 import org.cometd.client.ext.AckExtension;
-import org.cometd.server.continuation.ContinuationCometdServlet;
+import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -48,7 +46,7 @@ public class AckExtensionTest extends TestCase
     Server _server;
     Connector _connector;
     EventListener _listener;
-    Bayeux _bayeux;
+    BayeuxDemoServer _bayeux;
     ChatService _chatService;
 
     static Connector newConnector()
@@ -85,8 +83,7 @@ public class AckExtensionTest extends TestCase
 
         context.setBaseResource(FileResource.newResource(file.toURI().toURL()));
 
-        ServletHolder comet = context.addServlet(
-                ContinuationCometdServlet.class, "/cometd/*");
+        ServletHolder comet = context.addServlet(CometdServlet.class, "/cometd/*");
 
         comet.setInitParameter("timeout", "20000");
         comet.setInitParameter("interval", "100");

@@ -21,10 +21,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.cometd.Client;
-import org.cometd.Extension;
-import org.cometd.Message;
-import org.cometd.MessageListener;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.client.ClientSession.Extension;
+import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
 import org.eclipse.jetty.client.Address;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -46,6 +47,7 @@ public class ChatRoomClient extends AbstractLifeCycle
     private String _privateChannel;    
     private String _username;
     private List<Extension> _extensions;
+    private ChatListener _chatListener=new ChatListener();
 
     private boolean _connected = false;
     
@@ -120,12 +122,12 @@ public class ChatRoomClient extends AbstractLifeCycle
         return _httpClient;
     }
     
-    public List<Extension> getExtensions()
+    public List<org.cometd.bayeux.client.ClientSession.Extension> getExtensions()
     {
         return _extensions;
     }
     
-    public ChatRoomClient addExtension(Extension extension)
+    public ChatRoomClient addExtension(org.cometd.bayeux.client.ClientSession.Extension extension)
     {
         if(_extensions==null)
             _extensions = new ArrayList<Extension>();
@@ -169,24 +171,9 @@ public class ChatRoomClient extends AbstractLifeCycle
                     _bayeuxClient.addExtension(ext);
             }
             
-            _bayeuxClient.addListener(new ChatListener());
         }
-             
-        _threadPool.dispatch(new Runnable()
-        {
-            public void run()
-            {
-                try
-                {
-                    _bayeuxClient.start();
-                } 
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-                Log.info("{} {}", getClass().getSimpleName(), "bayeux client started.");
-            }
-        });
+
+        _bayeuxClient.handshake();
         
         Log.info("{} {}", getClass().getSimpleName(), "chat client started.");
     }
@@ -206,20 +193,20 @@ public class ChatRoomClient extends AbstractLifeCycle
         Log.info("{} {}", getClass().getSimpleName(), "chat client stopped.");
     }
     
-    public void onMessageReceived(Client from, Map<String,Object> message)
+    public void onMessageReceived(ClientSession session, Map<String,Object> message)
     {
         if("private".equals(message.get("scope")))
-            onPrivateMessageReceived(from, message);
+            onPrivateMessageReceived(session, message);
         else
-            onPublicMessageReceived(from, message);
+            onPublicMessageReceived(session, message);
     }
     
-    public void onPublicMessageReceived(Client from, Map<String,Object> message)
+    public void onPublicMessageReceived(ClientSession session, Map<String,Object> message)
     {
 
     }
     
-    public void onPrivateMessageReceived(Client from, Map<String,Object> message)
+    public void onPrivateMessageReceived(ClientSession session, Map<String,Object> message)
     {
 
     }
@@ -239,13 +226,12 @@ public class ChatRoomClient extends AbstractLifeCycle
         
         _bayeuxClient.startBatch();
         
-        _bayeuxClient.subscribe(_publicChannel);
-
-        _bayeuxClient.publish(_publicChannel, 
-                new Msg().add("user", username)
+        
+        SessionChannel channel=_bayeuxClient.getChannel(_publicChannel);
+        channel.subscribe(_chatListener);
+        channel.publish(new Msg().add("user", username)
                 .add("join", Boolean.TRUE)
-                .add("chat", username + " has joined"), 
-                String.valueOf(System.currentTimeMillis()));
+                .add("chat", username + " has joined"));
                 
         _bayeuxClient.endBatch();
         _username = username;
@@ -304,10 +290,11 @@ public class ChatRoomClient extends AbstractLifeCycle
         return true;
     }    
     
-    class ChatListener implements MessageListener
+    class ChatListener implements SubscriptionListener
     {
 
-        public void deliver(Client from, Client to, Message message)
+        @Override
+        public void onMessage(SessionChannel channel, Message message)
         {
             if(!_connected)
             {
@@ -324,9 +311,9 @@ public class ChatRoomClient extends AbstractLifeCycle
             if(data.getClass().isArray())                           
                 onUserListRefreshed((Object[])data);            
             else if(data instanceof Map)
-                onMessageReceived(from, (Map<String,Object>)data);
-            
-        }        
+                onMessageReceived(channel.getSession(), (Map<String,Object>)data);
+        }
+    
     }
     
     public static class Msg extends HashMap<String, Object>
@@ -350,12 +337,12 @@ public class ChatRoomClient extends AbstractLifeCycle
                     Log.info("user: {}", u);
             }
             
-            public void onPublicMessageReceived(org.cometd.Client from, Map<String,Object> message)
+            public void onPublicMessageReceived(ClientSession session, Map<String,Object> message)
             {
                 Log.info("public message: {}", message);
             }
             
-            public void onPrivateMessageReceived(org.cometd.Client from, Map<String,Object> message)
+            public void onPrivateMessageReceived(ClientSession session, Map<String,Object> message)
             {
                 Log.info("private message: {}", message);
             }

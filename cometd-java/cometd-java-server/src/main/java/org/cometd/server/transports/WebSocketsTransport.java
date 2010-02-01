@@ -261,7 +261,7 @@ public class WebSocketsTransport extends HttpTransport
         {
             String data = JSON.toString(messages);
             System.err.println("WS<<<"+data);
-            _outbound.sendMessage(WebSocket.SENTINEL_FRAME,data);
+            _outbound.sendMessage(data);
         }
         
         /* ------------------------------------------------------------ */
@@ -269,7 +269,7 @@ public class WebSocketsTransport extends HttpTransport
         {
             String data = message.getJSON();
             System.err.println("WS<<<["+data+"]");
-            _outbound.sendMessage(WebSocket.SENTINEL_FRAME,"["+data+"]");
+            _outbound.sendMessage("["+data+"]");
         }
     };
     

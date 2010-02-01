@@ -269,6 +269,25 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         }
         
         /* ------------------------------------------------------------ */
+        public void publish(Object data,Object id)
+        {
+            if (_session==null)
+                throw new IllegalStateException("!handshake");
+            
+            ServerMessage.Mutable message = _bayeux.newMessage();
+            message.incRef();
+            message.setChannel(_id.toString());
+            message.setClientId(LocalSessionImpl.this.getId());
+            message.setData(data);
+            if (id!=null)
+                message.setId(id);
+            
+            send(_session,message);
+            message.setAssociated(null);
+            message.decRef();
+        }
+        
+        /* ------------------------------------------------------------ */
         @Override
         public String toString()
         {

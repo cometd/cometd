@@ -14,6 +14,7 @@ public interface SessionChannel extends Channel
     ClientSession getSession();
 
     void publish(Object data);
+    void publish(Object data,Object id);
     
     void subscribe(SubscriptionListener listener);
     void unsubscribe(SubscriptionListener listener);
