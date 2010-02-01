@@ -131,9 +131,24 @@ public abstract class BayeuxService
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @deprecated use {@link #getLocalSession()} or {@link #getServerSession()}
+     */
     public LocalSession getClient()
     {
         return _session;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public LocalSession getLocalSession()
+    {
+        return _session;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public ServerSession getServerSession()
+    {
+        return _session.getServerSession();
     }
 
     /* ------------------------------------------------------------ */

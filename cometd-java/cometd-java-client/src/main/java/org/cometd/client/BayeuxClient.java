@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.Timer;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -12,6 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Bayeux;
@@ -30,6 +32,7 @@ import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
 import org.cometd.common.ChannelId;
 import org.cometd.common.HashMapMessage;
+import org.eclipse.jetty.client.Address;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.log.Log;
@@ -64,6 +67,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
 
     private volatile Map<String,Object> _advice;
     private volatile State _state = State.DISCONNECTED;
+    private AtomicBoolean _handshakeBatch = new AtomicBoolean();
     
     private volatile ScheduledFuture<?> _task;
 
@@ -135,8 +139,24 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         this(url,Executors.newSingleThreadScheduledExecutor());
     }
 
-    
-    
+    /* ------------------------------------------------------------ */
+    /**
+     * @deprecated
+     */
+    public BayeuxClient(HttpClient httpClient, Address address, String uri)
+    {
+        this("http://"+address+uri,httpClient);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @deprecated
+     */
+    public BayeuxClient(HttpClient httpClient, Address address, String uri, Timer timer)
+    {
+        this("http://"+address+uri,httpClient);
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.common.AbstractClientSession#doDisconnected()
@@ -261,7 +281,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     @Override
     public void handshake()
     {
-        if (_clientId!=null)
+        if (_clientId!=null || _handshakeBatch.get())
             throw new IllegalStateException();
         
         List<String> allowed = getAllowedTransports();
@@ -271,6 +291,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD,allowed);
         message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
         message.setId(_idGen.incrementAndGet());
+        
+        _batch.set(1);
+        _handshakeBatch.set(true);
         
         synchronized (_queue)
         {
@@ -358,7 +381,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             else if (transport != _transport)
                 updateTransport(transport);
             
-
             updateState(State.CONNECTING);
             _clientId = handshake.getClientId();
         }
@@ -372,7 +394,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         boolean successful = handshake.isSuccessful();
         
         if (successful)
+        {
             updateState(State.CONNECTED);
+            if (_handshakeBatch.getAndSet(false))
+                endBatch();
+        }
         else
             updateState(State.DISCONNECTED);
         followAdvice();   
@@ -506,6 +532,23 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             message.setClientId(_clientId);
             message.setData(data);
             message.setId(_idGen.incrementAndGet());
+            
+            send(message);
+        }
+        
+        /* ------------------------------------------------------------ */
+        @Override
+        public void publish(Object data,Object id)
+        {
+            if (_clientId==null)
+                throw new IllegalStateException("!handshake");
+            
+            Message.Mutable message = newMessage();
+            message.setChannel(_id.toString());
+            message.setClientId(_clientId);
+            message.setData(data);
+            if (id!=null)
+                message.setId(id);
             
             send(message);
         }

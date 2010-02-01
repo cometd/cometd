@@ -7,24 +7,23 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.cometd.Bayeux;
-import org.cometd.Channel;
-import org.cometd.Client;
-import org.cometd.RemoveListener;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxService;
 
 public class ChatService extends BayeuxService
 {
     private final ConcurrentMap<String, Map<String, String>> _members = new ConcurrentHashMap<String, Map<String, String>>();
 
-    public ChatService(Bayeux bayeux)
+    public ChatService(BayeuxServer bayeux)
     {
-        super(bayeux, "chat");
+        super(bayeux,"chat");
         subscribe("/service/members", "handleMembership");
         subscribe("/service/privatechat", "privateChat");
     }
 
-    public void handleMembership(Client client, Map<String, Object> data)
+    public void handleMembership(ServerSession session, Map<String, Object> data)
     {
         String room = (String)data.get("room");
         Map<String, String> roomMembers = _members.get(room);
@@ -36,39 +35,42 @@ public class ChatService extends BayeuxService
         }
         final Map<String, String> members = roomMembers;
         String userName = (String)data.get("user");
-        members.put(userName, client.getId());
-        client.addListener(new RemoveListener()
-        {
-            public void removed(String clientId, boolean timeout)
+        members.put(userName, session.getId());
+        
+        session.addListener(new ServerSession.RemoveListener()
+        { 
+            @Override
+            public void removed(ServerSession session, boolean timeout)
             {
-                members.values().remove(clientId);
+                members.values().remove(session.getId());
                 broadcastMembers(members.keySet());
             }
         });
+        
         broadcastMembers(members.keySet());
     }
 
     private void broadcastMembers(Set<String> members)
     {
         // Broadcast the new members list
-        Channel channel = getBayeux().getChannel("/chat/members", false);
+        ServerChannel channel = getBayeux().getChannel("/chat/members", false);
         if (channel != null)
             channel.publish(getClient(), members, null);
     }
 
-    public void privateChat(Client client, Map<String, Object> data)
+    public void privateChat(ServerSession session, Map<String, Object> data)
     {
         String roomName = (String)data.get("room");
         Map<String, String> membersMap = _members.get(roomName);
         String[] peerNames = ((String)data.get("peer")).split(",");
-        ArrayList<Client> peers = new ArrayList<Client>(peerNames.length);
+        ArrayList<ServerSession> peers = new ArrayList<ServerSession>(peerNames.length);
 
         for (String peerName : peerNames)
         {
             String peerId = membersMap.get(peerName);
             if (peerId!=null)
             {
-                Client peer = getBayeux().getClient(peerId);
+                ServerSession peer = getBayeux().getSession(peerId);
                 if (peer!=null)
                     peers.add(peer);
             }
@@ -80,9 +82,10 @@ public class ChatService extends BayeuxService
             message.put("chat", data.get("chat"));
             message.put("user", data.get("user"));
             message.put("scope", "private");
-            for (Client peer : peers)
-                peer.deliver(client, roomName, message, null);
-            client.deliver(getClient(), roomName, message, null);
+            for (ServerSession peer : peers)
+                peer.deliver(getLocalSession(),roomName, message, null);
+            
+            getServerSession().deliver(getLocalSession(), roomName, message, null);
         }
     }
 }

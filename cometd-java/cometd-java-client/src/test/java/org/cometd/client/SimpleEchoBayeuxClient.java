@@ -5,10 +5,9 @@ import java.io.LineNumberReader;
 import java.util.Map;
 import java.util.Timer;
 
-import org.cometd.Client;
-import org.cometd.Message;
-import org.cometd.MessageListener;
-import org.cometd.server.AbstractBayeux;
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.SessionChannel;
 import org.eclipse.jetty.client.Address;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -31,6 +30,31 @@ public class SimpleEchoBayeuxClient
     HttpClient _httpClient;
     boolean _connected;
     
+    SessionChannel.SubscriptionListener _alphaListener = new SessionChannel.SubscriptionListener()
+    {
+        
+        @Override
+        public void onMessage(SessionChannel channel, Message message)
+        {
+            Map<String,Object> data=message.getDataAsMap();
+
+            String user = "unknown";
+            if (data!=null)
+            {
+                user = (String)data.get("user");
+                String chat = (String)data.get("chat");
+
+                if (user == null) 
+                    user = "unknown";
+
+                if (user.equals(_who))
+                    user = "I";
+
+                System.err.println("\n\t"+user+" said: "+chat);
+            }
+        }
+    };
+    
     public SimpleEchoBayeuxClient(String host, int port, String uri, String who)
     throws Exception
     {  
@@ -52,13 +76,14 @@ public class SimpleEchoBayeuxClient
 
         Address address = new Address (host,port);
         
+        _client = new BayeuxClient(_httpClient,address,uri,_timer);
+      
         
-        _client = new BayeuxClient(_httpClient,address,uri,_timer)
+        _client.getChannel(Channel.META_CONNECT).addListener(new SessionChannel.MetaChannelListener()
         {
-            public void metaConnect(boolean success,Message message)
+            @Override
+            public void onMetaMessage(SessionChannel channel, Message message, boolean success, String error)
             {
-                super.metaConnect(success,message);
-                
                 if (success && !_connected) 
                 {
                     System.err.println("Reconnected!");
@@ -69,76 +94,42 @@ public class SimpleEchoBayeuxClient
                 }
                 _connected = success;
             }
-
-            public void metaHandshake(boolean success, boolean reestablish,Message message)
-            {
-                super.metaHandshake(success,reestablish,message);
-
-                if (success && reestablish)
-                {
-                    _client.subscribe("/foo/alpha");
-                    System.err.println("Resubscribed");
-                }
-            }
-
-            public void metaPublishFail(Throwable th,Message[] messages)
-            {
-                super.metaPublishFail(th,messages);
-            }  
-        };
+        });
         
-        _client.addListener (new MessageListener ()
+
+        _client.getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
         {
-
-            public void deliver(Client fromClient, Client toClient, Message msg)
+            @Override
+            public void onMetaMessage(SessionChannel channel, Message message, boolean success, String error)
             {
-                if (msg == null)
-                    return;
-                if ("/foo/alpha".equals(msg.getChannel()))
-                {  
-                    Object data=(Object)msg.get(AbstractBayeux.DATA_FIELD);
-
-                    String user = "unknown";
-                    if (data!=null)
-                    {
-                        user = (String)((Map)data).get("user");
-                        String chat = (String)((Map)data).get("chat");
-
-                        if (user == null) 
-                            user = "unknown";
-
-                        if (user.equals(_who))
-                            user = "I";
-
-                        System.err.println("\n\t"+user+" said: "+chat);
-                    }
+                if (success)
+                {
+                    _client.getChannel("/foo/alpha").subscribe(_alphaListener);
+                    Object msg=new JSON.Literal("{\"user\":\""+_who+"\",\"chat\":\"Has joined\"}");
+                    _client.getChannel("/foo/alpha").publish(msg, String.valueOf(_id++));
+                    _connected = true;
                 }
             }
         });
-        
        
       
     }
     
     public void start () throws Exception
     {
-        _client.start(); 
-        _client.subscribe("/foo/alpha"); 
-        Object msg=new JSON.Literal("{\"user\":\""+_who+"\",\"chat\":\"Has joined\"}");
-        _client.publish("/foo/alpha", msg, String.valueOf(_id++));
-        _connected = true;
+        _client.handshake();  
     }
     
     public void stop () throws Exception
     { 
-        _client.stop();
+        _client.disconnect();
         _connected = false;
     }
     
     public void publish (String say)
     {
         Object msg=new JSON.Literal("{\"user\":\""+_who+"\",\"chat\":\""+say+"\"}");
-        _client.publish("/foo/alpha", msg, String.valueOf(_id++));
+        _client.getChannel("/foo/alpha").publish(msg, String.valueOf(_id++));
     }
     
     public void stopHttp()
