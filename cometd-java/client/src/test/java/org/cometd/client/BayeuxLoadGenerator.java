@@ -343,7 +343,7 @@ public class BayeuxLoadGenerator
             {
                 Map.Entry<Long, AtomicLong> entry = entries.next();
                 long latency = entry.getKey();
-                Long bucketIndex = (latency - minLatency.get()) * latencyBucketFrequencies.length / latencyRange;
+                Long bucketIndex = latencyRange == 0 ? 0 : (latency - minLatency.get()) * latencyBucketFrequencies.length / latencyRange;
                 int index = bucketIndex.intValue() == latencyBucketFrequencies.length ? latencyBucketFrequencies.length - 1 : bucketIndex.intValue();
                 long value = entry.getValue().get();
                 latencyBucketFrequencies[index] += value;
@@ -352,10 +352,10 @@ public class BayeuxLoadGenerator
             }
 
             System.err.println("Messages - Latency Distribution Curve (X axis: Frequency, Y axis: Latency):");
-            for (int i = 0; i < latencyBucketFrequencies.length; i++)
+            for (int i = 0; i < latencyBucketFrequencies.length; ++i)
             {
                 long latencyBucketFrequency = latencyBucketFrequencies[i];
-                int value = Math.round(latencyBucketFrequency * (float) latencyBucketFrequencies.length / maxLatencyBucketFrequency);
+                int value = maxLatencyBucketFrequency == 0 ? 0 : Math.round(latencyBucketFrequency * (float) latencyBucketFrequencies.length / maxLatencyBucketFrequency);
                 if (value == latencyBucketFrequencies.length) value = value - 1;
                 for (int j = 0; j < value; ++j) System.err.print(" ");
                 System.err.print("@");
