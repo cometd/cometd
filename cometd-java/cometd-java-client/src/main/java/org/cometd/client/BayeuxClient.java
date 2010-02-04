@@ -59,7 +59,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
    
     protected final ScheduledExecutorService _scheduler;    
 
-    private final AtomicInteger _batch = new AtomicInteger();
     private final TransportListener _transportListener = new Listener();
     private final AtomicInteger _messageIds = new AtomicInteger();   
     private final Map<String,Object> _options = new TreeMap<String, Object>();    
@@ -70,6 +69,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     private AtomicBoolean _handshakeBatch = new AtomicBoolean();
     
     private volatile ScheduledFuture<?> _task;
+    
+    private int _backoffTries=0;
+    private long _backoffMax=30000;
+    private long _backoffInc=1000;
 
     private Handler _handshakeHandler = new AbstractClientSession.Handler()
     {
@@ -86,6 +89,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         public void handle(AbstractClientSession session, Mutable mutable)
         {
             processConnect(mutable);
+        }
+    };
+    
+    private Handler _disconnectHandler = new Handler()
+    {
+        @Override
+        public void handle(AbstractClientSession session, Mutable mutable)
+        {
+            processDisconnect(mutable);
         }
     };
 
@@ -131,6 +143,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         
         ((AbstractClientSession.AbstractSessionChannel)getChannel(Channel.META_HANDSHAKE)).setHandler(_handshakeHandler);
         ((AbstractClientSession.AbstractSessionChannel)getChannel(Channel.META_CONNECT)).setHandler(_connectHandler);
+        ((AbstractClientSession.AbstractSessionChannel)getChannel(Channel.META_DISCONNECT)).setHandler(_disconnectHandler);
     }
 
     /* ------------------------------------------------------------ */
@@ -211,8 +224,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     @Override
     public void disconnect()
     {
+        
         if (isConnected())
         {
+            updateState(State.DISCONNECTING);
             Message.Mutable message = newMessage();
             message.setClientId(getId());
             message.setChannel(Channel.META_DISCONNECT);
@@ -291,9 +306,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD,allowed);
         message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
         message.setId(_idGen.incrementAndGet());
-        
-        _batch.set(1);
+
         _handshakeBatch.set(true);
+        _batch.set(1);
         
         synchronized (_queue)
         {
@@ -387,6 +402,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         
         followAdvice();
     }
+
+    /* ------------------------------------------------------------ */
+    protected void processDisconnect(Message handshake)
+    {
+        boolean successful = handshake.isSuccessful();
+        
+        if (successful)
+            updateState(State.DISCONNECTED);
+    }
     
     /* ------------------------------------------------------------ */
     protected void processConnect(Message handshake)
@@ -395,12 +419,21 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         
         if (successful)
         {
-            updateState(State.CONNECTED);
+            switch(_state)
+            {
+                case CONNECTED:
+                    break;
+                case CONNECTING:
+                    updateState(State.CONNECTED);
+                    break;
+            }
             if (_handshakeBatch.getAndSet(false))
+            {
                 endBatch();
+            }
         }
         else
-            updateState(State.DISCONNECTED);
+            updateState(State.UNCONNECTED);
         followAdvice();   
     }
  
@@ -410,8 +443,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         for (Message message : incomingMessages)
         {
             System.out.println("< "+message);
-            if ("/meta/subscribe".equals(message.getChannel()))
-                System.out.println("match");
             receive(message,(Message.Mutable)message);   
         }
     }
@@ -455,33 +486,76 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
                 interval=((Number)advice.get(Message.INTERVAL_FIELD)).longValue();
         }
         
-        // Should we send a connect?
-        if (State.CONNECTED.equals(_state) || State.CONNECTING.equals(_state) || Message.RECONNECT_RETRY_VALUE.equals(reconnect))
+        // TODO backoff interval!
+        
+        switch(_state)
         {
-            // TODO backoff if !connected?
-            
-            System.out.println("Connect in "+interval);
-            _task = _scheduler.schedule(new Runnable()
-            {
-                public void run()
-                {
-                    sendConnect();
-                }
-            }, interval, TimeUnit.MILLISECONDS);
-        }
-        else if (Message.RECONNECT_RETRY_VALUE.equals(reconnect))
-        {
-            // TODO backoff?
+            case HANDSHAKING:
+                _backoffTries++;
+                scheduleHandshake(interval);
+                break;
+                
+            case CONNECTING:
+                sendConnect();
+                break;
+                
+            case CONNECTED:
+                _backoffTries=0;
+                scheduleConnect(interval);
+                break;
 
-            System.out.println("Handshake in "+interval);
-            _task = _scheduler.schedule(new Runnable()
-            {
-                public void run()
+            case UNCONNECTED:
+                _backoffTries++;
+                if (Message.RECONNECT_RETRY_VALUE.equals(reconnect))
                 {
-                    handshake();
+                    scheduleConnect(interval);
+                    break;
                 }
-            }, interval, TimeUnit.MILLISECONDS);
+                
+                if (Message.RECONNECT_HANDSHAKE_VALUE .equals(reconnect))
+                {
+                    scheduleHandshake(interval);
+                    break;
+                }
+                
+            case DISCONNECTING:
+            case DISCONNECTED:
+                
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    private void scheduleConnect(long interval)
+    {
+        long backOff=_backoffTries==0?0:((_backoffTries-1)*_backoffInc);
+        if (backOff>_backoffMax)
+            backOff=_backoffMax;
+        System.out.println("connect in "+interval+" + "+backOff);
+        
+        _task = _scheduler.schedule(new Runnable()
+        {
+            public void run()
+            {
+                sendConnect();
+            }
+        }, interval+backOff, TimeUnit.MILLISECONDS);
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void scheduleHandshake(long interval)
+    {
+        long backOff=_backoffTries==0?0:((_backoffTries-1)*_backoffInc);
+        if (backOff>_backoffMax)
+            backOff=_backoffMax;
+        System.out.println("handshake in "+interval+" + "+backOff);
+        
+        _task = _scheduler.schedule(new Runnable()
+        {
+            public void run()
+            {
+                handshake();
+            }
+        }, interval+backOff, TimeUnit.MILLISECONDS);
     }
     
     
@@ -583,6 +657,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
 
             send(message);
         }
+        
+        @Override
+        public String toString()
+        {
+            return super.toString()+"@"+_clientId;
+        }
     }
     
     private class Listener implements TransportListener
@@ -620,7 +700,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     
     private enum State
     {
-        HANDSHAKING, CONNECTING, CONNECTED, DISCONNECTING, DISCONNECTED
+        HANDSHAKING, CONNECTING, CONNECTED, UNCONNECTED, DISCONNECTING, DISCONNECTED
     }
 
 

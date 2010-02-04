@@ -229,7 +229,7 @@ public class ChatRoomClient extends AbstractLifeCycle
         
         SessionChannel channel=_bayeuxClient.getChannel(_publicChannel);
         channel.subscribe(_chatListener);
-        channel.publish(new Msg().add("user", username)
+        channel.publish(new Data().add("user", username)
                 .add("join", Boolean.TRUE)
                 .add("chat", username + " has joined"));
                 
@@ -247,10 +247,10 @@ public class ChatRoomClient extends AbstractLifeCycle
         
         _bayeuxClient.startBatch();
         
-        _bayeuxClient.unsubscribe(_publicChannel);
-
-        _bayeuxClient.publish(_publicChannel, 
-                new Msg().add("user", _username)
+        SessionChannel channel=_bayeuxClient.getChannel(_publicChannel);
+        channel.unsubscribe();
+        channel.publish( 
+                new Data().add("user", _username)
                 .add("leave", Boolean.TRUE)
                 .add("chat", _username + " has left"), 
                 String.valueOf(System.currentTimeMillis()));        
@@ -264,10 +264,9 @@ public class ChatRoomClient extends AbstractLifeCycle
     {
         if(_username==null)
             return false;
-        
-        _bayeuxClient.publish(_publicChannel, 
-                new Msg().add("user", _username)                
-                .add("chat", message), 
+
+        SessionChannel channel=_bayeuxClient.getChannel(_publicChannel);
+        channel.publish(new Data().add("user", _username).add("chat", message), 
                 String.valueOf(System.currentTimeMillis()));
         
         return true;
@@ -279,13 +278,12 @@ public class ChatRoomClient extends AbstractLifeCycle
             return false;
         if(user==null)
             return chat(message);
-        
-        _bayeuxClient.publish(_privateChannel, 
-                new Msg().add("user", _username)
+
+        SessionChannel channel=_bayeuxClient.getChannel(_privateChannel);
+        channel.publish(new Data().add("user", _username)
                 .add("room", _publicChannel)
                 .add("chat", message)
-                .add("peer", user), 
-                null);
+                .add("peer", user));
         
         return true;
     }    
@@ -316,10 +314,10 @@ public class ChatRoomClient extends AbstractLifeCycle
     
     }
     
-    public static class Msg extends HashMap<String, Object>
+    public static class Data extends HashMap<String, Object>
     {
         
-        Msg add(String name, Object value)
+        Data add(String name, Object value)
         {
             put(name, value);
             return this;
