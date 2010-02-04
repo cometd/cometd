@@ -66,8 +66,7 @@ public class BayeuxClientTest extends TestCase
         context.addFilter(new FilterHolder(_filter),"/*",0);
 
         // Cometd servlet
-        CometdServlet cometd = new CometdServlet();
-        ServletHolder cometd_holder = new ServletHolder(cometd);
+        ServletHolder cometd_holder = new ServletHolder(CometdServlet.class);
         cometd_holder.setInitParameter("timeout","10000");
         cometd_holder.setInitParameter("interval","100");
         cometd_holder.setInitParameter("maxInterval","100000");

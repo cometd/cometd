@@ -62,6 +62,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         getChannel(Channel.META_DISCONNECT,true).addListener(new DisconnectHandler());
         
         _logger=Log.getLogger("bayeux@"+hashCode());
+        _logger.info("STARTED: "+_sessions);
     }
     
     /* ------------------------------------------------------------ */
@@ -325,7 +326,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         ServerMessage.Mutable reply=null;
         
         if (_logger.isDebugEnabled())
-            _logger.debug(">  "+message);
+            _logger.debug(">  "+message+" "+session);
         
         if (!extendRecv(session,message) || session!=null && !session.extendRecv(message))
         {
