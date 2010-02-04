@@ -17,5 +17,5 @@ public interface TransportListener
 
     void onExpire();
 
-    void onProtocolError();
+    void onProtocolError(String info);
 }
