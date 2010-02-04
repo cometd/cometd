@@ -27,7 +27,10 @@ import javax.servlet.ServletContextListener;
 
 import junit.framework.TestCase;
 
-import org.cometd.client.ChatRoomClient.Msg;
+import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.client.ChatRoomClient.Data;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.server.Connector;
@@ -46,7 +49,7 @@ public class AckExtensionTest extends TestCase
     Server _server;
     Connector _connector;
     EventListener _listener;
-    BayeuxDemoServer _bayeux;
+    BayeuxServer _bayeux;
     ChatService _chatService;
 
     static Connector newConnector()
@@ -126,8 +129,8 @@ public class AckExtensionTest extends TestCase
         final List<Map<String, Object>> messages = new ArrayList<Map<String, Object>>();
         ChatRoomClient room = new ChatRoomClient(port)
         {
-            public void onPublicMessageReceived(org.cometd.Client from,
-                    Map<String, Object> message)
+            @Override
+            public void onPublicMessageReceived(ClientSession session, Map<String, Object> message)
             {
                 synchronized (lock)
                 {
@@ -148,7 +151,7 @@ public class AckExtensionTest extends TestCase
         // foo has joined
         assertTrue(receive(lock, messages, ++expectedMessages));
 
-        Channel publicChat = _bayeux.getChannel("/chat/demo", false);
+        ServerChannel publicChat = _bayeux.getChannel("/chat/demo", false);
         assertTrue(publicChat != null);
         
         for(int i=0; i<5;)
@@ -221,9 +224,9 @@ public class AckExtensionTest extends TestCase
         }
     }
 
-    protected void publishFromServer(Channel channel, String user, String chat)
+    protected void publishFromServer(ServerChannel channel, String user, String chat)
     {
-        channel.publish(_chatService.getClient(), new Msg().add("user", user)
+        channel.publish(_chatService.getLocalSession(), new Data().add("user", user)
                 .add("chat", chat), null);
     }
 
@@ -248,9 +251,9 @@ public class AckExtensionTest extends TestCase
 
         public void attributeAdded(ServletContextAttributeEvent event)
         {
-            if (_bayeux == null && event.getName().equals(Bayeux.ATTRIBUTE))
+            if (_bayeux == null && event.getName().equals(BayeuxServer.ATTRIBUTE))
             {
-                _bayeux = (Bayeux) event.getValue();
+                _bayeux = (BayeuxServer) event.getValue();
                 _chatService = new ChatService(_bayeux);
             }
         }

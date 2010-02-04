@@ -133,7 +133,7 @@ public class BayeuxClientTest extends TestCase
                 try
                 {
                     System.out.println("<<"+message+" @ "+channel);
-                    exchanger.exchange(message,1,TimeUnit.SECONDS);
+                    exchanger.exchange(message,5,TimeUnit.SECONDS);
                 }
                 catch (Exception e)
                 {
@@ -162,7 +162,7 @@ public class BayeuxClientTest extends TestCase
                 try
                 {
                     System.out.println("a<"+message+" @ "+channel);
-                    exchanger.exchange(message,1,TimeUnit.SECONDS);
+                    exchanger.exchange(message,5,TimeUnit.SECONDS);
                 }
                 catch (Exception e)
                 {
@@ -180,11 +180,22 @@ public class BayeuxClientTest extends TestCase
         assertEquals("data",message.getData());
 
         client.disconnect();
+        boolean connect_first=false;
         message = (Message)exchanger.exchange(null,1,TimeUnit.SECONDS);
+        if (Channel.META_CONNECT.equals(message.getChannel()))
+        {
+            connect_first=true;
+            message = (Message)exchanger.exchange(null,1,TimeUnit.SECONDS);
+        }
         assertEquals(Channel.META_DISCONNECT,message.getChannel());
         assertTrue(message.isSuccessful());
-
-        exchanger.exchange(null,1,TimeUnit.SECONDS);
+        
+        if (!connect_first)
+        {
+            message = (Message)exchanger.exchange(null,1,TimeUnit.SECONDS);
+            assertEquals(Channel.META_CONNECT,message.getChannel());
+            assertTrue(message.isSuccessful());
+        }
 
     }
 

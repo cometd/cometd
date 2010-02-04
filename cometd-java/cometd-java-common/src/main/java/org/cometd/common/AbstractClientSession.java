@@ -75,7 +75,9 @@ public abstract class AbstractClientSession implements ClientSession
     public void endBatch()
     {  
         if (_batch.decrementAndGet()==0)
+        {
             sendBatch();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -337,6 +339,13 @@ public abstract class AbstractClientSession implements ClientSession
         public void setHandler(Handler handler)
         {
             _handler=handler;
+        }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public String toString()
+        {
+            return _id.toString();
         }
      
     }
