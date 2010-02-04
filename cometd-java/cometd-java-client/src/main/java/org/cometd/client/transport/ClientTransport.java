@@ -87,9 +87,9 @@ public abstract class ClientTransport extends AbstractTransport
     }
 
     /* ------------------------------------------------------------ */
-    protected void notifyProtocolError()
+    protected void notifyProtocolError(String info)
     {
-        _listener.onProtocolError();
+        _listener.onProtocolError(info);
     }
 
     /* ------------------------------------------------------------ */

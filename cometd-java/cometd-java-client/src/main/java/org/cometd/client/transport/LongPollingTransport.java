@@ -56,6 +56,7 @@ public class LongPollingTransport extends ClientTransport
         try
         {
             httpExchange.setRequestContent(new ByteArrayBuffer(content, "UTF-8"));
+            _bayeux.customize(httpExchange);
             _httpClient.send(httpExchange);
         }
         catch (Exception x)
@@ -81,7 +82,7 @@ public class LongPollingTransport extends ClientTransport
             }
             else
             {
-                notifyProtocolError();
+                notifyProtocolError(""+getResponseStatus());
             }
         }
 

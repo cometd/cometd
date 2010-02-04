@@ -171,7 +171,7 @@ public class LongPollingTransportTest
                 transport.init(null,serverURI,new AbstractTransportListener()
                 {
                     @Override
-                    public void onProtocolError()
+                    public void onProtocolError(String info)
                     {
                         latch.countDown();
                     }
@@ -394,7 +394,7 @@ public class LongPollingTransportTest
         }
 
         @Override
-        public void onProtocolError()
+        public void onProtocolError(String info)
         {
         }
         
