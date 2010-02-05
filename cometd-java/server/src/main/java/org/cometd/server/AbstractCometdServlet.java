@@ -34,6 +34,7 @@ import org.cometd.Bayeux;
 import org.cometd.DataFilter;
 import org.cometd.Message;
 import org.cometd.server.filter.JSONDataFilter;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 
@@ -94,6 +95,9 @@ import org.eclipse.jetty.util.log.Log;
  * <dt>loglevel</dt>
  * <dd>0=none, 1=info, 2=debug</dd>
  * 
+ * <dt>jsonDebug</dt>
+ * <dd>If true, JSON complete json input will be kept for debug.</dd>
+ * 
  * <dt>refsThreshold</dt>
  * <dd>The number of message refs at which the a single message response will be
  * cached instead of being generated for every client delivered to. Done to
@@ -116,6 +120,7 @@ public abstract class AbstractCometdServlet extends GenericServlet
     public final static String BROWSER_ID="BAYEUX_BROWSER";
 
     protected AbstractBayeux _bayeux;
+    protected boolean _jsonDebug;
 
     public AbstractBayeux getBayeux()
     {
@@ -214,6 +219,9 @@ public abstract class AbstractCometdServlet extends GenericServlet
 
                 _bayeux.generateAdvice();
 
+                String jsonD=getInitParameter("jsonDebug");
+                _jsonDebug=jsonD!=null && Boolean.parseBoolean(jsonD);
+                
                 if (_bayeux.isLogInfo())
                 {
                     getServletContext().log("timeout=" + timeout);
@@ -286,6 +294,11 @@ public abstract class AbstractCometdServlet extends GenericServlet
             // Get message batches either as JSON body or as message parameters
             if (request.getContentType() != null && !request.getContentType().startsWith("application/x-www-form-urlencoded"))
             {
+                if (_jsonDebug)
+                {
+                    fodder=IO.toString(request.getReader());
+                    return _bayeux.parse(fodder);
+                }
                 return _bayeux.parse(request.getReader());
             }
 
@@ -319,7 +332,8 @@ public abstract class AbstractCometdServlet extends GenericServlet
         }
         catch(Exception e)
         {
-            throw new Error(fodder,e);
+            getServletContext().log(fodder,e);
+            throw new Error("Exception parsing message: |"+fodder+"|",e);
         }
     }
 
