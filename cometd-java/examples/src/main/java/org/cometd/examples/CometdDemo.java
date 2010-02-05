@@ -130,6 +130,7 @@ public class CometdDemo
         comet.setInitParameter("maxInterval","20000");
         comet.setInitParameter("multiFrameInterval","5000");
         comet.setInitParameter("logLevel","0");
+        comet.setInitParameter("jsonDebug","true");
         comet.setInitOrder(2);
 
 

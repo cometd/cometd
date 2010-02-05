@@ -37,6 +37,7 @@ public abstract class AbstractBayeuxServiceTest extends TestCase
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
         cometdServletHolder.setInitParameter("timeout", String.valueOf(5000));
         cometdServletHolder.setInitParameter("logLevel", "2");
+        cometdServletHolder.setInitParameter("jsonDebug", "true");
         String cometdServletPath = "/cometd";
         context.addServlet(cometdServletHolder, cometdServletPath + "/*");
 
