@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.ajax.JSON;
 /* ------------------------------------------------------------ */
 /**
  * Timesync extension (server side).
- * 
+ * <p/>
  * With each handshake or connect, the extension sends timestamps within the ext
  * field like:
  * <code>{ext:{timesync:{tc:12345567890,l:23,o:4567},...},...}</code> where:
@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.ajax.JSON;
  * <li>l is the network lag that the client has calculated.
  * <li>o is the clock offset that the client has calculated.
  * </ul>
- * 
+ * <p/>
  * <p>
  * A cometd server that supports timesync, can respond with an ext field like:
  * <code>{ext:{timesync:{tc:12345567890,ts:1234567900,p:123,a:3},...},...}</code>
@@ -67,17 +67,12 @@ import org.eclipse.jetty.util.ajax.JSON;
  */
 public class TimesyncExtension implements Extension
 {
-    private int _accuracyTarget=25;
+    private int _accuracyTarget = 25;
 
-    public TimesyncExtension()
-    {
-    }
-
-    /* ------------------------------------------------------------ */
     /**
      * timesync responses are not set if the measured accuracy is less than the
      * accuracyTarget.
-     * 
+     *
      * @return accuracy target in ms (default 25ms)
      */
     public int getAccuracyTarget()
@@ -85,17 +80,15 @@ public class TimesyncExtension implements Extension
         return _accuracyTarget;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * timesync responses are not set if the measured accuracy is less than the
      * accuracyTarget.
-     * 
-     * @param target
-     *            accuracy target in ms
+     *
+     * @param target accuracy target in ms
      */
     public void setAccuracyTarget(int target)
     {
-        _accuracyTarget=target;
+        _accuracyTarget = target;
     }
 
     public Message rcv(Client from, Message message)
@@ -105,15 +98,15 @@ public class TimesyncExtension implements Extension
 
     public Message rcvMeta(Client from, Message message)
     {
-        Map<String,Object> ext=message.getExt(false);
+        Map<String, Object> ext = message.getExt(false);
         if (ext != null)
         {
-            Map<String,Object> sync=(Map<String,Object>)ext.get("timesync");
+            Map<String, Object> sync = (Map<String, Object>)ext.get("timesync");
             if (sync != null)
             {
-                sync.put("ts",new Long(System.currentTimeMillis()));
-                Number lag=(Number)sync.get("l");
-                if (lag != null && from != null)
+                sync.put("ts", System.currentTimeMillis());
+                Number lag = (Number)sync.get("l");
+                if (lag != null && from instanceof ClientImpl)
                     ((ClientImpl)from).setLag(lag.intValue());
             }
         }
@@ -127,41 +120,47 @@ public class TimesyncExtension implements Extension
 
     public Message sendMeta(Client from, Message message)
     {
-        Message associated=message.getAssociated();
+        Message associated = message.getAssociated();
         if (associated != null)
         {
-            Map<String,Object> extIn=associated.getExt(false);
-
+            Map<String, Object> extIn = associated.getExt(false);
             if (extIn != null)
             {
-                Map<String,Object> sync=(Map<String,Object>)extIn.get("timesync");
+                Map<String, Object> sync = (Map<String, Object>)extIn.get("timesync");
                 if (sync != null)
                 {
-                    final long tc=((Number)sync.get("tc")).longValue();
-                    final long ts=((Number)sync.get("ts")).longValue();
+                    final long tc = ((Number)sync.get("tc")).longValue();
+                    final long ts = ((Number)sync.get("ts")).longValue();
 
-                    final Number lag=(Number)sync.get("l");
+                    StringBuilder buffer = new StringBuilder(80);
+                    final Number lag = (Number)sync.get("l");
                     if (lag == null)
                     {
-                        // old style timesync
-                        Map<String,Object> extOut=(Map<String,Object>)message.getExt(true);
-                        JSON.Literal timesync=new JSON.Literal("{\"tc\":" + tc + ",\"ts\":" + ts + ",\"p\":" + (System.currentTimeMillis() - ts) + "}");
-                        extOut.put("timesync",timesync);
+                        // Old style timesync
+                        Map<String, Object> extOut = message.getExt(true);
+                        buffer.append("{\"tc\":").append(tc)
+                                .append(",\"ts\":").append(ts)
+                                .append(",\"p\":").append(System.currentTimeMillis() - ts)
+                                .append("}");
+                        extOut.put("timesync", new JSON.Literal(buffer.toString()));
                     }
                     else
                     {
-                        final int l=lag.intValue();
-                        final int o=((Number)sync.get("o")).intValue();
-                        final int a=(int)((tc + o + l) - ts);
+                        final int l = lag.intValue();
+                        Number offset = (Number)sync.get("o");
+                        final int o = offset == null ? 0 : offset.intValue(); // May return null if is NaN
+                        final int a = (int)((tc + o + l) - ts);
 
-                        // is a OK ?
+                        // Within accuracy ?
                         if (l == 0 || a >= _accuracyTarget || a <= -_accuracyTarget)
                         {
-                            Map<String,Object> extOut=(Map<String,Object>)message.getExt(true);
-                            JSON.Literal timesync=new JSON.Literal("{\"tc\":" + tc + ",\"ts\":" + ts + ",\"p\":" + (System.currentTimeMillis() - ts)
-                                    + ",\"a\":" + a + "}");
-
-                            extOut.put("timesync",timesync);
+                            Map<String, Object> extOut = message.getExt(true);
+                            buffer.append("{\"tc\":").append(tc)
+                                    .append(",\"ts\":").append(ts)
+                                    .append(",\"p\":").append(System.currentTimeMillis() - ts)
+                                    .append(",\"a\":").append(a)
+                                    .append("}");
+                            extOut.put("timesync", new JSON.Literal(buffer.toString()));
                         }
                     }
                 }
