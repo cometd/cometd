@@ -56,7 +56,8 @@ public class LongPollingTransport extends ClientTransport
         try
         {
             httpExchange.setRequestContent(new ByteArrayBuffer(content, "UTF-8"));
-            _bayeux.customize(httpExchange);
+            if (_bayeux!=null) // TODO only needed for unit test
+                _bayeux.customize(httpExchange);
             _httpClient.send(httpExchange);
         }
         catch (Exception x)
