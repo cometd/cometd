@@ -71,7 +71,7 @@ public class BayeuxClientTest extends TestCase
         cometd_holder.setInitParameter("interval","100");
         cometd_holder.setInitParameter("maxInterval","100000");
         cometd_holder.setInitParameter("multiFrameInterval","2000");
-        cometd_holder.setInitParameter("logLevel","3");
+        cometd_holder.setInitParameter("logLevel","0");
 
         context.addServlet(cometd_holder, "/cometd/*");
         context.addServlet(DefaultServlet.class, "/");
@@ -372,21 +372,46 @@ public class BayeuxClientTest extends TestCase
     {
         Runtime.getRuntime().addShutdownHook(new DumpThread());
 
-        final int rooms=_stress?100:50;
-        final int publish=_stress?4000:2000;
-        final int batch=_stress?10:10;
-        final int pause=_stress?50:100;
+        final int rooms=_stress?100:10;
+        final int publish=_stress?4000:100;
+        final int batch=_stress?10:2;
+        final int pause=_stress?50:10;
         BayeuxClient[] clients= new BayeuxClient[_stress?500:2*rooms];
 
-        final AtomicBoolean connected=new AtomicBoolean();
         final AtomicInteger connections=new AtomicInteger();
         final AtomicInteger received=new AtomicInteger();
 
         for (int i=0;i<clients.length;i++)
         {
-            clients[i] = new BayeuxClient(_httpClient,"http://localhost:"+_port+"/cometd");
+            final int cid=i;
+            final AtomicBoolean connected=new AtomicBoolean();
+            final BayeuxClient client=new BayeuxClient(_httpClient,"http://localhost:"+_port+"/cometd");
+            final String room="/channel/"+(i%rooms);
+            clients[i] = client;
 
-            clients[i].getChannel(Channel.META_CONNECT).addListener(new SessionChannel.MetaChannelListener()
+            client.getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
+            {    
+                @Override
+                public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+                {
+                    if (connected.getAndSet(false))
+                        connections.decrementAndGet();
+                    
+                    if (successful)
+                    {
+                        client.getChannel(room).subscribe(new SubscriptionListener()
+                        {
+                            @Override
+                            public void onMessage(SessionChannel channel, Message message)
+                            {
+                                received.incrementAndGet();
+                            }
+                        });
+                    }
+                }
+            });
+            
+            client.getChannel(Channel.META_CONNECT).addListener(new SessionChannel.MetaChannelListener()
             {    
                 @Override
                 public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
@@ -397,30 +422,13 @@ public class BayeuxClientTest extends TestCase
                     }
                 }
             });
-
-            clients[i].getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
-            {    
-                @Override
-                public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
-                {
-                    if (connected.getAndSet(false))
-                        connections.decrementAndGet();
-                }
-            });
                     
             clients[i].handshake();
-            clients[i].getChannel("/channel/"+(i%rooms)).subscribe(new SubscriptionListener()
-            {
-                @Override
-                public void onMessage(SessionChannel channel, Message message)
-                {
-                    received.incrementAndGet();
-                }
-            });
         }
 
         long start=System.currentTimeMillis();
-        while(connections.get()<clients.length && (System.currentTimeMillis()-start)<30000)
+        Thread.sleep(100);
+        while(connections.get()<clients.length && (System.currentTimeMillis()-start)<10000)
         {
             Thread.sleep(1000);
             System.err.println("connected "+connections.get()+"/"+clients.length);

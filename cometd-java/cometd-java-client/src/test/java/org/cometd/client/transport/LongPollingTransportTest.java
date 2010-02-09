@@ -16,6 +16,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
+import org.cometd.client.BayeuxClient;
+import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpURI;
 import org.junit.Before;
@@ -74,12 +76,14 @@ public class LongPollingTransportTest
                             "\r\n" +
                             "[]").getBytes("UTF-8"));
                     output.flush();
-
                     socket.close();
                 }
                 catch (Exception x)
                 {
                     serverException.set(x);
+                }
+                finally
+                {
                 }
             }
         };
@@ -105,11 +109,15 @@ public class LongPollingTransportTest
                 });
 
                 long start = System.nanoTime();
-                transport.send();
+                transport.send(new HashMapMessage());
                 long end = System.nanoTime();
 
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
                 assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
+            }
+            catch(Exception e)
+            {
+                e.printStackTrace();
             }
             finally
             {
@@ -372,15 +380,20 @@ public class LongPollingTransportTest
     
     protected class AbstractTransportListener implements TransportListener
     {
+        boolean _suppress;
 
         @Override
         public void onConnectException(Throwable x)
         {
+            if (!_suppress)
+                x.printStackTrace();
         }
 
         @Override
         public void onException(Throwable x)
         {
+            if (!_suppress)
+                x.printStackTrace();
         }
 
         @Override
@@ -399,4 +412,5 @@ public class LongPollingTransportTest
         }
         
     }
+    
 }

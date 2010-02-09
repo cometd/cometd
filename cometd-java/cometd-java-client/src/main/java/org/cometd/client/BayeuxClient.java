@@ -302,11 +302,27 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     }
 
     /* ------------------------------------------------------------ */
+    /** @deprecated use {@link #handshake()}
+     * 
+     */
+    public void start()
+    {
+       handshake(); 
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** @deprecated use {@link #disconnect()}
+     * 
+     */
+    public void stop()
+    {
+       handshake(); 
+    }
+    
+    /* ------------------------------------------------------------ */
     @Override
     public void handshake()
     {
-        System.out.println("handshake");
-        
         List<String> allowed = getAllowedTransports();
         
         Message.Mutable message = newMessage();
@@ -384,9 +400,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
                 if(!extension.send(this,message))
                     return;
         }
-        
-        System.out.println("> "+message);
-        
+                
         _transport.send(message);
     }
 
@@ -487,7 +501,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     {
         for (Message message : incomingMessages)
         {
-            System.out.println("< "+message);
             receive(message,(Message.Mutable)message);   
         }
     }
@@ -549,7 +562,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         }
         
         // TODO backoff interval!
-        System.out.println("follow advice "+_state+" "+advice+" "+reconnect+" "+interval);
         switch(_state)
         {
             case HANDSHAKING:
@@ -597,7 +609,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         long backOff=_backoffTries*_backoffInc;
         if (backOff>_backoffMax)
             backOff=_backoffMax;
-        System.out.println("connect in "+interval+" + "+backOff);
         
         _task = _scheduler.schedule(new Runnable()
         {
@@ -614,7 +625,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         long backOff=_backoffTries*_backoffInc;
         if (backOff>_backoffMax)
             backOff=_backoffMax;
-        System.out.println("handshake in "+interval+" + "+backOff);
         
         _task = _scheduler.schedule(new Runnable()
         {

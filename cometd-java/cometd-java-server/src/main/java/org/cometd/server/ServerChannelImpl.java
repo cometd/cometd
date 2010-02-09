@@ -9,6 +9,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -218,7 +219,10 @@ public class ServerChannelImpl implements ServerChannel
         mutable.setId(id);
         
         if(_bayeux.extendSend(null,mutable))
-            _bayeux.root().doPublish((ServerSessionImpl)from,this,mutable);
+        {
+            ServerSessionImpl session=(ServerSessionImpl)((from instanceof LocalSession)?(((LocalSession)from).getServerSession()):((ServerSession)from));
+            _bayeux.root().doPublish(session,this,mutable);
+        }
     }
 
     /* ------------------------------------------------------------ */
