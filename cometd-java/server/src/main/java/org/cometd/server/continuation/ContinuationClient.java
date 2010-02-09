@@ -16,6 +16,7 @@ package org.cometd.server.continuation;
 
 import org.cometd.server.ClientImpl;
 import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 
 /* ------------------------------------------------------------ */
@@ -122,7 +123,14 @@ public class ContinuationClient extends ClientImpl
                     // We return the old connect via complete() since we do not
                     // want to resume() otherwise the old connect will be
                     // redispatched and will overwrite the new connect.
-                    oldContinuation.complete();
+                    try
+                    {
+                        oldContinuation.complete();
+                    }
+                    catch(IllegalStateException e)
+                    {
+                        Log.warn(e);
+                    }
                 }
             }
         }
