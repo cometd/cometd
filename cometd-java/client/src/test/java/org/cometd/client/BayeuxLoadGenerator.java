@@ -91,13 +91,14 @@ public class BayeuxLoadGenerator
 
         String url = protocol + "://" + host + ":" + port + uri;
 
-        int clients = 100;
-        int messageSize = 50;
         int rooms = 100;
         int roomsPerClient = 1;
+        int clients = 100;
         int batchCount = 1000;
-        long batchPause = 10;
         int batchSize = 10;
+        long batchPause = 10;
+        int messageSize = 50;
+        boolean randomize = true;
 
         System.err.print("channel [/chat/demo]: ");
         value = console.readLine().trim();
@@ -197,6 +198,9 @@ public class BayeuxLoadGenerator
             }
             else
             {
+                if (currentSize == 0)
+                    break;
+
                 System.err.println("Clients ready");
             }
 
@@ -229,10 +233,27 @@ public class BayeuxLoadGenerator
             for (int i = 0; i < messageSize; i++)
                 chat += "x";
 
-            int expected = 0;
+            System.err.print("randomize sends [" + randomize + "]: ");
+            value = console.readLine().trim();
+            if (value.length() == 0)
+                value = "" + randomize;
+            randomize = Boolean.parseBoolean(value);
+
+            long start = System.nanoTime();
+            int clientIndex = -1;
+            long expected = 0;
             for (int i = 0; i < batchCount; ++i)
             {
-                int clientIndex = random.nextInt(bayeuxClients.size());
+                if (randomize)
+                {
+                    clientIndex = random.nextInt(bayeuxClients.size());
+                }
+                else
+                {
+                    ++clientIndex;
+                    if (clientIndex >= bayeuxClients.size())
+                        clientIndex = 0;
+                }
                 BayeuxClient client = bayeuxClients.get(clientIndex);
                 Object message = new JSON.Literal("{\"user\":\"User-" + clientIndex + "\",\"chat\":\"" + chat + "\"}");
                 client.startBatch();
@@ -252,6 +273,16 @@ public class BayeuxLoadGenerator
 
                 if (batchPause > 0)
                     Thread.sleep(batchPause);
+            }
+            long end = System.nanoTime();
+            long elapsedNanos = end - start;
+            if (elapsedNanos > 0)
+            {
+                System.err.print("Messages - Elapsed | Rate = ");
+                System.err.print(TimeUnit.NANOSECONDS.toMillis(elapsedNanos));
+                System.err.print(" ms | ");
+                System.err.print(batchCount * batchSize * 1000 * 1000 * 1000 / elapsedNanos);
+                System.err.println(" sends/s ");
             }
 
             waitForMessages(expected);
@@ -282,7 +313,7 @@ public class BayeuxLoadGenerator
         latencies.get(latency).incrementAndGet();
     }
 
-    private boolean waitForMessages(int expected) throws InterruptedException
+    private boolean waitForMessages(long expected) throws InterruptedException
     {
         long arrived = messages.get();
         long lastArrived = 0;
