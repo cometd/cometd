@@ -1046,7 +1046,7 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
         Connect()
         {
             super("connect");
-            _connectString = "{" + "\"channel\":\"/meta/connect\"," + "\"clientId\":\"" + _clientId + "\"," + "\"connectionType\":\"long-polling\"" + "}";
+            _connectString = "[{" + "\"channel\":\"/meta/connect\"," + "\"clientId\":\"" + _clientId + "\"," + "\"connectionType\":\"long-polling\"" + "}]";
             setMessage(_connectString);
         }
 
