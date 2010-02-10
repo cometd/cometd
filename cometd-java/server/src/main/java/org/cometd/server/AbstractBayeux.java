@@ -1161,8 +1161,6 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             if (id != null)
                 reply.put(ID_FIELD,id);
 
-            reply=extendSendMeta(client,reply);
-
             Message pollReply=transport.getMetaConnectReply();
             if (pollReply != null)
             {
@@ -1286,18 +1284,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             }
             else
             {
-                message.remove(CLIENT_FIELD);
-                message=extendSendBayeux(client,message);
-
-                if (message != null)
-                {
-                    reply.put(SUCCESSFUL_FIELD,Boolean.TRUE);
-                }
-                else
-                {
-                    reply.put(SUCCESSFUL_FIELD,Boolean.FALSE);
-                    reply.put(ERROR_FIELD,"404::Message deleted");
-                }
+                reply.put(SUCCESSFUL_FIELD,Boolean.TRUE);
             }
 
             sendMetaReply(client,reply,transport);
