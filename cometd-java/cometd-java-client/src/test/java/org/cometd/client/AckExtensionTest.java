@@ -200,9 +200,10 @@ public class AckExtensionTest extends TestCase
         for(int i=10; i<15;i++)
             publicChat.publish(null,"hello","id"+i);
 
-        Thread.sleep(100);
+        Thread.sleep(500);
         
         // check if messages after reconnect are received 
+        System.err.println(messages);
         for(int i=0; i<15;i++)
         {
             Message message = messages.poll();
