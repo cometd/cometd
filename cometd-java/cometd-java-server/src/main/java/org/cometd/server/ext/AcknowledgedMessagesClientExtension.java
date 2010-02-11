@@ -27,7 +27,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
     {
         _session=session;
         _queue=(ArrayQueue<ServerMessage>)session.getQueue();
-        _unackedQueue=new ArrayIdQueue<ServerMessage>(8,16,session.getQueue());
+        _unackedQueue=new ArrayIdQueue<ServerMessage>(16,32,session.getQueue());
         _unackedQueue.setCurrentId(1);
     }
 
@@ -117,7 +117,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
     /* ------------------------------------------------------------ */
     public ServerMessage send(ServerSession to, ServerMessage message)
     {
-        synchronized(_session)
+        synchronized(_queue)
         {
             message.incRef();
             _unackedQueue.add(message);
@@ -131,7 +131,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
     {
         if (message.getChannel().equals(Channel.META_CONNECT))
         {
-            synchronized(_session)
+            synchronized(_queue)
             {
                 Map<String,Object> ext=message.getExt(true);
                 ext.put("ack",_unackedQueue.getCurrentId());

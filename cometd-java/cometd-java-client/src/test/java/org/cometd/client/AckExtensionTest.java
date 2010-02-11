@@ -46,6 +46,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.FileResource;
 
 public class AckExtensionTest extends TestCase
@@ -98,7 +99,7 @@ public class AckExtensionTest extends TestCase
         comet.setInitParameter("interval", "100");
         comet.setInitParameter("maxInterval", "10000");
         comet.setInitParameter("multiFrameInterval", "5000");
-        comet.setInitParameter("logLevel", "3");
+        comet.setInitParameter("logLevel", "2");
         comet.setInitOrder(2);
 
         server.start();
@@ -133,7 +134,32 @@ public class AckExtensionTest extends TestCase
 
         final Queue<Message> messages = new ConcurrentLinkedQueue<Message>();
         
-        final BayeuxClient client = new BayeuxClient("http://localhost:"+port+"/cometd");
+        final BayeuxClient client = new BayeuxClient("http://localhost:"+port+"/cometd")
+        {
+            /* ------------------------------------------------------------ */
+            /**
+             * @see org.cometd.client.BayeuxClient#onConnectException(java.lang.Throwable)
+             */
+            @Override
+            public void onConnectException(Throwable x)
+            {
+                Log.info(x.toString());
+            }
+
+            /* ------------------------------------------------------------ */
+            /**
+             * @see org.cometd.client.BayeuxClient#onException(java.lang.Throwable)
+             */
+            @Override
+            public void onException(Throwable x)
+            {
+                Log.info(x.toString());
+            }
+            
+        };
+        
+        
+        
         client.addExtension(new AckExtension());
         
         client.getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
@@ -172,7 +198,7 @@ public class AckExtensionTest extends TestCase
 
         Thread.sleep(500);
         assertEquals(5,messages.size());
-        
+
         _connector.stop();
         Thread.sleep(100);
         assertTrue(_connector.isStopped());
@@ -187,10 +213,10 @@ public class AckExtensionTest extends TestCase
         Thread.sleep(500);
         assertEquals(5,messages.size());
         
-        
+
         _connector.start();
         // allow a few secs for the client to reconnect
-        Thread.sleep(4000);
+        Thread.sleep(500);
         assertTrue(_connector.isStarted());
 
         // check that the offline messages are received
@@ -198,19 +224,22 @@ public class AckExtensionTest extends TestCase
         
         // send messages while client is online
         for(int i=10; i<15;i++)
+        {
             publicChat.publish(null,"hello","id"+i);
+            Thread.sleep(500);
+        }
 
-        Thread.sleep(500);
+        Thread.sleep(1000);
         
         // check if messages after reconnect are received 
-        System.err.println(messages);
         for(int i=0; i<15;i++)
         {
             Message message = messages.poll();
             assertTrue(message.getId().toString().indexOf("id"+i)>=0);
         }
-        
+
         client.disconnect();
+        Thread.sleep(500);
     }
 
 
