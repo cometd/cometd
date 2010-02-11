@@ -168,7 +168,6 @@ public class ServerSessionImpl implements ServerSession
     protected void doDeliver(ServerSession from, ServerMessage message)
     {
         message=extendSend(message);
-        System.err.println("doDeliver "+message);
         if (message==null)
             return;
 
@@ -193,7 +192,6 @@ public class ServerSessionImpl implements ServerSession
             }
         }
 
-        System.err.println("add"+message);
         message.incRef();
         _queue.add(message);
 
