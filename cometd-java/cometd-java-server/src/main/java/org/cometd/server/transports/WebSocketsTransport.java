@@ -74,6 +74,8 @@ public class WebSocketsTransport extends HttpTransport
         
         if (websocket!=null)
             _factory.upgrade(request,response,websocket,origin,protocol);
+        else
+            response.sendError(403);
     }
 
     protected String checkOrigin(HttpServletRequest request, String host, String origin)

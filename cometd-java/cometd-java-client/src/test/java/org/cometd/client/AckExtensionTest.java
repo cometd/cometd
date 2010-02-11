@@ -19,6 +19,9 @@ import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
@@ -27,12 +30,16 @@ import javax.servlet.ServletContextListener;
 
 import junit.framework.TestCase;
 
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
-import org.cometd.client.ChatRoomClient.Data;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.server.CometdServlet;
+import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -50,7 +57,6 @@ public class AckExtensionTest extends TestCase
     Connector _connector;
     EventListener _listener;
     BayeuxServer _bayeux;
-    ChatService _chatService;
 
     static Connector newConnector()
     {
@@ -71,13 +77,13 @@ public class AckExtensionTest extends TestCase
         server.stop();
     }
 
-    static void startServer(Server server, EventListener listener)
+    void startServer(Server server)
             throws Exception
     {
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
         
-        ServletContextHandler context = new ServletContextHandler(contexts, "/cometd", ServletContextHandler.NO_SECURITY
+        ServletContextHandler context = new ServletContextHandler(contexts, "/", ServletContextHandler.NO_SECURITY
                 | ServletContextHandler.SESSIONS);
 
         File file = new File("target/cometd-demo");
@@ -92,22 +98,24 @@ public class AckExtensionTest extends TestCase
         comet.setInitParameter("interval", "100");
         comet.setInitParameter("maxInterval", "10000");
         comet.setInitParameter("multiFrameInterval", "5000");
-        comet.setInitParameter("logLevel", "0");
+        comet.setInitParameter("logLevel", "3");
         comet.setInitOrder(2);
 
-        context.addEventListener(listener);
-
         server.start();
+        
+        _bayeux=(BayeuxServer)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+        _bayeux.addExtension(new AcknowledgedMessagesExtension());
     }
 
+    @Override
     public void setUp() throws Exception
     {
-        startServer(_server = newServer(_connector = newConnector()),
-                _listener = newContextAttributeListener());
+        startServer(_server = newServer(_connector = newConnector()));
         _connector.setPort(_connector.getLocalPort());
         super.setUp();
     }
 
+    @Override
     public void tearDown() throws Exception
     {
         stopServer(_server);
@@ -115,159 +123,96 @@ public class AckExtensionTest extends TestCase
         _bayeux = null;
         _connector = null;
         _server = null;
-        _chatService = null;
         super.tearDown();
     }
 
     public void testAck() throws Exception
     {
         int port = _connector.getLocalPort();
-        System.err.println("port: " + _connector.getPort() + " " + port + " " + _bayeux);
         assertTrue(port==_connector.getPort());
 
-        final Object lock = new Object();
-        final List<Map<String, Object>> messages = new ArrayList<Map<String, Object>>();
-        ChatRoomClient room = new ChatRoomClient(port)
+        final Queue<Message> messages = new ConcurrentLinkedQueue<Message>();
+        
+        final BayeuxClient client = new BayeuxClient("http://localhost:"+port+"/cometd");
+        client.addExtension(new AckExtension());
+        
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
         {
             @Override
-            public void onPublicMessageReceived(ClientSession session, Map<String, Object> message)
-            {
-                synchronized (lock)
+            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            {                
+                if (successful)
                 {
-                    messages.add(message);
-                    lock.notify();
+                    client.getChannel("/chat/demo").subscribe(new SubscriptionListener()
+                    {
+                        @Override
+                        public void onMessage(SessionChannel channel, Message message)
+                        {
+                            messages.add(message);
+                        }
+                    });
                 }
-                System.err.println(message);
             }
-        };
-        room.addExtension(new AckExtension());
-        room.start();
+        });
+        
+        client.handshake();
 
         Thread.sleep(500);
 
-        room.join("foo");
+        assertEquals(0,messages.size());
 
-        int expectedMessages = 0;
-        // foo has joined
-        assertTrue(receive(lock, messages, ++expectedMessages));
-
-        ServerChannel publicChat = _bayeux.getChannel("/chat/demo", false);
+        ServerChannel publicChat = _bayeux.getChannel("/chat/demo", true);
         assertTrue(publicChat != null);
         
-        for(int i=0; i<5;)
+        for(int i=0; i<5;i++)
         {
-            publishFromServer(publicChat, "server", "message_while_connected_" + (++i));
-            assertTrue(receive(lock, messages, ++expectedMessages));
+            publicChat.publish(null,"hello","id"+i);
+            Thread.sleep(20);
         }
 
+        Thread.sleep(500);
+        assertEquals(5,messages.size());
+        
         _connector.stop();
-        Thread.sleep(1000);
+        Thread.sleep(100);
         assertTrue(_connector.isStopped());
 
         // send messages while client is offline
-        for(int i=0; i<5;)
-        {
-            publishFromServer(publicChat, "server", "message_while_disconnected_" + (++i));
-            ++expectedMessages;
+        for(int i=5; i<10;i++)
+        {       
+            publicChat.publish(null,"hello","id"+i);
+            Thread.sleep(20);
         }
-        // verify that the offline messages are not received
-        assertTrue(receive(lock, messages, expectedMessages-5));
+        
+        Thread.sleep(500);
+        assertEquals(5,messages.size());
+        
         
         _connector.start();
         // allow a few secs for the client to reconnect
-        Thread.sleep(3000);
+        Thread.sleep(4000);
         assertTrue(_connector.isStarted());
 
         // check that the offline messages are received
-        assertTrue(receive(lock, messages, expectedMessages));
+        assertEquals(10,messages.size());
+        
+        // send messages while client is online
+        for(int i=10; i<15;i++)
+            publicChat.publish(null,"hello","id"+i);
 
+        Thread.sleep(100);
+        
         // check if messages after reconnect are received 
-        for(int i=0; i<5;)
+        for(int i=0; i<15;i++)
         {
-            publishFromServer(publicChat, "server", "message_after_reconnect_" + (++i));
-            assertTrue(receive(lock, messages, ++expectedMessages));
+            Message message = messages.poll();
+            assertTrue(message.getId().toString().indexOf("id"+i)>=0);
         }
         
-        synchronized(lock)
-        {
-            assertTrue(messages.size()==16 && expectedMessages==16);
-            assertEquals("foo has joined", messages.get(0).get("chat"));
-            assertEquals("message_while_connected_1", messages.get(1).get("chat"));
-            assertEquals("message_while_connected_2", messages.get(2).get("chat"));
-            assertEquals("message_while_connected_3", messages.get(3).get("chat"));
-            assertEquals("message_while_connected_4", messages.get(4).get("chat"));
-            assertEquals("message_while_connected_5", messages.get(5).get("chat"));
-            
-            assertEquals("message_while_disconnected_1", messages.get(6).get("chat"));
-            assertEquals("message_while_disconnected_2", messages.get(7).get("chat"));
-            assertEquals("message_while_disconnected_3", messages.get(8).get("chat"));
-            assertEquals("message_while_disconnected_4", messages.get(9).get("chat"));
-            assertEquals("message_while_disconnected_5", messages.get(10).get("chat"));
-            
-            assertEquals("message_after_reconnect_1", messages.get(11).get("chat"));
-            assertEquals("message_after_reconnect_2", messages.get(12).get("chat"));
-            assertEquals("message_after_reconnect_3", messages.get(13).get("chat"));
-            assertEquals("message_after_reconnect_4", messages.get(14).get("chat"));
-            assertEquals("message_after_reconnect_5", messages.get(15).get("chat"));
-        }
-
-        room.stop();
+        client.disconnect();
     }
 
-    protected boolean receive(Object lock, List<Map<String, Object>> messages,
-            int expectedMessages) throws Exception
-    {
-        synchronized (lock)
-        {
-            lock.wait(RECEIVE_LOCK_DURATION);
-            return expectedMessages == messages.size();
-        }
-    }
 
-    protected void publishFromServer(ServerChannel channel, String user, String chat)
-    {
-        channel.publish(_chatService.getLocalSession(), new Data().add("user", user)
-                .add("chat", chat), null);
-    }
 
-    protected ServletContextAttributeListener newContextAttributeListener()
-    {
-        return new ContextListener();
-    }
-
-    public class ContextListener implements ServletContextListener,
-            ServletContextAttributeListener
-    {
-
-        public void contextDestroyed(ServletContextEvent event)
-        {
-
-        }
-
-        public void contextInitialized(ServletContextEvent event)
-        {
-
-        }
-
-        public void attributeAdded(ServletContextAttributeEvent event)
-        {
-            if (_bayeux == null && event.getName().equals(BayeuxServer.ATTRIBUTE))
-            {
-                _bayeux = (BayeuxServer) event.getValue();
-                _chatService = new ChatService(_bayeux);
-            }
-        }
-
-        public void attributeRemoved(ServletContextAttributeEvent event)
-        {
-
-        }
-
-        public void attributeReplaced(ServletContextAttributeEvent event)
-        {
-
-        }
-
-    }
 
 }

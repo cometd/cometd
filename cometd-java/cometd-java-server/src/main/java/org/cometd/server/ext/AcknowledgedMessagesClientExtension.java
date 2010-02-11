@@ -8,6 +8,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession.Extension;
 import org.eclipse.jetty.util.ArrayQueue;
+import org.eclipse.jetty.util.log.Log;
 
 /**
  * Acknowledged Message Client extension.
@@ -20,6 +21,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
     private final ServerSession _session;
     private final ArrayQueue<ServerMessage> _queue;
     private final ArrayIdQueue<ServerMessage> _unackedQueue;
+    private long _lastAck;
 
     public AcknowledgedMessagesClientExtension(ServerSession session)
     {
@@ -38,7 +40,6 @@ public class AcknowledgedMessagesClientExtension implements Extension
     /* ------------------------------------------------------------ */
     public boolean rcvMeta(ServerSession session, Mutable message)
     {
-        
         if (Channel.META_CONNECT.equals(message.getChannel()))
         {
             Map<String,Object> ext=message.getExt(false);
@@ -50,7 +51,15 @@ public class AcknowledgedMessagesClientExtension implements Extension
                 {
                     Long acked=(Long)ext.get("ack");
                     if (acked != null)
-                    {
+                    {                        
+                        if (acked==_lastAck)
+                        {
+                            Log.debug("double ACK");
+                            _queue.clear();
+                            _queue.addAll(_unackedQueue);
+                        }
+                        _lastAck=acked;
+                        
                         // We have received an ack ID, so delete the acked
                         // messages.
                         final int s=_unackedQueue.size();
@@ -71,7 +80,8 @@ public class AcknowledgedMessagesClientExtension implements Extension
                                 // we need to remove elements until we see unacked
                                 for (int i=0; i < s; i++)
                                 {
-                                    if (_unackedQueue.getAssociatedIdUnsafe(0) <= acked)
+                                    final long a=_unackedQueue.getAssociatedIdUnsafe(0);
+                                    if (a <= acked)
                                     {
                                         final ServerMessage q=_unackedQueue.remove();
                                         q.decRef();
@@ -89,8 +99,12 @@ public class AcknowledgedMessagesClientExtension implements Extension
                 final int s=_unackedQueue.size();
                 for (int i=0; i < s; i++)
                 {
-                    if (_unackedQueue.getAssociatedIdUnsafe(0) < cid)
-                        _queue.add(i,_unackedQueue.remove());
+                    final long a=_unackedQueue.getAssociatedIdUnsafe(0);
+                    if (a < cid)
+                    {
+                        final ServerMessage q=_unackedQueue.remove();
+                        _queue.add(i,q);
+                    }
                     else
                         break;
                 }
@@ -108,6 +122,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
             message.incRef();
             _unackedQueue.add(message);
         }
+        
         return message;
     }
 
