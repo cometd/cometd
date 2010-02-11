@@ -243,9 +243,7 @@ public class BayeuxClientTest extends TestCase
             }
             
         };
-        
-        System.out.println("client "+client);
-        
+                
         client.getChannel(Channel.META_CONNECT).addListener(new SessionChannel.MetaChannelListener()
         {    
             @Override

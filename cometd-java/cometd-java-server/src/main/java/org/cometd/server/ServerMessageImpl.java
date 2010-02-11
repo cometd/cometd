@@ -15,9 +15,9 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
 {
     private final ImmutableHashMap<String,Object> _immutable = new NestedMap(8);
     private final MutableMessage _mutable;
-    private final Map.Entry<String,Object> _advice;
-    private final Map.Entry<String,Object> _data;
-    private final Map.Entry<String,Object> _ext;
+    private final Map.Entry<String,Object> _adviceImmutable;
+    private final Map.Entry<String,Object> _dataImmutable;
+    private final Map.Entry<String,Object> _extImmitable;
     
 
     private ServerMessage _associated;
@@ -40,9 +40,9 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     {
         _pool=bayeux;
         _mutable = new MutableMessage();
-        _advice=_immutable.getEntry(Message.ADVICE_FIELD);
-        _data=_immutable.getEntry(Message.DATA_FIELD);
-        _ext=_immutable.getEntry(Message.EXT_FIELD);
+        _adviceImmutable=_immutable.getEntry(Message.ADVICE_FIELD);
+        _dataImmutable=_immutable.getEntry(Message.DATA_FIELD);
+        _extImmitable=_immutable.getEntry(Message.EXT_FIELD);
     }
 
     /* ------------------------------------------------------------ */
@@ -127,19 +127,19 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     /* ------------------------------------------------------------ */
     public Object getData()
     {
-        return _data.getValue();
+        return _dataImmutable.getValue();
     }
 
     /* ------------------------------------------------------------ */
     public Map<String,Object> getDataAsMap()
     {
-        return (Map<String,Object>)_data.getValue();
+        return (Map<String,Object>)_dataImmutable.getValue();
     }
 
     /* ------------------------------------------------------------ */
     public Map<String, Object> getExt()
     {
-        return (Map<String, Object>)_ext.getValue();
+        return (Map<String, Object>)_extImmitable.getValue();
     }
 
     /* ------------------------------------------------------------ */
@@ -216,7 +216,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     /* ------------------------------------------------------------ */
     public void setData(Object data)
     {
-        _data.setValue(data);
+        _dataImmutable.setValue(data);
     }
 
     /* ------------------------------------------------------------ */
@@ -395,7 +395,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
                 return (Map<String,Object>)ext;
             }
 
-            ext=new NestedMap();
+            ext=new NestedMap().asMutable();
             _ext.setValue(ext);
             return (Map<String,Object>)ext;
         }

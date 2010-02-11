@@ -80,7 +80,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             processDisconnect(mutable);
         }
     };    
-    private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
 
     private AtomicBoolean _handshakeBatch = new AtomicBoolean();
     private Handler _handshakeHandler = new AbstractClientSession.Handler()
@@ -161,6 +160,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     {
         this._scheduler = scheduler;
         
+        
         if (transports!=null && transports.length>0)
         {
             for (ClientTransport transport : transports)
@@ -168,6 +168,19 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         }
         else
         {
+            if (httpClient==null)
+                httpClient=new HttpClient();
+            if (!httpClient.isRunning())
+            {
+                try
+                {
+                    httpClient.start();
+                }
+                catch(Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
             _transportRegistry.add(new LongPollingTransport(_options,httpClient));
         }
         _server = new HttpURI(url);
