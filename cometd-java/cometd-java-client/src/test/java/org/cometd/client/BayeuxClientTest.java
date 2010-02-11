@@ -200,7 +200,6 @@ public class BayeuxClientTest extends TestCase
             assertEquals(Channel.META_CONNECT,message.getChannel());
             assertTrue(message.isSuccessful());
         }
-
     }
     
     public void testRetry() throws Exception
@@ -346,22 +345,21 @@ public class BayeuxClientTest extends TestCase
         BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_port+"/cometd");
         client.handshake();
 
-        String cookieName = "foo";
-        Cookie cookie = new Cookie(cookieName, "bar");
-        cookie.setMaxAge(1);
-
         
-        client.setCookie(cookie);
-        assertNotNull(client.getCookie(cookieName));
+        client.setCookie("foo","bar",1);
+        assertNotNull(client.getCookie("foo"));
 
         // Allow cookie to expire
-        Thread.sleep(1500);
+        Thread.sleep(1100);
 
-        assertNull(client.getCookie(cookieName));
+        assertNull(client.getCookie("foo"));
 
-        cookie.setMaxAge(-1);
-        client.setCookie(cookie);
-        assertNotNull(client.getCookie(cookieName));
+        client.setCookie("foo","bar");
+        assertNotNull(client.getCookie("foo"));
+
+        Thread.sleep(1100);
+        
+        assertNotNull(client.getCookie("foo"));
         
         client.disconnect();
     }

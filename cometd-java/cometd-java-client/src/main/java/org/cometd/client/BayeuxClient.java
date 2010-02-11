@@ -9,15 +9,12 @@ import java.util.Timer;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.servlet.http.Cookie;
 
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
@@ -209,7 +206,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
                 builder.append("; ");
 
             // Expiration is handled by getCookie()
-            Cookie cookie = getCookie(cookieName);
+            ExpirableCookie cookie = getCookie(cookieName);
             if (cookie != null)
             {
                 builder.append(QuotedStringTokenizer.quote(cookie.getName()));
@@ -253,7 +250,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         return _transportRegistry.getAllowedTransports();
     }
 
-    public Cookie getCookie(String name)
+    public ExpirableCookie getCookie(String name)
     {
         ExpirableCookie cookie = _cookies.get(name);
         if (cookie != null)
@@ -264,7 +261,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
                 cookie = null;
             }
         }
-        return cookie == null ? null : cookie.cookie;
+        return cookie == null ? null : cookie;
     }
 
     /* ------------------------------------------------------------ */
@@ -363,18 +360,25 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     }
 
     /* ------------------------------------------------------------ */
-    public void setCookie(Cookie cookie)
+    public void setCookie(String name, String value)
+    {
+        ExpirableCookie expirableCookie = new ExpirableCookie(name,value, -1L);
+        _cookies.put(name, expirableCookie);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setCookie(String name, String value, int maxAge)
     {
         long expirationTime = System.currentTimeMillis();
-        int maxAge = cookie.getMaxAge();
         if (maxAge < 0)
             expirationTime = -1L;
         else
             expirationTime += TimeUnit.SECONDS.toMillis(maxAge);
 
-        ExpirableCookie expirableCookie = new ExpirableCookie(cookie, expirationTime);
-        _cookies.put(cookie.getName(), expirableCookie);
+        ExpirableCookie expirableCookie = new ExpirableCookie(name,value, expirationTime);
+        _cookies.put(name, expirableCookie);
     }
+    
     /* ------------------------------------------------------------ */
 
     /* ------------------------------------------------------------ */
@@ -772,20 +776,51 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     
     private static class ExpirableCookie
     {
-        private final Cookie cookie;
-        private final long expirationTime;
+        private final String _name;
+        private final String _value;
+        private final long _expirationTime;
 
-        private ExpirableCookie(Cookie cookie, long expirationTime)
+        private ExpirableCookie(String name, String value, long expirationTime)
         {
-            this.cookie = cookie;
-            this.expirationTime = expirationTime;
+            _name=name;
+            _value=value;
+            _expirationTime = expirationTime;
         }
 
         private boolean isExpired()
         {
-            if (expirationTime < 0) return false;
-            return System.currentTimeMillis() >= expirationTime;
+            if (_expirationTime < 0) return false;
+            return System.currentTimeMillis() >= _expirationTime;
         }
+
+        /* ------------------------------------------------------------ */
+        /** Get the name.
+         * @return the name
+         */
+        public String getName()
+        {
+            return _name;
+        }
+
+        /* ------------------------------------------------------------ */
+        /** Get the value.
+         * @return the value
+         */
+        public String getValue()
+        {
+            return _value;
+        }
+
+        /* ------------------------------------------------------------ */
+        /** Get the expirationTime.
+         * @return the expirationTime
+         */
+        public long getExpirationTime()
+        {
+            return _expirationTime;
+        }
+        
+        
     }
 
     private class Listener implements TransportListener

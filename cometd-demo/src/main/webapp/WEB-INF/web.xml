@@ -35,11 +35,7 @@
 
     <servlet>
         <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.continuation.ContinuationCometdServlet</servlet-class>
-        <init-param>
-            <param-name>filters</param-name>
-            <param-value>/WEB-INF/filters.json</param-value>
-        </init-param>
+        <servlet-class>org.cometd.server.CometdServlet</servlet-class>
         <init-param>
             <param-name>timeout</param-name>
             <param-value>30000</param-value>
@@ -53,20 +49,16 @@
             <param-value>10000</param-value>
         </init-param>
         <init-param>
-            <param-name>maxLazyLatency</param-name>
+            <param-name>maxLazyTimeout</param-name>
             <param-value>5000</param-value>
         </init-param>
         <init-param>
-            <param-name>multiFrameInterval</param-name>
+            <param-name>long-polling.multiSessionInterval</param-name>
             <param-value>2000</param-value>
         </init-param>
         <init-param>
             <param-name>logLevel</param-name>
-            <param-value>0</param-value>
-        </init-param>
-        <init-param>
-            <param-name>refsThreshold</param-name>
-            <param-value>10</param-value>
+            <param-value>1</param-value>
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>
@@ -81,6 +73,7 @@
         <load-on-startup>2</load-on-startup>
     </servlet>
 
+    <!-- not ported to cometd-2 yet
     <servlet>
         <servlet-name>oort</servlet-name>
         <servlet-class>org.cometd.oort.OortServlet</servlet-class>
@@ -88,13 +81,10 @@
             <param-name>oort.url</param-name>
             <param-value>http://localhost:8080/cometd</param-value>
         </init-param>
-        <!-- Set oort.cloud to a coma separated list of other oort.urls in the cluster -->
-        <!--
         <init-param>
             <param-name>oort.cloud</param-name>
             <param-value>http://localhost:8081/cometd</param-value>
         </init-param>
-        -->
         <load-on-startup>3</load-on-startup>
     </servlet>
 
@@ -113,6 +103,8 @@
         <servlet-class>org.webtide.demo.auction.AuctionServlet</servlet-class>
         <load-on-startup>5</load-on-startup>
     </servlet>
+
+    -->
 
 </web-app>
 
