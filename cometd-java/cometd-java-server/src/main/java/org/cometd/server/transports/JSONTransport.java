@@ -60,5 +60,4 @@ public class JSONTransport extends LongPollingTransport
         writer.append("]\n");
         writer.close();
     }
-    
 }

@@ -135,7 +135,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.incRef();
-            message.setClientId(getId());
             message.setChannel(Channel.META_DISCONNECT);
             message.setId(_idGen.incrementAndGet());
             send(_session,message);
@@ -206,6 +205,9 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
                     return;
         }
         
+        if (_session!=null)
+            message.setClientId(_session.getId());
+            
         ServerMessage reply = _bayeux.handle(session,message);
 
         if (reply!=null)
@@ -260,7 +262,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.incRef();
             message.setChannel(_id.toString());
-            message.setClientId(LocalSessionImpl.this.getId());
             message.setData(data);
             
             send(_session,message);
@@ -277,7 +278,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.incRef();
             message.setChannel(_id.toString());
-            message.setClientId(LocalSessionImpl.this.getId());
             message.setData(data);
             if (id!=null)
                 message.setId(id);
@@ -338,7 +338,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             message.incRef();
             message.setChannel(Channel.META_UNSUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
-            message.setClientId(LocalSessionImpl.this.getId());
             message.setId(_idGen.incrementAndGet());
 
             send(_session,message);

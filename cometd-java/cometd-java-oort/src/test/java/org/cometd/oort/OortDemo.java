@@ -85,7 +85,7 @@ public class OortDemo
         cometd_holder.setInitParameter("interval","100");
         cometd_holder.setInitParameter("maxInterval","100000");
         cometd_holder.setInitParameter("multiFrameInterval","1500");
-        cometd_holder.setInitParameter("logLevel","1");
+        cometd_holder.setInitParameter("logLevel","3");
         cometd_holder.setInitOrder(1);
         context.addServlet(cometd_holder, "/cometd/*");
         

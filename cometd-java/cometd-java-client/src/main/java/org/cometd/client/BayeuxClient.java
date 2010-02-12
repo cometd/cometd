@@ -415,7 +415,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
                 if(!extension.send(this,message))
                     return;
         }
-                
+        
+        if (_clientId!=null)
+            message.setClientId(_clientId);
+        
         _transport.send(message);
     }
 
@@ -748,12 +751,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         @Override
         public void publish(Object data,Object id)
         {
-            if (_clientId==null)
-                throw new IllegalStateException("!handshake");
-            
             Message.Mutable message = newMessage();
             message.setChannel(_id.toString());
-            message.setClientId(_clientId);
             message.setData(data);
             if (id!=null)
                 message.setId(id);
@@ -778,7 +777,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             Message.Mutable message = newMessage();
             message.setChannel(Channel.META_SUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
-            message.setClientId(_clientId);
             message.setId(_idGen.incrementAndGet());
             send(message);
         }
@@ -793,7 +791,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             Message.Mutable message = newMessage();
             message.setChannel(Channel.META_UNSUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
-            message.setClientId(_clientId);
             message.setId(_idGen.incrementAndGet());
 
             send(message);
