@@ -12,10 +12,10 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.ServletContext;
 
-import org.cometd.Bayeux;
-import org.cometd.Channel;
-import org.cometd.Client;
-import org.cometd.RemoveListener;
+import org.cometd.bayeux.Session;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxService;
 import org.eclipse.jetty.util.log.Log;
 
@@ -30,7 +30,7 @@ public class OortChatService extends BayeuxService
 
     public OortChatService(ServletContext context)
     {
-        super((Bayeux)context.getAttribute(Bayeux.ATTRIBUTE), "chat");
+        super((BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE), "chat");
 
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
         if (_oort==null)
@@ -44,7 +44,7 @@ public class OortChatService extends BayeuxService
         subscribe("/service/privatechat", "privateChat");
     }
 
-    public void trackMembers(final Client joiner, final String channelName, Object data, final String messageId)
+    public void trackMembers(final ServerSession joiner, final String channelName, Object data, final String messageId)
     {
         if (data instanceof Object[])
         {
@@ -87,15 +87,17 @@ public class OortChatService extends BayeuxService
                 if (!_oort.isOort(joiner))
                     _seti.associate(userName,joiner);
 
-                joiner.addListener(new RemoveListener(){
-
-                    public void removed(String clientId, boolean timeout)
+                joiner.addListener(new ServerSession.RemoveListener()
+                {
+                    
+                    @Override
+                    public void removed(ServerSession session, boolean timeout)
                     {
                         if (!_oort.isOort(joiner))
                             _seti.disassociate(userName);
                         if (timeout)
                         {
-                            Channel channel=getBayeux().getChannel(channelName,false);
+                            ServerChannel channel=getBayeux().getChannel(channelName,false);
                             if (channel!=null)
                             {
                                 Map<String,Object> leave = new HashMap<String,Object>();
@@ -134,7 +136,7 @@ public class OortChatService extends BayeuxService
         }
     }
 
-    public void privateChat(Client source, String channel, Map<String, Object> data, String messageId)
+    public void privateChat(ServerSession source, String channel, Map<String, Object> data, String messageId)
     {
         String toUid=(String)data.get("peer");
         String toChannel=(String)data.get("room");

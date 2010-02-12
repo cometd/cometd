@@ -197,10 +197,9 @@ public abstract class BayeuxService
      * received messages. The method must have a unique name and one of the
      * following signatures:
      * <ul>
-     * <li><code>myMethod(Client fromClient,Object data)</code></li>
-     * <li><code>myMethod(Client fromClient,Object data,String id)</code></li>
-     * <li>
-     * <code>myMethod(Client fromClient,String channel,Object data,String id)</code>
+     * <li><code>myMethod(ServerSession from,Object data)</code></li>
+     * <li><code>myMethod(ServerSession from,Object data,String id)</code></li>
+     * <li><code>myMethod(ServerSession from,String channel,Object data,String id)</code>
      * </li>
      * </li>
      * 
@@ -254,7 +253,7 @@ public abstract class BayeuxService
         int params=method.getParameterTypes().length;
         if (params < 2 || params > 4)
             throw new IllegalArgumentException("Method '" + methodName + "' does not have 2or3 parameters");
-        if (!Session.class.isAssignableFrom(method.getParameterTypes()[0]))
+        if (!ServerSession.class.isAssignableFrom(method.getParameterTypes()[0]))
             throw new IllegalArgumentException("Method '" + methodName + "' does not have Session as first parameter");
 
         

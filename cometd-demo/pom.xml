@@ -53,7 +53,7 @@
                         </overlay>
                         <overlay>
                             <groupId>org.cometd.java</groupId>
-                            <artifactId>cometd-examples-java</artifactId>
+                            <artifactId>cometd-java-examples</artifactId>
                             <excludes>
                                 <exclude>META-INF/**</exclude>
                                 <exclude>WEB-INF/web.xml</exclude>
@@ -106,14 +106,21 @@
             <version>${project.version}</version>
             <type>war</type>
         </dependency>
+	<!--
         <dependency>
             <groupId>org.cometd.java</groupId>
             <artifactId>cometd-java-oort</artifactId>
             <version>${project.version}</version>
         </dependency>
+	-->
         <dependency>
             <groupId>org.cometd.java</groupId>
-            <artifactId>cometd-examples-java</artifactId>
+            <artifactId>cometd-java-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.cometd.java</groupId>
+	    <artifactId>cometd-java-examples</artifactId>
             <version>${project.version}</version>
             <type>war</type>
         </dependency>

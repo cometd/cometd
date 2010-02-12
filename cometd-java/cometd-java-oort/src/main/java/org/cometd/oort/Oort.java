@@ -2,6 +2,7 @@ package org.cometd.oort;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -9,8 +10,20 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Session;
+import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.bayeux.server.BayeuxServer.Extension;
+import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -37,33 +50,31 @@ public class Oort extends AbstractLifeCycle
     public final static String OORT_CHANNELS = "oort.channels";
     public final static String OORT_ATTRIBUTE = "org.cometd.oort.Oort";
     
-    protected String _url;
-    protected String _secret;
-    protected BayeuxServer _bayeux;
-    protected HttpClient _httpClient=new HttpClient();
-    protected Timer _timer=new Timer();
-    protected Random _random=new SecureRandom();
-    protected Client _oortClient;
-    protected List<MessageListener> _oortMessageListeners = new ArrayList<MessageListener>();
+    final protected String _url;
+    final protected String _secret;
+    final protected BayeuxServer _bayeux;
+    final protected HttpClient _httpClient;
+    final protected Random _random=new SecureRandom();
+    final protected LocalSession _oortSession;
     
-    protected Map<String,OortComet> _knownCommets = new HashMap<String,OortComet>();
-    protected Set<String> _channels = new HashSet<String>();
+    final protected Map<String,OortComet> _knownCommets = new ConcurrentHashMap<String,OortComet>();
+    final protected Set<String> _channels = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     /* ------------------------------------------------------------ */
-    Oort(String id,Bayeux bayeux)
+    Oort(String id,BayeuxServer bayeux)
     {
         _url=id;
         _bayeux=bayeux;
         _secret=Long.toHexString(_random.nextLong());
         
-        _oortClient=_bayeux.newClient("oort");
-        _oortClient.addListener(new RootOortClientListener());
-        _bayeux.getChannel("/oort/cloud",true).subscribe(_oortClient);
+        _httpClient=new HttpClient();
+        
+        _oortSession=_bayeux.newLocalSession("oort");
         bayeux.addExtension(new OortExtension());
     }
 
     /* ------------------------------------------------------------ */
-    public Bayeux getBayeux()
+    public BayeuxServer getBayeux()
     {
         return _bayeux;
     }
@@ -88,6 +99,8 @@ public class Oort extends AbstractLifeCycle
     {
         super.doStart();
         _httpClient.start();
+        _oortSession.handshake();
+        _oortSession.getChannel("/oort/cloud").subscribe(new RootOortClientListener());
     }
 
     /* ------------------------------------------------------------ */
@@ -145,7 +158,7 @@ public class Oort extends AbstractLifeCycle
             known=getKnownComets();
             
             if (!comets.containsAll(known))
-                _bayeux.getChannel("/oort/cloud",true).publish(_oortClient,known,null);
+                _bayeux.getChannel("/oort/cloud",true).publish(_oortSession,known,null);
         }
     }
 
@@ -175,50 +188,24 @@ public class Oort extends AbstractLifeCycle
      */
     public void observeChannel(String channelId)
     {
-        synchronized (this)
+        if (_channels.add(channelId))
         {
-            if (!_channels.contains(channelId))
-            {
-                _channels.add(channelId);
-                for (OortComet comet : _knownCommets.values())
-                    if (comet.isHandshook())
-                        comet.subscribe(channelId);
-            }
+            for (OortComet comet : _knownCommets.values())
+                comet.subscribe(channelId);
         }
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * Add a MessageListener that will receive all messages 
-     * published on /oort/* channels on connected OortComets 
-     * @param listener
-     */
-    public void addOortMessageListener(MessageListener listener)
+    public boolean isOort(ServerSession session)
     {
-        synchronized (this)
-        {
-            _oortMessageListeners.add(listener);
-        }
+        LocalSession local=session.getLocalSession();
+        return local==_oortSession;
     }
-
+    
     /* ------------------------------------------------------------ */
-    /**
-     * Remove an Oort message listener.
-     * @param listener
-     * @return true if the listener was removed.
-     */
-    public boolean removeOortClientListener(MessageListener listener)
+    public boolean isOort(LocalSession session)
     {
-        synchronized (this)
-        {
-            return _oortMessageListeners.remove(listener);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isOort(Client client)
-    {
-        return client==_oortClient;
+        return session==_oortSession;
     }
 
     /* ------------------------------------------------------------ */
@@ -242,9 +229,9 @@ public class Oort extends AbstractLifeCycle
         if (!_knownCommets.containsKey(oortUrl))
             observeComet(oortUrl);
         
-        Client client = _bayeux.getClient(clientId);
+        ServerSession session =  _bayeux.getSession(clientId);
         
-        client.addExtension(new RemoteOortClientExtension());
+        session.addExtension(new RemoteOortClientExtension());
     }
 
     /* ------------------------------------------------------------ */
@@ -256,29 +243,34 @@ public class Oort extends AbstractLifeCycle
      */
     protected class OortExtension implements Extension
     {
-        public Message rcv(Client from, Message message)
+        @Override
+        public boolean rcv(ServerSession from, Mutable message)
         {
-            return message;
+            return true;
         }
 
-        public Message rcvMeta(Client from, Message message)
+        @Override
+        public boolean rcvMeta(ServerSession from, Mutable message)
         {
-            return message;
+            System.err.println("received "+message);
+            return true;
         }
 
-        public Message send(Client from, Message message)
+        @Override
+        public boolean send(Mutable message)
         {
-            return message;
+            return true;
         }
 
-        public Message sendMeta(Client from, Message message)
+        @Override
+        public boolean sendMeta(ServerSession to, Mutable message)
         {
-            if (message.getChannel().equals(Bayeux.META_HANDSHAKE) && Boolean.TRUE.equals(message.get(Bayeux.SUCCESSFUL_FIELD)))
+            if (message.getChannel().equals(Channel.META_HANDSHAKE) && message.isSuccessful())
             {
                 Message rcv = message.getAssociated();
                 if (Log.isDebugEnabled()) Log.debug(_url+" --> "+rcv);
                 
-                Map<String,Object> rcvExt = (Map<String,Object>)rcv.get("ext");
+                Map<String,Object> rcvExt = rcv.getExt();
                 if (rcvExt!=null)
                 {
                     Map<String,Object> oort = (Map<String,Object>)rcvExt.get("oort");
@@ -306,45 +298,48 @@ public class Oort extends AbstractLifeCycle
                 }
                 if (Log.isDebugEnabled()) Log.debug(_url+" <-- "+message);
             }
-            return message;
+            return true;
         }   
     }
+    
+
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /**
-     * An Extension installed on clients for remote Oort servers
+     * An Extension installed on sessions for remote Oort servers
      * that prevents publish loops.
      */
-    protected class RemoteOortClientExtension implements Extension
+    protected class RemoteOortClientExtension implements org.cometd.bayeux.server.ServerSession.Extension
     {
-        public boolean queueMaxed(Client from, Client client, Message message)
+
+        @Override
+        public boolean rcv(ServerSession session, Mutable message)
+        {
+            return true;
+        }
+
+        @Override
+        public boolean rcvMeta(ServerSession session, Mutable message)
+        {
+            return true;
+        }
+
+        @Override
+        public ServerMessage send(ServerSession to, ServerMessage message)
         {
             // avoid loops
-            boolean send = from!=_oortClient || message.getChannel().startsWith("/oort/");
-            return send;
-        }
-
-        public Message rcv(Client from, Message message)
-        {
+            if (to.getLocalSession()!=null && isOort(to.getLocalSession()))
+                return null;
+            if (message.getChannel().startsWith("/oort/"))
+                return null;
             return message;
         }
 
-        public Message rcvMeta(Client from, Message message)
+        @Override
+        public boolean sendMeta(ServerSession session, Mutable message)
         {
-            return message;
-        }
-
-        public Message send(Client from, Message message)
-        {
-            // avoid loops
-            boolean send = !isOort(from) || message.getChannel().startsWith("/oort/");
-            return send?message:null;
-        }
-
-        public Message sendMeta(Client from, Message message)
-        {
-            return message;
+            return true;
         }
     }
 
@@ -353,26 +348,20 @@ public class Oort extends AbstractLifeCycle
     /**
      * MessageListener that handles publishes to /oort/cloud
      */
-    protected class RootOortClientListener implements RemoveListener, MessageListener
+    protected class RootOortClientListener implements SessionChannel.SubscriptionListener
     {
-        public void removed(String clientId, boolean timeout)
-        {
-            // TODO
-        }
-
-        public void deliver(Client fromClient, Client toClient, Message msg)
+        @Override
+        public void onMessage(SessionChannel channel, Message msg)
         {
             String channelId = msg.getChannel();
-            if (msg.getData()!=null)
+            Object data=msg.getData();
+            if (data instanceof Object[])
             {
-                if (channelId.equals("/oort/cloud") && msg.getData() instanceof Object[])
-                {
-                    Object[] data = (Object[])msg.getData();
-                    Set<String> comets = new HashSet<String>();
-                    for (Object o:data)
-                        comets.add(o.toString());
-                    observedComets(comets);
-                }   
+                Object[] array = (Object[])msg.getData();
+                Set<String> comets = new HashSet<String>();
+                for (Object o:array)
+                    comets.add(o.toString());
+                observedComets(comets);
             }
         }
         

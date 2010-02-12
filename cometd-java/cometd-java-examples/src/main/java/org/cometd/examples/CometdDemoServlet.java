@@ -28,6 +28,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.BayeuxService;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
@@ -64,7 +65,7 @@ public class CometdDemoServlet extends GenericServlet
             subscribe("/service/echo","doEcho");
         }
 
-        public Object doEcho(Session session, Object data)
+        public Object doEcho(ServerSession session, Object data)
         {
 	    Log.info("ECHO from "+session+" "+data);
 	    return data;
@@ -81,17 +82,17 @@ public class CometdDemoServlet extends GenericServlet
             subscribe("/meta/*","monitorMeta");
         }
 
-        public void monitorSubscribe(Session session, ServerMessage message)
+        public void monitorSubscribe(ServerSession session, ServerMessage message)
         {
             Log.info("Subscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
         }
 
-        public void monitorUnsubscribe(Session session, ServerMessage message)
+        public void monitorUnsubscribe(ServerSession session, ServerMessage message)
         {
             Log.info("Unsubscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
         }
 
-        public void monitorMeta(Session session, ServerMessage message)
+        public void monitorMeta(ServerSession session, ServerMessage message)
         {
             if (Log.isDebugEnabled())
                 Log.debug(message.toString());

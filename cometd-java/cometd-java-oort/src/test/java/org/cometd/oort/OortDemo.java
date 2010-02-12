@@ -15,7 +15,7 @@
 package org.cometd.oort;
 
 
-import org.cometd.server.continuation.ContinuationCometdServlet;
+import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -76,16 +76,15 @@ public class OortDemo
         context.setBaseResource(new ResourceCollection(new Resource[]
         {
             Resource.newResource(base+"/../../cometd-demo/src/main/webapp/"),
-            Resource.newResource(base+"/../../cometd-demo/target/cometd-demo-1.0.beta9-SNAPSHOT/"),
+            //Resource.newResource(base+"/../../cometd-demo/target/cometd-demo-2.0-SNAPSHOT/"),
         }));
         
         // Cometd servlet
-        ServletHolder cometd_holder = new ServletHolder(ContinuationCometdServlet.class);
+        ServletHolder cometd_holder = new ServletHolder(CometdServlet.class);
         cometd_holder.setInitParameter("timeout","200000");
         cometd_holder.setInitParameter("interval","100");
         cometd_holder.setInitParameter("maxInterval","100000");
         cometd_holder.setInitParameter("multiFrameInterval","1500");
-        cometd_holder.setInitParameter("directDeliver","true");
         cometd_holder.setInitParameter("logLevel","1");
         cometd_holder.setInitOrder(1);
         context.addServlet(cometd_holder, "/cometd/*");

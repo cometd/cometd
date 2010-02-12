@@ -12,6 +12,7 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  */
 public abstract class AbstractCometdDojoTest extends AbstractCometdTest
 {
+    @Override
     protected void customizeContext(ServletContextHandler context) throws Exception
     {
         File baseDirectory = new File(System.getProperty("basedir", "."));

@@ -229,7 +229,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     @Override
     public void disconnect()
     {
-        
         if (isConnected())
         {
             updateState(State.DISCONNECTING);
@@ -241,6 +240,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             while (_batch.get()>0)
                 endBatch();
         }
+        else
+            updateState(State.DISCONNECTED);
     }
 
     /* ------------------------------------------------------------ */
@@ -343,13 +344,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
 
         if (!_handshakeBatch.getAndSet(true))
             _batch.set(1);
-        
-        synchronized (_queue)
-        {
-            updateTransport(_transportRegistry.getTransport(allowed.get(0)));
-            _state=State.HANDSHAKING;
-            doSend(message);
-        }
+
+        updateTransport(_transportRegistry.getTransport(allowed.get(0)));
+        updateState(State.HANDSHAKING);
+        doSend(message);
     }
 
     /* ------------------------------------------------------------ */
@@ -670,9 +668,37 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     private void updateState(State newState)
     {
         Log.debug("State change: {} -> {}", _state, newState);
-        this._state = newState;
+        synchronized (_queue)
+        {
+            this._state = newState;
+            _queue.notifyAll();
+        }
     }
-
+    
+    /* ------------------------------------------------------------ */
+    public boolean waitFor(State state,long timeoutMs)
+    {
+        long start = System.currentTimeMillis();
+        synchronized (_queue)
+        {
+            while (state!=_state && System.currentTimeMillis()-start<timeoutMs)
+            {
+                try
+                {
+                    _queue.wait(timeoutMs);
+                }
+                catch(InterruptedException e)
+                {
+                    long now=System.currentTimeMillis();
+                    timeoutMs-=now-start;
+                    start=now;
+                }
+            }
+            
+            return _state==state;
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
@@ -903,8 +929,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     }
 
 
-    private enum State
+    public enum State
     {
         CONNECTED, CONNECTING, DISCONNECTED, DISCONNECTING, HANDSHAKING, UNCONNECTED
-    }
+    };
+    
+    
+    
 }

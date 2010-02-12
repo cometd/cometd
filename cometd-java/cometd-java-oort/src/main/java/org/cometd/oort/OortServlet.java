@@ -25,8 +25,8 @@ import javax.servlet.ServletResponse;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletResponse;
 
-import org.cometd.Bayeux;
-import org.cometd.server.AbstractCometdServlet;
+import org.cometd.bayeux.server.BayeuxServer;
+
 
 /**
  * Oort Servlet.
@@ -70,11 +70,11 @@ public class OortServlet implements Servlet
         System.err.println("INIT "+config);
         _config=config;
 
-        Bayeux bayeux = (Bayeux)config.getServletContext().getAttribute(Bayeux.ATTRIBUTE);
+        BayeuxServer bayeux = (BayeuxServer)config.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
         if (bayeux==null)
         {
-            _config.getServletContext().log("No "+Bayeux.ATTRIBUTE +" initialized");
-            throw new UnavailableException(Bayeux.ATTRIBUTE);
+            _config.getServletContext().log("No "+BayeuxServer.ATTRIBUTE +" initialized");
+            throw new UnavailableException(BayeuxServer.ATTRIBUTE);
         }
 
         String url=_config.getInitParameter(Oort.OORT_URL);
@@ -94,15 +94,6 @@ public class OortServlet implements Servlet
             for (String channel : patterns)
                 oort.observeChannel(channel);
 
-        }
-
-        try
-        {
-            oort.start();
-        }
-        catch(Exception e)
-        {
-            throw new ServletException(e);
         }
 
         String cloud = _config.getInitParameter(Oort.OORT_CLOUD);
