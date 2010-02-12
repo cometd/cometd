@@ -9,14 +9,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletContext;
 
-import org.cometd.Bayeux;
-import org.cometd.Channel;
-import org.cometd.ChannelBayeuxListener;
-import org.cometd.Client;
-import org.cometd.SubscriptionListener;
-import org.cometd.oort.Oort;
-import org.cometd.oort.Seti;
-import org.cometd.server.BayeuxService;
 import org.webtide.demo.auction.dao.AuctionDao;
 import org.webtide.demo.auction.dao.BidderDao;
 import org.webtide.demo.auction.dao.CategoryDao;

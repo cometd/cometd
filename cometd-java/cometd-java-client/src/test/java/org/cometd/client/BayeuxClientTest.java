@@ -24,6 +24,7 @@ import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.SessionChannel.MetaChannelListener;
 import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
+import org.cometd.client.BayeuxClient.State;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.client.HttpClient;
@@ -223,14 +224,20 @@ public class BayeuxClientTest extends TestCase
             @Override
             public void onConnectException(Throwable x)
             {
-                Log.warn("onConnectException: "+x.toString());
+                if (x instanceof RuntimeException || x instanceof Error)
+                    Log.warn("onConnectException: ",x);
+                else
+                    Log.warn("onConnectException: "+x.toString());
                 queue.add(problem);
             }
 
             @Override
             public void onException(Throwable x)
             {
-                Log.warn("onException: "+x.toString());
+                if (x instanceof RuntimeException || x instanceof Error)
+                    Log.warn("onException: ",x);
+                else
+                    Log.warn("onException: "+x.toString());
                 queue.add(problem);
             }
 
@@ -336,8 +343,7 @@ public class BayeuxClientTest extends TestCase
         assertEquals("402::Unknown client",message.get("error"));
 
         client.disconnect();
-        // Wait for the disconnect to complete
-        Thread.sleep(500);
+        assertTrue(client.waitFor(State.DISCONNECTED,1000L));
     }
 
     public void testCookies() throws Exception
@@ -362,6 +368,7 @@ public class BayeuxClientTest extends TestCase
         assertNotNull(client.getCookie("foo"));
         
         client.disconnect();
+        assertTrue(client.waitFor(State.DISCONNECTED,1000L));
     }
 
     public void testPerf() throws Exception
@@ -467,8 +474,8 @@ public class BayeuxClientTest extends TestCase
         for (BayeuxClient client : clients)
             client.disconnect();
 
-        Thread.sleep(clients.length*20);
-
+        for (BayeuxClient client : clients)
+            assertTrue(client.waitFor(State.DISCONNECTED,1000L));
     }
 
     private class DumpThread extends Thread

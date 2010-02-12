@@ -12,12 +12,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.ServletContext;
 
-import org.cometd.Bayeux;
-import org.cometd.Channel;
-import org.cometd.Client;
-import org.cometd.RemoveListener;
-import org.cometd.oort.Oort;
-import org.cometd.oort.Seti;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxService;
 import org.eclipse.jetty.util.log.Log;
 
@@ -32,7 +27,7 @@ public class AuctionChatService extends BayeuxService
 
     public AuctionChatService(ServletContext context)
     {
-        super((Bayeux)context.getAttribute(Bayeux.ATTRIBUTE), "chat");
+        super((Bayeux)context.getAttribute(BayeuxServer.ATTRIBUTE), "chat");
 
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
         if (_oort==null)

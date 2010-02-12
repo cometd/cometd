@@ -7,10 +7,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.cometd.Channel;
-import org.cometd.Client;
-import org.cometd.Message;
-import org.cometd.MessageListener;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -46,14 +47,13 @@ public class Seti extends AbstractLifeCycle
     public final static String SETI_SHARD="seti.shard";
     
     final String _setiId;
-    final String _setiChannelId;
     final String _shardId;
     final Oort _oort;
-    final Client _client;
+    final LocalSession _session;
     final ShardLocation _allShardLocation;
-    final Channel _setiIdChannel;
-    final Channel _setiAllChannel;
-    final Channel _setiShardChannel;
+    final ServerChannel _setiIdChannel;
+    final ServerChannel _setiAllChannel;
+    final ServerChannel _setiShardChannel;
     
     final ConcurrentMap<String, Location> _uid2Location = new ConcurrentHashMap<String, Location>();
     
@@ -61,55 +61,75 @@ public class Seti extends AbstractLifeCycle
     public Seti(Oort oort, String shardId)
     {
         _oort=oort;
-        _client = _oort.getBayeux().newClient("seti");
+        _session = _oort.getBayeux().newLocalSession("seti");
         _setiId=_oort.getURL().replace("://","_").replace("/","_").replace(":","_");
         _shardId=shardId;
 
-        _setiChannelId="/seti/"+_setiId;
-        _setiIdChannel=_oort.getBayeux().getChannel(_setiChannelId,true);
+        _setiIdChannel=_oort.getBayeux().getChannel("/seti/"+_setiId,true);
         _setiIdChannel.setPersistent(true);
-        _oort.observeChannel(_setiIdChannel.getId());
-        _setiIdChannel.subscribe(_client);
         
         _setiAllChannel=_oort.getBayeux().getChannel("/seti/ALL",true);
         _setiAllChannel.setPersistent(true);
-        _oort.observeChannel(_setiAllChannel.getId());
-        _setiAllChannel.subscribe(_client);
         
         _setiShardChannel=_oort.getBayeux().getChannel("/seti/"+shardId,true);
         _setiShardChannel.setPersistent(true);
-        _oort.observeChannel(_setiShardChannel.getId());
-        _setiShardChannel.subscribe(_client);
         
-        _allShardLocation = new ShardLocation(_setiAllChannel);
-         
+        _allShardLocation = new ShardLocation(_setiAllChannel.getId());
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStart()
         throws Exception
     {
         super.doStart();
-        _client.addListener(new MessageListener()
+        _session.handshake();
+        
+        _oort.observeChannel(_setiIdChannel.getId());
+        _session.getChannel(_setiIdChannel.getId()).subscribe(new SessionChannel.SubscriptionListener()
         {
-            public void deliver(Client from, Client to, Message msg)
+            @Override
+            public void onMessage(SessionChannel channel, Message message)
             {
-                receive(from,to,msg);
+                receive(message);
             }
         });
+        
+        _oort.observeChannel(_setiAllChannel.getId());
+        _session.getChannel(_setiAllChannel.getId()).subscribe(new SessionChannel.SubscriptionListener()
+        {
+            @Override
+            public void onMessage(SessionChannel channel, Message message)
+            {
+                receive(message);
+            }
+        });
+        
+        
+        _oort.observeChannel(_setiShardChannel.getId());
+        _session.getChannel(_setiShardChannel.getId()).subscribe(new SessionChannel.SubscriptionListener()
+        {
+            @Override
+            public void onMessage(SessionChannel channel, Message message)
+            {
+                receive(message);
+            }
+        });
+        
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStop()
         throws Exception
     {
-        _client.disconnect();
+        _session.disconnect();
     }
     
     /* ------------------------------------------------------------ */
-    public void associate(final String userId,final Client client)
+    public void associate(final String userId,final ServerSession session)
     {
-        _uid2Location.put(userId,new LocalLocation(client));
+        _uid2Location.put(userId,new LocalLocation(session));
         userId2Shard(userId).associate(userId);
     }
 
@@ -121,13 +141,13 @@ public class Seti extends AbstractLifeCycle
     }
 
     /* ------------------------------------------------------------ */
-    public void sendMessage(final String toUser,final String toChannel,final Object message)
+    public void sendMessage(final String toUser,final String toChannel,final Object data)
     {
         Location location = _uid2Location.get(toUser);
         if (location==null)
             location = userId2Shard(toUser);
         
-        location.sendMessage(toUser,toChannel,message);
+        location.sendMessage(toUser,toChannel,data);
     }
 
     /* ------------------------------------------------------------ */
@@ -168,7 +188,7 @@ public class Seti extends AbstractLifeCycle
     }
 
     /* ------------------------------------------------------------ */
-    protected void receive(final Client from, final Client to, final Message msg)
+    protected void receive(final Message msg)
     {
         if (Log.isDebugEnabled()) Log.debug("SETI "+_oort+":: "+msg);
 
@@ -207,7 +227,7 @@ public class Seti extends AbstractLifeCycle
             final String toChannel=(String)data.get("channel");
             Location location=_uid2Location.get(toUid);
             
-            if (location==null && _setiChannelId.equals(msg.getChannel()))
+            if (location==null && _setiIdChannel.getId().equals(msg.getChannel()))
                 // was sent to this node, so escalate to the shard.
                 location =userId2Shard(toUid);
             
@@ -222,8 +242,8 @@ public class Seti extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     private interface Location
     {
-        public void sendMessage(String toUser,String toChannel,Object message);
-        public void receive(String toUser,String toChannel,Object message);
+        public void sendMessage(String toUser,String toChannel,Object data);
+        public void receive(String toUser,String toChannel,Object data);
     }
     
 
@@ -231,21 +251,21 @@ public class Seti extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     class LocalLocation implements Location
     {
-        Client _client;
+        ServerSession _session;
         
-        LocalLocation(Client client)
+        LocalLocation(ServerSession session)
         {
-            _client=client;
+            _session=session;
         }
 
-        public void sendMessage(String toUser, String toChannel, Object message)
+        public void sendMessage(String toUser, String toChannel, Object data)
         {
-            _client.deliver(Seti.this._client,toChannel,message,null);
+            _session.deliver(_session,toChannel,data,null);
         }
 
-        public void receive(String toUser, String toChannel, Object message)
+        public void receive(String toUser, String toChannel, Object data)
         {
-            _client.deliver(Seti.this._client,toChannel,message,null);
+            _session.deliver(_session,toChannel,data,null);
         }
     }
 
@@ -253,21 +273,21 @@ public class Seti extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     class SetiLocation implements Location
     {
-        Channel _channel;
+        SessionChannel _channel;
 
         SetiLocation(String channelId)
         {
-            _channel=_oort._bayeux.getChannel(channelId,true);
+            _channel=_session.getChannel(channelId);
         }
         
-        SetiLocation(Channel channel)
+        SetiLocation(SessionChannel channel)
         {
             _channel=channel;
         }
         
         public void sendMessage(String toUser, String toChannel, Object message)
         {
-            _channel.publish(Seti.this._client,new SetiMessage(toUser,toChannel,message),null);
+            _channel.publish(new SetiMessage(toUser,toChannel,message));
         }
 
         public void receive(String toUser, String toChannel, Object message)
@@ -291,27 +311,21 @@ public class Seti extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     class ShardLocation implements Location
     {
-        Channel _channel;
+        SessionChannel _channel;
         
         ShardLocation(String shardId)
         {
-            _channel=_oort._bayeux.getChannel("/seti/"+shardId,true);
-            
-        }
-        
-        ShardLocation(Channel channel)
-        {
-            _channel=channel;
+            _channel=_session.getChannel("/seti/"+shardId);
         }
         
         public void sendMessage(final Collection<String> toUsers, final String toChannel, final Object message)
         {
-            _channel.publish(Seti.this._client,new SetiMessage(toUsers,toChannel,message),null);
+            _channel.publish(new SetiMessage(toUsers,toChannel,message));
         }
 
         public void sendMessage(String toUser, String toChannel, Object message)
         {
-            _channel.publish(Seti.this._client,new SetiMessage(toUser,toChannel,message),null);
+            _channel.publish(new SetiMessage(toUser,toChannel,message));
         }
         
         public void receive(String toUser, String toChannel, Object message)
@@ -321,12 +335,12 @@ public class Seti extends AbstractLifeCycle
         
         public void associate(final String user)
         {
-            _channel.publish(Seti.this._client,new SetiPresence(user,true),null);
+            _channel.publish(new SetiPresence(user,true));
         }
         
         public void disassociate(final String user)
         {
-            _channel.publish(Seti.this._client,new SetiPresence(user,false),null);
+            _channel.publish(new SetiPresence(user,false));
         }
     }
 

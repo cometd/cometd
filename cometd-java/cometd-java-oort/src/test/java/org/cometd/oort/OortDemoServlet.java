@@ -25,7 +25,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
-import org.cometd.Bayeux;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.ext.TimesyncExtension;
 
 public class OortDemoServlet implements Servlet
@@ -51,7 +51,7 @@ public class OortDemoServlet implements Servlet
 
         new OortChatService(_context);
 
-        Bayeux bayeux = (Bayeux)_context.getAttribute(Bayeux.ATTRIBUTE);
+        BayeuxServer bayeux = (BayeuxServer)_context.getAttribute(BayeuxServer.ATTRIBUTE);
         bayeux.addExtension(new TimesyncExtension());
     }
 

@@ -37,6 +37,7 @@ import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.client.BayeuxClient.State;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.server.CometdServlet;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
@@ -136,24 +137,23 @@ public class AckExtensionTest extends TestCase
         
         final BayeuxClient client = new BayeuxClient("http://localhost:"+port+"/cometd")
         {
-            /* ------------------------------------------------------------ */
-            /**
-             * @see org.cometd.client.BayeuxClient#onConnectException(java.lang.Throwable)
-             */
+
             @Override
             public void onConnectException(Throwable x)
             {
-                Log.info(x.toString());
+                if (x instanceof RuntimeException || x instanceof Error)
+                    Log.warn("onConnectException: ",x);
+                else
+                    Log.info("onConnectException: "+x.toString());
             }
 
-            /* ------------------------------------------------------------ */
-            /**
-             * @see org.cometd.client.BayeuxClient#onException(java.lang.Throwable)
-             */
             @Override
             public void onException(Throwable x)
             {
-                Log.info(x.toString());
+                if (x instanceof RuntimeException || x instanceof Error)
+                    Log.warn("onException: ",x);
+                else
+                    Log.info("onException: "+x.toString());
             }
             
         };
@@ -239,7 +239,7 @@ public class AckExtensionTest extends TestCase
         }
 
         client.disconnect();
-        Thread.sleep(500);
+        assertTrue(client.waitFor(State.DISCONNECTED,1000L));
     }
 
 

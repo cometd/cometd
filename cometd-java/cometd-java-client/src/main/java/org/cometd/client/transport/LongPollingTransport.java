@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.client.ContentExchange;
@@ -12,6 +13,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.log.Log;
 
 /**
  * @version $Revision$ $Date$
@@ -43,13 +45,17 @@ public class LongPollingTransport extends ClientTransport
         super.init(bayeux, uri, listener);
     }
 
+    @Override
     public void send(Message... messages)
     {
         HttpExchange httpExchange = new TransportExchange();
         httpExchange.setMethod("POST");
         
         // TODO: handle extra path for handshake, connect and disconnect
-        httpExchange.setURL(_uri.toString());
+        if (messages.length==1 && messages[0].isMeta())
+            httpExchange.setURL(_uri+messages[0].getChannel());
+        else
+            httpExchange.setURL(_uri.toString());
 
         String content = JSON.toString(messages);
         httpExchange.setRequestContentType("application/json;charset=UTF-8");
@@ -78,12 +84,18 @@ public class LongPollingTransport extends ClientTransport
         {
             if (getResponseStatus() == 200)
             {
-                List<Message.Mutable> messages = toMessages(getResponseContent());
-                notifyMessages(messages);
+                String content=getResponseContent();
+                if (content!=null && content.length()>0)
+                {
+                    List<Message.Mutable> messages = toMessages(getResponseContent());
+                    notifyMessages(messages);
+                }
+                else
+                    notifyProtocolError(this+" 200 null content");
             }
             else
             {
-                notifyProtocolError(""+getResponseStatus());
+                notifyProtocolError(this+" "+getResponseStatus());
             }
         }
 
