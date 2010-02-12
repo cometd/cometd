@@ -75,9 +75,9 @@ public class CometdServlet extends GenericServlet
     @Override
     public void init() throws ServletException
     {
-        if (getServletConfig().getInitParameter("logLevel")!=null)
+        if (getInitParameter("logLevel")!=null)
         {
-            _logLevel=Integer.parseInt(getServletConfig().getInitParameter("logLevel"));
+            _logLevel=Integer.parseInt(getInitParameter("logLevel"));
             if (_logLevel>=DEBUG_LEVEL)
                 _bayeux.getLogger().setDebugEnabled(true);
         }
@@ -107,7 +107,7 @@ public class CometdServlet extends GenericServlet
         
         for (String option : qualified_names)
         {
-            Object value = getServletContext().getInitParameter(option);
+            Object value = getInitParameter(option);
             if (value!=null)
                 _bayeux.setOption(option,value);
         }

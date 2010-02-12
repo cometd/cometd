@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.client.ContentExchange;
@@ -13,7 +12,6 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.eclipse.jetty.util.log.Log;
 
 /**
  * @version $Revision$ $Date$

@@ -229,6 +229,7 @@ public abstract class LongPollingTransport extends HttpTransport
                         if (reply!=null)
                         {
                             reply=_bayeux.extendReply(session,reply);
+                            
                             if (reply!=null)
                                 writer=send(request,response,writer, reply);
                         }

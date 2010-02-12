@@ -95,6 +95,7 @@ public class Oort extends AbstractLifeCycle
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStart() throws Exception
     {
         super.doStart();
@@ -126,7 +127,7 @@ public class Oort extends AbstractLifeCycle
                 {
                     comet = new OortComet(this,cometUrl);
                     _knownCommets.put(cometUrl,comet);
-                    comet.start();
+                    comet.handshake();
                 }
                 catch(Exception e)
                 {
@@ -252,7 +253,6 @@ public class Oort extends AbstractLifeCycle
         @Override
         public boolean rcvMeta(ServerSession from, Mutable message)
         {
-            System.err.println("received "+message);
             return true;
         }
 
@@ -328,12 +328,10 @@ public class Oort extends AbstractLifeCycle
         @Override
         public ServerMessage send(ServerSession to, ServerMessage message)
         {
-            // avoid loops
-            if (to.getLocalSession()!=null && isOort(to.getLocalSession()))
-                return null;
-            if (message.getChannel().startsWith("/oort/"))
-                return null;
-            return message;
+            // avoid loops            
+            boolean send = !isOort(to) || message.getChannel().startsWith("/oort/");
+            return send?message:null;
+
         }
 
         @Override
