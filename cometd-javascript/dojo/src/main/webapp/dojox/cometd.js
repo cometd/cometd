@@ -61,8 +61,11 @@ dojox.cometd.CallbackPollingTransport = function()
 dojox.cometd.CallbackPollingTransport.prototype = new org.cometd.CallbackPollingTransport();
 dojox.cometd.CallbackPollingTransport.prototype.constructor = dojox.cometd.CallbackPollingTransport;
 
+if (window.WebSocket)
+	dojox.cometd.registerTransport('websocket', new org.cometd.WebSocketTransport());
 dojox.cometd.registerTransport('long-polling', new dojox.cometd.LongPollingTransport());
 dojox.cometd.registerTransport('callback-polling', new dojox.cometd.CallbackPollingTransport());
+
 
 // Create a compatibility API for dojox.cometd instance with
 // the original API.

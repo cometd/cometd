@@ -105,6 +105,7 @@ public class CometdDemo
 
                         Resource.newResource("../../cometd-javascript/dojo/src/main/webapp/"),
                         Resource.newResource("../../cometd-javascript/examples-dojo/src/main/webapp/"),
+                        Resource.newResource("../../cometd-javascript/dojo/target/scripts/")
                 }));
 
 
