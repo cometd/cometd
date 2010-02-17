@@ -22,7 +22,7 @@ import org.eclipse.jetty.websocket.WebSocketFactory;
 
 
 
-public class WebSocketsTransport extends HttpTransport
+public class WebSocketTransport extends HttpTransport
 {
     public final static String NAME="websocket";
     public final static String PROTOCOL_OPTION="protocol";
@@ -32,7 +32,7 @@ public class WebSocketsTransport extends HttpTransport
     
     private String _protocol="";
     
-    public WebSocketsTransport(BayeuxServerImpl bayeux, Map<String,Object> options)
+    public WebSocketTransport(BayeuxServerImpl bayeux, Map<String,Object> options)
     {
         super(bayeux,NAME,options);
         _prefix.add("ws");
@@ -108,7 +108,6 @@ public class WebSocketsTransport extends HttpTransport
 
         public void onDisconnect()
         {
-            System.err.println("WS Disconnected!");
             if (_session!=null)
             {
                 _session.cancelIntervalTimeout(); 
@@ -119,11 +118,10 @@ public class WebSocketsTransport extends HttpTransport
 
         public void onMessage(byte frame, String data)
         {
-            System.err.println("WS>>>"+data);
             boolean batch=false;
             try
             {
-                _bayeux.setCurrentTransport(WebSocketsTransport.this);
+                _bayeux.setCurrentTransport(WebSocketTransport.this);
                 
                 ServerMessage.Mutable[] messages = _bayeux.getServerMessagePool().parseMessages(data);
 
@@ -187,14 +185,12 @@ public class WebSocketsTransport extends HttpTransport
                         else
                             send(reply);
                     }
-                    
 
                     // disassociate the reply
                     message.setAssociated(null);
                     // dec our own ref, this should be to 0 unless message was ref'd elsewhere.
                     message.decRef();
                 }
-
             }
             catch(IOException e)
             {
@@ -262,7 +258,6 @@ public class WebSocketsTransport extends HttpTransport
         protected void send(Queue<ServerMessage> messages) throws IOException
         {
             String data = JSON.toString(messages);
-            System.err.println("WS<<<"+data);
             _outbound.sendMessage(data);
         }
         
@@ -270,7 +265,6 @@ public class WebSocketsTransport extends HttpTransport
         protected void send(ServerMessage message) throws IOException
         {
             String data = message.getJSON();
-            System.err.println("WS<<<["+data+"]");
             _outbound.sendMessage("["+data+"]");
         }
     };

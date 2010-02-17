@@ -86,7 +86,7 @@ public class OortServlet implements Servlet
 
         Oort oort= new Oort(url,bayeux);
         _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE,oort);
-
+        
         String channels=_config.getInitParameter(Oort.OORT_CHANNELS);
         if (channels!=null)
         {

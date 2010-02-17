@@ -44,6 +44,9 @@ public class ChannelId
                 name=name.substring(0,name.length() - 1);
 
             _segments=name.substring(1).split("/");
+            for (String s:_segments)
+                if (s==null || s.length()==0)
+                    throw new IllegalArgumentException(name);
         }
 
         if (_segments.length == 0)

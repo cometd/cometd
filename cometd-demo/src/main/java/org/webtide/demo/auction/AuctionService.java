@@ -9,12 +9,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletContext;
 
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.oort.Oort;
+import org.cometd.oort.Seti;
+import org.cometd.server.BayeuxService;
 import org.webtide.demo.auction.dao.AuctionDao;
 import org.webtide.demo.auction.dao.BidderDao;
 import org.webtide.demo.auction.dao.CategoryDao;
 
 
-public class AuctionService extends BayeuxService implements SubscriptionListener, ChannelBayeuxListener
+public class AuctionService extends BayeuxService implements SubscriptionListener, BayeuxServer.ChannelListener, BayeuxServer.SubscriptionListener
 {
     public static final String AUCTION_ROOT="/auction/";
     
@@ -29,7 +38,7 @@ public class AuctionService extends BayeuxService implements SubscriptionListene
 
     public AuctionService(ServletContext context)
     {
-        super((Bayeux)context.getAttribute(Bayeux.ATTRIBUTE), "oortion");
+        super((BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE), "oortion");
 
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
         if (_oort==null)
@@ -50,7 +59,7 @@ public class AuctionService extends BayeuxService implements SubscriptionListene
         subscribe("/service"+AUCTION_ROOT+"categories", "categories");
     }
 
-    public Bidder bidder(Client source, String channel, String bidder, String messageId)
+    public Bidder bidder(ServerSession source, String channel, String bidder, String messageId)
     {
         Integer id = _bidders.incrementAndGet();
         
@@ -66,22 +75,22 @@ public class AuctionService extends BayeuxService implements SubscriptionListene
         return b;   
     }
     
-    public List<Category> categories(Client source, String channel, String bidder, String messageId)
+    public List<Category> categories(ServerSession source, String channel, String bidder, String messageId)
     {
         return _categoryDao.getAllCategories();
     }
 
-    public List<Item> search(Client source, String channel, String search, String messageId)
+    public List<Item> search(ServerSession source, String channel, String search, String messageId)
     {  
         return _categoryDao.findItems(search);
     }
 
-    public List<Item> category(Client source, String channel, Number categoryId, String messageId)
+    public List<Item> category(ServerSession source, String channel, Number categoryId, String messageId)
     { 
         return _categoryDao.getItemsInCategory(categoryId.intValue());
     }
 
-    public synchronized void bid(Client source, String channel, Map<String,Object> bidMap, String messageId)
+    public synchronized void bid(ServerSession source, String channel, Map<String,Object> bidMap, String messageId)
     {
         try
         {
@@ -113,7 +122,7 @@ public class AuctionService extends BayeuxService implements SubscriptionListene
         }
     }
     
-    public synchronized void bids(Client source, String channel, Map<String,Object> bidMap, String messageId)
+    public synchronized void bids(ServerSession source, String channel, Map<String,Object> bidMap, String messageId)
     {
         // TODO Other half of the non atomic bid hack when used in Oort
         Integer itemId = ((Number)bidMap.get("itemId")).intValue();
@@ -142,9 +151,39 @@ public class AuctionService extends BayeuxService implements SubscriptionListene
         }
     }
 
-    public void subscribed(Client client, Channel channel)
+    /*
+    public void subscribed(ServerSession client, Channel channel)
     {
-        if (!client.isLocal()&&channel.getId().startsWith(AUCTION_ROOT+"item"))
+    }
+    */
+
+
+    @Override
+    public void onMessage(SessionChannel channel, Message message)
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void channelAdded(ServerChannel channel)
+    {
+        if (channel.getId().startsWith(AUCTION_ROOT+"item"))
+        {
+            getLocalSession().getChannel(channel.getId()).subscribe(this);
+        }
+    }
+
+    @Override
+    public void channelRemoved(String channelId)
+    {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void subscribed(ServerSession session, ServerChannel channel)
+    {
+        if (!session.isLocalSession()&&channel.getId().startsWith(AUCTION_ROOT+"item"))
         {
             String itemIdS=channel.getId().substring((AUCTION_ROOT+"item").length());
             if (itemIdS.indexOf('/')<0)
@@ -152,23 +191,17 @@ public class AuctionService extends BayeuxService implements SubscriptionListene
                 Integer itemId=Integer.decode(itemIdS);
                 Bid highest = _auctionDao.getHighestBid(itemId);
                 if (highest!=null)
-                    client.deliver(getClient(),channel.getId(),highest,null);
+                    session.deliver(getServerSession(),channel.getId(),highest,null);
             }
         }
+        
     }
 
-    public void unsubscribed(Client client, Channel channel)
+    @Override
+    public void unsubscribed(ServerSession session, ServerChannel channel)
     {
-    }
-
-    public void channelAdded(Channel channel)
-    {   
-        if (channel.getId().startsWith(AUCTION_ROOT+"item"))
-            channel.addListener(this);
-    }
-
-    public void channelRemoved(Channel channel)
-    {
+        // TODO Auto-generated method stub
+        
     }
 
     

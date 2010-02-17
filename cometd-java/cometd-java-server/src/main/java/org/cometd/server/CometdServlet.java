@@ -31,7 +31,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.transports.HttpTransport;
 import org.cometd.server.transports.JSONPTransport;
 import org.cometd.server.transports.JSONTransport;
-import org.cometd.server.transports.WebSocketsTransport;
+import org.cometd.server.transports.WebSocketTransport;
 
 /**
  */
@@ -49,7 +49,7 @@ public class CometdServlet extends GenericServlet
     private final BayeuxServerImpl _bayeux = new BayeuxServerImpl();
     private final JSONTransport _lpTransport = new JSONTransport(_bayeux,_bayeux.getOptions());
     private final JSONPTransport _cbTransport = new JSONPTransport(_bayeux,_bayeux.getOptions());
-    private final WebSocketsTransport _wsTransport = new WebSocketsTransport(_bayeux,_bayeux.getOptions());
+    private final WebSocketTransport _wsTransport = new WebSocketTransport(_bayeux,_bayeux.getOptions());
     private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<HttpServletRequest>();
     private String _transportParameter;
     private String _callbackParameter;
@@ -69,7 +69,7 @@ public class CometdServlet extends GenericServlet
         bayeux.addTransport(_wsTransport);
         bayeux.addTransport(_lpTransport);
         bayeux.addTransport(_cbTransport);
-        bayeux.setAllowedTransports(WebSocketsTransport.NAME,JSONTransport.NAME,JSONPTransport.NAME);
+        bayeux.setAllowedTransports(WebSocketTransport.NAME,JSONTransport.NAME,JSONPTransport.NAME);
     }
 
     @Override

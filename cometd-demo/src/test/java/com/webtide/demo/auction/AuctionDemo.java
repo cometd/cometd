@@ -19,7 +19,7 @@ import org.cometd.oort.Oort;
 import org.cometd.oort.OortServlet;
 import org.cometd.oort.Seti;
 import org.cometd.oort.SetiServlet;
-import org.cometd.server.continuation.ContinuationCometdServlet;
+import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -80,11 +80,11 @@ public class AuctionDemo
         context.setBaseResource(new ResourceCollection(new Resource[]
         {
             Resource.newResource(base+"/src/main/webapp/"),
-            Resource.newResource(base+"/target/cometd-demo-1.0.beta9-SNAPSHOT/"),
+            Resource.newResource(base+"/target/cometd-demo-2.0.0-SNAPSHOT//"),
         }));
         
         // Cometd servlet
-        ServletHolder cometd_holder = new ServletHolder(ContinuationCometdServlet.class);
+        ServletHolder cometd_holder = new ServletHolder(CometdServlet.class);
         cometd_holder.setInitParameter("timeout","200000");
         cometd_holder.setInitParameter("interval","100");
         cometd_holder.setInitParameter("maxInterval","100000");
