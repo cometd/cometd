@@ -198,8 +198,8 @@ public abstract class BayeuxService
      * following signatures:
      * <ul>
      * <li><code>myMethod(ServerSession from,Object data)</code></li>
-     * <li><code>myMethod(ServerSession from,Object data,String id)</code></li>
-     * <li><code>myMethod(ServerSession from,String channel,Object data,String id)</code>
+     * <li><code>myMethod(ServerSession from,Object data,String|Object id)</code></li>
+     * <li><code>myMethod(ServerSession from,String channel,Object data,String|Object id)</code>
      * </li>
      * </li>
      * 
@@ -311,9 +311,9 @@ public abstract class BayeuxService
      * @param msg
      * @param th
      */
-    protected void exception(ServerSession fromClient, LocalSession toClient, ServerMessage msg, Throwable th)
+    protected void exception(String method,ServerSession fromClient, LocalSession toClient, ServerMessage msg, Throwable th)
     {
-        System.err.println(msg);
+        System.err.println(method+": "+msg);
         th.printStackTrace();
     }
 
@@ -363,9 +363,13 @@ public abstract class BayeuxService
                         reply=method.invoke(this,fromClient,arg);
                         break;
                     case 3:
+                        if (id!=null && String.class.equals(method.getParameterTypes()[2]))
+                            id=id.toString();
                         reply=method.invoke(this,fromClient,arg,id);
                         break;
                     case 4:
+                        if (id!=null && String.class.equals(method.getParameterTypes()[2]))
+                            id=id.toString();
                         reply=method.invoke(this,fromClient,channel,arg,id);
                         break;
                 }
@@ -375,13 +379,11 @@ public abstract class BayeuxService
             }
             catch(Exception e)
             {
-                Log.debug("method",method);
-                exception(fromClient,_session,msg,e);
+                exception(method.toString(),fromClient,_session,msg,e);
             }
             catch(Error e)
             {
-                Log.debug("method",method);
-                exception(fromClient,_session,msg,e);
+                exception(method.toString(),fromClient,_session,msg,e);
             }
         }
     }

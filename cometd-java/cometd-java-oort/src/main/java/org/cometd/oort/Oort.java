@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.log.Log;
  * @author gregw
  *
  */
-public class Oort extends AbstractLifeCycle
+public class Oort
 {
     public final static String OORT_URL = "oort.url";
     public final static String OORT_CLOUD = "oort.cloud";
@@ -71,6 +71,17 @@ public class Oort extends AbstractLifeCycle
         
         _oortSession=_bayeux.newLocalSession("oort");
         bayeux.addExtension(new OortExtension());
+        
+        try
+        {
+            _httpClient.start();
+            _oortSession.handshake();
+            _oortSession.getChannel("/oort/cloud").subscribe(new RootOortClientListener());
+        }
+        catch(Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -92,16 +103,6 @@ public class Oort extends AbstractLifeCycle
     public String getSecret()
     {
         return _secret;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-        _httpClient.start();
-        _oortSession.handshake();
-        _oortSession.getChannel("/oort/cloud").subscribe(new RootOortClientListener());
     }
 
     /* ------------------------------------------------------------ */

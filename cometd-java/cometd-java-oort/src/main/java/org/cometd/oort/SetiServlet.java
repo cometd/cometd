@@ -38,7 +38,7 @@ public class SetiServlet implements Servlet
         {
             Seti seti= (Seti)_config.getServletContext().getAttribute(Seti.SETI_ATTRIBUTE);
             if (seti!=null)
-                seti.stop();
+                seti.disconnect();
         }
         catch(Exception e)
         {
@@ -74,15 +74,6 @@ public class SetiServlet implements Servlet
         
         Seti seti= new Seti(oort,shard);
         _config.getServletContext().setAttribute(Seti.SETI_ATTRIBUTE,seti);
-
-        try
-        {
-            seti.start();
-        }
-        catch(Exception e)
-        {
-            throw new ServletException(e);
-        }
         
     }
 

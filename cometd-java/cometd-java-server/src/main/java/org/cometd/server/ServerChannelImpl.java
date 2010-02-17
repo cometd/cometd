@@ -175,7 +175,8 @@ public class ServerChannelImpl implements ServerChannel
             if (!create)
                 return null;
             
-            child=new ServerChannelImpl(_bayeux,this,new ChannelId((_id.depth()==0?"/":(_id.toString() + "/")) + next));
+            String cid=(_id.depth()==0?"/":(_id.toString() + "/")) + next;
+            child=new ServerChannelImpl(_bayeux,this,new ChannelId(cid));
 
             ServerChannelImpl old=_children.putIfAbsent(next,child);
             if (old==null)

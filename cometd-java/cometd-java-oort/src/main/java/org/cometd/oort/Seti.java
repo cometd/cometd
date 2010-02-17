@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.log.Log;
  * method must be extended to map users to shards.
  * 
  */
-public class Seti extends AbstractLifeCycle
+public class Seti
 {
     public final static String SETI_ATTRIBUTE="org.cometd.oort.Seti";
     public final static String SETI_SHARD="seti.shard";
@@ -74,16 +74,17 @@ public class Seti extends AbstractLifeCycle
         _setiShardChannel=_oort.getBayeux().getChannel("/seti/"+shardId,true);
         _setiShardChannel.setPersistent(true);
         
-        _allShardLocation = new ShardLocation(_setiAllChannel.getId());
-    }
+        _allShardLocation = new ShardLocation("ALL");
+        
 
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void doStart()
-        throws Exception
-    {
-        super.doStart();
-        _session.handshake();
+        try
+        {
+            _session.handshake();
+        }
+        catch(Exception e)
+        {
+            throw new RuntimeException(e);
+        }
         
         _oort.observeChannel(_setiIdChannel.getId());
         _session.getChannel(_setiIdChannel.getId()).subscribe(new SessionChannel.SubscriptionListener()
@@ -115,17 +116,8 @@ public class Seti extends AbstractLifeCycle
                 receive(message);
             }
         });
-        
     }
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void doStop()
-        throws Exception
-    {
-        _session.disconnect();
-    }
-    
+
     /* ------------------------------------------------------------ */
     public void associate(final String userId,final ServerSession session)
     {
@@ -407,6 +399,11 @@ public class Seti extends AbstractLifeCycle
             out.add("from",_user);
             out.add(_on?"on":"off",_setiId);
         }
+    }
+
+    public void disconnect()
+    {
+        _session.disconnect();
     }
     
 }
