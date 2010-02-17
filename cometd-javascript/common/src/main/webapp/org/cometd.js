@@ -2232,10 +2232,17 @@ org.cometd.Cometd = function(name)
     	var _webSocket;
         var _supportsWebSocket = true;
         var _envelope;
-        var _state = WebSocket.CLOSED;
+        var _state;
         var _metaConnectEnvelope;
         var _timeout=[];
-
+        var _WebSocket;
+        
+        if (window.WebSocket)
+        {
+        	_WebSocket=window.WebSocket;
+        	_state=_WebSocket.CLOSED;
+        }
+        	
         function _doSend(envelope,metaConnect)
         {
             if (_webSocket.send(org.cometd.JSON.toJSON(envelope.messages)))
@@ -2270,7 +2277,7 @@ org.cometd.Cometd = function(name)
         
         this.accept = function(version, crossDomain)
         {
-            return _supportsWebSocket && typeof WebSocket === "function";
+            return _supportsWebSocket && _WebSocket!=null && typeof _WebSocket === "function";
         };
         
         this.send = function(envelope,metaConnect)
@@ -2284,7 +2291,7 @@ org.cometd.Cometd = function(name)
         		_envelope=envelope;
         	
         	// do we have an open websocket?
-            if (_state === WebSocket.OPEN)
+            if (_state === _WebSocket.OPEN)
             {
             	// yes - use it
             	_doSend(envelope,metaConnect);
@@ -2297,13 +2304,13 @@ org.cometd.Cometd = function(name)
                 var url = envelope.url.replace(/^http/, 'ws');
 
                 var self = this;
-                var webSocket = new WebSocket(url);
+                var webSocket = new _WebSocket(url);
                 
                 webSocket.onopen = function()
                 {
                 	_debug("Opened ",webSocket);
                 	// once the websocket is open, send the envelope.
-                    _state = WebSocket.OPEN;
+                    _state = _WebSocket.OPEN;
                     _webSocket = webSocket;
                     _doSend(envelope,metaConnect);
                 };
@@ -2311,14 +2318,14 @@ org.cometd.Cometd = function(name)
                 webSocket.onclose = function()
                 {
                 	_debug("Closed ",webSocket);
-                    if (_state !== WebSocket.OPEN)
+                    if (_state !== _WebSocket.OPEN)
                     {
                         _supportsWebSocket = false;
                     	envelope.onFailure(webSocket, "can't open", null);
                     }
                     else
                     {
-                        _state = WebSocket.CLOSED;
+                        _state = _WebSocket.CLOSED;
                         // clear all timeouts
                         for (var i in _timeout)
                         {
@@ -2330,7 +2337,7 @@ org.cometd.Cometd = function(name)
                 
                 webSocket.onmessage = function(message)
                 {	
-                    if (_state === WebSocket.OPEN)
+                    if (_state === _WebSocket.OPEN)
                     {
                     	var rcvdMessages= self._convertToMessages(message.data);
                     	var mc=false;
@@ -2372,7 +2379,7 @@ org.cometd.Cometd = function(name)
         	if (_webSocket)
         		_webSocket.close();
             _supportsWebSocket = true;
-            _state = WebSocket.CLOSED;
+            _state = _WebSocket.CLOSED;
             _envelope=null;
             _metaConnectEnvelope=null;
         };

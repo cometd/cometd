@@ -8,7 +8,7 @@
     <link rel="stylesheet" type="text/css" href="chat.css">
     <script type="text/javascript">
         var config = {
-            contextPath: '<%=request.getContextPath()%>'
+            contextPath: (new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/dojo-examples\/.*$/, '')) + "/cometd"
         };
     </script>
 </head>
