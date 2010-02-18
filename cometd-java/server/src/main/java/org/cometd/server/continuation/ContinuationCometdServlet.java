@@ -16,6 +16,9 @@ package org.cometd.server.continuation;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -219,77 +222,72 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
             }
             else
             {
-                // Send any queued messages.
-                synchronized(client)
+                List<Message> messages;
+                synchronized (client)
                 {
                     client.doDeliverListeners();
 
-                    final ArrayQueue<Message> messages=(ArrayQueue)client.getQueue();
-                    final int size=messages.size();
+                    ArrayQueue<Message> clientMessages = (ArrayQueue<Message>)client.getQueue();
+                    // Copy the messages to avoid synchronization
+                    messages = new ArrayList<Message>(clientMessages);
+                    // Empty client's queue
+                    clientMessages.clear();
+                }
 
-                    try
+                final int size=messages.size();
+                for (int i=0; i < size; i++)
+                {
+                    final Message message=messages.get(i);
+                    final MessageImpl mesgImpl=(message instanceof MessageImpl)?(MessageImpl)message:null;
+
+                    // Can we short cut the message?
+                    if (i == 0 && size == 1 && mesgImpl != null && _refsThreshold > 0 && metaConnectReply != null && transport instanceof JSONTransport)
                     {
-                        for (int i=0; i < size; i++)
+                        // is there a response already prepared
+                        ByteBuffer buffer=mesgImpl.getBuffer();
+                        if (buffer != null)
                         {
-                            final Message message=messages.getUnsafe(i);
-                            final MessageImpl mesgImpl=(message instanceof MessageImpl)?(MessageImpl)message:null;
+                            // Send pre-prepared buffer
+                            request.setAttribute("org.mortbay.jetty.ResponseBuffer",buffer);
+                            if (metaConnectReply instanceof MessageImpl)
+                                ((MessageImpl)metaConnectReply).decRef();
+                            metaConnectReply=null;
+                            transport=null;
+                            mesgImpl.decRef();
+                            continue;
+                        }
+                        else if (mesgImpl.getRefs() >= _refsThreshold)
+                        {
+                            // create multi-use buffer
+                            byte[] contentBytes=("[" + mesgImpl.getJSON() + ",{\"" + Bayeux.SUCCESSFUL_FIELD + "\":true,\"" + Bayeux.CHANNEL_FIELD
+                                    + "\":\"" + Bayeux.META_CONNECT + "\"}]").getBytes(StringUtil.__UTF8);
+                            int contentLength=contentBytes.length;
 
-                            // Can we short cut the message?
-                            if (i == 0 && size == 1 && mesgImpl != null && _refsThreshold > 0 && metaConnectReply != null && transport instanceof JSONTransport)
-                            {
-                                // is there a response already prepared
-                                ByteBuffer buffer=mesgImpl.getBuffer();
-                                if (buffer != null)
-                                {
-                                    // Send pre-prepared buffer
-                                    request.setAttribute(_responseBuffer,buffer);
-                                    if (metaConnectReply instanceof MessageImpl)
-                                        ((MessageImpl)metaConnectReply).decRef();
-                                    metaConnectReply=null;
-                                    transport=null;
-                                    mesgImpl.decRef();
-                                    continue;
-                                }
-                                else if (mesgImpl.getRefs() >= _refsThreshold)
-                                {
-                                    // create multi-use buffer
-                                    byte[] contentBytes=("[" + mesgImpl.getJSON() + ",{\"" + Bayeux.SUCCESSFUL_FIELD + "\":true,\"" + Bayeux.CHANNEL_FIELD
-                                            + "\":\"" + Bayeux.META_CONNECT + "\"}]").getBytes(StringUtil.__UTF8);
-                                    int contentLength=contentBytes.length;
+                            String headerString="HTTP/1.1 200 OK\r\n" + "Content-Type: text/json; charset=utf-8\r\n" + "Content-Length: "
+                                    + contentLength + "\r\n" + "\r\n";
 
-                                    String headerString="HTTP/1.1 200 OK\r\n" +
-                                            "Content-Type: " + Bayeux.JSON_CONTENT_TYPE + "\r\n" +
-                                            "Content-Length: " + contentLength + "\r\n" +
-                                            "\r\n";
+                            byte[] headerBytes=headerString.getBytes(StringUtil.__UTF8);
 
-                                    byte[] headerBytes=headerString.getBytes(StringUtil.__UTF8);
+                            buffer=ByteBuffer.allocateDirect(headerBytes.length + contentLength);
+                            buffer.put(headerBytes);
+                            buffer.put(contentBytes);
+                            buffer.flip();
 
-                                    buffer=ByteBuffer.allocateDirect(headerBytes.length + contentLength);
-                                    buffer.put(headerBytes);
-                                    buffer.put(contentBytes);
-                                    buffer.flip();
-
-                                    mesgImpl.setBuffer(buffer);
-                                    request.setAttribute(_responseBuffer,buffer);
-                                    metaConnectReply=null;
-                                    if (metaConnectReply instanceof MessageImpl)
-                                        ((MessageImpl)metaConnectReply).decRef();
-                                    transport=null;
-                                    mesgImpl.decRef();
-                                    continue;
-                                }
-                            }
-
-                            if (message != null)
-                                transport.send(message);
-                            if (mesgImpl != null)
-                                mesgImpl.decRef();
+                            mesgImpl.setBuffer(buffer);
+                            request.setAttribute("org.mortbay.jetty.ResponseBuffer",buffer);
+                            metaConnectReply=null;
+                            if (metaConnectReply instanceof MessageImpl)
+                                ((MessageImpl)metaConnectReply).decRef();
+                            transport=null;
+                            mesgImpl.decRef();
+                            continue;
                         }
                     }
-                    finally
-                    {
-                        messages.clear();
-                    }
+
+                    if (message != null)
+                        transport.send(message);
+                    if (mesgImpl != null)
+                        mesgImpl.decRef();
                 }
 
                 if (metaConnectReply != null)
