@@ -52,61 +52,49 @@ public class AcknowledgedMessagesClientExtension implements Extension
                     Long acked=(Long)ext.get("ack");
                     if (acked != null)
                     {                        
-                        if (acked==_lastAck)
+                        if (acked.longValue()<=_lastAck)
                         {
-                            Log.debug("double ACK");
+                            Log.debug(session+" lost ACK "+acked.longValue()+"<="+_lastAck);
                             _queue.clear();
                             _queue.addAll(_unackedQueue);
                         }
-                        _lastAck=acked;
-                        
-                        // We have received an ack ID, so delete the acked
-                        // messages.
-                        final int s=_unackedQueue.size();
-                        if (s > 0)
+                        else
                         {
-                            if (_unackedQueue.getAssociatedIdUnsafe(s - 1) <= acked)
+                            _lastAck=acked.longValue();
+
+                            // We have received an ack ID, so delete the acked
+                            // messages.
+                            final int s=_unackedQueue.size();
+                            if (s > 0)
                             {
-                                // we can just clear the queue
-                                for (int i=0; i < s; i++)
+                                if (_unackedQueue.getAssociatedIdUnsafe(s - 1) <= acked)
                                 {
-                                    final ServerMessage q=_unackedQueue.getUnsafe(i);
-                                    q.decRef();
-                                }
-                                _unackedQueue.clear();
-                            }
-                            else
-                            {
-                                // we need to remove elements until we see unacked
-                                for (int i=0; i < s; i++)
-                                {
-                                    final long a=_unackedQueue.getAssociatedIdUnsafe(0);
-                                    if (a <= acked)
+                                    // we can just clear the queue
+                                    for (int i=0; i < s; i++)
                                     {
-                                        final ServerMessage q=_unackedQueue.remove();
+                                        final ServerMessage q=_unackedQueue.getUnsafe(i);
                                         q.decRef();
-                                        continue;
                                     }
-                                    break;
+                                    _unackedQueue.clear();
+                                }
+                                else
+                                {
+                                    // we need to remove elements until we see unacked
+                                    for (int i=0; i < s; i++)
+                                    {
+                                        final long a=_unackedQueue.getAssociatedIdUnsafe(0);
+                                        if (a <= acked)
+                                        {
+                                            final ServerMessage q=_unackedQueue.remove();
+                                            q.decRef();
+                                            continue;
+                                        }
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-
-                // requeue all unacked messages.
-                final int cid=_unackedQueue.getCurrentId();
-                final int s=_unackedQueue.size();
-                for (int i=0; i < s; i++)
-                {
-                    final long a=_unackedQueue.getAssociatedIdUnsafe(0);
-                    if (a < cid)
-                    {
-                        final ServerMessage q=_unackedQueue.remove();
-                        _queue.add(i,q);
-                    }
-                    else
-                        break;
                 }
             }
         }
