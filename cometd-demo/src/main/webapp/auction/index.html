@@ -31,7 +31,7 @@
     
     dojo.addOnLoad(function()
     {
-        var cometURL = (new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/auction\/.*$/, '')) + "/cometd";
+        var cometURL = (new String(document.location).replace(/\/auction\/.*$/, '')) + "/cometd";
         dojox.cometd.init({ url: cometURL, logLevel: "info" });  
 	
         var tick=function()
@@ -172,13 +172,13 @@
         <div id="chatitem"></div>
         </td>
         <td class="mbrs">
-        <b>Members</br></b>
+        <b>Members<br/></b>
         <div id="members"></div>
         </td>
       </tr>
       <tr>
-        <td id="input">Chat:&nbsp;<input id="phrase" type="text"></input>
-        <input id="sendChat" class="button" type="submit" value="send" /></td>
+        <td id="input">Chat:&nbsp;<input id="phrase" type="text"/>
+        <input id="sendChat" class="button" type="submit" value="send"/></td>
       </tr>
     </table>
     </td>

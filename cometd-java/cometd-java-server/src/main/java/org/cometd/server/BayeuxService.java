@@ -292,13 +292,7 @@ public abstract class BayeuxService
      */
     protected void send(ServerSession toClient, String onChannel, Object data, Object id)
     {
-        ServerMessage.Mutable message = _bayeux.newMessage();
-        message.setChannel(onChannel);
-        message.setData(data);
-        message.setId(id);
-        message.setClientId(_session.getId());
-        
-        toClient.deliver(_session.getServerSession(),message);
+        toClient.deliver(_session.getServerSession(),onChannel,data,id);
     }
 
     /* ------------------------------------------------------------ */
@@ -368,7 +362,7 @@ public abstract class BayeuxService
                         reply=method.invoke(this,fromClient,arg,id);
                         break;
                     case 4:
-                        if (id!=null && String.class.equals(method.getParameterTypes()[2]))
+                        if (id!=null && String.class.equals(method.getParameterTypes()[3]))
                             id=id.toString();
                         reply=method.invoke(this,fromClient,channel,arg,id);
                         break;

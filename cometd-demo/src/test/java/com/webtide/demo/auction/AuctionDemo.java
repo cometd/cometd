@@ -52,7 +52,7 @@ public class AuctionDemo
     public static void main(String[] args) throws Exception
     {
         AuctionDemo d8080=new AuctionDemo(8080);
-        AuctionDemo d8081=new AuctionDemo(8081);
+        // AuctionDemo d8081=new AuctionDemo(8081);
     }
 
     /* ------------------------------------------------------------ */
@@ -90,13 +90,14 @@ public class AuctionDemo
         cometd_holder.setInitParameter("maxInterval","100000");
         cometd_holder.setInitParameter("multiFrameInterval","1500");
         cometd_holder.setInitParameter("directDeliver","true");
-        cometd_holder.setInitParameter("logLevel","1");
+        cometd_holder.setInitParameter("logLevel","3");
         cometd_holder.setInitOrder(1);
         context.addServlet(cometd_holder, "/cometd/*");
         
         ServletHolder oort_holder = new ServletHolder(OortServlet.class);
         oort_holder.setInitParameter(Oort.OORT_URL,"http://localhost:"+port+"/cometd");
-        oort_holder.setInitParameter(Oort.OORT_CLOUD,(port==8080)?"http://localhost:"+8081+"/cometd":"http://localhost:"+8080+"/cometd");
+        oort_holder.setInitParameter(Oort.OORT_CLOUD,"");
+        // oort_holder.setInitParameter(Oort.OORT_CLOUD,(port==8080)?"http://localhost:"+8081+"/cometd":"http://localhost:"+8080+"/cometd");
         oort_holder.setInitOrder(2);
         context.addServlet(oort_holder, "/oort/*");
 

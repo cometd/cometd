@@ -2302,6 +2302,7 @@ org.cometd.Cometd = function(name)
 
                 // Mangle the URL, changing the scheme from 'http' to 'ws'
                 var url = envelope.url.replace(/^http/, 'ws');
+                _info("WS url "+url);
 
                 var self = this;
                 var webSocket = new _WebSocket(url);

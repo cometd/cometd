@@ -59,7 +59,7 @@ public class AuctionService extends BayeuxService implements SubscriptionListene
         subscribe("/service"+AUCTION_ROOT+"categories", "categories");
     }
 
-    public Bidder bidder(ServerSession source, String channel, String bidder, String messageId)
+    public Bidder bidder(ServerSession source, String channel, String bidder, Object messageId)
     {
         Integer id = _bidders.incrementAndGet();
         
@@ -75,22 +75,22 @@ public class AuctionService extends BayeuxService implements SubscriptionListene
         return b;   
     }
     
-    public List<Category> categories(ServerSession source, String channel, String bidder, String messageId)
+    public List<Category> categories(ServerSession source, String channel, String bidder, Object messageId)
     {
         return _categoryDao.getAllCategories();
     }
 
-    public List<Item> search(ServerSession source, String channel, String search, String messageId)
+    public List<Item> search(ServerSession source, String channel, String search, Object messageId)
     {  
         return _categoryDao.findItems(search);
     }
 
-    public List<Item> category(ServerSession source, String channel, Number categoryId, String messageId)
+    public List<Item> category(ServerSession source, String channel, Number categoryId, Object messageId)
     { 
         return _categoryDao.getItemsInCategory(categoryId.intValue());
     }
 
-    public synchronized void bid(ServerSession source, String channel, Map<String,Object> bidMap, String messageId)
+    public synchronized void bid(ServerSession source, String channel, Map<String,Object> bidMap, Object messageId)
     {
         try
         {
@@ -122,7 +122,7 @@ public class AuctionService extends BayeuxService implements SubscriptionListene
         }
     }
     
-    public synchronized void bids(ServerSession source, String channel, Map<String,Object> bidMap, String messageId)
+    public synchronized void bids(ServerSession source, String channel, Map<String,Object> bidMap, Object messageId)
     {
         // TODO Other half of the non atomic bid hack when used in Oort
         Integer itemId = ((Number)bidMap.get("itemId")).intValue();
