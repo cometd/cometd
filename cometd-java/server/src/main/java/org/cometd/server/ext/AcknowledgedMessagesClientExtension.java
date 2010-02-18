@@ -19,6 +19,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
 {
     private final Client _client;
     private final ArrayIdQueue<Message> _unackedQueue;
+    private long _lastAck;
 
     public AcknowledgedMessagesClientExtension(Client client)
     {
@@ -49,36 +50,46 @@ public class AcknowledgedMessagesClientExtension implements Extension
                     Long acked=(Long)ext.get("ack");
                     if (acked != null)
                     {
-                        // We have received an ack ID, so delete the acked
-                        // messages.
-                        final int s=_unackedQueue.size();
-                        if (s > 0)
+                        if (acked.longValue()<=_lastAck)
                         {
-                            if (_unackedQueue.getAssociatedIdUnsafe(s - 1) <= acked)
+                            from.getQueue().clear();
+                            from.getQueue().addAll(_unackedQueue);
+                        }
+                        else
+                        {
+                            _lastAck=acked.longValue();
+
+                            // We have received an ack ID, so delete the acked
+                            // messages.
+                            final int s=_unackedQueue.size();
+                            if (s > 0)
                             {
-                                // we can just clear the queue
-                                for (int i=0; i < s; i++)
+                                if (_unackedQueue.getAssociatedIdUnsafe(s - 1) <= acked)
                                 {
-                                    final Message q=_unackedQueue.getUnsafe(i);
-                                    if (q instanceof MessageImpl)
-                                        ((MessageImpl)q).decRef();
-                                }
-                                _unackedQueue.clear();
-                            }
-                            else
-                            {
-                                // we need to remove elements until we see
-                                // unacked
-                                for (int i=0; i < s; i++)
-                                {
-                                    if (_unackedQueue.getAssociatedIdUnsafe(0) <= acked)
+                                    // we can just clear the queue
+                                    for (int i=0; i < s; i++)
                                     {
-                                        final Message q=_unackedQueue.remove();
+                                        final Message q=_unackedQueue.getUnsafe(i);
                                         if (q instanceof MessageImpl)
                                             ((MessageImpl)q).decRef();
-                                        continue;
                                     }
-                                    break;
+                                    _unackedQueue.clear();
+                                }
+                                else
+                                {
+                                    // we need to remove elements until we see
+                                    // unacked
+                                    for (int i=0; i < s; i++)
+                                    {
+                                        if (_unackedQueue.getAssociatedIdUnsafe(0) <= acked)
+                                        {
+                                            final Message q=_unackedQueue.remove();
+                                            if (q instanceof MessageImpl)
+                                                ((MessageImpl)q).decRef();
+                                            continue;
+                                        }
+                                        break;
+                                    }
                                 }
                             }
                         }
