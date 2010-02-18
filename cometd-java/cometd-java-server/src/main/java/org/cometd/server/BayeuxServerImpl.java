@@ -676,7 +676,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     error(reply,"403::cannot subscribe");
                 else
                 {
-                    channel.subscribe((ServerSessionImpl)from);
+                    if (from.isLocalSession() || !channel.isMeta() && !channel.isService())
+                        channel.subscribe((ServerSessionImpl)from);
                     reply.setSuccessful(true);
                 }
             }
@@ -710,7 +711,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     error(reply,"400::no channel");
                 else
                 {
-                    channel.unsubscribe((ServerSessionImpl)from);
+                    if (from.isLocalSession() || !channel.isMeta() && !channel.isService())
+                        channel.unsubscribe((ServerSessionImpl)from);
                     reply.setSuccessful(true);
                 }
             }
