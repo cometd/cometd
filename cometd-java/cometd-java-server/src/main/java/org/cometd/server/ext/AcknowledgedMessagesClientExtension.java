@@ -55,6 +55,10 @@ public class AcknowledgedMessagesClientExtension implements Extension
                         if (acked.longValue()<=_lastAck)
                         {
                             Log.debug(session+" lost ACK "+acked.longValue()+"<="+_lastAck);
+                            for (ServerMessage m:_unackedQueue)
+                                m.incRef();
+                            for (ServerMessage m:_queue)
+                                m.decRef();
                             _queue.clear();
                             _queue.addAll(_unackedQueue);
                         }
