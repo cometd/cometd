@@ -3,6 +3,13 @@ package org.cometd.bayeux;
 import java.util.List;
 import java.util.Set;
 
+
+/* ------------------------------------------------------------ */
+/** 
+ * The Bayeux API.
+ * <p>This interface is the common interface for client and server 
+ * implementations of Bayeux. 
+ */
 public interface Bayeux
 {
     /* ------------------------------------------------------------ */

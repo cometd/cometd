@@ -10,7 +10,13 @@ import java.util.Set;
  * resulted in confusion between the various representation of the server-side 
  * elements of a "Client".   Thus this entity has been renamed "Session", but
  * for backwards compatibility with the wire protocol, it is identified by 
- * a clientID string.
+ * a clientID field withing the messages (see {@link Message#getClientId()}).
+ * </p>
+ * <p>This interface is the common base interface for both server side and 
+ * client side representations of a session.   Note that on the client side
+ * a local session may have representations of both serverside and client sides
+ * for the same session.
+ * </p>
  */
 public interface Session
 {

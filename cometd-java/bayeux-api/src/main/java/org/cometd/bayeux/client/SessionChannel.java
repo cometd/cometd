@@ -6,6 +6,17 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 
 
+
+/* ------------------------------------------------------------ */
+/**
+ * A Channel scoped to a Session.
+ * <p>
+ * A channel scoped to a particular {@link ClientSession}, so that subscriptions
+ * and publishes to a SessionChannel are done on behalf of the associated {@link ClientSession}.
+ * A SessionChannel may be for either an absolute channel (eg /foo/bar) or a
+ * wild channel (eg /meta/* or /foo/**).
+ * 
+ */
 public interface SessionChannel extends Channel
 {
     void addListener(SessionChannelListener listener);
