@@ -9,7 +9,11 @@ import org.cometd.bayeux.Session;
 
 
 /**
- * @version $Revision$ $Date: 2009-12-08 09:42:45 +1100 (Tue, 08 Dec 2009) $
+ * Client Bayeux Session.
+ * 
+ * This interface represents the client side Bayeux session, which is
+ * the entity that can subscribe and publish to channels. 
+ * 
  */
 public interface ClientSession extends Session
 {
@@ -19,21 +23,23 @@ public interface ClientSession extends Session
      */
     void addExtension(Extension extension);
 
-    
     /**
      * <p>Initiates the bayeux protocol handshake with the server(s).</p>
      * @throws IOException if a handshake fails
      */
     void handshake() throws IOException;
-    
 
     /* ------------------------------------------------------------ */
     /**
-     * @param channelName
-     * @return
+     * Get a channel scoped by this session.
+     * <p>
+     * Get a channel representation scoped to this session.
+     * The SessionChannel may be for a specific channel (eg /foo/bar)
+     * or for a wild channel (eg /meta/** or /foo/* ).
+     * @param channelName absolute or wild channel name. 
+     * @return a channel scoped by this session.
      */
     SessionChannel getChannel(String channelName);
-
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

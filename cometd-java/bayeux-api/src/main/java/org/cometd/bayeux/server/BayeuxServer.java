@@ -2,7 +2,33 @@ package org.cometd.bayeux.server;
 
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.BayeuxListener;
+import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.SessionChannel;
 
+
+/* ------------------------------------------------------------ */
+/**
+ * The Bayeux Server interface.
+ * <p>
+ * An instance of the BayeuxServer interface is available to 
+ * webapplications from via the {@value #ATTRIBUTE} attribute
+ * of the {@link javax.servlet.ServletContext}.
+ * </p>
+ * <p>The BayeuxServer API gives access to the 
+ * {@link ServerSession}s via the {@link #getSession(String)}
+ * method.  It also allows new {@link LocalSession} to be 
+ * created within the server using the {@link #newLocalSession(String)}
+ * method.
+ * </p>
+ * {@link ServerChannel} instances may be accessed via the 
+ * {@link #getChannel(String)} method, but the server has 
+ * no direct relationship with {@link SessionChannel}s or
+ * {@link ClientSession}.  If subscription semantics is required, then
+ * the {@link #newLocalSession(String)} method should be used to
+ * create a {@link LocalSession} that can subscribe and publish
+ * like a remote bayeux session.
+ * 
+ */
 public interface BayeuxServer extends Bayeux
 {
     /* ------------------------------------------------------------ */

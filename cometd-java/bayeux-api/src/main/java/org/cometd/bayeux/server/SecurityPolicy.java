@@ -17,7 +17,7 @@ package org.cometd.bayeux.server;
 import org.cometd.bayeux.Session;
 
 /**
- * Pluggable security policy for Bayeux
+ * Plugable security policy for Bayeux
  * 
  * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
  */

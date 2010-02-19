@@ -18,6 +18,11 @@ package org.cometd.bayeux;
  * channel IDs starting with "/service/" and are channels for which
  * publish is disabled, so that only server side listeners will receive
  * the messages.
+ * <p>
+ * A Channel name may also be specified with wildcards. For 
+ * example /meta/* refers to all meta channels and /foo/** 
+ * refers to all channels such as /foo/bar and /foo/bar/boop.
+ * 
  */
 public interface Channel
 {
