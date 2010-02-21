@@ -1,19 +1,19 @@
 package org.cometd.server.ext;
 
 import java.util.Map;
+import java.util.Queue;
 
 import org.cometd.Bayeux;
 import org.cometd.Client;
 import org.cometd.Extension;
 import org.cometd.Message;
 import org.cometd.server.MessageImpl;
-import org.eclipse.jetty.util.ArrayQueue;
 
 /**
  * Acknowledged Message Client extension.
- * 
+ *
  * Tracks the batch id of messages sent to a client.
- * 
+ *
  */
 public class AcknowledgedMessagesClientExtension implements Extension
 {
@@ -50,62 +50,54 @@ public class AcknowledgedMessagesClientExtension implements Extension
                     Long acked=(Long)ext.get("ack");
                     if (acked != null)
                     {
-                        if (acked.longValue()<=_lastAck)
-                        {
-                            from.getQueue().clear();
-                            from.getQueue().addAll(_unackedQueue);
-                        }
-                        else
-                        {
-                            _lastAck=acked.longValue();
+                        final int s=_unackedQueue.size();
 
-                            // We have received an ack ID, so delete the acked
-                            // messages.
-                            final int s=_unackedQueue.size();
-                            if (s > 0)
+                        if (acked<=_lastAck)
+                        {
+                            Queue<Message> clientQueue = from.getQueue();
+                            clientQueue.clear();
+                            for (int i=0; i < s; ++i)
                             {
-                                if (_unackedQueue.getAssociatedIdUnsafe(s - 1) <= acked)
+                                Message m = _unackedQueue.getUnsafe(i);
+                                if (m instanceof MessageImpl)
+                                    ((MessageImpl)m).incRef();
+                                clientQueue.add(m);
+                            }
+                        }
+                        _lastAck=acked;
+
+                        // We have received an ack ID, so delete the acked messages.
+                        if (s > 0)
+                        {
+                            if (_unackedQueue.getAssociatedIdUnsafe(s - 1) <= acked)
+                            {
+                                // we can just clear the queue
+                                for (int i=0; i < s; i++)
                                 {
-                                    // we can just clear the queue
-                                    for (int i=0; i < s; i++)
+                                    final Message q=_unackedQueue.getUnsafe(i);
+                                    if (q instanceof MessageImpl)
+                                        ((MessageImpl)q).decRef();
+                                }
+                                _unackedQueue.clear();
+                            }
+                            else
+                            {
+                                // we need to remove elements until we see
+                                // unacked
+                                for (int i=0; i < s; i++)
+                                {
+                                    if (_unackedQueue.getAssociatedIdUnsafe(0) <= acked)
                                     {
-                                        final Message q=_unackedQueue.getUnsafe(i);
+                                        final Message q=_unackedQueue.remove();
                                         if (q instanceof MessageImpl)
                                             ((MessageImpl)q).decRef();
+                                        continue;
                                     }
-                                    _unackedQueue.clear();
-                                }
-                                else
-                                {
-                                    // we need to remove elements until we see
-                                    // unacked
-                                    for (int i=0; i < s; i++)
-                                    {
-                                        if (_unackedQueue.getAssociatedIdUnsafe(0) <= acked)
-                                        {
-                                            final Message q=_unackedQueue.remove();
-                                            if (q instanceof MessageImpl)
-                                                ((MessageImpl)q).decRef();
-                                            continue;
-                                        }
-                                        break;
-                                    }
+                                    break;
                                 }
                             }
                         }
                     }
-                }
-
-                // requeue all unacked messages.
-                final ArrayQueue<Message> messages=(ArrayQueue)from.getQueue();
-                final int cid=_unackedQueue.getCurrentId();
-                final int s=_unackedQueue.size();
-                for (int i=0; i < s; i++)
-                {
-                    if (_unackedQueue.getAssociatedIdUnsafe(0) < cid)
-                        messages.add(i,_unackedQueue.remove());
-                    else
-                        break;
                 }
             }
         }
@@ -126,6 +118,12 @@ public class AcknowledgedMessagesClientExtension implements Extension
 
     public Message sendMeta(Client from, Message message)
     {
+        if (message == null)
+            return message;
+
+        if (message.getChannel() == null)
+            return message;
+
         if (message.getChannel().equals(Bayeux.META_CONNECT))
         {
             synchronized(_client)
