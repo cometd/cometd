@@ -351,10 +351,10 @@ public class ServerSessionImpl implements ServerSession
         {
             if (_lazyDispatch && _lazyTask!=null)
                 _bayeux.cancelTimeout(_lazyTask);
-            
-            if (_dispatcher!=null)
+
+            Dispatcher dispatcher=_dispatcher;
+            if (dispatcher!=null)
             {
-                Dispatcher dispatcher=_dispatcher;
                 _dispatcher=null;
                 dispatcher.dispatch();
                 return;
@@ -392,6 +392,20 @@ public class ServerSessionImpl implements ServerSession
             {
                 _lazyDispatch=true;
                 _bayeux.startTimeout(_lazyTask,_accessed%_maxLazy);
+            }
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void cancelDispatch()
+    {
+        synchronized (_queue)
+        {
+            Dispatcher dispatcher=_dispatcher;
+            if (dispatcher!=null)
+            {
+                _dispatcher=null;
+                dispatcher.cancelDispatch();
             }
         }
     }

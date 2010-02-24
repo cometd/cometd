@@ -50,8 +50,8 @@ public class CometdDemoServlet extends GenericServlet
         new EchoRPC(bayeux);
         new Monitor(bayeux);
         new ChatService(bayeux);
-        // bayeux.addExtension(new TimesyncExtension());
-        // bayeux.addExtension(new AcknowledgedMessagesExtension());
+        bayeux.addExtension(new TimesyncExtension());
+        bayeux.addExtension(new AcknowledgedMessagesExtension());
         
         if (bayeux.getLogger().isDebugEnabled())
             System.err.println(bayeux.dump());

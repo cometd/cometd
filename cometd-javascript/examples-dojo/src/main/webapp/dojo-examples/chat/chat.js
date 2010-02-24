@@ -188,8 +188,6 @@ var room = {
         });
         dojox.cometd.batch(function()
         {
-            room._unsubscribe();
-            room._subscribe();
             dojox.cometd.publish('/service/members', {
                 user: room._username,
                 room: '/chat/demo'
@@ -222,7 +220,13 @@ var room = {
             }
         });
     },
-
+    
+    _metaHandshake: function(message)
+    {
+    	if (message.successful)
+    		room._subscribe();
+    },
+    
     _metaConnect: function(message)
     {
         if (room._disconnecting)
@@ -246,6 +250,7 @@ var room = {
     }
 };
 
+dojox.cometd.addListener("/meta/handshake", room, room._metaHandshake);
 dojox.cometd.addListener("/meta/connect", room, room._metaConnect);
 dojo.addOnLoad(room, "_init");
 dojo.addOnUnload(room, "leave");

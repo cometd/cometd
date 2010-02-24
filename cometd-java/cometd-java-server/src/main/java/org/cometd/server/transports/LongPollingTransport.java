@@ -20,6 +20,7 @@ import org.cometd.server.ServerTransport;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.eclipse.jetty.util.log.Log;
 
 public abstract class LongPollingTransport extends HttpTransport
 {
@@ -303,7 +304,26 @@ public abstract class LongPollingTransport extends HttpTransport
 
         public void cancelDispatch()
         {
-            _continuation.complete();
+            if (_continuation!=null && _continuation.isSuspended() )
+            {
+                try
+                {
+                    ((HttpServletResponse)_continuation.getServletResponse()).sendError(503);
+                }
+                catch(IOException e)
+                {
+                    Log.ignore(e);
+                }
+                
+                try
+                {
+                    _continuation.complete();
+                }
+                catch(Exception e)
+                {
+                    Log.ignore(e);
+                }
+            }
         }
 
         public void dispatch()

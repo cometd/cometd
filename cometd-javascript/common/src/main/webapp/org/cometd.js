@@ -566,7 +566,7 @@ org.cometd.Cometd = function(name)
                 }
                 catch (x)
                 {
-                    _debug('Exception during handling of response', x);
+                    _debug('Exception onSuccess', x);
                 }
             },
             onFailure: function(conduit, reason, exception)
@@ -577,7 +577,7 @@ org.cometd.Cometd = function(name)
                 }
                 catch (x)
                 {
-                    _debug('Exception during handling of failure', x);
+                    _debug('Exception onSuccess', x);
                 }
             }
         };
@@ -2121,7 +2121,25 @@ org.cometd.Cometd = function(name)
                     body: org.cometd.JSON.toJSON(envelope.messages),
                     onSuccess: function(responses)
                     {
-                        self.transportSuccess(envelope, request, self._convertToMessages(responses));
+                	    var success=false;
+                	    try
+                	    {
+                	        var received = self._convertToMessages(responses);
+                	        if (received.length==0)
+                                self.transportFailure(envelope, request, "no response", null);
+                	        else
+                	        {
+                	            success=true;
+                                self.transportSuccess(envelope, request, received);
+                	        }
+                	    }
+                	    catch(x)
+                	    {
+                	    	if (!success)
+                                self.transportFailure(envelope, request, "bad response", x);
+                	    	else
+                    	    	_warn(x);
+                	    }
                     },
                     onError: function(reason, exception)
                     {
@@ -2203,7 +2221,25 @@ org.cometd.Cometd = function(name)
                         body: messages,
                         onSuccess: function(responses)
                         {
-                            self.transportSuccess(envelope, request, self._convertToMessages(responses));
+                    	    var success=false;
+                    	    try
+                    	    {
+                    		    var received = self._convertToMessages(responses);
+                    		    if (received.length==0)
+                    			    self.transportFailure(envelope, request, "no response", null);
+                    		    else
+                    		    {
+                    			    success=true;
+                    			    self.transportSuccess(envelope, request, received);
+                    		    }
+                    	    }
+                    	    catch(x)
+                    	    {
+                    		    if (!success)
+                    			    self.transportFailure(envelope, request, "bad response", x);
+                    	    	else
+                        	    	_warn(x);
+                    	    }
                         },
                         onError: function(reason, exception)
                         {
