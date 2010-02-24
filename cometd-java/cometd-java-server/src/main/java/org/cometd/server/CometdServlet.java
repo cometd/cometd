@@ -234,4 +234,20 @@ public class CometdServlet extends GenericServlet
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see javax.servlet.GenericServlet#destroy()
+     */
+    @Override
+    public void destroy()
+    {
+        for (ServerSessionImpl session : _bayeux.getSessions())
+        {
+            session.cancelDispatch();
+        }
+        
+    }
+    
+    
+
 }

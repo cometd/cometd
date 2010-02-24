@@ -204,8 +204,6 @@
             });
             $.cometd.batch(function()
             {
-                _unsubscribe();
-                _subscribe();
                 $.cometd.publish('/service/members', {
                     user: _username,
                     room: '/chat/demo'
@@ -239,6 +237,12 @@
             });
         }
 
+        function _metaHandshake(message)
+        {
+        	if (message.successful)
+        		_subscribe();
+        }
+        
         function _metaConnect(message)
         {
             if (_disconnecting)
@@ -261,6 +265,7 @@
             }
         }
 
+        $.cometd.addListener('/meta/handshake', _metaHandshake);
         $.cometd.addListener('/meta/connect', _metaConnect);
 
         // Restore the state, if present
