@@ -125,11 +125,12 @@ public class ContinuationClient extends ClientImpl
                     // redispatched and will overwrite the new connect.
                     try
                     {
-                        oldContinuation.complete();
+                        if (oldContinuation.isSuspended())
+                            oldContinuation.complete();
                     }
                     catch(IllegalStateException e)
                     {
-                        Log.warn(e);
+                        Log.debug(e);
                     }
                 }
             }
