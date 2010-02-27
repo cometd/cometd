@@ -260,7 +260,6 @@ public class WebSocketTransport extends HttpTransport
         protected void send(Queue<ServerMessage> messages) throws IOException
         {
             String data = JSON.toString(messages);
-            System.err.println("<WS<"+data);
             _outbound.sendMessage(data);
         }
         
@@ -268,7 +267,6 @@ public class WebSocketTransport extends HttpTransport
         protected void send(ServerMessage message) throws IOException
         {
             String data = message.getJSON();
-            System.err.println("<WS<"+data);
             _outbound.sendMessage("["+data+"]");
         }
     };

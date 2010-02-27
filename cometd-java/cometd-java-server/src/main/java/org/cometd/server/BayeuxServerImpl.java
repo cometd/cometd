@@ -630,9 +630,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 reply.put(Message.ADVICE_FIELD,_handshakeAdvice);
                 return;
             }
-            
-            System.err.println("QUEUE "+session.getQueue());
-            
+                        
             session.connect(_timeout.getNow());
             
             // receive advice
