@@ -586,8 +586,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             addServerSession(session);
 
-            /*
             // receive advice
+            /*
             Object advice=message.get(Message.ADVICE_FIELD);
             if (advice != null)
             {
@@ -597,8 +597,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 Long interval=((Map<String,Long>)advice).get("interval");
                 session.setInterval(interval==null?0:interval.longValue());
             }
+            */
 
             // send advice
+            /*
             advice = session.getAdvice();
             if (advice!=null)
                 reply.put(Message.ADVICE_FIELD,advice);
@@ -628,6 +630,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 reply.put(Message.ADVICE_FIELD,_handshakeAdvice);
                 return;
             }
+            
+            System.err.println("QUEUE "+session.getQueue());
             
             session.connect(_timeout.getNow());
             

@@ -434,7 +434,7 @@ public class BayeuxLoadGenerator
 
         public void init(String channel, int room)
         {
-            getChannel(channel + "/" + room).subscribe(new SessionChannel.SubscriptionListener()
+            getChannel(channel + "/" + room).subscribe(new SessionChannel.SubscriberListener()
             {
                 @Override
                 public void onMessage(SessionChannel channel, Message message)

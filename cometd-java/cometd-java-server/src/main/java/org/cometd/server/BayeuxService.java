@@ -22,11 +22,13 @@ import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.client.SessionChannel;
-import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
+import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession.MessageListener;
 import org.cometd.common.ChannelId;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -70,8 +72,6 @@ public abstract class BayeuxService
     private final LocalSession _session;
     private final Map<String,Method> _methods=new ConcurrentHashMap<String,Method>();
     private final Map<ChannelId,Method> _wild=new ConcurrentHashMap<ChannelId,Method>();
-    private final ServerSession.ServerSessionListener _serverListener;
-    private final SubscriptionListener _clientListener;
     
     private ThreadPool _threadPool;
     private boolean _seeOwn=false;
@@ -111,8 +111,6 @@ public abstract class BayeuxService
         _name=name;
         _bayeux=(BayeuxServerImpl)bayeux;
         _session=_bayeux.newLocalSession(name);
-        _serverListener=new ServerListener();
-        _clientListener=new ClientListener();
         try
         {
             _session.handshake();
@@ -121,7 +119,6 @@ public abstract class BayeuxService
         {
             throw new RuntimeException(e);
         }
-        _session.getServerSession().addListener(_serverListener);
     }
 
     /* ------------------------------------------------------------ */
@@ -257,14 +254,25 @@ public abstract class BayeuxService
             throw new IllegalArgumentException("Method '" + methodName + "' does not have Session as first parameter");
 
         
-        SessionChannel channel=_session.getChannel(channelId);
+        ServerChannel channel=_bayeux.getChannel(channelId,true);
         
         if (channel.isWild())
             _wild.put(new ChannelId(channel.getId()),method);
         else
             _methods.put(channelId,method);
             
-        channel.subscribe(_clientListener);
+        final Method invoke=method;
+        channel.addListener(new ServerChannel.MessageListener()
+        {
+            @Override
+            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
+            {
+                if (_seeOwn || from != getServerSession())
+                    invoke(invoke,from,message);
+                
+                return true;
+            }
+        });
         
     }
 
@@ -381,43 +389,4 @@ public abstract class BayeuxService
             }
         }
     }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private class ServerListener implements org.cometd.bayeux.server.ServerSession.MessageListener
-    {
-        public boolean onMessage(ServerSession to, ServerSession from, ServerMessage message)
-        {
-            if (_seeOwn || from != getClient().getServerSession())
-            {
-                // tunnel the from field on the message
-                String channel=message.getChannel();
-                Method method=_methods.get(channel);
-                if (method!=null)
-                    invoke(method,from,message);
-
-                // look for a wild matches
-                ChannelId id = _bayeux.newChannelId(channel);
-
-                for (Map.Entry<ChannelId, Method> entry : _wild.entrySet())
-                {
-                    if (entry.getKey().matches(id))
-                    {
-                        invoke(entry.getValue(),from,message);
-                    }
-                }
-            }
-            return false;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private class ClientListener implements SubscriptionListener
-    {
-        public void onMessage(SessionChannel session, Message message)
-        {
-        }   
-    }
-
 }

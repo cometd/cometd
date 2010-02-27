@@ -23,7 +23,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.SessionChannel.MetaChannelListener;
-import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
+import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
 import org.cometd.client.BayeuxClient.State;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.CometdServlet;
@@ -159,7 +159,7 @@ public class BayeuxClientTest extends TestCase
         assertEquals(Channel.META_CONNECT,message.getChannel());
         assertTrue(message.isSuccessful());
 
-        client.getChannel("/a/channel").subscribe(new SubscriptionListener()
+        client.getChannel("/a/channel").subscribe(new SubscriberListener()
         {
             @Override
             public void onMessage(SessionChannel channel, Message message)
@@ -402,7 +402,7 @@ public class BayeuxClientTest extends TestCase
                     
                     if (successful)
                     {
-                        client.getChannel(room).subscribe(new SubscriptionListener()
+                        client.getChannel(room).subscribe(new SubscriberListener()
                         {
                             @Override
                             public void onMessage(SessionChannel channel, Message message)

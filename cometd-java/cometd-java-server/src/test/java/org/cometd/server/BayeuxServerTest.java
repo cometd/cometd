@@ -8,7 +8,7 @@ import junit.framework.Assert;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
-import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
+import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
@@ -130,7 +130,7 @@ public class BayeuxServerTest extends Assert
         
         final Queue<String> events = new ConcurrentLinkedQueue<String>();
         
-        SubscriptionListener listener = new SubscriptionListener()
+        SubscriberListener listener = new SubscriberListener()
         {
             public void onMessage(SessionChannel channel, Message message)
             {
@@ -325,7 +325,7 @@ public class BayeuxServerTest extends Assert
             }
         });
         
-        SubscriptionListener listener = new SubscriptionListener()
+        SubscriberListener listener = new SubscriberListener()
         {
             public void onMessage(SessionChannel channel, Message message)
             {

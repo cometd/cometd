@@ -30,7 +30,7 @@ public class SimpleEchoBayeuxClient
     HttpClient _httpClient;
     boolean _connected;
     
-    SessionChannel.SubscriptionListener _alphaListener = new SessionChannel.SubscriptionListener()
+    SessionChannel.SubscriberListener _alphaListener = new SessionChannel.SubscriberListener()
     {
         
         @Override

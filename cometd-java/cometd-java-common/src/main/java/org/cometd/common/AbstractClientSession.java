@@ -12,7 +12,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
-import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
+import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.log.Log;
 
@@ -213,7 +213,7 @@ public abstract class AbstractClientSession implements ClientSession
 
         if (channel!=null && (channel.isMeta() || message.getData()!=null))
         {
-            for (SubscriptionListener listener : channel._subscriptions)
+            for (SubscriberListener listener : channel._subscriptions)
             {
                 try
                 {
@@ -247,7 +247,7 @@ public abstract class AbstractClientSession implements ClientSession
     protected abstract static class AbstractSessionChannel implements SessionChannel
     {
         protected final ChannelId _id;
-        protected CopyOnWriteArrayList<SubscriptionListener> _subscriptions = new CopyOnWriteArrayList<SubscriptionListener>();
+        protected CopyOnWriteArrayList<SubscriberListener> _subscriptions = new CopyOnWriteArrayList<SubscriberListener>();
         protected CopyOnWriteArrayList<SessionChannelListener> _listeners = new CopyOnWriteArrayList<SessionChannelListener>();
         protected Handler _handler;
         
@@ -282,7 +282,7 @@ public abstract class AbstractClientSession implements ClientSession
         protected abstract void sendUnSubscribe();
         
         /* ------------------------------------------------------------ */
-        public void subscribe(SubscriptionListener listener)
+        public void subscribe(SubscriberListener listener)
         {
             _subscriptions.add(listener);
             if (_subscriptions.size()==1)
@@ -290,7 +290,7 @@ public abstract class AbstractClientSession implements ClientSession
         }
 
         /* ------------------------------------------------------------ */
-        public void unsubscribe(SubscriptionListener listener)
+        public void unsubscribe(SubscriberListener listener)
         {
             if (_subscriptions.remove(listener) && _subscriptions.size()==0)
             {
@@ -301,7 +301,7 @@ public abstract class AbstractClientSession implements ClientSession
         /* ------------------------------------------------------------ */
         public void unsubscribe()
         {
-            for (SubscriptionListener listener : _subscriptions)
+            for (SubscriberListener listener : _subscriptions)
                 unsubscribe(listener);
         }
 

@@ -34,7 +34,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
-import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
+import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.client.BayeuxClient.State;
@@ -169,7 +169,7 @@ public class AckExtensionTest extends TestCase
             {                
                 if (successful)
                 {
-                    client.getChannel("/chat/demo").subscribe(new SubscriptionListener()
+                    client.getChannel("/chat/demo").subscribe(new SubscriberListener()
                     {
                         @Override
                         public void onMessage(SessionChannel channel, Message message)
