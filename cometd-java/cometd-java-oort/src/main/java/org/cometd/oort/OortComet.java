@@ -101,7 +101,7 @@ public class OortComet extends BayeuxClient
                     System.err.println("Oort subscriptions for "+this);
                     
                     // subscribe to cloud notificiations
-                    getChannel("/oort/cloud").subscribe(new SessionChannel.SubscriptionListener()
+                    getChannel("/oort/cloud").subscribe(new SessionChannel.SubscriberListener()
                     {
                         @Override
                         public void onMessage(SessionChannel channel, Message message)
@@ -130,7 +130,7 @@ public class OortComet extends BayeuxClient
     public void subscribe(String id)
     {
         final SessionChannel channel_here = _oort._oortSession.getChannel(id);
-        getChannel(id).subscribe(new SessionChannel.SubscriptionListener()
+        getChannel(id).subscribe(new SessionChannel.SubscriberListener()
         {
             @Override
             public void onMessage(SessionChannel channel, Message message)

@@ -11,7 +11,7 @@ import javax.servlet.ServletContext;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.SessionChannel;
-import org.cometd.bayeux.client.SessionChannel.SubscriptionListener;
+import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
@@ -23,7 +23,7 @@ import org.webtide.demo.auction.dao.BidderDao;
 import org.webtide.demo.auction.dao.CategoryDao;
 
 
-public class AuctionService extends BayeuxService implements SubscriptionListener, BayeuxServer.ChannelListener, BayeuxServer.SubscriptionListener
+public class AuctionService extends BayeuxService implements SubscriberListener, BayeuxServer.ChannelListener, BayeuxServer.SubscriptionListener
 {
     public static final String AUCTION_ROOT="/auction/";
     

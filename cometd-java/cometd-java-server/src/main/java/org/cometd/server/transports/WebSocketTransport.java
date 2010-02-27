@@ -118,6 +118,7 @@ public class WebSocketTransport extends HttpTransport
 
         public void onMessage(byte frame, String data)
         {
+            System.err.println(">WS>"+data);
             boolean batch=false;
             try
             {
@@ -152,7 +153,8 @@ public class WebSocketTransport extends HttpTransport
 
                     if (connect && reply.isSuccessful())
                     {
-                        _session.setDispatcher(this);
+                        if (!_session.setDispatcher(this))
+                            this.dispatch();
                         
                         long timeout=_session.getTimeout();
                         if (timeout<0) 
@@ -258,6 +260,7 @@ public class WebSocketTransport extends HttpTransport
         protected void send(Queue<ServerMessage> messages) throws IOException
         {
             String data = JSON.toString(messages);
+            System.err.println("<WS<"+data);
             _outbound.sendMessage(data);
         }
         
@@ -265,6 +268,7 @@ public class WebSocketTransport extends HttpTransport
         protected void send(ServerMessage message) throws IOException
         {
             String data = message.getJSON();
+            System.err.println("<WS<"+data);
             _outbound.sendMessage("["+data+"]");
         }
     };

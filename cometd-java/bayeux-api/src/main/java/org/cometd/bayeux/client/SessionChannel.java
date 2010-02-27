@@ -27,8 +27,8 @@ public interface SessionChannel extends Channel
     void publish(Object data);
     void publish(Object data,Object id);
     
-    void subscribe(SubscriptionListener listener);
-    void unsubscribe(SubscriptionListener listener);
+    void subscribe(SubscriberListener listener);
+    void unsubscribe(SubscriberListener listener);
     void unsubscribe();
 
     /* ------------------------------------------------------------ */
@@ -43,7 +43,7 @@ public interface SessionChannel extends Channel
     /* ------------------------------------------------------------ */
     /**
      */
-    public interface SubscriptionListener extends BayeuxListener
+    public interface SubscriberListener extends BayeuxListener
     {
         void onMessage(SessionChannel channel, Message message);
     }

@@ -347,7 +347,7 @@ public class Oort
     /**
      * MessageListener that handles publishes to /oort/cloud
      */
-    protected class RootOortClientListener implements SessionChannel.SubscriptionListener
+    protected class RootOortClientListener implements SessionChannel.SubscriberListener
     {
         @Override
         public void onMessage(SessionChannel channel, Message msg)

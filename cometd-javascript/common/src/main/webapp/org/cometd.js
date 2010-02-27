@@ -2284,7 +2284,7 @@ org.cometd.Cometd = function(name)
         var _envelope;
         var _state;
         var _metaConnectEnvelope;
-        var _timeouts=[];
+        var _timeouts={};
         var _WebSocket;
         
         if (window.WebSocket)
@@ -2306,13 +2306,14 @@ org.cometd.Cometd = function(name)
             		var message=envelope.messages[i];
             		if (message.id)
             		{
-            			_debug('waiting',delay,' for response to ',message.id);
                         _timeouts[message.id] = _setTimeout(function()
                         {
-                            var errorMessage = 'Send'+ exceeded ' + delay + 'ms';
+                        	delete _timeouts[message.id];
+                            var errorMessage = 'TIMEOUT message '+message.id +' exceeded '+ delay+ 'ms';
                             _debug(errorMessage);
                             envelope.onFailure(_webSocket, 'timeout', errorMessage);
                         }, delay);
+            			_debug('waiting',delay,' for  ',message.id, org.cometd.JSON.toJSON(_timeouts));
             		}
             	}
             }
@@ -2404,8 +2405,11 @@ org.cometd.Cometd = function(name)
                     			mc=true;
                     		
                     		// cancel and delete any pending timeouts for meta messages and publish responses
+                    		_debug("timeouts ",org.cometd.JSON.toJSON(_timeouts));
+                    		
                     		if (!message.data && message.id && _timeouts[message.id])
                     		{
+                        		_debug("timeout ",_timeouts[message.id]);
                     			clearTimeout(_timeouts[message.id]);
                     			delete _timeouts[message.id];
                     		}

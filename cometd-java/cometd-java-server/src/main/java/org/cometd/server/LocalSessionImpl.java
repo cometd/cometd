@@ -307,7 +307,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
                 b.append(child);
                 b.append('\n');
             }
-            for (SubscriptionListener child : _subscriptions)
+            for (SubscriberListener child : _subscriptions)
             {
                 b.append(indent);
                 b.append(" +-");
