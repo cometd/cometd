@@ -29,6 +29,7 @@
     // Remap toolkit-specific transport calls
     $.cometd.LongPollingTransport = function()
     {
+    	org.cometd.LongPollingTransport(this);
         this.xhrSend = function(packet)
         {
             return $.ajax({
@@ -50,11 +51,10 @@
             });
         };
     };
-    $.cometd.LongPollingTransport.prototype = new org.cometd.LongPollingTransport();
-    $.cometd.LongPollingTransport.prototype.constructor = $.cometd.LongPollingTransport;
 
     $.cometd.CallbackPollingTransport = function()
     {
+    	org.cometd.CallbackPollingTransport(this);
         this.jsonpSend = function(packet)
         {
             $.ajax({
@@ -80,8 +80,6 @@
             });
         };
     };
-    $.cometd.CallbackPollingTransport.prototype = new org.cometd.CallbackPollingTransport();
-    $.cometd.CallbackPollingTransport.prototype.constructor = $.cometd.CallbackPollingTransport;
 
     if (window.WebSocket)
         $.cometd.registerTransport('websocket', new org.cometd.WebSocketTransport());

@@ -166,6 +166,9 @@ org.cometd.Cometd = function(name)
     var _advice = {};
     var _handshakeProps;
     var _reestablish = false;
+    var _timeout;
+    var _interval;
+    var _reconnect;
 
     /**
      * Mixes in the given objects into the target object by copying the properties.
@@ -329,6 +332,9 @@ org.cometd.Cometd = function(name)
         _reverseIncomingExtensions = configuration.reverseIncomingExtensions !== false;
         _maxNetworkDelay = configuration.maxNetworkDelay || 10000;
         _requestHeaders = configuration.requestHeaders || {};
+        _timeout=configuration.timeout || 60000;
+        _interval=configuration.interval || 0;
+        _reconnect=configuration.reconnect || 'retry';
 
         // Check if we're cross domain
         var urlParts = /(^https?:)?(\/\/(([^:\/\?#]+)(:(\d+))?))?([^\?#]*)/.exec(_url);
@@ -354,7 +360,8 @@ org.cometd.Cometd = function(name)
 
     function _setStatus(newStatus)
     {
-        _debug('Status', _status, '->', newStatus);
+    	if (_status!=newStatus)
+    		_debug('Status', _status, '->', newStatus);
         _status = newStatus;
     }
 
@@ -496,12 +503,9 @@ org.cometd.Cometd = function(name)
     function _delayedSend(operation)
     {
         _cancelDelayedSend();
-        var delay = _backoff;
-        if (_advice.interval && _advice.interval > 0)
-        {
-            delay += _advice.interval;
-        }
-        _debug('schedule ',operation,' in ',delay);
+        var delay = _interval+_backoff;
+        
+        _debug('schedule',operation,'in i',_interval,' + bo',_backoff,'=',delay);
         _scheduledSend = _setTimeout(operation, delay);
     }
 
@@ -554,7 +558,6 @@ org.cometd.Cometd = function(name)
             url = url + extraPath;
         }
 
-        var self = this;
         var envelope = {
             url: url,
             messages: messages,
@@ -562,7 +565,7 @@ org.cometd.Cometd = function(name)
             {
                 try
                 {
-                    _handleMessages.call(self, rcvdMessages);
+                    _handleMessages.call(_transport, rcvdMessages);
                 }
                 catch (x)
                 {
@@ -573,7 +576,7 @@ org.cometd.Cometd = function(name)
             {
                 try
                 {
-                    _handleFailure.call(self, conduit, messages, reason, exception);
+                    _handleFailure.call(_transport, conduit, messages, reason, exception);
                 }
                 catch (x)
                 {
@@ -675,7 +678,6 @@ org.cometd.Cometd = function(name)
 
     function _delayedConnect()
     {
-        _setStatus('connecting');
         _delayedSend(function()
         {
             _connect();
@@ -721,7 +723,11 @@ org.cometd.Cometd = function(name)
             version: version,
             minimumVersion: '0.9',
             channel: '/meta/handshake',
-            supportedConnectionTypes: transportTypes
+            supportedConnectionTypes: transportTypes,
+            advice: {
+                timeout: _timeout,
+                interval: _interval
+            }
         };
         // Do not allow the user to mess with the required properties,
         // so merge first the user properties and *then* the bayeux message
@@ -730,7 +736,7 @@ org.cometd.Cometd = function(name)
         // Pick up the first available transport as initial transport
         // since we don't know if the server supports it
         _transport = _transports.negotiateTransport(transportTypes, version, _crossDomain);
-        _debug('Initial transport is', _transport);
+        _debug('Initial transport is', _transport.getType());
 
         // We started a batch to hold the application messages,
         // so here we must bypass it and send immediately.
@@ -769,9 +775,9 @@ org.cometd.Cometd = function(name)
                       ", server " +
                       message.supportedConnectionTypes;
             }
-            else
+            else if (_transport!=newTransport)
             {
-                _debug('Transport', _transport, '->', newTransport);
+                _debug('Transport', _transport.getType(), '->', newTransport.getType());
                 _transport = newTransport;
             }
 
@@ -787,9 +793,10 @@ org.cometd.Cometd = function(name)
             _internalBatch = false;
             _flushBatch();
 
-            var action = _advice.reconnect ? _advice.reconnect : 'retry';
-            switch (action)
+            switch (_reconnect)
             {
+                case 'handshake':
+                	_reconnect='retry';
                 case 'retry':
                     _delayedConnect();
                     break;
@@ -799,7 +806,7 @@ org.cometd.Cometd = function(name)
         }
         else
         {
-            var retry = !_isDisconnected() && _advice.reconnect != 'none';
+            var retry = !_isDisconnected() && _reconnect != 'none';
             if (!retry)
             {
                 _setStatus('disconnected');
@@ -833,7 +840,7 @@ org.cometd.Cometd = function(name)
             }
         };
 
-        var retry = !_isDisconnected() && _advice.reconnect != 'none';
+        var retry = !_isDisconnected() && _reconnect != 'none';
         if (!retry)
         {
             _setStatus('disconnected');
@@ -853,7 +860,7 @@ org.cometd.Cometd = function(name)
 
     function _connectResponse(message)
     {
-        var action = _isDisconnected() ? 'none' : (_advice.reconnect ? _advice.reconnect : 'retry');
+        var action = _isDisconnected() ? 'none' : _reconnect;
         
         if (!_isDisconnected())
         {
@@ -927,8 +934,7 @@ org.cometd.Cometd = function(name)
 
         if (!_isDisconnected())
         {
-            var action = _advice.reconnect ? _advice.reconnect : 'retry';
-            switch (action)
+            switch (_reconnect)
             {
                 case 'retry':
                     _increaseBackoff();
@@ -942,7 +948,7 @@ org.cometd.Cometd = function(name)
                     _resetBackoff();
                     break;
                 default:
-                    _debug('Unrecognized action', action);
+                    _debug('Unrecognized reconnect', _reconnect);
                     break;
             }
         }
@@ -1112,7 +1118,13 @@ org.cometd.Cometd = function(name)
         if (message.advice)
         {
             _advice = message.advice;
-        	_debug("New advice",_advice);
+            if (_advice.timeout)
+            	_timeout=_advice.timeout;
+            if (_advice.interval)
+            	_interval=_advice.interval;
+            if (_advice.reconnect)
+            	_reconnect=_advice.reconnect;
+        	_debug("New advice",_advice,_timeout,_interval,_reconnect);
         }
 
         var channel = message.channel;
@@ -1159,7 +1171,7 @@ org.cometd.Cometd = function(name)
 
     _handleFailure = function _handleFailure(conduit, messages, reason, exception)
     {
-        _debug('Failed', messages);
+        _debug('handleFailure', conduit,messages,reason,exception);
 
         for (var i = 0; i < messages.length; ++i)
         {
@@ -1303,8 +1315,6 @@ org.cometd.Cometd = function(name)
         var result = _transports.add(type, transport, index);
         if (result)
         {
-            _debug('Registered transport', type);
-
             if (_isFunction(transport.registered))
             {
                 transport.registered(type, this);
@@ -1512,7 +1522,7 @@ org.cometd.Cometd = function(name)
         }
         if (_isDisconnected())
         {
-            throw 'Illegal state: already disconnected';
+            throw 'Illegal state: disconnected';
         }
 
         // Normalize arguments
@@ -1556,7 +1566,7 @@ org.cometd.Cometd = function(name)
         }
         if (_isDisconnected())
         {
-            throw 'Illegal state: already disconnected';
+            throw 'Illegal state: disconnected';
         }
 
         // Remove the local listener before sending the message
@@ -1603,7 +1613,7 @@ org.cometd.Cometd = function(name)
         }
         if (_isDisconnected())
         {
-            throw 'Illegal state: already disconnected';
+            throw 'Illegal state: disconnected';
         }
 
         var bayeuxMessage = {
@@ -1812,13 +1822,14 @@ org.cometd.Cometd = function(name)
 
     
     /**
-     * Base transport object with the common functionality for all transports.
+     * Convert the passed object into a transport.
      */
-    org.cometd.Transport = function()
+    org.cometd.Transport = function(transport)
     {
+    	transport=transport?transport:this;
         var _type;
         
-        this.registered = function(type, cometd)
+        transport.registered = function(type, cometd)
         {
             _type = type;
         };
@@ -1827,7 +1838,7 @@ org.cometd.Cometd = function(name)
          * Function invoked just after a transport has been successfully unregistered.
          * @see #registered(type, cometd)
          */
-        this.unregistered = function()
+        transport.unregistered = function()
         {
             _type = null;
         };
@@ -1838,7 +1849,7 @@ org.cometd.Cometd = function(name)
          * @param response the response to convert
          * @return an array of bayeux messages obtained by converting the response
          */
-        this._convertToMessages = function (response)
+        transport._convertToMessages = function (response)
         {
             if (_isString(response))
             {
@@ -1874,7 +1885,7 @@ org.cometd.Cometd = function(name)
          * @return true if this transport can work for the given version and cross domain communication case,
          * false otherwise
          */
-        this.accept = function(version, crossDomain)
+        transport.accept = function(version, crossDomain)
         {
             throw 'Abstract accept';
         };
@@ -1883,32 +1894,34 @@ org.cometd.Cometd = function(name)
          * Returns the type of this transport.
          * @see #registered(type, cometd)
          */
-        this.getType = function()
+        transport.getType = function()
         {
             return _type;
         };
 
-        this.send = function(envelope, metaConnect)
+        transport.send = function(envelope, metaConnect)
         {
         	throw "Abstract send";
         };
         
-        this.reset = function()
+        transport.reset = function()
         {
-            throw 'Abstract reset';
         };
     }
     
     /**
-     * Base object with the common functionality for transports based on Requests.
+     * Extend object with the common functionality for transports based on Requests.
      * The key responsibility is to allow at most 2 outstanding requests to the server,
      * to avoid that requests are sent behind a long poll.
      * To achieve this, we have one reserved request for the long poll, and all other
      * requests are serialized one after the other.
      */
-    org.cometd.RequestTransport = function()
+    org.cometd.RequestTransport = function(transport)
     {
-        var _requestIds = 0;
+    	transport=transport?transport:this;
+    	org.cometd.Transport(transport);
+    	
+        var _requestIds = 1000;
         var _metaConnectRequest = null;
         var _requests = [];
         var _envelopes = [];
@@ -1918,47 +1931,47 @@ org.cometd.Cometd = function(name)
          * @param envelope the envelope to send
          * @param request the request information
          */
-        this._doSend = function(envelope, request)
+        transport._doSend = function(envelope, request)
         {
             throw 'Abstract _doSend';
         };
 
-        this.transportSuccess = function(envelope, request, responses)
+        transport.transportSuccess = function(envelope, request, responses)
         {
             if (!request.expired)
             {
                 clearTimeout(request.timeout);
                 if (request.metaConnect)
-                	_metaConnectComplete.call(this,request);
+                	_metaConnectComplete.call(transport,request);
                 else
-                	_complete.call(this,request,true);
+                	_complete.call(transport,request,true);
                 envelope.onSuccess(responses);
             }
         };
 
-        this.transportFailure = function(envelope, request, reason, exception)
+        transport.transportFailure = function(envelope, request, reason, exception)
         {
             if (!request.expired)
             {
                 clearTimeout(request.timeout);
                 if (request.metaConnect)
-                	_metaConnectComplete.call(this,request);
+                	_metaConnectComplete.call(transport,request);
                 else
-                	_complete.call(this,request,false);
+                	_complete.call(transport,request,false);
                 envelope.onFailure(request.xhr, reason, exception);
             }
         };
         
         function _transportSend(envelope, request)
         {
-            var self = this;
-
-            this._doSend(envelope, request);
+            transport._doSend(envelope, request);
             request.expired = false;
 
             var delay = _maxNetworkDelay;
             if (request.metaConnect === true)
-                delay +=_advice && typeof _advice.timeout === 'number' ? _advice.timeout : 0;
+                delay +=_timeout;
+
+            _debug ("Timeout ",delay,_maxNetworkDelay);
             
             request.timeout = _setTimeout(function()
             {
@@ -1967,7 +1980,7 @@ org.cometd.Cometd = function(name)
                 {
                     request.xhr.abort();
                 }
-                var errorMessage = 'Transport ' + self.getType() + ' exceeded ' + delay + ' ms max network delay';
+                var errorMessage = 'Request ' + transport.getType() + ' '+ request.id + ' exceeded ' + delay + ' ms max network delay';
                 _debug(errorMessage);
                 envelope.onFailure(request, 'timeout', errorMessage);
             }, delay);
@@ -1981,11 +1994,12 @@ org.cometd.Cometd = function(name)
             }
 
             var requestId = ++_requestIds;
+        	_debug('metaConnect send ',transport.getType() ,requestId,envelope);
             var request = {
                 id: requestId,
                 metaConnect: true
             };
-            _transportSend.call(this, envelope, request);
+            _transportSend.call(transport, envelope, request);
             _metaConnectRequest = request;
         }
 
@@ -1996,10 +2010,11 @@ org.cometd.Cometd = function(name)
                 id: requestId,
                 metaConnect: false
             };
+            
             // Consider the metaConnect requests which should always be present
             if (_requests.length < _maxConnections - 1)
             {
-                _transportSend.call(this, envelope, request);
+                _transportSend.call(transport, envelope, request);
                 _requests.push(request);
             }
             else
@@ -2011,7 +2026,7 @@ org.cometd.Cometd = function(name)
         function _metaConnectComplete(request)
         {
             var requestId = request.id;
-        	_debug('metaConnect complete ',requestId);
+        	_debug('metaConnect complete ',transport.getType(),requestId);
             if (_metaConnectRequest !== null && _metaConnectRequest.id !== requestId)
             {
                 throw 'Longpoll request mismatch, completing request ' + requestId;
@@ -2035,7 +2050,7 @@ org.cometd.Cometd = function(name)
                 var envelope = _envelopes.shift();
                 if (success)
                 {
-                    _queueSend.call(this, envelope[0]);
+                    _queueSend.call(transport, envelope[0]);
                 }
                 else
                 {
@@ -2048,19 +2063,19 @@ org.cometd.Cometd = function(name)
             }
         }
 
-        this.send = function(envelope, metaConnect)
+        transport.send = function(envelope, metaConnect)
         {
             if (metaConnect)
             {
-                _metaConnectSend.call(this, envelope);
+                _metaConnectSend.call(transport, envelope);
             }
             else
             {
-                _queueSend.call(this, envelope);
+                _queueSend.call(transport, envelope);
             }
         };
 
-        this.abort = function()
+        transport.abort = function()
         {
             for (var i = 0; i < _requests.length; ++i)
             {
@@ -2079,43 +2094,42 @@ org.cometd.Cometd = function(name)
                     _metaConnectRequest.xhr.abort();
                 }
             }
-            this.reset();
+            transport.reset();
         };
 
-        this.reset = function()
+        transport.reset = function()
         {
             _metaConnectRequest = null;
             _requests = [];
             _envelopes = [];
         };
     };
-    org.cometd.RequestTransport.prototype = new org.cometd.Transport();
-    org.cometd.RequestTransport.prototype.constructor = org.cometd.RequestTransport;
-
     
     
-    org.cometd.LongPollingTransport = function()
+    org.cometd.LongPollingTransport = function(transport)
     {
+    	transport=transport?transport:this;
+    	org.cometd.RequestTransport(transport);
+    	
         // By default, support cross domain
         var _supportsCrossDomain = true;
 
-        this.accept = function(version, crossDomain)
+        transport.accept = function(version, crossDomain)
         {
             return _supportsCrossDomain || !crossDomain;
         };
 
-        this.xhrSend = function(packet)
+        transport.xhrSend = function(packet)
         {
             throw 'Abstract xhrSend';
         };
 
-        this._doSend = function(envelope, request)
+        transport._doSend = function(envelope, request)
         {
-            var self = this;
             try
             {
-                request.xhr = this.xhrSend({
-                    transport: this,
+                request.xhr = transport.xhrSend({
+                    transport: transport,
                     url: envelope.url,
                     headers: _requestHeaders,
                     body: org.cometd.JSON.toJSON(envelope.messages),
@@ -2124,19 +2138,19 @@ org.cometd.Cometd = function(name)
                 	    var success=false;
                 	    try
                 	    {
-                	        var received = self._convertToMessages(responses);
+                	        var received = transport._convertToMessages(responses);
                 	        if (received.length==0)
-                                self.transportFailure(envelope, request, "no response", null);
+                                transport.transportFailure(envelope, request, "no response", null);
                 	        else
                 	        {
                 	            success=true;
-                                self.transportSuccess(envelope, request, received);
+                                transport.transportSuccess(envelope, request, received);
                 	        }
                 	    }
                 	    catch(x)
                 	    {
                 	    	if (!success)
-                                self.transportFailure(envelope, request, "bad response", x);
+                                transport.transportFailure(envelope, request, "bad response", x);
                 	    	else
                     	    	_warn(x);
                 	    }
@@ -2144,7 +2158,7 @@ org.cometd.Cometd = function(name)
                     onError: function(reason, exception)
                     {
                         _supportsCrossDomain = false;
-                        self.transportFailure(envelope, request, reason, exception);
+                        transport.transportFailure(envelope, request, reason, exception);
                     }
                 });
             }
@@ -2154,38 +2168,38 @@ org.cometd.Cometd = function(name)
                 // Keep the semantic of calling response callbacks asynchronously after the request
                 _setTimeout(function()
                 {
-                    self.transportFailure(envelope, request, 'error', x);
+                    transport.transportFailure(envelope, request, 'error', x);
                 }, 0);
             }
         };
 
-        this.reset = function()
+        var superReset=transport.reset;
+        transport.reset = function()
         {
-            org.cometd.LongPollingTransport.prototype.reset();
+            superReset();
             _supportsCrossDomain = true;
         };
     };
-    org.cometd.LongPollingTransport.prototype = new org.cometd.RequestTransport();
-    org.cometd.LongPollingTransport.prototype.constructor = org.cometd.LongPollingTransport;
-
-    org.cometd.CallbackPollingTransport = function()
+    
+    org.cometd.CallbackPollingTransport = function(transport)
     {
+    	transport=transport?transport:this;
+    	org.cometd.RequestTransport(transport);
+    	
         var _maxLength = 2000;
 
-        this.accept = function(version, crossDomain)
+        transport.accept = function(version, crossDomain)
         {
-            return crossDomain;
+            return true;
         };
 
-        this.jsonpSend = function(packet)
+        transport.jsonpSend = function(packet)
         {
             throw 'Abstract jspnpSend';
         };
 
-        this._doSend = function(envelope, request)
+        transport._doSend = function(envelope, request)
         {
-            var self = this;
-
             // Microsoft Internet Explorer has a 2083 URL max length
             // We must ensure that we stay within that length
             var messages = org.cometd.JSON.toJSON(envelope.messages);
@@ -2201,21 +2215,21 @@ org.cometd.Cometd = function(name)
             {
                 var x = envelope.messages.length > 1 ?
                         'Too many bayeux messages in the same batch resulting in message too big ' +
-                        '(' + urlLength + ' bytes, max is ' + _maxLength + ') for transport ' + this.getType() :
+                        '(' + urlLength + ' bytes, max is ' + _maxLength + ') for transport ' + transport.getType() :
                         'Bayeux message too big (' + urlLength + ' bytes, max is ' + _maxLength + ') ' +
-                        'for transport ' + this.getType();
+                        'for transport ' + transport.getType();
                 // Keep the semantic of calling response callbacks asynchronously after the request
                 _setTimeout(function()
                 {
-                    self.transportFailure(envelope, request, 'error', x);
+                    transport.transportFailure(envelope, request, 'error', x);
                 }, 0);
             }
             else
             {
                 try
                 {
-                    this.jsonpSend({
-                        transport: this,
+                    transport.jsonpSend({
+                        transport: transport,
                         url: envelope.url,
                         headers: _requestHeaders,
                         body: messages,
@@ -2224,26 +2238,26 @@ org.cometd.Cometd = function(name)
                     	    var success=false;
                     	    try
                     	    {
-                    		    var received = self._convertToMessages(responses);
+                    		    var received = transport._convertToMessages(responses);
                     		    if (received.length==0)
-                    			    self.transportFailure(envelope, request, "no response", null);
+                    			    transport.transportFailure(envelope, request, "no response", null);
                     		    else
                     		    {
                     			    success=true;
-                    			    self.transportSuccess(envelope, request, received);
+                    			    transport.transportSuccess(envelope, request, received);
                     		    }
                     	    }
                     	    catch(x)
                     	    {
                     		    if (!success)
-                    			    self.transportFailure(envelope, request, "bad response", x);
+                    			    transport.transportFailure(envelope, request, "bad response", x);
                     	    	else
                         	    	_warn(x);
                     	    }
                         },
                         onError: function(reason, exception)
                         {
-                            self.transportFailure(envelope, request, reason, exception);
+                            transport.transportFailure(envelope, request, reason, exception);
                         }
                     });
                 }
@@ -2252,25 +2266,25 @@ org.cometd.Cometd = function(name)
                     // Keep the semantic of calling response callbacks asynchronously after the request
                     _setTimeout(function()
                     {
-                        self.transportFailure(envelope, request, 'error', xx);
+                        transport.transportFailure(envelope, request, 'error', xx);
                     }, 0);
                 }
             }
         };
     };
-    org.cometd.CallbackPollingTransport.prototype = new org.cometd.RequestTransport();
-    org.cometd.CallbackPollingTransport.prototype.constructor = org.cometd.CallbackPollingTransport;
-
     
-    org.cometd.WebSocketTransport = function()
+    org.cometd.WebSocketTransport = function(transport)
     {
+    	transport=transport?transport:this;
+    	org.cometd.Transport(transport);
+    	
         // By default, support WebSocket
     	var _webSocket;
         var _supportsWebSocket = true;
         var _envelope;
         var _state;
         var _metaConnectEnvelope;
-        var _timeout=[];
+        var _timeouts=[];
         var _WebSocket;
         
         if (window.WebSocket)
@@ -2285,16 +2299,17 @@ org.cometd.Cometd = function(name)
             {
                 var delay = _maxNetworkDelay;
                 if (metaConnect)
-                    delay +=(_advice && typeof _advice.timeout === 'number') ? _advice.timeout : 0;
+                    delay += _timeout;
                 
             	for (var i = 0; i < envelope.messages.length; ++i)
             	{
             		var message=envelope.messages[i];
             		if (message.id)
             		{
-                        _timeout[message.id] = _setTimeout(function()
+            			_debug('waiting',delay,' for response to ',message.id);
+                        _timeouts[message.id] = _setTimeout(function()
                         {
-                            var errorMessage = 'Transport timeout exceeded ' + delay + 'ms';
+                            var errorMessage = 'Send'+ exceeded ' + delay + 'ms';
                             _debug(errorMessage);
                             envelope.onFailure(_webSocket, 'timeout', errorMessage);
                         }, delay);
@@ -2311,12 +2326,12 @@ org.cometd.Cometd = function(name)
             }
         }
         
-        this.accept = function(version, crossDomain)
+        transport.accept = function(version, crossDomain)
         {
             return _supportsWebSocket && _WebSocket!=null && typeof _WebSocket === "function";
         };
         
-        this.send = function(envelope,metaConnect)
+        transport.send = function(envelope,metaConnect)
         {
         	_debug("ws doSend",envelope,metaConnect);
         	
@@ -2340,7 +2355,6 @@ org.cometd.Cometd = function(name)
                 var url = envelope.url.replace(/^http/, 'ws');
                 _info("WS url "+url);
 
-                var self = this;
                 var webSocket = new _WebSocket(url);
                 
                 webSocket.onopen = function()
@@ -2364,19 +2378,20 @@ org.cometd.Cometd = function(name)
                     {
                         _state = _WebSocket.CLOSED;
                         // clear all timeouts
-                        for (var i in _timeout)
+                        for (var i in _timeouts)
                         {
-                        	clearTimeout(_timeout[i]);
-                        	delete _timeout[i];
+                        	clearTimeout(_timeouts[i]);
+                        	delete _timeouts[i];
                         }
                     }
                 };
                 
                 webSocket.onmessage = function(message)
                 {	
+                	_debug("onmessage",message);
                     if (_state === _WebSocket.OPEN)
                     {
-                    	var rcvdMessages= self._convertToMessages(message.data);
+                    	var rcvdMessages= transport._convertToMessages(message.data);
                     	var mc=false;
                     	
                     	// scan messages
@@ -2389,10 +2404,10 @@ org.cometd.Cometd = function(name)
                     			mc=true;
                     		
                     		// cancel and delete any pending timeouts for meta messages and publish responses
-                    		if (!message.data && message.id && _timeout[message.id])
+                    		if (!message.data && message.id && _timeouts[message.id])
                     		{
-                    			clearTimeout(_timeout[message.id]);
-                    			delete _timeout[message.id];
+                    			clearTimeout(_timeouts[message.id]);
+                    			delete _timeouts[message.id];
                     		}
                     		
                     		// check for disconnect
@@ -2410,9 +2425,11 @@ org.cometd.Cometd = function(name)
             }
         };
 
-        this.reset = function()
+        var superReset=transport.reset;
+        transport.reset = function()
         {
         	_debug("reset ",_webSocket);
+        	superReset();
         	if (_webSocket)
         		_webSocket.close();
             _supportsWebSocket = true;
@@ -2421,6 +2438,4 @@ org.cometd.Cometd = function(name)
             _metaConnectEnvelope=null;
         };
     };
-    org.cometd.WebSocketTransport.prototype = new org.cometd.Transport();
-    org.cometd.WebSocketTransport.prototype.constructor = org.cometd.WebSocketTransport;
 };

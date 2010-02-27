@@ -40,9 +40,9 @@ public class WebSocketTransport extends HttpTransport
         setOption(BUFFER_SIZE_OPTION,_factory.getBufferSize());
         _metaConnectDeliveryOnly=false;
         setOption(META_CONNECT_DELIVERY_OPTION,_metaConnectDeliveryOnly);
-        _timeout=10000;
+        _timeout=15000;
         setOption(TIMEOUT_OPTION,_timeout);
-        _interval=10000;
+        _interval=2500;
         setOption(INTERVAL_OPTION,_interval);
         _maxInterval=15000;
         setOption(MAX_INTERVAL_OPTION,_maxInterval);
