@@ -37,7 +37,7 @@ public class ServerSessionImpl implements ServerSession
     private final AttributesMap _attributes = new AttributesMap();
     
     private ServerTransport.Dispatcher _dispatcher;
-    private transient ServerTransport _adviceTransport;
+    private transient ServerTransport _advisedTransport;
 
     private int _maxQueue=-1;
     private boolean _connected;
@@ -314,7 +314,7 @@ public class ServerSessionImpl implements ServerSession
     {
         _listeners.remove(listener);
     }
-
+    
     /* ------------------------------------------------------------ */
     public boolean setDispatcher(ServerTransport.Dispatcher dispatcher)
     {
@@ -330,10 +330,7 @@ public class ServerSessionImpl implements ServerSession
 
             if (_dispatcher!=null && _dispatcher!=dispatcher)
             {
-                // This is the reload case: there is an outstanding connect,
-                // and the client issues a new connect.
-                _dispatcher.cancelDispatch();
-                _dispatcher=null;
+                throw new IllegalStateException();
             }
 
             if (_queue.size()>0)
@@ -345,7 +342,7 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    protected void dispatch()
+    public void dispatch()
     {
         synchronized (_queue)
         {
@@ -382,7 +379,7 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    protected void dispatchLazy()
+    public void dispatchLazy()
     {
         synchronized (_queue)
         {
@@ -397,7 +394,7 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    protected void cancelDispatch()
+    public void cancelDispatch()
     {
         synchronized (_queue)
         {
@@ -505,15 +502,21 @@ public class ServerSessionImpl implements ServerSession
                 ",\"timeout\":" + 
                 (_timeout==-1?transport.getTimeout():_timeout) + "}");
     }
+
+    /* ------------------------------------------------------------ */
+    public void reAdvise()
+    {
+        _advisedTransport=null;
+    }
     
     /* ------------------------------------------------------------ */
     public Object takeAdvice()
     {
         final ServerTransport transport = _bayeux.getCurrentTransport();
                 
-        if (transport!=null && transport!=_adviceTransport)
+        if (transport!=null && transport!=_advisedTransport)
         {
-            _adviceTransport=transport;
+            _advisedTransport=transport;
             return getAdvice();
         }
         
@@ -537,14 +540,14 @@ public class ServerSessionImpl implements ServerSession
     public void setTimeout(long timeoutMS)
     {   
         _timeout=timeoutMS;
-        _adviceTransport=null;
+        _advisedTransport=null;
     }
 
     /* ------------------------------------------------------------ */
     public void setInterval(long intervalMS)
     {   
         _interval=intervalMS;
-        _adviceTransport=null;
+        _advisedTransport=null;
     }
 
     /* ------------------------------------------------------------ */

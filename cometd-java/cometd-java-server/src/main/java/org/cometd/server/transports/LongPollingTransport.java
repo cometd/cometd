@@ -143,7 +143,6 @@ public abstract class LongPollingTransport extends HttpTransport
                     // reference it (this should be ref=1)
                     message.incRef();
 
-                    
                     // Get the session from the message
                     if (session==null)
                     {
@@ -197,6 +196,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                 // If the writer is non null, we have already started sending a response, so we should not suspend
                                 if(was_connected && writer==null && reply.isSuccessful())
                                 {
+                                    session.cancelDispatch();
                                     String browserId=getBrowserId(request,response);
                                     if (incBrowserId(browserId,request,reply))
                                     {
@@ -219,6 +219,10 @@ public abstract class LongPollingTransport extends HttpTransport
                                             if (session.isConnected())
                                                 session.startIntervalTimeout();
                                         }
+                                    }
+                                    else 
+                                    {
+                                        session.reAdvise();
                                     }
                                 }
                                 else if (session.isConnected())

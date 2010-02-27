@@ -293,9 +293,11 @@
         			org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
         				connected: _wasConnected,
         				username: _username
-        			}), { 'max-age': 5 });
+        			}), { 'max-age': 10 });
         		}
             }
+        	else
+        		$.cometd.disconnect();
         });
     }
 

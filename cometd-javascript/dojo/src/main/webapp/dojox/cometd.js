@@ -18,6 +18,7 @@ dojox.cometd = new org.cometd.Cometd();
 // Remap toolkit-specific transport calls
 dojox.cometd.LongPollingTransport = function()
 {
+	org.cometd.LongPollingTransport(this);
     this.xhrSend = function(packet)
     {
         var deferred = dojo.rawXhrPost({
@@ -35,11 +36,10 @@ dojox.cometd.LongPollingTransport = function()
         return deferred.ioArgs.xhr;
     };
 };
-dojox.cometd.LongPollingTransport.prototype = new org.cometd.LongPollingTransport();
-dojox.cometd.LongPollingTransport.prototype.constructor = dojox.cometd.LongPollingTransport;
 
 dojox.cometd.CallbackPollingTransport = function()
 {
+	org.cometd.CallbackPollingTransport(this);
     this.jsonpSend = function(packet)
     {
         var deferred = dojo.io.script.get({
@@ -58,8 +58,6 @@ dojox.cometd.CallbackPollingTransport = function()
         return undefined;
     };
 };
-dojox.cometd.CallbackPollingTransport.prototype = new org.cometd.CallbackPollingTransport();
-dojox.cometd.CallbackPollingTransport.prototype.constructor = dojox.cometd.CallbackPollingTransport;
 
 if (window.WebSocket)
 	dojox.cometd.registerTransport('websocket', new org.cometd.WebSocketTransport());
