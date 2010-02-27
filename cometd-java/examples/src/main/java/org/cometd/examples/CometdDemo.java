@@ -117,7 +117,6 @@ public class CometdDemo
             webdir,
         }));
 
-
         // Cometd servlet
 
         ServletHolder dftServlet = context.addServlet(DefaultServlet.class, "/");

@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.Bayeux;
+import org.cometd.Client;
 import org.cometd.Message;
 import org.cometd.server.AbstractBayeux;
 import org.cometd.server.AbstractCometdServlet;
@@ -35,6 +36,7 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
 
 public class ContinuationCometdServlet extends AbstractCometdServlet
 {
@@ -173,7 +175,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                 }
             }
         }
-
+        
         Message metaConnectReply=null;
 
         // Do we need to wait for messages
@@ -306,7 +308,39 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
 
     public void destroy()
     {
-        if (_bayeux != null)
-            ((ContinuationBayeux)_bayeux).destroy();
+        ContinuationBayeux bayeux = (ContinuationBayeux)_bayeux;
+        if (bayeux != null)
+        {
+            for (Client c : bayeux.getClients())
+            {
+                if (c instanceof ContinuationClient)
+                {
+                    ContinuationClient client = (ContinuationClient)c;
+                    Continuation continuation = client.getContinuation();
+                    client.setContinuation(null);
+                    if (continuation!=null && continuation.isSuspended())
+                    {
+                        try
+                        {
+                            ((HttpServletResponse)continuation.getServletResponse()).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                        }
+                        catch (IOException e)
+                        { 
+                            Log.ignore(e);
+                        }
+                        
+                        try
+                        {
+                            continuation.complete();
+                        }
+                        catch (Exception e)
+                        {
+                            Log.ignore(e);
+                        }
+                    }     
+                }
+            }
+            bayeux.destroy();
+        }
     }
 }
