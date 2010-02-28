@@ -87,6 +87,7 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         {
             public Object call() throws IOException
             {
+                System.err.println("src "+url);
                 return context.evaluateReader(rootScope, new InputStreamReader(url.openStream()), url.toExternalForm(), 1, null);
             }
         });
