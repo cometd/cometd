@@ -361,7 +361,9 @@ org.cometd.Cometd = function(name)
     function _setStatus(newStatus)
     {
     	if (_status!=newStatus)
+    	{
     		_debug('Status', _status, '->', newStatus);
+    	}
         _status = newStatus;
     }
 
@@ -549,7 +551,7 @@ org.cometd.Cometd = function(name)
 
         // Prepare the URL to send the message to
         var url = _url;
-        if (!url.match(/\/$/)) // url.endsWith('/') ?
+        if (!url.endsWith('/'))
         {
             url = url + '/';
         }
@@ -797,6 +799,8 @@ org.cometd.Cometd = function(name)
             {
                 case 'handshake':
                 	_reconnect='retry';
+                    _delayedConnect();
+                    break;
                 case 'retry':
                     _delayedConnect();
                     break;
@@ -1876,7 +1880,7 @@ org.cometd.Cometd = function(name)
                 return [response];
             }
             throw 'Conversion Error ' + response + ', typeof ' + (typeof response);
-        }
+        };
 
         /**
          * Returns whether this transport can work for the given version and cross domain communication case.
@@ -1907,7 +1911,7 @@ org.cometd.Cometd = function(name)
         transport.reset = function()
         {
         };
-    }
+    };
     
     /**
      * Extend object with the common functionality for transports based on Requests.
@@ -2329,7 +2333,7 @@ org.cometd.Cometd = function(name)
         
         transport.accept = function(version, crossDomain)
         {
-            return _supportsWebSocket && _WebSocket!=null && typeof _WebSocket === "function";
+            return _supportsWebSocket && _WebSocket!==null && typeof _WebSocket === "function";
         };
         
         transport.send = function(envelope,metaConnect)
