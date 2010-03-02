@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.BayeuxService;
@@ -95,7 +94,7 @@ public class CometdDeliverTest extends AbstractCometdJQueryTest
             Boolean deliver = (Boolean) data.get("deliver");
             if (deliver)
             {
-                remote.deliver(getClient(), channel, messageData, messageId);
+                remote.deliver(getServerSession(), channel, messageData, messageId);
             }
         }
     }

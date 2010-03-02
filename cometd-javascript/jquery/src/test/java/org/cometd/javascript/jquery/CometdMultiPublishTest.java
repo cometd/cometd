@@ -116,6 +116,7 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
         public void jsFunction_handle(Object jsMessage)
         {
             Map message = (Map)jsToJava(jsMessage);
+            System.out.println("SIMON, message = " + message);
             Boolean successful = (Boolean)message.get("successful");
             ++id;
             if (id == 1)
