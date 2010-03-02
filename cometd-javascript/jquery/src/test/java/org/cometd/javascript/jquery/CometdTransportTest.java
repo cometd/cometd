@@ -26,19 +26,23 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
         String localTransport =
                 "function LocalTransport()" +
                 "{" +
-                "    this.sends = 0;" +
+                "    var _super = new org.cometd.RequestTransport();" +
+                "    var that = org.cometd.Transport.derive(_super);" +
+                "    var _sends = 0;" +
                 "" +
-                "    this.accept = function(version, crossDomain)" +
+                "    that.getSends = function() { return _sends; };" +
+                "" +
+                "    that.accept = function(version, crossDomain)" +
                 "    {" +
                 "        return true;" +
                 "    };" +
                 "" +
-                "    this.transportSend = function(envelope, request)" +
+                "    that.transportSend = function(envelope, request)" +
                 "    {" +
-                "        ++this.sends;" +
+                "        ++_sends;" +
                 "        var response;" +
                 "        var timeout;" +
-                "        switch (this.sends)" +
+                "        switch (_sends)" +
                 "        {" +
                 "            case 1:" +
                 "                response = '[{" +
@@ -84,14 +88,15 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
                 "        }" +
                 "" +
                 "        /* Respond asynchronously */" +
+                "        var self = this;" +
                 "        setTimeout(function()" +
                 "        {" +
-                "            envelope.onSuccess(request, response);" +
+                "            self.transportSuccess(envelope, request, self.convertToMessages(response));" +
                 "        }, timeout);" +
                 "    };" +
-                "};" +
-                "LocalTransport.prototype = new org.cometd.Transport();" +
-                "LocalTransport.prototype.constructor = LocalTransport;";
+                "" +
+                "    return that;" +
+                "};";
 
         evaluateScript(localTransport);
 
@@ -101,10 +106,10 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
 
         evaluateScript("$.cometd.handshake();");
         Thread.sleep(500);
-        assertEquals(3, ((Number)evaluateScript("localTransport.sends;")).intValue());
+        assertEquals(3, ((Number)evaluateScript("localTransport.getSends();")).intValue());
         assertEquals("connected", evaluateScript("$.cometd.getStatus();"));
         evaluateScript("$.cometd.disconnect();");
-        assertEquals(4, ((Number)evaluateScript("localTransport.sends;")).intValue());
+        assertEquals(4, ((Number)evaluateScript("localTransport.getSends();")).intValue());
         Thread.sleep(500);
         assertEquals("disconnected", evaluateScript("$.cometd.getStatus();"));
     }
