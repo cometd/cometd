@@ -15,7 +15,7 @@
     <script type="text/javascript" src="chat.js"></script>
     <script type="text/javascript">
         var config = {
-            contextPath: '<%=request.getContextPath()%>'
+            contextPath: (new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/jquery-examples\/.*$/,''))
         };
     </script>
 </head>
@@ -40,7 +40,7 @@
                         <label for="useServer" title="Selects whether to use cross-domain Cometd">Use Alternate Server</label>
                     </td>
                     <td>
-                        <input id="altServer" type="text" value="http://127.0.0.1:8080<%=request.getContextPath()%>/cometd" />
+                        <input id="altServer" type="text" value="http://127.0.0.1:8080/cometd/cometd" />
                     </td>
                     <td>&nbsp;</td>
                 </tr>
