@@ -166,8 +166,9 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         ChannelId cid=_channelIdCache.get(id);
         if (cid == null)
         {
-            // TODO shrink cache!
             cid=new ChannelId(id);
+            if (_channelIdCache.size()>10000) // TODO make this configurable
+                _channelIdCache.clear();
             ChannelId other=_channelIdCache.putIfAbsent(id,cid);
             if (other!=null)
                 return other;
