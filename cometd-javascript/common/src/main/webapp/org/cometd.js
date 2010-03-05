@@ -619,13 +619,24 @@ org.cometd.Cometd = function(name)
             messages: messages,
             onSuccess: function(request, response)
             {
+        	    var handling=false;
                 try
                 {
-                    _handleResponse.call(_cometd, request, response, longpoll);
+                    var received = _convertToMessages(response);
+                    _debug('Received', received);
+                    if (received.length==0)
+                        _handleFailure.call(_cometd, request, messages, "no messages", null, longpoll);
+                    else
+                    {
+                    	handling=true;
+                    	_handleResponse.call(_cometd, request, received, longpoll);
+                    }
                 }
                 catch (x)
                 {
-                    _debug('Exception during handling of response', x);
+                    _warn('Exception onSuccess', x);
+                    if (!handling)
+                    	_handleFailure.call(_cometd, request, messages, "Exception onSuccess", x, longpoll);
                 }
             },
             onFailure: function(request, reason, exception)
@@ -636,7 +647,7 @@ org.cometd.Cometd = function(name)
                 }
                 catch (x)
                 {
-                    _debug('Exception during handling of failure', x);
+                    _warn('Exception onFailure', x);
                 }
             }
         };
@@ -1203,11 +1214,8 @@ org.cometd.Cometd = function(name)
      */
     this.receive = _receive;
 
-    _handleResponse = function _handleResponse(request, response, longpoll)
+    _handleResponse = function _handleResponse(request, messages, longpoll)
     {
-        var messages = _convertToMessages(response);
-        _debug('Received', response, 'converted to', messages);
-
         // Signal the transport it can send other queued requests
         _transport.complete(request, true, longpoll);
 

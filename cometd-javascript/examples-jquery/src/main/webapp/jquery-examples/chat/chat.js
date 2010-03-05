@@ -19,7 +19,7 @@
         {
             if (e.keyCode == 13)
             {
-                chat.join();
+                chat.join($('#username').val());
             }
         });
         $('#phrase').attr('autocomplete', 'off');
