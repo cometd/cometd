@@ -605,7 +605,7 @@ org.cometd.Cometd = function(name)
 
         // Prepare the URL to send the message to
         var url = _url;
-        if (!url.match(/\/$/)) // url.endsWith('/') ?
+        if (!url.match(/\/$/)) // if url does not end with '/' ?
         {
             url = url + '/';
         }
