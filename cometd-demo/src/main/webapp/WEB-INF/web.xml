@@ -65,8 +65,8 @@
             <param-value>0</param-value>
         </init-param>
         <init-param>
-            <param-name>refsThreshold</param-name>
-            <param-value>10</param-value>
+            <param-name>channelIdCacheLimit</param-name>
+            <param-value>-1</param-value>
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>
