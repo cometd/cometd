@@ -82,6 +82,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     protected long _maxInterval=10000;
     protected boolean _initialized;
     protected int _multiFrameInterval=-1;
+    private int _channelIdCacheLimit=0;
 
     protected boolean _requestAvailable;
 
@@ -163,11 +164,14 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     /* ------------------------------------------------------------ */
     public ChannelId getChannelId(String id)
     {
+        if (_channelIdCacheLimit<0)
+            return new ChannelId(id);
+
         ChannelId cid=_channelIdCache.get(id);
         if (cid == null)
         {
             cid=new ChannelId(id);
-            if (_channelIdCache.size()>10000) // TODO make this configurable
+            if (_channelIdCacheLimit>0 && _channelIdCache.size()>_channelIdCacheLimit)
                 _channelIdCache.clear();
             ChannelId other=_channelIdCache.putIfAbsent(id,cid);
             if (other!=null)
@@ -625,6 +629,27 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     public int getMultiFrameInterval()
     {
         return _multiFrameInterval;
+    }
+
+    /**
+     * @return the limit of the {@link ChannelId} cache
+     * @see #setChannelIdCacheLimit(int)
+     */
+    public int getChannelIdCacheLimit()
+    {
+        return _channelIdCacheLimit;
+    }
+
+    /**
+     * Sets the cache limit for {@link ChannelId}s: use -1 to disable the cache, 0 for
+     * an unlimited cache, and any positive value for the limit after which the cache
+     * is cleared.
+     * @param channelIdCacheLimit the limit of the {@link ChannelId} cache
+     * @see #getChannelIdCacheLimit()
+     */
+    public void setChannelIdCacheLimit(int channelIdCacheLimit)
+    {
+        this._channelIdCacheLimit = channelIdCacheLimit;
     }
 
     /* ------------------------------------------------------------ */

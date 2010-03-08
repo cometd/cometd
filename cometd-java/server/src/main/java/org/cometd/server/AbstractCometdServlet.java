@@ -21,7 +21,6 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -40,12 +39,12 @@ import org.eclipse.jetty.util.log.Log;
 
 /**
  * Cometd Filter Servlet implementing the {@link AbstractBayeux} protocol.
- * 
+ *
  * The Servlet can be initialized with a json file mapping channels to
  * {@link DataFilter} definitions. The servlet init parameter "filters" should
  * point to a webapplication resource containing a JSON array of filter
  * definitions. For example:
- * 
+ *
  * <pre>
  *  [
  *    {
@@ -55,58 +54,62 @@ import org.eclipse.jetty.util.log.Log;
  *    }
  *  ]
  * </pre>
- * 
+ *
  * The following init parameters can be used to configure the servlet:
  * <dl>
  * <dt>timeout</dt>
  * <dd>The server side poll timeout in milliseconds (default 250000). This is
  * how long the server will hold a reconnect request before responding.</dd>
- * 
+ *
  * <dt>interval</dt>
  * <dd>The client side poll timeout in milliseconds (default 0). How long a
  * client will wait between reconnects</dd>
- * 
+ *
  * <dt>maxInterval</dt>
  * <dd>The max client side poll timeout in milliseconds (default 30000). A
  * client will be removed if a connection is not received in this time.
- * 
+ *
  * <dt>maxLazyLatency</dt>
  * <dd>The max time in ms(default 0) that a client with lazy messages will wait before
  * sending a response. If 0, then the client will wait until the next timeout or
  * non-lazy message.
- * 
+ *
  * <dt>multiFrameInterval</dt>
  * <dd>the client side poll timeout if multiple connections are detected from
  * the same browser (default 1500).</dd>
- * 
+ *
  * <dt>JSONCommented</dt>
  * <dd>If "true" then the server will accept JSON wrapped in a comment and will
  * generate JSON wrapped in a comment. This is a defence against Ajax Hijacking.
  * </dd>
- * 
+ *
  * <dt>filters</dt>
  * <dd>the location of a JSON file describing {@link DataFilter} instances to be
  * installed</dd>
- * 
+ *
  * <dt>requestAvailable</dt>
  * <dd>If true, the current request is made available via the
  * {@link AbstractBayeux#getCurrentRequest()} method</dd>
- * 
+ *
  * <dt>loglevel</dt>
  * <dd>0=none, 1=info, 2=debug</dd>
- * 
+ *
  * <dt>jsonDebug</dt>
  * <dd>If true, JSON complete json input will be kept for debug.</dd>
- * 
+ *
+ * <dt>channelIdCacheLimit</dt>
+ * <dd>The limit of the {@link ChannelId} cache: -1 to disable caching, 0 for no limits,
+ * any positive value to clear the cache once the limit has been reached</dd>
+ *
  * <dt>refsThreshold</dt>
  * <dd>The number of message refs at which the a single message response will be
  * cached instead of being generated for every client delivered to. Done to
  * optimize a single message being sent to multiple clients.</dd>
  * </dl>
- * 
+ *
  * @author gregw
  * @author aabeling: added JSONP transport
- * 
+ *
  * @see {@link AbstractBayeux}
  * @see {@link ChannelId}
  */
@@ -221,7 +224,11 @@ public abstract class AbstractCometdServlet extends GenericServlet
 
                 String jsonD=getInitParameter("jsonDebug");
                 _jsonDebug=jsonD!=null && Boolean.parseBoolean(jsonD);
-                
+
+                String channelIdCacheLimit=getInitParameter("channelIdCacheLimit");
+                if (channelIdCacheLimit != null)
+                    _bayeux.setChannelIdCacheLimit(Integer.parseInt(channelIdCacheLimit));
+
                 if (_bayeux.isLogInfo())
                 {
                     getServletContext().log("timeout=" + timeout);
