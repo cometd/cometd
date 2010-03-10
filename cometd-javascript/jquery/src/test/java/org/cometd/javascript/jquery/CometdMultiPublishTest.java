@@ -133,7 +133,8 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
                 }
                 else
                 {
-                    int dataId = (Integer)((Map)((Map)message.get("request")).get("data")).get("id");
+                    Map data = (Map)((Map)message.get("request")).get("data");
+                    int dataId = ((Number)data.get("id")).intValue();
                     if (dataId != id) failures.get().add(new AssertionError("data id " + dataId + ", expecting " + id));
                 }
             }
