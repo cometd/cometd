@@ -42,6 +42,11 @@ public class XMLHttpRequestExchange extends ScriptableObject
         exchange.addRequestHeader(name, value);
     }
 
+    public void jsFunction_setOnReadyStateChange(Scriptable thiz, Function function)
+    {
+        exchange.setOnReadyStateChange(thiz, function);
+    }
+
     public String jsGet_method()
     {
         return exchange.getMethod();
@@ -96,8 +101,8 @@ public class XMLHttpRequestExchange extends ScriptableObject
 
         private final ThreadModel threads;
         private final Scriptable scope;
-        private final Scriptable thiz;
-        private final Function function;
+        private volatile Scriptable thiz;
+        private volatile Function function;
         private volatile boolean aborted;
         private volatile ReadyState readyState = ReadyState.UNSENT;
         private volatile String responseText;
@@ -117,6 +122,12 @@ public class XMLHttpRequestExchange extends ScriptableObject
             responseStatusText = null;
             getRequestFields().clear();
             notifyReadyStateChange();
+        }
+
+        private void setOnReadyStateChange(Scriptable thiz, Function function)
+        {
+            this.thiz = thiz;
+            this.function = function;
         }
 
         private void notifyReadyStateChange()

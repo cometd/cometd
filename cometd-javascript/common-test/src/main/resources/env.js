@@ -824,6 +824,7 @@ var window = this;
             send: function(data)
             {
                 if (this.readyState !== XMLHttpRequest.OPENED) throw 'INVALID_STATE_ERR';
+                this._exchange.setOnReadyStateChange(this, this.onreadystatechange);
                 if (this._exchange.method == 'GET') data = null;
                 if (data) this._exchange.setRequestContent(data);
                 _xhrClient.send(this._exchange);
