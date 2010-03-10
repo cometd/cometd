@@ -169,10 +169,7 @@ public class ChannelImpl implements Channel
     /* ------------------------------------------------------------ */
     public int getChannelCount()
     {
-        int result = 1;
-        for (ChannelImpl channel : _children.values())
-            result += channel.getChannelCount();
-        return result;
+        return _children.size();
     }
 
     /* ------------------------------------------------------------ */

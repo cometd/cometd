@@ -745,7 +745,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
      */
     public int getChannelCount()
     {
-        return _root.getChannelCount();
+        return getChannels().size();
     }
 
     /* ------------------------------------------------------------ */
