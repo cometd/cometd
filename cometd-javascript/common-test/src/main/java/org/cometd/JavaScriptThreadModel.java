@@ -62,6 +62,9 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
     public void run()
     {
         context = Context.enter();
+        context.setGeneratingDebug(true);
+        context.setGeneratingSource(true);
+        context.setOptimizationLevel(-1);
         try
         {
             while (running)
