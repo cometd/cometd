@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.cometd.Bayeux;
 import org.cometd.Channel;
@@ -34,9 +33,9 @@ import org.eclipse.jetty.util.log.Log;
 /* ------------------------------------------------------------ */
 /**
  * A Bayuex Channel
- * 
+ *
  * @author gregw
- * 
+ *
  */
 public class ChannelImpl implements Channel
 {
@@ -51,7 +50,7 @@ public class ChannelImpl implements Channel
     private volatile boolean _persistent;
     private volatile int _split;
     private volatile boolean _lazy;
-    
+
     /* ------------------------------------------------------------ */
     protected ChannelImpl(String id, AbstractBayeux bayeux)
     {
@@ -63,7 +62,7 @@ public class ChannelImpl implements Channel
     /**
      * A Lazy channel marks published messages as lazy. Lazy messages are queued
      * but do not wake up waiting clients.
-     * 
+     *
      * @return true if message is lazy
      */
     public boolean isLazy()
@@ -75,7 +74,7 @@ public class ChannelImpl implements Channel
     /**
      * A Lazy channel marks published messages as lazy. Lazy messages are queued
      * but do not wake up waiting clients.
-     * 
+     *
      * @param lazy
      *            true if message is lazy
      */
@@ -170,7 +169,10 @@ public class ChannelImpl implements Channel
     /* ------------------------------------------------------------ */
     public int getChannelCount()
     {
-        return _children.size();
+        int result = 1;
+        for (ChannelImpl channel : _children.values())
+            result += channel.getChannelCount();
+        return result;
     }
 
     /* ------------------------------------------------------------ */
@@ -267,7 +269,7 @@ public class ChannelImpl implements Channel
                 }
 
                 boolean removed=child.doRemove(channel,listeners);
-                
+
                 // Do we remove a non persistent child?
                 if (removed && !child.isPersistent() && child.getChannelCount() == 0 && child.getSubscriberCount() == 0)
                 {
@@ -351,10 +353,10 @@ public class ChannelImpl implements Channel
 
         for (SubscriptionListener l : _subscriptionListeners)
             l.unsubscribed(client,this);
-        
+
         if (!_persistent && _subscribers.length == 0 && _children.size() == 0)
             remove();
-        
+
     }
 
     /* ------------------------------------------------------------ */
@@ -492,7 +494,7 @@ public class ChannelImpl implements Channel
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see dojox.cometd.Channel#getFilters()
      */
     public Collection<DataFilter> getDataFilters()
