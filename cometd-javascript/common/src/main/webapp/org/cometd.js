@@ -369,11 +369,11 @@ org.cometd.Cometd = function(name)
         return ++_messageId;
     }
 
-    function _applyExtension(name, callback, message, outgoing)
+    function _applyExtension(scope, callback, name, message, outgoing)
     {
         try
         {
-            return callback(message);
+            return callback.call(scope, message);
         }
         catch (x)
         {
@@ -409,7 +409,7 @@ org.cometd.Cometd = function(name)
             var callback = extension.extension.incoming;
             if (_isFunction(callback))
             {
-                var result = _applyExtension(extension.name, callback, message, false);
+                var result = _applyExtension(extension.extension, callback, extension.name, message, false);
                 message = result === undefined ? message : result;
             }
         }
@@ -429,7 +429,7 @@ org.cometd.Cometd = function(name)
             var callback = extension.extension.outgoing;
             if (_isFunction(callback))
             {
-                var result = _applyExtension(extension.name, callback, message, true);
+                var result = _applyExtension(extension.extension, callback, extension.name, message, true);
                 message = result === undefined ? message : result;
             }
         }
@@ -619,24 +619,13 @@ org.cometd.Cometd = function(name)
             messages: messages,
             onSuccess: function(request, response)
             {
-        	    var handling=false;
                 try
                 {
-                    var received = _convertToMessages(response);
-                    _debug('Received', received);
-                    if (received.length==0)
-                        _handleFailure.call(_cometd, request, messages, "no messages", null, longpoll);
-                    else
-                    {
-                    	handling=true;
-                    	_handleResponse.call(_cometd, request, received, longpoll);
-                    }
+                    _handleResponse.call(_cometd, request, response, longpoll);
                 }
                 catch (x)
                 {
-                    _warn('Exception onSuccess', x);
-                    if (!handling)
-                    	_handleFailure.call(_cometd, request, messages, "Exception onSuccess", x, longpoll);
+                    _debug('Exception during handling of response', x);
                 }
             },
             onFailure: function(request, reason, exception)
@@ -647,7 +636,7 @@ org.cometd.Cometd = function(name)
                 }
                 catch (x)
                 {
-                    _warn('Exception onFailure', x);
+                    _debug('Exception during handling of failure', x);
                 }
             }
         };
@@ -1214,8 +1203,11 @@ org.cometd.Cometd = function(name)
      */
     this.receive = _receive;
 
-    _handleResponse = function _handleResponse(request, messages, longpoll)
+    _handleResponse = function _handleResponse(request, response, longpoll)
     {
+        var messages = _convertToMessages(response);
+        _debug('Received', response, 'converted to', messages);
+
         // Signal the transport it can send other queued requests
         _transport.complete(request, true, longpoll);
 
