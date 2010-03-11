@@ -96,7 +96,8 @@ var window = this;
     };
     window.clearTimeout = function(handle)
     {
-        handle.cancel(true);
+        if (handle)
+            handle.cancel(true);
     };
     window.setInterval = function(fn, period)
     {
@@ -806,14 +807,12 @@ var window = this;
             },
             open: function(method, url, async, user, password)
             {
-                if (async !== undefined && !async) throw 'NOT_SUPPORTED_ERR';
-
                 // Abort previous exchange
                 this.abort();
 
                 var absolute = /^https?:\/\//.test(url);
                 var absoluteURL = absolute ? url : window.location.href + url;
-                this._exchange = new XMLHttpRequestExchange(threadModel, this, this, this.onreadystatechange, method, absoluteURL);
+                this._exchange = new XMLHttpRequestExchange(threadModel, this, this, this.onreadystatechange, method, absoluteURL, async);
             },
             setRequestHeader: function(header, value)
             {

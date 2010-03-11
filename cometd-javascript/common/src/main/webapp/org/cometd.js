@@ -574,7 +574,7 @@ org.cometd.Cometd = function(name)
      * @param messages the array of messages to send
      * @param longpoll true if this send is a long poll
      */
-    function _send(messages, longpoll, extraPath)
+    function _send(sync, messages, longpoll, extraPath)
     {
         // We must be sure that the messages have a clientId.
         // This is not guaranteed since the handshake may take time to return
@@ -616,6 +616,7 @@ org.cometd.Cometd = function(name)
 
         var envelope = {
             url: url,
+            sync: sync,
             messages: messages,
             onSuccess: function(request, response)
             {
@@ -640,7 +641,7 @@ org.cometd.Cometd = function(name)
                 }
             }
         };
-        _debug('Send', envelope);
+        _debug('Send, sync=' + sync, envelope);
         _transport.send(envelope, longpoll);
     }
 
@@ -652,7 +653,7 @@ org.cometd.Cometd = function(name)
         }
         else
         {
-            _send([message], false);
+            _send(false, [message], false);
         }
     }
 
@@ -693,7 +694,7 @@ org.cometd.Cometd = function(name)
         _messageQueue = [];
         if (messages.length > 0)
         {
-            _send(messages, false);
+            _send(false, messages, false);
         }
     }
 
@@ -722,14 +723,17 @@ org.cometd.Cometd = function(name)
      */
     function _connect()
     {
-        var message = {
-            channel: '/meta/connect',
-            connectionType: _transport.getType()
-        };
-        _setStatus('connecting');
-        _debug('Connect sent', message);
-        _send([message], true, 'connect');
-        _setStatus('connected');
+        if (!_isDisconnected())
+        {
+            var message = {
+                channel: '/meta/connect',
+                connectionType: _transport.getType()
+            };
+            _setStatus('connecting');
+            _debug('Connect sent', message);
+            _send(false, [message], true, 'connect');
+            _setStatus('connected');
+        }
     }
 
     function _delayedConnect()
@@ -795,7 +799,7 @@ org.cometd.Cometd = function(name)
         // so here we must bypass it and send immediately.
         _setStatus('handshaking');
         _debug('Handshake sent', message);
-        _send([message], false, 'handshake');
+        _send(false, [message], false, 'handshake');
     }
 
     function _delayedHandshake()
@@ -1451,18 +1455,28 @@ org.cometd.Cometd = function(name)
      * Disconnects from the Bayeux server.
      * @param disconnectProps an object to be merged with the disconnect message
      */
-    this.disconnect = function(disconnectProps)
+    this.disconnect = function(sync, disconnectProps)
     {
         if (_isDisconnected())
         {
             return;
         }
+
+        if (disconnectProps === undefined)
+        {
+            if (typeof sync !== "boolean")
+            {
+                disconnectProps = sync;
+                sync = false;
+            }
+        }
+
         var bayeuxMessage = {
             channel: '/meta/disconnect'
         };
         var message = _mixin(false, {}, disconnectProps, bayeuxMessage);
         _setStatus('disconnecting');
-        _send([message], false, 'disconnect');
+        _send(sync === true, [message], false, 'disconnect');
     };
 
     /**
@@ -2136,6 +2150,7 @@ org.cometd.Cometd = function(name)
                 request.xhr = this.xhrSend({
                     transport: this,
                     url: envelope.url,
+                    sync: envelope.sync,
                     headers: _requestHeaders,
                     body: org.cometd.JSON.toJSON(envelope.messages),
                     onSuccess: function(response)
@@ -2218,6 +2233,7 @@ org.cometd.Cometd = function(name)
                     this.jsonpSend({
                         transport: this,
                         url: envelope.url,
+                        sync: envelope.sync,
                         headers: _requestHeaders,
                         body: messages,
                         onSuccess: function(response)
