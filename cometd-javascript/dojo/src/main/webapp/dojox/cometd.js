@@ -22,6 +22,7 @@ dojox.cometd.LongPollingTransport = function()
     {
         var deferred = dojo.rawXhrPost({
             url: packet.url,
+            sync: packet.sync === true,
             contentType: 'application/json;charset=UTF-8',
             headers: packet.headers,
             postData: packet.body,
@@ -44,6 +45,7 @@ dojox.cometd.CallbackPollingTransport = function()
     {
         var deferred = dojo.io.script.get({
             url: packet.url,
+            sync: packet.sync === true,
             callbackParamName: 'jsonp',
             content: {
                 // In callback-polling, the content must be sent via the 'message' parameter

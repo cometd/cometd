@@ -33,6 +33,7 @@
         {
             return $.ajax({
                 url: packet.url,
+                async: packet.sync !== true,
                 type: 'POST',
                 contentType: 'application/json;charset=UTF-8',
                 data: packet.body,
@@ -59,6 +60,7 @@
         {
             $.ajax({
                 url: packet.url,
+                async: packet.sync !== true,
                 type: 'GET',
                 dataType: 'jsonp',
                 jsonp: 'jsonp',
