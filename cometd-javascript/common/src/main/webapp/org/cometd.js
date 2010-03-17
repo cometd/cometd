@@ -2408,6 +2408,7 @@ org.cometd.Cometd = function(name)
                 var url = envelope.url.replace(/^http/, 'ws');
                 _info("WS url "+url);
 
+                var self=this;
                 var webSocket = new _WebSocket(url);
 
                 webSocket.onopen = function()
@@ -2444,7 +2445,7 @@ org.cometd.Cometd = function(name)
                     _debug("onmessage",message);
                     if (_state === _WebSocket.OPEN)
                     {
-                        var rcvdMessages = this.convertToMessages(message.data);
+                        var rcvdMessages = self.convertToMessages(message.data);
                         var mc = false;
 
                         // scan messages
