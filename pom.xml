@@ -8,6 +8,9 @@
     <version>2.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>CometD</name>
+    <description>Web framework for bidirectional message to/from a browser using 
+    a negotiated transport (eg long polling, jsonp callback or websocket).
+    </description>
 
     <properties>
         <jetty-version>7.0.2.RC0</jetty-version>
@@ -21,6 +24,133 @@
         <module>cometd-demo</module>
         <module>cometd-distribution</module>
     </modules>
+
+    <organization>
+        <name>Dojo Foundation</name>
+        <url>http://dojofoundation.org</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>Apache License Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+        </license>
+        <license>
+            <name>The New BSD License</name>
+        </license>
+        <license>
+            <name>The Academic Free License, v. 2.1</name>
+        </license>
+    </licenses>
+
+    <issueManagement>
+        <system>jira</system>
+        <url>http://bugs.cometd.org</url>
+    </issueManagement>
+
+    <mailingLists>
+        <mailingList>
+            <name>CometD Dev List</name>
+            <archive>http://groups.google.com/group/cometd-dev/</archive>
+        </mailingList>
+        <mailingList>
+            <name>CometD User List</name>
+            <archive>http://groups.google.com/group/cometd-users/</archive>
+        </mailingList>
+    </mailingLists>
+
+    <developers>
+        <developer>
+            <id>gregw</id>
+            <name>Greg Wilkins</name>
+            <email>gregw@webtide.com</email>
+            <url>http://www.mortbay.com/mortbay/people/gregw</url>
+            <organization>Webtide</organization>
+            <organizationUrl>http://www.webtide.com</organizationUrl>
+        </developer>
+        <developer>
+            <id>sbordet</id>
+            <name>Simone Bordet</name>
+            <email>sbordet@webtide.com</email>
+            <organization>Webtide</organization>
+            <organizationUrl>http://www.webtide.com</organizationUrl>
+        </developer>
+        <developer>
+            <id>xantus</id>
+            <name>David Davis</name>
+            <url>http://xantus.vox.com/</url>
+        </developer>
+        <developer>
+            <id>alex</id>
+            <name>Alex Russell</name>
+            <url>http://alex.dojotoolkit.org/</url>
+            <organization>Sitepen</organization>
+        </developer>
+        <developer>
+            <id>mark</id>
+            <name>Mark Smith</name>
+        </developer>
+
+    </developers>
+    <repositories>
+        <repository>
+            <id>dojoSnapshots</id>
+            <name>Dojo Maven2 Snapshot Repository</name>
+            <url>http://oss.sonatype.org/content/groups/dojo</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <layout>default</layout>
+        </repository>
+        <repository>
+            <id>jettySnapshots</id>
+            <name>Jetty Maven2 Snapshot Repository</name>
+            <url>http://oss.sonatype.org/content/groups/jetty</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <layout>default</layout>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>jettySnapshots</id>
+            <name>Jetty Maven2 Snapshot Repository</name>
+            <url>http://oss.sonatype.org/content/groups/jetty</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <layout>default</layout>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <distributionManagement>
+        <repository>
+            <id>cometdReleases</id>
+            <name>CometD Maven2 Repository</name>
+            <url>http://oss.repository.sonatype.org/service/local/staging/deploy/maven2</url>
+        </repository>
+        <snapshotRepository>
+            <id>cometdSnapshots</id>
+            <name>CometD Maven2 Snapshot Repository</name>
+            <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <scm>
+        <connection>scm:svn:http://svn.cometd.org</connection>
+        <developerConnection>scm:svn:https://svn.cometd.org</developerConnection>
+    </scm>
 
     <build>
         <plugins>
