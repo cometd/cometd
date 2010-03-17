@@ -33,6 +33,7 @@ import org.cometd.bayeux.server.ServerSession.MessageListener;
 import org.cometd.common.ChannelId;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
@@ -75,6 +76,7 @@ public abstract class BayeuxService
     
     private ThreadPool _threadPool;
     private boolean _seeOwn=false;
+    private final Logger _logger;
 
     /* ------------------------------------------------------------ */
     /**
@@ -119,6 +121,7 @@ public abstract class BayeuxService
         {
             throw new RuntimeException(e);
         }
+        _logger=((BayeuxServerImpl)bayeux).getLogger();
     }
 
     /* ------------------------------------------------------------ */
@@ -227,6 +230,9 @@ public abstract class BayeuxService
      */
     protected void subscribe(String channelId, String methodName)
     {
+        if (_logger.isDebugEnabled())
+            _logger.debug("subscribe "+_name+"#"+methodName+" to "+channelId);
+        
         Method method=null;
 
         Class<?> c=this.getClass();
@@ -322,6 +328,9 @@ public abstract class BayeuxService
     /* ------------------------------------------------------------ */
     private void invoke(final Method method, final ServerSession fromClient, final ServerMessage msg)
     {
+        if (_logger.isDebugEnabled())
+            _logger.debug("invoke "+_name+"#"+method.getName()+" from "+fromClient+" with "+msg.getData());
+        
         if (_threadPool == null)
             doInvoke(method,fromClient,msg);
         else
