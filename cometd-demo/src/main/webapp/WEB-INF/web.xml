@@ -13,7 +13,6 @@
     </context-param>
 
     <!-- Portability Filter, needed only to run on non Jetty or non Servlet-3.0 containers -->
-<!--
     <filter>
         <filter-name>continuation</filter-name>
         <filter-class>org.eclipse.jetty.continuation.ContinuationFilter</filter-class>
@@ -22,8 +21,8 @@
         <filter-name>continuation</filter-name>
         <url-pattern>/cometd/*</url-pattern>
     </filter-mapping>
--->
 
+    <!-- Filter to support FF cross domain origin headers -->
     <filter>
         <filter-name>cross-origin</filter-name>
         <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
@@ -33,6 +32,7 @@
         <url-pattern>/cometd/*</url-pattern>
     </filter-mapping>
 
+    <!-- Cometd Servlet -->
     <servlet>
         <servlet-name>cometd</servlet-name>
         <servlet-class>org.cometd.server.CometdServlet</servlet-class>
@@ -73,7 +73,7 @@
         <load-on-startup>2</load-on-startup>
     </servlet>
 
-    <!-- not ported to cometd-2 yet
+    <!-- Configure Oort Cloud, used by Auction demo -->
     <servlet>
         <servlet-name>oort</servlet-name>
         <servlet-class>org.cometd.oort.OortServlet</servlet-class>
@@ -81,13 +81,16 @@
             <param-name>oort.url</param-name>
             <param-value>http://localhost:8080/cometd</param-value>
         </init-param>
+        <!-- Define the Oort cloud
         <init-param>
             <param-name>oort.cloud</param-name>
             <param-value>http://localhost:8081/cometd</param-value>
         </init-param>
+        -->
         <load-on-startup>3</load-on-startup>
     </servlet>
 
+    <!-- Configure Seti ID management, used by Auction demo -->
     <servlet>
         <servlet-name>seti</servlet-name>
         <servlet-class>org.cometd.oort.SetiServlet</servlet-class>
@@ -98,13 +101,13 @@
         <load-on-startup>4</load-on-startup>
     </servlet>
 
+    <!-- Auction demo Servlet-->
     <servlet>
         <servlet-name>auctionDemo</servlet-name>
         <servlet-class>org.webtide.demo.auction.AuctionServlet</servlet-class>
         <load-on-startup>5</load-on-startup>
     </servlet>
 
-    -->
 
 </web-app>
 
