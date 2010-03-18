@@ -96,13 +96,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     private final HttpURI _server;
     private volatile State _state = State.DISCONNECTED;
 
-    private volatile ScheduledFuture<?> _task;
     
     private ClientTransport _transport;
     
     private final TransportRegistry _transportRegistry = new TransportRegistry();
+    private HttpClient _privateHttpClient;
     
-    private Message _lastMeta;
 
     
     /* ------------------------------------------------------------ */
@@ -166,7 +165,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         else
         {
             if (httpClient==null)
-                httpClient=new HttpClient();
+            {
+                httpClient=_privateHttpClient=new HttpClient();
+            }
+            
             if (!httpClient.isRunning())
             {
                 try
@@ -242,6 +244,18 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         }
         else
             updateState(State.DISCONNECTED);
+        
+        if (_privateHttpClient!=null)
+        {
+            try
+            {
+                _privateHttpClient.stop();
+            }
+            catch(Exception e)
+            {
+                Log.warn(e);
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -628,7 +642,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         if (backOff>_backoffMax)
             backOff=_backoffMax;
         
-        _task = _scheduler.schedule(new Runnable()
+        _scheduler.schedule(new Runnable()
         {
             public void run()
             {
@@ -644,7 +658,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         if (backOff>_backoffMax)
             backOff=_backoffMax;
         
-        _task = _scheduler.schedule(new Runnable()
+        _scheduler.schedule(new Runnable()
         {
             public void run()
             {

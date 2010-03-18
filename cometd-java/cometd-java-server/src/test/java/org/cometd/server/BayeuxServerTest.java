@@ -145,6 +145,8 @@ public class BayeuxServerTest extends Assert
         session1.getChannel("/foo/bar").subscribe(listener);
         session2.getChannel("/foo/bar").subscribe(listener);
         
+        System.err.println(_bayeux.dump());
+        
         assertEquals(3,_bayeux.getChannel("/foo/bar").getSubscribers().size());
         
         session0.getChannel("/foo/bar").unsubscribe(listener);
