@@ -53,7 +53,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.FileResource;
 
-public class AckExtensionTest extends TestCase
+public class TimeExtensionTest extends TestCase
 {
     public static int RECEIVE_LOCK_DURATION = Integer.getInteger(
             "receive.lock_duration", 2000).intValue();
@@ -109,7 +109,8 @@ public class AckExtensionTest extends TestCase
         server.start();
         
         _bayeux=(BayeuxServer)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-        _bayeux.addExtension(new AcknowledgedMessagesExtension());
+        _bayeux.addExtension(new TimestampExtension());
+        _bayeux.addExtension(new TimesyncExtension());
     }
 
     @Override
@@ -131,116 +132,69 @@ public class AckExtensionTest extends TestCase
         super.tearDown();
     }
 
-    public void testAck() throws Exception
+    public void testTimeStamp() throws Exception
     {
         int port = _connector.getLocalPort();
         assertTrue(port==_connector.getPort());
 
         final Queue<Message> messages = new ConcurrentLinkedQueue<Message>();
         
-        final BayeuxClient client = new BayeuxClient("http://localhost:"+port+"/cometd")
-        {
-
-            @Override
-            public void onConnectException(Throwable x)
-            {
-                if (x instanceof RuntimeException || x instanceof Error)
-                    Log.warn("onConnectException: ",x);
-                else
-                    Log.info("onConnectException: "+x.toString());
-            }
-
-            @Override
-            public void onException(Throwable x)
-            {
-                if (x instanceof RuntimeException || x instanceof Error)
-                    Log.warn("onException: ",x);
-                else
-                    Log.info("onException: "+x.toString());
-            }
-            
-        };
-        
-        client.addExtension(new AckExtension());
+        final BayeuxClient client = new BayeuxClient("http://localhost:"+port+"/cometd");
+        client.addExtension(new TimesyncClientExtension());
         
         client.getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
         {
             @Override
             public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
-            {                
-                if (successful)
-                {
-                    client.getChannel("/chat/demo").subscribe(new SubscriberListener()
-                    {
-                        @Override
-                        public void onMessage(SessionChannel channel, Message message)
-                        {
-                            messages.add(message);
-                        }
-                    });
-                }
+            {          
+                messages.add(message);
             }
         });
         
         client.handshake();
-
-        Thread.sleep(500);
-
-        assertEquals(0,messages.size());
-
-        ServerChannel publicChat = _bayeux.getChannel("/chat/demo", true);
-        assertTrue(publicChat != null);
-        
-        for(int i=0; i<5;i++)
-        {
-            publicChat.publish(null,"hello","id"+i);
-            Thread.sleep(20);
-        }
-
-        Thread.sleep(500);
-        assertEquals(5,messages.size());
-
-        _connector.stop();
-        Thread.sleep(100);
-        assertTrue(_connector.isStopped());
-
-        // send messages while client is offline
-        for(int i=5; i<10;i++)
-        {       
-            publicChat.publish(null,"hello","id"+i);
-            Thread.sleep(20);
-        }
-        
-        Thread.sleep(500);
-        assertEquals(5,messages.size());
-        
-
-        _connector.start();
-        // allow a few secs for the client to reconnect
-        Thread.sleep(500);
-        assertTrue(_connector.isStarted());
-
-        // check that the offline messages are received
-        assertEquals(10,messages.size());
-        
-        // send messages while client is online
-        for(int i=10; i<15;i++)
-        {
-            publicChat.publish(null,"hello","id"+i);
-            Thread.sleep(500);
-        }
-
-        Thread.sleep(1000);
-        
-        // check if messages after reconnect are received 
-        for(int i=0; i<15;i++)
-        {
-            Message message = messages.poll();
-            assertTrue(message.getId().toString().indexOf("id"+i)>=0);
-        }
-
+        Thread.sleep(200);
         client.disconnect();
-        assertTrue(client.waitFor(State.DISCONNECTED,1000L));
+        Thread.sleep(200);
+        
+        assertTrue(messages.size()>0);
+        
+        for (Message message : messages)
+            assertTrue(message.get("timestamp")!=null);
+        
+        
+    }
+
+    public void testTimeSync() throws Exception
+    {
+        int port = _connector.getLocalPort();
+        assertTrue(port==_connector.getPort());
+
+        final Queue<Message> messages = new ConcurrentLinkedQueue<Message>();
+        
+        final BayeuxClient client = new BayeuxClient("http://localhost:"+port+"/cometd");
+        
+        client.addExtension(new TimesyncClientExtension());
+        
+        client.getChannel("/meta/*").addListener(new SessionChannel.MetaChannelListener()
+        {
+            @Override
+            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            {           
+                messages.add(message);
+            }
+        });
+        
+        client.handshake();
+        Thread.sleep(250);
+        client.disconnect();
+        Thread.sleep(250);
+
+        assertTrue(messages.size()>0);
+        
+        for (Message message : messages)
+        {
+            assertTrue(message.getExt().get("timesync")!=null);
+        }
     }
 
 
