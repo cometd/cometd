@@ -62,10 +62,13 @@ public class BayeuxServerTest extends Assert
         
         ServerSessionImpl session0 = _bayeux.newServerSession();
         _bayeux.addServerSession(session0);
+        session0.connect(System.currentTimeMillis());
         ServerSessionImpl session1 = _bayeux.newServerSession();
         _bayeux.addServerSession(session1);
+        session1.connect(System.currentTimeMillis());
         ServerSessionImpl session2 = _bayeux.newServerSession();
         _bayeux.addServerSession(session2);
+        session2.connect(System.currentTimeMillis());
 
         assertEquals("sessionAdded",_events.poll());
         assertEquals(session0,_events.poll());
@@ -82,9 +85,7 @@ public class BayeuxServerTest extends Assert
         assertEquals(foobar,_events.poll());
         assertEquals("unsubscribed",_events.poll());
         assertEquals(session0,_events.poll());
-        assertEquals(foobar,_events.poll());
-        
-        
+        assertEquals(foobar,_events.poll());       
     }
     
     
@@ -172,7 +173,6 @@ public class BayeuxServerTest extends Assert
         assertEquals("hello",events.poll());
         assertEquals(session0.getId(),events.poll());
         assertEquals("hello",events.poll());
-        
         
         session1.batch(new Runnable()
         {

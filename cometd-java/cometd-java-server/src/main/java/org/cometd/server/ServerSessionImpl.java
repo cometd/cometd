@@ -1,9 +1,12 @@
 package org.cometd.server;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -12,6 +15,7 @@ import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.common.ChannelId;
 import org.cometd.server.ServerTransport.Dispatcher;
 import org.cometd.server.transports.HttpTransport;
 import org.eclipse.jetty.util.ArrayQueue;
@@ -35,12 +39,13 @@ public class ServerSessionImpl implements ServerSession
     private final AtomicInteger _batch=new AtomicInteger();
     private final LocalSessionImpl _localSession;
     private final AttributesMap _attributes = new AttributesMap();
+    private final AtomicBoolean _connected = new AtomicBoolean();
+    private final Set<ServerChannelImpl> _subscribedTo = Collections.newSetFromMap(new ConcurrentHashMap<ServerChannelImpl, Boolean>());
     
     private ServerTransport.Dispatcher _dispatcher;
     private transient ServerTransport _advisedTransport;
 
     private int _maxQueue=-1;
-    private boolean _connected;
     private long _timeout=-1;
     private long _interval=-1;
     private long _maxInterval;
@@ -211,7 +216,7 @@ public class ServerSessionImpl implements ServerSession
         synchronized (_queue)
         {
             cancelIntervalTimeout(); 
-            _connected=true;
+            _connected.set(true);
             
             if (_accessed==-1)
             {
@@ -250,8 +255,9 @@ public class ServerSessionImpl implements ServerSession
 
     /* ------------------------------------------------------------ */
     public void disconnect()
-    {
-        if (_connected)
+    {       
+        boolean connected=_bayeux.removeServerSession(this,false);
+        if (connected)
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.incRef();
@@ -262,7 +268,6 @@ public class ServerSessionImpl implements ServerSession
             if (_queue.size()>0)
                 dispatch();
         }
-        _bayeux.removeServerSession(this,false);
     }
     
 
@@ -448,7 +453,7 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public boolean isConnected()
     {
-        return _connected;
+        return _connected.get();
     }
 
     /* ------------------------------------------------------------ */
@@ -551,14 +556,27 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    protected void removed(boolean timedout)
+    /**
+     * @param timedout
+     * @return True if the session was connected.
+     */
+    protected boolean removed(boolean timedout)
     {
-        _connected=false;
-        for (ServerSessionListener listener : _listeners)
+        boolean connected = _connected.getAndSet(false);
+        if (connected)
         {
-            if (listener instanceof ServerSession.RemoveListener)
-                ((ServerSession.RemoveListener)listener).removed(this,timedout);
+            for (ServerChannelImpl channel : _subscribedTo)
+            {
+                channel.unsubscribe(this);
+            }
+            
+            for (ServerSessionListener listener : _listeners)
+            {
+                if (listener instanceof ServerSession.RemoveListener)
+                    ((ServerSession.RemoveListener)listener).removed(this,timedout);
+            }
         }
+        return connected;
     }
 
     /* ------------------------------------------------------------ */
@@ -587,6 +605,18 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
+    protected void subscribedTo(ServerChannelImpl channel)
+    {
+        _subscribedTo.add(channel);
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected void unsubscribedTo(ServerChannelImpl channel)
+    {
+        _subscribedTo.remove(channel);
+    }
+    
+    /* ------------------------------------------------------------ */
     protected void dump(StringBuilder b,String indent)
     {
         b.append(toString());
@@ -614,4 +644,5 @@ public class ServerSessionImpl implements ServerSession
     {
         return _id;
     }
+
 }

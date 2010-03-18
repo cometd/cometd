@@ -63,6 +63,8 @@ public class ServerChannelTest extends Assert
         SubListener csubl = new SubListener();
         channel.addListener(csubl);
         ServerSessionImpl session0 = _bayeux.newServerSession();
+        _bayeux.addServerSession(session0);
+        session0.connect(System.currentTimeMillis());
         
         channel.subscribe(session0);
         assertEquals(1,channel.getSubscribers().size());
@@ -76,6 +78,8 @@ public class ServerChannelTest extends Assert
         assertEquals(2,_chanl._calls);
         
         ServerSessionImpl session1 = _bayeux.newServerSession();
+        _bayeux.addServerSession(session1);
+        session1.connect(System.currentTimeMillis());
         ((ServerChannelImpl)_bayeux.getChannel("/foo/*",true)).subscribe(session1);
         assertEquals("subscribed",_subl._method);
         assertEquals("/foo/*",_subl._channel.getId());
@@ -83,6 +87,8 @@ public class ServerChannelTest extends Assert
         assertEquals(3,_chanl._calls);
         
         ServerSessionImpl session2 = _bayeux.newServerSession();
+        _bayeux.addServerSession(session2);
+        session2.connect(System.currentTimeMillis());
         ((ServerChannelImpl)_bayeux.getChannel("/**",true)).subscribe(session2);
         assertEquals("subscribed",_subl._method);
         assertEquals("/**",_subl._channel.getId());
@@ -120,6 +126,25 @@ public class ServerChannelTest extends Assert
         assertEquals(0,foo.getSubscribers().size());
         assertEquals(0,foobob.getSubscribers().size());
            
+    }
+
+    @Test
+    public void testUnSubscribeAll() throws Exception
+    {
+        ServerChannelImpl channel = (ServerChannelImpl)_bayeux.getChannel("/foo/bar",true);
+        ServerSessionImpl session0 = _bayeux.newServerSession();
+        _bayeux.addServerSession(session0);
+        session0.connect(System.currentTimeMillis());
+        
+        channel.subscribe(session0);
+        assertEquals(1,channel.getSubscribers().size());
+        assertTrue(channel.getSubscribers().contains(session0));
+        
+        _bayeux.removeServerSession(session0,false);
+        
+        assertEquals(0,channel.getSubscribers().size());
+        assertTrue(!channel.getSubscribers().contains(session0));
+     
     }
 
     @Test
@@ -161,15 +186,18 @@ public class ServerChannelTest extends Assert
         
         ServerSessionImpl session0 = _bayeux.newServerSession();
         _bayeux.addServerSession(session0);
+        session0.connect(System.currentTimeMillis());
         
         // this is a private API - not a normal subscribe!!
         foobar.subscribe(session0);
       
         ServerSessionImpl session1 = _bayeux.newServerSession();
         _bayeux.addServerSession(session1);
+        session1.connect(System.currentTimeMillis());
         foostar.subscribe(session1);
         ServerSessionImpl session2 = _bayeux.newServerSession();
         _bayeux.addServerSession(session2);
+        session2.connect(System.currentTimeMillis());
         starstar.subscribe(session2);
         
         ServerMessage.Mutable msg = _bayeux.newMessage();

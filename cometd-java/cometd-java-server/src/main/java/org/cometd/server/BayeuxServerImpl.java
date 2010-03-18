@@ -241,11 +241,19 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public void removeServerSession(ServerSession session,boolean timedout)
+    /**
+     * @param session
+     * @param timedout
+     * @return true if the session was removed and was connected
+     */
+    public boolean removeServerSession(ServerSession session,boolean timedout)
     {
         if (_logger.isDebugEnabled())
             _logger.debug("remove "+session+(timedout?" timedout":""));
-        if(_sessions.remove(session.getId())==session)
+        
+        ServerSessionImpl removed =_sessions.remove(session.getId());
+        
+        if(removed==session)
         {
             for (BayeuxServerListener listener : _listeners)
             {
@@ -253,8 +261,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     ((SessionListener)listener).sessionRemoved(session,timedout);
             }
             
-            ((ServerSessionImpl)session).removed(timedout);
+            return ((ServerSessionImpl)session).removed(timedout);
         }
+        else
+            return false;
     }
 
     /* ------------------------------------------------------------ */
