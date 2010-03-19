@@ -696,8 +696,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 else
                 {
                     if (from.isLocalSession() || !channel.isMeta() && !channel.isService())
-                        channel.subscribe((ServerSessionImpl)from);
-                    reply.setSuccessful(true);
+                    {
+                        if (channel.subscribe((ServerSessionImpl)from))
+                            reply.setSuccessful(true);
+                        else
+                            error(reply,"403::subscribe failed");
+                    }
+                    else
+                        reply.setSuccessful(true);
                 }
             }
         }
