@@ -30,6 +30,7 @@ public class ServerChannelImpl implements ServerChannel
     private boolean _persistent;
     private ServerChannelImpl _wild;
     private ServerChannelImpl _deepWild;
+    private volatile boolean _used;
 
     /* ------------------------------------------------------------ */
     protected ServerChannelImpl(BayeuxServerImpl bayeux, ServerChannelImpl parent, ChannelId id)
@@ -60,6 +61,7 @@ public class ServerChannelImpl implements ServerChannel
         for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
             if (listener instanceof BayeuxServer.SubscriptionListener)
                 ((BayeuxServer.SubscriptionListener)listener).subscribed(session,this);
+        _used=true;
         return true;
     }
 
@@ -190,7 +192,9 @@ public class ServerChannelImpl implements ServerChannel
 
             ServerChannelImpl old=_children.putIfAbsent(next,child);
             if (old==null)
-            {
+            {        
+                _used=true;
+
                 if (ChannelId.WILD.equals(next))
                     _wild=child;
                 else if (ChannelId.DEEPWILD.equals(next))
@@ -309,40 +313,20 @@ public class ServerChannelImpl implements ServerChannel
         switch(tail)
         {
             case 0:
-            
                 for (ServerSessionImpl session : _subscribers)
-                {
-                    if (session.isConnected())
-                        session.doDeliver(from,message);
-                    else
-                        unsubscribe(session);
-                }
+                    session.doDeliver(from,message);
                 break;
 
             case 1:
                 if (wild != null)
-                {
                     for (ServerSessionImpl session : wild._subscribers)
-                    {
-                        if (session.isConnected())
-                            session.doDeliver(from,message);
-                        else
-                            unsubscribe(session);
-                    }
-                }
+                        session.doDeliver(from,message);
+                
                 // fall through to default
-                   
             default:
                 if (deepwild != null)
-                {
                     for (ServerSessionImpl session : deepwild._subscribers)
-                    {
-                        if (session.isConnected())
-                            session.doDeliver(from,message);
-                        else
-                            unsubscribe(session);
-                    }
-                }
+                        session.doDeliver(from,message);
                 
                 String next=to.getSegment(_id.depth());
                 ServerChannelImpl channel=_children.get(next);
@@ -351,6 +335,23 @@ public class ServerChannelImpl implements ServerChannel
         }
     }
 
+    /* ------------------------------------------------------------ */
+    protected void doSweep()
+    {
+        for (ServerChannelImpl child : _children.values())
+            child.doSweep();
+        
+        for (ServerSessionImpl session : _subscribers)
+        {
+            if (!session.isConnected())
+                unsubscribe(session);
+        }
+        
+        if (_used && !isPersistent() && _subscribers.size()==0 && _children.size()==0)
+            remove();
+    }
+    
+    /* ------------------------------------------------------------ */
     public void remove()
     {
         for (ServerChannelImpl child : _children.values())

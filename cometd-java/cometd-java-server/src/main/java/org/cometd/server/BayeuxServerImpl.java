@@ -89,6 +89,15 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 _timeout.tick(System.currentTimeMillis());
             }
         },137L,137L);
+        
+        _timer.schedule(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                _root.doSweep();
+            }
+        },977L,977L);
     }
 
 
@@ -560,6 +569,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             reply.setId(id);
         return reply;
     }
+
+    /* ------------------------------------------------------------ */
+    protected ServerChannelImpl getRootChannel()
+    {
+        return _root;
+    }
     
     /* ------------------------------------------------------------ */
     public String dump()
@@ -595,26 +610,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
 
             addServerSession(session);
-
-            // receive advice
-            /*
-            Object advice=message.get(Message.ADVICE_FIELD);
-            if (advice != null)
-            {
-                Long timeout=((Map<String,Long>)advice).get("timeout");
-                session.setTimeout(timeout==null?0:timeout.longValue());
-
-                Long interval=((Map<String,Long>)advice).get("interval");
-                session.setInterval(interval==null?0:interval.longValue());
-            }
-            */
-
-            // send advice
-            /*
-            advice = session.getAdvice();
-            if (advice!=null)
-                reply.put(Message.ADVICE_FIELD,advice);
-            */
             
             reply.setSuccessful(true);
             reply.put(Message.CLIENT_FIELD,session.getId());
@@ -644,20 +639,20 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             session.connect(_timeout.getNow());
             
             // receive advice
-            Object advice=message.get(Message.ADVICE_FIELD);
-            if (advice != null)
+            Map<String,Object> adviceIn=message.getAdvice();
+            if (adviceIn != null)
             {
-                Long timeout=((Map<String,Long>)advice).get("timeout");
+                Long timeout=(Long)adviceIn.get("timeout");
                 session.setTimeout(timeout==null?0:timeout.longValue());
 
-                Long interval=((Map<String,Long>)advice).get("interval");
+                Long interval=(Long)adviceIn.get("interval");
                 session.setInterval(interval==null?0:interval.longValue());
             }
 
             // send advice
-            advice = session.takeAdvice();
-            if (advice!=null)
-                reply.put(Message.ADVICE_FIELD,advice);
+            Object adviceOut = session.takeAdvice();
+            if (adviceOut!=null)
+                reply.put(Message.ADVICE_FIELD,adviceOut);
             
             reply.setSuccessful(true);
         }
