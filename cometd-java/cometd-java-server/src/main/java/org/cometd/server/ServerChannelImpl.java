@@ -44,10 +44,14 @@ public class ServerChannelImpl implements ServerChannel
     }
 
     /* ------------------------------------------------------------ */
-    protected void subscribe(ServerSessionImpl session)
+    /**
+     * @param session
+     * @return true if the subscribe succeeded.
+     */
+    protected boolean subscribe(ServerSessionImpl session)
     {
         if (!session.isConnected())
-            throw new IllegalStateException();
+            return false;
         _subscribers.add(session);
         session.subscribedTo(this);
         for (ServerChannelListener listener : _listeners)
@@ -56,6 +60,7 @@ public class ServerChannelImpl implements ServerChannel
         for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
             if (listener instanceof BayeuxServer.SubscriptionListener)
                 ((BayeuxServer.SubscriptionListener)listener).subscribed(session,this);
+        return true;
     }
 
     /* ------------------------------------------------------------ */
