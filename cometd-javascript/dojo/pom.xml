@@ -11,6 +11,10 @@
     <packaging>war</packaging>
     <name>CometD :: JavaScript :: Dojo</name>
 
+    <properties>
+        <dojo-version>1.4.2</dojo-version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
