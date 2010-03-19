@@ -247,6 +247,48 @@ public class ServerChannelTest extends Assert
         
   
     }
+
+    @Test
+    public void testPersistent() throws Exception
+    {
+        ServerChannelImpl root = _bayeux.getRootChannel();
+        
+        ServerChannelImpl foobar = (ServerChannelImpl)_bayeux.getChannel("/foo/bar",true);
+        assertEquals(foobar,_bayeux.getChannel("/foo/bar",false));
+        root.doSweep();
+        assertEquals(foobar,_bayeux.getChannel("/foo/bar",false));
+        
+        _bayeux.getChannel("/foo/bar/baz",true).remove();
+        assertEquals(foobar,_bayeux.getChannel("/foo/bar",false));
+        root.doSweep();
+        assertNull(_bayeux.getChannel("/foo/bar",false));
+        assertNull(_bayeux.getChannel("/foo",false));
+        
+        foobar = (ServerChannelImpl)_bayeux.getChannel("/foo/bar",true);
+        assertEquals(foobar,_bayeux.getChannel("/foo/bar",false));
+        
+        ServerChannelImpl foobarbaz = (ServerChannelImpl)_bayeux.getChannel("/foo/bar/baz",true);
+        ServerSessionImpl session0 = _bayeux.newServerSession();
+        _bayeux.addServerSession(session0);
+        session0.connect(System.currentTimeMillis());
+        
+        foobarbaz.subscribe(session0);
+        ((ServerChannelImpl)_bayeux.getChannel("/foo",false)).subscribe(session0);
+        root.doSweep();
+        assertNotNull(_bayeux.getChannel("/foo/bar/baz",false));
+        assertNotNull(_bayeux.getChannel("/foo/bar",false));
+        assertNotNull(_bayeux.getChannel("/foo",false));
+
+        foobarbaz.unsubscribe(session0);root.doSweep();
+        assertNull(_bayeux.getChannel("/foo/bar/baz",false));
+        assertNull(_bayeux.getChannel("/foo/bar",false));
+        assertNotNull(_bayeux.getChannel("/foo",false));
+    
+        ((ServerChannelImpl)_bayeux.getChannel("/foo",false)).unsubscribe(session0);
+        root.doSweep();
+        assertNull(_bayeux.getChannel("/foo",false));
+    }
+    
     
     static class SSubL implements BayeuxServer.SubscriptionListener
     {
