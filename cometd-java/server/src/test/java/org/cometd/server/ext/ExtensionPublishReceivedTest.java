@@ -8,6 +8,7 @@ import org.cometd.Bayeux;
 import org.cometd.Client;
 import org.cometd.Extension;
 import org.cometd.Message;
+import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.BayeuxService;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
@@ -15,7 +16,7 @@ import org.eclipse.jetty.client.HttpExchange;
 /**
  * @version $Revision$ $Date$
  */
-public class ExtensionPublishReceivedTest extends AbstractExtensionTest
+public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
 {
     private CountingExtension extension;
 
