@@ -18,7 +18,7 @@ public interface ThreadModel
 
     Object evaluate(URL url) throws IOException;
 
-    Object evaluate(String script);
+    Object evaluate(String scriptName, String script);
 
     Object execute(Scriptable scope, Scriptable thiz, Function function, Object... arguments);
 

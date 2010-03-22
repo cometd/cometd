@@ -1,15 +1,13 @@
 package org.cometd.javascript.jquery.extension;
 
 import java.net.URL;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.cometd.Bayeux;
+import org.cometd.javascript.Latch;
 import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
 import org.cometd.server.AbstractBayeux;
 import org.cometd.server.BayeuxService;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
-import org.mozilla.javascript.ScriptableObject;
 
 /**
  * @version $Revision: 871 $ $Date$
@@ -100,8 +98,7 @@ public class CometdAckAndReloadExtensionsTest extends AbstractCometdJQueryTest
         evaluateScript("window.assert(testMessage[0].data == 'message2', 'message2');");
         evaluateScript("window.assert(testMessage[1].data == 'message3', 'message3');");
 
-        evaluateScript("$.cometd.disconnect();");
-        Thread.sleep(500); // Wait for the disconnect to return
+        evaluateScript("$.cometd.disconnect(true);");
     }
 
     private static class AckService extends BayeuxService
@@ -114,31 +111,6 @@ public class CometdAckAndReloadExtensionsTest extends AbstractCometdJQueryTest
         public void emit(String content)
         {
             getBayeux().getChannel("/test", true).publish(getClient(), content, null);
-        }
-    }
-
-    public static class Latch extends ScriptableObject
-    {
-        private volatile CountDownLatch latch;
-
-        public String getClassName()
-        {
-            return "Latch";
-        }
-
-        public void jsConstructor(int count)
-        {
-            latch = new CountDownLatch(count);
-        }
-
-        public boolean await(long timeout) throws InterruptedException
-        {
-            return latch.await(timeout, TimeUnit.MILLISECONDS);
-        }
-
-        public void jsFunction_countDown()
-        {
-            latch.countDown();
         }
     }
 }

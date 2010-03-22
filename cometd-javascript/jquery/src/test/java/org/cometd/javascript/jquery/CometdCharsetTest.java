@@ -1,9 +1,6 @@
 package org.cometd.javascript.jquery;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import org.mozilla.javascript.ScriptableObject;
+import org.cometd.javascript.Latch;
 
 /**
  * @version $Revision$ $Date$
@@ -42,32 +39,6 @@ public class CometdCharsetTest extends AbstractCometdJQueryTest
         evaluateScript("window.assert(data.hiragana === '" + hiragana + "', 'bad hiragana');");
         evaluateScript("window.assert(data.chinese === '" + chinese + "', 'bad chinese');");
 
-        evaluateScript("$.cometd.disconnect();");
-        Thread.sleep(500); // Wait for the disconnect to return
-    }
-
-    public static class Latch extends ScriptableObject
-    {
-        private volatile CountDownLatch latch;
-
-        public String getClassName()
-        {
-            return "Latch";
-        }
-
-        public void jsConstructor(int count)
-        {
-            latch = new CountDownLatch(count);
-        }
-
-        public boolean await(long timeout) throws InterruptedException
-        {
-            return latch.await(timeout, TimeUnit.MILLISECONDS);
-        }
-
-        public void jsFunction_countDown()
-        {
-            latch.countDown();
-        }
+        evaluateScript("$.cometd.disconnect(true);");
     }
 }

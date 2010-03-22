@@ -112,13 +112,13 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         }
     }
 
-    public Object evaluate(final String script)
+    public Object evaluate(final String scriptName, final String script)
     {
         FutureTask<Object> future = new FutureTask<Object>(new Callable<Object>()
         {
             public Object call()
             {
-                return context.evaluateString(rootScope, script, nextScriptName(), 1, null);
+                return context.evaluateString(rootScope, script, scriptName == null ? nextScriptName() : scriptName, 1, null);
             }
         });
         submit(future);
