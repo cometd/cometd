@@ -838,45 +838,50 @@ org.cometd.Cometd = function(name)
                 _transport = newTransport;
             }
 
-            // Notify the listeners before the connect below.
-            // Here the new transport is in place, as well as the clientId, so
-            // the listeners can perform a publish() if they want.
-            message.reestablish = _reestablish;
-            _reestablish = true;
-            _notifyListeners('/meta/handshake', message);
-
             // End the internal batch and allow held messages from the application
             // to go to the server (see _handshake() where we start the internal batch).
             _internalBatch = false;
             _flushBatch();
 
-            var action = _advice.reconnect ? _advice.reconnect : 'retry';
-            switch (action)
+            // Here the new transport is in place, as well as the clientId, so
+            // the listeners can perform a publish() if they want.
+            // Notify the listeners before the connect below.
+            message.reestablish = _reestablish;
+            _reestablish = true;
+            _notifyListeners('/meta/handshake', message);
+
+            if (!_isDisconnected())
             {
-                case 'retry':
+                if (_advice.reconnect != 'none')
+                {
                     _delayedConnect();
-                    break;
-                default:
-                    break;
+                }
+                else
+                {
+                    _resetBackoff();
+                    _setStatus('disconnected');
+                }
             }
         }
         else
         {
-            var retry = !_isDisconnected() && _advice.reconnect != 'none';
-            if (!retry)
-            {
-                _setStatus('disconnected');
-            }
-
             _notifyListeners('/meta/handshake', message);
             _notifyListeners('/meta/unsuccessful', message);
 
             // Only try again if we haven't been disconnected and
             // the advice permits us to retry the handshake
-            if (retry)
+            if (!_isDisconnected())
             {
-                _increaseBackoff();
-                _delayedHandshake();
+                if (_advice.reconnect != 'none')
+                {
+                    _increaseBackoff();
+                    _delayedHandshake();
+                }
+                else
+                {
+                    _resetBackoff();
+                    _setStatus('disconnected');
+                }
             }
         }
     }
@@ -896,32 +901,28 @@ org.cometd.Cometd = function(name)
             }
         };
 
-        var retry = !_isDisconnected() && _advice.reconnect != 'none';
-        if (!retry)
-        {
-            _setStatus('disconnected');
-        }
-
         _notifyListeners('/meta/handshake', failureMessage);
         _notifyListeners('/meta/unsuccessful', failureMessage);
 
-        // Only try again if we haven't been disconnected and the
-        // advice permits us to try again
-        if (retry)
+        // Only try again if we haven't been disconnected and
+        // the advice permits us to retry the handshake
+        if (!_isDisconnected())
         {
-            _increaseBackoff();
-            _delayedHandshake();
+            if (_advice.reconnect != 'none')
+            {
+                _increaseBackoff();
+                _delayedHandshake();
+            }
+            else
+            {
+                _resetBackoff();
+                _setStatus('disconnected');
+            }
         }
     }
 
     function _connectResponse(message)
     {
-        var action = _isDisconnected() ? 'none' : (_advice.reconnect ? _advice.reconnect : 'retry');
-        if (!_isDisconnected())
-        {
-            _setStatus(action == 'retry' ? 'connecting' : 'disconnecting');
-        }
-
         if (message.successful)
         {
             // Notify the listeners after the status change but before the next connect
@@ -931,16 +932,18 @@ org.cometd.Cometd = function(name)
             // Normally, the advice will say "reconnect: 'retry', interval: 0"
             // and the server will hold the request, so when a response returns
             // we immediately call the server again (long polling)
-            switch (action)
+            if (!_isDisconnected())
             {
-                case 'retry':
+                if (!_advice.reconnect || _advice.reconnect == 'retry')
+                {
                     _resetBackoff();
                     _delayedConnect();
-                    break;
-                default:
+                }
+                else
+                {
                     _resetBackoff();
                     _setStatus('disconnected');
-                    break;
+                }
             }
         }
         else
@@ -952,20 +955,27 @@ org.cometd.Cometd = function(name)
             // Connect was not successful.
             // This may happen when the server crashed, the current clientId
             // will be invalid, and the server will ask to handshake again
-            switch (action)
+            if (!_isDisconnected())
             {
-                case 'retry':
-                    _increaseBackoff();
-                    _delayedConnect();
-                    break;
-                case 'handshake':
-                    _resetBackoff();
-                    _delayedHandshake();
-                    break;
-                case 'none':
-                    _resetBackoff();
-                    _setStatus('disconnected');
-                    break;
+                var action = _advice.reconnect ? _advice.reconnect : 'retry';
+                switch (action)
+                {
+                    case 'retry':
+                        _increaseBackoff();
+                        _delayedConnect();
+                        break;
+                    case 'handshake':
+                        _resetBackoff();
+                        _delayedHandshake();
+                        break;
+                    case 'none':
+                        _resetBackoff();
+                        _setStatus('disconnected');
+                        break;
+                    default:
+                        _info('Unrecognized advice action', action);
+                        break;
+                }
             }
         }
     }
@@ -1002,9 +1012,10 @@ org.cometd.Cometd = function(name)
                     break;
                 case 'none':
                     _resetBackoff();
+                    _setStatus('disconnected');
                     break;
                 default:
-                    _debug('Unrecognized action', action);
+                    _info('Unrecognized advice action', action);
                     break;
             }
         }
@@ -2021,10 +2032,12 @@ org.cometd.Cometd = function(name)
             {
                 _transportSend.call(this, envelope, request);
                 _requests.push(request);
+                _debug('Transport sent request', requestId, envelope);
             }
             else
             {
                 _envelopes.push([envelope, request]);
+                _debug('Transport queued request', requestId, envelope);
             }
         }
 
@@ -2043,7 +2056,7 @@ org.cometd.Cometd = function(name)
         function _complete(request, success)
         {
             var index = _inArray(request, _requests);
-            // The index can be negative the request has been aborted
+            // The index can be negative if the request has been aborted
             if (index >= 0)
             {
                 _requests.splice(index, 1);
@@ -2055,6 +2068,7 @@ org.cometd.Cometd = function(name)
                 if (success)
                 {
                     _queueSend.call(this, envelope[0]);
+                    _debug('Transport completed request', request.id, envelope[0]);
                 }
                 else
                 {

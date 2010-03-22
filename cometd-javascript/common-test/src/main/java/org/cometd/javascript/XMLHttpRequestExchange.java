@@ -1,4 +1,4 @@
-package org.cometd;
+package org.cometd.javascript;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;

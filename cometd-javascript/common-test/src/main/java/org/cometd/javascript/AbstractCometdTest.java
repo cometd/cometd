@@ -12,7 +12,7 @@
 // limitations under the License.
 // ========================================================================
 
-package org.cometd;
+package org.cometd.javascript;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -23,6 +23,7 @@ import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
 
 import junit.framework.TestCase;
+import org.cometd.Bayeux;
 import org.cometd.server.AbstractBayeux;
 import org.cometd.server.continuation.ContinuationCometdServlet;
 import org.eclipse.jetty.server.Server;

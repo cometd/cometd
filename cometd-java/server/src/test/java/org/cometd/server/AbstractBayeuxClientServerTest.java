@@ -1,11 +1,10 @@
-package org.cometd.server.ext;
+package org.cometd.server;
 
 import java.io.UnsupportedEncodingException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.cometd.Bayeux;
-import org.cometd.server.AbstractBayeuxServiceTest;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpMethods;
@@ -14,7 +13,7 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 /**
  * @version $Revision$ $Date$
  */
-public abstract class AbstractExtensionTest extends AbstractBayeuxServiceTest
+public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServerTest
 {
     protected HttpClient httpClient;
 

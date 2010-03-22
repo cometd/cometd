@@ -3,7 +3,7 @@ package org.cometd.javascript.jquery;
 import java.io.File;
 import java.net.URL;
 
-import org.cometd.AbstractCometdTest;
+import org.cometd.javascript.AbstractCometdTest;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 
