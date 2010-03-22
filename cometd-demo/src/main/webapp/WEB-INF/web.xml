@@ -42,7 +42,7 @@
         </init-param>
         <init-param>
             <param-name>timeout</param-name>
-            <param-value>30000</param-value>
+            <param-value>20000</param-value>
         </init-param>
         <init-param>
             <param-name>interval</param-name>
@@ -88,7 +88,7 @@
             <param-name>oort.url</param-name>
             <param-value>http://localhost:8080/cometd</param-value>
         </init-param>
-        <!-- Set oort.cloud to a coma separated list of other oort.urls in the cluster -->
+        <!-- Set oort.cloud to a comma separated list of other oort.urls in the cluster -->
         <!--
         <init-param>
             <param-name>oort.cloud</param-name>
