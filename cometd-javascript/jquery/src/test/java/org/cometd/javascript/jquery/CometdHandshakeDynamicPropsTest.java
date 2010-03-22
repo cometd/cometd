@@ -1,8 +1,6 @@
 package org.cometd.javascript.jquery;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -13,10 +11,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.Bayeux;
+import org.cometd.javascript.Latch;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.mozilla.javascript.ScriptableObject;
 
 /**
  * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
@@ -92,33 +90,7 @@ public class CometdHandshakeDynamicPropsTest extends AbstractCometdJQueryTest
         token = ((Number)evaluateScript("outHandshake.ext.token")).intValue();
         assertEquals(2, token);
 
-        evaluateScript("$.cometd.disconnect();");
-        Thread.sleep(500); // Wait for the disconnect to return
-    }
-
-    public static class Latch extends ScriptableObject
-    {
-        private volatile CountDownLatch latch;
-
-        public String getClassName()
-        {
-            return "Latch";
-        }
-
-        public void jsConstructor(int count)
-        {
-            latch = new CountDownLatch(count);
-        }
-
-        public boolean await(long timeout) throws InterruptedException
-        {
-            return latch.await(timeout, TimeUnit.MILLISECONDS);
-        }
-
-        public void jsFunction_countDown()
-        {
-            latch.countDown();
-        }
+        evaluateScript("$.cometd.disconnect(true);");
     }
 
     public class BayeuxFilter implements Filter

@@ -2,6 +2,8 @@ package org.cometd.javascript.jquery;
 
 import java.util.Arrays;
 
+import org.cometd.javascript.Latch;
+
 /**
  * @version $Revision$ $Date$
  */
@@ -9,6 +11,7 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
 {
     public void testTransport() throws Exception
     {
+        defineClass(Latch.class);
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         Object[] transportTypes = (Object[])jsToJava(evaluateScript("$.cometd.getTransportTypes()"));
         // The spec requires at least these 2 transports
@@ -99,13 +102,21 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
         // The server does not support a 'local' transport, so use 'long-polling'
         assertTrue((Boolean)evaluateScript("$.cometd.registerTransport('long-polling', localTransport);"));
 
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/connect', readyLatch, 'countDown');");
         evaluateScript("$.cometd.handshake();");
-        Thread.sleep(500);
+        assertTrue(readyLatch.await(1000));
+
         assertEquals(3, ((Number)evaluateScript("localTransport.sends;")).intValue());
         assertEquals("connected", evaluateScript("$.cometd.getStatus();"));
+
+        readyLatch.reset(1);
+        evaluateScript("$.cometd.addListener('/meta/disconnect', readyLatch, 'countDown');");
         evaluateScript("$.cometd.disconnect();");
+        assertTrue(readyLatch.await(1000));
+
         assertEquals(4, ((Number)evaluateScript("localTransport.sends;")).intValue());
-        Thread.sleep(500);
         assertEquals("disconnected", evaluateScript("$.cometd.getStatus();"));
     }
 }

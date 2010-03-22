@@ -1,8 +1,6 @@
 package org.cometd.javascript.jquery;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -12,10 +10,10 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.cometd.javascript.Latch;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.mozilla.javascript.ScriptableObject;
 
 /**
  * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
@@ -33,17 +31,17 @@ public class CometdConnectFailureTest extends AbstractCometdJQueryTest
 
     public void testConnectFailure() throws Exception
     {
+        defineClass(Latch.class);
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
-        defineClass(Listener.class);
-        evaluateScript("var handshakeListener = new Listener();");
-        Listener handshakeListener = get("handshakeListener");
-        evaluateScript("var failureListener = new Listener();");
-        Listener failureListener = get("failureListener");
-        evaluateScript("var connectListener = new Listener();");
-        Listener connectListener = get("connectListener");
-        evaluateScript("$.cometd.addListener('/meta/handshake', handshakeListener, handshakeListener.handle);");
-        evaluateScript("$.cometd.addListener('/meta/unsuccessful', failureListener, failureListener.handle);");
-        evaluateScript("$.cometd.addListener('/meta/connect', connectListener, connectListener.handle);");
+        evaluateScript("var handshakeLatch = new Latch(1);");
+        Latch handshakeLatch = get("handshakeLatch");
+        evaluateScript("var failureLatch = new Latch(1);");
+        Latch failureLatch = get("failureLatch");
+        evaluateScript("var connectLatch = new Latch(1);");
+        Latch connectLatch = get("connectLatch");
+        evaluateScript("$.cometd.addListener('/meta/handshake', handshakeLatch, handshakeLatch.countDown);");
+        evaluateScript("$.cometd.addListener('/meta/unsuccessful', failureLatch, failureLatch.countDown);");
+        evaluateScript("$.cometd.addListener('/meta/connect', connectLatch, connectLatch.countDown);");
 
         evaluateScript("var backoff = $.cometd.getBackoffPeriod();");
         evaluateScript("var backoffIncrement = $.cometd.getBackoffIncrement();");
@@ -52,13 +50,10 @@ public class CometdConnectFailureTest extends AbstractCometdJQueryTest
         assertEquals(0, backoff);
         assertTrue(backoffIncrement > 0);
 
-        handshakeListener.jsFunction_expect(1);
-        connectListener.jsFunction_expect(1);
-        failureListener.jsFunction_expect(1);
         evaluateScript("$.cometd.handshake();");
-        assertTrue(handshakeListener.await(1000));
-        assertTrue(connectListener.await(1000));
-        assertTrue(failureListener.await(1000));
+        assertTrue(handshakeLatch.await(1000));
+        assertTrue(connectLatch.await(1000));
+        assertTrue(failureLatch.await(1000));
 
         // There is a failure, the backoff will be increased from 0 to backoffIncrement
         Thread.sleep(backoffIncrement / 2); // Waits for the backoff to happen
@@ -66,10 +61,10 @@ public class CometdConnectFailureTest extends AbstractCometdJQueryTest
         backoff = ((Number)get("backoff")).intValue();
         assertEquals(backoffIncrement, backoff);
 
-        connectListener.jsFunction_expect(1);
-        failureListener.jsFunction_expect(1);
-        assertTrue(connectListener.await(backoffIncrement));
-        assertTrue(failureListener.await(backoffIncrement));
+        connectLatch.reset(1);
+        failureLatch.reset(1);
+        assertTrue(connectLatch.await(backoffIncrement));
+        assertTrue(failureLatch.await(backoffIncrement));
 
         // Another failure, backoff will be increased to 2 * backoffIncrement
         Thread.sleep(backoffIncrement / 2); // Waits for the backoff to happen
@@ -77,51 +72,25 @@ public class CometdConnectFailureTest extends AbstractCometdJQueryTest
         backoff = ((Number)get("backoff")).intValue();
         assertEquals(2 * backoffIncrement, backoff);
 
-        connectListener.jsFunction_expect(1);
-        failureListener.jsFunction_expect(1);
-        assertTrue(connectListener.await(2 * backoffIncrement));
-        assertTrue(failureListener.await(2 * backoffIncrement));
+        connectLatch.reset(1);
+        failureLatch.reset(1);
+        assertTrue(connectLatch.await(2 * backoffIncrement));
+        assertTrue(failureLatch.await(2 * backoffIncrement));
 
         // Disconnect so that connect is not performed anymore
-        evaluateScript("var disconnectListener = new Listener();");
-        Listener disconnectListener = get("disconnectListener");
-        disconnectListener.jsFunction_expect(1);
-        failureListener.jsFunction_expect(1);
-        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);");
+        evaluateScript("var disconnectLatch = new Latch(1);");
+        Latch disconnectLatch = get("disconnectLatch");
+        failureLatch.reset(1);
+        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
         evaluateScript("$.cometd.disconnect();");
-        assertTrue(disconnectListener.await(1000));
-        assertTrue(failureListener.await(1000));
+        assertTrue(disconnectLatch.await(1000));
+        assertTrue(failureLatch.await(1000));
         String status = evaluateScript("$.cometd.getStatus();");
         assertEquals("disconnected", status);
 
         // Be sure the connect is not retried anymore
-        connectListener.jsFunction_expect(1);
-        assertFalse(connectListener.await(4 * backoffIncrement));
-    }
-
-    public static class Listener extends ScriptableObject
-    {
-        private CountDownLatch latch;
-
-        public void jsFunction_expect(int messageCount)
-        {
-            latch = new CountDownLatch(messageCount);
-        }
-
-        public String getClassName()
-        {
-            return "Listener";
-        }
-
-        public void jsFunction_handle(Object message)
-        {
-            latch.countDown();
-        }
-
-        public boolean await(long timeout) throws InterruptedException
-        {
-            return latch.await(timeout, TimeUnit.MILLISECONDS);
-        }
+        connectLatch.reset(1);
+        assertFalse(connectLatch.await(4 * backoffIncrement));
     }
 
     public static class ConnectThrowingFilter implements Filter

@@ -1912,6 +1912,7 @@ org.cometd.Cometd = function(name)
      */
     org.cometd.Transport = function()
     {
+        var self = this;
         var _type;
         var _requestIds = 0;
         var _longpollRequest = null;
@@ -1980,28 +1981,30 @@ org.cometd.Cometd = function(name)
 
         function _transportSend(envelope, request)
         {
-            var self = this;
+            request.expired = false;
 
             this.transportSend(envelope, request);
 
-            request.expired = false;
-
-            var delay = _maxNetworkDelay;
-            if (request.longpoll === true)
+            if (!envelope.sync)
             {
-                delay +=_advice && typeof _advice.timeout === 'number' ? _advice.timeout : 0;
-            }
-            request.timeout = _setTimeout(function()
-            {
-                request.expired = true;
-                if (request.xhr)
+                var delay = _maxNetworkDelay;
+                if (request.longpoll === true)
                 {
-                    request.xhr.abort();
+                    delay +=_advice && typeof _advice.timeout === 'number' ? _advice.timeout : 0;
                 }
-                var errorMessage = 'Transport ' + self.getType() + ' exceeded ' + delay + ' ms max network delay';
-                _debug(errorMessage);
-                envelope.onFailure(request, 'timeout', errorMessage);
-            }, delay);
+                request.timeout = _setTimeout(function()
+                {
+                    request.expired = true;
+                    if (request.xhr)
+                    {
+                        request.xhr.abort();
+                    }
+                    var errorMessage = 'Transport ' + self.getType() + ' exceeded ' + delay +
+                            ' ms max network delay for request ' + request.id;
+                    _debug(errorMessage);
+                    envelope.onFailure(request, 'timeout', errorMessage);
+                }, delay);
+            }
         }
 
         function _longpollSend(envelope)
@@ -2030,14 +2033,14 @@ org.cometd.Cometd = function(name)
             // Consider the longpoll requests which should always be present
             if (_requests.length < _maxConnections - 1)
             {
+                _debug('Transport sending request', requestId, envelope);
                 _transportSend.call(this, envelope, request);
                 _requests.push(request);
-                _debug('Transport sent request', requestId, envelope);
             }
             else
             {
+                _debug('Transport queueing request', requestId, envelope);
                 _envelopes.push([envelope, request]);
-                _debug('Transport queued request', requestId, envelope);
             }
         }
 
@@ -2143,6 +2146,7 @@ org.cometd.Cometd = function(name)
 
     org.cometd.LongPollingTransport = function()
     {
+        var self = this;
         // By default, support cross domain
         var _supportsCrossDomain = true;
 
@@ -2158,7 +2162,6 @@ org.cometd.Cometd = function(name)
 
         this.transportSend = function(envelope, request)
         {
-            var self = this;
             try
             {
                 request.xhr = this.xhrSend({
@@ -2200,6 +2203,7 @@ org.cometd.Cometd = function(name)
 
     org.cometd.CallbackPollingTransport = function()
     {
+        var self = this;
         var _maxLength = 2000;
 
         this.accept = function(version, crossDomain)
@@ -2214,8 +2218,6 @@ org.cometd.Cometd = function(name)
 
         this.transportSend = function(envelope, request)
         {
-            var self = this;
-
             // Microsoft Internet Explorer has a 2083 URL max length
             // We must ensure that we stay within that length
             var messages = org.cometd.JSON.toJSON(envelope.messages);

@@ -71,8 +71,7 @@ public class CometdMaxNetworkDelayTest extends AbstractCometdJQueryTest
         assertTrue(publishListener.await(2 * maxNetworkDelay));
         assertTrue(failures.get().toString(), failures.get().isEmpty());
 
-        evaluateScript("$.cometd.disconnect();");
-        Thread.sleep(500);
+        evaluateScript("$.cometd.disconnect(true);");
     }
 
     public static class Listener extends ScriptableObject

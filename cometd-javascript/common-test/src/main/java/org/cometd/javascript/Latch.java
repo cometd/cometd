@@ -19,6 +19,11 @@ public class Latch extends ScriptableObject
 
     public void jsConstructor(int count)
     {
+        reset(count);
+    }
+
+    public void reset(int count)
+    {
         latch = new CountDownLatch(count);
     }
 

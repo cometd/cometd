@@ -16,6 +16,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.cometd.javascript.Latch;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -37,15 +38,16 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
 
     public void testMultiPublish() throws Throwable
     {
+        defineClass(Latch.class);
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("$.cometd.init({url: '" + cometdURL + "', logLevel: 'debug'});");
+        assertTrue(readyLatch.await(1000));
 
-        // Wait for the long poll
-        Thread.sleep(1000);
-
-        defineClass(Listener.class);
-        evaluateScript("var listener = new Listener();");
-        Listener listener = get("listener");
-        evaluateScript("$.cometd.subscribe('/echo', listener, listener.listen);");
+        evaluateScript("var latch = new Latch(1);");
+        Latch latch = get("latch");
+        evaluateScript("$.cometd.subscribe('/echo', latch, latch.countDown);");
         // Wait for subscribe to return
         Thread.sleep(1000);
 
@@ -53,14 +55,13 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
         evaluateScript("var handler = new Handler();");
         Handler handler = get("handler");
         evaluateScript("$.cometd.addListener('/meta/publish', handler, handler.handle);");
-        evaluateScript("var disconnect = new Listener();");
-        Listener disconnect = get("disconnect");
-        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnect, disconnect.listen);");
+        evaluateScript("var disconnect = new Latch(1);");
+        Latch disconnect = get("disconnect");
+        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnect, disconnect.countDown);");
 
-        listener.expect(1);
         AtomicReference<List<Throwable>> failures = new AtomicReference<List<Throwable>>(new ArrayList<Throwable>());
         handler.expect(failures, 4);
-        disconnect.expect(1);
+        disconnect.reset(1);
 
         // These publish are sent without waiting each one to return,
         // so they will be queued. The second publish will fail, we
@@ -71,35 +72,10 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
                 "$.cometd.publish('/echo', {id: 4});" +
                 "$.cometd.disconnect();");
 
-        assertTrue(listener.await(1000));
+        assertTrue(latch.await(1000));
         assertTrue(handler.await(1000));
         assertTrue(failures.get().toString(), failures.get().isEmpty());
         assertTrue(disconnect.await(1000));
-    }
-
-    public static class Listener extends ScriptableObject
-    {
-        private CountDownLatch latch;
-
-        public String getClassName()
-        {
-            return "Listener";
-        }
-
-        public void jsFunction_listen(Object message)
-        {
-            latch.countDown();
-        }
-
-        public void expect(int count)
-        {
-            latch = new CountDownLatch(count);
-        }
-
-        public boolean await(long timeout) throws InterruptedException
-        {
-            return latch.await(timeout, TimeUnit.MILLISECONDS);
-        }
     }
 
     public static class Handler extends ScriptableObject

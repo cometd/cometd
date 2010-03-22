@@ -3,6 +3,7 @@ package org.cometd.javascript.jquery.extension;
 import java.net.URL;
 
 import org.cometd.Bayeux;
+import org.cometd.javascript.Latch;
 import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
 import org.cometd.server.AbstractBayeux;
 import org.cometd.server.BayeuxService;
@@ -27,6 +28,7 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
         URL ackExtensionURL = new URL(contextURL + "/org/cometd/AckExtension.js");
         evaluateURL(ackExtensionURL);
 
+        defineClass(Latch.class);
         evaluateScript("var cometd = $.cometd;");
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("var ackExt = new org.cometd.AckExtension();");
@@ -44,14 +46,18 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
                 "   return message;" +
                 "}" +
                 "});");
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Thread.sleep(500); // Wait for the long poll
+
+        assertTrue(readyLatch.await(1000));
+
         Boolean clientSupportsAck = get("clientSupportsAck");
         assertTrue(clientSupportsAck);
         evaluateScript("cometd.unregisterExtension('test');");
 
-        evaluateScript("cometd.disconnect();");
-        Thread.sleep(500); // Wait for the disconnect to return
+        evaluateScript("cometd.disconnect(true);");
     }
 
     public void testAcknowledgement() throws Exception
@@ -59,6 +65,7 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
         URL ackExtensionURL = new URL(contextURL + "/org/cometd/AckExtension.js");
         evaluateURL(ackExtensionURL);
 
+        defineClass(Latch.class);
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("$.cometd.registerExtension('ack', new org.cometd.AckExtension());");
 
@@ -82,28 +89,33 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
                 "   return message;" +
                 "}" +
                 "});");
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("$.cometd.handshake();");
-        Thread.sleep(500); // Wait for the long poll
-        Number outAckId = get("outAckId");
+
+        assertTrue(readyLatch.await(1000));
+
+        Number inAckId = get("inAckId");
         // The server should have returned a non-negative value during the first connect call
-        assertTrue(outAckId.intValue() >= 0);
+        assertTrue(inAckId.intValue() >= 0);
 
         // Subscribe to receive server events
         evaluateScript("var msgCount = 0;");
         evaluateScript("$.cometd.subscribe('/echo', function(message) { ++msgCount; });");
-        Thread.sleep(500); // Wait for the subscription
+        Thread.sleep(500); // Wait for the subscription TODO: make it deterministic
         // The server receives an event and sends it to the client via the long poll
         ackService.emit("test acknowledgement");
-        Thread.sleep(500); // Wait for server-side event to arrive via long poll
-        Number inAckId = get("inAckId");
-        assertTrue(inAckId.intValue() > outAckId.intValue());
+        Thread.sleep(500); // Wait for server-side event to arrive via long poll TODO: make it deterministic
+        inAckId = get("inAckId");
+        Number outAckId = get("outAckId");
+        assertTrue(inAckId.intValue() >= outAckId.intValue());
         Number msgCount = get("msgCount");
         assertEquals(1, msgCount.intValue());
 
         evaluateScript("$.cometd.unregisterExtension('test');");
 
-        evaluateScript("$.cometd.disconnect();");
-        Thread.sleep(500); // Wait for the disconnect to return
+        evaluateScript("$.cometd.disconnect(true);");
     }
 
     private static class AckService extends BayeuxService

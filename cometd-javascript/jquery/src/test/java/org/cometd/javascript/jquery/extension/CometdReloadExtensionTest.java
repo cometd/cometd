@@ -1,11 +1,9 @@
 package org.cometd.javascript.jquery.extension;
 
 import java.net.URL;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
+import org.cometd.javascript.Latch;
 import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
-import org.mozilla.javascript.ScriptableObject;
 
 /**
  * @version $Revision$ $Date$
@@ -21,9 +19,13 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         URL jqueryReloadExtension = new URL(contextURL + "/jquery/jquery.cometd-reload.js");
         evaluateURL(jqueryReloadExtension);
 
+        defineClass(Latch.class);
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
         evaluateScript("$.cometd.handshake();");
-        Thread.sleep(500); // Wait for the long poll
+        assertTrue(readyLatch.await(1000));
 
         // Get the clientId
         String clientId = evaluateScript("$.cometd.getClientId();");
@@ -38,15 +40,18 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         evaluateURL(reloadExtension);
         evaluateURL(jqueryReloadExtension);
 
+        defineClass(Latch.class);
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("var readyLatch = new Latch(1);");
+        readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
         evaluateScript("$.cometd.handshake();");
-        Thread.sleep(500); // Wait for the long poll
+        assertTrue(readyLatch.await(1000));
 
         String newClientId = evaluateScript("$.cometd.getClientId();");
         assertEquals(clientId, newClientId);
 
-        evaluateScript("$.cometd.disconnect();");
-        Thread.sleep(500); // Wait for the disconnect to return
+        evaluateScript("$.cometd.disconnect(true);");
 
         // Be sure the cookie has been removed on disconnect
         String cookie = evaluateScript("org.cometd.COOKIE.get('org.cometd.reload');");
@@ -69,9 +74,13 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         URL jqueryReloadExtension = new URL(contextURL + "/jquery/jquery.cometd-reload.js");
         evaluateURL(jqueryReloadExtension);
 
+        defineClass(Latch.class);
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
         evaluateScript("$.cometd.handshake();");
-        Thread.sleep(500); // Wait for the long poll
+        assertTrue(readyLatch.await(1000));
 
         // Get the clientId
         String clientId = evaluateScript("$.cometd.getClientId();");
@@ -90,15 +99,18 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         evaluateURL(reloadExtension);
         evaluateURL(jqueryReloadExtension);
 
+        defineClass(Latch.class);
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("var readyLatch = new Latch(1);");
+        readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
         evaluateScript("$.cometd.handshake();");
-        Thread.sleep(500); // Wait for the long poll
+        assertTrue(readyLatch.await(1000));
 
         String newClientId = evaluateScript("$.cometd.getClientId();");
         assertEquals(clientId, newClientId);
 
-        evaluateScript("$.cometd.disconnect();");
-        Thread.sleep(500); // Wait for the disconnect to return
+        evaluateScript("$.cometd.disconnect(true);");
     }
 
     public void testReloadWithSubscriptionAndPublish() throws Exception
@@ -144,8 +156,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         // Check that publish went out
         evaluateScript("window.assert(extPublish !== null, 'extPublish');");
 
-        evaluateScript("$.cometd.disconnect();");
-        Thread.sleep(500); // Wait for the disconnect to return
+        evaluateScript("$.cometd.disconnect(true);");
     }
 
     private void evaluateApplication() throws Exception
@@ -198,30 +209,5 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
                 "" +
                 "$.cometd.addListener('/meta/connect', _init);" +
                 "$.cometd.handshake();");
-    }
-
-    public static class Latch extends ScriptableObject
-    {
-        private volatile CountDownLatch latch;
-
-        public String getClassName()
-        {
-            return "Latch";
-        }
-
-        public void jsConstructor(int count)
-        {
-            latch = new CountDownLatch(count);
-        }
-
-        public boolean await(long timeout) throws InterruptedException
-        {
-            return latch.await(timeout, TimeUnit.MILLISECONDS);
-        }
-
-        public void jsFunction_countDown()
-        {
-            latch.countDown();
-        }
     }
 }

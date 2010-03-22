@@ -1,15 +1,13 @@
 package org.cometd.javascript.jquery;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
 import org.cometd.Bayeux;
 import org.cometd.Client;
 import org.cometd.Extension;
 import org.cometd.Message;
+import org.cometd.javascript.Latch;
 import org.cometd.server.AbstractBayeux;
-import org.mozilla.javascript.ScriptableObject;
 
 /**
  * @version $Revision$ $Date$
@@ -55,31 +53,6 @@ public class CometdURLPathTest extends AbstractCometdJQueryTest
         evaluateScript("window.assert(disconnect.ext !== undefined, 'disconnect without ext');");
         String disconnectURI = evaluateScript("disconnect.ext.uri");
         assertTrue(disconnectURI.endsWith("/disconnect"));
-    }
-
-    public static class Latch extends ScriptableObject
-    {
-        private volatile CountDownLatch latch;
-
-        public String getClassName()
-        {
-            return "Latch";
-        }
-
-        public void jsConstructor(int count)
-        {
-            latch = new CountDownLatch(count);
-        }
-
-        public boolean await(long timeout) throws InterruptedException
-        {
-            return latch.await(timeout, TimeUnit.MILLISECONDS);
-        }
-
-        public void jsFunction_countDown()
-        {
-            latch.countDown();
-        }
     }
 
     public static class BayeuxURLExtension implements Extension
