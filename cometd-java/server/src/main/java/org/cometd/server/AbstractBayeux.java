@@ -1029,6 +1029,11 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
         abstract ChannelId getMetaChannelId();
 
+        protected boolean isClientUnknown(Client client)
+        {
+            return client == null || !hasClient(client.getId());
+        }
+
         void unknownClient(Transport transport, String channel) throws IOException
         {
             MessageImpl reply=newMessage();
@@ -1068,7 +1073,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         @Override
         public void handle(ClientImpl client, Transport transport, Message message) throws IOException
         {
-            if (client == null)
+            if (isClientUnknown(client))
             {
                 unknownClient(transport,_metaChannel);
                 return;
@@ -1170,7 +1175,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         @Override
         public void handle(ClientImpl client, Transport transport, Message message) throws IOException
         {
-            if (client == null)
+            if (isClientUnknown(client))
             {
                 unknownClient(transport,META_DISCONNECT);
                 return;
@@ -1280,7 +1285,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             }
 
             String channel_id=message.getChannel();
-            if (client == null && message.containsKey(CLIENT_FIELD))
+            if (isClientUnknown(client) && message.containsKey(CLIENT_FIELD))
             {
                 unknownClient(transport,channel_id);
                 return;
@@ -1335,7 +1340,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         {
             String channel_id=message.getChannel();
 
-            if (client == null && !META_HANDSHAKE.equals(channel_id))
+            if (isClientUnknown(client) && !META_HANDSHAKE.equals(channel_id) && !META_DISCONNECT.equals(channel_id))
             {
                 // unknown client
                 return;
@@ -1361,7 +1366,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         @Override
         public void handle(ClientImpl client, Transport transport, Message message) throws IOException
         {
-            if (client == null)
+            if (isClientUnknown(client))
             {
                 unknownClient(transport,META_SUBSCRIBE);
                 return;
@@ -1407,9 +1412,25 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
                         channel=(ChannelImpl)getChannel(subscribe_id,true);
 
                     if (channel != null)
-                        channel.subscribe(client);
+                    {
+                        // Reduces the window of time where a server-side expiration
+                        // or a concurrent disconnect causes the invalid client to be
+                        // registered as subscriber and hence being kept alive by the
+                        // fact that the channel references it.
+                        if (isClientUnknown(client))
+                        {
+                            unknownClient(transport, META_SUBSCRIBE);
+                            return;
+                        }
+                        else
+                        {
+                            channel.subscribe(client);
+                        }
+                    }
                     else
+                    {
                         can_subscribe=false;
+                    }
                 }
 
                 if (can_subscribe)
@@ -1450,7 +1471,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         @Override
         public void handle(ClientImpl client, Transport transport, Message message) throws IOException
         {
-            if (client == null)
+            if (isClientUnknown(client))
             {
                 unknownClient(transport,META_UNSUBSCRIBE);
                 return;

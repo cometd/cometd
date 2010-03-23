@@ -14,10 +14,11 @@
 
 package org.cometd.server;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.cometd.Bayeux;
 import org.cometd.Channel;
@@ -27,7 +28,6 @@ import org.cometd.Client;
 import org.cometd.DataFilter;
 import org.cometd.Message;
 import org.cometd.SubscriptionListener;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
@@ -42,9 +42,9 @@ public class ChannelImpl implements Channel
     private final AbstractBayeux _bayeux;
     private final ChannelId _id;
     private final ConcurrentHashMap<String,ChannelImpl> _children=new ConcurrentHashMap<String,ChannelImpl>();
-    private volatile ClientImpl[] _subscribers=new ClientImpl[0]; // copy on write
-    private volatile DataFilter[] _dataFilters=new DataFilter[0]; // copy on write
-    private volatile SubscriptionListener[] _subscriptionListeners=new SubscriptionListener[0]; // copy on write
+    private final List<ClientImpl> _subscribers=new CopyOnWriteArrayList<ClientImpl>();
+    private final List<DataFilter> _dataFilters=new CopyOnWriteArrayList<DataFilter>();
+    private final List<SubscriptionListener> _subscriptionListeners=new CopyOnWriteArrayList<SubscriptionListener>();
     private volatile ChannelImpl _wild;
     private volatile ChannelImpl _wildWild;
     private volatile boolean _persistent;
@@ -127,10 +127,7 @@ public class ChannelImpl implements Channel
      */
     public void addDataFilter(DataFilter filter)
     {
-        synchronized(this)
-        {
-            _dataFilters=(DataFilter[])LazyList.addToArray(_dataFilters,filter,null);
-        }
+        _dataFilters.add(filter);
     }
 
     /* ------------------------------------------------------------ */
@@ -201,7 +198,7 @@ public class ChannelImpl implements Channel
         if (m != null)
         {
             for (Client t : to)
-                ((ClientImpl)t).doDelivery(from,m);
+                deliverToSubscriber((ClientImpl)t,from,m);
         }
         if (m instanceof MessageImpl)
             ((MessageImpl)m).decRef();
@@ -289,11 +286,8 @@ public class ChannelImpl implements Channel
      */
     public DataFilter removeDataFilter(DataFilter filter)
     {
-        synchronized(this)
-        {
-            _dataFilters=(DataFilter[])LazyList.removeFromArray(_dataFilters,filter);
-            return filter;
-        }
+        _dataFilters.remove(filter);
+        return filter;
     }
 
     /* ------------------------------------------------------------ */
@@ -311,17 +305,15 @@ public class ChannelImpl implements Channel
         if (!(client instanceof ClientImpl))
             throw new IllegalArgumentException("Client instance not obtained from Bayeux.newClient()");
 
-        synchronized(this)
+        for (ClientImpl c : _subscribers)
         {
-            for (ClientImpl c : _subscribers)
-            {
-                if (client.equals(c))
-                    return;
-            }
-            _subscribers=(ClientImpl[])LazyList.addToArray(_subscribers,client,null);
+            if (client.equals(c))
+                return;
         }
-        SubscriptionListener[] listeners=_subscriptionListeners;
-        for (SubscriptionListener l : listeners)
+
+        _subscribers.add((ClientImpl)client);
+
+        for (SubscriptionListener l : _subscriptionListeners)
             l.subscribed(client,this);
 
         ((ClientImpl)client).addSubscription(this);
@@ -338,22 +330,21 @@ public class ChannelImpl implements Channel
     /**
      * @param client
      */
-    public void unsubscribe(Client client)
+    public void unsubscribe(Client c)
     {
-        if (!(client instanceof ClientImpl))
+        if (!(c instanceof ClientImpl))
             throw new IllegalArgumentException("Client instance not obtained from Bayeux.newClient()");
-        ((ClientImpl)client).removeSubscription(this);
-        synchronized(this)
-        {
-            _subscribers=(ClientImpl[])LazyList.removeFromArray(_subscribers,client);
-        }
+        ClientImpl client = (ClientImpl)c;
+
+        client.removeSubscription(this);
+
+        _subscribers.remove(client);
 
         for (SubscriptionListener l : _subscriptionListeners)
             l.unsubscribed(client,this);
 
-        if (!_persistent && _subscribers.length == 0 && _children.size() == 0)
+        if (!_persistent && _subscribers.size() == 0 && _children.size() == 0)
             remove();
-
     }
 
     /* ------------------------------------------------------------ */
@@ -374,8 +365,7 @@ public class ChannelImpl implements Channel
                 {
                     case 0:
                     {
-                        final DataFilter[] filters=_dataFilters;
-                        for (DataFilter filter : filters)
+                        for (DataFilter filter : _dataFilters)
                         {
                             data=filter.filter(from,this,data);
                             if (data == null)
@@ -388,8 +378,7 @@ public class ChannelImpl implements Channel
                         final ChannelImpl wild = _wild;
                         if (wild != null)
                         {
-                            final DataFilter[] filters=wild._dataFilters;
-                            for (DataFilter filter : filters)
+                            for (DataFilter filter : wild._dataFilters)
                             {
                                 data=filter.filter(from,this,data);
                                 if (data == null)
@@ -401,8 +390,7 @@ public class ChannelImpl implements Channel
                         final ChannelImpl wildWild = _wildWild;
                         if (wildWild != null)
                         {
-                            final DataFilter[] filters=wildWild._dataFilters;
-                            for (DataFilter filter : filters)
+                            for (DataFilter filter : wildWild._dataFilters)
                             {
                                 data=filter.filter(from,this,data);
                                 if (data == null)
@@ -430,15 +418,15 @@ public class ChannelImpl implements Channel
                 if (_lazy && msg instanceof MessageImpl)
                     ((MessageImpl)msg).setLazy(true);
 
-                final ClientImpl[] subscribers=_subscribers;
+                final ClientImpl[] subscribers=_subscribers.toArray(new ClientImpl[_subscribers.size()]);
                 if (subscribers.length > 0)
                 {
                     // fair delivery
                     int split=_split++ % subscribers.length;
                     for (int i=split; i < subscribers.length; i++)
-                        subscribers[i].doDelivery(from,msg);
+                        deliverToSubscriber(subscribers[i],from,msg);
                     for (int i=0; i < split; i++)
-                        subscribers[i].doDelivery(from,msg);
+                        deliverToSubscriber(subscribers[i],from,msg);
                 }
                 break;
             }
@@ -449,9 +437,8 @@ public class ChannelImpl implements Channel
                 {
                     if (wild._lazy && msg instanceof MessageImpl)
                         ((MessageImpl)msg).setLazy(true);
-                    final ClientImpl[] subscribers=wild._subscribers;
-                    for (ClientImpl client : subscribers)
-                        client.doDelivery(from,msg);
+                    for (ClientImpl client : wild._subscribers)
+                        wild.deliverToSubscriber(client,from,msg);
                 }
 
             default:
@@ -461,9 +448,8 @@ public class ChannelImpl implements Channel
                 {
                     if (wildWild._lazy && msg instanceof MessageImpl)
                         ((MessageImpl)msg).setLazy(true);
-                    final ClientImpl[] subscribers=wildWild._subscribers;
-                    for (ClientImpl client : subscribers)
-                        client.doDelivery(from,msg);
+                    for (ClientImpl client : wildWild._subscribers)
+                        wildWild.deliverToSubscriber(client,from,msg);
                 }
                 String next=to.getSegment(_id.depth());
                 ChannelImpl channel=_children.get(next);
@@ -473,19 +459,24 @@ public class ChannelImpl implements Channel
         }
     }
 
+    private void deliverToSubscriber(ClientImpl subscriber, Client from, Message message)
+    {
+        if (_bayeux.hasClient(subscriber.getId()))
+            subscriber.doDelivery(from, message);
+        else
+            unsubscribe(subscriber);
+    }
+
     /* ------------------------------------------------------------ */
     public Collection<Client> getSubscribers()
     {
-        synchronized(this)
-        {
-            return Arrays.asList((Client[])_subscribers);
-        }
+        return new ArrayList<Client>(_subscribers);
     }
 
     /* ------------------------------------------------------------ */
     public int getSubscriberCount()
     {
-        return _subscribers.length;
+        return _subscribers.size();
     }
 
     /* ------------------------------------------------------------ */
@@ -496,10 +487,7 @@ public class ChannelImpl implements Channel
      */
     public Collection<DataFilter> getDataFilters()
     {
-        synchronized(this)
-        {
-            return Arrays.asList(_dataFilters);
-        }
+        return new ArrayList<DataFilter>(_dataFilters);
     }
 
     /* ------------------------------------------------------------ */
@@ -507,10 +495,7 @@ public class ChannelImpl implements Channel
     {
         if (listener instanceof SubscriptionListener)
         {
-            synchronized(this)
-            {
-                _subscriptionListeners=(SubscriptionListener[])LazyList.addToArray(_subscriptionListeners,listener,null);
-            }
+            _subscriptionListeners.add((SubscriptionListener)listener);
         }
     }
 
@@ -518,10 +503,7 @@ public class ChannelImpl implements Channel
     {
         if (listener instanceof SubscriptionListener)
         {
-            synchronized(this)
-            {
-                _subscriptionListeners=(SubscriptionListener[])LazyList.removeFromArray(_subscriptionListeners,listener);
-            }
+            _subscriptionListeners.remove((SubscriptionListener)listener);
         }
     }
 }
