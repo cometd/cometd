@@ -26,7 +26,8 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
                 "   $.cometd.unregisterTransport(types[i]);" +
                 "};");
 
-        String localTransport =
+        evaluateScript("" +
+                "var readyLatch = new Latch(1);" +
                 "function LocalTransport()" +
                 "{" +
                 "    this.sends = 0;" +
@@ -73,6 +74,7 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
                 "                    \"advice\":{\"reconnect\":\"retry\",\"interval\":0,\"timeout\":5000}" +
                 "                }]';" +
                 "                timeout = 5000;" +
+                "                readyLatch.countDown();" +
                 "                break;" +
                 "            case 4:" +
                 "                response = '[{" +
@@ -94,17 +96,14 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
                 "    };" +
                 "};" +
                 "LocalTransport.prototype = new org.cometd.Transport();" +
-                "LocalTransport.prototype.constructor = LocalTransport;";
-
-        evaluateScript(localTransport);
+                "LocalTransport.prototype.constructor = LocalTransport;" +
+                "");
 
         evaluateScript("var localTransport = new LocalTransport();");
         // The server does not support a 'local' transport, so use 'long-polling'
         assertTrue((Boolean)evaluateScript("$.cometd.registerTransport('long-polling', localTransport);"));
 
-        evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
-        evaluateScript("$.cometd.addListener('/meta/connect', readyLatch, 'countDown');");
         evaluateScript("$.cometd.handshake();");
         assertTrue(readyLatch.await(1000));
 

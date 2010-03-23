@@ -60,8 +60,6 @@ public class CometdDisconnectFailureTest extends AbstractCometdJQueryTest
 
     public static class DisconnectThrowingFilter implements Filter
     {
-        private int messages;
-
         public void init(FilterConfig filterConfig) throws ServletException
         {
         }
@@ -73,9 +71,9 @@ public class CometdDisconnectFailureTest extends AbstractCometdJQueryTest
 
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            ++messages;
-            // The fourth message will be the disconnect, throw
-            if (messages == 4) throw new IOException();
+            String uri = request.getRequestURI();
+            if (uri.endsWith("disconnect"))
+                throw new IOException();
             chain.doFilter(request, response);
         }
 
