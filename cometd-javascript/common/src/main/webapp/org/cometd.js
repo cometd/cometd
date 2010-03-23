@@ -1998,7 +1998,14 @@ org.cometd.Cometd = function(name)
             if (!request.expired)
             {
                 clearTimeout(request.timeout);
-                envelope.onSuccess(request, response);
+                if (response && response.length > 0)
+                {
+                    envelope.onSuccess(request, response);
+                }
+                else
+                {
+                    envelope.onFailure(request, 'Empty HTTP response');
+                }
             }
         };
 
