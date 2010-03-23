@@ -609,6 +609,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 return;
             }
 
+            session.handshake();
             addServerSession(session);
             
             reply.setSuccessful(true);

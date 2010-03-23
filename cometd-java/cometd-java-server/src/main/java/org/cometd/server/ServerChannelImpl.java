@@ -51,6 +51,8 @@ public class ServerChannelImpl implements ServerChannel
      */
     protected boolean subscribe(ServerSessionImpl session)
     {
+        if (!session.isHandshook())
+            return false;
         _subscribers.add(session);
         session.subscribedTo(this);
         for (ServerChannelListener listener : _listeners)
@@ -341,7 +343,7 @@ public class ServerChannelImpl implements ServerChannel
         
         for (ServerSessionImpl session : _subscribers)
         {
-            if (!session.isConnected())
+            if (!session.isHandshook())
                 unsubscribe(session);
         }
         
