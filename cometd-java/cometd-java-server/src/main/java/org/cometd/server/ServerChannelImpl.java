@@ -51,8 +51,6 @@ public class ServerChannelImpl implements ServerChannel
      */
     protected boolean subscribe(ServerSessionImpl session)
     {
-        if (!session.isConnected())
-            return false;
         _subscribers.add(session);
         session.subscribedTo(this);
         for (ServerChannelListener listener : _listeners)

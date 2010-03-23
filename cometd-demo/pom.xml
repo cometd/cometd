@@ -69,7 +69,7 @@
                 <configuration>
                     <scanIntervalSeconds>1</scanIntervalSeconds>
                     <webAppConfig>
-                        <contextPath>/</contextPath>
+                        <contextPath>/cometd</contextPath>
                     </webAppConfig>
                 </configuration>
             </plugin>
