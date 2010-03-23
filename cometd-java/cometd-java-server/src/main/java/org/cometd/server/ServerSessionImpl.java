@@ -15,7 +15,6 @@ import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.common.ChannelId;
 import org.cometd.server.ServerTransport.Dispatcher;
 import org.cometd.server.transports.HttpTransport;
 import org.eclipse.jetty.util.ArrayQueue;
@@ -40,6 +39,7 @@ public class ServerSessionImpl implements ServerSession
     private final LocalSessionImpl _localSession;
     private final AttributesMap _attributes = new AttributesMap();
     private final AtomicBoolean _connected = new AtomicBoolean();
+    private final AtomicBoolean _handshook = new AtomicBoolean();
     private final Set<ServerChannelImpl> _subscribedTo = Collections.newSetFromMap(new ConcurrentHashMap<ServerChannelImpl, Boolean>());
     
     private ServerTransport.Dispatcher _dispatcher;
@@ -210,6 +210,12 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
+    /* ------------------------------------------------------------ */
+    protected void handshake()
+    {
+        _handshook.set(true);
+    }
+    
     /* ------------------------------------------------------------ */
     protected void connect(long timestamp)
     {
@@ -455,6 +461,12 @@ public class ServerSessionImpl implements ServerSession
     {
         return _connected.get();
     }
+    
+    /* ------------------------------------------------------------ */
+    public boolean isHandshook()
+    {
+        return _handshook.get();
+    }
 
     /* ------------------------------------------------------------ */
     protected boolean extendRecv(ServerMessage.Mutable message)
@@ -563,7 +575,8 @@ public class ServerSessionImpl implements ServerSession
     protected boolean removed(boolean timedout)
     {
         boolean connected = _connected.getAndSet(false);
-        if (connected)
+        boolean handshook = _handshook.getAndSet(false);
+        if (connected || handshook)
         {
             for (ServerChannelImpl channel : _subscribedTo)
             {
