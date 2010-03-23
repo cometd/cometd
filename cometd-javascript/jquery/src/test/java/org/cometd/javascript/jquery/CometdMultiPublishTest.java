@@ -41,15 +41,17 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
-        evaluateScript("$.cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        evaluateScript("$.cometd.addListener('/meta/connect', readyLatch, 'countDown');");
         evaluateScript("$.cometd.init({url: '" + cometdURL + "', logLevel: 'debug'});");
         assertTrue(readyLatch.await(1000));
 
+        evaluateScript("var subscribeLatch = new Latch(1);");
+        Latch subscribeLatch = get("subscribeLatch");
+        evaluateScript("$.cometd.addListener('/meta/subscribe', subscribeLatch, 'countDown');");
         evaluateScript("var latch = new Latch(1);");
         Latch latch = get("latch");
         evaluateScript("$.cometd.subscribe('/echo', latch, latch.countDown);");
-        // Wait for subscribe to return
-        Thread.sleep(1000);
+        assertTrue(subscribeLatch.await(1000));
 
         defineClass(Handler.class);
         evaluateScript("var handler = new Handler();");

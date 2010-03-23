@@ -61,13 +61,12 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
         defineClass(Listener.class);
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
 
-        StringBuilder script = new StringBuilder();
-        script.append("var listener = new Listener();");
-        script.append("$.cometd.registerExtension('testext', {" +
+        evaluateScript("" +
+                "var listener = new Listener();" +
+                "$.cometd.registerExtension('testext', {" +
                 "incoming: function(message) { listener.incoming(message); return message;}," +
                 "outgoing: function(message) { listener.outgoing(message); return message;}" +
                 "});");
-        evaluateScript(script.toString());
         Listener listener = get("listener");
 
         evaluateScript("var readyLatch = new Latch(1);");
@@ -77,49 +76,47 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
         assertTrue(readyLatch.await(1000));
 
         // Wait for the long poll to be established
+        // Cannot rely on latches for this, since we need to intercept the connect2
         Thread.sleep(500);
 
         assertEquals(3, listener.getOutgoingMessageCount()); // handshake, connect1, connect2
         assertEquals(2, listener.getIncomingMessageCount()); // handshake, connect1
 
         listener.reset();
-        script.setLength(0);
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = get("subscribeLatch");
         evaluateScript("$.cometd.addListener('/meta/subscribe', subscribeLatch, 'countDown');");
-        script.append("var subscription = $.cometd.subscribe('/echo', window.console, window.console.debug);");
-        evaluateScript(script.toString());
+        evaluateScript("var messageLatch = new Latch(1);");
+        Latch messageLatch = get("messageLatch");
+        evaluateScript("var subscription = $.cometd.subscribe('/echo', messageLatch, 'countDown');");
         assertTrue(subscribeLatch.await(1000));
         assertEquals(1, listener.getOutgoingMessageCount()); // subscribe
         assertEquals(1, listener.getIncomingMessageCount()); // subscribe
 
         listener.reset();
-        script.setLength(0);
         evaluateScript("var publishLatch = new Latch(1);");
         Latch publishLatch = get("publishLatch");
         evaluateScript("$.cometd.addListener('/meta/publish', publishLatch, 'countDown');");
-        script.append("$.cometd.publish('/echo', 'test');");
-        evaluateScript(script.toString());
+        evaluateScript("$.cometd.publish('/echo', 'test');");
         assertTrue(publishLatch.await(1000));
+        assertTrue(messageLatch.await(1000));
         assertEquals(1, listener.getOutgoingMessageCount()); // publish
         assertEquals(2, listener.getIncomingMessageCount()); // publish, message
 
         listener.reset();
-        script.setLength(0);
         evaluateScript("var unsubscribeLatch = new Latch(1);");
         Latch unsubscribeLatch = get("unsubscribeLatch");
         evaluateScript("$.cometd.addListener('/meta/unsubscribe', unsubscribeLatch, 'countDown');");
-        script.append("$.cometd.unsubscribe(subscription);");
-        evaluateScript(script.toString());
+        evaluateScript("$.cometd.unsubscribe(subscription);");
         assertTrue(unsubscribeLatch.await(1000));
         assertEquals(1, listener.getOutgoingMessageCount()); // unsubscribe
         assertEquals(1, listener.getIncomingMessageCount()); // unsubscribe
 
+        readyLatch.reset(1);
         listener.reset();
-        script.setLength(0);
-        script.append("$.cometd.disconnect(true);");
-        evaluateScript(script.toString());
-        Thread.sleep(500); // Wait for connect to return
+        evaluateScript("$.cometd.disconnect(true);");
+        assertTrue(readyLatch.await(1000));
+
         assertEquals(1, listener.getOutgoingMessageCount()); // disconnect
         assertEquals(2, listener.getIncomingMessageCount()); // connect2, disconnect
     }
