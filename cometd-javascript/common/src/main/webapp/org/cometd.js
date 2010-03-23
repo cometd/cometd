@@ -151,6 +151,7 @@ org.cometd.Cometd = function(name)
     var _reverseIncomingExtensions;
     var _maxNetworkDelay;
     var _requestHeaders;
+    var _appendMessageTypeToURL;
     var _crossDomain = false;
     var _transports = new org.cometd.TransportRegistry();
     var _transport;
@@ -330,10 +331,38 @@ org.cometd.Cometd = function(name)
         _reverseIncomingExtensions = configuration.reverseIncomingExtensions !== false;
         _maxNetworkDelay = configuration.maxNetworkDelay || 10000;
         _requestHeaders = configuration.requestHeaders || {};
+        _appendMessageTypeToURL = configuration.appendMessageTypeToURL !== false;
 
         // Check if we're cross domain
-        var urlParts = /(^https?:)?(\/\/(([^:\/\?#]+)(:(\d+))?))?([^\?#]*)/.exec(_url);
+        // [1] = protocol:, [2] = //host:port, [3] = host:port, [4] = host, [5] = :port, [6] = port, [7] = uri, [8] = rest
+        var urlParts = /(^https?:)?(\/\/(([^:\/\?#]+)(:(\d+))?))?([^\?#]*)(.*)?/.exec(_url);
         _crossDomain = urlParts[3] && urlParts[3] != window.location.host;
+
+        // Check if appending extra path is supported
+        if (_appendMessageTypeToURL)
+        {
+            if (urlParts[8] !== undefined)
+            {
+                _info('Appending message type to URI ' + urlParts[7] + urlParts[8] + ' is not supported, disabling \'appendMessageTypeToURL\' configuration');
+                _appendMessageTypeToURL = false;
+            }
+            else
+            {
+                var uriSegments = urlParts[7].split('/');
+                var lastSegmentIndex = uriSegments.length - 1;
+                if (urlParts[7].match(/\/$/))
+                {
+                    lastSegmentIndex -= 1;
+                }
+                if (uriSegments[lastSegmentIndex].indexOf('.') >= 0)
+                {
+                    // Very likely the CometD servlet's URL pattern is mapped to an extension, such as *.cometd
+                    // It will be difficult to add the extra path in this case
+                    _info('Appending message type to URI ' + urlParts[7] + ' is not supported, disabling \'appendMessageTypeToURL\' configuration');
+                    _appendMessageTypeToURL = false;
+                }
+            }
+        }
     }
 
     function _clearSubscriptions()
@@ -603,15 +632,18 @@ org.cometd.Cometd = function(name)
             return;
         }
 
-        // Prepare the URL to send the message to
         var url = _url;
-        if (!url.match(/\/$/)) // if url does not end with '/' ?
+        if (_appendMessageTypeToURL)
         {
-            url = url + '/';
-        }
-        if (extraPath)
-        {
-            url = url + extraPath;
+            // If url does not end with '/', then append it
+            if (!url.match(/\/$/))
+            {
+                url = url + '/';
+            }
+            if (extraPath)
+            {
+                url = url + extraPath;
+            }
         }
 
         var envelope = {
