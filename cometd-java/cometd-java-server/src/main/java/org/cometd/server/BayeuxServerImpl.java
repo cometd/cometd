@@ -32,6 +32,16 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 
+
+/* ------------------------------------------------------------ */
+/**
+ * 
+ * Options to configure the server are: <dl>
+ * <tt>tickIntervalMs</tt><td>The time in milliseconds between ticks to check for timeouts etc</td>
+ * <tt>sweepIntervalMs</tt><td>The time in milliseconds between sweeps of channels to remove 
+ * invalid subscribers and non-persistent channels</td>
+ * </dl>
+ */
 public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer 
 {
     private final Logger _logger;
@@ -51,7 +61,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private SecurityPolicy _policy=new DefaultSecurityPolicy();
     private Timer _timer = new Timer();
     private Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
-
     
     /* ------------------------------------------------------------ */
     protected BayeuxServerImpl()
@@ -64,6 +73,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         
         _logger=Log.getLogger("bayeux@"+hashCode());
         _logger.info("STARTED: "+_sessions);
+        
+        setOption("tickIntervalMs","97");
+        setOption("sweepIntervalMs","9997");
     }
     
     /* ------------------------------------------------------------ */
@@ -81,23 +93,27 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         super.doStart();
         _timer=new Timer("BayeuxServer@" +hashCode(),true);
-        _timer.schedule(new TimerTask()
-        {
-            @Override
-            public void run()
+        long tick_interval = getLongOptions("tickIntervalMs",-1);
+        if (tick_interval>0)
+            _timer.schedule(new TimerTask()
             {
-                _timeout.tick(System.currentTimeMillis());
-            }
-        },137L,137L);
-        
-        _timer.schedule(new TimerTask()
-        {
-            @Override
-            public void run()
+                @Override
+                public void run()
+                {
+                    _timeout.tick(System.currentTimeMillis());
+                }
+            },tick_interval,tick_interval);
+
+        long sweep_interval = getLongOptions("sweepIntervalMs",-1);
+        if (sweep_interval>0)
+            _timer.schedule(new TimerTask()
             {
-                _root.doSweep();
-            }
-        },977L,977L);
+                @Override
+                public void run()
+                {
+                    _root.doSweep();
+                }
+            },sweep_interval,sweep_interval);
     }
 
 
@@ -149,6 +165,22 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _options.get(qualifiedName);
     }
 
+    /* ------------------------------------------------------------ */
+    /** Get an option value as a long
+     * @param name
+     * @param dft The default value
+     * @return long value
+     */
+    protected long getLongOptions(String name,long dft)
+    {
+        Object val=getOption(name);
+        if (val instanceof Long)
+            return ((Long)val).longValue();
+        if (val!=null)
+            return Long.valueOf(val.toString());
+        return dft;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.bayeux.Bayeux#getOptionNames()
