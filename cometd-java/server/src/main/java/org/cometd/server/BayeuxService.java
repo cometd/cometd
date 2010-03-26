@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
-/* ------------------------------------------------------------ */
 /**
  * Abstract Bayeux Service class. This is a base class to assist with the
  * creation of server side @ link Bayeux} clients that provide services to
@@ -37,7 +36,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * methods on the derived class and to send responses to those methods.
  *
  * <p>
- * If a {@link #set_threadPool(ThreadPool)} is set, then messages are handled in
+ * If a {@link #setThreadPool(ThreadPool)} is set, then messages are handled in
  * their own threads. This is desirable if the handling of a message can take
  * considerable time and it is desired not to hold up the delivering thread
  * (typically a HTTP request handling thread).
@@ -55,7 +54,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  *
  * @see MessageListener
  * @author gregw
- *
  */
 public abstract class BayeuxService
 {
@@ -67,7 +65,6 @@ public abstract class BayeuxService
     private MessageListener _listener;
     private boolean _seeOwn=false;
 
-    /* ------------------------------------------------------------ */
     /**
      * Instantiate the service. Typically the derived constructor will call @
      * #subscribe(String, String)} to map subscriptions to methods.
@@ -82,7 +79,6 @@ public abstract class BayeuxService
         this(bayeux,name,0,false);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Instantiate the service. Typically the derived constructor will call @
      * #subscribe(String, String)} to map subscriptions to methods.
@@ -99,7 +95,6 @@ public abstract class BayeuxService
         this(bayeux,name,maxThreads,false);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Instantiate the service. Typically the derived constructor will call @
      * #subscribe(String, String)} to map subscriptions to methods.
@@ -125,30 +120,26 @@ public abstract class BayeuxService
 
     }
 
-    /* ------------------------------------------------------------ */
     public Bayeux getBayeux()
     {
         return _bayeux;
     }
 
-    /* ------------------------------------------------------------ */
     public Client getClient()
     {
         return _client;
     }
 
-    /* ------------------------------------------------------------ */
     public ThreadPool getThreadPool()
     {
         return _threadPool;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Set the threadpool. If the {@link ThreadPool} is a {@link LifeCycle},
+     * Set the ThreadPool. If the {@link ThreadPool} is a {@link LifeCycle},
      * then it is started by this method.
      *
-     * @param pool
+     * @param pool The thread pool
      */
     public void setThreadPool(ThreadPool pool)
     {
@@ -165,19 +156,16 @@ public abstract class BayeuxService
         _threadPool=pool;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isSeeOwnPublishes()
     {
         return _seeOwn;
     }
 
-    /* ------------------------------------------------------------ */
     public void setSeeOwnPublishes(boolean own)
     {
         _seeOwn=own;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Subscribe to a channel. Subscribe to channel and map a method to handle
      * received messages. The method must have a unique name and one of the
@@ -247,9 +235,8 @@ public abstract class BayeuxService
 
         if (((ChannelImpl)channel).getChannelId().isWild())
         {
-            final Method m=method;
             Client wild_client=_bayeux.newClient(_name + "-wild");
-            wild_client.addListener(_listener instanceof MessageListener.Asynchronous?new AsyncWildListen(wild_client,m):new SyncWildListen(wild_client,m));
+            wild_client.addListener(_listener instanceof MessageListener.Asynchronous?new AsyncWildListen(wild_client, method):new SyncWildListen(wild_client, method));
             channel.subscribe(wild_client);
         }
         else
@@ -259,7 +246,6 @@ public abstract class BayeuxService
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Send data to a individual client. The data passed is sent to the client
      * as the "data" member of a message with the given channel and id. The
@@ -286,15 +272,14 @@ public abstract class BayeuxService
         toClient.deliver(getClient(),onChannel,data,id);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Handle Exception. This method is called when a mapped subscription method
      * throws and exception while handling a message.
      *
-     * @param fromClient
-     * @param toClient
-     * @param msg
-     * @param th
+     * @param fromClient The remote client
+     * @param toClient The client associated with this BayeuxService
+     * @param msg The message
+     * @param th The exception thrown by the mapped subscription method
      */
     protected void exception(Client fromClient, Client toClient, Map<String,Object> msg, Throwable th)
     {
@@ -302,32 +287,37 @@ public abstract class BayeuxService
         th.printStackTrace();
     }
 
-    /* ------------------------------------------------------------ */
     private void invoke(final Method method, final Client fromClient, final Client toClient, final Message msg)
     {
         if (_threadPool == null)
+        {
             doInvoke(method,fromClient,toClient,msg);
+        }
         else
         {
+            ((MessageImpl)msg).incRef();
             _threadPool.dispatch(new Runnable()
             {
                 public void run()
                 {
-                    try
-                    {
-                        ((MessageImpl)msg).incRef();
-                        doInvoke(method,fromClient,toClient,msg);
-                    }
-                    finally
-                    {
-                        ((MessageImpl)msg).decRef();
-                    }
+                    asyncDoInvoke(method, fromClient, toClient, msg);
                 }
             });
         }
     }
 
-    /* ------------------------------------------------------------ */
+    protected void asyncDoInvoke(Method method, Client fromClient, Client toClient, Message msg)
+    {
+        try
+        {
+            doInvoke(method,fromClient,toClient,msg);
+        }
+        finally
+        {
+            ((MessageImpl)msg).decRef();
+        }
+    }
+
     private void doInvoke(Method method, Client fromClient, Client toClient, Message msg)
     {
         String channel=(String)msg.get(Bayeux.CHANNEL_FIELD);
@@ -375,8 +365,6 @@ public abstract class BayeuxService
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     private class AsyncListen implements MessageListener, MessageListener.Asynchronous
     {
         public void deliver(Client fromClient, Client toClient, Message msg)
@@ -389,8 +377,6 @@ public abstract class BayeuxService
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     private class SyncListen implements MessageListener, MessageListener.Synchronous
     {
         public void deliver(Client fromClient, Client toClient, Message msg)
@@ -403,8 +389,6 @@ public abstract class BayeuxService
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     private class SyncWildListen implements MessageListener, MessageListener.Synchronous
     {
         Client _client;
@@ -422,10 +406,8 @@ public abstract class BayeuxService
                 return;
             invoke(_method,fromClient,toClient,msg);
         }
-    };
+    }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     private class AsyncWildListen implements MessageListener, MessageListener.Asynchronous
     {
         Client _client;
@@ -443,6 +425,5 @@ public abstract class BayeuxService
                 return;
             invoke(_method,fromClient,toClient,msg);
         }
-    };
-
+    }
 }
