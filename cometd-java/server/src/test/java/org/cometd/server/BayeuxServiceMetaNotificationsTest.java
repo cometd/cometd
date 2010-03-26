@@ -73,10 +73,11 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
         httpClient.send(handshake);
         assertTrue(handshakeLatch.await(1000, TimeUnit.MILLISECONDS));
         assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake.getResponseContent());
 
-        HttpExchange connect = newBayeuxExchange("[{" +
+        ContentExchange connect = newBayeuxExchange("[{" +
                                                  "\"channel\": \"/meta/connect\"," +
                                                  "\"clientId\": \"" + clientId + "\"," +
                                                  "\"connectionType\": \"long-polling\"" +
@@ -84,9 +85,10 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
         httpClient.send(connect);
         assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
         assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
+        assertEquals(200, connect.getResponseStatus());
 
         String channel = "/foo";
-        HttpExchange subscribe = newBayeuxExchange("[{" +
+        ContentExchange subscribe = newBayeuxExchange("[{" +
                                                    "\"channel\": \"/meta/subscribe\"," +
                                                    "\"clientId\": \"" + clientId + "\"," +
                                                    "\"subscription\": \"" + channel + "\"" +
@@ -94,8 +96,9 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
         httpClient.send(subscribe);
         assertTrue(subscribeLatch.await(1000, TimeUnit.MILLISECONDS));
         assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
+        assertEquals(200, subscribe.getResponseStatus());
 
-        HttpExchange unsubscribe = newBayeuxExchange("[{" +
+        ContentExchange unsubscribe = newBayeuxExchange("[{" +
                                                      "\"channel\": \"/meta/unsubscribe\"," +
                                                      "\"clientId\": \"" + clientId + "\"," +
                                                      "\"subscription\": \"" + channel + "\"" +
@@ -103,13 +106,15 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
         httpClient.send(unsubscribe);
         assertTrue(unsubscribeLatch.await(1000, TimeUnit.MILLISECONDS));
         assertEquals(HttpExchange.STATUS_COMPLETED, unsubscribe.waitForDone());
+        assertEquals(200, unsubscribe.getResponseStatus());
 
-        HttpExchange disconnect = newBayeuxExchange("[{" +
+        ContentExchange disconnect = newBayeuxExchange("[{" +
                                                     "\"channel\": \"/meta/disconnect\"," +
                                                     "\"clientId\": \"" + clientId + "\"" +
                                                     "}]");
         httpClient.send(disconnect);
         assertTrue(disconnectLatch.await(1000, TimeUnit.MILLISECONDS));
         assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
+        assertEquals(200, disconnect.getResponseStatus());
     }
 }
