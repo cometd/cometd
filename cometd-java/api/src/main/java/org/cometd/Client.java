@@ -71,7 +71,7 @@ public interface Client
      * Adds a bayeux client extension.
      * A bayeux client extension may examine a message or return a new message.
      * A bayeux client extension should not modify a message as it may be sent to
-     * multile clients, instead it should clone the passed message.
+     * multiple clients, instead it should deep copy the passed message.
      *
      * @param ext the extension to add
      * @see #removeExtension(Extension)

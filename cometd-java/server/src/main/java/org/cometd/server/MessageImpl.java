@@ -14,23 +14,22 @@ import org.eclipse.jetty.util.ajax.JSON;
 
 public class MessageImpl extends HashMap<String,Object> implements Message, JSON.Generator
 {
-    Message _associated;
-    ByteBuffer _buffer;
-    String _channel;
-    String _clientId;
-    Object _data;
-    Object _ext;
-    String _id;
-    String _json;
-    boolean _lazy=false;
-    final MessagePool _pool;
-    AtomicInteger _refs=new AtomicInteger();
+    private MessagePool _pool;
+    private Message _associated;
+    private String _json;
+    private ByteBuffer _buffer;
+    private String _channel;
+    private String _clientId;
+    private String _id;
+    private boolean _lazy;
+    private Object _data;
+    private Object _ext;
+    private AtomicInteger _refs=new AtomicInteger();
 
     /* ------------------------------------------------------------ */
     public MessageImpl()
     {
-        super(8);
-        _pool=null;
+        this(null);
     }
 
     /* ------------------------------------------------------------ */
@@ -49,7 +48,7 @@ public class MessageImpl extends HashMap<String,Object> implements Message, JSON
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.util.HashMap#clear()
      */
     @Override
@@ -91,12 +90,29 @@ public class MessageImpl extends HashMap<String,Object> implements Message, JSON
     /* ------------------------------------------------------------ */
     public Object clone()
     {
-        MessageImpl msg=new MessageImpl();
-        msg.putAll(this);
-        msg._channel=_channel;
-        msg._clientId=_clientId;
-        msg._id=_id;
-        return msg;
+        MessageImpl clone = (MessageImpl)super.clone();
+
+        // Cloned instance will not be pooled
+        clone._pool = null;
+
+        // Adjust refs for the associated message
+        if (clone._associated instanceof MessageImpl)
+            ((MessageImpl)clone._associated).incRef();
+
+        // Reset cached values
+        clone._json = null;
+        clone._buffer = null;
+
+        // Plain fields _channel, _clientId, _id, _lazy have been already shallow cloned
+
+        // Fields _data and _ext cannot be deep cloned, because even if they implement
+        // java.lang.Cloneable, we cannot call clone() because it is a protected method.
+        // Object.clone() is really broken !
+
+        // Cloned instance has a different reference counter
+        clone._refs = new AtomicInteger();
+
+        return clone;
     }
 
     /* ------------------------------------------------------------ */
@@ -115,7 +131,7 @@ public class MessageImpl extends HashMap<String,Object> implements Message, JSON
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.util.HashMap#entrySet()
      */
     @Override
@@ -216,7 +232,7 @@ public class MessageImpl extends HashMap<String,Object> implements Message, JSON
     /* ------------------------------------------------------------ */
     /**
      * Lazy messages are queued but do not wake up waiting clients.
-     * 
+     *
      * @return true if message is lazy
      */
     public boolean isLazy()
@@ -234,7 +250,7 @@ public class MessageImpl extends HashMap<String,Object> implements Message, JSON
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.util.HashMap#keySet()
      */
     @Override
@@ -246,7 +262,7 @@ public class MessageImpl extends HashMap<String,Object> implements Message, JSON
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.util.HashMap#put(java.lang.Object, java.lang.Object)
      */
     @Override
@@ -270,7 +286,7 @@ public class MessageImpl extends HashMap<String,Object> implements Message, JSON
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.util.HashMap#putAll(java.util.Map)
      */
     @Override
@@ -288,7 +304,7 @@ public class MessageImpl extends HashMap<String,Object> implements Message, JSON
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.util.HashMap#remove(java.lang.Object)
      */
     @Override
@@ -335,7 +351,7 @@ public class MessageImpl extends HashMap<String,Object> implements Message, JSON
     /* ------------------------------------------------------------ */
     /**
      * Lazy messages are queued but do not wake up waiting clients.
-     * 
+     *
      * @param lazy
      *            true if message is lazy
      */
