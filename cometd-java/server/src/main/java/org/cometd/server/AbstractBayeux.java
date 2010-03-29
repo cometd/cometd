@@ -46,7 +46,6 @@ import org.eclipse.jetty.util.ajax.JSON;
 /**
  * @author gregw
  * @author aabeling: added JSONP transport
- *
  */
 public abstract class AbstractBayeux extends MessagePool implements Bayeux
 {
@@ -92,14 +91,10 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     protected Extension[] _extensions;
     protected JSON.Literal _transports=new JSON.Literal("[\"" + Bayeux.TRANSPORT_LONG_POLL + "\",\"" + Bayeux.TRANSPORT_CALLBACK_POLL + "\"]");
-    protected JSON.Literal _replyExt=new JSON.Literal("{\"ack\":\"true\"}");
 
     protected int _maxLazyLatency=5000;
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param context The logLevel init parameter is used to set the logging to: 0=none, 1=info, 2=debug
-     */
     protected AbstractBayeux()
     {
         _publishHandler=new PublishHandler();
@@ -127,8 +122,8 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @param id
-     * @return
+     * @param id the channel id
+     * @return the ChannelImpl instance with the given id
      */
     public ChannelImpl getChannel(ChannelId id)
     {
@@ -181,17 +176,11 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.cometd.server.Bx#getClient(java.lang.String)
-     */
     public Client getClient(String client_id)
     {
         if (client_id == null)
             return null;
-        Client client=_clients.get(client_id);
-        return client;
+        return _clients.get(client_id);
     }
 
     /* ------------------------------------------------------------ */
@@ -220,11 +209,6 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.cometd.server.Bx#getSecurityPolicy()
-     */
     public SecurityPolicy getSecurityPolicy()
     {
         return _securityPolicy;
@@ -271,12 +255,11 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
      * Handle a Bayeux message. This is normally only called by the bayeux
      * servlet or a test harness.
      *
-     * @param client
-     *            The client if known
-     * @param transport
-     *            The transport to use for the message
-     * @param message
-     *            The bayeux message.
+     * @param client The client if known
+     * @param transport The transport to use for the message
+     * @param message The bayeux message.
+     * @return the channel id
+     * @throws IOException if the handle fails
      */
     public String handle(ClientImpl client, Transport transport, Message message) throws IOException
     {
@@ -455,13 +438,13 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * Publish data to a channel. Creates a message and delivers it to the root
-     * channel.
+     * Publish data to a channel. Creates a message and delivers it to the root channel.
      *
-     * @param to
-     * @param from
-     * @param data
-     * @param msgId
+     * @param to the channel id to publish to
+     * @param from the client that publishes
+     * @param data the data to publish
+     * @param msgId the message id
+     * @param lazy whether the message is published lazily
      */
     protected void doPublish(ChannelId to, Client from, Object data, String msgId, boolean lazy)
     {
@@ -470,7 +453,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
         if (msgId == null)
         {
-            long id=message.hashCode() ^ (to == null?0:to.hashCode()) ^ (from == null?0:from.hashCode());
+            long id=message.hashCode() ^ to.hashCode() ^ (from == null?0:from.hashCode());
             id=id < 0?-id:id;
             message.put(ID_FIELD,Long.toString(id,36));
         }
@@ -522,7 +505,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             if (other == null)
             {
                 for (ClientBayeuxListener l : _clientListeners)
-                    l.clientAdded((Client)client);
+                    l.clientAdded(client);
 
                 return;
             }
@@ -530,11 +513,6 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.cometd.server.Bx#removeClient(java.lang.String)
-     */
     public Client removeClient(String client_id)
     {
         ClientImpl client;
@@ -544,7 +522,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         if (client != null)
         {
             for (ClientBayeuxListener l : _clientListeners)
-                l.clientRemoved((Client)client);
+                l.clientRemoved(client);
             client.unsubscribeAll();
         }
         return client;
@@ -582,12 +560,6 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * org.cometd.server.Bx#setSecurityPolicy(org.cometd.server.SecurityPolicy)
-     */
     public void setSecurityPolicy(SecurityPolicy securityPolicy)
     {
         _securityPolicy=securityPolicy;
@@ -722,10 +694,6 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @return the current request if {@link #isRequestAvailable()} is true,
-     *         else null
-     */
     void setCurrentRequest(HttpServletRequest request)
     {
         _request.set(request);
@@ -741,7 +709,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the number of channels
      */
     public int getChannelCount()
     {
@@ -756,7 +724,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the number of clients
      */
     public int getClientCount()
     {
@@ -1015,7 +983,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
         public boolean canPublish(Client client, String channel, Message message)
         {
-            return client != null || client == null && Bayeux.META_HANDSHAKE.equals(channel);
+            return client != null || Bayeux.META_HANDSHAKE.equals(channel);
         }
 
     }
@@ -1092,14 +1060,14 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             if (advice != null)
             {
                 Long timeout=(Long)((Map)advice).get("timeout");
-                if (timeout != null && timeout.longValue() > 0)
-                    client.setTimeout(timeout.longValue());
+                if (timeout != null && timeout > 0)
+                    client.setTimeout(timeout);
                 else
                     client.setTimeout(0);
 
                 Long interval=(Long)((Map)advice).get("interval");
-                if (interval != null && interval.longValue() > 0)
-                    client.setInterval(interval.longValue());
+                if (interval != null && interval > 0)
+                    client.setInterval(interval);
                 else
                     client.setInterval(0);
             }
@@ -1529,12 +1497,6 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         }
 
         /* ------------------------------------------------------------ */
-        /*
-         * (non-Javadoc)
-         *
-         * @see
-         * org.cometd.server.ChannelImpl#addChild(org.cometd.server.ChannelImpl)
-         */
         @Override
         public ChannelImpl addChild(ChannelImpl channel)
         {
