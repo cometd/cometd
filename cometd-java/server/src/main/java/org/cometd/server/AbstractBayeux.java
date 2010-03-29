@@ -834,19 +834,18 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     void clientOffBrowser(String browserId, String clientId)
     {
         List<String> clients=_browser2client.get(browserId);
-
         if (clients != null)
+        {
             clients.remove(clientId);
+            if (clients.isEmpty())
+                _browser2client.remove(browserId);
+        }
     }
 
     /* ------------------------------------------------------------ */
     List<String> clientsOnBrowser(String browserId)
     {
-        List<String> clients=_browser2client.get(browserId);
-
-        if (clients == null)
-            return Collections.emptyList();
-        return clients;
+        return _browser2client.get(browserId);
     }
 
     /* ------------------------------------------------------------ */
@@ -1116,8 +1115,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             if (polling && _multiFrameInterval > 0 && client.getBrowserId() != null)
             {
                 List<String> clients=clientsOnBrowser(client.getBrowserId());
-                int count=clients.size();
-                if (count > 1)
+                if (clients != null && clients.size() > 1)
                 {
                     polling=clients.get(0).equals(client.getId());
                     advice=client.getAdvice();
