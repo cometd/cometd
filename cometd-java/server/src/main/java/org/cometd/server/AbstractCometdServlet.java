@@ -91,7 +91,7 @@ import org.eclipse.jetty.util.log.Log;
  * <dd>If true, the current request is made available via the
  * {@link AbstractBayeux#getCurrentRequest()} method</dd>
  *
- * <dt>loglevel</dt>
+ * <dt>logLevel</dt>
  * <dd>0=none, 1=info, 2=debug</dd>
  *
  * <dt>jsonDebug</dt>
@@ -220,14 +220,14 @@ public abstract class AbstractCometdServlet extends GenericServlet
                 if (async != null)
                     getServletContext().log("asyncDeliver no longer supported");
 
-                _bayeux.generateAdvice();
-
                 String jsonD=getInitParameter("jsonDebug");
                 _jsonDebug=jsonD!=null && Boolean.parseBoolean(jsonD);
 
                 String channelIdCacheLimit=getInitParameter("channelIdCacheLimit");
                 if (channelIdCacheLimit != null)
                     _bayeux.setChannelIdCacheLimit(Integer.parseInt(channelIdCacheLimit));
+
+                _bayeux.generateAdvice();
 
                 if (_bayeux.isLogInfo())
                 {
@@ -336,7 +336,7 @@ public abstract class AbstractCometdServlet extends GenericServlet
         }
         catch(Exception x)
         {
-            return handleJSONParseException(messageString, x);
+            return handleJSONParseException(request, messageString, x);
         }
     }
 
@@ -345,13 +345,13 @@ public abstract class AbstractCometdServlet extends GenericServlet
      * Default behavior is to log at warn level on logger "org.cometd.json" and to throw a ServletException that
      * wraps the original exception.
      *
+     * @param request the request object
      * @param messageString the JSON text, if available; can be null if the JSON is not buffered before being parsed.
-     * See
      * @param x the exception thrown during parsing
      * @return a non-null array of messages, possibly empty, if the JSON parse exception is recoverable
      * @throws ServletException if the JSON parsing is not recoverable
      */
-    protected Message[] handleJSONParseException(String messageString, Exception x) throws ServletException
+    protected Message[] handleJSONParseException(HttpServletRequest request, String messageString, Exception x) throws ServletException
     {
         Log.getLogger("org.cometd.json").warn("Exception parsing JSON: " + messageString, x);
         throw new ServletException("Exception parsing JSON: |"+messageString+"|", x);
