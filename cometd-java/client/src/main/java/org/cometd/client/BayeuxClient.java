@@ -83,7 +83,6 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     private final Address _cometdAddress;
     private final String _path;
     private Timer _timer;
-    private boolean _ownTimer;
     protected MessagePool _msgPool;
     private Exchange _pull;
     private Exchange _push;
@@ -260,7 +259,6 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                 _timer = (Timer)_httpClient.getAttribute(__TIMER);
                 if (_timer==null)
                 {
-		    _ownTimer=true;
                     _timer = new Timer(__TIMER+"@"+hashCode(),true);
                     _httpClient.setAttribute(__TIMER,_timer);
                 }
@@ -294,12 +292,6 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
     /* ------------------------------------------------------------ */
     protected void doStop() throws Exception
     {
-        if (_ownTimer)
-	{
-	    _timer.cancel();
-	    _timer=null;
-	}
-
         if (!_disconnecting)
             disconnect();
         super.doStop();
@@ -1460,12 +1452,9 @@ public class BayeuxClient extends AbstractLifeCycle implements Client
                     }
                     catch (IllegalStateException e)
                     {
+                        Log.warn("Delayed send, retry: "+e);
                         Log.debug(e);
-		        if (isRunning())
-			{
-			    Log.warn("Delayed send, retry: "+e);
-			    send(exchange,true);
-			}
+                        send(exchange,true);
                     }
                 }
             };
