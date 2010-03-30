@@ -175,7 +175,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                 }
             }
         }
-        
+
         Message metaConnectReply=null;
 
         // Do we need to wait for messages
@@ -207,7 +207,6 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
 
                 client.setContinuation(null);
                 transport.setMetaConnectReply(null);
-
             }
             else if (client != null)
             {

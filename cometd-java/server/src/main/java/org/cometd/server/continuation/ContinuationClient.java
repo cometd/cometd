@@ -14,6 +14,8 @@
 
 package org.cometd.server.continuation;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.cometd.server.ClientImpl;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.util.log.Log;
@@ -126,9 +128,12 @@ public class ContinuationClient extends ClientImpl
                     try
                     {
                         if (oldContinuation.isSuspended())
+                        {
+                            ((HttpServletResponse)oldContinuation.getServletResponse()).sendError(HttpServletResponse.SC_REQUEST_TIMEOUT);
                             oldContinuation.complete();
+                        }	
                     }
-                    catch(IllegalStateException e)
+                    catch(Exception e)
                     {
                         Log.debug(e);
                     }
