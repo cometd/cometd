@@ -145,12 +145,12 @@ public class ChannelId
     {
         if (isWild() || depth() >= id.depth())
             return false;
-
-        for (int i = _segments.length - 1; i >= 0; --i)
-		{
+       
+        for (int i = _segments.length-1; i >= 0; i--)
+        {
             if (!_segments[i].equals(id._segments[i]))
                 return false;
-		}
+        }
         return true;
     }
 

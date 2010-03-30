@@ -453,7 +453,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
         if (msgId == null)
         {
-            long id=message.hashCode() ^ to.hashCode() ^ (from == null?0:from.hashCode());
+            long id=message.hashCode() ^ (to == null?0:to.hashCode()) ^ (from == null?0:from.hashCode());
             id=id < 0?-id:id;
             message.put(ID_FIELD,Long.toString(id,36));
         }
@@ -983,7 +983,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
         public boolean canPublish(Client client, String channel, Message message)
         {
-            return client != null || Bayeux.META_HANDSHAKE.equals(channel);
+            return client != null || client == null && Bayeux.META_HANDSHAKE.equals(channel);
         }
 
     }
@@ -1060,14 +1060,14 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             if (advice != null)
             {
                 Long timeout=(Long)((Map)advice).get("timeout");
-                if (timeout != null && timeout > 0)
-                    client.setTimeout(timeout);
+                if (timeout != null && timeout.longValue() > 0)
+                    client.setTimeout(timeout.longValue());
                 else
                     client.setTimeout(0);
 
                 Long interval=(Long)((Map)advice).get("interval");
-                if (interval != null && interval > 0)
-                    client.setInterval(interval);
+                if (interval != null && interval.longValue() > 0)
+                    client.setInterval(interval.longValue());
                 else
                     client.setInterval(0);
             }
