@@ -281,7 +281,7 @@ public class BayeuxLoadGenerator
                 System.err.print("Messages - Elapsed | Rate = ");
                 System.err.print(TimeUnit.NANOSECONDS.toMillis(elapsedNanos));
                 System.err.print(" ms | ");
-                System.err.print(batchCount * batchSize * 1000 * 1000 * 1000 / elapsedNanos);
+                System.err.print(batchCount * batchSize * 1000L * 1000L * 1000L / elapsedNanos);
                 System.err.println(" sends/s ");
             }
 
