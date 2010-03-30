@@ -293,9 +293,9 @@ public abstract class AbstractCometdServlet extends GenericServlet
 
     private static Message[] __EMPTY_BATCH=new Message[0];
 
-    protected Message[] getMessages(HttpServletRequest request) throws IOException
+    protected Message[] getMessages(HttpServletRequest request) throws IOException, ServletException
     {
-        String fodder=null;
+        String messageString=null;
         try
         {
             // Get message batches either as JSON body or as message parameters
@@ -303,8 +303,8 @@ public abstract class AbstractCometdServlet extends GenericServlet
             {
                 if (_jsonDebug)
                 {
-                    fodder=IO.toString(request.getReader());
-                    return _bayeux.parse(fodder);
+                    messageString=IO.toString(request.getReader());
+                    return _bayeux.parse(messageString);
                 }
                 return _bayeux.parse(request.getReader());
             }
@@ -314,34 +314,46 @@ public abstract class AbstractCometdServlet extends GenericServlet
             if (batches == null || batches.length == 0)
                 return __EMPTY_BATCH;
 
-            if (batches.length == 0)
+            if (batches.length == 1)
             {
-                fodder=batches[0];
-                return _bayeux.parse(fodder);
+                messageString=batches[0];
+                return _bayeux.parse(messageString);
             }
 
             List<Message> messages=new ArrayList<Message>();
-            for (int i=0; i < batches.length; i++)
+            for (String batch : batches)
             {
-                if (batches[i] == null)
+                if (batch == null)
                     continue;
-
-                fodder=batches[i];
-                _bayeux.parseTo(fodder,messages);
-
+                messageString = batch;
+                _bayeux.parseTo(messageString, messages);
             }
-
             return messages.toArray(new Message[messages.size()]);
         }
-        catch(IOException e)
+        catch(IOException x)
         {
-            throw e;
+            throw x;
         }
-        catch(Exception e)
+        catch(Exception x)
         {
-            getServletContext().log(fodder,e);
-            throw new Error("Exception parsing message: |"+fodder+"|",e);
+            return handleJSONParseException(messageString, x);
         }
     }
 
+    /**
+     * Override to customize the handling of JSON parse exceptions.
+     * Default behavior is to log at warn level on logger "org.cometd.json" and to throw a ServletException that
+     * wraps the original exception.
+     *
+     * @param messageString the JSON text, if available; can be null if the JSON is not buffered before being parsed.
+     * See
+     * @param x the exception thrown during parsing
+     * @return a non-null array of messages, possibly empty, if the JSON parse exception is recoverable
+     * @throws ServletException if the JSON parsing is not recoverable
+     */
+    protected Message[] handleJSONParseException(String messageString, Exception x) throws ServletException
+    {
+        Log.getLogger("org.cometd.json").warn("Exception parsing JSON: " + messageString, x);
+        throw new ServletException("Exception parsing JSON: |"+messageString+"|", x);
+    }
 }
