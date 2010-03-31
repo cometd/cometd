@@ -76,7 +76,16 @@ var room = {
 
     _unsubscribe: function()
     {
-
+        if (room._chatSubscription)
+        {
+            dojox.cometd.unsubscribe(room._chatSubscription);
+        }
+        room._chatSubscription = null;
+        if (room._membersSubscription)
+        {
+            dojox.cometd.unsubscribe(room._membersSubscription);
+        }
+        room._membersSubscription = null;
     },
 
     _subscribe: function()
