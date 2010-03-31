@@ -164,7 +164,7 @@ public class BayeuxLoadGenerator
             {
                 for (int i = 0; i < currentClients - clients; ++i)
                 {
-                    LoadBayeuxClient client = bayeuxClients.get(i);
+                    LoadBayeuxClient client = bayeuxClients.get(currentClients - i - 1);
                     client.addListener(disconnectListener);
                     client.destroy();
                 }
