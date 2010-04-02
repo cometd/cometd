@@ -5,27 +5,17 @@
     <artifactId>cometd-project</artifactId>
     <packaging>pom</packaging>
     <name>CometD</name>
-    <version>1.1.1-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
     <url>http://www.cometd.org</url>
+    <description>
+        The CometD project is a scalable HTTP-based event routing bus that uses the AJAX push technology pattern known as "Comet"
+    </description>
+    <inceptionYear>2008</inceptionYear>
 
     <issueManagement>
         <system>jira</system>
         <url>http://bugs.cometd.org</url>
     </issueManagement>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.0.2.v20100331</jetty-version>
-        <maven-wagon-version>1.0-beta-2</maven-wagon-version>
-    </properties>
-
-    <modules>
-        <module>cometd-archetypes</module>
-        <module>cometd-java</module>
-        <module>cometd-javascript</module>
-        <module>cometd-demo</module>
-        <module>cometd-distribution</module>
-    </modules>
 
     <mailingLists>
         <mailingList>
@@ -78,53 +68,13 @@
         </license>
         <license>
             <name>The New BSD License</name>
+            <url>http://www.opensource.org/licenses/bsd-license.html</url>
         </license>
         <license>
             <name>The Academic Free License, v. 2.1</name>
+            <url>http://opensource-definition.org/licenses/afl-2.1.html</url>
         </license>
     </licenses>
-
-    <repositories>
-        <repository>
-            <id>dojoSnapshots</id>
-            <name>Dojo Maven2 Snapshot Repository</name>
-            <url>http://oss.sonatype.org/content/repositories/dojo-snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <layout>default</layout>
-        </repository>
-        <repository>
-            <id>jettySnapshots</id>
-            <name>Jetty Maven2 Snapshot Repository</name>
-            <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <layout>default</layout>
-        </repository>
-    </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>jettySnapshots</id>
-            <name>Jetty Maven2 Snapshot Repository</name>
-            <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <layout>default</layout>
-        </pluginRepository>
-    </pluginRepositories>
 
     <distributionManagement>
         <repository>
@@ -149,6 +99,20 @@
         <name>Dojo Foundation</name>
         <url>http://dojofoundation.org</url>
     </organization>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jetty-version>7.0.2.v20100331</jetty-version>
+        <maven-wagon-version>1.0-beta-2</maven-wagon-version>
+    </properties>
+
+    <modules>
+        <module>cometd-archetypes</module>
+        <module>cometd-java</module>
+        <module>cometd-javascript</module>
+        <module>cometd-demo</module>
+        <module>cometd-distribution</module>
+    </modules>
 
     <profiles>
         <profile>
