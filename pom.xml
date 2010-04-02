@@ -259,6 +259,7 @@
                     <tagBase>https://svn.cometd.org/tags</tagBase>
                     <goals>deploy</goals>
                     <preparationGoals>clean install</preparationGoals>
+                    <mavenExecutorId>forked-path</mavenExecutorId>
                 </configuration>
             </plugin>
         </plugins>
