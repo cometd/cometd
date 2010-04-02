@@ -5,7 +5,7 @@
     <artifactId>cometd-project</artifactId>
     <packaging>pom</packaging>
     <name>CometD</name>
-    <version>1.1.0</version>
+    <version>1.1.1-SNAPSHOT</version>
     <url>http://www.cometd.org</url>
 
     <issueManagement>
@@ -140,9 +140,9 @@
     </distributionManagement>
 
     <scm>
-        <connection>scm:svn:http://svn.cometd.org/1.1.0</connection>
-        <developerConnection>scm:svn:https://svn.cometd.org/tags/1.1.0</developerConnection>
-        <url>http://svn.cometd.org/1.1.0</url>
+        <connection>scm:svn:http://svn.cometd.org</connection>
+        <developerConnection>scm:svn:https://svn.cometd.org</developerConnection>
+        <url>http://svn.cometd.org</url>
     </scm>
 
     <organization>
