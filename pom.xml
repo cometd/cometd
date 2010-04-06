@@ -13,7 +13,7 @@
     </description>
 
     <properties>
-        <jetty-version>7.0.2.RC0</jetty-version>
+        <jetty-version>7.0.2.v20100331</jetty-version>
         <dojo-version>1.4.2</dojo-version>
         <maven-wagon-version>1.0-beta-2</maven-wagon-version>
     </properties>

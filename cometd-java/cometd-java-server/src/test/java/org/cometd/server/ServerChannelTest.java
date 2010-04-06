@@ -18,6 +18,15 @@ public class ServerChannelTest extends Assert
     ChanL _chanl = new ChanL();
     SSubL _subl = new SSubL();
     BayeuxServerImpl _bayeux = new BayeuxServerImpl();
+
+    private ServerSessionImpl newServerSession()
+    {
+        ServerSessionImpl session = _bayeux.newServerSession();
+        _bayeux.addServerSession(session);
+        session.handshake();
+        session.connect(System.currentTimeMillis());
+        return session;
+    }
     
     @Before
     public void setup()
@@ -62,9 +71,7 @@ public class ServerChannelTest extends Assert
         ServerChannelImpl channel = (ServerChannelImpl)_bayeux.getChannel("/foo/bar",true);
         SubListener csubl = new SubListener();
         channel.addListener(csubl);
-        ServerSessionImpl session0 = _bayeux.newServerSession();
-        _bayeux.addServerSession(session0);
-        session0.connect(System.currentTimeMillis());
+        ServerSessionImpl session0 = newServerSession();
         
         channel.subscribe(session0);
         assertEquals(1,channel.getSubscribers().size());
@@ -77,18 +84,14 @@ public class ServerChannelTest extends Assert
         assertEquals(session0,csubl._session);
         assertEquals(2,_chanl._calls);
         
-        ServerSessionImpl session1 = _bayeux.newServerSession();
-        _bayeux.addServerSession(session1);
-        session1.connect(System.currentTimeMillis());
+        ServerSessionImpl session1 = newServerSession();
         ((ServerChannelImpl)_bayeux.getChannel("/foo/*",true)).subscribe(session1);
         assertEquals("subscribed",_subl._method);
         assertEquals("/foo/*",_subl._channel.getId());
         assertEquals(session1,_subl._session);
         assertEquals(3,_chanl._calls);
         
-        ServerSessionImpl session2 = _bayeux.newServerSession();
-        _bayeux.addServerSession(session2);
-        session2.connect(System.currentTimeMillis());
+        ServerSessionImpl session2 = newServerSession();
         ((ServerChannelImpl)_bayeux.getChannel("/**",true)).subscribe(session2);
         assertEquals("subscribed",_subl._method);
         assertEquals("/**",_subl._channel.getId());
@@ -132,9 +135,7 @@ public class ServerChannelTest extends Assert
     public void testUnSubscribeAll() throws Exception
     {
         ServerChannelImpl channel = (ServerChannelImpl)_bayeux.getChannel("/foo/bar",true);
-        ServerSessionImpl session0 = _bayeux.newServerSession();
-        _bayeux.addServerSession(session0);
-        session0.connect(System.currentTimeMillis());
+        ServerSessionImpl session0 = newServerSession();
         
         channel.subscribe(session0);
         assertEquals(1,channel.getSubscribers().size());
@@ -184,18 +185,14 @@ public class ServerChannelTest extends Assert
             }
         });
         
-        ServerSessionImpl session0 = _bayeux.newServerSession();
-        _bayeux.addServerSession(session0);
-        session0.connect(System.currentTimeMillis());
+        ServerSessionImpl session0 = newServerSession();
         
         // this is a private API - not a normal subscribe!!
         foobar.subscribe(session0);
       
-        ServerSessionImpl session1 = _bayeux.newServerSession();
-        _bayeux.addServerSession(session1);
-        session1.connect(System.currentTimeMillis());
+        ServerSessionImpl session1 = newServerSession();
         foostar.subscribe(session1);
-        ServerSessionImpl session2 = _bayeux.newServerSession();
+        ServerSessionImpl session2 = newServerSession();
         _bayeux.addServerSession(session2);
         session2.connect(System.currentTimeMillis());
         starstar.subscribe(session2);
@@ -268,9 +265,7 @@ public class ServerChannelTest extends Assert
         assertEquals(foobar,_bayeux.getChannel("/foo/bar",false));
         
         ServerChannelImpl foobarbaz = (ServerChannelImpl)_bayeux.getChannel("/foo/bar/baz",true);
-        ServerSessionImpl session0 = _bayeux.newServerSession();
-        _bayeux.addServerSession(session0);
-        session0.connect(System.currentTimeMillis());
+        ServerSessionImpl session0 = newServerSession();
         
         foobarbaz.subscribe(session0);
         ((ServerChannelImpl)_bayeux.getChannel("/foo",false)).subscribe(session0);
