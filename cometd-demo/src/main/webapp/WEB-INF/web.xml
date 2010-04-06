@@ -13,6 +13,7 @@
     </context-param>
 
     <!-- Portability Filter, needed only to run on non Jetty or non Servlet-3.0 containers -->
+    <!-- 
     <filter>
         <filter-name>continuation</filter-name>
         <filter-class>org.eclipse.jetty.continuation.ContinuationFilter</filter-class>
@@ -21,11 +22,13 @@
         <filter-name>continuation</filter-name>
         <url-pattern>/cometd/*</url-pattern>
     </filter-mapping>
-
+    -->
+    
     <!-- Filter to support FF cross domain origin headers -->
     <filter>
         <filter-name>cross-origin</filter-name>
         <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+        <!--async-supported>true</async-supported-->
     </filter>
     <filter-mapping>
         <filter-name>cross-origin</filter-name>
@@ -36,6 +39,7 @@
     <servlet>
         <servlet-name>cometd</servlet-name>
         <servlet-class>org.cometd.server.CometdServlet</servlet-class>
+        <!--async-supported>true</async-supported-->
         <init-param>
             <param-name>timeout</param-name>
             <param-value>30000</param-value>

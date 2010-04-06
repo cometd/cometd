@@ -24,6 +24,15 @@ public class BayeuxServerTest extends Assert
 {
     Queue<Object> _events = new ConcurrentLinkedQueue<Object>();
     BayeuxServerImpl _bayeux = new BayeuxServerImpl();
+
+    private ServerSessionImpl newServerSession()
+    {
+        ServerSessionImpl session = _bayeux.newServerSession();
+        _bayeux.addServerSession(session);
+        session.handshake();
+        session.connect(System.currentTimeMillis());
+        return session;
+    }
     
     @Before
     public void setup()
@@ -60,15 +69,9 @@ public class BayeuxServerTest extends Assert
         assertEquals("channelRemoved",_events.poll());
         assertEquals(wibble.getId(),_events.poll());
         
-        ServerSessionImpl session0 = _bayeux.newServerSession();
-        _bayeux.addServerSession(session0);
-        session0.connect(System.currentTimeMillis());
-        ServerSessionImpl session1 = _bayeux.newServerSession();
-        _bayeux.addServerSession(session1);
-        session1.connect(System.currentTimeMillis());
-        ServerSessionImpl session2 = _bayeux.newServerSession();
-        _bayeux.addServerSession(session2);
-        session2.connect(System.currentTimeMillis());
+        ServerSessionImpl session0 = newServerSession();
+        ServerSessionImpl session1 = newServerSession();
+        ServerSessionImpl session2 = newServerSession();
 
         assertEquals("sessionAdded",_events.poll());
         assertEquals(session0,_events.poll());

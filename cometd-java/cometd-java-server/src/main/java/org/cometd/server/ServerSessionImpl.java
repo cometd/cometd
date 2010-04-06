@@ -96,7 +96,7 @@ public class ServerSessionImpl implements ServerSession
         _intervalTask=new Timeout.Task()
         {
             @Override
-            protected void expired()
+            public void expired()
             {   
                 if (_logger.isDebugEnabled())
                     _logger.debug("Expired interval "+ServerSessionImpl.this);
@@ -240,7 +240,7 @@ public class ServerSessionImpl implements ServerSession
                         _lazyTask=new Timeout.Task()
                         {
                             @Override
-                            protected void expired()
+                            public void expired()
                             {
                                 dispatch();
                             }
