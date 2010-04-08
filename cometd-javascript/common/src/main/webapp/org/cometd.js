@@ -2211,11 +2211,13 @@ org.cometd.Cometd = function(name)
                     body: org.cometd.JSON.toJSON(envelope.messages),
                     onSuccess: function(response)
                     {
+                	    if (response.length==0)
+                	    	_supportsCrossDomain=false;
                         self.transportSuccess(envelope, request, response);
                     },
                     onError: function(reason, exception)
                     {
-                        _supportsCrossDomain = false;
+                        _supportsCrossDomain=false;
                         self.transportFailure(envelope, request, reason, exception);
                     }
                 });
@@ -2247,7 +2249,7 @@ org.cometd.Cometd = function(name)
 
         this.accept = function(version, crossDomain)
         {
-            return crossDomain;
+            return true;
         };
 
         this.jsonpSend = function(packet)
