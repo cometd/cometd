@@ -2217,7 +2217,7 @@ org.cometd.Cometd = function(name)
                     body: org.cometd.JSON.toJSON(envelope.messages),
                     onSuccess: function(response)
                     {
-                        if (response.length === 0)
+                        if (!response || response.length === 0)
                         {
                             _supportsCrossDomain = false;
                         }
