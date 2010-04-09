@@ -49,10 +49,10 @@ public class CometdListenerExceptionCallbackTest extends AbstractCometdJQueryTes
                 "   if (exception === 'test' && channelSubscription === subscriptionHandle && isListener === false)" +
                 "   {" +
                 "       this.unsubscribe(subscriptionHandle);" +
-                "       latch.countDown();" +
                 "   }" +
                 "};" +
                 "" +
+                "$.cometd.addListener('/meta/unsubscribe', latch, 'countDown');" +
                 "$.cometd.handshake();" +
                 "channelSubscription = $.cometd.subscribe('/test', function(message) { throw 'test'; });" +
                 "$.cometd.publish('/test', {});");
