@@ -15,7 +15,7 @@ public class CometdPublishHeldUntilHandshookTest extends AbstractCometdJQueryTes
         defineClass(Latch.class);
         evaluateScript("" +
                 "$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});" +
-                "var latch = new Latch(1);" +
+                "var latch = new Latch(2);" +
                 "var savedChannels;" +
                 "var channels = [];" +
                 "$.cometd.registerExtension('test', {" +
@@ -29,7 +29,7 @@ public class CometdPublishHeldUntilHandshookTest extends AbstractCometdJQueryTes
                 "    $.cometd.publish('/bar', {});" +
                 "    $.cometd.batch(function()" +
                 "    {" +
-                "        $.cometd.subscribe('/foo', function(msg) {});" +
+                "        $.cometd.subscribe('/foo', function(msg) { latch.countDown(); });" +
                 "        $.cometd.publish('/foo', {});" +
                 "    });" +
                 "});" +
