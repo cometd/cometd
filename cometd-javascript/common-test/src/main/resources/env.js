@@ -149,10 +149,10 @@ var window = this;
         window.console.debug('Event: ', event);
         if (event.type)
         {
+            var self = this;
+
             if (this.uuid && events[this.uuid][event.type])
             {
-                var self = this;
-
                 events[this.uuid][event.type].forEach(function(fn)
                 {
                     fn.call(self, event);
@@ -164,6 +164,26 @@ var window = this;
         }
     };
 
+    /**
+     * Performs a GET request to retrieve the content of the given URL,
+     * simulating the behavior of a browser calling the URL of the src
+     * attribute of the script tag.
+     * 
+     * @param url the URL to make the request to
+     */
+    function makeScriptRequest(url)
+    {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", url, true);
+        xhr.onreadystatechange = function()
+        {
+            if (this.readyState === XMLHttpRequest.DONE && this.status === 200)
+            {
+                eval(this.responseText);
+            }
+        };
+        xhr.send();
+    }
 
     var _domNodes = new java.util.HashMap();
     /**
@@ -174,8 +194,10 @@ var window = this;
     function makeNode(javaNode)
     {
         if (!javaNode) return null;
-        if (_domNodes.containsKey(javaNode)) return _domNodes.get(javaNode);
-        var jsNode = javaNode.getNodeType() == Packages.org.w3c.dom.Node.ELEMENT_NODE ? new DOMElement(javaNode) : new DOMNode(javaNode);
+        if (_domNodes.containsKey(javaNode))
+            return _domNodes.get(javaNode);
+        var isElement = javaNode.getNodeType() == Packages.org.w3c.dom.Node.ELEMENT_NODE;
+        var jsNode = isElement ? new DOMElement(javaNode) : new DOMNode(javaNode);
         _domNodes.put(javaNode, jsNode);
         return jsNode;
     }
@@ -318,7 +340,10 @@ var window = this;
         this._file = stream;
         this._dom = Packages.javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(stream);
 
-        if (!_domNodes.containsKey(this._dom)) _domNodes.put(this._dom, this);
+        if (!_domNodes.containsKey(this._dom))
+            _domNodes.put(this._dom, this);
+
+        this._dom.addEventListener('DOMNodeInserted', Packages.org.cometd.javascript.ScriptInjectionEventListener(threadModel, window, window, makeScriptRequest), false);
     };
     DOMDocument.prototype = extend(new DOMNode(), {
         // START OFFICIAL DOM
@@ -338,8 +363,7 @@ var window = this;
         },
         createTextNode: function(text)
         {
-            return makeNode(this._dom.createTextNode(
-                    text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")));
+            return makeNode(this._dom.createTextNode(text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")));
         },
         createComment: function(text)
         {
