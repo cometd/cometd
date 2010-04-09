@@ -2209,6 +2209,7 @@ org.cometd.Cometd = function(name)
         {
             try
             {
+                var sameStack = true;
                 request.xhr = this.xhrSend({
                     transport: this,
                     url: envelope.url,
@@ -2226,9 +2227,21 @@ org.cometd.Cometd = function(name)
                     onError: function(reason, exception)
                     {
                         _supportsCrossDomain = false;
-                        self.transportFailure(envelope, request, reason, exception);
+                        if (sameStack)
+                        {
+                            // Keep the semantic of calling response callbacks asynchronously after the request
+                            _setTimeout(function()
+                            {
+                                self.transportFailure(envelope, request, reason, exception);
+                            }, 0);
+                        }
+                        else
+                        {
+                            self.transportFailure(envelope, request, reason, exception);
+                        }
                     }
                 });
+                sameStack = false;
             }
             catch (x)
             {
@@ -2295,6 +2308,7 @@ org.cometd.Cometd = function(name)
             {
                 try
                 {
+                    var sameStack = true;
                     this.jsonpSend({
                         transport: this,
                         url: envelope.url,
@@ -2307,9 +2321,21 @@ org.cometd.Cometd = function(name)
                         },
                         onError: function(reason, exception)
                         {
-                            self.transportFailure(envelope, request, reason, exception);
+                            if (sameStack)
+                            {
+                                // Keep the semantic of calling response callbacks asynchronously after the request
+                                _setTimeout(function()
+                                {
+                                    self.transportFailure(envelope, request, reason, exception);
+                                }, 0);
+                            }
+                            else
+                            {
+                                self.transportFailure(envelope, request, reason, exception);
+                            }
                         }
                     });
+                    sameStack = false;
                 }
                 catch (xx)
                 {
