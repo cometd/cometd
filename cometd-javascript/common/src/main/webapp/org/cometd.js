@@ -38,6 +38,9 @@ org.cometd.TransportRegistry = function()
 
     this.findTransportTypes = function(version, crossDomain)
     {
+        if (_types.length == 1)
+            return [_types[0]];
+
         var result = [];
         for (var i = 0; i < _types.length; ++i)
         {
@@ -52,6 +55,9 @@ org.cometd.TransportRegistry = function()
 
     this.negotiateTransport = function(types, version, crossDomain)
     {
+        if (_types.length == 1)
+            return _transports[_types[0]];
+
         for (var i = 0; i < _types.length; ++i)
         {
             var type = _types[i];
@@ -2211,13 +2217,15 @@ org.cometd.Cometd = function(name)
                     body: org.cometd.JSON.toJSON(envelope.messages),
                     onSuccess: function(response)
                     {
-                	    if (response.length==0)
-                	    	_supportsCrossDomain=false;
+                        if (response.length === 0)
+                        {
+                            _supportsCrossDomain = false;
+                        }
                         self.transportSuccess(envelope, request, response);
                     },
                     onError: function(reason, exception)
                     {
-                        _supportsCrossDomain=false;
+                        _supportsCrossDomain = false;
                         self.transportFailure(envelope, request, reason, exception);
                     }
                 });
