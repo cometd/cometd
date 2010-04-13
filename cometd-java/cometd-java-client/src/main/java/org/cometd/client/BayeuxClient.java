@@ -11,7 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,6 +37,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 
 
@@ -100,7 +100,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     private ClientTransport _transport;
     
     private final TransportRegistry _transportRegistry = new TransportRegistry();
-    private HttpClient _privateHttpClient;
+    private final HttpClient _privateHttpClient;
     
 
     
@@ -161,13 +161,17 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         {
             for (ClientTransport transport : transports)
                 this._transportRegistry.add(transport);
+            _privateHttpClient=null;
         }
         else
         {
             if (httpClient==null)
             {
+                Log.debug("created private HttpClient for "+this);
                 httpClient=_privateHttpClient=new HttpClient();
             }
+            else
+                _privateHttpClient=null;
             
             if (!httpClient.isRunning())
             {
@@ -265,6 +269,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         return _transportRegistry.getAllowedTransports();
     }
 
+    /* ------------------------------------------------------------ */
     public ExpirableCookie getCookie(String name)
     {
         ExpirableCookie cookie = _cookies.get(name);
@@ -325,29 +330,23 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     {
         return _transportRegistry.getTransport(transport);
     }
-
-    /* ------------------------------------------------------------ */
-    /** @deprecated use {@link #handshake()}
-     * 
-     */
-    public void start()
-    {
-       handshake(); 
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** @deprecated use {@link #disconnect()}
-     * 
-     */
-    public void stop()
-    {
-       handshake(); 
-    }
     
     /* ------------------------------------------------------------ */
     @Override
     public void handshake()
     {
+        if (_privateHttpClient!=null && !_privateHttpClient.isRunning())
+        {
+            try
+            {
+                _privateHttpClient.start();
+            }
+            catch(Exception e)
+            {
+                Log.warn(e);
+            }
+        }
+        
         List<String> allowed = getAllowedTransports();
         
         Message.Mutable message = newMessage();
