@@ -163,6 +163,7 @@ org.cometd.ReloadExtension = function(configuration)
         else if (channel == '/meta/disconnect')
         {
             _state = {};
+            _state.subscriptions = {};
         }
         return message;
     };
