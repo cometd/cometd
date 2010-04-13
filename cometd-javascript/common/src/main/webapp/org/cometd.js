@@ -38,9 +38,6 @@ org.cometd.TransportRegistry = function()
 
     this.findTransportTypes = function(version, crossDomain)
     {
-        if (_types.length == 1)
-            return [_types[0]];
-
         var result = [];
         for (var i = 0; i < _types.length; ++i)
         {
@@ -55,9 +52,6 @@ org.cometd.TransportRegistry = function()
 
     this.negotiateTransport = function(types, version, crossDomain)
     {
-        if (_types.length == 1)
-            return _transports[_types[0]];
-
         for (var i = 0; i < _types.length; ++i)
         {
             var type = _types[i];
@@ -230,6 +224,11 @@ org.cometd.Cometd = function(name)
 
         return result;
     }
+
+    /**
+     * This method is exposed as facility for extensions that may need to clone messages.
+     */
+    this._mixin = _mixin;
 
     /**
      * Returns whether the given element is contained into the given array.
@@ -605,7 +604,7 @@ org.cometd.Cometd = function(name)
     var _handleFailure;
 
     /**
-     * Delivers the messages to the Cometd server
+     * Delivers the messages to the CometD server
      * @param messages the array of messages to send
      * @param longpoll true if this send is a long poll
      */
@@ -805,7 +804,7 @@ org.cometd.Cometd = function(name)
         // It may happen that the application calls init() then subscribe()
         // and the subscribe message is sent before the connect message, if
         // the subscribe message is not held until the connect message is sent.
-        // So here we start a batch to hold temporarly any message until
+        // So here we start a batch to hold temporarily any message until
         // the connection is fully established.
         _internalBatch = true;
 
@@ -1502,6 +1501,10 @@ org.cometd.Cometd = function(name)
 
     /**
      * Disconnects from the Bayeux server.
+     * It is possible to suggest to attempt a synchronous disconnect, but this feature
+     * may only be available in certain transports (for example, long-polling may support
+     * it, callback-polling certainly does not).
+     * @param sync whether attempt to perform a synchronous disconnect
      * @param disconnectProps an object to be merged with the disconnect message
      */
     this.disconnect = function(sync, disconnectProps)
@@ -1913,7 +1916,7 @@ org.cometd.Cometd = function(name)
 
     /**
      * Returns the name assigned to this Cometd object, or the string 'default'
-     * if no name has been explicitely passed as parameter to the constructor.
+     * if no name has been explicitly passed as parameter to the constructor.
      */
     this.getName = function()
     {
@@ -2187,6 +2190,11 @@ org.cometd.Cometd = function(name)
             _requests = [];
             _envelopes = [];
         };
+
+        this.toString = function()
+        {
+            return this.getType();
+        }
     };
 
     org.cometd.LongPollingTransport = function()

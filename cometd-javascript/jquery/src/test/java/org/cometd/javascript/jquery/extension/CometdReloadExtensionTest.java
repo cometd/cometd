@@ -10,7 +10,7 @@ import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
  */
 public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
 {
-    public void testReload() throws Exception
+    public void testReloadWithLongPollingTransport() throws Exception
     {
         URL cookiePlugin = new URL(contextURL + "/jquery/jquery.cookie.js");
         evaluateURL(cookiePlugin);
@@ -23,7 +23,11 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
-        evaluateScript("$.cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
+        evaluateScript("" +
+                "$.cometd.addListener('/meta/connect', function(message) " +
+                "{ " +
+                "   if (message.successful) readyLatch.countDown(); " +
+                "});");
         evaluateScript("$.cometd.handshake();");
         assertTrue(readyLatch.await(1000));
 
@@ -44,14 +48,93 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = get("readyLatch");
-        evaluateScript("$.cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
+        // On reload, the first long poll does not return immediately
+        evaluateScript("" +
+                "$.cometd.addListener('/meta/connect', function(message) " +
+                "{" +
+                "   if (message.successful) readyLatch.countDown(); " +
+                "});");
         evaluateScript("$.cometd.handshake();");
-        assertTrue(readyLatch.await(1000));
+        assertTrue(readyLatch.await(2 * longPollingPeriod));
 
         String newClientId = evaluateScript("$.cometd.getClientId();");
         assertEquals(clientId, newClientId);
 
         evaluateScript("$.cometd.disconnect(true);");
+
+        // Be sure the cookie has been removed on disconnect
+        String cookie = evaluateScript("org.cometd.COOKIE.get('org.cometd.reload');");
+        assertNull(cookie);
+    }
+
+    public void testReloadWithCallbackPollingTransport() throws Exception
+    {
+        URL cookiePlugin = new URL(contextURL + "/jquery/jquery.cookie.js");
+        evaluateURL(cookiePlugin);
+        URL reloadExtension = new URL(contextURL + "/org/cometd/ReloadExtension.js");
+        evaluateURL(reloadExtension);
+        URL jqueryReloadExtension = new URL(contextURL + "/jquery/jquery.cometd-reload.js");
+        evaluateURL(jqueryReloadExtension);
+
+        defineClass(Latch.class);
+        // Make the CometD URL different to simulate the cross domain request
+        String url = cometdURL.replace("localhost", "127.0.0.1");
+        evaluateScript("$.cometd.configure({url: '" + url + "', logLevel: 'debug'});");
+        // Leave only the callback-polling transport
+        evaluateScript("" +
+                "var types = $.cometd.getTransportTypes();" +
+                "for (var i = 0; i < types.length; ++i)" +
+                "{" +
+                "   if (types[i] !== 'callback-polling')" +
+                "       $.cometd.unregisterTransport(types[i]);" +
+                "}");
+
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("" +
+                "$.cometd.addListener('/meta/connect', function(message) " +
+                "{ " +
+                "   if (message.successful) readyLatch.countDown(); " +
+                "});");
+        evaluateScript("$.cometd.handshake();");
+        assertTrue(readyLatch.await(1000));
+
+        // Get the clientId
+        String clientId = evaluateScript("$.cometd.getClientId();");
+
+        // Calling reload() results in the cookie being written
+        evaluateScript("$.cometd.reload();");
+
+        // Reload the page
+        destroyPage();
+        initPage();
+        evaluateURL(cookiePlugin);
+        evaluateURL(reloadExtension);
+        evaluateURL(jqueryReloadExtension);
+
+        defineClass(Latch.class);
+        evaluateScript("$.cometd.configure({url: '" + url + "', logLevel: 'debug'});");
+        // Leave all the transports so that we can test if the previous transport is the one used on reload
+
+        evaluateScript("var readyLatch = new Latch(1);");
+        readyLatch = get("readyLatch");
+        // On reload, the first long poll does not return immediately
+        evaluateScript("" +
+                "$.cometd.addListener('/meta/connect', function(message) " +
+                "{" +
+                "   if (message.successful) readyLatch.countDown(); " +
+                "});");
+        evaluateScript("$.cometd.handshake();");
+        assertTrue(readyLatch.await(2 * longPollingPeriod));
+
+        String newClientId = evaluateScript("$.cometd.getClientId();");
+        assertEquals(clientId, newClientId);
+
+        String transportType = (String)evaluateScript("$.cometd.getTransport().getType();");
+        assertEquals("callback-polling", transportType);
+
+        evaluateScript("$.cometd.disconnect();");
+        Thread.sleep(500); // Callback-polling transport does not support sync disconnect
 
         // Be sure the cookie has been removed on disconnect
         String cookie = evaluateScript("org.cometd.COOKIE.get('org.cometd.reload');");
@@ -78,7 +161,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
-        evaluateScript("$.cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
+        evaluateScript("$.cometd.addListener('/meta/connect', readyLatch, 'countDown');");
         evaluateScript("$.cometd.handshake();");
         assertTrue(readyLatch.await(1000));
 
@@ -103,9 +186,13 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = get("readyLatch");
-        evaluateScript("$.cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
+        evaluateScript("" +
+                "$.cometd.addListener('/meta/connect', function(message) " +
+                "{ " +
+                "   if (message.successful) readyLatch.countDown(); " +
+                "});");
         evaluateScript("$.cometd.handshake();");
-        assertTrue(readyLatch.await(1000));
+        assertTrue(readyLatch.await(2 * longPollingPeriod));
 
         String newClientId = evaluateScript("$.cometd.getClientId();");
         assertEquals(clientId, newClientId);
