@@ -24,6 +24,8 @@ import org.eclipse.jetty.util.log.Log;
 
 public abstract class LongPollingTransport extends HttpTransport
 {
+    private final static AtomicInteger __zero = new AtomicInteger(0);
+    
     protected final static String BROWSER_ID_OPTION="browserId";
     protected final static String MAX_SESSIONS_PER_BROWSER_OPTION="maxSessionsPerBrowser";
     protected final static String MULTI_SESSION_INTERVAL_OPTION="multiSessionInterval";
@@ -103,15 +105,16 @@ public abstract class LongPollingTransport extends HttpTransport
             return false;
         }
         
-        
         return true;   
     }
     
     protected void decBrowserId(String browserId)
     {
         AtomicInteger count = _browserMap.get(browserId);
-        if (count!=null)
-            count.decrementAndGet();
+        if (count!=null && count.decrementAndGet()==0)
+        {
+            _browserMap.remove(browserId,__zero);
+        }
     }
     
     @Override
