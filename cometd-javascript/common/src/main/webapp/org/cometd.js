@@ -2172,6 +2172,7 @@ org.cometd.Cometd = function(name)
                             var received = self.convertToMessages(responses);
                             if (received.length === 0)
                             {
+                                _supportsCrossDomain = false;
                                 self.transportFailure(envelope, request, "no response", null);
                             }
                             else
@@ -2184,6 +2185,7 @@ org.cometd.Cometd = function(name)
                         {
                             if (success === false)
                             {
+                                _supportsCrossDomain = false;
                                 self.transportFailure(envelope, request, "bad response", x);
                             }
                             else
