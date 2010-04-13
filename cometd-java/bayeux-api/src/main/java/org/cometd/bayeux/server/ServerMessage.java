@@ -35,7 +35,7 @@ public interface ServerMessage extends Message
     /** Decrement reference for the messsage.
      * If a reference to a message is to be kept longer than the calling scope 
      * into which a message was passed, then the holder of the reference should
-     * call decRef() once thar reference is cleared, so the message can be cleared 
+     * call decRef() once the reference is cleared, so the message can be cleared 
      * and pooled.
      */
     void decRef();
