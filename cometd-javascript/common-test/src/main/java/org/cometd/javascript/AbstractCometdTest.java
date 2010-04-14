@@ -49,6 +49,7 @@ public abstract class AbstractCometdTest extends TestCase
     protected String cometServletPath = "/cometd";
     protected String cometdURL;
     protected int longPollingPeriod = 5000;
+    protected int expirationPeriod = 2500;
     private HttpCookieStore cookies;
 
     @Override
@@ -79,6 +80,7 @@ public abstract class AbstractCometdTest extends TestCase
         cometServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
         cometServletHolder.setInitParameter("logLevel", "2");
         cometServletHolder.setInitParameter("requestAvailable", "true");
+        cometServletHolder.setInitParameter("maxInterval", String.valueOf(expirationPeriod));
         context.addServlet(cometServletHolder, cometServletPath + "/*");
 
         // Setup bayeux listener

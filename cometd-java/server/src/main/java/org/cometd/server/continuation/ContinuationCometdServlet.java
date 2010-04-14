@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -185,7 +184,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
             if (metaConnectReply != null)
             {
                 long timeout=client.getTimeout();
-                if (timeout == 0)
+                if (timeout < 0)
                     timeout=_bayeux.getTimeout();
 
                 Continuation continuation=ContinuationSupport.getContinuation(request);
@@ -193,7 +192,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                 // Get messages or wait
                 synchronized(client)
                 {
-                    if (!client.hasNonLazyMessages() && initial && received <= 1)
+                    if (timeout > 0 && !client.hasNonLazyMessages() && initial && received <= 1)
                     {
                         // save state and suspend
                         request.setAttribute(CLIENT_ATTR,client);
@@ -324,10 +323,10 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                             ((HttpServletResponse)continuation.getServletResponse()).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                         }
                         catch (IOException e)
-                        { 
+                        {
                             Log.ignore(e);
                         }
-                        
+
                         try
                         {
                             continuation.complete();
@@ -336,7 +335,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                         {
                             Log.ignore(e);
                         }
-                    }     
+                    }
                 }
             }
             bayeux.destroy();

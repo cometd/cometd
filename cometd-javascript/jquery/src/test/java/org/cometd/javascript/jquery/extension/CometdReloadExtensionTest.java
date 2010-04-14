@@ -1,5 +1,6 @@
 package org.cometd.javascript.jquery.extension;
 
+import java.io.IOException;
 import java.net.URL;
 
 import org.cometd.javascript.Latch;
@@ -10,15 +11,81 @@ import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
  */
 public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
 {
+    private URL cookiePlugin;
+    private URL reloadExtension;
+    private URL jqueryReloadExtension;
+
+    @Override
+    protected void setUp() throws Exception
+    {
+        super.setUp();
+        cookiePlugin = new URL(contextURL + "/jquery/jquery.cookie.js");
+        reloadExtension = new URL(contextURL + "/org/cometd/ReloadExtension.js");
+        jqueryReloadExtension = new URL(contextURL + "/jquery/jquery.cometd-reload.js");
+        initReload();
+    }
+
+    private void initReload() throws IOException
+    {
+        evaluateURL(cookiePlugin);
+        evaluateURL(reloadExtension);
+        evaluateURL(jqueryReloadExtension);
+    }
+
+    public void testReloadDoesNotExpire() throws Exception
+    {
+        defineClass(Latch.class);
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("" +
+                "$.cometd.addListener('/meta/connect', function(message) " +
+                "{ " +
+                "   if (message.successful) readyLatch.countDown(); " +
+                "});");
+        evaluateScript("$.cometd.handshake();");
+        assertTrue(readyLatch.await(1000));
+
+        // Get the clientId
+        String clientId = evaluateScript("$.cometd.getClientId();");
+
+        // Wait that the long poll is established before reloading
+        Thread.sleep(longPollingPeriod / 2);
+
+        // Calling reload() results in the cookie being written
+        evaluateScript("$.cometd.reload();");
+
+        // Reload the page
+        destroyPage();
+        initPage();
+        initReload();
+
+        defineClass(Latch.class);
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("var readyLatch = new Latch(1);");
+        readyLatch = get("readyLatch");
+        evaluateScript("var expireLatch = new Latch(1);");
+        Latch expireLatch = get("expireLatch");
+        evaluateScript("" +
+                "$.cometd.addListener('/meta/connect', function(message) " +
+                "{" +
+                "   if (message.successful) " +
+                "       readyLatch.countDown();" +
+                "   else" +
+                "       expireLatch.countDown();" +
+                "});");
+        evaluateScript("$.cometd.handshake();");
+        assertTrue(readyLatch.await(1000));
+
+        String newClientId = evaluateScript("$.cometd.getClientId();");
+        assertEquals(clientId, newClientId);
+
+        // Make sure that reloading will not expire the client on the server
+        assertFalse(expireLatch.await(expirationPeriod + longPollingPeriod));
+    }
+
     public void testReloadWithLongPollingTransport() throws Exception
     {
-        URL cookiePlugin = new URL(contextURL + "/jquery/jquery.cookie.js");
-        evaluateURL(cookiePlugin);
-        URL reloadExtension = new URL(contextURL + "/org/cometd/ReloadExtension.js");
-        evaluateURL(reloadExtension);
-        URL jqueryReloadExtension = new URL(contextURL + "/jquery/jquery.cometd-reload.js");
-        evaluateURL(jqueryReloadExtension);
-
         defineClass(Latch.class);
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("var readyLatch = new Latch(1);");
@@ -40,22 +107,19 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         // Reload the page
         destroyPage();
         initPage();
-        evaluateURL(cookiePlugin);
-        evaluateURL(reloadExtension);
-        evaluateURL(jqueryReloadExtension);
+        initReload();
 
         defineClass(Latch.class);
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = get("readyLatch");
-        // On reload, the first long poll does not return immediately
         evaluateScript("" +
                 "$.cometd.addListener('/meta/connect', function(message) " +
                 "{" +
                 "   if (message.successful) readyLatch.countDown(); " +
                 "});");
         evaluateScript("$.cometd.handshake();");
-        assertTrue(readyLatch.await(2 * longPollingPeriod));
+        assertTrue(readyLatch.await(1000));
 
         String newClientId = evaluateScript("$.cometd.getClientId();");
         assertEquals(clientId, newClientId);
@@ -69,13 +133,6 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
 
     public void testReloadWithCallbackPollingTransport() throws Exception
     {
-        URL cookiePlugin = new URL(contextURL + "/jquery/jquery.cookie.js");
-        evaluateURL(cookiePlugin);
-        URL reloadExtension = new URL(contextURL + "/org/cometd/ReloadExtension.js");
-        evaluateURL(reloadExtension);
-        URL jqueryReloadExtension = new URL(contextURL + "/jquery/jquery.cometd-reload.js");
-        evaluateURL(jqueryReloadExtension);
-
         defineClass(Latch.class);
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
@@ -108,9 +165,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         // Reload the page
         destroyPage();
         initPage();
-        evaluateURL(cookiePlugin);
-        evaluateURL(reloadExtension);
-        evaluateURL(jqueryReloadExtension);
+        initReload();
 
         defineClass(Latch.class);
         evaluateScript("$.cometd.configure({url: '" + url + "', logLevel: 'debug'});");
@@ -118,14 +173,13 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
 
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = get("readyLatch");
-        // On reload, the first long poll does not return immediately
         evaluateScript("" +
                 "$.cometd.addListener('/meta/connect', function(message) " +
                 "{" +
                 "   if (message.successful) readyLatch.countDown(); " +
                 "});");
         evaluateScript("$.cometd.handshake();");
-        assertTrue(readyLatch.await(2 * longPollingPeriod));
+        assertTrue(readyLatch.await(1000));
 
         String newClientId = evaluateScript("$.cometd.getClientId();");
         assertEquals(clientId, newClientId);
@@ -141,78 +195,11 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         assertNull(cookie);
     }
 
-    public void testReloadWithTimestamp() throws Exception
-    {
-        evaluateScript("$.cometd.setLogLevel('debug');");
-        // Add timestamp extension before the reload extension
-        URL timestampExtension = new URL(contextURL + "/org/cometd/TimeStampExtension.js");
-        evaluateURL(timestampExtension);
-        URL jqueryTimestampExtension = new URL(contextURL + "/jquery/jquery.cometd-timestamp.js");
-        evaluateURL(jqueryTimestampExtension);
-
-        URL cookiePlugin = new URL(contextURL + "/jquery/jquery.cookie.js");
-        evaluateURL(cookiePlugin);
-        URL reloadExtension = new URL(contextURL + "/org/cometd/ReloadExtension.js");
-        evaluateURL(reloadExtension);
-        URL jqueryReloadExtension = new URL(contextURL + "/jquery/jquery.cometd-reload.js");
-        evaluateURL(jqueryReloadExtension);
-
-        defineClass(Latch.class);
-        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
-        evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("$.cometd.addListener('/meta/connect', readyLatch, 'countDown');");
-        evaluateScript("$.cometd.handshake();");
-        assertTrue(readyLatch.await(1000));
-
-        // Get the clientId
-        String clientId = evaluateScript("$.cometd.getClientId();");
-
-        // Calling reload() results in the cookie being written
-        evaluateScript("$.cometd.reload();");
-
-        // Reload the page
-        destroyPage();
-        initPage();
-
-        evaluateScript("$.cometd.setLogLevel('debug');");
-        evaluateURL(timestampExtension);
-        evaluateURL(jqueryTimestampExtension);
-        evaluateURL(cookiePlugin);
-        evaluateURL(reloadExtension);
-        evaluateURL(jqueryReloadExtension);
-
-        defineClass(Latch.class);
-        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
-        evaluateScript("var readyLatch = new Latch(1);");
-        readyLatch = get("readyLatch");
-        evaluateScript("" +
-                "$.cometd.addListener('/meta/connect', function(message) " +
-                "{ " +
-                "   if (message.successful) readyLatch.countDown(); " +
-                "});");
-        evaluateScript("$.cometd.handshake();");
-        assertTrue(readyLatch.await(2 * longPollingPeriod));
-
-        String newClientId = evaluateScript("$.cometd.getClientId();");
-        assertEquals(clientId, newClientId);
-
-        evaluateScript("$.cometd.disconnect(true);");
-    }
-
     public void testReloadWithSubscriptionAndPublish() throws Exception
     {
-        URL cookiePlugin = new URL(contextURL + "/jquery/jquery.cookie.js");
-        evaluateURL(cookiePlugin);
-        URL reloadExtension = new URL(contextURL + "/org/cometd/ReloadExtension.js");
-        evaluateURL(reloadExtension);
-        URL jqueryReloadExtension = new URL(contextURL + "/jquery/jquery.cometd-reload.js");
-        evaluateURL(jqueryReloadExtension);
-
         defineClass(Latch.class);
-        evaluateScript("var latch = new Latch(1);");
-        Latch latch = (Latch)get("latch");
         evaluateApplication();
+        Latch latch = (Latch)get("latch");
         assertTrue(latch.await(1000));
 
         // Calling reload() results in the cookie being written
@@ -221,17 +208,11 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         // Reload the page
         destroyPage();
         initPage();
-
-        evaluateURL(cookiePlugin);
-        evaluateURL(reloadExtension);
-        evaluateURL(jqueryReloadExtension);
+        initReload();
 
         defineClass(Latch.class);
-        evaluateScript("var latch = new Latch(1);");
-        latch = (Latch)get("latch");
         evaluateApplication();
-        // Call explicitly application initialization after reload
-        evaluateScript("_init({successful: true});");
+        latch = (Latch)get("latch");
         assertTrue(latch.await(1000));
 
         // Check that handshake was faked
@@ -249,6 +230,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
     private void evaluateApplication() throws Exception
     {
         evaluateScript("" +
+                "var latch = new Latch(1);" +
                 "$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});" +
                 "" +
                 "var extHandshake = null;" +
