@@ -1,11 +1,9 @@
 package org.cometd.bayeux.client;
 
-
 import java.io.IOException;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
-
 
 
 /**
@@ -23,12 +21,19 @@ public interface ClientSession extends Session
      */
     void addExtension(Extension extension);
 
+    /* ------------------------------------------------------------ */
     /**
-     * <p>Initiates the bayeux protocol handshake with the server(s).</p>
-     * @throws IOException if a handshake fails
+     * <p>Initiates the bayeux protocol handshake with the server(s).
+     * This is an asynchronous handshake and does not wait for the 
+     * handshake response</p>
+     * 
+     * @see {@link org.cometd.client.BayeuxClient#onConnectException(Throwable)}
+     * @see {@link org.cometd.client.BayeuxClient#onException(Throwable)}
+     * @see {@link org.cometd.client.BayeuxClient#onExpire()}
+     * @see {@link org.cometd.client.BayeuxClient#handshake(int time,java.util.concurrent.TimeUnit unit)}
      */
     void handshake() throws IOException;
-
+    
     /* ------------------------------------------------------------ */
     /**
      * Get a channel scoped by this session.

@@ -240,7 +240,7 @@ public class AckExtensionTest extends TestCase
         }
 
         client.disconnect();
-        assertTrue(client.waitFor(State.DISCONNECTED,1000L));
+        assertTrue(client.waitFor(1000L,State.DISCONNECTED));
     }
 
 
