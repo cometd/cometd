@@ -1,6 +1,7 @@
 package org.cometd.client;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
@@ -24,8 +25,13 @@ import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.SessionChannel.MetaChannelListener;
 import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.client.BayeuxClient.State;
 import org.cometd.common.HashMapMessage;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
@@ -47,6 +53,7 @@ public class BayeuxClientTest extends TestCase
     private HttpClient _httpClient;
     private TestFilter _filter;
     private int _port;
+    private BayeuxServerImpl _bayeux;
 
     protected void setUp() throws Exception
     {
@@ -73,6 +80,7 @@ public class BayeuxClientTest extends TestCase
         cometd_holder.setInitParameter("maxInterval","100000");
         cometd_holder.setInitParameter("multiFrameInterval","2000");
         cometd_holder.setInitParameter("logLevel","0");
+        cometd_holder.setInitOrder(1);
 
         context.addServlet(cometd_holder, "/cometd/*");
         context.addServlet(DefaultServlet.class, "/");
@@ -85,6 +93,10 @@ public class BayeuxClientTest extends TestCase
         _httpClient.start();
 
         _port=_connector.getLocalPort();
+        
+        _bayeux=(BayeuxServerImpl)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+        if (_bayeux==null)
+            throw new IllegalStateException("No Bayeux");
     }
 
     /* ------------------------------------------------------------ */
@@ -343,7 +355,7 @@ public class BayeuxClientTest extends TestCase
         assertEquals("402::Unknown client",message.get("error"));
 
         client.disconnect();
-        assertTrue(client.waitFor(State.DISCONNECTED,1000L));
+        assertTrue(client.waitFor(1000L,State.DISCONNECTED));
     }
 
     public void testCookies() throws Exception
@@ -368,7 +380,7 @@ public class BayeuxClientTest extends TestCase
         assertNotNull(client.getCookie("foo"));
         
         client.disconnect();
-        assertTrue(client.waitFor(State.DISCONNECTED,1000L));
+        assertTrue(client.waitFor(1000L,State.DISCONNECTED));
     }
 
     public void testPerf() throws Exception
@@ -475,7 +487,70 @@ public class BayeuxClientTest extends TestCase
             client.disconnect();
 
         for (BayeuxClient client : clients)
-            assertTrue(client.waitFor(State.DISCONNECTED,1000L));
+            assertTrue(client.waitFor(1000L,State.DISCONNECTED));
+    }
+
+    
+    public void testPublish()
+        throws Exception
+    {
+        final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
+        
+        _bayeux.getChannel("/chat/msg",true).addListener(new ServerChannel.MessageListener()
+        {   
+            @Override
+            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
+            {
+                results.add(from.getId());
+                results.add(channel.getId());
+                results.add(String.valueOf(message.getData()));
+                return true;
+            }
+        });
+        
+        
+        BayeuxClient client = new BayeuxClient(_httpClient, "http://localhost:"+_port+"/cometd");
+        client.handshake();
+        client.getChannel("/chat/msg").publish("Hello World");
+        
+        String id=results.poll(1,TimeUnit.SECONDS);
+        assertEquals(client.getId(),id);
+        assertEquals("/chat/msg",results.poll(1,TimeUnit.SECONDS));
+        assertEquals("Hello World",results.poll(1,TimeUnit.SECONDS));
+        
+        client.disconnect();
+    }
+
+    public void testWaitFor()
+    throws Exception
+    {
+        final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
+
+        _bayeux.getChannel("/chat/msg",true).addListener(new ServerChannel.MessageListener()
+        {   
+            @Override
+            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
+            {
+                results.add(from.getId());
+                results.add(channel.getId());
+                results.add(String.valueOf(message.getData()));
+                return true;
+            }
+        });
+
+
+        BayeuxClient client = new BayeuxClient(_httpClient, "http://localhost:"+_port+"/cometd");
+        client.handshake(1000L);
+        assertTrue(client.getId()!=null);
+        client.getChannel("/chat/msg").publish("Hello World");
+        
+        assertEquals(client.getId(),results.poll(1,TimeUnit.SECONDS));
+        assertEquals("/chat/msg",results.poll(1,TimeUnit.SECONDS));
+        assertEquals("Hello World",results.poll(1,TimeUnit.SECONDS));
+
+        client.disconnect();
+        
+        assertTrue(client.waitFor(1000,State.DISCONNECTED));
     }
 
     private class DumpThread extends Thread
