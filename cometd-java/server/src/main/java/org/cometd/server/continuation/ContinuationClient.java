@@ -131,7 +131,7 @@ public class ContinuationClient extends ClientImpl
                         {
                             ((HttpServletResponse)oldContinuation.getServletResponse()).sendError(HttpServletResponse.SC_REQUEST_TIMEOUT);
                             oldContinuation.complete();
-                        }	
+                        }
                     }
                     catch(Exception e)
                     {
