@@ -279,9 +279,11 @@
             // Save the application state only if the user was chatting
             if (_wasConnected && _username)
             {
+                var expires = new Date();
+                expires.setTime(expires.getTime() + 5 * 1000);
                 org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
                     username: _username
-                }), { 'max-age': 5 });
+                }), { 'max-age': 5, expires: expires });
             }
         });
     }
