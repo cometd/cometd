@@ -55,8 +55,8 @@ public class ClientImpl implements Client
     private int _batch;
     private int _maxQueue;
     private ArrayQueue<Message> _queue=new ArrayQueue<Message>(8,16,this);
-    private long _timeout;
-    private long _interval;
+    private long _timeout = -1;
+    private long _interval = -1;
     private int _lag;
     private Extension[] _extensions;
 

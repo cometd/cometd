@@ -92,52 +92,41 @@ public class ContinuationClient extends ClientImpl
     /* ------------------------------------------------------------ */
     public void setContinuation(Continuation continuation)
     {
-        if (continuation == null)
+        synchronized (this)
         {
-            synchronized(this)
-            {
-                // This is the end of a long poll
-                _continuation = null;
+            Continuation oldContinuation = _continuation;
+            _continuation = continuation;
+            Log.debug("oldContinuation {}, newContinuation {}", oldContinuation, continuation);
 
+            // There can be a suspended old continuation if the remote client reloads or
+            // somehow re-issues a new long poll request with an outstanding long poll request.
+            // In this case we complete() the existing continuation, otherwise
+            // it will expire, this method is entered again with a null argument, and a timeout
+            // to expire this client will be scheduled (which is wrong because client expiration
+            // must be handled by the new continuation and not by the old one, which dies here)
+            if (oldContinuation != null && oldContinuation.isSuspended())
+            {
+                try
+                {
+                    ((HttpServletResponse)oldContinuation.getServletResponse()).sendError(HttpServletResponse.SC_REQUEST_TIMEOUT);
+                    oldContinuation.complete();
+                }
+                catch(Exception e)
+                {
+                    Log.debug(e);
+                }
+            }
+
+            if (continuation == null)
+            {
                 // Set timeout when to expect the next long poll
                 if (_intervalTimeoutTask != null)
                     _bayeux.startTimeout(_intervalTimeoutTask, _bayeux.getMaxInterval());
             }
-        }
-        else
-        {
-            synchronized(this)
+            else
             {
-                Continuation oldContinuation = _continuation;
-                _continuation = continuation;
-
                 _bayeux.cancelTimeout(_intervalTimeoutTask);
                 _accessed = _bayeux.getNow();
-
-                if (oldContinuation == null)
-                {
-                    // This is the start of a long poll
-                }
-                else
-                {
-                    // This is the reload case: there is an outstanding connect,
-                    // and the client issues a new connect.
-                    // We return the old connect via complete() since we do not
-                    // want to resume() otherwise the old connect will be
-                    // redispatched and will overwrite the new connect.
-                    try
-                    {
-                        if (oldContinuation.isSuspended())
-                        {
-                            ((HttpServletResponse)oldContinuation.getServletResponse()).sendError(HttpServletResponse.SC_REQUEST_TIMEOUT);
-                            oldContinuation.complete();
-                        }
-                    }
-                    catch(Exception e)
-                    {
-                        Log.debug(e);
-                    }
-                }
             }
         }
     }

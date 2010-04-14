@@ -266,15 +266,11 @@
         // Restore the state, if present
         if (state)
         {
-            _connected = state.connected === true;
-            if (_connected)
+            setTimeout(function()
             {
-                setTimeout(function()
-                {
-                    _self.join(state.username);
-                    _connectionEstablished();
-                }, 0);
-            }
+                // This will perform the handshake
+                _self.join(state.username);
+            }, 0);
         }
 
         $(window).unload(function()
@@ -284,7 +280,6 @@
             if (_wasConnected && _username)
             {
                 org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
-                    connected: _wasConnected,
                     username: _username
                 }), { 'max-age': 5 });
             }

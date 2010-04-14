@@ -52,7 +52,6 @@ org.cometd.ReloadExtension = function(configuration)
                 'max-age': _cookieMaxAge,
                 expires: new Date(new Date().getTime() + _cookieMaxAge * 1000)
             });
-            _state = {};
         }
     }
 
@@ -111,8 +110,10 @@ org.cometd.ReloadExtension = function(configuration)
                             _debug('Reload extension replaying handshake response', oldState.handshakeResponse);
                             _state.handshakeResponse = oldState.handshakeResponse;
                             _state.subscriptions = oldState.subscriptions;
-                            var response = _cometd._mixin(true, {}, oldState.handshakeResponse);
-                            response.supportedConnectionTypes = [oldState.transportType];
+                            _state.transportType = oldState.transportType;
+                            _state.reloading = true;
+                            var response = _cometd._mixin(true, {}, _state.handshakeResponse);
+                            response.supportedConnectionTypes = [_state.transportType];
                             _cometd.receive(response);
                             _debug('Reload extension replayed handshake response', response);
                         }, 0);
@@ -136,6 +137,16 @@ org.cometd.ReloadExtension = function(configuration)
             {
                 _state.transportType = message.connectionType;
                 _debug('Reload extension tracked transport type', _state.transportType);
+            }
+
+            if (_state.reloading)
+            {
+                delete _state.reloading;
+                if (!message.advice)
+                {
+                    message.advice = {};
+                }
+                message.advice.timeout = 0;
             }
         }
         else if (channel == '/meta/subscribe')

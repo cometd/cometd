@@ -983,7 +983,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
 
         public boolean canPublish(Client client, String channel, Message message)
         {
-            return client != null || client == null && Bayeux.META_HANDSHAKE.equals(channel);
+            return client != null || Bayeux.META_HANDSHAKE.equals(channel);
         }
 
     }
@@ -1060,21 +1060,21 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             if (advice != null)
             {
                 Long timeout=(Long)((Map)advice).get("timeout");
-                if (timeout != null && timeout.longValue() > 0)
-                    client.setTimeout(timeout.longValue());
+                if (timeout != null && timeout >= 0L)
+                    client.setTimeout(timeout);
                 else
-                    client.setTimeout(0);
+                    client.setTimeout(-1);
 
                 Long interval=(Long)((Map)advice).get("interval");
-                if (interval != null && interval.longValue() > 0)
-                    client.setInterval(interval.longValue());
+                if (interval != null && interval >= 0L)
+                    client.setInterval(interval);
                 else
-                    client.setInterval(0);
+                    client.setInterval(-1);
             }
             else
             {
-                client.setTimeout(0);
-                client.setInterval(0);
+                client.setTimeout(-1);
+                client.setInterval(-1);
             }
 
             advice=null;
