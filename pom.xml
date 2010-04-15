@@ -1,196 +1,170 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+>
 
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>org.cometd</groupId>
-    <artifactId>cometd-project</artifactId>
-    <version>2.0.beta0-SNAPSHOT</version>
-    <packaging>pom</packaging>
-    <name>CometD</name>
-    <description>Web framework for bidirectional message to/from a browser using 
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.cometd</groupId>
+  <artifactId>cometd-project</artifactId>
+  <version>2.0.beta0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>CometD</name>
+  <description>Web framework for bidirectional message to/from a browser using 
     a negotiated transport (eg long polling, jsonp callback or websocket).
     </description>
 
-    <properties>
-        <jetty-version>7.0.2.v20100331</jetty-version>
-        <dojo-version>1.4.2</dojo-version>
-        <maven-wagon-version>1.0-beta-2</maven-wagon-version>
-    </properties>
+  <properties>
+    <jetty-version>7.0.2.v20100331</jetty-version>
+    <dojo-version>1.4.2</dojo-version>
+    <maven-wagon-version>1.0-beta-2</maven-wagon-version>
+  </properties>
 
-    <modules>
-        <module>cometd-java</module>
-        <module>cometd-javascript</module>
-        <module>cometd-demo</module>
-        <module>cometd-distribution</module>
-    </modules>
+  <modules>
+    <module>cometd-java</module>
+    <module>cometd-javascript</module>
+    <module>cometd-demo</module>
+    <module>cometd-distribution</module>
+  </modules>
 
-    <organization>
-        <name>Dojo Foundation</name>
-        <url>http://dojofoundation.org</url>
-    </organization>
+  <organization>
+    <name>Dojo Foundation</name>
+    <url>http://dojofoundation.org</url>
+  </organization>
 
-    <licenses>
-        <license>
-            <name>Apache License Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
-        </license>
-        <license>
-            <name>The New BSD License</name>
-        </license>
-        <license>
-            <name>The Academic Free License, v. 2.1</name>
-        </license>
-    </licenses>
+  <licenses>
+    <license>
+      <name>Apache License Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+    <license>
+      <name>The New BSD License</name>
+    </license>
+    <license>
+      <name>The Academic Free License, v. 2.1</name>
+    </license>
+  </licenses>
 
-    <issueManagement>
-        <system>jira</system>
-        <url>http://bugs.cometd.org</url>
-    </issueManagement>
+  <issueManagement>
+    <system>jira</system>
+    <url>http://bugs.cometd.org</url>
+  </issueManagement>
 
-    <mailingLists>
-        <mailingList>
-            <name>CometD Dev List</name>
-            <archive>http://groups.google.com/group/cometd-dev/</archive>
-        </mailingList>
-        <mailingList>
-            <name>CometD User List</name>
-            <archive>http://groups.google.com/group/cometd-users/</archive>
-        </mailingList>
-    </mailingLists>
+  <mailingLists>
+    <mailingList>
+      <name>CometD Dev List</name>
+      <archive>http://groups.google.com/group/cometd-dev/</archive>
+    </mailingList>
+    <mailingList>
+      <name>CometD User List</name>
+      <archive>http://groups.google.com/group/cometd-users/</archive>
+    </mailingList>
+  </mailingLists>
 
-    <developers>
-        <developer>
-            <id>gregw</id>
-            <name>Greg Wilkins</name>
-            <email>gregw@webtide.com</email>
-            <url>http://www.mortbay.com/mortbay/people/gregw</url>
-            <organization>Webtide</organization>
-            <organizationUrl>http://www.webtide.com</organizationUrl>
-        </developer>
-        <developer>
-            <id>sbordet</id>
-            <name>Simone Bordet</name>
-            <email>sbordet@webtide.com</email>
-            <organization>Webtide</organization>
-            <organizationUrl>http://www.webtide.com</organizationUrl>
-        </developer>
-        <developer>
-            <id>xantus</id>
-            <name>David Davis</name>
-            <url>http://xantus.vox.com/</url>
-        </developer>
-        <developer>
-            <id>alex</id>
-            <name>Alex Russell</name>
-            <url>http://alex.dojotoolkit.org/</url>
-            <organization>Sitepen</organization>
-        </developer>
-        <developer>
-            <id>mark</id>
-            <name>Mark Smith</name>
-        </developer>
+  <developers>
+    <developer>
+      <id>gregw</id>
+      <name>Greg Wilkins</name>
+      <email>gregw@webtide.com</email>
+      <url>http://www.mortbay.com/mortbay/people/gregw</url>
+      <organization>Webtide</organization>
+      <organizationUrl>http://www.webtide.com</organizationUrl>
+    </developer>
+    <developer>
+      <id>sbordet</id>
+      <name>Simone Bordet</name>
+      <email>sbordet@webtide.com</email>
+      <organization>Webtide</organization>
+      <organizationUrl>http://www.webtide.com</organizationUrl>
+    </developer>
+    <developer>
+      <id>xantus</id>
+      <name>David Davis</name>
+      <url>http://xantus.vox.com/</url>
+    </developer>
+    <developer>
+      <id>alex</id>
+      <name>Alex Russell</name>
+      <url>http://alex.dojotoolkit.org/</url>
+      <organization>Sitepen</organization>
+    </developer>
+    <developer>
+      <id>mark</id>
+      <name>Mark Smith</name>
+    </developer>
 
-    </developers>
-    <repositories>
-        <repository>
-            <id>dojoSnapshots</id>
-            <name>Dojo Maven2 Snapshot Repository</name>
-            <url>http://oss.sonatype.org/content/groups/dojo</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <layout>default</layout>
-        </repository>
-        <repository>
-            <id>jettySnapshots</id>
-            <name>Jetty Maven2 Snapshot Repository</name>
-            <url>http://oss.sonatype.org/content/groups/jetty</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <layout>default</layout>
-        </repository>
-    </repositories>
+  </developers>
+  <repositories>
+    <repository>
+      <id>dojoSnapshots</id>
+      <name>Dojo Maven2 Snapshot Repository</name>
+      <url>http://oss.sonatype.org/content/groups/dojo</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <layout>default</layout>
+    </repository>
+    <repository>
+      <id>jettySnapshots</id>
+      <name>Jetty Maven2 Snapshot Repository</name>
+      <url>http://oss.sonatype.org/content/groups/jetty</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <layout>default</layout>
+    </repository>
+  </repositories>
 
-    <pluginRepositories>
-        <pluginRepository>
-            <id>jettySnapshots</id>
-            <name>Jetty Maven2 Snapshot Repository</name>
-            <url>http://oss.sonatype.org/content/groups/jetty</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <layout>default</layout>
-        </pluginRepository>
-    </pluginRepositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>jettySnapshots</id>
+      <name>Jetty Maven2 Snapshot Repository</name>
+      <url>http://oss.sonatype.org/content/groups/jetty</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <layout>default</layout>
+    </pluginRepository>
+  </pluginRepositories>
 
-    <distributionManagement>
-        <repository>
-            <id>cometdReleases</id>
-            <name>CometD Maven2 Repository</name>
-            <url>http://oss.repository.sonatype.org/service/local/staging/deploy/maven2</url>
-        </repository>
-        <snapshotRepository>
-            <id>cometdSnapshots</id>
-            <name>CometD Maven2 Snapshot Repository</name>
-            <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
-        </snapshotRepository>
-    </distributionManagement>
+  <distributionManagement>
+    <repository>
+      <id>cometdReleases</id>
+      <name>CometD Maven2 Repository</name>
+      <url>http://oss.repository.sonatype.org/service/local/staging/deploy/maven2</url>
+    </repository>
+    <snapshotRepository>
+      <id>cometdSnapshots</id>
+      <name>CometD Maven2 Snapshot Repository</name>
+      <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
 
-    <scm>
-        <connection>scm:svn:http://svn.cometd.org</connection>
-        <developerConnection>scm:svn:https://svn.cometd.org</developerConnection>
-    </scm>
+  <scm>
+    <connection>scm:svn:http://svn.cometd.org</connection>
+    <developerConnection>scm:svn:https://svn.cometd.org</developerConnection>
+  </scm>
 
-    <profiles>
-        <profile>
-            <id>sign-artifacts</id>
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
-    <build>
-        <defaultGoal>install</defaultGoal>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
