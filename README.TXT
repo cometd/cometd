@@ -17,7 +17,7 @@ If you have downloaded the release bundle, then the CometD is already built for 
 To run the demonstration with Maven:
 
     $ cd cometd-demo
-    $ mvn jetty:deploy-war
+    $ mvn jetty:run
 
 then point your browser at http://localhost:8080
 
