@@ -121,6 +121,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     {
         this("http://"+address+uri,httpClient);
     }
+    
     /* ------------------------------------------------------------ */
     public BayeuxClient(HttpClient httpClient, String url)
     {
@@ -340,6 +341,18 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     @Override
     public void handshake()
     {
+        handshake(null);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see #onConnectException(Throwable)
+     * @see #onException(Throwable)
+     * @see #onExpire()
+     */
+    @Override
+    public void handshake(Map<String, Object> template)
+    {
         if (_privateHttpClient!=null && !_privateHttpClient.isRunning())
         {
             try
@@ -355,6 +368,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         List<String> allowed = getAllowedTransports();
         
         Message.Mutable message = newMessage();
+        if (template!=null)
+            message.putAll(template);
         message.setChannel(Channel.META_HANDSHAKE);
         message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD,allowed);
         message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
@@ -376,7 +391,20 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
      */
     public State handshake(long waitMs)
     {
-        handshake();
+        handshake(null);
+        waitFor(waitMs,State.CONNECTED,State.CONNECTING, State.DISCONNECTED, State.UNCONNECTED);
+        return _state;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /*
+     * @see #onConnectException(Throwable)
+     * @see #onException(Throwable)
+     * @see #onExpire()
+     */
+    public State handshake(Map<String,Object> template, long waitMs)
+    {
+        handshake(template);
         waitFor(waitMs,State.CONNECTED,State.CONNECTING, State.DISCONNECTED, State.UNCONNECTED);
         return _state;
     }
