@@ -628,6 +628,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     class HandshakeHandler extends HandlerListener
     {
+        @Override
         public void onMessage(ServerSessionImpl session, final Mutable message)
         {
             if (session==null)
