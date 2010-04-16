@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.cometd</groupId>
   <artifactId>cometd-project</artifactId>
-  <version>2.0.beta0</version>
+  <version>2.0.beta0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>CometD</name>
   <description>Web framework for bidirectional message to/from a browser using 
@@ -151,8 +155,8 @@
   </distributionManagement>
 
   <scm>
-    <connection>scm:svn:scm:svn:https://svn.cometd.org/tags/2.0.beta0-SNAPSHOT</connection>
-    <developerConnection>scm:svn:scm:svn:https://svn.cometd.org/tags/2.0.beta0-SNAPSHOT</developerConnection>
+    <connection>scm:svn:http://svn.cometd.org/branches/cometd2</connection>
+    <developerConnection>scm:svn:https://svn.cometd.org/branches/cometd2</developerConnection>
   </scm>
 
   <build>
@@ -171,7 +175,6 @@
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
 	  <tagBase>scm:svn:https://svn.cometd.org/tags</tagBase>
-	  <tag>${project.version}</tag>
 	  <useReleaseProfile>true</useReleaseProfile>
 	  <autoVersionSubmodules>true</autoVersionSubmodules>
 	  <goals>deploy</goals>
