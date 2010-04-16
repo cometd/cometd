@@ -5,6 +5,7 @@
   <groupId>org.cometd</groupId>
   <artifactId>cometd-project</artifactId>
   <version>2.0.beta1-SNAPSHOT</version>
+  <url>http://cometd.org</url>
   <packaging>pom</packaging>
   <name>CometD</name>
   <description>Web framework for bidirectional message to/from a browser using 
@@ -151,8 +152,9 @@
   </distributionManagement>
 
   <scm>
-    <connection>scm:svn:scm:svn:https://svn.cometd.org/branches/cometd2</connection>
-    <developerConnection>scm:svn:scm:svn:https://svn.cometd.org/branches/cometd2</developerConnection>
+    <url>http://svn.cometd.org/branches/cometd2</url>
+    <connection>scm:svn:http://svn.cometd.org/branches/cometd2</connection>
+    <developerConnection>scm:svn:https://svn.cometd.org/branches/cometd2</developerConnection>
   </scm>
 
   <build>
