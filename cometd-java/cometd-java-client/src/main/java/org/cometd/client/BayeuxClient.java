@@ -1,5 +1,6 @@
 package org.cometd.client;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +38,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 
 
@@ -121,6 +121,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     {
         this("http://"+address+uri,httpClient);
     }
+    
     /* ------------------------------------------------------------ */
     public BayeuxClient(HttpClient httpClient, String url)
     {
@@ -332,8 +333,25 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * @see #onConnectException(Throwable)
+     * @see #onException(Throwable)
+     * @see #onExpire()
+     */
     @Override
     public void handshake()
+    {
+        handshake(null);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see #onConnectException(Throwable)
+     * @see #onException(Throwable)
+     * @see #onExpire()
+     */
+    @Override
+    public void handshake(Map<String, Object> template)
     {
         if (_privateHttpClient!=null && !_privateHttpClient.isRunning())
         {
@@ -350,6 +368,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         List<String> allowed = getAllowedTransports();
         
         Message.Mutable message = newMessage();
+        if (template!=null)
+            message.putAll(template);
         message.setChannel(Channel.META_HANDSHAKE);
         message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD,allowed);
         message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
@@ -363,6 +383,32 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         doSend(message);
     }
 
+    /* ------------------------------------------------------------ */
+    /*
+     * @see #onConnectException(Throwable)
+     * @see #onException(Throwable)
+     * @see #onExpire()
+     */
+    public State handshake(long waitMs)
+    {
+        handshake(null);
+        waitFor(waitMs,State.CONNECTED,State.CONNECTING, State.DISCONNECTED, State.UNCONNECTED);
+        return _state;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /*
+     * @see #onConnectException(Throwable)
+     * @see #onException(Throwable)
+     * @see #onExpire()
+     */
+    public State handshake(Map<String,Object> template, long waitMs)
+    {
+        handshake(template);
+        waitFor(waitMs,State.CONNECTED,State.CONNECTING, State.DISCONNECTED, State.UNCONNECTED);
+        return _state;
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public boolean isConnected()
@@ -651,7 +697,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     }
 
     /* ------------------------------------------------------------ */
-    private void scheduleHandshake(long interval)
+    private void scheduleHandshake(long interval) 
     {
         long backOff=_backoffTries*_backoffInc;
         if (backOff>_backoffMax)
@@ -692,26 +738,36 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     }
     
     /* ------------------------------------------------------------ */
-    public boolean waitFor(State state,long timeoutMs)
+    public boolean waitFor(long waitMs,State... states)
     {
+        if (states.length==0)
+            throw new IllegalArgumentException("no stats");
+        
         long start = System.currentTimeMillis();
+        
         synchronized (_queue)
         {
-            while (state!=_state && System.currentTimeMillis()-start<timeoutMs)
+            while (System.currentTimeMillis()-start<waitMs)
             {
+                for (State s : states)
+                    if (_state==s)
+                        return true;
                 try
                 {
-                    _queue.wait(timeoutMs);
+                    _queue.wait(waitMs);
                 }
                 catch(InterruptedException e)
                 {
                     long now=System.currentTimeMillis();
-                    timeoutMs-=now-start;
+                    waitMs-=now-start;
                     start=now;
                 }
             }
-            
-            return _state==state;
+
+            for (State s : states)
+                if (_state==s)
+                    return true;
+            return false;
         }
     }
     
@@ -748,12 +804,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         @Override
         public void publish(Object data)
         {
-            if (_clientId==null)
-                throw new IllegalStateException("!handshake");
-            
             Message.Mutable message = newMessage();
             message.setChannel(_id.toString());
-            message.setClientId(_clientId);
             message.setData(data);
             message.setId(_idGen.incrementAndGet());
             

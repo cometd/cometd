@@ -1,5 +1,6 @@
 package org.cometd.server;
 
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -96,10 +97,18 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     /* ------------------------------------------------------------ */
     public void handshake()
     {
+        handshake(null);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void handshake(Map<String, Object> template)
+    {
         if (_session!=null)
             throw new IllegalStateException();
         
         ServerMessage.Mutable message = _bayeux.newMessage();
+        if (template!=null)
+            message.putAll(template);
         message.incRef();
         message.setChannel(Channel.META_HANDSHAKE);
         message.setId(_idGen.incrementAndGet());

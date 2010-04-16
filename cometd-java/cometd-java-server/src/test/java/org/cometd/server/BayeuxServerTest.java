@@ -372,7 +372,6 @@ public class BayeuxServerTest extends Assert
     
     class SessListener implements BayeuxServer.SessionListener
     {
-
         public void sessionAdded(ServerSession session)
         {
             _events.add("sessionAdded");
