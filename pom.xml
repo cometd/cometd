@@ -153,8 +153,8 @@
 
   <scm>
     <url>http://svn.cometd.org/tags/2.0.beta0</url>
-    <connection>scm:svn:scm:svn:https://svn.cometd.org/tags/2.0.beta0</connection>
-    <developerConnection>scm:svn:scm:svn:https://svn.cometd.org/tags/2.0.beta0</developerConnection>
+    <connection>scm:svn:https://svn.cometd.org/tags/2.0.beta0</connection>
+    <developerConnection>scm:svn:https://svn.cometd.org/tags/2.0.beta0</developerConnection>
   </scm>
 
   <build>
