@@ -175,6 +175,7 @@
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
 	  <tagBase>scm:svn:https://svn.cometd.org/tags</tagBase>
+	  <tag>${project.version}</tag>
 	  <useReleaseProfile>true</useReleaseProfile>
 	  <autoVersionSubmodules>true</autoVersionSubmodules>
 	  <goals>deploy</goals>
