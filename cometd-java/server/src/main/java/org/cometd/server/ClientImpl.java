@@ -207,7 +207,7 @@ public class ClientImpl implements Client
         }
         catch (Throwable x)
         {
-            Log.debug(x);
+            Log.warn(x);
             return false;
         }
     }
@@ -220,7 +220,7 @@ public class ClientImpl implements Client
         }
         catch (Throwable x)
         {
-            Log.debug(x);
+            Log.warn(x);
         }
     }
 
@@ -243,7 +243,7 @@ public class ClientImpl implements Client
         }
         catch (Throwable x)
         {
-            Log.debug(x);
+            Log.warn(x);
         }
     }
 
@@ -398,7 +398,7 @@ public class ClientImpl implements Client
         }
         catch (Throwable x)
         {
-            Log.debug(x);
+            Log.warn(x);
         }
     }
 
