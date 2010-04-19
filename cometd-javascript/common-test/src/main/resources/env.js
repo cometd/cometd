@@ -58,7 +58,7 @@ var window = this;
             var log = formatter.format(new java.util.Date());
             log += ' ' + java.lang.Thread.currentThread().getId();
             log += ' ' + text;
-            java.lang.System.out.println(log);
+            java.lang.System.err.println(log);
         }
 
         return {
@@ -168,7 +168,7 @@ var window = this;
      * Performs a GET request to retrieve the content of the given URL,
      * simulating the behavior of a browser calling the URL of the src
      * attribute of the script tag.
-     * 
+     *
      * @param url the URL to make the request to
      */
     function makeScriptRequest(url)
