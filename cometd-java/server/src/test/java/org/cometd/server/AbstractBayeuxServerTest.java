@@ -17,7 +17,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
  */
 public abstract class AbstractBayeuxServerTest extends TestCase
 {
-    private Server server;
+    protected Server server;
+    protected ServletContextHandler context;
     protected String cometdURL;
 
     protected void setUp() throws Exception
@@ -30,7 +31,7 @@ public abstract class AbstractBayeuxServerTest extends TestCase
         server.setHandler(handlers);
 
         String contextPath = "/cometd";
-        ServletContextHandler context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
+        context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
 
         // Setup comet servlet
         ContinuationCometdServlet cometdServlet = new ContinuationCometdServlet();

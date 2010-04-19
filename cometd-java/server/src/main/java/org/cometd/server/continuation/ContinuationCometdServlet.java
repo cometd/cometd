@@ -35,7 +35,6 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
 
 public class ContinuationCometdServlet extends AbstractCometdServlet
 {
@@ -314,28 +313,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                 if (c instanceof ContinuationClient)
                 {
                     ContinuationClient client = (ContinuationClient)c;
-                    Continuation continuation = client.getContinuation();
                     client.setContinuation(null);
-                    if (continuation!=null && continuation.isSuspended())
-                    {
-                        try
-                        {
-                            ((HttpServletResponse)continuation.getServletResponse()).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                        }
-                        catch (IOException e)
-                        {
-                            Log.ignore(e);
-                        }
-
-                        try
-                        {
-                            continuation.complete();
-                        }
-                        catch (Exception e)
-                        {
-                            Log.ignore(e);
-                        }
-                    }
                 }
             }
             bayeux.destroy();

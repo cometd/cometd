@@ -96,7 +96,7 @@ public class ContinuationClient extends ClientImpl
         {
             Continuation oldContinuation = _continuation;
             _continuation = continuation;
-            Log.debug("oldContinuation {}, newContinuation {}", oldContinuation, continuation);
+            Log.debug("Old continuation {}, new continuation {}", oldContinuation, continuation);
 
             // There can be a suspended old continuation if the remote client reloads or
             // somehow re-issues a new long poll request with an outstanding long poll request.
@@ -108,12 +108,24 @@ public class ContinuationClient extends ClientImpl
             {
                 try
                 {
-                    ((HttpServletResponse)oldContinuation.getServletResponse()).sendError(HttpServletResponse.SC_REQUEST_TIMEOUT);
+                    int responseCode = HttpServletResponse.SC_REQUEST_TIMEOUT;
+                    Log.debug("Sending {} on old continuation {}", responseCode, oldContinuation);
+                    HttpServletResponse response = (HttpServletResponse)oldContinuation.getServletResponse();
+                    response.sendError(responseCode);
+                }
+                catch(Exception x)
+                {
+                    Log.ignore(x);
+                }
+
+                try
+                {
+                    Log.debug("Completing old continuation {}", oldContinuation);
                     oldContinuation.complete();
                 }
-                catch(Exception e)
+                catch (Exception x)
                 {
-                    Log.debug(e);
+                    Log.ignore(x);
                 }
             }
 
