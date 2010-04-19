@@ -506,7 +506,8 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             {
                 for (ClientBayeuxListener l : _clientListeners)
                     l.clientAdded(client);
-
+                if (isLogInfo())
+                    logInfo("Added client: " + client);
                 return;
             }
         }
@@ -524,6 +525,8 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             for (ClientBayeuxListener l : _clientListeners)
                 l.clientRemoved(client);
             client.unsubscribeAll();
+            if (isLogInfo())
+                logInfo("Removed client: " + client);
         }
         return client;
     }
