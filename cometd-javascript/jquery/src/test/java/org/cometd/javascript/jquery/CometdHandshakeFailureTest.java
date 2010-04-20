@@ -117,7 +117,10 @@ public class CometdHandshakeFailureTest extends AbstractCometdJQueryTest
 
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            throw new IOException();
+            String uri = request.getRequestURI();
+            if (uri.endsWith("handshake"))
+                throw new IOException();
+            chain.doFilter(request, response);
         }
 
         public void destroy()

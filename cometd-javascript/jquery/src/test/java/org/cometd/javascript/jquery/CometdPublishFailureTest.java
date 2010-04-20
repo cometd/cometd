@@ -84,9 +84,12 @@ public class CometdPublishFailureTest extends AbstractCometdJQueryTest
 
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            ++messages;
-            // The fifth message will be the publish, throw
-            if (messages == 5) throw new IOException();
+            String uri = request.getRequestURI();
+            if (!uri.endsWith("handshake") && !uri.endsWith("connect"))
+                ++messages;
+            // The second non-handshake and non-connect message will be the publish, throw
+            if (messages == 2)
+                throw new IOException();
             chain.doFilter(request, response);
         }
 
