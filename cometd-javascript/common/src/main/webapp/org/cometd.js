@@ -168,6 +168,7 @@ org.cometd.Cometd = function(name)
     var _advice = {};
     var _handshakeProps;
     var _reestablish = false;
+    var _connected = true;
 
     /**
      * Mixes in the given objects into the target object by copying the properties.
@@ -766,6 +767,12 @@ org.cometd.Cometd = function(name)
                 channel: '/meta/connect',
                 connectionType: _transport.getType()
             };
+            if (!_connected)
+            {
+                _connected = true;
+                message.advice = {};
+                message.advice.timeout = 0;
+            }
             _setStatus('connecting');
             _debug('Connect sent', message);
             _send(false, [message], true, 'connect');
@@ -960,7 +967,8 @@ org.cometd.Cometd = function(name)
 
     function _connectResponse(message)
     {
-        if (message.successful)
+        _connected = message.successful;
+        if (_connected)
         {
             // Notify the listeners after the status change but before the next connect
             _notifyListeners('/meta/connect', message);
@@ -1019,6 +1027,8 @@ org.cometd.Cometd = function(name)
 
     function _connectFailure(xhr, message)
     {
+        _connected = false;
+
         // Notify listeners
         var failureMessage = {
             successful: false,
