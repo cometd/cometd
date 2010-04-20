@@ -194,17 +194,10 @@
             _membersSubscription = $.cometd.subscribe('/chat/members', _self.members);
         }
 
-        function _connectionEstablished()
+        function _connectionInitialized()
         {
-            _self.receive({
-                data: {
-                    user: 'system',
-                    chat: 'Connection to Server Opened'
-                }
-            });
             $.cometd.batch(function()
             {
-                _unsubscribe();
                 _subscribe();
                 $.cometd.publish('/service/members', {
                     user: _username,
@@ -215,6 +208,19 @@
                     membership: 'join',
                     chat: _username + ' has joined'
                 });
+            });
+        }
+
+        function _connectionEstablished()
+        {
+            _self.receive({
+                data: {
+                    user: 'system',
+                    chat: 'Connection to Server Opened'
+                }
+            });
+            $.cometd.publish('/service/members', {
+                room: '/chat/demo'
             });
         }
 
@@ -261,6 +267,15 @@
             }
         }
 
+        function _metaHandshake(message)
+        {
+            if (message.successful)
+            {
+                _connectionInitialized();
+            }
+        }
+
+        $.cometd.addListener('/meta/handshake', _metaHandshake);
         $.cometd.addListener('/meta/connect', _metaConnect);
 
         // Restore the state, if present

@@ -218,9 +218,9 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         // Check that handshake was faked
         evaluateScript("window.assert(extHandshake === null, 'extHandshake');");
         evaluateScript("window.assert(rcvHandshake !== null, 'rcvHandshake');");
-        // Check that subscription was faked
-        evaluateScript("window.assert(extSubscribe === null, 'extSubscribe');");
-        evaluateScript("window.assert(rcvSubscribe !== null, 'rcvSubscribe');");
+        // Check that subscription went out
+        evaluateScript("window.assert(extSubscribe !== null, 'extSubscribe');");
+        evaluateScript("window.assert(rcvSubscribe === null, 'rcvSubscribe');");
         // Check that publish went out
         evaluateScript("window.assert(extPublish !== null, 'extPublish');");
 
@@ -248,6 +248,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
                 "   }" +
                 "});" +
                 "" +
+                "/* Override receive() since it's the method called by the extension to fake responses */" +
                 "var rcvHandshake = null;" +
                 "var rcvSubscribe = null;" +
                 "var _receive = $.cometd.receive;" +

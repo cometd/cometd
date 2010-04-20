@@ -35,19 +35,23 @@ public class ChatService extends BayeuxService
         {
             Map<String, String> newRoomMembers = new ConcurrentHashMap<String, String>();
             roomMembers = _members.putIfAbsent(room, newRoomMembers);
-            if (roomMembers == null) roomMembers = newRoomMembers;
+            if (roomMembers == null)
+                roomMembers = newRoomMembers;
         }
         final Map<String, String> members = roomMembers;
         String userName = (String)data.get("user");
-        members.put(userName, client.getId());
-        client.addListener(new RemoveListener()
+        if (userName != null)
         {
-            public void removed(String clientId, boolean timeout)
+            members.put(userName, client.getId());
+            client.addListener(new RemoveListener()
             {
-                members.values().remove(clientId);
-                broadcastMembers(members.keySet());
-            }
-        });
+                public void removed(String clientId, boolean timeout)
+                {
+                    members.values().remove(clientId);
+                    broadcastMembers(members.keySet());
+                }
+            });
+        }
         broadcastMembers(members.keySet());
     }
 
