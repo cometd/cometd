@@ -81,7 +81,6 @@ public class CometdConnectTemporaryFailureTest extends AbstractCometdJQueryTest
 
     public static class ConnectThrowingFilter implements Filter
     {
-        private boolean handshook;
         private int connects;
 
         public void init(FilterConfig filterConfig) throws ServletException
@@ -95,16 +94,11 @@ public class CometdConnectTemporaryFailureTest extends AbstractCometdJQueryTest
 
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            if (handshook)
-            {
+            String uri = request.getRequestURI();
+            if (uri.endsWith("connect"))
                 ++connects;
-                if (connects == 3)
-                    throw new IOException();
-            }
-            else
-            {
-                handshook = true;
-            }
+            if (connects == 3)
+                throw new IOException();
             chain.doFilter(request, response);
         }
 

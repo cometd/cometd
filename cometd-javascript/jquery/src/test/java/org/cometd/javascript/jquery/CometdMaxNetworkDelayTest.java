@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -106,8 +105,6 @@ public class CometdMaxNetworkDelayTest extends AbstractCometdJQueryTest
 
     private class DelayingFilter implements Filter
     {
-        private final AtomicInteger messages = new AtomicInteger();
-
         public void init(FilterConfig filterConfig) throws ServletException
         {
         }
@@ -119,10 +116,10 @@ public class CometdMaxNetworkDelayTest extends AbstractCometdJQueryTest
 
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            // Messages are: handshake, first connect, second connect, publish
-            // We hold the publish longer than the maxNetworkDelay
-            if (messages.incrementAndGet() == 4)
+            String uri = request.getRequestURI();
+            if (!uri.endsWith("handshake") && !uri.endsWith("connect"))
             {
+                // We hold the publish longer than the maxNetworkDelay
                 try
                 {
                     Thread.sleep(2 * maxNetworkDelay);
