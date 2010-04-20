@@ -186,17 +186,10 @@ var room = {
         members.innerHTML = list;
     },
 
-    _connectionEstablished: function()
+    _connectionInitialized: function()
     {
-        room.receive({
-            data: {
-                user: 'system',
-                chat: 'Connection to Server Opened'
-            }
-        });
         dojox.cometd.batch(function()
         {
-            room._unsubscribe();
             room._subscribe();
             dojox.cometd.publish('/service/members', {
                 user: room._username,
@@ -207,6 +200,19 @@ var room = {
                 membership: 'join',
                 chat: room._username + ' has joined'
             });
+        });
+    },
+
+    _connectionEstablished: function()
+    {
+        room.receive({
+            data: {
+                user: 'system',
+                chat: 'Connection to Server Opened'
+            }
+        });
+        dojox.cometd.publish('/service/members', {
+            room: '/chat/demo'
         });
     },
 
@@ -229,6 +235,14 @@ var room = {
                 chat: 'Connection to Server Closed'
             }
         });
+    },
+
+    _metaHandshake: function(message)
+    {
+        if (message.successful)
+        {
+            room._connectionInitialized();
+        }
     },
 
     _metaConnect: function(message)
@@ -254,6 +268,7 @@ var room = {
     }
 };
 
+dojox.cometd.addListener("/meta/handshake", room, room._metaHandshake);
 dojox.cometd.addListener("/meta/connect", room, room._metaConnect);
 dojo.addOnLoad(room, "_init");
 dojo.addOnUnload(room, "leave");
