@@ -5,7 +5,7 @@
     <artifactId>cometd-project</artifactId>
     <packaging>pom</packaging>
     <name>CometD</name>
-    <version>1.1.1-SNAPSHOT</version>
+    <version>1.1.1</version>
     <url>http://www.cometd.org</url>
     <description>
         The CometD project is a scalable HTTP-based event routing bus that uses the AJAX push technology pattern known as "Comet"
@@ -90,9 +90,9 @@
     </distributionManagement>
 
     <scm>
-        <connection>scm:svn:http://svn.cometd.org</connection>
-        <developerConnection>scm:svn:https://svn.cometd.org</developerConnection>
-        <url>http://svn.cometd.org</url>
+        <connection>scm:svn:http://svn.cometd.org/1.1.1</connection>
+        <developerConnection>scm:svn:https://svn.cometd.org/tags/1.1.1</developerConnection>
+        <url>http://svn.cometd.org/1.1.1</url>
     </scm>
 
     <organization>
