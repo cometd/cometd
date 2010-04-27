@@ -9,12 +9,18 @@ import org.cometd.bayeux.Message;
 
 /* ------------------------------------------------------------ */
 /**
- * A Channel scoped to a Session.
+ * A client side Channel representation.
  * <p>
- * A channel scoped to a particular {@link ClientSession}, so that subscriptions
- * and publishes to a SessionChannel are done on behalf of the associated {@link ClientSession}.
- * A SessionChannel may be for either an absolute channel (eg /foo/bar) or a
- * wild channel (eg /meta/* or /foo/**).
+ * A SessionChannel is scoped to a particular {@link ClientSession} that is 
+ * obtained by a call to {@link ClientSession#getChannel(String)}.
+ * </p><p>
+ * Typical usage examples are: <pre>
+ *     clientSession.getChannel("/foo/bar").subscribe(mySubscriptionListener);
+ *     clientSession.getChannel("/foo/bar").publish("Hello");
+ *     clientSession.getChannel("/meta/*").addListener(myMetaChannelListener);
+ * <pre>
+ * 
+ * <p>
  * 
  */
 public interface SessionChannel extends Channel

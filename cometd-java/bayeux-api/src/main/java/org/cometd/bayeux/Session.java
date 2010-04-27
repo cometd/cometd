@@ -3,19 +3,29 @@ package org.cometd.bayeux;
 import java.util.Set;
 
 
+
 /* ------------------------------------------------------------ */
-/** A Bayeux Session
+/** A Bayeux Session.
  * <p>A bayeux session represents a connection between a bayeux client and 
- * a bayeux server.  Previously this interface was called "Client", but this
+ * a bayeux server.  This interface is the common base interface for both 
+ * server side and client side representations of a session:<ul>
+ * <li>If the remote client is in javascript, then only a {@link org.cometd.bayeux.server.ServerSession}
+ * instance will exist in Java in the server.
+ * <li>If the remote client is in java, then a {@link org.cometd.bayeux.client.ClientSession}
+ * instance will exist in the client and a {@link org.cometd.bayeux.server.ServerSession}
+ * instance will exist in the server, linked by clientId and the bayeux protocol.
+ * <li>If the client is java, but located in the server, then the
+ * {@link org.cometd.bayeux.client.ClientSession} instance will an instance
+ * of {@link org.cometd.bayeux.server.LocalSession} and will be associated
+ * with a local {@link org.cometd.bayeux.server.ServerSession} instance.
+ * </ul>
+ * 
+ * </p>
+ * <p>Previously this interface was called "Client", but this
  * resulted in confusion between the various representation of the server-side 
  * elements of a "Client".   Thus this entity has been renamed "Session", but
  * for backwards compatibility with the wire protocol, it is identified by 
  * a clientID field withing the messages (see {@link Message#getClientId()}).
- * </p>
- * <p>This interface is the common base interface for both server side and 
- * client side representations of a session.   Note that on the client side
- * a local session may have representations of both serverside and client sides
- * for the same session.
  * </p>
  */
 public interface Session
