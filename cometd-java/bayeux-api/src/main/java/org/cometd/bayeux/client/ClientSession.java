@@ -52,11 +52,23 @@ public interface ClientSession extends Session
     
     /* ------------------------------------------------------------ */
     /**
-     * Get a channel scoped by this session.
+     * Get a client side channel scoped by this session.
      * <p>
      * Get a channel representation scoped to this session.
-     * The SessionChannel may be for a specific channel (eg /foo/bar)
-     * or for a wild channel (eg /meta/** or /foo/* ).
+     * The SessionChannel may be for a specific channel (eg /foo/bar")
+     * or for a wild channel (eg "/meta/**" or "/foo/*" ).
+     * This method will always return a channel, even if the 
+     * the channel has not been created on the server side.  The server
+     * side channel is only involved once a publish or subscribe method
+     * is called on the returned SessionChannel.
+     * </p>
+     * <p>
+     * Typical usage examples are: <pre>
+     *     clientSession.getChannel("/foo/bar").subscribe(mySubscriptionListener);
+     *     clientSession.getChannel("/foo/bar").publish("Hello");
+     *     clientSession.getChannel("/meta/*").addListener(myMetaChannelListener);
+     * <pre>
+     * </p>
      * @param channelName absolute or wild channel name. 
      * @return a channel scoped by this session.
      */
