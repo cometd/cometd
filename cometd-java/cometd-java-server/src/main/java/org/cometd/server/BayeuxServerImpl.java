@@ -82,6 +82,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
+    public BayeuxServerImpl(boolean initializeDefaultTransports)
+    {
+        this();
+        if (initializeDefaultTransports)
+            initializeDefaultTransports();
+    }
+    
+    /* ------------------------------------------------------------ */
     /** Initialize the default transports.
      * This method creates a {@link WebSocketTransport}, a {@link JSONTransport}
      * and a {@link JSONPTransport} and calls {@link BayeuxServerImpl#setAllowedTransports(String...)}.
