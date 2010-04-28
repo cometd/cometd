@@ -19,6 +19,7 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.eclipse.jetty.http.MimeTypes;
@@ -43,8 +44,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  */
 public class CometdDemo
 {
-    private static int _testHandshakeFailure=0;
-
     /* ------------------------------------------------------------ */
     /**
      * @param args
@@ -94,6 +93,10 @@ public class CometdDemo
 
         ServletContextHandler context = new ServletContextHandler(contexts,"/cometd",ServletContextHandler.SESSIONS);
 
+        final BayeuxServerImpl bayeux = new BayeuxServerImpl();
+        bayeux.initializeDefaultTransports();
+        context.setAttribute(BayeuxServer.ATTRIBUTE,bayeux);
+        
         context.setBaseResource(
                 new ResourceCollection(new Resource[]
                 {
@@ -128,24 +131,8 @@ public class CometdDemo
         
         server.start();
 
-        final BayeuxServer bayeux = ((CometdServlet)comet.getServlet()).getBayeux();
-
-        bayeux.setSecurityPolicy(new DefaultSecurityPolicy()
-        {
-            
-            @Override
-            public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
-            {
-                if (_testHandshakeFailure<0)
-                {
-                    _testHandshakeFailure++;
-                    return false;
-                }
-                return super.canHandshake(server,session,message);
-            }
-
-        });
-
+        bayeux.setSecurityPolicy(new DefaultSecurityPolicy());
+        
         // Demo lazy messages
         if (Boolean.getBoolean("LAZY"))
         {

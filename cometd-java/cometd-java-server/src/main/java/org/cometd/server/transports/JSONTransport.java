@@ -18,10 +18,10 @@ public class JSONTransport extends LongPollingTransport
     protected String _mimeType="application/json;charset=UTF-8";
     
     
-    public JSONTransport(BayeuxServerImpl bayeux,Map<String,Object> options)
+    public JSONTransport(BayeuxServerImpl bayeux)
     {
-        super(bayeux,NAME,options);
-        _prefix.add("json");
+        super(bayeux,NAME);
+        addPrefix("json");
         setOption(MIME_TYPE_OPTION,_mimeType);
         _metaConnectDeliveryOnly=false;
     }
@@ -33,6 +33,12 @@ public class JSONTransport extends LongPollingTransport
         _mimeType=getOption(MIME_TYPE_OPTION,_mimeType);
     }
 
+    @Override
+    public boolean accept(HttpServletRequest request)
+    {
+        return "POST".equals(request.getMethod());
+    }
+    
     @Override
     public boolean isMetaConnectDeliveryOnly()
     {

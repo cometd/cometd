@@ -36,10 +36,10 @@ public abstract class LongPollingTransport extends HttpTransport
     private int _maxSessionsPerBrowser=1;
     private long _multiSessionInterval=2000;
     
-    protected LongPollingTransport(BayeuxServerImpl bayeux,String name,Map<String,Object> options)
+    protected LongPollingTransport(BayeuxServerImpl bayeux,String name)
     {
-        super(bayeux,name,options);
-        _prefix.add("long-polling");
+        super(bayeux,name);
+        addPrefix("long-polling");
         setOption(BROWSER_ID_OPTION,_browserId);
         setOption(MAX_SESSIONS_PER_BROWSER_OPTION,_maxSessionsPerBrowser);
         setOption(MULTI_SESSION_INTERVAL_OPTION,_multiSessionInterval);

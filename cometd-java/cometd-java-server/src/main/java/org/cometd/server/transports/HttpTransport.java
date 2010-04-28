@@ -21,9 +21,9 @@ public abstract class HttpTransport extends ServerTransport
     
     private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<HttpServletRequest>();
     
-    protected HttpTransport(BayeuxServerImpl bayeux,String name,Map<String,Object> options)
+    protected HttpTransport(BayeuxServerImpl bayeux,String name)
     {
-        super(bayeux,name,options);
+        super(bayeux,name);
     }
     
     @Override
@@ -32,6 +32,8 @@ public abstract class HttpTransport extends ServerTransport
         super.init();
     }
 
+    public abstract boolean accept(HttpServletRequest request);
+    
     public abstract void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
     
     

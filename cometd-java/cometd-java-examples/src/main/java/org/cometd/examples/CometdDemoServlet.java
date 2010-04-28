@@ -41,7 +41,6 @@ public class CometdDemoServlet extends GenericServlet
     {
     }
 
-
     @Override
     public void init() throws ServletException
     {

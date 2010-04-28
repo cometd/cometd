@@ -32,10 +32,10 @@ public class WebSocketTransport extends HttpTransport
     
     private String _protocol="";
     
-    public WebSocketTransport(BayeuxServerImpl bayeux, Map<String,Object> options)
+    public WebSocketTransport(BayeuxServerImpl bayeux)
     {
-        super(bayeux,NAME,options);
-        _prefix.add("ws");
+        super(bayeux,NAME);
+        addPrefix("ws");
         setOption(PROTOCOL_OPTION,_protocol);
         setOption(BUFFER_SIZE_OPTION,_factory.getBufferSize());
         _metaConnectDeliveryOnly=false;
@@ -55,6 +55,12 @@ public class WebSocketTransport extends HttpTransport
         _factory.setBufferSize(getOption(BUFFER_SIZE_OPTION,_factory.getBufferSize()));
     }
     
+    @Override
+    public boolean accept(HttpServletRequest request)
+    {
+        return "WebSocket".equals(request.getHeader("Upgrade"));
+    }
+
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
