@@ -12,19 +12,19 @@ import org.cometd.util.ImmutableHashMap;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public class ServerMessagePool
+public class ServerMessagePoolImpl
 {
     final private ConcurrentLinkedQueue<ServerMessageImpl> _messagePool;
     final private ConcurrentLinkedQueue<JSON.ReaderSource> _readerPool;
 
     /* ------------------------------------------------------------ */
-    public ServerMessagePool()
+    public ServerMessagePoolImpl()
     {
         this(50);
     }
 
     /* ------------------------------------------------------------ */
-    public ServerMessagePool(int capacity)
+    public ServerMessagePoolImpl(int capacity)
     {
         _messagePool=new ConcurrentLinkedQueue<ServerMessageImpl>();
         _readerPool=new ConcurrentLinkedQueue<JSON.ReaderSource>();
@@ -99,7 +99,7 @@ public class ServerMessagePool
             message=new ServerMessageImpl(this);
         return message.asMutable();
     }
-    
+
     /* ------------------------------------------------------------ */
     void recycleMessage(ServerMessage message)
     {
@@ -263,5 +263,4 @@ public class ServerMessagePool
             return _msgJSON;
         }
     };
-
 }
