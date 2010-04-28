@@ -23,8 +23,8 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.ChannelId;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -35,20 +35,20 @@ import org.eclipse.jetty.util.thread.Timeout;
 
 /* ------------------------------------------------------------ */
 /**
- * 
+ *
  * Options to configure the server are: <dl>
  * <tt>tickIntervalMs</tt><td>The time in milliseconds between ticks to check for timeouts etc</td>
- * <tt>sweepIntervalMs</tt><td>The time in milliseconds between sweeps of channels to remove 
+ * <tt>sweepIntervalMs</tt><td>The time in milliseconds between sweeps of channels to remove
  * invalid subscribers and non-persistent channels</td>
  * </dl>
  */
-public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer 
+public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 {
     private final Logger _logger;
     private final SecureRandom _random = new SecureRandom();
     private final List<BayeuxServerListener> _listeners = new CopyOnWriteArrayList<BayeuxServerListener>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
-    private final ServerMessagePool _pool = new ServerMessagePool();
+    private final ServerMessagePoolImpl _pool = new ServerMessagePoolImpl();
     private final ServerChannelImpl _root=new ServerChannelImpl(this,null,new ChannelId("/"));
     private final ConcurrentMap<String, ServerSessionImpl> _sessions = new ConcurrentHashMap<String, ServerSessionImpl>();
     private final ConcurrentMap<String, ServerChannelImpl> _channels = new ConcurrentHashMap<String, ServerChannelImpl>();
@@ -57,11 +57,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final ThreadLocal<ServerTransport> _currentTransport = new ThreadLocal<ServerTransport>();
     private final Map<String,Object> _options = new TreeMap<String, Object>();
     private final Timeout _timeout = new Timeout();
-    
+
     private SecurityPolicy _policy=new DefaultSecurityPolicy();
     private Timer _timer = new Timer();
     private Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
-    
+
     /* ------------------------------------------------------------ */
     protected BayeuxServerImpl()
     {
@@ -70,20 +70,20 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         getChannel(Channel.META_SUBSCRIBE,true).addListener(new SubscribeHandler());
         getChannel(Channel.META_UNSUBSCRIBE,true).addListener(new UnsubscribeHandler());
         getChannel(Channel.META_DISCONNECT,true).addListener(new DisconnectHandler());
-        
+
         _logger=Log.getLogger("bayeux@"+hashCode());
         _logger.info("STARTED: "+_sessions);
-        
+
         setOption("tickIntervalMs","97");
         setOption("sweepIntervalMs","9997");
     }
-    
+
     /* ------------------------------------------------------------ */
     public Logger getLogger()
     {
         return _logger;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
@@ -140,7 +140,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         task.cancel();
     }
-    
+
     /* ------------------------------------------------------------ */
     public ChannelId newChannelId(String id)
     {
@@ -155,7 +155,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         return _options;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.bayeux.Bayeux#getOption(java.lang.String)
@@ -180,7 +180,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             return Long.valueOf(val.toString());
         return dft;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.bayeux.Bayeux#getOptionNames()
@@ -196,7 +196,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      */
     public void setOption(String qualifiedName, Object value)
     {
-        _options.put(qualifiedName,value);   
+        _options.put(qualifiedName,value);
     }
 
     /* ------------------------------------------------------------ */
@@ -222,9 +222,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         return _root;
     }
-    
+
     /* ------------------------------------------------------------ */
-    public ServerMessagePool getServerMessagePool()
+    public ServerMessagePoolImpl getServerMessagePool()
     {
         return _pool;
     }
@@ -234,7 +234,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         _currentTransport.set(transport);
     }
-    
+
     /* ------------------------------------------------------------ */
     public ServerTransport getCurrentTransport()
     {
@@ -261,7 +261,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         return Collections.unmodifiableCollection(_sessions.values());
     }
-    
+
     /* ------------------------------------------------------------ */
     public ServerSession getSession(String clientId)
     {
@@ -291,9 +291,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         if (_logger.isDebugEnabled())
             _logger.debug("remove "+session+(timedout?" timedout":""));
-        
+
         ServerSessionImpl removed =_sessions.remove(session.getId());
-        
+
         if(removed==session)
         {
             for (BayeuxServerListener listener : _listeners)
@@ -301,7 +301,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 if (listener instanceof BayeuxServer.SessionListener)
                     ((SessionListener)listener).sessionRemoved(session,timedout);
             }
-            
+
             return ((ServerSessionImpl)session).removed(timedout);
         }
         else
@@ -313,7 +313,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         return new ServerSessionImpl(this);
     }
-    
+
     /* ------------------------------------------------------------ */
     protected ServerSessionImpl newServerSession(LocalSessionImpl local, String idHint)
     {
@@ -331,7 +331,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         return _pool.getServerMessage();
     }
-    
+
     /* ------------------------------------------------------------ */
     public ServerMessage.Mutable newMessage(ServerMessage tocopy)
     {
@@ -382,10 +382,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public ServerMessage handle(ServerSessionImpl session, ServerMessage.Mutable message)
     {
         ServerMessage.Mutable reply=null;
-        
+
         if (_logger.isDebugEnabled())
             _logger.debug(">  "+message+" "+session);
-        
+
         if (!extendRecv(session,message) || session!=null && !session.extendRecv(message))
         {
             reply=createReply(message);
@@ -407,7 +407,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
 
             if (channel==null)
-            { 
+            {
                 reply = createReply(message);
                 error(reply,channelId==null?"402::no channel":"403::Cannot create");
             }
@@ -416,11 +416,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 root().doPublish(session,(ServerChannelImpl)channel,message);
                 reply = message.getAssociated().asMutable();
             }
-            else if (_policy.canPublish(this,session,channel,message))                               
+            else if (_policy.canPublish(this,session,channel,message))
             {
-                // This is a normal publish, 
+                // This is a normal publish,
 
-                // if this is not a local client, lets create a new message as we 
+                // if this is not a local client, lets create a new message as we
                 // don't trust what else was in their message.
                 if (session!=null && session.isLocalSession() || channel.isService())
                 {
@@ -452,7 +452,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             _logger.debug("<< "+reply);
         return reply;
     }
-    
+
     /* ------------------------------------------------------------ */
     public ServerMessage extendReply(ServerSessionImpl session, ServerMessage reply)
     {
@@ -463,10 +463,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         if (_logger.isDebugEnabled())
             _logger.debug("<  "+reply);
-        
+
         return reply;
     }
-    
+
     /* ------------------------------------------------------------ */
     protected boolean extendRecv(ServerSessionImpl from, ServerMessage.Mutable message)
     {
@@ -502,7 +502,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 if (!i.previous().send(message))
                     return false;
         }
-        
+
         return true;
     }
 
@@ -533,7 +533,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
         return false;
     }
-    
+
     /* ------------------------------------------------------------ */
     List<BayeuxServerListener> getListeners()
     {
@@ -569,7 +569,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         setAllowedTransports(Arrays.asList(allowed));
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setAllowedTransports(List<String> allowed)
     {
@@ -594,7 +594,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         ServerMessage.Mutable reply=newMessage();
         message.setAssociated(reply);
         reply.setAssociated(message);
-        
+
         reply.setChannel(message.getChannel());
         Object id=message.getId();
         if (id != null)
@@ -607,23 +607,23 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         return _root;
     }
-    
+
     /* ------------------------------------------------------------ */
     public String dump()
     {
         StringBuilder b = new StringBuilder();
         _root.dump(b,"");
         return b.toString();
-    }    
-    
+    }
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     abstract class HandlerListener implements ServerChannel.ServerChannelListener
     {
         public abstract void onMessage(final ServerSessionImpl from, final ServerMessage.Mutable message);
-        
+
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     class HandshakeHandler extends HandlerListener
@@ -635,7 +635,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 session = newServerSession();
 
             ServerMessage.Mutable reply=createReply(message);
-            
+
             if (_policy != null && !_policy.canHandshake(BayeuxServerImpl.this,session,message))
             {
                 error(reply,"403::Handshake denied");
@@ -644,13 +644,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             session.handshake();
             addServerSession(session);
-            
+
             reply.setSuccessful(true);
             reply.put(Message.CLIENT_FIELD,session.getId());
             reply.put(Message.VERSION_FIELD,"1.0");
             reply.put(Message.MIN_VERSION_FIELD,"1.0");
             reply.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD,getAllowedTransports());
-            
+
         }
     }
 
@@ -669,9 +669,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 reply.put(Message.ADVICE_FIELD,_handshakeAdvice);
                 return;
             }
-                        
+
             session.connect(_timeout.getNow());
-            
+
             // receive advice
             Map<String,Object> adviceIn=message.getAdvice();
             if (adviceIn != null)
@@ -687,11 +687,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             Object adviceOut = session.takeAdvice();
             if (adviceOut!=null)
                 reply.put(Message.ADVICE_FIELD,adviceOut);
-            
+
             reply.setSuccessful(true);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     class SubscribeHandler extends HandlerListener
@@ -705,10 +705,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 reply.put(Message.ADVICE_FIELD,_handshakeAdvice);
                 return;
             }
-            
+
             String subscribe_id=(String)message.get(Message.SUBSCRIPTION_FIELD);
-            reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);            
-            
+            reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);
+
             if (subscribe_id==null)
                 error(reply,"403::cannot create");
             else
@@ -717,7 +717,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscribe_id);
                 if (channel==null && getSecurityPolicy().canCreate(BayeuxServerImpl.this,from,subscribe_id,message))
                     channel = (ServerChannelImpl)getChannel(subscribe_id,true);
-                
+
                 if (channel==null)
                     error(reply,"403::cannot create");
                 else if (!getSecurityPolicy().canSubscribe(BayeuxServerImpl.this,from,channel,message))
@@ -751,15 +751,15 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 reply.put(Message.ADVICE_FIELD,_handshakeAdvice);
                 return;
             }
-            
+
             String subscribe_id=(String)message.get(Message.SUBSCRIPTION_FIELD);
-            reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);            
+            reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);
             if (subscribe_id==null)
                 error(reply,"400::no channel");
             else
             {
                 reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);
-                
+
                 ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscribe_id);
                 if (channel==null)
                     error(reply,"400::no channel");
@@ -788,9 +788,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             removeServerSession(session,false);
             session.dispatch();
-            
+
             reply.setSuccessful(true);
-        }    
+        }
     }
-    
+
 }

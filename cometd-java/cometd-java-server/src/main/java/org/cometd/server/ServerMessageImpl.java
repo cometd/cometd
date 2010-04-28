@@ -18,14 +18,14 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     private final Map.Entry<String,Object> _adviceImmutable;
     private final Map.Entry<String,Object> _dataImmutable;
     private final Map.Entry<String,Object> _extImmitable;
-    
+
 
     private ServerMessage _associated;
     private String _jsonString;
     private boolean _lazy=false;
-    
-    private final ServerMessagePool _pool;
-    
+
+    private final ServerMessagePoolImpl _pool;
+
 
     private final AtomicInteger _refs=new AtomicInteger();
 
@@ -34,9 +34,9 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     {
         this(null);
     }
-    
+
     /* ------------------------------------------------------------ */
-    public ServerMessageImpl(ServerMessagePool bayeux)
+    public ServerMessageImpl(ServerMessagePoolImpl bayeux)
     {
         _pool=bayeux;
         _mutable = new MutableMessage();
@@ -179,14 +179,14 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     /* ------------------------------------------------------------ */
     /**
      * Lazy messages are queued but do not wake up waiting clients.
-     * 
+     *
      * @return true if message is lazy
      */
     public boolean isLazy()
     {
         return _lazy;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isMeta()
     {
@@ -222,7 +222,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     /* ------------------------------------------------------------ */
     /**
      * Lazy messages are queued but do not wake up waiting clients.
-     * 
+     *
      * @param lazy
      *            true if message is lazy
      */
@@ -243,7 +243,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     {
         return "|"+getJSON()+"|";
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     class MutableMessage extends AbstractMap<String,Object> implements ServerMessage.Mutable
@@ -255,7 +255,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
         private final Map.Entry<String,Object> _data;
         private final Map.Entry<String,Object> _ext;
         private final Map.Entry<String,Object> _id;
-        
+
         MutableMessage()
         {
             _mutable.put(Message.ADVICE_FIELD,null);
@@ -276,7 +276,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
         {
             return this;
         }
-        
+
         public ServerMessageImpl asImmutable()
         {
             return ServerMessageImpl.this;
@@ -325,7 +325,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             Map<String, Object> data=(Map<String, Object>)_data.getValue();
             return data;
         }
-        
+
         public Map<String, Object> getDataAsMap(boolean create)
         {
             Map<String, Object> data=(Map<String, Object>)_data.getValue();
@@ -383,10 +383,10 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             Object ext=_ext.getValue();
             if (ext==null && !create)
                 return null;
-            
+
             if (ext instanceof Map)
                 return (Map<String,Object>)ext;
-            
+
             if (ext instanceof JSON.Literal)
             {
                 JSON json=_pool == null?JSON.getDefault():_pool.getMsgJSON();
@@ -414,7 +414,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
         {
             return ChannelId.isMeta((String)_channelId.getValue());
         }
-        
+
         @Override
         public Object put(String key, Object value)
         {
@@ -492,7 +492,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
         {
             put(SUCCESSFUL_FIELD,success?Boolean.TRUE:Boolean.FALSE);
         }
-        
+
         public String toString()
         {
             return getJSON();
@@ -504,12 +504,12 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
         protected NestedMap()
         {
         }
-        
+
         protected NestedMap(int size)
         {
             super(size);
         }
-        
+
         @Override
         protected void onChange(String key) throws UnsupportedOperationException
         {
