@@ -20,10 +20,10 @@ public class JSONPTransport extends LongPollingTransport
     protected String _mimeType="text/javascript;charset=UTF-8";
     private String _callbackParam="jsonp";
     
-    public JSONPTransport(BayeuxServerImpl bayeux,Map<String,Object> options)
+    public JSONPTransport(BayeuxServerImpl bayeux)
     {
-        super(bayeux,NAME,options);
-        _prefix.add("jsonp");
+        super(bayeux,NAME);
+        addPrefix("jsonp");
         
         setOption(CALLBACK_PARAMETER_OPTION,_callbackParam);
         setOption(MIME_TYPE_OPTION,_mimeType);
@@ -43,6 +43,13 @@ public class JSONPTransport extends LongPollingTransport
         _mimeType=getOption(MIME_TYPE_OPTION,_mimeType);
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public boolean accept(HttpServletRequest request)
+    {
+        return "GET".equals(request.getMethod()) && request.getParameter(getCallbackParameter())!=null;
+    }
+    
     /* ------------------------------------------------------------ */
     public String getCallbackParameter()
     {

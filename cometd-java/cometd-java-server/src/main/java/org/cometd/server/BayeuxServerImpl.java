@@ -26,6 +26,9 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.ChannelId;
+import org.cometd.server.transports.JSONPTransport;
+import org.cometd.server.transports.JSONTransport;
+import org.cometd.server.transports.WebSocketTransport;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -63,7 +66,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
 
     /* ------------------------------------------------------------ */
-    protected BayeuxServerImpl()
+    public BayeuxServerImpl()
     {
         getChannel(Channel.META_HANDSHAKE,true).addListener(new HandshakeHandler());
         getChannel(Channel.META_CONNECT,true).addListener(new ConnectHandler());
@@ -76,6 +79,19 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         setOption("tickIntervalMs","97");
         setOption("sweepIntervalMs","9997");
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Initialize the default transports.
+     * This method creates a {@link WebSocketTransport}, a {@link JSONTransport}
+     * and a {@link JSONPTransport} and calls {@link BayeuxServerImpl#setAllowedTransports(String...)}.
+     */
+    public void initializeDefaultTransports()
+    {
+        addTransport(new WebSocketTransport(this));
+        addTransport(new JSONTransport(this));
+        addTransport(new JSONPTransport(this));
+        setAllowedTransports(WebSocketTransport.NAME,JSONTransport.NAME,JSONPTransport.NAME);
     }
 
     /* ------------------------------------------------------------ */
@@ -792,5 +808,4 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             reply.setSuccessful(true);
         }
     }
-
 }

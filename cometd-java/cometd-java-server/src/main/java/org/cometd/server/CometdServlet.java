@@ -34,9 +34,21 @@ import org.cometd.server.transports.JSONTransport;
 import org.cometd.server.transports.WebSocketTransport;
 
 /**
+ * The cometd Servlet.
+ * </p>
+ * <p>
+ * The cometd Servlet maps HTTP requests to the {@link HttpTransport} of a {@link BayeuxServerImpl} instance.
+ * If a {@link BayeuxServerImpl} instance is discovered in the {@link BayeuxServer#ATTRIBUTE} servlet context
+ * attribute, then it is used, otherwise a new instance is created and the {@link #initializeBayeux(BayeuxServerImpl)}
+ * method called.
+ * </p>
+ * <p>
+ * 
+ * </p>
  */
 public class CometdServlet extends GenericServlet
 {
+    private static final long serialVersionUID = 3637310585741732936L;
     public static final int CONFIG_LEVEL=1;
     public static final int INFO_LEVEL=2;
     public static final int DEBUG_LEVEL=3;
@@ -46,44 +58,51 @@ public class CometdServlet extends GenericServlet
     public static final String TUNNEL_INIT_PARAM="tunnelInit";
     public static final String HTTP_CLIENT_ID="BAYEUX_HTTP_CLIENT";
 
-    private final BayeuxServerImpl _bayeux = new BayeuxServerImpl();
-    private final JSONTransport _lpTransport = new JSONTransport(_bayeux,_bayeux.getOptions());
-    private final JSONPTransport _cbTransport = new JSONPTransport(_bayeux,_bayeux.getOptions());
-    private final WebSocketTransport _wsTransport = new WebSocketTransport(_bayeux,_bayeux.getOptions());
+    private BayeuxServerImpl _bayeux;
     private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<HttpServletRequest>();
     private String _transportParameter;
-    private String _callbackParameter;
-    private boolean _useWS;
-    private boolean _useLP;
-    private boolean _useCB;
     private int _logLevel;
+    private HttpTransport[] _transports;
     
     
     public BayeuxServerImpl getBayeux()
     {
+        if (_bayeux==null)
+        {
+            _bayeux= new BayeuxServerImpl();
+            initializeBayeux(_bayeux);
+        }
         return _bayeux;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Initialise the BayeuxServer.
+     * Called by {@link #init()} if a bayeux server is constructed by
+     * this servlet. The default implementation 
+     * calls {@link BayeuxServerImpl#initializeDefaultTransports()}.
+     * 
+     * @param bayeux
+     */
     protected void initializeBayeux(BayeuxServerImpl bayeux)
     {
-        bayeux.addTransport(_wsTransport);
-        bayeux.addTransport(_lpTransport);
-        bayeux.addTransport(_cbTransport);
-        bayeux.setAllowedTransports(WebSocketTransport.NAME,JSONTransport.NAME,JSONPTransport.NAME);
+        bayeux.initializeDefaultTransports();
     }
-
+    
+    /* ------------------------------------------------------------ */
     @Override
     public void init() throws ServletException
     {
+        
+        _bayeux=(BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+        if (_bayeux==null)
+            getServletContext().setAttribute(BayeuxServer.ATTRIBUTE,getBayeux());
+
         if (getInitParameter("logLevel")!=null)
         {
             _logLevel=Integer.parseInt(getInitParameter("logLevel"));
             if (_logLevel>=DEBUG_LEVEL)
                 _bayeux.getLogger().setDebugEnabled(true);
         }
-        
-        initializeBayeux(_bayeux);
-        getServletContext().setAttribute(BayeuxServer.ATTRIBUTE,_bayeux);
         
         // Get any specific options as init paramters
         HashSet<String> qualified_names = new HashSet<String>();
@@ -125,10 +144,13 @@ public class CometdServlet extends GenericServlet
                 getServletContext().log(entry.getKey()+"="+entry.getValue());
         }
         
-        _useLP=_bayeux.getAllowedTransports().contains(JSONTransport.NAME);
-        _useCB=_bayeux.getAllowedTransports().contains(JSONPTransport.NAME);
-        _useWS=_bayeux.getAllowedTransports().contains(JSONPTransport.NAME);
-        _callbackParameter=(String)_cbTransport.getCallbackParameter();
+        _transports=new HttpTransport[_bayeux.getAllowedTransports().size()];
+        int i=0;
+        for (String t : _bayeux.getAllowedTransports())
+        {
+            Transport transport = _bayeux.getTransport(t); 
+            _transports[i++]=transport instanceof HttpTransport?(HttpTransport)transport:null;
+        }
         
         try
         {
@@ -168,15 +190,17 @@ public class CometdServlet extends GenericServlet
             if (transport_name!=null)
                 transport= (HttpTransport)_bayeux.getTransport(transport_name);
         }
-        
+
         if (transport==null)
         {
-            if (_useCB && request.getParameter(_callbackParameter)!=null)
-                transport=_cbTransport;
-            else if (_useWS && "WebSocket".equals(request.getHeader("Upgrade")))
-                transport=_wsTransport;
-            else if (_useLP)
-                transport=_lpTransport;
+            for (HttpTransport t : _transports)
+            {
+                if (t!=null && t.accept(request))
+                {
+                    transport=t;
+                    break;
+                }
+            }
         }
             
         if (transport==null)         
