@@ -16,6 +16,8 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxService;
+import org.cometd.server.filter.DataFilterMessageListener;
+import org.cometd.server.filter.NoMarkupFilter;
 
 public class ChatService extends BayeuxService
 {
@@ -24,6 +26,10 @@ public class ChatService extends BayeuxService
     public ChatService(BayeuxServer bayeux)
     {
         super(bayeux, "chat");
+        DataFilterMessageListener filters = new DataFilterMessageListener(new NoMarkupFilter());
+        bayeux.getChannel("/chat/**",true).addListener(filters);
+        bayeux.getChannel("/service/privatechat",true).addListener(filters);
+        
         subscribe("/service/members", "handleMembership");
         subscribe("/service/privatechat", "privateChat");
     }
