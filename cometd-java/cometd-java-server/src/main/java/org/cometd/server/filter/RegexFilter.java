@@ -23,10 +23,9 @@ import java.util.regex.Pattern;
  */
 public class RegexFilter extends JSONDataFilter
 {
-    String[] _templates;
-    String[] _replaces;
-
-    transient Pattern[] _patterns;
+    protected String[] _templates;
+    protected String[] _replaces;
+    protected transient Pattern[] _patterns;
 
     /**
      * Assumes the init object is an Array of 2 element Arrays:
@@ -51,7 +50,7 @@ public class RegexFilter extends JSONDataFilter
         checkPatterns();
     }
 
-    private void checkPatterns()
+    protected void checkPatterns()
     {
         // TODO replace this check with a terracotta transient init clause
         synchronized(this)
