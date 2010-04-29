@@ -170,7 +170,7 @@ public class BayeuxLoadGenerator
                 }
             }
 
-            int maxRetries = 60;
+            int maxRetries = 50;
             int retries = maxRetries;
             int lastSize = 0;
             int currentSize = bayeuxClients.size();
@@ -239,6 +239,10 @@ public class BayeuxLoadGenerator
                 value = "" + randomize;
             randomize = Boolean.parseBoolean(value);
 
+            // Send a message to the server to signal the start of the test
+            LoadBayeuxClient statsClient = bayeuxClients.get(0);
+            statsClient.begin();
+
             long start = System.nanoTime();
             int clientIndex = -1;
             long expected = 0;
@@ -275,6 +279,9 @@ public class BayeuxLoadGenerator
                     Thread.sleep(batchPause);
             }
             long end = System.nanoTime();
+
+            statsClient.end();
+
             long elapsedNanos = end - start;
             if (elapsedNanos > 0)
             {
@@ -491,6 +498,16 @@ public class BayeuxLoadGenerator
             }
 
             subscriptions.clear();
+        }
+
+        public void begin()
+        {
+            publish("/service/statistics/start", new HashMap<String, Object>(), null);
+        }
+
+        public void end()
+        {
+            publish("/service/statistics/stop", new HashMap<String, Object>(), null);
         }
     }
 }
