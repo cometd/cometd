@@ -69,7 +69,6 @@ public class CometdSubscribeTest extends AbstractCometdJQueryTest
         evaluateScript("var subscriber = new Latch(1);");
         Latch subscriber = get("subscriber");
         evaluateScript("$.cometd.subscribe('/test', subscriber, 'countDown');");
-        assertTrue(latch.await(1000)); // Wait for subscribe to happen
         // Wait for the message on the subscriber and on the listener
         latch.reset(1);
         evaluateScript("$.cometd.publish('/test', {});");
@@ -85,7 +84,6 @@ public class CometdSubscribeTest extends AbstractCometdJQueryTest
         // Now the previous subscriber must be gone, but not the listener
         // Subscribe again: if the previous listener is not gone, I get 2 notifications
         evaluateScript("$.cometd.subscribe('/test', subscriber, 'countDown');");
-        assertTrue(latch.await(1000)); // Wait for subscribe to happen
         latch.reset(1);
         subscriber.reset(2);
         evaluateScript("$.cometd.publish('/test', {});");
