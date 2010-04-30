@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ServerTransport;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -130,12 +131,10 @@ public class WebSocketTransport extends HttpTransport
             {
                 _bayeux.setCurrentTransport(WebSocketTransport.this);
                 
-                ServerMessage.Mutable[] messages = _bayeux.getServerMessagePool().parseMessages(data);
+                ServerMessage.Mutable[] messages = ServerMessageImpl.parseMessages(data);
 
                 for (ServerMessage.Mutable message : messages)
                 {
-                    // reference it (this should make ref=1)
-                    message.incRef();
                     boolean connect = Channel.META_CONNECT.equals(message.getChannel());
          
                     // Get the session from the message
@@ -171,7 +170,6 @@ public class WebSocketTransport extends HttpTransport
                             // delay sending connect reply until dispatch or timeout.
                             _bayeux.startTimeout(_timeoutTask,timeout);
                             _connectReply=reply;
-                            _connectReply.incRef();
                             reply=null;
                         }
                         else if (!was_connected)
@@ -187,7 +185,6 @@ public class WebSocketTransport extends HttpTransport
 
                         if (batch)
                         {
-                            reply.incRef();
                             _session.getQueue().add(reply);
                         }
                         else
@@ -196,8 +193,6 @@ public class WebSocketTransport extends HttpTransport
 
                     // disassociate the reply
                     message.setAssociated(null);
-                    // dec our own ref, this should be to 0 unless message was ref'd elsewhere.
-                    message.decRef();
                 }
             }
             catch(IOException e)
@@ -252,8 +247,6 @@ public class WebSocketTransport extends HttpTransport
                     {
                         _bayeux.getLogger().warn("io ",e);
                     }
-                    for (ServerMessage message:queue)
-                        message.decRef();
                     queue.clear();
                 }
 

@@ -143,9 +143,6 @@ public abstract class LongPollingTransport extends HttpTransport
                 // for each message
                 for (ServerMessage.Mutable message : messages)
                 {
-                    // reference it (this should be ref=1)
-                    message.incRef();
-
                     // Get the session from the message
                     if (session==null)
                     {
@@ -245,8 +242,6 @@ public abstract class LongPollingTransport extends HttpTransport
                     
                     // disassociate the reply
                     message.setAssociated(null);
-                    // dec our own ref, this should be to 0 unless message was ref'd elsewhere.
-                    message.decRef();
                 }
                 if (writer!=null)
                     complete(writer);
@@ -305,7 +300,6 @@ public abstract class LongPollingTransport extends HttpTransport
             _continuation = continuation;
             _continuation.addContinuationListener(this);
             _reply = reply;
-            reply.incRef();
             _browserId=browserId;
         }
 

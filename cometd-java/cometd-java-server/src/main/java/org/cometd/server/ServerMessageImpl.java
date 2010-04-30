@@ -1,48 +1,33 @@
 package org.cometd.server;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.common.ChannelId;
 import org.cometd.util.ImmutableHashMap;
+import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.ajax.JSON;
 
 public class ServerMessageImpl extends AbstractMap<String,Object> implements ServerMessage, JSON.Generator
-{
-    private final ImmutableHashMap<String,Object> _immutable = new NestedMap(8);
+{   
+    private final ImmutableHashMap<String,Object> _immutable = new NestedMap(16);
     private final MutableMessage _mutable;
-    private final Map.Entry<String,Object> _adviceImmutable;
-    private final Map.Entry<String,Object> _dataImmutable;
-    private final Map.Entry<String,Object> _extImmitable;
 
-
-    private ServerMessage _associated;
-    private String _jsonString;
-    private boolean _lazy=false;
-
-    private final ServerMessagePoolImpl _pool;
-
-
-    private final AtomicInteger _refs=new AtomicInteger();
+    private volatile ServerMessage _associated;
+    private volatile boolean _lazy=false;
+    private volatile String _jsonString;
 
     /* ------------------------------------------------------------ */
     public ServerMessageImpl()
     {
-        this(null);
-    }
-
-    /* ------------------------------------------------------------ */
-    public ServerMessageImpl(ServerMessagePoolImpl bayeux)
-    {
-        _pool=bayeux;
         _mutable = new MutableMessage();
-        _adviceImmutable=_immutable.getEntry(Message.ADVICE_FIELD);
-        _dataImmutable=_immutable.getEntry(Message.DATA_FIELD);
-        _extImmitable=_immutable.getEntry(Message.EXT_FIELD);
     }
 
     /* ------------------------------------------------------------ */
@@ -52,9 +37,16 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     }
 
     /* ------------------------------------------------------------ */
-    public void addJSON(StringBuffer buffer)
+    public void addJSON(Appendable buffer)
     {
-        buffer.append(getJSON());
+        try
+        {
+            buffer.append(getJSON());
+        }
+        catch(IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -69,18 +61,6 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     public boolean containsValue(Object value)
     {
         return _immutable.containsValue(value);
-    }
-
-    /* ------------------------------------------------------------ */
-    public void decRef()
-    {
-        int r=_refs.decrementAndGet();
-        if (r == 0 && _pool != null)
-        {
-            _pool.recycleMessage(this);
-        }
-        else if (r < 0)
-            throw new IllegalStateException();
     }
 
     /* ------------------------------------------------------------ */
@@ -100,7 +80,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     /* ------------------------------------------------------------ */
     public Map<String, Object> getAdvice()
     {
-        Object advice=_mutable._advice.getValue();
+        Object advice=_mutable._advice.asImmutable().getValue();
         if (advice instanceof JSON.Literal)
             return (Map<String, Object>)JSON.parse(advice.toString());
         return (Map<String, Object>)advice;
@@ -115,7 +95,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     /* ------------------------------------------------------------ */
     public String getChannel()
     {
-        return (String)_mutable._channelId.getValue();
+        return (String)_mutable._channel.getValue();
     }
 
     /* ------------------------------------------------------------ */
@@ -127,19 +107,19 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     /* ------------------------------------------------------------ */
     public Object getData()
     {
-        return _dataImmutable.getValue();
+        return _mutable._data.asImmutable().getValue();
     }
 
     /* ------------------------------------------------------------ */
     public Map<String,Object> getDataAsMap()
     {
-        return (Map<String,Object>)_dataImmutable.getValue();
+        return (Map<String,Object>)_mutable._data.asImmutable().getValue();
     }
 
     /* ------------------------------------------------------------ */
     public Map<String, Object> getExt()
     {
-        return (Map<String, Object>)_extImmitable.getValue();
+        return (Map<String, Object>)_mutable._ext.asImmutable().getValue();
     }
 
     /* ------------------------------------------------------------ */
@@ -153,27 +133,11 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     {
         if (_jsonString == null)
         {
-            JSON json=_pool == null?JSON.getDefault():_pool.getMsgJSON();
-            StringBuffer buf=new StringBuffer(json.getStringBufferSize());
-            synchronized(buf)
-            {
-                json.appendMap(buf,this);
-                _jsonString=buf.toString();
-            }
+            StringBuilder buf=new StringBuilder(__msgJSON.getStringBufferSize());
+            __msgJSON.appendMap(buf,this);
+            _jsonString=buf.toString();
         }
         return _jsonString;
-    }
-
-    /* ------------------------------------------------------------ */
-    public int getRefs()
-    {
-        return _refs.get();
-    }
-
-    /* ------------------------------------------------------------ */
-    public void incRef()
-    {
-        _refs.incrementAndGet();
     }
 
     /* ------------------------------------------------------------ */
@@ -190,7 +154,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     /* ------------------------------------------------------------ */
     public boolean isMeta()
     {
-        return ChannelId.isMeta((String)_mutable._channelId.getValue());
+        return ChannelId.isMeta((String)_mutable._channel.getValue());
     }
 
     /* ------------------------------------------------------------ */
@@ -203,20 +167,13 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     /* ------------------------------------------------------------ */
     public void setAssociated(ServerMessage associated)
     {
-        if (_associated != associated)
-        {
-            if (_associated != null)
-                _associated.decRef();
-            _associated=associated;
-            if (_associated != null)
-                _associated.incRef();
-        }
+        _associated=associated;
     }
 
     /* ------------------------------------------------------------ */
     public void setData(Object data)
     {
-        _dataImmutable.setValue(data);
+        _mutable._data.asImmutable().setValue(data);
     }
 
     /* ------------------------------------------------------------ */
@@ -249,27 +206,21 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     class MutableMessage extends AbstractMap<String,Object> implements ServerMessage.Mutable
     {
         private final ImmutableHashMap<String,Object>.Mutable _mutable=_immutable.asMutable();
-        private final Map.Entry<String,Object> _advice;
-        private final Map.Entry<String,Object> _channelId;
-        private final Map.Entry<String,Object> _clientId;
-        private final Map.Entry<String,Object> _data;
-        private final Map.Entry<String,Object> _ext;
-        private final Map.Entry<String,Object> _id;
+        private final ImmutableHashMap.MutableEntry<String,Object> _advice;
+        private final ImmutableHashMap.MutableEntry<String,Object> _channel;
+        private final ImmutableHashMap.MutableEntry<String,Object> _clientId;
+        private final ImmutableHashMap.MutableEntry<String,Object> _data;
+        private final ImmutableHashMap.MutableEntry<String,Object> _ext;
+        private final ImmutableHashMap.MutableEntry<String,Object> _id;
 
         MutableMessage()
         {
-            _mutable.put(Message.ADVICE_FIELD,null);
-            _mutable.put(Message.CHANNEL_FIELD,null);
-            _mutable.put(Message.CLIENT_FIELD,null);
-            _mutable.put(Message.DATA_FIELD,null);
-            _mutable.put(Message.EXT_FIELD,null);
-            _mutable.put(Message.ID_FIELD,null);
-            _advice=_mutable.getEntry(Message.ADVICE_FIELD);
-            _channelId=_mutable.getEntry(Message.CHANNEL_FIELD);
-            _clientId=_mutable.getEntry(Message.CLIENT_FIELD);
-            _data=_mutable.getEntry(Message.DATA_FIELD);
-            _ext=_mutable.getEntry(Message.EXT_FIELD);
-            _id=_mutable.getEntry(Message.ID_FIELD);
+            _advice=_mutable.getEntryReference(Message.ADVICE_FIELD);
+            _channel=_mutable.getEntryReference(Message.CHANNEL_FIELD);
+            _clientId=_mutable.getEntryReference(Message.CLIENT_FIELD);
+            _data=_mutable.getEntryReference(Message.DATA_FIELD);
+            _ext=_mutable.getEntryReference(Message.EXT_FIELD);
+            _id=_mutable.getEntryReference(Message.ID_FIELD);
         }
 
         public ServerMessage.Mutable asMutable()
@@ -355,7 +306,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
 
         public String getChannel()
         {
-            return (String)_channelId.getValue();
+            return (String)_channel.getValue();
         }
 
         public String getClientId()
@@ -389,8 +340,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
 
             if (ext instanceof JSON.Literal)
             {
-                JSON json=_pool == null?JSON.getDefault():_pool.getMsgJSON();
-                ext=json.fromJSON(ext.toString());
+                ext=__json.fromJSON(ext.toString());
                 _ext.setValue(ext);
                 return (Map<String,Object>)ext;
             }
@@ -412,7 +362,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
 
         public boolean isMeta()
         {
-            return ChannelId.isMeta((String)_channelId.getValue());
+            return ChannelId.isMeta((String)_channel.getValue());
         }
 
         @Override
@@ -465,22 +415,12 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
 
         public void setChannel(String channelId)
         {
-            _channelId.setValue(channelId);
+            _channel.setValue(channelId);
         }
 
         public String getJSON()
         {
             return ServerMessageImpl.this.getJSON();
-        }
-
-        public void decRef()
-        {
-            ServerMessageImpl.this.decRef();
-        }
-
-        public void incRef()
-        {
-            ServerMessageImpl.this.incRef();
         }
 
         public boolean isSuccessful()
@@ -516,4 +456,168 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             _jsonString=null;
         } ;
     };
+    
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private static StringMap __fieldStrings=new StringMap();
+    private static StringMap __valueStrings=new StringMap();
+    {
+        __fieldStrings.put(Message.ADVICE_FIELD,Message.ADVICE_FIELD);
+        __fieldStrings.put(Message.CHANNEL_FIELD,Message.CHANNEL_FIELD);
+        __fieldStrings.put(Message.CLIENT_FIELD,Message.CLIENT_FIELD);
+        __fieldStrings.put(Message.DATA_FIELD,Message.DATA_FIELD);
+        __fieldStrings.put(Message.ERROR_FIELD,Message.ERROR_FIELD);
+        __fieldStrings.put(Message.EXT_FIELD,Message.EXT_FIELD);
+        __fieldStrings.put(Message.ID_FIELD,Message.ID_FIELD);
+        __fieldStrings.put(Message.SUBSCRIPTION_FIELD,Message.SUBSCRIPTION_FIELD);
+        __fieldStrings.put(Message.SUCCESSFUL_FIELD,Message.SUCCESSFUL_FIELD);
+        __fieldStrings.put(Message.TIMESTAMP_FIELD,Message.TIMESTAMP_FIELD);
+        __fieldStrings.put(Message.TRANSPORT_FIELD,Message.TRANSPORT_FIELD);
+        __fieldStrings.put("connectionType","connectionType");
+
+        __valueStrings.put(Channel.META_CONNECT,Channel.META_CONNECT);
+        __valueStrings.put(Channel.META_DISCONNECT,Channel.META_DISCONNECT);
+        __valueStrings.put(Channel.META_HANDSHAKE,Channel.META_HANDSHAKE);
+        __valueStrings.put(Channel.META_SUBSCRIBE,Channel.META_SUBSCRIBE);
+        __valueStrings.put(Channel.META_UNSUBSCRIBE,Channel.META_UNSUBSCRIBE);
+        __valueStrings.put("long-polling","long-polling");
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /** Add a JSON convertor.
+     * Add a JSON convertor to the JSON instance used to convert 
+     * message fields.
+     * @see JSON#addConvertor(Class, org.eclipse.jetty.util.ajax.JSON.Convertor)
+     */
+    public static void addConvertor(Class forClass,JSON.Convertor convertor)
+    {
+        __json.addConvertor(forClass,convertor);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Add a JSON convertor.
+     * Add a JSON convertor to the JSON instance used to convert 
+     * message fields.
+     * @see JSON#addConvertorFor(String, org.eclipse.jetty.util.ajax.JSON.Convertor)
+     */
+    public static void addConvertorFor(String name,JSON.Convertor convertor)
+    {
+        __json.addConvertorFor(name,convertor);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private static JSON __json=new JSON()
+    {
+        @Override
+        protected Map newMap()
+        {
+            return new ImmutableHashMap<String, Object>().asMutable();
+        }
+
+        @Override
+        protected String toString(char[] buffer, int offset, int length)
+        {
+            Map.Entry entry=__valueStrings.getEntry(buffer,offset,length);
+            if (entry != null)
+                return (String)entry.getValue();
+            String s=new String(buffer,offset,length);
+            return s;
+        }
+        
+    };
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private static JSON __msgJSON=new JSON()
+    {
+        @Override
+        protected Map newMap()
+        {
+            return new ServerMessageImpl().asMutable();
+        }
+
+        @Override
+        protected String toString(char[] buffer, int offset, int length)
+        {
+            Map.Entry entry=__fieldStrings.getEntry(buffer,offset,length);
+            if (entry != null)
+                return (String)entry.getValue();
+
+            String s=new String(buffer,offset,length);
+            return s;
+        }
+
+        @Override
+        protected JSON contextFor(String field)
+        {
+            return __json;
+        }
+    };
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private static JSON __batchJSON=new JSON()
+    {
+        @Override
+        protected Map newMap()
+        {
+            return new ServerMessageImpl().asMutable();
+        }
+
+        @Override
+        protected Object[] newArray(int size)
+        {
+            return new ServerMessage.Mutable[size];
+        }
+
+        @Override
+        protected JSON contextFor(String field)
+        {
+            return __json;
+        }
+
+        @Override
+        protected JSON contextForArray()
+        {
+            return __msgJSON;
+        }
+    };
+    
+
+    /* ------------------------------------------------------------ */
+    public static ServerMessage.Mutable[] parseMessages(Reader reader) throws IOException
+    {
+        JSON.ReaderSource source=new JSON.ReaderSource(reader);
+        
+        Object batch=__batchJSON.parse(source);
+
+        if (batch == null)
+            return new ServerMessage.Mutable[0];
+        if (batch.getClass().isArray())
+            return (ServerMessage.Mutable[])batch;
+        return new ServerMessage.Mutable[]
+        {(ServerMessage.Mutable)batch};
+    }
+
+    /* ------------------------------------------------------------ */
+    public static ServerMessage.Mutable[] parseMessages(String s) throws IOException
+    {
+        Object batch=__batchJSON.parse(new JSON.StringSource(s));
+        if (batch == null)
+            return new ServerMessage.Mutable[0];
+        if (batch.getClass().isArray())
+            return (ServerMessage.Mutable[])batch;
+        return new ServerMessage.Mutable[]
+        {(ServerMessage.Mutable)batch};
+    }
+
+    /* ------------------------------------------------------------ */
+    public static ServerMessage.Mutable parseMessage(String s) throws IOException
+    {
+        return (ServerMessage.Mutable)__msgJSON.parse(new JSON.StringSource(s));
+    }
+   
 }

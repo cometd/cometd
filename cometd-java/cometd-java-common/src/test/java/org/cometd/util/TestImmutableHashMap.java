@@ -1,8 +1,11 @@
 package org.cometd.util;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
+import org.cometd.util.ImmutableHashMap.MutableEntry;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -18,7 +21,8 @@ public class TestImmutableHashMap
         Assert.assertEquals(0,mutable.size());
         
         mutable.put("A","one");
-        mutable.put("B","2");
+        MutableEntry<String, Object> bee = mutable.getEntryReference("B");
+        bee.setValue("2");
         mutable.put("C","3");
         mutable.put("A","1");
         mutable.put("D","4");
@@ -27,6 +31,8 @@ public class TestImmutableHashMap
         Assert.assertEquals(4,mutable.size());
         Assert.assertEquals("1",mutable.get("A"));
         Assert.assertEquals("2",mutable.get("B"));
+        Assert.assertEquals("2",bee.getValue());
+        Assert.assertEquals("2",bee.asImmutable().getValue());
         Assert.assertEquals("3",mutable.get("C"));
         Assert.assertEquals("4",mutable.get("D"));
         Assert.assertTrue(mutable.containsKey("D"));
@@ -34,6 +40,37 @@ public class TestImmutableHashMap
         Assert.assertEquals("D",mutable.getEntry("D").getKey()); 
         Assert.assertEquals("4",mutable.getEntry("D").getValue());  
         
+        Set<String> temp = new HashSet<String>();
+        for (String key : mutable.keySet())
+            temp.add(key);
+        Assert.assertTrue(temp.contains("A"));
+        Assert.assertTrue(temp.contains("B"));
+        Assert.assertTrue(temp.contains("C"));
+        Assert.assertTrue(temp.contains("D"));
+        
+        temp.clear();
+        for (String key : mutable.asImmutable().keySet())
+            temp.add(key);
+        Assert.assertTrue(temp.contains("A"));
+        Assert.assertTrue(temp.contains("B"));
+        Assert.assertTrue(temp.contains("C"));
+        Assert.assertTrue(temp.contains("D"));
+        
+        temp.clear();
+        for (Object value : mutable.values())
+            temp.add(String.valueOf(value));
+        Assert.assertTrue(temp.contains("1"));
+        Assert.assertTrue(temp.contains("2"));
+        Assert.assertTrue(temp.contains("3"));
+        Assert.assertTrue(temp.contains("4"));
+        
+        temp.clear();
+        for (Object value : mutable.asImmutable().values())
+            temp.add(String.valueOf(value));
+        Assert.assertTrue(temp.contains("1"));
+        Assert.assertTrue(temp.contains("2"));
+        Assert.assertTrue(temp.contains("3"));
+        Assert.assertTrue(temp.contains("4"));
         
         boolean[] keys={false,false,false,false};
         for (String s: mutable.keySet())
@@ -48,7 +85,7 @@ public class TestImmutableHashMap
         Assert.assertEquals("3",mutable.get("C"));
         Assert.assertEquals("4",mutable.get("D"));
 
-        mutable.put("B",null); 
+        bee.setValue(null);
         Assert.assertEquals(2,mutable.size());
         Assert.assertEquals(null,mutable.get("A"));
         Assert.assertEquals(null,mutable.get("B"));

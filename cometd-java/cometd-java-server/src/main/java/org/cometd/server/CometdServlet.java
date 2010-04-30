@@ -221,43 +221,6 @@ public class CometdServlet extends GenericServlet
         }
     }
 
-
-    private static ServerMessage.Mutable[] __EMPTY_BATCH=new ServerMessage.Mutable[0];
-
-    protected ServerMessage.Mutable[] getMessages(HttpServletRequest request) throws IOException
-    {
-        String fodder=null;
-        try
-        {
-            // Get message batches either as JSON body or as message parameters
-            if (request.getContentType() != null && !request.getContentType().startsWith("application/x-www-form-urlencoded"))
-            {
-                return _bayeux.getServerMessagePool().parseMessages(request.getReader());
-            }
-
-            String[] batches=request.getParameterValues(MESSAGE_PARAM);
-
-            if (batches == null || batches.length == 0)
-                return __EMPTY_BATCH;
-
-            if (batches.length == 0)
-            {
-                fodder=batches[0];
-                return _bayeux.getServerMessagePool().parseMessages(fodder);
-            }
-
-            throw new IllegalStateException();
-        }
-        catch(IOException e)
-        {
-            throw e;
-        }
-        catch(Exception e)
-        {
-            throw new Error(fodder,e);
-        }
-    }
-
     /* ------------------------------------------------------------ */
     /**
      * @see javax.servlet.GenericServlet#destroy()

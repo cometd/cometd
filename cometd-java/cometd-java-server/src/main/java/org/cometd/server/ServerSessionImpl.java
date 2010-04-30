@@ -197,7 +197,6 @@ public class ServerSessionImpl implements ServerSession
             }
         }
 
-        message.incRef();
         _queue.add(message);
 
 
@@ -266,7 +265,6 @@ public class ServerSessionImpl implements ServerSession
         if (connected)
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
-            message.incRef();
             message.setClientId(getId());
             message.setChannel(Channel.META_DISCONNECT);
             message.setSuccessful(true);

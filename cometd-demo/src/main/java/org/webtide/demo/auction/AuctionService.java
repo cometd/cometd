@@ -17,13 +17,13 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
-import org.cometd.server.BayeuxService;
+import org.cometd.server.AbstractService;
 import org.webtide.demo.auction.dao.AuctionDao;
 import org.webtide.demo.auction.dao.BidderDao;
 import org.webtide.demo.auction.dao.CategoryDao;
 
 
-public class AuctionService extends BayeuxService implements SubscriberListener, BayeuxServer.ChannelListener, BayeuxServer.SubscriptionListener
+public class AuctionService extends AbstractService implements SubscriberListener, BayeuxServer.ChannelListener, BayeuxServer.SubscriptionListener
 {
     public static final String AUCTION_ROOT="/auction/";
     
@@ -51,12 +51,12 @@ public class AuctionService extends BayeuxService implements SubscriberListener,
 
         getBayeux().addListener(this);
         setSeeOwnPublishes(false);
-        subscribe(AUCTION_ROOT+"*", "bids");
-        subscribe("/service"+AUCTION_ROOT+"bid", "bid");
-        subscribe("/service"+AUCTION_ROOT+"bidder", "bidder");
-        subscribe("/service"+AUCTION_ROOT+"search", "search");
-        subscribe("/service"+AUCTION_ROOT+"category", "category");
-        subscribe("/service"+AUCTION_ROOT+"categories", "categories");
+        addService(AUCTION_ROOT+"*", "bids");
+        addService("/service"+AUCTION_ROOT+"bid", "bid");
+        addService("/service"+AUCTION_ROOT+"bidder", "bidder");
+        addService("/service"+AUCTION_ROOT+"search", "search");
+        addService("/service"+AUCTION_ROOT+"category", "category");
+        addService("/service"+AUCTION_ROOT+"categories", "categories");
     }
 
     public Bidder bidder(ServerSession source, String channel, String bidder, Object messageId)

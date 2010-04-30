@@ -4,7 +4,7 @@ import java.net.URL;
 
 import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.BayeuxService;
+import org.cometd.server.AbstractService;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 
 /**
@@ -105,7 +105,7 @@ public class CometdAckExtensionTest extends AbstractCometdJQueryTest
         Thread.sleep(500); // Wait for the disconnect to return
     }
 
-    private static class AckService extends BayeuxService
+    private static class AckService extends AbstractService
     {
         private AckService(BayeuxServerImpl bayeux)
         {

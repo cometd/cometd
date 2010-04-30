@@ -35,7 +35,7 @@ import java.util.Set;
  */
 public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
 {
-    private final DualEntry[] _entries;
+    private final ImmutableEntry<K,V>[] _entries;
     private final Mutable _mutable;
     private final ImmutableEntrySet _immutableSet;
     private final MutableEntrySet _mutableSet;
@@ -53,7 +53,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         int capacity = 1;
         while (capacity < nominalSize) 
             capacity <<= 1;
-        _entries=new DualEntry[capacity];
+        _entries=new ImmutableEntry[capacity];
         _mutable=new Mutable();
         _immutableSet = new ImmutableEntrySet();
         _mutableSet = new MutableEntrySet();
@@ -70,11 +70,8 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
 
     /* ------------------------------------------------------------ */
     /** Get an entry reference.
-     * The first [nominalSize] entries added are guaranteed never to
-     * be deleted from the map, so the references may be used as repeated
-     * quick lookups of the same key.
-     * @param key
-     * @return
+     * @param key The key to lookup.
+     * @return The found entry.
      */
     public Map.Entry<K,V> getEntry(K key)
     {
@@ -84,11 +81,45 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         final int hash = key.hashCode();
         final int index=hash & (_entries.length-1);
         
-        for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
+        for (ImmutableEntry<K,V> e = _entries[index]; e != null; e = e._next) 
         {
             if (e._hash == hash && key.equals(e._key)) 
                 return e;
         }
+        return null;
+    }    
+    
+    /* ------------------------------------------------------------ */
+    /** Get an entry reference.
+     * <p>
+     * The entries stored in the top level of the maps entry buckets
+     * are never deleted, only nulled. Thus references returned to them
+     * can be kept over calls to reset and used to directly access the
+     * value without a hash lookup.
+     * </p>
+     * <p>
+     * This method returns only such top level entries. 
+     * </p>
+     * @param key The key to lookup.
+     * @return The found entry or null
+     * @throws IllegalStateException if key is not a top level entry
+     */
+    public ImmutableEntry<K,V> getEntryReference(K key)
+    {
+        if (key == null)
+            throw new IllegalArgumentException();
+        
+        final int hash = key.hashCode();
+        final int index=hash & (_entries.length-1);
+        
+        ImmutableEntry<K,V> e = _entries[index];
+        if (e!=null)
+        {
+            if (e._hash == hash && key.equals(e._key)) 
+                return e;
+            throw new IllegalStateException(key+" is not top level");
+        }
+        
         return null;
     }    
     
@@ -126,7 +157,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         final int hash = key.hashCode();
         final int index=hash & (_entries.length-1);
 
-        for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
+        for (ImmutableEntry<K,V> e = _entries[index]; e != null; e = e._next) 
         {
             if (e._hash == hash && key.equals(e._key)) 
                 return e.getValue();
@@ -168,7 +199,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             final int hash = key.hashCode();
             final int index=hash & (_entries.length-1);
 
-            for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
+            for (ImmutableEntry<K,V> e = _entries[index]; e != null; e = e._next) 
             {
                 if (e._hash == hash && key.equals(e._key)) 
                     return true;
@@ -187,7 +218,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             final int hash = key.hashCode();
             final int index=hash & (_entries.length-1);
 
-            for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
+            for (ImmutableEntry<K,V> e = _entries[index]; e != null; e = e._next) 
             {
                 if (e._hash == hash && key.equals(e._key)) 
                     return e._mutable.getValue();
@@ -197,11 +228,8 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
 
         /* ------------------------------------------------------------ */
         /** Get an entry reference.
-         * The first [nominalSize] entries added are guarenteed never to
-         * be deleted from the map, so the references may be used as repeated
-         * quick lookups of the same key.
-         * @param key
-         * @return
+         * @param key The key to lookup.
+         * @return The found entry
          */
         public Map.Entry<K,V> getEntry(K key)
         {
@@ -211,7 +239,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             final int hash = key.hashCode();
             final int index=hash & (_entries.length-1);
             
-            for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
+            for (ImmutableEntry<K,V> e = _entries[index]; e != null; e = e._next) 
             {
                 if (e._hash == hash && key.equals(e._key)) 
                     return e._mutable;
@@ -219,6 +247,46 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             return null;
         }    
 
+        /* ------------------------------------------------------------ */
+        /** Get an entry reference.
+         * <p>
+         * The entries stored in the top level of the maps entry buckets
+         * are never deleted, only nulled. Thus references returned to them
+         * can be kept over calls to reset and used to directly access the
+         * value without a hash lookup.
+         * </p>
+         * <p>
+         * This method returns only such top level entries, or null if one
+         * cannot be created. Entries that do not exist are created with
+         * null values.
+         * </p>
+         * @param key The key to lookup.
+         * @return The found entry
+         * @throws IllegalStateException if key is not a top level entry.
+         */
+        public MutableEntry<K,V> getEntryReference(K key) throws IllegalStateException
+        {
+            if (key == null)
+                throw new IllegalArgumentException();
+            
+            final int hash = key.hashCode();
+            final int index=hash & (_entries.length-1);
+            
+            ImmutableEntry<K,V> e = _entries[index];
+            if (e!=null)
+            {
+                if (e._hash == hash && key.equals(e._key)) 
+                    return e._mutable;
+                throw new IllegalStateException(key+" is not top level");
+            }
+            
+            e = new ImmutableEntry<K,V>(ImmutableHashMap.this,hash,key,null);
+            _entries[index] = e;
+            
+            return e._mutable;
+        }    
+        
+        
         /* ------------------------------------------------------------ */
         @Override
         public V put(K key, V value) 
@@ -231,8 +299,8 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             final int hash = key.hashCode();
             final int index=hash & (_entries.length-1);
             
-            DualEntry<K,V> last = null;
-            for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
+            ImmutableEntry<K,V> last = null;
+            for (ImmutableEntry<K,V> e = _entries[index]; e != null; e = e._next) 
             {
                 if (e._hash == hash && key.equals(e._key)) 
                 {
@@ -242,7 +310,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
                 last=e;
             }
 
-            DualEntry<K,V> e = new DualEntry<K,V>(ImmutableHashMap.this,hash,key,value);
+            ImmutableEntry<K,V> e = new ImmutableEntry<K,V>(ImmutableHashMap.this,hash,key,value);
             if (last==null)
                 _entries[index]=e;
             else
@@ -260,7 +328,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             {
                 int depth=0;
 
-                for (DualEntry<K,V> e = _entries[i]; e != null; e = e._next)
+                for (ImmutableEntry<K,V> e = _entries[i]; e != null; e = e._next)
                 {
                     e._mutable.setValue(null);
                     if (++depth>_entries.length)
@@ -285,7 +353,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             final int hash = key.hashCode();
             final int index=hash & (_entries.length-1);
             
-            for (DualEntry<K,V> e = _entries[index]; e != null; e = e._next) 
+            for (ImmutableEntry<K,V> e = _entries[index]; e != null; e = e._next) 
             {
                 if (e._hash == hash && key.equals(e._key)) 
                 {
@@ -303,6 +371,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         {
             return _size;
         }
+        
     }
 
 
@@ -342,14 +411,25 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    static class DualEntry<K,V> implements Map.Entry<K,V>
+    public static class ImmutableEntry<K,V> implements Map.Entry<K,V>
     {
         private final ImmutableHashMap<K,V> _map;
         private final K _key;
         private final int _hash;
         private V _value;
-        private DualEntry<K,V> _next;
+        private ImmutableEntry<K,V> _next;
+        private final MutableEntry<K,V> _mutable = new MutableEntry<K,V>(this);
 
+        ImmutableEntry(ImmutableHashMap<K,V> map,int hash, K k, V v) 
+        {
+            _map=map;
+            _value = v;
+            if (_value!=null)
+                _map._size++;
+            _key = k;
+            _hash = hash;
+        }
+        
         public K getKey()
         {
             return _key;
@@ -368,56 +448,75 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         {
             throw new UnsupportedOperationException();
         }
-        
-        private Map.Entry<K,V> _mutable = new Map.Entry<K,V>()
-        {
-            public K getKey()
-            {
-                return _key;
-            }
 
-            public V getValue()
-            {
-                if (_value instanceof ImmutableHashMap)
-                    return (V)((ImmutableHashMap)_value).asMutable();
-                return _value;
-            }
-
-            public V setValue(V value)
-            {
-                _map.onChange(_key);
-                
-                V old = _value;
-                _value = value;
-                
-                if (old!=null && _value==null)
-                    _map._size--;
-                else if (old==null && _value!=null)
-                    _map._size++;
-                
-                return old;
-            }
-        };
-        
-        DualEntry(ImmutableHashMap<K,V> map,int hash, K k, V v) 
+        public MutableEntry<K,V> asMutable()
         {
-            _map=map;
-            _value = v;
-            if (_value!=null)
-                _map._size++;
-            _key = k;
-            _hash = hash;
+            return _mutable;
+        }
+        
+        @Override
+        public String toString()
+        {
+            return super.toString()+"("+_key+","+_value+")";
+        }
+
+    }
+
+    public static final class MutableEntry<K,V> implements Map.Entry<K,V>
+    {
+        final ImmutableEntry<K, V> _immutable;
+        
+        MutableEntry(ImmutableEntry<K, V> immutable)
+        {
+            _immutable=immutable;
+        }
+        
+        public K getKey()
+        {
+            return _immutable._key;
+        }
+
+        public V getValue()
+        {
+            if (_immutable._value instanceof ImmutableHashMap)
+                return (V)((ImmutableHashMap)(_immutable._value)).asMutable();
+            return _immutable._value;
+        }
+
+        public V setValue(V value)
+        {
+            _immutable._map.onChange(_immutable._key);
+
+            V old = _immutable._value;
+            _immutable._value = value;
+
+            if (old!=null && _immutable._value==null)
+                _immutable._map._size--;
+            else if (old==null && _immutable._value!=null)
+                _immutable._map._size++;
+
+            return old;
+        }
+
+        public ImmutableEntry<K,V> asImmutable()
+        {
+            return _immutable;
+        }
+        
+        @Override
+        public String toString()
+        {
+            return super.toString()+"("+_immutable._key+","+_immutable._value+")";
         }
     }
-    
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     class EntryIterator 
     {
         protected int _index=0;
-        protected DualEntry<K,V> _entry;
-        protected DualEntry<K,V> _last;
+        protected ImmutableEntry<K,V> _entry;
+        protected ImmutableEntry<K,V> _last;
         
         EntryIterator()
         {
@@ -436,11 +535,11 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             return _entry!=null;
         }
 
-        protected DualEntry<K, V> nextEntry()
+        protected ImmutableEntry<K, V> nextEntry()
         {
             if (_entry==null)
                 throw new NoSuchElementException();
-            DualEntry<K,V> entry=_entry;
+            ImmutableEntry<K,V> entry=_entry;
             
             _entry=_entry._next;
             while(_entry!=null && _entry._value==null)

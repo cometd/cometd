@@ -10,17 +10,17 @@ import java.util.concurrent.ConcurrentMap;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.BayeuxService;
+import org.cometd.server.AbstractService;
 
-public class ChatService extends BayeuxService
+public class ChatService extends AbstractService
 {
     private final ConcurrentMap<String, Map<String, String>> _members = new ConcurrentHashMap<String, Map<String, String>>();
 
     public ChatService(BayeuxServer bayeux)
     {
         super(bayeux,"chat");
-        subscribe("/service/members", "handleMembership");
-        subscribe("/service/privatechat", "privateChat");
+        addService("/service/members", "handleMembership");
+        addService("/service/privatechat", "privateChat");
     }
 
     public void handleMembership(ServerSession session, Map<String, Object> data)

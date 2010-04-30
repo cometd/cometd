@@ -82,7 +82,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         {
             ServerMessage.Mutable message = _queue.poll();
             doSend(_session,message);
-            message.decRef();
         }
     }
 
@@ -109,7 +108,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         ServerMessage.Mutable message = _bayeux.newMessage();
         if (template!=null)
             message.putAll(template);
-        message.incRef();
         message.setChannel(Channel.META_HANDSHAKE);
         message.setId(_idGen.incrementAndGet());
         
@@ -134,7 +132,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
                 _session=null;
         }
         message.setAssociated(null);
-        message.decRef();
     }
 
     /* ------------------------------------------------------------ */
@@ -143,11 +140,9 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         if (_session!=null)
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
-            message.incRef();
             message.setChannel(Channel.META_DISCONNECT);
             message.setId(_idGen.incrementAndGet());
             send(_session,message);
-            message.decRef();
             while (_batch.get()>0)
                 endBatch();
         }
@@ -184,10 +179,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     protected void send(ServerSessionImpl session,ServerMessage.Mutable message)
     {
         if (_batch.get()>0)
-        {
-            message.incRef();
             _queue.add(message);
-        }
         else
             doSend(session,message);
     }
@@ -269,13 +261,11 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
                 throw new IllegalStateException("!handshake");
             
             ServerMessage.Mutable message = _bayeux.newMessage();
-            message.incRef();
             message.setChannel(_id.toString());
             message.setData(data);
             
             send(_session,message);
             message.setAssociated(null);
-            message.decRef();
         }
         
         /* ------------------------------------------------------------ */
@@ -285,7 +275,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
                 throw new IllegalStateException("!handshake");
             
             ServerMessage.Mutable message = _bayeux.newMessage();
-            message.incRef();
             message.setChannel(_id.toString());
             message.setData(data);
             if (id!=null)
@@ -293,7 +282,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             
             send(_session,message);
             message.setAssociated(null);
-            message.decRef();
         }
         
         /* ------------------------------------------------------------ */
@@ -329,7 +317,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         protected void sendSubscribe()
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
-            message.incRef();
             message.setChannel(Channel.META_SUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
             message.setClientId(LocalSessionImpl.this.getId());
@@ -337,23 +324,19 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
 
             send(_session,message);
             message.setAssociated(null);
-            message.decRef();
         }
 
         @Override
         protected void sendUnSubscribe()
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
-            message.incRef();
             message.setChannel(Channel.META_UNSUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
             message.setId(_idGen.incrementAndGet());
 
             send(_session,message);
             message.setAssociated(null);
-            message.decRef();
         }
-
     }
 
 }

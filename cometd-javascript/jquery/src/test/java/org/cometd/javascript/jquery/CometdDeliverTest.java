@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.BayeuxService;
+import org.cometd.server.AbstractService;
 import org.mozilla.javascript.ScriptableObject;
 
 /**
@@ -80,12 +80,12 @@ public class CometdDeliverTest extends AbstractCometdJQueryTest
         }
     }
 
-    public static class DeliverService extends BayeuxService
+    public static class DeliverService extends AbstractService
     {
         public DeliverService(BayeuxServerImpl bayeux)
         {
             super(bayeux, "deliver");
-            subscribe("/deliver", "deliver");
+            addService("/deliver", "deliver");
         }
 
         public void deliver(ServerSession remote, String channel, Object messageData, String messageId)
