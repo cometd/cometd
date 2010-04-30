@@ -30,7 +30,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.BayeuxService;
+import org.cometd.server.AbstractService;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.ext.TimesyncExtension;
 import org.eclipse.jetty.util.log.Log;
@@ -56,12 +56,12 @@ public class CometdDemoServlet extends GenericServlet
             System.err.println(bayeux.dump());
     }
 
-    public static class EchoRPC extends BayeuxService
+    public static class EchoRPC extends AbstractService
     {
         public EchoRPC(BayeuxServer bayeux)
         {
             super(bayeux,"echo");
-            subscribe("/service/echo","doEcho");
+            addService("/service/echo","doEcho");
         }
 
         public Object doEcho(ServerSession session, Object data)
@@ -71,14 +71,14 @@ public class CometdDemoServlet extends GenericServlet
         }
     }
 
-    public static class Monitor extends BayeuxService
+    public static class Monitor extends AbstractService
     {
         public Monitor(BayeuxServer bayeux)
         {
             super(bayeux,"monitor");
-            subscribe("/meta/subscribe","monitorSubscribe");
-            subscribe("/meta/unsubscribe","monitorUnsubscribe");
-            subscribe("/meta/*","monitorMeta");
+            addService("/meta/subscribe","monitorSubscribe");
+            addService("/meta/unsubscribe","monitorUnsubscribe");
+            addService("/meta/*","monitorMeta");
         }
 
         public void monitorSubscribe(ServerSession session, ServerMessage message)

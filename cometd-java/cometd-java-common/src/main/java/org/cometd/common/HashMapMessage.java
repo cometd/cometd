@@ -1,5 +1,6 @@
 package org.cometd.common;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,9 +72,16 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     
 
     /* ------------------------------------------------------------ */
-    public void addJSON(StringBuffer buffer)
+    public void addJSON(Appendable buffer)
     {
-        buffer.append(getJSON());
+        try
+        {
+            buffer.append(getJSON());
+        }
+        catch(IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     /* ------------------------------------------------------------ */

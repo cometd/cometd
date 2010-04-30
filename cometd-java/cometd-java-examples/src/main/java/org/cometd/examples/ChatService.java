@@ -15,11 +15,11 @@ import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.BayeuxService;
+import org.cometd.server.AbstractService;
 import org.cometd.server.filter.DataFilterMessageListener;
 import org.cometd.server.filter.NoMarkupFilter;
 
-public class ChatService extends BayeuxService
+public class ChatService extends AbstractService
 {
     private final ConcurrentMap<String, Map<String, String>> _members = new ConcurrentHashMap<String, Map<String, String>>();
 
@@ -30,8 +30,8 @@ public class ChatService extends BayeuxService
         bayeux.getChannel("/chat/**",true).addListener(filters);
         bayeux.getChannel("/service/privatechat",true).addListener(filters);
         
-        subscribe("/service/members", "handleMembership");
-        subscribe("/service/privatechat", "privateChat");
+        addService("/service/members", "handleMembership");
+        addService("/service/privatechat", "privateChat");
     }
 
     public void handleMembership(ServerSession client, Map<String, Object> data)

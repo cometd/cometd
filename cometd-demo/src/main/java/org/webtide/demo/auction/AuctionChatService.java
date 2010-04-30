@@ -17,10 +17,10 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
-import org.cometd.server.BayeuxService;
+import org.cometd.server.AbstractService;
 import org.eclipse.jetty.util.log.Log;
 
-public class AuctionChatService extends BayeuxService
+public class AuctionChatService extends AbstractService
 {
     /**
      * A map(channel, map(userName, clientId))
@@ -40,8 +40,8 @@ public class AuctionChatService extends BayeuxService
         if (_seti==null)
             throw new RuntimeException("!"+Seti.SETI_ATTRIBUTE);
 
-        subscribe("/auction/chat/**", "trackMembers");
-        subscribe("/service/auction/chat", "privateChat");
+        addService("/auction/chat/**", "trackMembers");
+        addService("/service/auction/chat", "privateChat");
     }
 
     public void trackMembers(final ServerSession joiner, final String channelName, Object data, final String messageId)

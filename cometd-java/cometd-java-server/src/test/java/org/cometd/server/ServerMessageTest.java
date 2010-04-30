@@ -4,6 +4,7 @@ import java.util.Map;
 
 import junit.framework.Assert;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.ServerMessage;
 import org.junit.Test;
 
 
@@ -14,8 +15,7 @@ public class ServerMessageTest
     {
         String json = "{\"id\":\"12345\", \"clientId\":\"jva73siaj92jdafa\", \"data\":{\"name\":\"value\"}, \"ext\":{\"name\":\"value\"}}";
 
-        ServerMessagePoolImpl pool = new ServerMessagePoolImpl();
-        Message[] messages=pool.parseMessages(json);
+        Message[] messages=ServerMessageImpl.parseMessages(json);
         ServerMessageImpl.MutableMessage mutable= (ServerMessageImpl.MutableMessage)messages[0];
         ServerMessageImpl immutable= mutable.asImmutable();
 
@@ -41,5 +41,23 @@ public class ServerMessageTest
         ((Map<String, Object>)mutable.getData()).put("y","9");
         Assert.assertEquals("8",immutable.getDataAsMap().get("x"));
         Assert.assertEquals("9",immutable.getDataAsMap().get("y"));
+    }
+    
+    @Test
+    public void testSpecific() throws Exception
+    {
+        ServerMessageImpl.Mutable mutable= new ServerMessageImpl().asMutable();
+        ServerMessage immutable = mutable.asImmutable();
+        
+        mutable.put("channel","/foo/bar");
+        
+        Assert.assertEquals(1,mutable.size());
+        
+        Assert.assertEquals("/foo/bar",mutable.getChannel());
+        Assert.assertEquals("/foo/bar",immutable.getChannel());
+        Assert.assertEquals("channel",immutable.keySet().iterator().next());
+        Assert.assertEquals("/foo/bar",immutable.values().iterator().next());
+
+        
     }
 }

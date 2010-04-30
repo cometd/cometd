@@ -55,10 +55,6 @@ public class AcknowledgedMessagesClientExtension implements Extension
                         if (acked.longValue()<=_lastAck)
                         {
                             Log.debug(session+" lost ACK "+acked.longValue()+"<="+_lastAck);
-                            for (ServerMessage m:_unackedQueue)
-                                m.incRef();
-                            for (ServerMessage m:_queue)
-                                m.decRef();
                             _queue.clear();
                             _queue.addAll(_unackedQueue);
                         }
@@ -74,11 +70,6 @@ public class AcknowledgedMessagesClientExtension implements Extension
                                 if (_unackedQueue.getAssociatedIdUnsafe(s - 1) <= acked)
                                 {
                                     // we can just clear the queue
-                                    for (int i=0; i < s; i++)
-                                    {
-                                        final ServerMessage q=_unackedQueue.getUnsafe(i);
-                                        q.decRef();
-                                    }
                                     _unackedQueue.clear();
                                 }
                                 else
@@ -90,7 +81,6 @@ public class AcknowledgedMessagesClientExtension implements Extension
                                         if (a <= acked)
                                         {
                                             final ServerMessage q=_unackedQueue.remove();
-                                            q.decRef();
                                             continue;
                                         }
                                         break;
@@ -111,7 +101,6 @@ public class AcknowledgedMessagesClientExtension implements Extension
     {
         synchronized(_queue)
         {
-            message.incRef();
             _unackedQueue.add(message);
         }
         

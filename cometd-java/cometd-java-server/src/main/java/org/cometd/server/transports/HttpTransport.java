@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerTransport;
 
 
@@ -44,7 +45,7 @@ public abstract class HttpTransport extends ServerTransport
 
         // Get message batches either as JSON body or as message parameters
         if (content_type!=null && !content_type.startsWith("application/x-www-form-urlencoded"))
-            return _bayeux.getServerMessagePool().parseMessages(request.getReader());
+            return ServerMessageImpl.parseMessages(request.getReader());
         
         String[] batches=request.getParameterValues(MESSAGE_PARAM);
         
@@ -52,14 +53,14 @@ public abstract class HttpTransport extends ServerTransport
             return null;
 
         if (batches.length == 1)
-            return _bayeux.getServerMessagePool().parseMessages(batches[0]);
+            return ServerMessageImpl.parseMessages(batches[0]);
 
         List<ServerMessage.Mutable> messages=new ArrayList<ServerMessage.Mutable>();
         for (int i=0; i < batches.length; i++)
         {
             if (batches[i] == null)
                 continue;
-            messages.addAll(Arrays.asList(_bayeux.getServerMessagePool().parseMessages(batches[i])));
+            messages.addAll(Arrays.asList(ServerMessageImpl.parseMessages(batches[i])));
         }
         return messages.toArray(new ServerMessage.Mutable[messages.size()]);
     }

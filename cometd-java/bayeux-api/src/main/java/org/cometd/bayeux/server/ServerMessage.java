@@ -22,23 +22,6 @@ public interface ServerMessage extends Message
      * queue to be flushed.
      */
     boolean isLazy();
-    
-    /* ------------------------------------------------------------ */
-    /** Increment reference count for the messsage.
-     * If a reference to a message is to be kept longer than the calling scope 
-     * into which a message was passed, then the holder of the reference should
-     * call incRef() to avoid the message being cleared and pooled.
-     */
-    void incRef();
-    
-    /* ------------------------------------------------------------ */
-    /** Decrement reference for the messsage.
-     * If a reference to a message is to be kept longer than the calling scope 
-     * into which a message was passed, then the holder of the reference should
-     * call decRef() once the reference is cleared, so the message can be cleared 
-     * and pooled.
-     */
-    void decRef();
 
     /* ------------------------------------------------------------ */
     ServerMessage.Mutable asMutable();

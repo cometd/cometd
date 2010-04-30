@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.BayeuxService;
+import org.cometd.server.AbstractService;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.mozilla.javascript.ScriptableObject;
 
@@ -104,7 +104,7 @@ public class CometdAckAndReloadExtensionsTest extends AbstractCometdJQueryTest
         Thread.sleep(500); // Wait for the disconnect to return
     }
 
-    private static class AckService extends BayeuxService
+    private static class AckService extends AbstractService
     {
         private AckService(BayeuxServerImpl bayeux)
         {

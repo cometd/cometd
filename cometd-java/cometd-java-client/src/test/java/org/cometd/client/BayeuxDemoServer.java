@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.BayeuxService;
+import org.cometd.server.AbstractService;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -78,7 +78,7 @@ public class BayeuxDemoServer
         new StatisticsService(bayeux);
     }
 
-    public static class StatisticsService extends BayeuxService implements Runnable
+    public static class StatisticsService extends AbstractService implements Runnable
     {
         private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         private final com.sun.management.OperatingSystemMXBean operatingSystem;
@@ -108,8 +108,8 @@ public class BayeuxDemoServer
         private StatisticsService(BayeuxServer bayeux)
         {
             super(bayeux, "statistics-service");
-            subscribe("/service/statistics/start", "startStatistics");
-            subscribe("/service/statistics/stop", "stopStatistics");
+            addService("/service/statistics/start", "startStatistics");
+            addService("/service/statistics/stop", "stopStatistics");
             this.operatingSystem = (com.sun.management.OperatingSystemMXBean)ManagementFactory.getOperatingSystemMXBean();
             this.jitCompiler = ManagementFactory.getCompilationMXBean();
             this.heapMemory = ManagementFactory.getMemoryMXBean();

@@ -51,7 +51,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final SecureRandom _random = new SecureRandom();
     private final List<BayeuxServerListener> _listeners = new CopyOnWriteArrayList<BayeuxServerListener>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
-    private final ServerMessagePoolImpl _pool = new ServerMessagePoolImpl();
     private final ServerChannelImpl _root=new ServerChannelImpl(this,null,new ChannelId("/"));
     private final ConcurrentMap<String, ServerSessionImpl> _sessions = new ConcurrentHashMap<String, ServerSessionImpl>();
     private final ConcurrentMap<String, ServerChannelImpl> _channels = new ConcurrentHashMap<String, ServerChannelImpl>();
@@ -248,12 +247,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public ServerMessagePoolImpl getServerMessagePool()
-    {
-        return _pool;
-    }
-
-    /* ------------------------------------------------------------ */
     public void setCurrentTransport(ServerTransport transport)
     {
         _currentTransport.set(transport);
@@ -353,13 +346,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public ServerMessage.Mutable newMessage()
     {
-        return _pool.getServerMessage();
+        return new ServerMessageImpl().asMutable();
     }
 
     /* ------------------------------------------------------------ */
     public ServerMessage.Mutable newMessage(ServerMessage tocopy)
     {
-        ServerMessage.Mutable mutable = _pool.getServerMessage();
+        ServerMessage.Mutable mutable = new ServerMessageImpl().asMutable();
         for (String key : tocopy.keySet())
             mutable.put(key,tocopy.get(key));
         return mutable;
@@ -457,9 +450,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     out.setChannel(message.getChannel());
                     out.setData(message.getData());
                     out.setId(message.getId());
-                    out.incRef();
                     channel.publish(session,out);
-                    out.decRef();
                 }
 
                 reply = createReply(message);
