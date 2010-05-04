@@ -9,7 +9,7 @@ import org.cometd.bayeux.Message;
  */
 public interface TransportListener
 {
-    void onMessages(List<Message.Mutable> metaMessages);
+    void onMessages(List<Message.Mutable> messages);
 
     void onConnectException(Throwable x);
 

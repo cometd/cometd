@@ -99,17 +99,17 @@ public class LongPollingTransportTest
             {
                 final CountDownLatch latch = new CountDownLatch(1);
                 ClientTransport transport = new LongPollingTransport(_options,httpClient);
-                transport.init(null,serverURI,new AbstractTransportListener()
+                transport.init(null,serverURI);
+
+                long start = System.nanoTime();
+                transport.send(new AbstractTransportListener()
                 {
                     @Override
                     public void onMessages(List<Message.Mutable> messages)
                     {
                         latch.countDown();
                     }
-                });
-
-                long start = System.nanoTime();
-                transport.send(new HashMapMessage());
+                },new HashMapMessage());
                 long end = System.nanoTime();
 
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
@@ -176,7 +176,10 @@ public class LongPollingTransportTest
             {
                 ClientTransport transport = new LongPollingTransport(_options,httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                transport.init(null,serverURI,new AbstractTransportListener()
+                transport.init(null,serverURI);
+
+                long start = System.nanoTime();
+                transport.send(new AbstractTransportListener()
                 {
                     @Override
                     public void onProtocolError(String info)
@@ -184,9 +187,6 @@ public class LongPollingTransportTest
                         latch.countDown();
                     }
                 });
-
-                long start = System.nanoTime();
-                transport.send();
                 long end = System.nanoTime();
 
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
@@ -219,7 +219,9 @@ public class LongPollingTransportTest
         {
             ClientTransport transport = new LongPollingTransport(_options,httpClient);
             final CountDownLatch latch = new CountDownLatch(1);
-            transport.init(null,serverURI,new AbstractTransportListener()
+            transport.init(null,serverURI);
+
+            transport.send(new AbstractTransportListener()
             {
                 @Override
                 public void onConnectException(Throwable x)
@@ -227,8 +229,6 @@ public class LongPollingTransportTest
                     latch.countDown();
                 }
             });
-
-            transport.send();
 
             assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
         }
@@ -275,7 +275,10 @@ public class LongPollingTransportTest
             {
                 ClientTransport transport = new LongPollingTransport(_options,httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                transport.init(null,serverURI,new AbstractTransportListener()
+                transport.init(null,serverURI);
+
+                long start = System.nanoTime();
+                transport.send(new AbstractTransportListener()
                 {
                     @Override
                     public void onException(Throwable x)
@@ -283,9 +286,6 @@ public class LongPollingTransportTest
                         latch.countDown();
                     }
                 });
-
-                long start = System.nanoTime();
-                transport.send();
                 long end = System.nanoTime();
 
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
@@ -352,7 +352,9 @@ public class LongPollingTransportTest
             {
                 ClientTransport transport = new LongPollingTransport(_options,httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                transport.init(null,serverURI,new AbstractTransportListener()
+                transport.init(null,serverURI);
+
+                transport.send(new AbstractTransportListener()
                 {
                     @Override
                     public void onExpire()
@@ -360,8 +362,6 @@ public class LongPollingTransportTest
                         latch.countDown();
                     }
                 });
-
-                transport.send();
 
                 assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
             }

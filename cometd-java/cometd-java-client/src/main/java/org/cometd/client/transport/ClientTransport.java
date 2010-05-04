@@ -24,8 +24,6 @@ public abstract class ClientTransport extends AbstractTransport
     
     protected BayeuxClient _bayeux;
     protected HttpURI _uri;
-
-    private TransportListener _listener;
     
     protected long _timeout=-1;
     protected long _interval=-1;
@@ -42,11 +40,10 @@ public abstract class ClientTransport extends AbstractTransport
     }
     
     /* ------------------------------------------------------------ */
-    public void init(BayeuxClient bayeux, HttpURI uri, TransportListener listener)
+    public void init(BayeuxClient bayeux, HttpURI uri)
     {
         _bayeux=bayeux;
         _uri=uri;
-        _listener=listener;
         
         _timeout=getOption(TIMEOUT_OPTION,_timeout);
         _interval=getOption(INTERVAL_OPTION,_interval);
@@ -60,38 +57,8 @@ public abstract class ClientTransport extends AbstractTransport
     public abstract boolean accept(String version);
     
     /* ------------------------------------------------------------ */
-    public abstract void send(Message... messages);
+    public abstract void send(TransportListener listener, Message... messages);
     
-    /* ------------------------------------------------------------ */
-    protected void notifyMessages(List<Message.Mutable> messages)
-    {
-        _listener.onMessages(messages);
-    }
-
-    /* ------------------------------------------------------------ */
-    protected void notifyConnectException(Throwable x)
-    {
-        _listener.onConnectException(x);
-    }
-
-    /* ------------------------------------------------------------ */
-    protected void notifyException(Throwable x)
-    {
-        _listener.onException(x);
-    }
-
-    /* ------------------------------------------------------------ */
-    protected void notifyExpire()
-    {
-        _listener.onExpire();
-    }
-
-    /* ------------------------------------------------------------ */
-    protected void notifyProtocolError(String info)
-    {
-        _listener.onProtocolError(info);
-    }
-
     /* ------------------------------------------------------------ */
     public Message.Mutable newMessage()
     {
@@ -106,7 +73,6 @@ public abstract class ClientTransport extends AbstractTransport
             return Collections.singletonList((Message.Mutable)object);
         return Arrays.asList((Message.Mutable[])object);
     }
-    
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

@@ -96,11 +96,23 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     private final HttpURI _server;
     private volatile State _state = State.DISCONNECTED;
 
-    
     private ClientTransport _transport;
     
     private final TransportRegistry _transportRegistry = new TransportRegistry();
     private final HttpClient _privateHttpClient;
+    private final AtomicBoolean _batchInTransit = new AtomicBoolean();
+    
+    private final Listener _listener = new Listener();
+    private final Listener _batchListener = new Listener()
+    {
+        @Override
+        public void complete()
+        {
+            _batchInTransit.set(false);
+            if (_batch.get()==0 && _queue.size()>0)
+                sendBatch();
+        }
+    };
     
 
     
@@ -380,14 +392,16 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
 
         updateTransport(_transportRegistry.getTransport(allowed.get(0)));
         updateState(State.HANDSHAKING);
-        doSend(message);
+        doSend(_listener,message);
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see #onConnectException(Throwable)
-     * @see #onException(Throwable)
-     * @see #onExpire()
+    /** Blocking Handshake.
+     * Unlike {@link #handshake()}, this call blocks until the handshake 
+     * succeeds or fails.
+     * @param waitMs The time to wait in ms for the completion.
+     * @return The state that the client is in after the handshake completes, failed or 
+     * the wait expired.
      */
     public State handshake(long waitMs)
     {
@@ -460,25 +474,29 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     }    
     
     /* ------------------------------------------------------------ */
-    protected void doSend(Message.Mutable message)
+    protected void doSend(TransportListener listener, final Message.Mutable... messages)
     {
-        if (message.isMeta())
+        for (int i=0;i<messages.length;i++)
         {
-            for (Extension extension : _extensions)
-                if(!extension.sendMeta(this,message))
-                    return;
-        }
-        else
-        {
-            for (Extension extension : _extensions)
-                if(!extension.send(this,message))
-                    return;
+            final Message.Mutable message=messages[i];
+            if (message.isMeta())
+            {
+                for (Extension extension : _extensions)
+                    if(!extension.sendMeta(this,message))
+                        return;
+            }
+            else
+            {
+                for (Extension extension : _extensions)
+                    if(!extension.send(this,message))
+                        return;
+            }
+
+            if (_clientId!=null)
+                message.setClientId(_clientId);
         }
         
-        if (_clientId!=null)
-            message.setClientId(_clientId);
-        
-        _transport.send(message);
+        _transport.send(listener,messages);
     }
 
     /* ------------------------------------------------------------ */
@@ -585,10 +603,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     /* ------------------------------------------------------------ */
     protected void send(Message.Mutable message)
     {
-        if (_batch.get()>0)
-            _queue.add(message);
-        else
-            doSend(message);
+        _queue.add(message);
+        if (_batch.get()==0)
+            sendBatch();
     }
     
     /* ------------------------------------------------------------ */
@@ -598,11 +615,14 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     @Override
     protected void sendBatch()
     {
-        int size=_queue.size();
-        while(size-->0)
+        if (_batchInTransit.compareAndSet(false,true))
         {
-            Message.Mutable message = _queue.poll();
-            doSend(message);
+            int size=_queue.size();
+            Message.Mutable[] messages=new Message.Mutable[size];
+
+            for (int i=0;i<size;i++)
+                messages[i] = _queue.poll();
+            doSend(_batchListener,messages);
         }
     }
 
@@ -618,7 +638,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             _transport=null;
         }
         
-        transport.init(this, _server, new Listener());
+        transport.init(this,_server);
         _transport=transport;
     }
     
@@ -723,7 +743,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         if (State.CONNECTING.equals(_state))
             message.put(Message.CONNECTION_TYPE_FIELD, _transport.getName());
         message.setId(_idGen.incrementAndGet());
-        doSend(message);
+        doSend(_listener,message);
     }
 
     /* ------------------------------------------------------------ */
@@ -738,6 +758,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     }
     
     /* ------------------------------------------------------------ */
+    /** Wait for client state.
+     * Wait for one of several states to be achieved by the client.
+     * @param waitMs the time in MS to wait for a state
+     * @param states The states to wait for
+     * @return True if a waited for state is achieved.
+     */
     public boolean waitFor(long waitMs,State... states)
     {
         if (states.length==0)
@@ -862,6 +888,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         }
     }
     
+    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     private static class ExpirableCookie
     {
         private final String _name;
@@ -910,9 +939,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         
         
     }
-
+    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     private class Listener implements TransportListener
     {
+        public void complete()
+        {    
+        }
+        
         @Override
         public void onConnectException(Throwable x)
         {
@@ -921,6 +956,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
                 updateState(State.UNCONNECTED);
             _backoffTries++;
             followAdvice();
+            complete();
         }
 
         @Override
@@ -931,6 +967,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
                 updateState(State.UNCONNECTED);
             _backoffTries++;
             followAdvice();
+            complete();
         }
 
         @Override
@@ -941,6 +978,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
                 updateState(State.UNCONNECTED);
             _backoffTries++;
             followAdvice();
+            complete();
         }
 
         @Override
@@ -948,6 +986,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         {
             BayeuxClient.this.onMessages(messages);
             receive(messages);
+            complete();
         }
 
         @Override
@@ -958,6 +997,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
                 updateState(State.UNCONNECTED);
             _backoffTries++;
             followAdvice();
+            complete();
         }
     }
 

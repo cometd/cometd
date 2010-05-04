@@ -3,6 +3,7 @@ package org.cometd.client;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Random;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -118,8 +119,8 @@ public class BayeuxClientTest extends TestCase
     /* ------------------------------------------------------------ */
     public void testClient() throws Exception
     {
-        final Exchanger<Object> exchanger = new Exchanger<Object>();
-
+        final BlockingArrayQueue<Object> results = new BlockingArrayQueue<Object>();
+        
         BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_port+"/cometd");
         
         final AtomicBoolean connected = new AtomicBoolean();
@@ -150,7 +151,7 @@ public class BayeuxClientTest extends TestCase
                 try
                 {
                     System.out.println("<<"+message+" @ "+channel);
-                    exchanger.exchange(message,5,TimeUnit.SECONDS);
+                    results.offer(message);
                 }
                 catch (Exception e)
                 {
@@ -161,13 +162,13 @@ public class BayeuxClientTest extends TestCase
         
         client.handshake();
 
-        Message message = (Message)exchanger.exchange(null,1,TimeUnit.SECONDS);
+        Message message = (Message)results.poll(1,TimeUnit.SECONDS);
         assertEquals(Channel.META_HANDSHAKE,message.getChannel());
         assertTrue(message.isSuccessful());
         String id = client.getId();
         assertTrue(id!=null);
 
-        message = (Message)exchanger.exchange(null,1,TimeUnit.SECONDS);
+        message = (Message)results.poll(1,TimeUnit.SECONDS);
         assertEquals(Channel.META_CONNECT,message.getChannel());
         assertTrue(message.isSuccessful());
 
@@ -179,7 +180,7 @@ public class BayeuxClientTest extends TestCase
                 try
                 {
                     System.out.println("a<"+message+" @ "+channel);
-                    exchanger.exchange(message,5,TimeUnit.SECONDS);
+                    results.offer(message);
                 }
                 catch (Exception e)
                 {
@@ -187,32 +188,89 @@ public class BayeuxClientTest extends TestCase
                 }
             }
         });
-        
-        message = (Message)exchanger.exchange(null,1,TimeUnit.SECONDS);
+
+        message = (Message)results.poll(1,TimeUnit.SECONDS);
         assertEquals(Channel.META_SUBSCRIBE,message.getChannel());
         assertTrue(message.isSuccessful());
 
         client.getChannel("/a/channel").publish("data");
-        message = (Message)exchanger.exchange(null,1,TimeUnit.SECONDS);
+        message = (Message)results.poll(1,TimeUnit.SECONDS);
         assertEquals("data",message.getData());
 
         client.disconnect();
-        boolean connect_first=false;
-        message = (Message)exchanger.exchange(null,1,TimeUnit.SECONDS);
-        if (Channel.META_CONNECT.equals(message.getChannel()))
-        {
-            connect_first=true;
-            message = (Message)exchanger.exchange(null,1,TimeUnit.SECONDS);
-        }
-        assertEquals(Channel.META_DISCONNECT,message.getChannel());
-        assertTrue(message.isSuccessful());
+        assertTrue(client.waitFor(1000,BayeuxClient.State.DISCONNECTED));
+    }
+
+    /* ------------------------------------------------------------ */
+    public void testAsync() throws Exception
+    {
+        BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_port+"/cometd");
         
-        if (!connect_first)
+        final AtomicBoolean connected = new AtomicBoolean();
+        
+        client.getChannel(Channel.META_CONNECT).addListener(new MetaChannelListener()
         {
-            message = (Message)exchanger.exchange(null,1,TimeUnit.SECONDS);
-            assertEquals(Channel.META_CONNECT,message.getChannel());
-            assertTrue(message.isSuccessful());
-        }
+            @Override
+            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            {
+                connected.set(successful);
+            }
+        });
+        
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new MetaChannelListener()
+        {
+            @Override
+            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            {
+                connected.set(false);
+            }
+        });
+        
+        /*
+        client.getChannel("/**").addListener(new SessionChannel.MessageListener()
+        {
+            @Override
+            public void onMessage(ClientSession session, Message message)
+            {
+                System.err.println("Client: "+message);
+            }
+        });
+        
+        _bayeux.getChannel("/**",true).addListener(new ServerChannel.MessageListener()
+        {
+            
+            @Override
+            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
+            {
+                System.err.println("Servr: "+message);
+                return true;
+            }
+        });
+        */
+        
+
+        final BlockingArrayQueue<String> messages = new BlockingArrayQueue<String>();
+        
+        client.handshake();
+        client.getChannel("/foo/bar").subscribe(new SubscriberListener()
+        {
+            @Override
+            public void onMessage(SessionChannel channel, Message message)
+            {
+                System.err.println("message "+message);
+                messages.add(channel.getId());
+                messages.add(message.getData().toString());
+            }
+        });
+        client.getChannel("/foo/bar").publish("Hello");
+
+        assertTrue(client.waitFor(1000,BayeuxClient.State.CONNECTED));
+        
+        assertEquals("/foo/bar",messages.poll(1,TimeUnit.SECONDS));
+        assertEquals("Hello",messages.poll(1,TimeUnit.SECONDS));
+        
+        client.disconnect();
+        assertTrue(client.waitFor(1000,BayeuxClient.State.DISCONNECTED));
     }
     
     public void testRetry() throws Exception

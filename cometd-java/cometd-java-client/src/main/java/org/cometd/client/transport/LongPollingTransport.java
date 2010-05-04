@@ -38,15 +38,15 @@ public class LongPollingTransport extends ClientTransport
     }
 
     @Override
-    public void init(BayeuxClient bayeux, HttpURI uri, TransportListener listener)
+    public void init(BayeuxClient bayeux, HttpURI uri)
     {
-        super.init(bayeux, uri, listener);
+        super.init(bayeux, uri);
     }
 
     @Override
-    public void send(Message... messages)
+    public void send(final TransportListener listener, Message... messages)
     {
-        HttpExchange httpExchange = new TransportExchange();
+        HttpExchange httpExchange = new TransportExchange(listener);
         httpExchange.setMethod("POST");
         
         // TODO: handle extra path for handshake, connect and disconnect
@@ -66,15 +66,18 @@ public class LongPollingTransport extends ClientTransport
         }
         catch (Exception x)
         {
-            notifyException(x);
+            listener.onException(x);
         }
     }
 
     private class TransportExchange extends ContentExchange
-    {
-        private TransportExchange()
+    {        
+        TransportListener _listener;
+        
+        private TransportExchange(TransportListener listener)
         {
             super(true);
+            _listener=listener;
         }
 
         @Override
@@ -86,33 +89,33 @@ public class LongPollingTransport extends ClientTransport
                 if (content!=null && content.length()>0)
                 {
                     List<Message.Mutable> messages = toMessages(getResponseContent());
-                    notifyMessages(messages);
+                    _listener.onMessages(messages);
                 }
                 else
-                    notifyProtocolError(this+" 200 null content");
+                    _listener.onProtocolError(this+" 200 null content");
             }
             else
             {
-                notifyProtocolError(this+" "+getResponseStatus());
+                _listener.onProtocolError(this+" "+getResponseStatus());
             }
         }
 
         @Override
         protected void onConnectionFailed(Throwable x)
         {
-            notifyConnectException(x);
+            _listener.onConnectException(x);
         }
 
         @Override
         protected void onException(Throwable x)
         {
-            notifyException(x);
+            _listener.onException(x);
         }
 
         @Override
         protected void onExpire()
         {
-            notifyExpire();
+            _listener.onExpire();
         }
     }
 
