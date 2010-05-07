@@ -85,7 +85,8 @@ public class ClientImpl implements Client
     {
         _extensions=(Extension[])LazyList.addToArray(_extensions,ext,Extension.class);
     }
-
+    
+    /* ------------------------------------------------------------ */
     public void removeExtension(Extension ext)
     {
         _extensions=(Extension[])LazyList.removeFromArray(_extensions,ext);

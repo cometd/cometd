@@ -19,6 +19,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.cometd.Bayeux;
 import org.cometd.Channel;
@@ -50,12 +52,40 @@ public class ChannelImpl implements Channel
     private volatile boolean _persistent;
     private volatile int _split;
     private volatile boolean _lazy;
+    
+    private final CountDownLatch _initialized = new CountDownLatch(1);
 
     /* ------------------------------------------------------------ */
     protected ChannelImpl(String id, AbstractBayeux bayeux)
     {
         _id=new ChannelId(id);
         _bayeux=bayeux;
+    }
+
+    /* ------------------------------------------------------------ */
+    /* wait for initialized call.
+     * wait for bayeux max interval for the channel to be initialized,
+     * which means waiting for addChild to finish calling bayeux.addChannel,
+     * which calls all the listeners.
+     * 
+     */
+    private void waitForInitialized()
+    {
+        try
+        {
+            if (!_initialized.await(_bayeux.getMaxInterval(),TimeUnit.SECONDS))
+                throw new IllegalStateException("Not Initialized: "+this);
+        }
+        catch(InterruptedException e)
+        {
+            throw new IllegalStateException("Initizlization interrupted: "+this);
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void initialized()
+    {
+        _initialized.countDown();
     }
 
     /* ------------------------------------------------------------ */
@@ -105,13 +135,17 @@ public class ChannelImpl implements Channel
             // add the channel to this channels
             ChannelImpl old=_children.putIfAbsent(next,channel);
             if (old != null)
+            {
+                old.waitForInitialized();
                 return old;
+            }
 
             if (ChannelId.WILD.equals(next))
                 _wild=channel;
             else if (ChannelId.WILDWILD.equals(next))
                 _wildWild=channel;
             _bayeux.addChannel(channel);
+            channel.initialized();
             return channel;
         }
         else
@@ -147,6 +181,8 @@ public class ChannelImpl implements Channel
             return null;
 
         ChannelImpl channel=_children.get(next);
+        if (channel!=null)
+            channel.waitForInitialized();
 
         if (channel == null || channel.getChannelId().depth() == id.depth())
         {
