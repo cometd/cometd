@@ -258,6 +258,10 @@ public class ServerChannelTest extends Assert
         _bayeux.getChannel("/foo/bar/baz",true).remove();
         assertEquals(foobar,_bayeux.getChannel("/foo/bar",false));
         root.doSweep();
+        assertNotNull(_bayeux.getChannel("/foo/bar",false));
+        assertNotNull(_bayeux.getChannel("/foo",false));
+        root.doSweep();
+        root.doSweep();
         assertNull(_bayeux.getChannel("/foo/bar",false));
         assertNull(_bayeux.getChannel("/foo",false));
         
@@ -270,6 +274,8 @@ public class ServerChannelTest extends Assert
         foobarbaz.subscribe(session0);
         ((ServerChannelImpl)_bayeux.getChannel("/foo",false)).subscribe(session0);
         root.doSweep();
+        root.doSweep();
+        root.doSweep();
         assertNotNull(_bayeux.getChannel("/foo/bar/baz",false));
         assertNotNull(_bayeux.getChannel("/foo/bar",false));
         assertNotNull(_bayeux.getChannel("/foo",false));
@@ -280,6 +286,8 @@ public class ServerChannelTest extends Assert
         assertNotNull(_bayeux.getChannel("/foo",false));
     
         ((ServerChannelImpl)_bayeux.getChannel("/foo",false)).unsubscribe(session0);
+        root.doSweep();
+        root.doSweep();
         root.doSweep();
         assertNull(_bayeux.getChannel("/foo",false));
     }

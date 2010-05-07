@@ -6,6 +6,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -26,11 +28,12 @@ public class ServerChannelImpl implements ServerChannel
     private final boolean _meta;
     private final boolean _broadcast;
     private final boolean _service;
+    private final CountDownLatch _initialized;
     private boolean _lazy;
     private boolean _persistent;
     private ServerChannelImpl _wild;
     private ServerChannelImpl _deepWild;
-    private volatile boolean _used;
+    private volatile int _used=-1;
 
     /* ------------------------------------------------------------ */
     protected ServerChannelImpl(BayeuxServerImpl bayeux, ServerChannelImpl parent, ChannelId id)
@@ -41,9 +44,36 @@ public class ServerChannelImpl implements ServerChannel
         _meta=_id.isMeta();
         _service=_id.isService();
         _broadcast=!isMeta()&&!isService();
+        _initialized=new CountDownLatch(1);
         setPersistent(!_broadcast);
     }
 
+    /* ------------------------------------------------------------ */
+    /* wait for initialised call.
+     * wait for bayeux max interval for the channel to be initialised,
+     * which means waiting for addChild to finish calling bayeux.addChannel,
+     * which calls all the listeners.
+     * 
+     */
+    private void waitForInitialized()
+    {
+        try
+        {
+            if (!_initialized.await(5,TimeUnit.SECONDS))
+                throw new IllegalStateException("Not Initialized: "+this);
+        }
+        catch(InterruptedException e)
+        {
+            throw new IllegalStateException("Initizlization interrupted: "+this);
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void initialized()
+    {
+        _initialized.countDown();
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @param session
@@ -61,7 +91,7 @@ public class ServerChannelImpl implements ServerChannel
         for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
             if (listener instanceof BayeuxServer.SubscriptionListener)
                 ((BayeuxServer.SubscriptionListener)listener).subscribed(session,this);
-        _used=true;
+        _used=0;
         return true;
     }
 
@@ -193,17 +223,24 @@ public class ServerChannelImpl implements ServerChannel
             ServerChannelImpl old=_children.putIfAbsent(next,child);
             if (old==null)
             {        
-                _used=true;
+                _used=0;
 
                 if (ChannelId.WILD.equals(next))
                     _wild=child;
                 else if (ChannelId.DEEPWILD.equals(next))
                     _deepWild=child;
                 _bayeux.addServerChannel(child);
+                child.initialized();
             }
             else
+            {
                 child=old;
+                child.waitForInitialized();
+            }
         }
+        else
+            child.waitForInitialized();
+            
         
         if ((id.depth() - _id.depth()) > 1)
             return child.getChild(id,create);
@@ -347,7 +384,10 @@ public class ServerChannelImpl implements ServerChannel
                 unsubscribe(session);
         }
         
-        if (_used && !isPersistent() && _subscribers.size()==0 && _children.size()==0)
+        if (_used>=0)
+            _used++;
+        
+        if (_used>=2 && !isPersistent() && _subscribers.size()==0 && _children.size()==0)
             remove();
     }
     
