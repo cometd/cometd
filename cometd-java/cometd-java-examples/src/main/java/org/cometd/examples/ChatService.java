@@ -88,13 +88,19 @@ public class ChatService extends AbstractService
         if (peers.size() > 0)
         {
             Map<String, Object> chat = new HashMap<String, Object>();
-            chat.put("chat", data.get("chat"));
+            String text=(String)data.get("chat");
+            chat.put("chat", text);
             chat.put("user", data.get("user"));
             chat.put("scope", "private");
             ServerMessage.Mutable forward = getBayeux().newMessage();
             forward.setChannel(room);
             forward.setId(message.getId());
             forward.setData(chat);
+            
+            // test for lazy messages
+            if (text.lastIndexOf("lazy")>0)
+                forward.setLazy(true);
+                
             
             for (ServerSession peer : peers)
                 peer.deliver(getClient().getServerSession(),forward);
