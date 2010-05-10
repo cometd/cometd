@@ -34,10 +34,9 @@ import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
 /**
- * A Bayuex Channel
+ * A Bayeux Channel
  *
- * @author gregw
- *
+ * @version $Revision: 1035 $ $Date: 2010-03-22 11:59:52 +0100 (Mon, 22 Mar 2010) $
  */
 public class ChannelImpl implements Channel
 {
@@ -47,13 +46,12 @@ public class ChannelImpl implements Channel
     private final List<ClientImpl> _subscribers=new CopyOnWriteArrayList<ClientImpl>();
     private final List<DataFilter> _dataFilters=new CopyOnWriteArrayList<DataFilter>();
     private final List<SubscriptionListener> _subscriptionListeners=new CopyOnWriteArrayList<SubscriptionListener>();
+    private final CountDownLatch _initialized = new CountDownLatch(1);
     private volatile ChannelImpl _wild;
     private volatile ChannelImpl _wildWild;
     private volatile boolean _persistent;
     private volatile int _split;
     private volatile boolean _lazy;
-    
-    private final CountDownLatch _initialized = new CountDownLatch(1);
 
     /* ------------------------------------------------------------ */
     protected ChannelImpl(String id, AbstractBayeux bayeux)
@@ -63,25 +61,28 @@ public class ChannelImpl implements Channel
     }
 
     /* ------------------------------------------------------------ */
-    /* wait for initialized call.
-     * wait for bayeux max interval for the channel to be initialized,
-     * which means waiting for addChild to finish calling bayeux.addChannel,
-     * which calls all the listeners.
-     * 
+    /**
+     * Wait for the channel to be initialized, at most for bayeux maxInterval.
+     * Channel initialization means waiting for {@link #addChild(ChannelImpl)}
+     * to finish calling {@link AbstractBayeux#addChannel(ChannelImpl)},
+     * which notifies channel listeners. Channel initialization may therefore
+     * be delayed in case of slow listeners, but it is guaranteed that any
+     * concurrent channel creation will wait until listeners have been called,
+     * therefore enforcing channel creation + notification to be atomic.
      */
     private void waitForInitialized()
     {
         try
         {
-            if (!_initialized.await(_bayeux.getMaxInterval(),TimeUnit.SECONDS))
-                throw new IllegalStateException("Not Initialized: "+this);
+            if (!_initialized.await(_bayeux.getMaxInterval(), TimeUnit.MILLISECONDS))
+                throw new IllegalStateException("Not Initialized: " + this);
         }
-        catch(InterruptedException e)
+        catch (InterruptedException x)
         {
-            throw new IllegalStateException("Initizlization interrupted: "+this);
+            throw new IllegalStateException("Initialization interrupted: " + this, x);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     private void initialized()
     {
@@ -115,8 +116,8 @@ public class ChannelImpl implements Channel
 
     /* ------------------------------------------------------------ */
     /**
-     * Add a channel
-     * @param channel
+     * Adds a channel
+     * @param channel the child channel to add
      * @return The added channel, or the existing channel if another thread
      * already added the channel
      */
@@ -157,7 +158,7 @@ public class ChannelImpl implements Channel
 
     /* ------------------------------------------------------------ */
     /**
-     * @param filter
+     * @param filter the data filter to add
      */
     public void addDataFilter(DataFilter filter)
     {
@@ -166,7 +167,7 @@ public class ChannelImpl implements Channel
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the ChannelId of this channel
      */
     public ChannelId getChannelId()
     {
@@ -207,7 +208,7 @@ public class ChannelImpl implements Channel
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the id of this channel in string form
      */
     public String getId()
     {
@@ -318,7 +319,7 @@ public class ChannelImpl implements Channel
 
     /* ------------------------------------------------------------ */
     /**
-     * @param filter
+     * @param filter the data filter to remove
      */
     public DataFilter removeDataFilter(DataFilter filter)
     {
@@ -334,7 +335,7 @@ public class ChannelImpl implements Channel
 
     /* ------------------------------------------------------------ */
     /**
-     * @param client
+     * @param client the client to subscribe to this channel
      */
     public void subscribe(Client client)
     {
@@ -364,7 +365,7 @@ public class ChannelImpl implements Channel
 
     /* ------------------------------------------------------------ */
     /**
-     * @param client
+     * @param c the client to unsubscribe from this channel
      */
     public void unsubscribe(Client c)
     {
