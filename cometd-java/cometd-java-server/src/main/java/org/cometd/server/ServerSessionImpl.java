@@ -55,7 +55,7 @@ public class ServerSessionImpl implements ServerSession
 
     private Task _intervalTask;
 
-    private boolean _lazyDispatch;
+    private volatile boolean _lazyDispatch;
 
     private Task _lazyTask;
 
@@ -241,6 +241,7 @@ public class ServerSessionImpl implements ServerSession
                             @Override
                             public void expired()
                             {
+                                _lazyDispatch=false;
                                 dispatch();
                             }
 
