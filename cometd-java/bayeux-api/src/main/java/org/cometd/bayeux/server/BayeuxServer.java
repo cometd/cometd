@@ -72,6 +72,18 @@ public interface BayeuxServer extends Bayeux
     ServerChannel getChannel(String channelId, boolean create);
     
     /* ------------------------------------------------------------ */
+    /** Create a server channel.
+     * This method can be used instead of a {@link ChannelInitializerListener}
+     * to atomically initialize a channel.
+     * @param channelId The channel to create and initialize
+     * @param initializer The initializer to run on the channel.
+     * @return The created ServerChannel.
+     * @throws IllegalStateException if the channel has already been initialized.
+     */
+    ServerChannel create(String channelId, ChannelInitializerListener initializer)
+        throws IllegalStateException;
+    
+    /* ------------------------------------------------------------ */
     /** Get a server session my ID
      * @param clientId the ID
      * @return the server session or null if no such valid session exists.
@@ -137,9 +149,8 @@ public interface BayeuxServer extends Bayeux
      * from a {@link ChannelInitializerListener} will result in an 
      * {@link IllegalStateException} after a delay.
      */
-    public interface ChannelInitializerListener extends BayeuxServerListener
+    public interface ChannelInitializerListener extends BayeuxServerListener, ServerChannel.Initializer
     {
-        public ServerChannel.ServerChannelListener getServerChannelListener(String channelId);
     };
 
     /* ------------------------------------------------------------ */

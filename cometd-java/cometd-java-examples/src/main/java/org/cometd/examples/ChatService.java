@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.InitialServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
@@ -26,9 +27,18 @@ public class ChatService extends AbstractService
     public ChatService(BayeuxServer bayeux)
     {
         super(bayeux, "chat");
-        DataFilterMessageListener filters = new DataFilterMessageListener(new NoMarkupFilter());
-        bayeux.getChannel("/chat/**",true).addListener(filters);
-        bayeux.getChannel("/service/privatechat",true).addListener(filters);
+        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(new NoMarkupFilter());
+        BayeuxServer.ChannelInitializerListener initNoMarkup = new BayeuxServer.ChannelInitializerListener()
+        {
+            @Override
+            public void initialize(InitialServerChannel initializer)
+            {
+                initializer.addListener(noMarkup);
+            }
+        };
+            
+        bayeux.create("/chat/**",initNoMarkup);
+        bayeux.create("/service/privatechat",initNoMarkup);
         
         addService("/service/members", "handleMembership");
         addService("/service/privatechat", "privateChat");
