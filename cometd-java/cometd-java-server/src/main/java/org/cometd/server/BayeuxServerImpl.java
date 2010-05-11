@@ -520,15 +520,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         return true;
     }
-
+    
     /* ------------------------------------------------------------ */
     void addServerChannel(ServerChannelImpl channel)
     {
-        for (BayeuxServerListener listener : _listeners)
-        {
-            if (listener instanceof BayeuxServer.ChannelListener)
-            ((ChannelListener)listener).channelAdded(channel);
-        }
         ServerChannelImpl old = _channels.putIfAbsent(channel.getId(),channel);
         if (old!=null)
             throw new IllegalStateException();
