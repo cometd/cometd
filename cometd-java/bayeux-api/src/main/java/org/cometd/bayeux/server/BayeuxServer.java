@@ -80,7 +80,7 @@ public interface BayeuxServer extends Bayeux
      * @return The created ServerChannel.
      * @throws IllegalStateException if the channel has already been initialized.
      */
-    ServerChannel create(String channelId, ChannelInitializerListener initializer)
+    ServerChannel create(String channelId, ServerChannel.Initializer initializer)
         throws IllegalStateException;
     
     /* ------------------------------------------------------------ */
@@ -138,32 +138,22 @@ public interface BayeuxServer extends Bayeux
     interface BayeuxServerListener extends BayeuxListener
     {}
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /** A Channel Initializer Listener.
-     * Channel Initializer listeners are called atomically during 
-     * Channel creation to obtain a ServerChannel listener to add to
-     * the channel before any publishes or subscribes can occur.
-     * <p>
-     * Any attempt to call {@link BayeuxServer#getChannel(String)}
-     * from a {@link ChannelInitializerListener} will result in an 
-     * {@link IllegalStateException} after a delay.
-     */
-    public interface ChannelInitializerListener extends BayeuxServerListener, ServerChannel.Initializer
-    {
-    };
-
+   
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /** Listener for Channel creation events.
-     * <p>This listener is called asynchronously when a channel
-     * is added to or removed from a {@link BayeuxServer}.
+     * <p>The {@link ServerChannel.Initializer#initialize(InitialServerChannel)}
+     * method is called atomically during Channel creation so that
+     * the channel may be setup before use.
+     * 
+     * <p>The other methods are called asynchronously when
+     * a channel is added to or removed from a {@link BayeuxServer}.
      * There is no ordering guarantee that this listener will be called
      * before any {@link ServerChannel.ServerChannelListener} listeners
      * that may be added by a {@link ChannelInitializerListener} 
      * listener.
      */
-    public interface ChannelListener extends BayeuxServerListener
+    public interface ChannelListener extends BayeuxServerListener, ServerChannel.Initializer
     {
         public void channelAdded(ServerChannel channel);
         public void channelRemoved(String channelId);

@@ -14,6 +14,7 @@ import org.cometd.bayeux.Session;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.InitialServerChannel;
+import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
@@ -28,7 +29,7 @@ public class ChatService extends AbstractService
     {
         super(bayeux, "chat");
         final DataFilterMessageListener noMarkup = new DataFilterMessageListener(new NoMarkupFilter());
-        BayeuxServer.ChannelInitializerListener initNoMarkup = new BayeuxServer.ChannelInitializerListener()
+        ServerChannel.Initializer initNoMarkup = new ServerChannel.Initializer()
         {
             @Override
             public void initialize(InitialServerChannel initializer)

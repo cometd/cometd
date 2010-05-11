@@ -13,6 +13,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.InitialServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Oort;
@@ -164,7 +165,12 @@ public class AuctionService extends AbstractService implements SubscriberListene
         // TODO Auto-generated method stub
         
     }
-
+    
+    @Override
+    public void initialize(InitialServerChannel channel)
+    {
+    }
+    
     @Override
     public void channelAdded(ServerChannel channel)
     {

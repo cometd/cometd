@@ -3,6 +3,7 @@ package org.cometd.server;
 import junit.framework.Assert;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.InitialServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -54,13 +55,13 @@ public class ServerChannelTest extends Assert
         _bayeux.getChannel("/foo/bar",true);
         assertTrue(_bayeux.getChannel("/foo")!=null);
         assertTrue(_bayeux.getChannel("/foo/bar")!=null);
-        assertEquals(2,_chanl._calls);
-        assertEquals("added",_chanl._method);
+        assertEquals(4,_chanl._calls);
+        assertEquals("initadded",_chanl._method);
         assertEquals("/foo/bar",_chanl._channel);
         _bayeux.getChannel("/foo/bob",true);
         assertTrue(_bayeux.getChannel("/foo/bob")!=null);
-        assertEquals(3,_chanl._calls);
-        assertEquals("added",_chanl._method);
+        assertEquals(6,_chanl._calls);
+        assertEquals("initadded",_chanl._method);
         assertEquals("/foo/bob",_chanl._channel);
     }
     
@@ -81,21 +82,21 @@ public class ServerChannelTest extends Assert
         assertEquals("subscribed",csubl._method);
         assertEquals(channel,csubl._channel);
         assertEquals(session0,csubl._session);
-        assertEquals(2,_chanl._calls);
+        assertEquals(4,_chanl._calls);
         
         ServerSessionImpl session1 = newServerSession();
         ((ServerChannelImpl)_bayeux.getChannel("/foo/*",true)).subscribe(session1);
         assertEquals("subscribed",_subl._method);
         assertEquals("/foo/*",_subl._channel.getId());
         assertEquals(session1,_subl._session);
-        assertEquals(3,_chanl._calls);
+        assertEquals(6,_chanl._calls);
         
         ServerSessionImpl session2 = newServerSession();
         ((ServerChannelImpl)_bayeux.getChannel("/**",true)).subscribe(session2);
         assertEquals("subscribed",_subl._method);
         assertEquals("/**",_subl._channel.getId());
         assertEquals(session2,_subl._session);
-        assertEquals(4,_chanl._calls);
+        assertEquals(8,_chanl._calls);
         
         channel.unsubscribe(session0);
         assertEquals(0,channel.getSubscribers().size());
@@ -107,7 +108,7 @@ public class ServerChannelTest extends Assert
         assertEquals(channel,csubl._channel);
         assertEquals(session0,csubl._session);
         
-        assertEquals(5,_chanl._calls);
+        assertEquals(9,_chanl._calls);
         assertEquals("/foo/bar",_chanl._channel);
         assertEquals("removed",_chanl._method);
 
@@ -118,11 +119,11 @@ public class ServerChannelTest extends Assert
         foo.subscribe(session0);
         foo.addListener(new SubListener());
 
-        assertEquals(6,_chanl._calls);
+        assertEquals(11,_chanl._calls);
         
         foo.remove();
 
-        assertEquals(9,_chanl._calls);
+        assertEquals(14,_chanl._calls);
         assertEquals("/foo",_chanl._channel);
         assertEquals("removed",_chanl._method);
         assertEquals(0,foo.getSubscribers().size());
@@ -363,11 +364,17 @@ public class ServerChannelTest extends Assert
             _channel=null;
         }
         
+        @Override
+        public void initialize(InitialServerChannel channel)
+        {
+            _calls++;
+            _method="init";
+        }
 
         public void channelAdded(ServerChannel channel)
         {
             _calls++;
-            _method="added";
+            _method+="added";
             _channel=channel.getId();
         }
 
