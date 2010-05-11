@@ -23,26 +23,12 @@ import org.cometd.bayeux.client.SessionChannel;
  * </p>
  *
  */
-public interface ServerChannel extends Channel
+public interface ServerChannel extends InitialServerChannel
 {
-    /* ------------------------------------------------------------ */
-    /** Add a listener to the channel.
-     * <p>If it is imporant that all events to a channel are captured
-     * by an listener, then this method should not be directly used as
-     * some events may occur before this call.  Instead use an instance
-     * of {@link BayeuxServer.ChannelInitializerListener} to
-     * create ServerChannelListener instances before any publish
-     * or subscribes have occurred on the channel.
-     * @param listener
-     */
-    void addListener(ServerChannelListener listener);
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param listener
-     */
-    void removeListener(ServerChannelListener listener);
-    
+    public interface Initializer
+    {
+        void initialize(InitialServerChannel channel);
+    }
     
     /* ------------------------------------------------------------ */
     /**
@@ -67,22 +53,6 @@ public interface ServerChannel extends Channel
      * @return
      */
     boolean isPersistent();
-    
-    
-    /* ------------------------------------------------------------ */
-    /** Set lazy channel
-     * @param lazy If true, all messages published to this channel will
-     * be marked as lazy.
-     */
-    void setLazy(boolean lazy);
-    
-    /* ------------------------------------------------------------ */
-    /** Set persistent channel
-     * @param persistent If true, the channel will not be removed when 
-     * the last subscription is removed.
-     */
-    void setPersistent(boolean persistent);
-
 
     /* ------------------------------------------------------------ */
     /**

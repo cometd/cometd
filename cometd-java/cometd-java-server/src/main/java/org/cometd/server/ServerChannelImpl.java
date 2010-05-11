@@ -1,5 +1,6 @@
 package org.cometd.server;
 
+import java.nio.channels.IllegalSelectorException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,13 +12,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.InitialServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.ChannelId;
 
-public class ServerChannelImpl implements ServerChannel
+public class ServerChannelImpl implements ServerChannel, InitialServerChannel
 {
     private final BayeuxServerImpl _bayeux;
     private final ServerChannelImpl _parent;
@@ -200,23 +202,17 @@ public class ServerChannelImpl implements ServerChannel
     }
     
     /* ------------------------------------------------------------ */
-    public ServerChannelImpl getChild(ChannelId id,boolean create)
+    public ServerChannelImpl getChild(ChannelId id,ServerChannel.Initializer initializer)
     {
         if (!_id.isParentOf(id))
-        {
-            if (create)                
-                throw new IllegalArgumentException(_id + " not parent of " + id);
-            return null;
-        }
+            throw new IllegalArgumentException(_id + " not parent of " + id);
     
         String next=id.getSegment(_id.depth());
         ServerChannelImpl child = _children.get(next);
+        boolean childIsLeaf = id.depth()-_id.depth()==1;
         
         if (child==null)
         {
-            if (!create)
-                return null;
-            
             String cid=(_id.depth()==0?"/":(_id.toString() + "/")) + next;
             child=new ServerChannelImpl(_bayeux,this,new ChannelId(cid));
 
@@ -230,15 +226,12 @@ public class ServerChannelImpl implements ServerChannel
                 else if (ChannelId.DEEPWILD.equals(next))
                     _deepWild=child;
 
+                if (initializer!=null && childIsLeaf)
+                    initializer.initialize(child);
                 for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
                 {
                     if (listener instanceof BayeuxServer.ChannelInitializerListener)
-                    {
-                        ServerChannel.ServerChannelListener to_add=
-                            ((BayeuxServer.ChannelInitializerListener)listener).getServerChannelListener(child.getId());
-                        if (to_add!=null)
-                            child.addListener(to_add);
-                    }
+                        ((BayeuxServer.ChannelInitializerListener)listener).initialize(child);
                 }
                 child.initialized();
                 _bayeux.addServerChannel(child);
@@ -253,17 +246,22 @@ public class ServerChannelImpl implements ServerChannel
             }
             else
             {
+                if (initializer!=null && childIsLeaf )
+                    throw new IllegalStateException("Already initialized "+id);
                 child=old;
                 child.waitForInitialized();
             }
         }
         else
+        {
+            if (initializer!=null && childIsLeaf )
+                throw new IllegalStateException("Already initialized "+id);
             child.waitForInitialized();
-            
+        }
         
-        if ((id.depth() - _id.depth()) > 1)
-            return child.getChild(id,create);
-        return child;
+        if (childIsLeaf)
+            return child;
+        return child.getChild(id,initializer);
     }
     
     /* ------------------------------------------------------------ */

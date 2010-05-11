@@ -67,11 +67,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public BayeuxServerImpl()
     {
-        getChannel(Channel.META_HANDSHAKE,true).addListener(new HandshakeHandler());
-        getChannel(Channel.META_CONNECT,true).addListener(new ConnectHandler());
-        getChannel(Channel.META_SUBSCRIBE,true).addListener(new SubscribeHandler());
-        getChannel(Channel.META_UNSUBSCRIBE,true).addListener(new UnsubscribeHandler());
-        getChannel(Channel.META_DISCONNECT,true).addListener(new DisconnectHandler());
+        ((ServerChannelImpl)getChannel(Channel.META_HANDSHAKE,true)).addListener(new HandshakeHandler());
+        ((ServerChannelImpl)getChannel(Channel.META_CONNECT,true)).addListener(new ConnectHandler());
+        ((ServerChannelImpl)getChannel(Channel.META_SUBSCRIBE,true)).addListener(new SubscribeHandler());
+        ((ServerChannelImpl)getChannel(Channel.META_UNSUBSCRIBE,true)).addListener(new UnsubscribeHandler());
+        ((ServerChannelImpl)getChannel(Channel.META_DISCONNECT,true)).addListener(new DisconnectHandler());
 
         _logger=Log.getLogger("bayeux@"+hashCode());
         _logger.info("STARTED: "+_sessions);
@@ -265,11 +265,21 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
+    public ServerChannel create(String channelId, BayeuxServer.ChannelInitializerListener initializer)
+    {
+        if (_channels.containsKey(channelId))
+            throw new IllegalStateException("Channel exists "+channelId);
+        ServerChannel channel=_root.getChild(new ChannelId(channelId),initializer);
+        return channel;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
     public ServerChannel getChannel(String channelId, boolean create)
     {
         ServerChannelImpl channel = _channels.get(channelId);
         if (channel==null && create)
-            channel=_root.getChild(new ChannelId(channelId),true);
+            channel=_root.getChild(new ChannelId(channelId),null);
         return channel;
     }
 

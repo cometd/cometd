@@ -42,7 +42,6 @@ public class ServerChannelTest extends Assert
         
         assertEquals(0,root.getChannelId().depth());
         assertEquals("/",root.getChannelId().toString());
-        assertEquals(null,root.getChild(new ChannelId("/foo"),false));
         
         assertEquals(0,root.getSubscribers().size());
     }
