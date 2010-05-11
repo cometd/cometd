@@ -230,8 +230,8 @@ public class ServerChannelImpl implements ServerChannel, InitialServerChannel
                     initializer.initialize(child);
                 for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
                 {
-                    if (listener instanceof BayeuxServer.ChannelInitializerListener)
-                        ((BayeuxServer.ChannelInitializerListener)listener).initialize(child);
+                    if (listener instanceof ServerChannel.Initializer)
+                        ((ServerChannel.Initializer)listener).initialize(child);
                 }
                 child.initialized();
                 _bayeux.addServerChannel(child);
