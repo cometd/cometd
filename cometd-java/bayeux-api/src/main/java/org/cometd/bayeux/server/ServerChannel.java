@@ -26,7 +26,13 @@ import org.cometd.bayeux.client.SessionChannel;
 public interface ServerChannel extends Channel
 {
     /* ------------------------------------------------------------ */
-    /**
+    /** Add a listener to the channel.
+     * <p>If it is imporant that all events to a channel are captured
+     * by an listener, then this method should not be directly used as
+     * some events may occur before this call.  Instead use an instance
+     * of {@link BayeuxServer.ChannelInitializerListener} to
+     * create ServerChannelListener instances before any publish
+     * or subscribes have occurred on the channel.
      * @param listener
      */
     void addListener(ServerChannelListener listener);
