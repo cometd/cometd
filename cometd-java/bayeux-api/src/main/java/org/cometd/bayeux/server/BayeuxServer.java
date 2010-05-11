@@ -128,6 +128,22 @@ public interface BayeuxServer extends Bayeux
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
+    /** A Channel Initializer Listener.
+     * Channel Initializer listeners are called atomically during 
+     * Channel creation to obtain a ServerChannel listener to add to
+     * the channel before any publishes or subscribes can occur.
+     * <p>
+     * Any attempt to call {@link BayeuxServer#getChannel(String)}
+     * from a {@link ChannelInitializerListener} will result in an 
+     * {@link IllegalStateException} after a delay.
+     */
+    public interface ChannelInitializerListener extends BayeuxServerListener
+    {
+        public ServerChannel.ServerChannelListener getServerChannelListener(String channelId);
+    };
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     /**
      */
     public interface ChannelListener extends BayeuxServerListener
