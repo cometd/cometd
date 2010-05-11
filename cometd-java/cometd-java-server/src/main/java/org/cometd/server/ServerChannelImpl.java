@@ -229,8 +229,27 @@ public class ServerChannelImpl implements ServerChannel
                     _wild=child;
                 else if (ChannelId.DEEPWILD.equals(next))
                     _deepWild=child;
-                _bayeux.addServerChannel(child);
+
+                for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
+                {
+                    if (listener instanceof BayeuxServer.ChannelInitializerListener)
+                    {
+                        ServerChannel.ServerChannelListener to_add=
+                            ((BayeuxServer.ChannelInitializerListener)listener).getServerChannelListener(child.getId());
+                        if (to_add!=null)
+                            child.addListener(to_add);
+                    }
+                }
                 child.initialized();
+                _bayeux.addServerChannel(child);
+
+                for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
+                {
+                    if (listener instanceof BayeuxServer.ChannelListener)
+                    {
+                        ((BayeuxServer.ChannelListener)listener).channelAdded(child);
+                    }
+                }
             }
             else
             {
