@@ -144,7 +144,13 @@ public interface BayeuxServer extends Bayeux
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    /**
+    /** Listener for Channel creation events.
+     * <p>This listener is called asynchronously when a channel
+     * is added to or removed from a {@link BayeuxServer}.
+     * There is no ordering guarantee that this listener will be called
+     * before any {@link ServerChannel.ServerChannelListener} listeners
+     * that may be added by a {@link ChannelInitializerListener} 
+     * listener.
      */
     public interface ChannelListener extends BayeuxServerListener
     {
@@ -154,7 +160,9 @@ public interface BayeuxServer extends Bayeux
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    /**
+    /** Listener for Session creation events.
+     * <p>This listener is called when a {@link ServerSession} is added
+     * or removed from a {@link BayeuxServer}.
      */
     public interface SessionListener extends BayeuxServerListener
     {
@@ -164,6 +172,13 @@ public interface BayeuxServer extends Bayeux
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
+    /** Listener of Subscription events.
+     * <p>This listener is called when a subscribe or unsubscribe
+     * occurs for any channel known to this {@link BayeuxServer}.
+     * See also {@link ServerChannel.SubscriptionListener} which
+     * is called for subscribe/unsubscribe events for a 
+     * specific {@link ServerChannel} (or pattern).
+     */
     public interface SubscriptionListener extends BayeuxServerListener
     {
         public void subscribed(ServerSession session, ServerChannel channel);
