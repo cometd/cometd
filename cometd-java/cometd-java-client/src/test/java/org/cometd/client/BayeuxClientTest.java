@@ -281,12 +281,13 @@ public class BayeuxClientTest extends TestCase
 
         final AtomicBoolean connected = new AtomicBoolean(false);
         
-        BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_port+"/cometd")
+        BayeuxClient client = new BayeuxClient(_httpClient,"http://127.0.0.2:"+_port+"/cometd")
         {
             @Override
             public void onProtocolError(String info)
             {
                 super.onProtocolError(info);
+                problem.put("error","P protocol error "+info);
                 queue.add(problem);
                 _filter._code=0;
             }
@@ -298,6 +299,7 @@ public class BayeuxClientTest extends TestCase
                     Log.warn("onConnectException: ",x);
                 else
                     Log.warn("onConnectException: "+x.toString());
+                problem.put("error","P connect exception "+x);
                 queue.add(problem);
             }
 
@@ -308,6 +310,7 @@ public class BayeuxClientTest extends TestCase
                     Log.warn("onException: ",x);
                 else
                     Log.warn("onException: "+x.toString());
+                problem.put("error","P exception "+x);
                 queue.add(problem);
             }
 
@@ -315,6 +318,7 @@ public class BayeuxClientTest extends TestCase
             public void onExpire()
             {
                 Log.warn("onExpire: ");
+                problem.put("error","P expired");
                 queue.add(problem);
             }
             
@@ -406,8 +410,10 @@ public class BayeuxClientTest extends TestCase
         _connector.setPort(_port);
         _server.start();
 
+        
         message=queue.poll(5,TimeUnit.SECONDS);
-        System.err.println(message);
+        while (message.get("error")!=null && message.get("error").toString().startsWith("P "))
+            message=queue.poll(10,TimeUnit.SECONDS);
 
         assertFalse(message.isSuccessful());
         assertEquals("402::Unknown client",message.get("error"));
