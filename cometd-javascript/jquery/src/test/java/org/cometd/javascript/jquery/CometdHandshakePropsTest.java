@@ -24,7 +24,7 @@ public class CometdHandshakePropsTest extends AbstractCometdJQueryTest
         bayeux.setSecurityPolicy(new TokenSecurityPolicy());
     }
 
-    public void testHandshakeProps() throws Exception
+    public void testHandshakeNoProps() throws Exception
     {
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         defineClass(Listener.class);
@@ -40,12 +40,25 @@ public class CometdHandshakePropsTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.handshake({})");
         assertTrue(handshakeListener.await(1000));
 
-        // Disconnect to avoid the handshake to backoff
-        disconnectListener.expect(1);
-        evaluateScript("$.cometd.disconnect();");
-        assertTrue(disconnectListener.await(1000));
+        // Wait for retries etc.
+        Thread.sleep(1000);
 
-        // We are already initialized, handshake again with a token
+        String status = evaluateScript("$.cometd.getStatus();");
+        assertEquals("disconnected", status);
+    }
+    
+    public void testHandshakeProps() throws Exception
+    {
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        defineClass(Listener.class);
+        evaluateScript("var handshakeListener = new Listener();");
+        Listener handshakeListener = (Listener)get("handshakeListener");
+        evaluateScript("$.cometd.addListener('/meta/handshake', handshakeListener, handshakeListener.handle);");
+        evaluateScript("var disconnectListener = new Listener();");
+        Listener disconnectListener = (Listener)get("disconnectListener");
+        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);");
+
+        // Start without the token; this makes the handshake fail
         handshakeListener.expect(1);
         evaluateScript("$.cometd.handshake({ext: {token: 'test'}})");
         assertTrue(handshakeListener.await(1000));
