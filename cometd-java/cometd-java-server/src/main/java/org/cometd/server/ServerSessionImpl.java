@@ -53,8 +53,7 @@ public class ServerSessionImpl implements ServerSession
     private boolean _metaConnectDelivery;
     private long _accessed=-1;
 
-    private Task _intervalTask;
-
+    private volatile long _intervalTimestamp;
     private volatile boolean _lazyDispatch;
 
     private Task _lazyTask;
@@ -92,31 +91,25 @@ public class ServerSessionImpl implements ServerSession
 
         _id=id.toString();
         
-
-        _intervalTask=new Timeout.Task()
-        {
-            @Override
-            public void expired()
-            {   
-                if (_logger.isDebugEnabled())
-                    _logger.debug("Expired interval "+ServerSessionImpl.this);
-                synchronized (_queue)
-                {
-                    if (_dispatcher!=null)
-                        _dispatcher.cancelDispatch();
-                }
-                _bayeux.removeServerSession(ServerSessionImpl.this,true);
-            }
-            
-            public String toString()
-            {
-                return "IntervalTask@"+getId();
-            }
-        };
-        
         HttpTransport transport=(HttpTransport)_bayeux.getCurrentTransport();
         if (transport!=null)
-            _bayeux.startTimeout(_intervalTask,transport.getMaxInterval());
+            _intervalTimestamp=System.currentTimeMillis()+transport.getMaxInterval();
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected void sweep(long now)
+    {
+        if (_intervalTimestamp!=0 && now>_intervalTimestamp)
+        {
+            if (_logger.isDebugEnabled())
+                _logger.debug("Expired interval "+ServerSessionImpl.this);
+            synchronized (_queue)
+            {
+                if (_dispatcher!=null)
+                    _dispatcher.cancelDispatch();
+            }
+            _bayeux.removeServerSession(ServerSessionImpl.this,true);
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -420,13 +413,13 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public void cancelIntervalTimeout()
     {
-        _bayeux.cancelTimeout(_intervalTask);
+        _intervalTimestamp=0;
     }
 
     /* ------------------------------------------------------------ */
     public void startIntervalTimeout()
     {
-        _bayeux.startTimeout(_intervalTask,_maxInterval);
+        _intervalTimestamp=System.currentTimeMillis()+_maxInterval;
     }
 
     /* ------------------------------------------------------------ */

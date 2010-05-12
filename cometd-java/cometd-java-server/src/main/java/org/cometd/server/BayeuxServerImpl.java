@@ -77,7 +77,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _logger.info("STARTED: "+_sessions);
 
         setOption("tickIntervalMs","97");
-        setOption("sweepIntervalMs","9997");
+        setOption("sweepIntervalMs","997");
     }
 
     /* ------------------------------------------------------------ */
@@ -135,6 +135,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 public void run()
                 {
                     _root.doSweep();
+                    
+                    final long now=System.currentTimeMillis();
+                    for (ServerSessionImpl session : _sessions.values())
+                        session.sweep(now);
                 }
             },sweep_interval,sweep_interval);
     }
