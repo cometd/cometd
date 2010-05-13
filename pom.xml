@@ -102,7 +102,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.0.2.v20100331</jetty-version>
+        <jetty-version>7.1.0.v20100505</jetty-version>
         <maven-wagon-version>1.0-beta-2</maven-wagon-version>
     </properties>
 
