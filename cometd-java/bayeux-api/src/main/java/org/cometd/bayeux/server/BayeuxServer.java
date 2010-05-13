@@ -72,16 +72,21 @@ public interface BayeuxServer extends Bayeux
     ServerChannel getChannel(String channelId, boolean create);
     
     /* ------------------------------------------------------------ */
-    /** Create a server channel.
+    /** Create a server channel and initialize atomically.
+     * <p>
      * This method can be used instead of a {@link ChannelInitializerListener}
-     * to atomically initialize a channel.
+     * to atomically initialize a channel. The initializer will be called before
+     * any other thread can access the new channel instance.
+     * <p>
+     * The createIfAbsent method should be used instead of getChannel(id,true)
+     * when a channel needs to be intialized (eg with listeners) before any
+     * publish or subscribes can occur on the channel.
+     * 
      * @param channelId The channel to create and initialize
      * @param initializer The initializer to run on the channel.
-     * @return The created ServerChannel.
-     * @throws IllegalStateException if the channel has already been initialized.
+     * @return True if the channel was initialized.
      */
-    ServerChannel create(String channelId, ServerChannel.Initializer initializer)
-        throws IllegalStateException;
+    boolean createIfAbsent(String channelId, ServerChannel.Initializer initializer);
     
     /* ------------------------------------------------------------ */
     /** Get a server session my ID
