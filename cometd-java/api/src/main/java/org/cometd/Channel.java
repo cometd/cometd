@@ -30,17 +30,12 @@ import java.util.Collection;
  *
  * @version $Revision: 686 $ $Date: 2009-07-03 11:07:24 +0200 (Fri, 03 Jul 2009) $
  */
-public interface Channel
+public interface Channel extends ConfigurableChannel
 {
     /**
      * @return true if the channel has been removed, false if it was not possible to remove the channel
      */
     public boolean remove();
-
-    /**
-     * @return the channel's name
-     */
-    public String getId();
 
     /**
      * Publishes a message.
@@ -49,21 +44,6 @@ public interface Channel
      * @param msgId the message ID or null
      */
     public void publish(Client fromClient, Object data, String msgId);
-
-    /**
-     * Indicates whether the channel is persistent or not.
-     * Non persistent channels are removed when the last subscription is
-     * removed.
-     * @return true if the Channel will persist even when all subscriptions are gone.
-     * @see #setPersistent(boolean)
-     */
-    public boolean isPersistent();
-
-    /**
-     * Sets the persistency of this channel.
-     * @param persistent true if the channel is persistent, false otherwise
-     */
-    public void setPersistent(boolean persistent);
 
     /**
      * Subscribes the given {@link Client} to this channel.
@@ -89,51 +69,4 @@ public interface Channel
      * @return the number of clients subscribed to this channel
      */
     public int getSubscriberCount();
-
-    /**
-     * Adds the given {@link DataFilter} to this channel.
-     * @param filter the data filter to add
-     * @see #removeDataFilter(DataFilter)
-     */
-    public void addDataFilter(DataFilter filter);
-
-    /**
-     * Removes the given {@link DataFilter} from this channel.
-     * @param filter the data filter to remove
-     * @return the removed data filter
-     * @see #addDataFilter(DataFilter)
-     */
-    public DataFilter removeDataFilter(DataFilter filter);
-
-    /**
-     * Returns a collection copy of the data filters for this channel.
-     * @return the data filters for this channel
-     */
-    public Collection<DataFilter> getDataFilters();
-
-    /**
-     * Adds a channel listener to this channel.
-     * @param listener the listener to add
-     * @see #removeListener(ChannelListener)
-     */
-    public void addListener(ChannelListener listener);
-
-    /**
-     * Removes the channel listener from this channel.
-     * @param listener the listener to remove
-     * @see #addListener(ChannelListener)
-     */
-    public void removeListener(ChannelListener listener);
-
-    /**
-     * @return whether the channel is lazy.
-     * @see #setLazy(boolean)
-     */
-    public boolean isLazy();
-
-    /**
-     * Sets the lazyness of the channel
-     * @param lazy true if channel is lazy
-     */
-    public void setLazy(boolean lazy);
 }
