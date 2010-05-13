@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import junit.framework.TestCase;
 import org.cometd.Channel;
 import org.cometd.ChannelBayeuxListener;
+import org.cometd.ConfigurableChannel;
 
 /**
  * @version $Revision: 1035 $ $Date: 2010-03-22 11:59:52 +0100 (Mon, 22 Mar 2010) $
@@ -27,17 +28,102 @@ public class ChannelImplTest extends TestCase
         _bayeux = new BayeuxStub();
     }
 
-    public void testAddNotificationIsAtomicWithCreation() throws Exception
+    public void testConcurrentGetChannel() throws Exception
     {
         // Tests the race condition where a channel is created concurrently by 2 threads.
-        // The first thread will add the channel to a map<name, channel> and then notify
-        // listeners that the channel has been added.
-        // The second thread will see the channel in the map, and could return before
-        // the add listeners are notified by the first thread, which could break applications
-        // that expect the create-notify to be atomic.
+        //
+        // There are 2 steps in the channel creation: the first is to populate internal
+        // data structures so that the channel can be retrieved by subsequent calls;
+        // the second is to notify listeners that are interested in configuring the
+        // channel (for example adding a listener).
+        // These 2 steps must be atomic, otherwise a race is possible where T1 creates
+        // the channel, populates the data structures, but is preempted before calling
+        // the listeners that configure the channel; and T2 that creates the channel,
+        // sees it already in the data structures, then publishes a message to it.
+        // In this case, a message listener can be notified before the channel is fully
+        // configured.
+        //
         // See http://bugs.cometd.org/browse/COMETD-112
+
+        final String channelName = "/test";
         final CountDownLatch latch1 = new CountDownLatch(1);
         final CountDownLatch latch2 = new CountDownLatch(1);
+        _bayeux.addListener(new ConfigurableChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableChannel channel)
+            {
+                try
+                {
+                    // Be sure T1 arrives here before T2 creates the channel
+                    latch1.countDown();
+
+                    // T1 will wait here while T2 creates the channel
+                    assertFalse(latch2.await(1000, TimeUnit.MILLISECONDS));
+                }
+                catch (InterruptedException x)
+                {
+                    assertTrue("Interrupted", false);
+                }
+            }
+        });
+
+        // Thread T1 asks for the channel, it will trigger the listener
+        final AtomicReference<Channel> channelRef = new AtomicReference<Channel>();
+        final CountDownLatch latch3 = new CountDownLatch(1);
+        new Thread()
+        {
+            @Override
+            public void run()
+            {
+                Channel channel = _bayeux.getChannel(channelName, true);
+                channelRef.set(channel);
+                latch3.countDown();
+            }
+        }.start();
+        assertTrue(latch1.await(1000, TimeUnit.MILLISECONDS));
+
+        // Thread T2 asks for the channel, it will not trigger the listener
+        // It must wait for thread T1 to call the listener
+        // If it will not wait, latch2 will be counted down and the assert
+        // in configureChannel() above will fail, failing the test
+        Channel channel = _bayeux.getChannel(channelName, true);
+        assertNotNull(channel);
+        latch2.countDown();
+
+        assertTrue(latch3.await(1000, TimeUnit.MILLISECONDS));
+        assertNotNull(channelRef.get());
+        assertSame(channel, channelRef.get());
+    }
+
+    public void testReentrantGetChannelFromInitializer()
+    {
+        long maxInterval = 2000;
+        _bayeux.setMaxInterval(maxInterval);
+        _bayeux.addListener(new ConfigurableChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableChannel channel)
+            {
+                // Reentrant call is forbidden here:
+                // we are initializing the channel and cannot obtain it
+                try
+                {
+                    _bayeux.getChannel(channel.getId());
+                    fail();
+                }
+                catch (IllegalStateException x)
+                {
+                    // Expected
+                }
+            }
+        });
+        _bayeux.getChannel("/test", true);
+    }
+
+    public void testConcurrentReentrantGetChannelFromChannelAddedListener() throws Exception
+    {
+        final CountDownLatch latch1 = new CountDownLatch(1);
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        final CountDownLatch userLatch = new CountDownLatch(1);
         _bayeux.addListener(new ChannelBayeuxListener()
         {
             public void channelAdded(Channel channel)
@@ -45,7 +131,11 @@ public class ChannelImplTest extends TestCase
                 try
                 {
                     latch1.countDown();
-                    assertFalse(latch2.await(1000, TimeUnit.MILLISECONDS));
+                    // Reentrant call
+                    Channel c = _bayeux.getChannel(channel.getId());
+                    assertNotNull(c);
+                    assertTrue(latch2.await(1000, TimeUnit.MILLISECONDS));
+                    userLatch.countDown();
                 }
                 catch (InterruptedException x)
                 {
@@ -58,7 +148,6 @@ public class ChannelImplTest extends TestCase
             }
         });
 
-        // Thread 1 asks for the channel, it triggers the add listeners
         final AtomicReference<Channel> channelRef = new AtomicReference<Channel>();
         final CountDownLatch latch3 = new CountDownLatch(1);
         final String name = "/test";
@@ -73,11 +162,10 @@ public class ChannelImplTest extends TestCase
         }.start();
         assertTrue(latch1.await(1000, TimeUnit.MILLISECONDS));
 
-        // Thread 2 asks for the channel, it does not trigger the listeners
-        // It must wait for thread 1 to call the add listeners
         Channel channel = _bayeux.getChannel(name, true);
         assertNotNull(channel);
         latch2.countDown();
+        assertTrue(userLatch.await(1000, TimeUnit.MILLISECONDS));
 
         assertTrue(latch3.await(1000, TimeUnit.MILLISECONDS));
         assertNotNull(channelRef.get());

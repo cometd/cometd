@@ -123,15 +123,13 @@ public class ChannelImpl implements Channel
      */
     public ChannelImpl addChild(ChannelImpl channel)
     {
-        ChannelId child=channel.getChannelId();
-        if (!_id.isParentOf(child))
-        {
-            throw new IllegalArgumentException(_id + " not parent of " + child);
-        }
+        ChannelId childId=channel.getChannelId();
+        if (!_id.isParentOf(childId))
+            throw new IllegalArgumentException(_id + " not parent of " + childId);
 
-        String next=child.getSegment(_id.depth());
+        String next=childId.getSegment(_id.depth());
 
-        if ((child.depth() - _id.depth()) == 1)
+        if ((childId.depth() - _id.depth()) == 1)
         {
             // add the channel to this channels
             ChannelImpl old=_children.putIfAbsent(next,channel);
@@ -145,8 +143,11 @@ public class ChannelImpl implements Channel
                 _wild=channel;
             else if (ChannelId.WILDWILD.equals(next))
                 _wildWild=channel;
-            _bayeux.addChannel(channel);
+
+            _bayeux.initChannel(channel);
             channel.initialized();
+
+            _bayeux.addChannel(channel);
             return channel;
         }
         else
@@ -291,8 +292,7 @@ public class ChannelImpl implements Channel
                                 for (ChannelImpl c : child._children.values())
                                     child.doRemove(c,listeners);
                             }
-                            for (ChannelBayeuxListener l : listeners)
-                                l.channelRemoved(child);
+                            notifyChannelRemoved(listeners, child);
                         }
                         return true;
                     }
@@ -306,8 +306,7 @@ public class ChannelImpl implements Channel
                 {
                     child=_children.remove(key);
                     if (child!=null)
-                        for (ChannelBayeuxListener l : listeners)
-                            l.channelRemoved(child);
+                        notifyChannelRemoved(listeners, child);
                 }
 
                 return removed;
@@ -315,6 +314,21 @@ public class ChannelImpl implements Channel
 
         }
         return false;
+    }
+
+    private void notifyChannelRemoved(List<ChannelBayeuxListener> listeners, ChannelImpl channel)
+    {
+        for (ChannelBayeuxListener listener : listeners)
+        {
+            try
+            {
+                listener.channelRemoved(channel);
+            }
+            catch (RuntimeException x)
+            {
+                AbstractBayeux.logger.info("Unexpected exception while invoking listener " + listener, x);
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */

@@ -36,11 +36,14 @@ import org.cometd.Channel;
 import org.cometd.ChannelBayeuxListener;
 import org.cometd.Client;
 import org.cometd.ClientBayeuxListener;
+import org.cometd.ConfigurableChannel;
 import org.cometd.Extension;
 import org.cometd.Message;
 import org.cometd.SecurityPolicy;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -49,6 +52,7 @@ import org.eclipse.jetty.util.ajax.JSON;
  */
 public abstract class AbstractBayeux extends MessagePool implements Bayeux
 {
+    public static final Logger logger = Log.getLogger(Bayeux.class.getName());
     public static final ChannelId META_ID=new ChannelId(META);
     public static final ChannelId META_CONNECT_ID=new ChannelId(META_CONNECT);
     public static final ChannelId META_CLIENT_ID=new ChannelId(META_CLIENT);
@@ -67,6 +71,7 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
     protected final ThreadLocal<HttpServletRequest> _request=new ThreadLocal<HttpServletRequest>();
     protected final List<ClientBayeuxListener> _clientListeners=new CopyOnWriteArrayList<ClientBayeuxListener>();
     protected final List<ChannelBayeuxListener> _channelListeners=new CopyOnWriteArrayList<ChannelBayeuxListener>();
+    private final List<ConfigurableChannel.Initializer> _initialChannelListeners=new CopyOnWriteArrayList<ConfigurableChannel.Initializer>();
     protected final Handler _publishHandler;
     protected final Handler _metaPublishHandler;
 
@@ -477,11 +482,35 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
         return _root.doRemove(channel,_channelListeners);
     }
 
+    protected void initChannel(ConfigurableChannel channel)
+    {
+        for (ConfigurableChannel.Initializer listener : _initialChannelListeners)
+        {
+            try
+            {
+                listener.configureChannel(channel);
+            }
+            catch (RuntimeException x)
+            {
+                logger.info("Unexpected exception while invoking listener " + listener, x);
+            }
+        }
+    }
+
     /* ------------------------------------------------------------ */
     protected void addChannel(ChannelImpl channel)
     {
-        for (ChannelBayeuxListener l : _channelListeners)
-            l.channelAdded(channel);
+        for (ChannelBayeuxListener listener : _channelListeners)
+        {
+            try
+            {
+                listener.channelAdded(channel);
+            }
+            catch (RuntimeException x)
+            {
+                logger.info("Unexpected exception while invoking listener " + listener, x);
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -826,6 +855,8 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             _clientListeners.add((ClientBayeuxListener)listener);
         if (listener instanceof ChannelBayeuxListener)
             _channelListeners.add((ChannelBayeuxListener)listener);
+        if (listener instanceof ConfigurableChannel.Initializer)
+            _initialChannelListeners.add((ConfigurableChannel.Initializer)listener);
     }
 
     public void removeListener(BayeuxListener listener)
@@ -834,6 +865,8 @@ public abstract class AbstractBayeux extends MessagePool implements Bayeux
             _clientListeners.remove(listener);
         if (listener instanceof ChannelBayeuxListener)
             _channelListeners.remove(listener);
+        if (listener instanceof ConfigurableChannel.Initializer)
+            _initialChannelListeners.remove(listener);
     }
 
     /* ------------------------------------------------------------ */
