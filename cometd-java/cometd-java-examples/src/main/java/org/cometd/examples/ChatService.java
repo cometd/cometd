@@ -38,8 +38,9 @@ public class ChatService extends AbstractService
             }
         };
             
-        bayeux.create("/chat/**",initNoMarkup);
-        bayeux.create("/service/privatechat",initNoMarkup);
+        if (!bayeux.createIfAbsent("/chat/**",initNoMarkup) ||      
+            !bayeux.createIfAbsent("/service/privatechat",initNoMarkup))
+            throw new IllegalStateException();
         
         addService("/service/members", "handleMembership");
         addService("/service/privatechat", "privateChat");

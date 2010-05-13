@@ -269,12 +269,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public ServerChannel create(String channelId, ServerChannel.Initializer initializer)
+    public boolean createIfAbsent(String channelId, ServerChannel.Initializer initializer)
     {
         if (_channels.containsKey(channelId))
-            throw new IllegalStateException("Channel exists "+channelId);
+            return false;
         ServerChannel channel=_root.getChild(new ChannelId(channelId),initializer);
-        return channel;
+        return channel!=null;
     }
     
     
