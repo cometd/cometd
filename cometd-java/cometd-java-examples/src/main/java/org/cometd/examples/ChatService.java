@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.InitialServerChannel;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -32,7 +32,7 @@ public class ChatService extends AbstractService
         ServerChannel.Initializer initNoMarkup = new ServerChannel.Initializer()
         {
             @Override
-            public void initialize(InitialServerChannel initializer)
+            public void configureChannel(ConfigurableServerChannel initializer)
             {
                 initializer.addListener(noMarkup);
             }

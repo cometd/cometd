@@ -3,7 +3,7 @@ package org.cometd.server;
 import junit.framework.Assert;
 
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.InitialServerChannel;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -365,7 +365,7 @@ public class ServerChannelTest extends Assert
         }
         
         @Override
-        public void initialize(InitialServerChannel channel)
+        public void configureChannel(ConfigurableServerChannel channel)
         {
             _calls++;
             _method="init";
