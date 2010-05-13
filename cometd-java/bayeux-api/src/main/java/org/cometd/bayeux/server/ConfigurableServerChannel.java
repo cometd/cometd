@@ -19,18 +19,30 @@ import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
 
 
 /* ------------------------------------------------------------ */
-/** Initial Server Channel.
+/** Configurable Server Channel.
  * 
- * This interface represents the methods initially available
- * on a ServerChannel before it has been completely added
- * to the {@link BayeuxServer} instance.
+ * This interface represents the methods available
+ * on a ServerChannel that can be used to configure it.
+ * This API is available while a new channel is being 
+ * initialized while being added to the {@link BayeuxServer} instance.
  * <p>
- * This API may be called via a {@link BayeuxServer.ChannelInitializerListener} 
+ * This API may be called via a {@link BayeuxServer.ChannelListener#configureChannel(ConfigurableServerChannel)} 
  * so that a channel can be setup before any publish or subscribes
  * are performed on it. 
  */
-public interface InitialServerChannel extends Channel
+public interface ConfigurableServerChannel extends Channel
 {
+    
+    /* ------------------------------------------------------------ */
+    /** Channel Initializer.
+     * <p>Interface to atomically set the initial configuration of 
+     * a channel. 
+     */
+    public interface Initializer
+    {
+        void configureChannel(ConfigurableServerChannel channel);
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @param listener

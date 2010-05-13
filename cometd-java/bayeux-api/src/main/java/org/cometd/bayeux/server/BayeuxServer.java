@@ -147,7 +147,7 @@ public interface BayeuxServer extends Bayeux
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /** Listener for Channel creation events.
-     * <p>The {@link ServerChannel.Initializer#initialize(InitialServerChannel)}
+     * <p>The {@link ServerChannel.Initializer#configureChannel(InitialServerChannel)}
      * method is called atomically during Channel creation so that
      * the channel may be setup before use.
      * 

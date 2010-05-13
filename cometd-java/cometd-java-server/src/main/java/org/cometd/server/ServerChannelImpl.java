@@ -12,14 +12,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.InitialServerChannel;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.ChannelId;
 
-public class ServerChannelImpl implements ServerChannel, InitialServerChannel
+public class ServerChannelImpl implements ServerChannel, ConfigurableServerChannel
 {
     private final BayeuxServerImpl _bayeux;
     private final ServerChannelImpl _parent;
@@ -227,11 +227,11 @@ public class ServerChannelImpl implements ServerChannel, InitialServerChannel
                     _deepWild=child;
 
                 if (initializer!=null && childIsLeaf)
-                    initializer.initialize(child);
+                    initializer.configureChannel(child);
                 for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
                 {
                     if (listener instanceof ServerChannel.Initializer)
-                        ((ServerChannel.Initializer)listener).initialize(child);
+                        ((ServerChannel.Initializer)listener).configureChannel(child);
                 }
                 child.initialized();
                 _bayeux.addServerChannel(child);

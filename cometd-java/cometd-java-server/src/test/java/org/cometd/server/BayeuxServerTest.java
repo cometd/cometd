@@ -10,7 +10,7 @@ import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.InitialServerChannel;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -363,7 +363,7 @@ public class BayeuxServerTest extends Assert
     
     class CListener implements BayeuxServer.ChannelListener
     {
-        public void initialize(InitialServerChannel channel)
+        public void configureChannel(ConfigurableServerChannel channel)
         {
         }
 

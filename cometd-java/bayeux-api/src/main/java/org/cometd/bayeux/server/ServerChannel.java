@@ -23,12 +23,8 @@ import org.cometd.bayeux.client.SessionChannel;
  * </p>
  *
  */
-public interface ServerChannel extends InitialServerChannel
+public interface ServerChannel extends ConfigurableServerChannel
 {
-    public interface Initializer
-    {
-        void initialize(InitialServerChannel channel);
-    }
     
     /* ------------------------------------------------------------ */
     /**
