@@ -1,5 +1,6 @@
 package org.cometd.server;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,9 +41,16 @@ public class MessageImpl extends HashMap<String,Object> implements Message, JSON
     }
 
     /* ------------------------------------------------------------ */
-    public void addJSON(StringBuffer buffer)
+    public void addJSON(Appendable buffer)
     {
-        buffer.append(getJSON());
+        try
+        {
+            buffer.append(getJSON());
+        }
+        catch (IOException x)
+        {
+            throw new RuntimeException(x);
+        }
     }
 
     /* ------------------------------------------------------------ */
