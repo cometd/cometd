@@ -134,8 +134,8 @@ public class CometdServlet extends GenericServlet
         for (String name :_bayeux.getKnownTransportNames())
         {
             Transport transport = _bayeux.getTransport(name);
-            if (transport instanceof ServerTransport)
-                ((ServerTransport)transport).init();
+            if (transport instanceof AbstractServerTransport)
+                ((AbstractServerTransport)transport).init();
         }
         
         if (_logLevel>=CONFIG_LEVEL)

@@ -15,7 +15,8 @@ import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.ServerTransport.Dispatcher;
+import org.cometd.bayeux.server.ServerTransport;
+import org.cometd.server.AbstractServerTransport.Dispatcher;
 import org.cometd.server.transports.HttpTransport;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
@@ -42,7 +43,7 @@ public class ServerSessionImpl implements ServerSession
     private final AtomicBoolean _handshook = new AtomicBoolean();
     private final Set<ServerChannelImpl> _subscribedTo = Collections.newSetFromMap(new ConcurrentHashMap<ServerChannelImpl, Boolean>());
     
-    private ServerTransport.Dispatcher _dispatcher;
+    private AbstractServerTransport.Dispatcher _dispatcher;
     private transient ServerTransport _advisedTransport;
 
     private int _maxQueue=-1;
@@ -319,7 +320,7 @@ public class ServerSessionImpl implements ServerSession
     }
     
     /* ------------------------------------------------------------ */
-    public boolean setDispatcher(ServerTransport.Dispatcher dispatcher)
+    public boolean setDispatcher(AbstractServerTransport.Dispatcher dispatcher)
     {
         synchronized(_queue)
         {

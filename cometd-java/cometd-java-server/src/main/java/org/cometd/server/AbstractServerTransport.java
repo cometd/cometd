@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerTransport;
 import org.eclipse.jetty.util.ajax.JSON;
 
 
@@ -15,7 +16,7 @@ import org.eclipse.jetty.util.ajax.JSON;
 /** The base class of all server transports.
  * 
  */
-public class ServerTransport implements Transport
+public abstract class AbstractServerTransport implements ServerTransport
 {
     public final static String TIMEOUT_OPTION="timeout";
     public final static String INTERVAL_OPTION="interval";
@@ -24,12 +25,12 @@ public class ServerTransport implements Transport
     public final static String META_CONNECT_DELIVERY_OPTION="metaConnectDeliverOnly";
     
     final protected BayeuxServerImpl _bayeux;
-    protected long _interval=0;
-    protected long _maxInterval=10000;
+    public long _interval=0;
+    public long _maxInterval=10000;
     protected long _timeout=10000;
-    protected long _maxLazyTimeout=5000;
-    protected boolean _metaConnectDeliveryOnly=false;
-    protected Object _advice;
+    public long _maxLazyTimeout=5000;
+    public boolean _metaConnectDeliveryOnly=false;
+    public Object _advice;
 
     private final String _name;
     private final Map<String,Object> _options;
@@ -50,7 +51,7 @@ public class ServerTransport implements Transport
      * </p>
      * <p>
      */
-    protected ServerTransport(BayeuxServerImpl bayeux, String name)
+    protected AbstractServerTransport(BayeuxServerImpl bayeux, String name)
     {
         _name=name;
         _options=bayeux.getOptions();

@@ -2,6 +2,7 @@ package org.cometd.server.transports;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Queue;
 
@@ -14,7 +15,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.ServerTransport;
+import org.cometd.server.AbstractServerTransport;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -30,6 +31,10 @@ public class WebSocketTransport extends HttpTransport
     public final static String BUFFER_SIZE_OPTION="bufferSize";
     
     private final WebSocketFactory _factory = new WebSocketFactory();
+    
+    private ThreadLocal<Addresses> _addresses = new ThreadLocal<Addresses>();
+    
+    
     
     private String _protocol="";
     
@@ -77,7 +82,11 @@ public class WebSocketTransport extends HttpTransport
             return;
         }
         
-        WebSocket websocket = isMetaConnectDeliveryOnly()?null:new WebSocketDispatcher();
+        Addresses addresses=new Addresses();
+        addresses._local=new InetSocketAddress(request.getLocalAddr(),request.getLocalPort());
+        addresses._remote=new InetSocketAddress(request.getRemoteAddr(),request.getRemotePort());
+        
+        WebSocket websocket = isMetaConnectDeliveryOnly()?null:new WebSocketDispatcher(addresses);
         
         if (websocket!=null)
             _factory.upgrade(request,response,websocket,origin,protocol);
@@ -92,8 +101,9 @@ public class WebSocketTransport extends HttpTransport
         return origin;
     }
     
-    protected class WebSocketDispatcher implements WebSocket, ServerTransport.Dispatcher
+    protected class WebSocketDispatcher implements WebSocket, AbstractServerTransport.Dispatcher
     {
+        protected final Addresses _addresses;
         protected ServerSessionImpl _session;
         protected Outbound _outbound;
         protected ServerMessage _connectReply;
@@ -107,6 +117,11 @@ public class WebSocketTransport extends HttpTransport
                     dispatch();
             }
         };
+        
+        public WebSocketDispatcher(Addresses addresses)
+        {
+            _addresses=addresses;
+        }
         
         public void onConnect(Outbound outbound)
         {
@@ -125,10 +140,10 @@ public class WebSocketTransport extends HttpTransport
 
         public void onMessage(byte frame, String data)
         {
-            System.err.println(">WS>"+data);
             boolean batch=false;
             try
             {
+                WebSocketTransport.this._addresses.set(_addresses);
                 _bayeux.setCurrentTransport(WebSocketTransport.this);
                 
                 ServerMessage.Mutable[] messages = ServerMessageImpl.parseMessages(data);
@@ -201,6 +216,7 @@ public class WebSocketTransport extends HttpTransport
             }
             finally
             {
+                WebSocketTransport.this._addresses.set(null);
                 _bayeux.setCurrentTransport(null);
                 // if we started a batch - end it now
                 if (batch)
@@ -270,5 +286,38 @@ public class WebSocketTransport extends HttpTransport
         }
     };
     
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.server.transports.HttpTransport#getCurrentLocalAddress()
+     */
+    @Override
+    public InetSocketAddress getCurrentLocalAddress()
+    {
+        Addresses addresses = _addresses.get();
+        if (addresses!=null)
+            return addresses._local;
+        return super.getCurrentLocalAddress();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.server.transports.HttpTransport#getCurrentRemoteAddress()
+     */
+    @Override
+    public InetSocketAddress getCurrentRemoteAddress()
+    {
+        Addresses addresses = _addresses.get();
+        if (addresses!=null)
+            return addresses._remote;
+        return super.getCurrentRemoteAddress();
+    }
+
+    private static class Addresses
+    {
+        InetSocketAddress _local;
+        InetSocketAddress _remote;
+    }
     
 }

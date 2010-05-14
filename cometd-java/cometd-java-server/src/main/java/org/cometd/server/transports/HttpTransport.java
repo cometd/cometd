@@ -1,6 +1,7 @@
 package org.cometd.server.transports;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,10 +14,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerMessageImpl;
-import org.cometd.server.ServerTransport;
+import org.cometd.server.AbstractServerTransport;
 
 
-public abstract class HttpTransport extends ServerTransport
+public abstract class HttpTransport extends AbstractServerTransport
 {
     public static final String MESSAGE_PARAM="message";
     
@@ -65,14 +66,45 @@ public abstract class HttpTransport extends ServerTransport
         return messages.toArray(new ServerMessage.Mutable[messages.size()]);
     }
     
+    /* ------------------------------------------------------------ */
     public void setCurrentRequest(HttpServletRequest request)
     {
         _currentRequest.set(request);
     }
-    
+    /* ------------------------------------------------------------ */
+
     public HttpServletRequest getCurrentRequest()
     {
         return _currentRequest.get();
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.bayeux.server.ServerTransport#getCurrentLocalAddress()
+     */
+    @Override
+    public InetSocketAddress getCurrentLocalAddress()
+    {
+        HttpServletRequest request=getCurrentRequest();
+        if (request!=null)
+            return new InetSocketAddress(request.getLocalName(),request.getLocalPort());
+        
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.bayeux.server.ServerTransport#getCurrentRemoteAddress()
+     */
+    @Override
+    public InetSocketAddress getCurrentRemoteAddress()
+    {
+        HttpServletRequest request=getCurrentRequest();
+        if (request!=null)
+            return new InetSocketAddress(request.getRemoteHost(),request.getRemotePort());
+        
+        return null;
+    }
+    
     
 }
