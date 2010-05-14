@@ -16,7 +16,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.ServerTransport;
+import org.cometd.server.AbstractServerTransport;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
@@ -287,7 +287,7 @@ public abstract class LongPollingTransport extends HttpTransport
     abstract protected void complete(PrintWriter writer) throws IOException;
     
     
-    private class LongPollDispatcher implements ServerTransport.Dispatcher, ContinuationListener
+    private class LongPollDispatcher implements AbstractServerTransport.Dispatcher, ContinuationListener
     {
         private final ServerSessionImpl _session;
         private final Continuation _continuation;

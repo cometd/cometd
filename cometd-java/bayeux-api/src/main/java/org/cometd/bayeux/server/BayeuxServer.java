@@ -2,6 +2,7 @@ package org.cometd.bayeux.server;
 
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.BayeuxListener;
+import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
 
@@ -129,12 +130,10 @@ public interface BayeuxServer extends Bayeux
     /* ------------------------------------------------------------ */
     /**
      * Get the current transport for the current thread.
-     * A transport object will be: <ul>
-     * <li>A javax.servlet.http.HttpServletRequest instance for a HTTP transport
-     * <li>An org.eclipse.jetty.websocket.WebSocket instance for WebSocket transports
-     * </ul>
+     * 
+     * @return An the instance of the current Transport.
      */
-    public Object getCurrentTransport();
+    public Transport getCurrentTransport();
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
