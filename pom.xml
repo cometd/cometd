@@ -237,7 +237,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
-                    <version>1.0.1</version>
+                    <version>1.1.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.mortbay.jetty</groupId>

@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class BayeuxLoadGenerator
 {
+    private final StatisticsHelper helper = new StatisticsHelper();
     private final List<LoadBayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<LoadBayeuxClient>());
     private final Map<Integer, Integer> rooms = new HashMap<Integer, Integer>();
     private final AtomicLong start = new AtomicLong();
@@ -239,6 +240,7 @@ public class BayeuxLoadGenerator
                 value = "" + randomize;
             randomize = Boolean.parseBoolean(value);
 
+            helper.startStatistics();
             // Send a message to the server to signal the start of the test
             LoadBayeuxClient statsClient = bayeuxClients.get(0);
             statsClient.begin();
@@ -281,6 +283,7 @@ public class BayeuxLoadGenerator
             long end = System.nanoTime();
 
             statsClient.end();
+            helper.stopStatistics();
 
             long elapsedNanos = end - start;
             if (elapsedNanos > 0)
