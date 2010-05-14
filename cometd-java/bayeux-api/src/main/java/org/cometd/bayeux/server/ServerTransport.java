@@ -1,6 +1,5 @@
 package org.cometd.bayeux.server;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import org.cometd.bayeux.Transport;
