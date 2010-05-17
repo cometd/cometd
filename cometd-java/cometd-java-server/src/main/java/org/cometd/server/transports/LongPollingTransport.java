@@ -2,6 +2,8 @@ package org.cometd.server.transports;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -177,16 +179,7 @@ public abstract class LongPollingTransport extends HttpTransport
                             if  (connect || !(isMetaConnectDeliveryOnly()||session.isMetaConnectDeliveryOnly()))
                             {
                                 // send the queued messages
-                                Queue<ServerMessage> queue = session.getQueue();
-                                synchronized (queue)
-                                {
-                                    session.dequeue();
-                                    for (int i=queue.size();i-->0;)
-                                    {
-                                        ServerMessage m=queue.poll();
-                                        writer=send(request,response,writer, m);
-                                    }
-                                }
+                                writer=sendQueue(request,response,session,writer);
                             }
 
                             // special handling for connect
@@ -262,16 +255,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
             // Send the message queue
             Queue<ServerMessage> queue = session.getQueue();
-            PrintWriter writer=null;
-            synchronized (queue)
-            {
-                session.dequeue();
-                for (int i=queue.size();i-->0;)
-                {
-                    ServerMessage m=queue.poll();
-                    writer=send(request,response,writer, m);
-                }
-            }
+            PrintWriter writer=sendQueue(request,response,session,null);
             
             // send the connect reply
             ServerMessage reply=dispatcher.getReply();
@@ -280,6 +264,23 @@ public abstract class LongPollingTransport extends HttpTransport
             
             complete(writer);
         }
+    }
+    
+    private PrintWriter sendQueue(HttpServletRequest request, HttpServletResponse response,ServerSessionImpl session, PrintWriter writer) 
+        throws IOException
+    {
+        final Queue<ServerMessage> queue = session.getQueue();
+        final List<ServerMessage> copy;
+        synchronized (queue)
+        {
+            session.dequeue();
+            copy = new ArrayList<ServerMessage>(queue);
+            queue.clear();
+        }
+        for (ServerMessage m:copy)
+            writer=send(request,response,writer, m);
+
+        return writer;
     }
 
     abstract protected PrintWriter send(HttpServletRequest request,HttpServletResponse response,PrintWriter writer, ServerMessage message) throws IOException;
