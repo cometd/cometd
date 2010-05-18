@@ -3,6 +3,7 @@ package org.cometd.server.transports;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -16,6 +17,7 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.AbstractServerTransport;
+import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -244,26 +246,22 @@ public class WebSocketTransport extends HttpTransport
         {
             while (_session!=null)
             {
-                Queue<ServerMessage> queue = _session.getQueue();
-                synchronized (queue)
+                final List<ServerMessage> queue = _session.takeQueue();
+
+                if (_connectReply!=null)
                 {
-                    _session.dequeue();
-                    if (_connectReply!=null)
-                    {
-                        queue.add(_bayeux.extendReply(_session,_connectReply));
-                        _connectReply=null;
-                        _session.startIntervalTimeout();
-                    }
-                    try
-                    {
-                        if (queue.size()>0)
-                            send(queue);   
-                    }
-                    catch(IOException e)
-                    {
-                        _bayeux.getLogger().warn("io ",e);
-                    }
-                    queue.clear();
+                    queue.add(_bayeux.extendReply(_session,_connectReply));
+                    _connectReply=null;
+                    _session.startIntervalTimeout();
+                }
+                try
+                {
+                    if (queue.size()>0)
+                        send(queue);   
+                }
+                catch(IOException e)
+                {
+                    _bayeux.getLogger().warn("io ",e);
                 }
 
                 if (isMetaConnectDeliveryOnly() || _session.setDispatcher(this))
@@ -272,7 +270,7 @@ public class WebSocketTransport extends HttpTransport
         }
         
         /* ------------------------------------------------------------ */
-        protected void send(Queue<ServerMessage> messages) throws IOException
+        protected void send(List<ServerMessage> messages) throws IOException
         {
             String data = JSON.toString(messages);
             _outbound.sendMessage(data);

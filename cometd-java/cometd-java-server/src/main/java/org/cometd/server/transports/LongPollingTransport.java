@@ -254,7 +254,6 @@ public abstract class LongPollingTransport extends HttpTransport
                 session.startIntervalTimeout();
 
             // Send the message queue
-            Queue<ServerMessage> queue = session.getQueue();
             PrintWriter writer=sendQueue(request,response,session,null);
             
             // send the connect reply
@@ -269,17 +268,9 @@ public abstract class LongPollingTransport extends HttpTransport
     private PrintWriter sendQueue(HttpServletRequest request, HttpServletResponse response,ServerSessionImpl session, PrintWriter writer) 
         throws IOException
     {
-        final Queue<ServerMessage> queue = session.getQueue();
-        final List<ServerMessage> copy;
-        synchronized (queue)
-        {
-            session.dequeue();
-            copy = new ArrayList<ServerMessage>(queue);
-            queue.clear();
-        }
-        for (ServerMessage m:copy)
+        final List<ServerMessage> queue = session.takeQueue();
+        for (ServerMessage m:queue)
             writer=send(request,response,writer, m);
-
         return writer;
     }
 
