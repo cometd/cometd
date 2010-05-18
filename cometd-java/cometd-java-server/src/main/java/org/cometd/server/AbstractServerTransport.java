@@ -266,7 +266,8 @@ public abstract class AbstractServerTransport implements ServerTransport
     {
         return _timeout;
     }
-
+    
+    /* ------------------------------------------------------------ */
     public boolean isMetaConnectDeliveryOnly()
     {
         return _metaConnectDeliveryOnly;
@@ -310,4 +311,8 @@ public abstract class AbstractServerTransport implements ServerTransport
         void cancel();
         void schedule();
     }
+    
+    /* ------------------------------------------------------------ */
+    public interface OneTimeScheduler extends Scheduler
+    {}
 }

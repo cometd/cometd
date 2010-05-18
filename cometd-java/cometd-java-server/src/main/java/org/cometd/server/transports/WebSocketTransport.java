@@ -84,16 +84,19 @@ public class WebSocketTransport extends HttpTransport
             return;
         }
         
+        if (isMetaConnectDeliveryOnly())
+        {
+            Log.warn("MetaConnectDeliveryOnly not implemented for websocket");
+            response.sendError(403);
+            return;
+        }
+        
         Addresses addresses=new Addresses();
         addresses._local=new InetSocketAddress(request.getLocalAddr(),request.getLocalPort());
         addresses._remote=new InetSocketAddress(request.getRemoteAddr(),request.getRemotePort());
         
-        WebSocket websocket = isMetaConnectDeliveryOnly()?null:new WebSocketScheduler(addresses);
-        
-        if (websocket!=null)
-            _factory.upgrade(request,response,websocket,origin,protocol);
-        else
-            response.sendError(403);
+        WebSocket websocket = new WebSocketScheduler(addresses);
+        _factory.upgrade(request,response,websocket,origin,protocol);
     }
 
     protected String checkOrigin(HttpServletRequest request, String host, String origin)
@@ -115,8 +118,10 @@ public class WebSocketTransport extends HttpTransport
             public void expired()
             {
                 // send the meta connect response after timeout.
-                if (_session!=null && _session.setDispatcher(null))
+                if (_session!=null)
+                {
                     WebSocketScheduler.this.schedule();
+                }
             }
         };
         
@@ -175,14 +180,13 @@ public class WebSocketTransport extends HttpTransport
 
                     if (connect && reply.isSuccessful())
                     {
-                        if (!_session.setDispatcher(this))
-                            this.schedule();
+                        _session.setScheduler(this);
                         
                         long timeout=_session.getTimeout();
                         if (timeout<0) 
                             timeout=_timeout;
                         
-                        if (_session.setDispatcher(this) && timeout>0 && was_connected)
+                        if (timeout>0 && was_connected)
                         {
                             // delay sending connect reply until dispatch or timeout.
                             _bayeux.startTimeout(_timeoutTask,timeout);
@@ -266,9 +270,6 @@ public class WebSocketTransport extends HttpTransport
                 {
                     _bayeux.getLogger().warn("io ",e);
                 }
-
-                if (isMetaConnectDeliveryOnly() || _session.setDispatcher(this))
-                    break;
             }
         }
         
