@@ -92,11 +92,11 @@ public class LongPollingTransport extends ClientTransport
                     _listener.onMessages(messages);
                 }
                 else
-                    _listener.onProtocolError(this+" 200 null content");
+                    _listener.onProtocolError("Empty response: "+this);
             }
             else
             {
-                _listener.onProtocolError(this+" "+getResponseStatus());
+                _listener.onProtocolError("Unexpected response "+getResponseStatus()+": "+this);
             }
         }
 
