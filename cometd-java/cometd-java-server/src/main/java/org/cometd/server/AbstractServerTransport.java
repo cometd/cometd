@@ -305,9 +305,9 @@ public abstract class AbstractServerTransport implements ServerTransport
     }
     
     /* ------------------------------------------------------------ */
-    public interface Dispatcher
+    public interface Scheduler
     {
-        void cancelDispatch();
-        void dispatch();
+        void cancel();
+        void schedule();
     }
 }
