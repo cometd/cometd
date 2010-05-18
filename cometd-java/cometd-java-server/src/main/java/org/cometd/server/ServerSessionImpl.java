@@ -53,10 +53,12 @@ public class ServerSessionImpl implements ServerSession
     private long _maxInterval;
     private long _maxLazy=-1;
     private boolean _metaConnectDelivery;
-    private long _accessed=-1;
     private int _batch;
 
-    private volatile long _intervalTimestamp;
+    private long _connectTimestamp=-1;
+    private long _intervalTimestamp;
+    private long _lastInterval;
+    private long _lastConnect;
     private volatile boolean _lazyDispatch;
 
     private Task _lazyTask;
@@ -216,14 +218,13 @@ public class ServerSessionImpl implements ServerSession
     }
     
     /* ------------------------------------------------------------ */
-    protected void connect(long timestamp)
+    protected void connect()
     {
         synchronized (_queue)
-        {
-            cancelIntervalTimeout(); 
+        { 
             _connected.set(true);
             
-            if (_accessed==-1)
+            if (_connectTimestamp==-1)
             {
                 HttpTransport transport=(HttpTransport)_bayeux.getCurrentTransport();
                 
@@ -253,9 +254,8 @@ public class ServerSessionImpl implements ServerSession
                         };
                     }
                 }
-                
             }
-            _accessed=timestamp;
+            cancelIntervalTimeout();
         }
     }
 
@@ -393,12 +393,11 @@ public class ServerSessionImpl implements ServerSession
             {
                 _scheduler = null;
             }
-            else if (_scheduler!=null && _scheduler!=scheduler)
+            else 
             {
-                throw new IllegalStateException();
-            }
-            else
-            {
+                if (_scheduler!=null && _scheduler!=scheduler)
+                    _scheduler.cancel();
+                    
                 _scheduler=scheduler;
 
                 if (_queue.size()>0 && _batch==0)
@@ -450,13 +449,13 @@ public class ServerSessionImpl implements ServerSession
             else if (_maxLazy>0 && !_lazyDispatch)
             {
                 _lazyDispatch=true;
-                _bayeux.startTimeout(_lazyTask,_accessed%_maxLazy);
+                _bayeux.startTimeout(_lazyTask,_connectTimestamp%_maxLazy);
             }
         }
     }
 
     /* ------------------------------------------------------------ */
-    public void cancelDispatch()
+    public void cancelSchedule()
     {
         synchronized (_queue)
         {
@@ -472,13 +471,25 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public void cancelIntervalTimeout()
     {
-        _intervalTimestamp=0;
+        synchronized (_queue)
+        {
+            long now = System.currentTimeMillis();
+            if (_intervalTimestamp>0)
+                _lastInterval=now-(_intervalTimestamp-_maxInterval);
+            _connectTimestamp=now;
+            _intervalTimestamp=0;
+        }
     }
 
     /* ------------------------------------------------------------ */
     public void startIntervalTimeout()
     {
-        _intervalTimestamp=System.currentTimeMillis()+_maxInterval;
+        synchronized (_queue)
+        {
+            long now = System.currentTimeMillis();
+            _lastConnect=now-_connectTimestamp;
+            _intervalTimestamp=now+_maxInterval;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -689,6 +700,12 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
+    /* ------------------------------------------------------------ */
+    public String toDetailString()
+    {
+        return _id+",lc="+_lastConnect+",li="+_lastInterval;
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public String toString()

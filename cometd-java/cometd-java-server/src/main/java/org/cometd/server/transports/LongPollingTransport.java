@@ -189,7 +189,6 @@ public abstract class LongPollingTransport extends HttpTransport
                                 // If the writer is non null, we have already started sending a response, so we should not suspend
                                 if(was_connected && writer==null && reply.isSuccessful() && session.isQueueEmpty())
                                 {
-                                    session.cancelDispatch();
                                     String browserId=getBrowserId(request,response);
                                     if (incBrowserId(browserId,request,reply))
                                     {

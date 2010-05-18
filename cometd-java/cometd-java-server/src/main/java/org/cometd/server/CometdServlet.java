@@ -230,7 +230,7 @@ public class CometdServlet extends GenericServlet
     {
         for (ServerSessionImpl session : _bayeux.getSessions())
         {
-            session.cancelDispatch();
+            session.cancelSchedule();
         }
         
     }

@@ -696,7 +696,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 return;
             }
 
-            session.connect(_timeout.getNow());
+            session.connect();
 
             // receive advice
             Map<String,Object> adviceIn=message.getAdvice();

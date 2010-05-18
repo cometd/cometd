@@ -31,7 +31,7 @@ public class BayeuxServerTest extends Assert
         ServerSessionImpl session = _bayeux.newServerSession();
         _bayeux.addServerSession(session);
         session.handshake();
-        session.connect(System.currentTimeMillis());
+        session.connect();
         return session;
     }
     
