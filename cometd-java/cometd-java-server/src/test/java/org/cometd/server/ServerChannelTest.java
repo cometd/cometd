@@ -25,7 +25,7 @@ public class ServerChannelTest extends Assert
         ServerSessionImpl session = _bayeux.newServerSession();
         _bayeux.addServerSession(session);
         session.handshake();
-        session.connect(System.currentTimeMillis());
+        session.connect();
         return session;
     }
     
@@ -194,7 +194,7 @@ public class ServerChannelTest extends Assert
         foostar.subscribe(session1);
         ServerSessionImpl session2 = newServerSession();
         _bayeux.addServerSession(session2);
-        session2.connect(System.currentTimeMillis());
+        session2.connect();
         starstar.subscribe(session2);
         
         ServerMessage.Mutable msg = _bayeux.newMessage();

@@ -65,7 +65,7 @@ public class CometdDemo
         // SocketConnector connector=new SocketConnector();
         connector.setPort(port);
         connector.setMaxIdleTime(120000);
-        connector.setLowResourceMaxIdleTime(60000);
+        connector.setLowResourcesMaxIdleTime(60000);
         connector.setLowResourcesConnections(20000);
         connector.setAcceptQueueSize(5000);
         server.addConnector(connector);
@@ -120,7 +120,7 @@ public class CometdDemo
 
         ServletHolder comet = context.addServlet(CometdServlet.class, "/cometd/*");
         comet.setInitParameter("timeout","20000");
-        comet.setInitParameter("interval","50");
+        comet.setInitParameter("interval","0");
         comet.setInitParameter("maxInterval","20000");
         comet.setInitParameter("multiFrameInterval","5000");
         comet.setInitParameter("logLevel","0");
