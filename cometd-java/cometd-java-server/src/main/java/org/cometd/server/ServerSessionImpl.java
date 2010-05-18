@@ -1,5 +1,6 @@
 package org.cometd.server;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
@@ -312,6 +313,25 @@ public class ServerSessionImpl implements ServerSession
     {
         return _queue;
     }
+    
+    /* ------------------------------------------------------------ */
+    public List<ServerMessage> takeQueue()
+    {
+        final List<ServerMessage> copy;
+        synchronized (_queue)
+        {
+            for (ServerSessionListener listener : _listeners)
+            {
+                if (listener instanceof ServerSession.DeQueueListener)
+                    ((ServerSession.DeQueueListener)listener).deQueue(this);
+            }
+            
+            copy=new ArrayList<ServerMessage>(_queue.size()+2);
+            copy.addAll(_queue);
+            _queue.clear();
+        }
+        return copy;
+    }
 
     /* ------------------------------------------------------------ */
     public void removeListener(ServerSessionListener listener)
@@ -595,19 +615,6 @@ public class ServerSessionImpl implements ServerSession
     public boolean isMetaConnectDeliveryOnly()
     {
         return _metaConnectDelivery;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void dequeue()
-    {
-        synchronized (_queue)
-        {
-            for (ServerSessionListener listener : _listeners)
-            {
-                if (listener instanceof ServerSession.DeQueueListener)
-                    ((ServerSession.DeQueueListener)listener).deQueue(this);
-            }
-        }
     }
 
     /* ------------------------------------------------------------ */
