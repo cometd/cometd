@@ -1,5 +1,6 @@
 package org.cometd.server.ext;
 
+import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.Channel;
@@ -7,6 +8,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession.Extension;
+import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 
@@ -18,16 +20,19 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class AcknowledgedMessagesClientExtension implements Extension
 {
-    private final ServerSession _session;
-    private final ArrayQueue<ServerMessage> _queue;
+    private final ServerSessionImpl _session;
+    private final Object _lock;
     private final ArrayIdQueue<ServerMessage> _unackedQueue;
     private long _lastAck;
 
     public AcknowledgedMessagesClientExtension(ServerSession session)
     {
-        _session=session;
-        _queue=(ArrayQueue<ServerMessage>)session.getQueue();
-        _unackedQueue=new ArrayIdQueue<ServerMessage>(16,32,session.getQueue());
+        _session=(ServerSessionImpl)session;
+        _lock=_session.getLock();
+        
+        List<ServerMessage> copy = _session.takeQueue();
+        _session.replaceQueue(copy);
+        _unackedQueue=new ArrayIdQueue<ServerMessage>(16,32,copy);
         _unackedQueue.setCurrentId(1);
     }
 
@@ -47,7 +52,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
             {
                 assert session==_session;
 
-                synchronized(_queue)
+                synchronized(_lock)
                 {
                     Long acked=(Long)ext.get("ack");
                     if (acked != null)
@@ -55,8 +60,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
                         if (acked.longValue()<=_lastAck)
                         {
                             Log.debug(session+" lost ACK "+acked.longValue()+"<="+_lastAck);
-                            _queue.clear();
-                            _queue.addAll(_unackedQueue);
+                            _session.replaceQueue(_unackedQueue);
                         }
                         else
                         {
@@ -99,7 +103,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
     /* ------------------------------------------------------------ */
     public ServerMessage send(ServerSession to, ServerMessage message)
     {
-        synchronized(_queue)
+        synchronized(_lock)
         {
             _unackedQueue.add(message);
         }
@@ -112,7 +116,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
     {
         if (message.getChannel().equals(Channel.META_CONNECT))
         {
-            synchronized(_queue)
+            synchronized(_lock)
             {
                 Map<String,Object> ext=message.getExt(true);
                 ext.put("ack",_unackedQueue.getCurrentId());

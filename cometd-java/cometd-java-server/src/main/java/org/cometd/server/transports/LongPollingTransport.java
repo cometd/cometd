@@ -123,7 +123,7 @@ public abstract class LongPollingTransport extends HttpTransport
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         // is this a resumed connect?
-        LongPollDispatcher dispatcher=(LongPollDispatcher)request.getAttribute("dispatcher");
+        LongPollScheduler dispatcher=(LongPollScheduler)request.getAttribute("dispatcher");
         if (dispatcher==null)
         {
             // No - process messages
@@ -149,7 +149,7 @@ public abstract class LongPollingTransport extends HttpTransport
                     if (session==null)
                     {
                         session=(ServerSessionImpl)_bayeux.getSession(message.getClientId());
-                        if (session!=null && !message.isMeta())
+                        if (!batch && session!=null && !message.isMeta())
                         {
                             // start a batch to group all resulting messages into a single response.
                             batch=true;
@@ -197,7 +197,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                         long timeout=session.getTimeout();
                                         continuation.setTimeout(timeout==-1?_timeout:timeout); 
                                         continuation.suspend();
-                                        dispatcher=new LongPollDispatcher(session,continuation,reply,browserId);
+                                        dispatcher=new LongPollScheduler(session,continuation,reply,browserId);
                                         if (session.setDispatcher(dispatcher))
                                         {
                                             // suspend successful
@@ -279,14 +279,14 @@ public abstract class LongPollingTransport extends HttpTransport
     abstract protected void complete(PrintWriter writer) throws IOException;
     
     
-    private class LongPollDispatcher implements AbstractServerTransport.Dispatcher, ContinuationListener
+    private class LongPollScheduler implements AbstractServerTransport.Scheduler, ContinuationListener
     {
         private final ServerSessionImpl _session;
         private final Continuation _continuation;
         private final ServerMessage _reply;
         private final String _browserId;
         
-        public LongPollDispatcher(ServerSessionImpl session, Continuation continuation, ServerMessage reply,String browserId)
+        public LongPollScheduler(ServerSessionImpl session, Continuation continuation, ServerMessage reply,String browserId)
         {
             _session = session;
             _continuation = continuation;
@@ -295,7 +295,7 @@ public abstract class LongPollingTransport extends HttpTransport
             _browserId=browserId;
         }
 
-        public void cancelDispatch()
+        public void cancel()
         {
             if (_continuation!=null && _continuation.isSuspended() )
             {
@@ -319,7 +319,7 @@ public abstract class LongPollingTransport extends HttpTransport
             }
         }
 
-        public void dispatch()
+        public void schedule()
         {
             _continuation.resume();
         }

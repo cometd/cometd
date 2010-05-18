@@ -55,12 +55,6 @@ public interface ServerSession extends Session
      * remote client.
      */
     LocalSession getLocalSession();
-    
-    /* ------------------------------------------------------------ */
-    /** Get the session message queue.
-     * @return The queue of messages awaiting delivery to the client.
-     */
-    Queue<ServerMessage> getQueue();    
 
     /* ------------------------------------------------------------ */
     /**
@@ -135,7 +129,7 @@ public interface ServerSession extends Session
          * client.  This is the last chance to process the queue and remove
          * duplicates or merge messages.
          */
-        public void deQueue(ServerSession session);
+        public void deQueue(ServerSession session,Queue<ServerMessage> queue);
     };
 
 

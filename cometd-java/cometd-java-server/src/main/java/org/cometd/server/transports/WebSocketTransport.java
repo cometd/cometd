@@ -88,7 +88,7 @@ public class WebSocketTransport extends HttpTransport
         addresses._local=new InetSocketAddress(request.getLocalAddr(),request.getLocalPort());
         addresses._remote=new InetSocketAddress(request.getRemoteAddr(),request.getRemotePort());
         
-        WebSocket websocket = isMetaConnectDeliveryOnly()?null:new WebSocketDispatcher(addresses);
+        WebSocket websocket = isMetaConnectDeliveryOnly()?null:new WebSocketScheduler(addresses);
         
         if (websocket!=null)
             _factory.upgrade(request,response,websocket,origin,protocol);
@@ -103,7 +103,7 @@ public class WebSocketTransport extends HttpTransport
         return origin;
     }
     
-    protected class WebSocketDispatcher implements WebSocket, AbstractServerTransport.Dispatcher
+    protected class WebSocketScheduler implements WebSocket, AbstractServerTransport.Scheduler
     {
         protected final Addresses _addresses;
         protected ServerSessionImpl _session;
@@ -116,11 +116,11 @@ public class WebSocketTransport extends HttpTransport
             {
                 // send the meta connect response after timeout.
                 if (_session!=null && _session.setDispatcher(null))
-                    dispatch();
+                    WebSocketScheduler.this.schedule();
             }
         };
         
-        public WebSocketDispatcher(Addresses addresses)
+        public WebSocketScheduler(Addresses addresses)
         {
             _addresses=addresses;
         }
@@ -176,7 +176,7 @@ public class WebSocketTransport extends HttpTransport
                     if (connect && reply.isSuccessful())
                     {
                         if (!_session.setDispatcher(this))
-                            this.dispatch();
+                            this.schedule();
                         
                         long timeout=_session.getTimeout();
                         if (timeout<0) 
@@ -202,7 +202,7 @@ public class WebSocketTransport extends HttpTransport
 
                         if (batch)
                         {
-                            _session.getQueue().add(reply);
+                            _session.addQueue(reply);
                         }
                         else
                             send(reply);
@@ -238,12 +238,15 @@ public class WebSocketTransport extends HttpTransport
             }
         }
 
-        public void cancelDispatch()
+        public void cancel()
         {
         }
 
-        public void dispatch()
+        public void schedule()
         {
+            // TODO should schedule another thread!
+            // otherwise a receive can be blocked writing to another client
+            
             while (_session!=null)
             {
                 final List<ServerMessage> queue = _session.takeQueue();

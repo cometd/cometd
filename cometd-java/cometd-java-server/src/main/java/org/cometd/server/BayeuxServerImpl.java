@@ -813,7 +813,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
 
             removeServerSession(session,false);
-            session.dispatch();
+            session.flush();
 
             reply.setSuccessful(true);
         }
