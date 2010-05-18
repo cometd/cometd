@@ -17,6 +17,7 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
+import org.cometd.server.AbstractServerTransport.OneTimeScheduler;
 import org.cometd.server.AbstractServerTransport.Scheduler;
 import org.cometd.server.transports.HttpTransport;
 import org.eclipse.jetty.util.ArrayQueue;
@@ -37,14 +38,13 @@ public class ServerSessionImpl implements ServerSession
     private final List<ServerSessionListener> _listeners = new CopyOnWriteArrayList<ServerSessionListener>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
     private final ArrayQueue<ServerMessage> _queue=new ArrayQueue<ServerMessage>(8,16,this);
-    private final AtomicInteger _batch=new AtomicInteger();
     private final LocalSessionImpl _localSession;
     private final AttributesMap _attributes = new AttributesMap();
     private final AtomicBoolean _connected = new AtomicBoolean();
     private final AtomicBoolean _handshook = new AtomicBoolean();
     private final Set<ServerChannelImpl> _subscribedTo = Collections.newSetFromMap(new ConcurrentHashMap<ServerChannelImpl, Boolean>());
     
-    private AbstractServerTransport.Scheduler _dispatcher;
+    private AbstractServerTransport.Scheduler _scheduler;
     private transient ServerTransport _advisedTransport;
 
     private int _maxQueue=-1;
@@ -54,6 +54,7 @@ public class ServerSessionImpl implements ServerSession
     private long _maxLazy=-1;
     private boolean _metaConnectDelivery;
     private long _accessed=-1;
+    private int _batch;
 
     private volatile long _intervalTimestamp;
     private volatile boolean _lazyDispatch;
@@ -107,8 +108,8 @@ public class ServerSessionImpl implements ServerSession
                 _logger.debug("Expired interval "+ServerSessionImpl.this);
             synchronized (_queue)
             {
-                if (_dispatcher!=null)
-                    _dispatcher.cancel();
+                if (_scheduler!=null)
+                    _scheduler.cancel();
             }
             _bayeux.removeServerSession(ServerSessionImpl.this,true);
         }
@@ -192,10 +193,14 @@ public class ServerSessionImpl implements ServerSession
             }
         }
 
-        _queue.add(message);
+        boolean wakeup;
+        synchronized (_queue)
+        {
+            _queue.add(message);
+            wakeup = _batch==0;
+        }
 
-
-        if (_batch.get() == 0 && _queue.size() > 0)
+        if (wakeup)
         {
             if (message.isLazy())
                 flushLazy();
@@ -274,8 +279,11 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public void endBatch()
     {
-        if (_batch.decrementAndGet()==0 && _queue.size()>0)
-            flush();
+        synchronized (_queue)
+        {
+            if (--_batch==0 && _queue.size()>0)
+                flush();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -293,7 +301,10 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public void startBatch()
     {
-        _batch.incrementAndGet();
+        synchronized (_queue)
+        {
+            _batch++;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -315,9 +326,18 @@ public class ServerSessionImpl implements ServerSession
     }
     
     /* ------------------------------------------------------------ */
-    Queue<ServerMessage> getQueue()
+    public Queue<ServerMessage> getQueue()
     {
         return _queue;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public boolean isQueueEmpty()
+    {
+        synchronized (_queue)
+        {
+            return _queue.size()==0;
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -365,28 +385,29 @@ public class ServerSessionImpl implements ServerSession
     }
     
     /* ------------------------------------------------------------ */
-    public boolean setDispatcher(AbstractServerTransport.Scheduler dispatcher)
+    public void setScheduler(AbstractServerTransport.Scheduler scheduler)
     {
         synchronized(_queue)
         {
-            if (dispatcher == null)
+            if (scheduler == null)
             {
-                // This is the end of a connect
-                Scheduler old=_dispatcher;
-                _dispatcher = null;
-                return old!=null;
+                _scheduler = null;
             }
-
-            if (_dispatcher!=null && _dispatcher!=dispatcher)
+            else if (_scheduler!=null && _scheduler!=scheduler)
             {
                 throw new IllegalStateException();
             }
+            else
+            {
+                _scheduler=scheduler;
 
-            if (_queue.size()>0)
-                return false;
-
-            _dispatcher=dispatcher;
-            return true;
+                if (_queue.size()>0 && _batch==0)
+                {
+                    _scheduler.schedule();
+                    if (_scheduler instanceof OneTimeScheduler)
+                        _scheduler=null;
+                }
+            }
         }
     }
 
@@ -398,11 +419,12 @@ public class ServerSessionImpl implements ServerSession
             if (_lazyDispatch && _lazyTask!=null)
                 _bayeux.cancelTimeout(_lazyTask);
 
-            Scheduler dispatcher=_dispatcher;
-            if (dispatcher!=null)
+            Scheduler scheduler=_scheduler;
+            if (scheduler!=null)
             {
-                _dispatcher=null;
-                dispatcher.schedule();
+                if (_scheduler instanceof OneTimeScheduler)
+                    _scheduler=null;
+                scheduler.schedule();
                 return;
             }
         }
@@ -438,10 +460,10 @@ public class ServerSessionImpl implements ServerSession
     {
         synchronized (_queue)
         {
-            Scheduler dispatcher=_dispatcher;
+            Scheduler dispatcher=_scheduler;
             if (dispatcher!=null)
             {
-                _dispatcher=null;
+                _scheduler=null;
                 dispatcher.cancel();
             }
         }

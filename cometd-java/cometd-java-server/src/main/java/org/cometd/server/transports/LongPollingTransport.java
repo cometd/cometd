@@ -123,8 +123,8 @@ public abstract class LongPollingTransport extends HttpTransport
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         // is this a resumed connect?
-        LongPollScheduler dispatcher=(LongPollScheduler)request.getAttribute("dispatcher");
-        if (dispatcher==null)
+        LongPollScheduler scheduler=(LongPollScheduler)request.getAttribute("dispatcher");
+        if (scheduler==null)
         {
             // No - process messages
             
@@ -187,7 +187,7 @@ public abstract class LongPollingTransport extends HttpTransport
                             {
                                 // Should we suspend? 
                                 // If the writer is non null, we have already started sending a response, so we should not suspend
-                                if(was_connected && writer==null && reply.isSuccessful())
+                                if(was_connected && writer==null && reply.isSuccessful() && session.isQueueEmpty())
                                 {
                                     session.cancelDispatch();
                                     String browserId=getBrowserId(request,response);
@@ -197,21 +197,10 @@ public abstract class LongPollingTransport extends HttpTransport
                                         long timeout=session.getTimeout();
                                         continuation.setTimeout(timeout==-1?_timeout:timeout); 
                                         continuation.suspend();
-                                        dispatcher=new LongPollScheduler(session,continuation,reply,browserId);
-                                        if (session.setDispatcher(dispatcher))
-                                        {
-                                            // suspend successful
-                                            request.setAttribute("dispatcher",dispatcher);
-                                            reply=null;
-                                        }
-                                        else
-                                        {
-                                            // a message was already added - so handle it now;
-                                            continuation.complete();
-                                            dispatcher=null;
-                                            if (session.isConnected())
-                                                session.startIntervalTimeout();
-                                        }
+                                        scheduler=new LongPollScheduler(session,continuation,reply,browserId);
+                                        session.setScheduler(scheduler);
+                                        request.setAttribute("dispatcher",scheduler);
+                                        reply=null;
                                     }
                                     else 
                                     {
@@ -249,7 +238,7 @@ public abstract class LongPollingTransport extends HttpTransport
         else
         {
             // Get the resumed session
-            ServerSessionImpl session=dispatcher.getSession();
+            ServerSessionImpl session=scheduler.getSession();
             if (session.isConnected())
                 session.startIntervalTimeout();
 
@@ -257,7 +246,7 @@ public abstract class LongPollingTransport extends HttpTransport
             PrintWriter writer=sendQueue(request,response,session,null);
             
             // send the connect reply
-            ServerMessage reply=dispatcher.getReply();
+            ServerMessage reply=scheduler.getReply();
             reply=_bayeux.extendReply(session,reply);
             writer=send(request,response,writer, reply);
             
@@ -279,7 +268,7 @@ public abstract class LongPollingTransport extends HttpTransport
     abstract protected void complete(PrintWriter writer) throws IOException;
     
     
-    private class LongPollScheduler implements AbstractServerTransport.Scheduler, ContinuationListener
+    private class LongPollScheduler implements AbstractServerTransport.OneTimeScheduler, ContinuationListener
     {
         private final ServerSessionImpl _session;
         private final Continuation _continuation;
@@ -346,7 +335,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
         public void onTimeout(Continuation continuation)
         {
-            _session.setDispatcher(null);
+            _session.setScheduler(null);
         }
         
     }
