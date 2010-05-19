@@ -176,7 +176,6 @@ public class StatisticsHelper implements Runnable
         System.err.println("Garbage Generated in Old Generation: " + mebiBytes(totalOldUsed) + " MiB");
 
         System.err.println("Average CPU Load: " + ((float)elapsedProcessCPUTime * 100 / elapsedTime) + "/" + (100 * operatingSystem.getAvailableProcessors()));
-        System.err.println();
     }
 
     public float percent(long dividend, long divisor)
