@@ -162,6 +162,34 @@ public class TestChannelId extends Assert
         assertTrue(deep.matches(foobarbaz));
         
     }
+
+    @Test
+    public void testWilds()
+    {
+        ChannelId id=new ChannelId("/");
+        assertEquals(0,id.getWilds().size());
         
+        id=new ChannelId("/foo/bar/*");
+        assertEquals(0,id.getWilds().size());
+
+        id=new ChannelId("/foo");
+        assertEquals(2,id.getWilds().size());
+        assertEquals("/*",id.getWilds().get(0));
+        assertEquals("/**",id.getWilds().get(1));
+        
+        id=new ChannelId("/foo/bar");
+        assertEquals(3,id.getWilds().size());
+        assertEquals("/foo/*",id.getWilds().get(0));
+        assertEquals("/foo/**",id.getWilds().get(1));
+        assertEquals("/**",id.getWilds().get(2));
+        
+        id=new ChannelId("/foo/bar/bob");
+        assertEquals(4,id.getWilds().size());
+        assertEquals("/foo/bar/*",id.getWilds().get(0));
+        assertEquals("/foo/bar/**",id.getWilds().get(1));
+        assertEquals("/foo/**",id.getWilds().get(2));
+        assertEquals("/**",id.getWilds().get(3));
+        
+    }  
         
 }

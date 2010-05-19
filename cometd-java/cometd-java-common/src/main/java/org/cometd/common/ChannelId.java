@@ -14,6 +14,10 @@
 
 package org.cometd.common;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 
 /* ------------------------------------------------------------ */
 /** Holder of a channel ID broken into path segments
@@ -27,16 +31,20 @@ public class ChannelId
     private final String  _name;
     private final String[] _segments;
     private final int _wild;
-
+    private final List<String> _wilds;
+    
     public ChannelId(String name)
     {
         _name=name;
         if (name == null || name.length() == 0 || name.charAt(0) != '/')
             throw new IllegalArgumentException(name);
-
+        
+        String[] wilds;
+        
         if ("/".equals(name))
         {
             _segments=ROOT;
+            wilds=new String[]{};
         }
         else
         {
@@ -44,9 +52,20 @@ public class ChannelId
                 name=name.substring(0,name.length() - 1);
 
             _segments=name.substring(1).split("/");
-            for (String s:_segments)
-                if (s==null || s.length()==0)
+            wilds=new String[_segments.length+1];
+            StringBuilder b=new StringBuilder();
+            b.append('/');
+            
+            for (int i=0;i<_segments.length;i++)
+            {
+                if (_segments[i]==null || _segments[i].length()==0)
                     throw new IllegalArgumentException(name);
+             
+                if (i>0)
+                    b.append(_segments[i-1]).append('/');
+                wilds[_segments.length-i]=b+"**";
+            }
+            wilds[0]=b+"*";
         }
 
         if (_segments.length == 0)
@@ -57,6 +76,11 @@ public class ChannelId
             _wild=2;
         else
             _wild=0;
+        
+        if (_wild==0)
+            _wilds=Collections.unmodifiableList(Arrays.asList(wilds));
+        else
+            _wilds=Collections.emptyList();
     }
 
     public boolean isWild()
@@ -171,6 +195,16 @@ public class ChannelId
         return _segments[i];
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The list of wilds channels that match this channel, or 
+     * the empty list if this channel is already wild.
+     */
+    public List<String> getWilds()
+    {
+        return _wilds;
+    }
+    
     public static boolean isMeta(String channelId)
     {
         return channelId!=null && channelId.startsWith("/meta/");
