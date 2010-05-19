@@ -9,7 +9,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.transports.HttpTransport;
+import org.cometd.server.transport.HttpTransport;
 import org.mozilla.javascript.ScriptableObject;
 
 /**
@@ -91,7 +91,7 @@ public class CometdURLPathTest extends AbstractCometdJQueryTest
         {
             this.bayeux = bayeux;
         }
-        
+
         @Override
         public boolean rcv(ServerSession from, Mutable message)
         {
@@ -125,5 +125,5 @@ public class CometdURLPathTest extends AbstractCometdJQueryTest
             return true;
         }
     }
-    
+
 }

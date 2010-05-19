@@ -27,11 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.server.transports.HttpTransport;
-import org.cometd.server.transports.JSONPTransport;
-import org.cometd.server.transports.JSONTransport;
-import org.cometd.server.transports.WebSocketTransport;
+import org.cometd.server.transport.HttpTransport;
 
 /**
  * The cometd Servlet.
@@ -43,7 +39,7 @@ import org.cometd.server.transports.WebSocketTransport;
  * method called.
  * </p>
  * <p>
- * 
+ *
  * </p>
  */
 public class CometdServlet extends GenericServlet
@@ -63,8 +59,8 @@ public class CometdServlet extends GenericServlet
     private String _transportParameter;
     private int _logLevel;
     private HttpTransport[] _transports;
-    
-    
+
+
     public BayeuxServerImpl getBayeux()
     {
         if (_bayeux==null)
@@ -78,21 +74,21 @@ public class CometdServlet extends GenericServlet
     /* ------------------------------------------------------------ */
     /** Initialise the BayeuxServer.
      * Called by {@link #init()} if a bayeux server is constructed by
-     * this servlet. The default implementation 
+     * this servlet. The default implementation
      * calls {@link BayeuxServerImpl#initializeDefaultTransports()}.
-     * 
+     *
      * @param bayeux
      */
     protected void initializeBayeux(BayeuxServerImpl bayeux)
     {
         bayeux.initializeDefaultTransports();
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void init() throws ServletException
     {
-        
+
         _bayeux=(BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
         if (_bayeux==null)
             getServletContext().setAttribute(BayeuxServer.ATTRIBUTE,getBayeux());
@@ -103,7 +99,7 @@ public class CometdServlet extends GenericServlet
             if (_logLevel>=DEBUG_LEVEL)
                 _bayeux.getLogger().setDebugEnabled(true);
         }
-        
+
         // Get any specific options as init paramters
         HashSet<String> qualified_names = new HashSet<String>();
         for (String name :_bayeux.getKnownTransportNames())
@@ -123,7 +119,7 @@ public class CometdServlet extends GenericServlet
                 }
             }
         }
-        
+
         for (String option : qualified_names)
         {
             Object value = getInitParameter(option);
@@ -137,21 +133,21 @@ public class CometdServlet extends GenericServlet
             if (transport instanceof AbstractServerTransport)
                 ((AbstractServerTransport)transport).init();
         }
-        
+
         if (_logLevel>=CONFIG_LEVEL)
         {
             for (Map.Entry<String, Object> entry : _bayeux.getOptions().entrySet())
                 getServletContext().log(entry.getKey()+"="+entry.getValue());
         }
-        
+
         _transports=new HttpTransport[_bayeux.getAllowedTransports().size()];
         int i=0;
         for (String t : _bayeux.getAllowedTransports())
         {
-            Transport transport = _bayeux.getTransport(t); 
+            Transport transport = _bayeux.getTransport(t);
             _transports[i++]=transport instanceof HttpTransport?(HttpTransport)transport:null;
         }
-        
+
         try
         {
             _bayeux.start();
@@ -182,7 +178,7 @@ public class CometdServlet extends GenericServlet
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         HttpTransport transport=null;
-        
+
         // handle forced transport
         if (_transportParameter!=null)
         {
@@ -202,8 +198,8 @@ public class CometdServlet extends GenericServlet
                 }
             }
         }
-            
-        if (transport==null)         
+
+        if (transport==null)
             response.sendError(400,"bad transport");
         else
         {
@@ -215,7 +211,7 @@ public class CometdServlet extends GenericServlet
             }
             finally
             {
-                _bayeux.setCurrentTransport(null);  
+                _bayeux.setCurrentTransport(null);
                 transport.setCurrentRequest(null);
             }
         }
@@ -232,9 +228,9 @@ public class CometdServlet extends GenericServlet
         {
             session.cancelSchedule();
         }
-        
+
     }
-    
-    
+
+
 
 }

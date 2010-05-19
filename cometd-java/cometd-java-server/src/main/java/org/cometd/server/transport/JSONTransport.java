@@ -1,8 +1,7 @@
-package org.cometd.server.transports;
+package org.cometd.server.transport;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -14,10 +13,10 @@ public class JSONTransport extends LongPollingTransport
 {
     public final static String NAME="long-polling";
     public final static String MIME_TYPE_OPTION="mimeType";
-    
+
     protected String _mimeType="application/json;charset=UTF-8";
-    
-    
+
+
     public JSONTransport(BayeuxServerImpl bayeux)
     {
         super(bayeux,NAME);
@@ -25,7 +24,7 @@ public class JSONTransport extends LongPollingTransport
         setOption(MIME_TYPE_OPTION,_mimeType);
         _metaConnectDeliveryOnly=false;
     }
-    
+
     @Override
     protected void init()
     {
@@ -38,7 +37,7 @@ public class JSONTransport extends LongPollingTransport
     {
         return "POST".equals(request.getMethod());
     }
-    
+
     @Override
     public boolean isMetaConnectDeliveryOnly()
     {
@@ -52,10 +51,10 @@ public class JSONTransport extends LongPollingTransport
         {
             response.setContentType(_mimeType);
             writer = response.getWriter();
-            writer.append('['); 
+            writer.append('[');
         }
         else
-            writer.append(','); 
+            writer.append(',');
         writer.append(message.getJSON());
         return writer;
     }
