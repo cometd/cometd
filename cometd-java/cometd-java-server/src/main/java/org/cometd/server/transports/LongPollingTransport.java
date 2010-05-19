@@ -2,13 +2,10 @@ package org.cometd.server.transports;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -16,9 +13,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.AbstractServerTransport;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
@@ -27,7 +24,7 @@ import org.eclipse.jetty.util.log.Log;
 public abstract class LongPollingTransport extends HttpTransport
 {
     private final static AtomicInteger __zero = new AtomicInteger(0);
-    
+
     protected final static String BROWSER_ID_OPTION="browserId";
     protected final static String MAX_SESSIONS_PER_BROWSER_OPTION="maxSessionsPerBrowser";
     protected final static String MULTI_SESSION_INTERVAL_OPTION="multiSessionInterval";
@@ -37,7 +34,7 @@ public abstract class LongPollingTransport extends HttpTransport
     protected String _browserId="BAYEUX_BROWSER";
     private int _maxSessionsPerBrowser=1;
     private long _multiSessionInterval=2000;
-    
+
     protected LongPollingTransport(BayeuxServerImpl bayeux,String name)
     {
         super(bayeux,name);
@@ -55,7 +52,6 @@ public abstract class LongPollingTransport extends HttpTransport
         _maxSessionsPerBrowser=getOption(MAX_SESSIONS_PER_BROWSER_OPTION,_maxSessionsPerBrowser);
         _multiSessionInterval=getOption(MULTI_SESSION_INTERVAL_OPTION,_multiSessionInterval);
     }
-    
 
     protected String getBrowserId(HttpServletRequest request, HttpServletResponse response)
     {
@@ -82,7 +78,7 @@ public abstract class LongPollingTransport extends HttpTransport
     {
         if (_maxSessionsPerBrowser<0)
             return true;
-        
+
         AtomicInteger count = _browserMap.get(browserId);
         if (count==null)
         {
@@ -91,7 +87,7 @@ public abstract class LongPollingTransport extends HttpTransport
             if (count==null)
                 count=new_count;
         }
-        
+
         if (count.incrementAndGet()>_maxSessionsPerBrowser)
         {
             Map<String,Object> advice=reply.asMutable().getAdvice(true);
@@ -106,10 +102,10 @@ public abstract class LongPollingTransport extends HttpTransport
             count.decrementAndGet();
             return false;
         }
-        
-        return true;   
+
+        return true;
     }
-    
+
     protected void decBrowserId(String browserId)
     {
         AtomicInteger count = _browserMap.get(browserId);
@@ -118,7 +114,7 @@ public abstract class LongPollingTransport extends HttpTransport
             _browserMap.remove(browserId,__zero);
         }
     }
-    
+
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -127,10 +123,10 @@ public abstract class LongPollingTransport extends HttpTransport
         if (scheduler==null)
         {
             // No - process messages
-            
+
             // remember if we start a batch
             boolean batch=false;
-            
+
             // Don't know the session until first message or handshake response.
             ServerSessionImpl session=null;
 
@@ -185,7 +181,7 @@ public abstract class LongPollingTransport extends HttpTransport
                             // special handling for connect
                             if (connect)
                             {
-                                // Should we suspend? 
+                                // Should we suspend?
                                 // If the writer is non null, we have already started sending a response, so we should not suspend
                                 if(was_connected && writer==null && reply.isSuccessful() && session.isQueueEmpty())
                                 {
@@ -194,14 +190,14 @@ public abstract class LongPollingTransport extends HttpTransport
                                     {
                                         Continuation continuation = ContinuationSupport.getContinuation(request);
                                         long timeout=session.getTimeout();
-                                        continuation.setTimeout(timeout==-1?_timeout:timeout); 
+                                        continuation.setTimeout(timeout==-1?_timeout:timeout);
                                         continuation.suspend();
                                         scheduler=new LongPollScheduler(session,continuation,reply,browserId);
                                         session.setScheduler(scheduler);
                                         request.setAttribute("dispatcher",scheduler);
                                         reply=null;
                                     }
-                                    else 
+                                    else
                                     {
                                         session.reAdvise();
                                     }
@@ -210,17 +206,17 @@ public abstract class LongPollingTransport extends HttpTransport
                                     session.startIntervalTimeout();
                             }
                         }
-                        
+
                         // If the reply has not been otherwise handled, send it
                         if (reply!=null)
                         {
                             reply=_bayeux.extendReply(session,reply);
-                            
+
                             if (reply!=null)
                                 writer=send(request,response,writer, reply);
                         }
                     }
-                    
+
                     // disassociate the reply
                     message.setAssociated(null);
                 }
@@ -243,17 +239,17 @@ public abstract class LongPollingTransport extends HttpTransport
 
             // Send the message queue
             PrintWriter writer=sendQueue(request,response,session,null);
-            
+
             // send the connect reply
             ServerMessage reply=scheduler.getReply();
             reply=_bayeux.extendReply(session,reply);
             writer=send(request,response,writer, reply);
-            
+
             complete(writer);
         }
     }
-    
-    private PrintWriter sendQueue(HttpServletRequest request, HttpServletResponse response,ServerSessionImpl session, PrintWriter writer) 
+
+    private PrintWriter sendQueue(HttpServletRequest request, HttpServletResponse response,ServerSessionImpl session, PrintWriter writer)
         throws IOException
     {
         final List<ServerMessage> queue = session.takeQueue();
@@ -263,17 +259,17 @@ public abstract class LongPollingTransport extends HttpTransport
     }
 
     abstract protected PrintWriter send(HttpServletRequest request,HttpServletResponse response,PrintWriter writer, ServerMessage message) throws IOException;
-    
+
     abstract protected void complete(PrintWriter writer) throws IOException;
-    
-    
+
+
     private class LongPollScheduler implements AbstractServerTransport.OneTimeScheduler, ContinuationListener
     {
         private final ServerSessionImpl _session;
         private final Continuation _continuation;
         private final ServerMessage _reply;
         private String _browserId;
-        
+
         public LongPollScheduler(ServerSessionImpl session, Continuation continuation, ServerMessage reply,String browserId)
         {
             _session = session;
@@ -296,7 +292,7 @@ public abstract class LongPollingTransport extends HttpTransport
                 {
                     Log.ignore(e);
                 }
-                
+
                 try
                 {
                     _continuation.complete();
@@ -338,7 +334,7 @@ public abstract class LongPollingTransport extends HttpTransport
         {
             _session.setScheduler(null);
         }
-        
+
         private void decBrowserId()
         {
             synchronized (this)
@@ -350,6 +346,6 @@ public abstract class LongPollingTransport extends HttpTransport
                 }
             }
         }
-        
+
     }
 }

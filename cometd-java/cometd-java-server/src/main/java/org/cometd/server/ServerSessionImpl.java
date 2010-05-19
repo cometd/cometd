@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.Channel;
@@ -43,7 +42,7 @@ public class ServerSessionImpl implements ServerSession
     private final AtomicBoolean _connected = new AtomicBoolean();
     private final AtomicBoolean _handshook = new AtomicBoolean();
     private final Set<ServerChannelImpl> _subscribedTo = Collections.newSetFromMap(new ConcurrentHashMap<ServerChannelImpl, Boolean>());
-    
+
     private AbstractServerTransport.Scheduler _scheduler;
     private transient ServerTransport _advisedTransport;
 
@@ -95,12 +94,12 @@ public class ServerSessionImpl implements ServerSession
         id.insert(index,Long.toString(_idCount.incrementAndGet(),36));
 
         _id=id.toString();
-        
+
         HttpTransport transport=(HttpTransport)_bayeux.getCurrentTransport();
         if (transport!=null)
             _intervalTimestamp=System.currentTimeMillis()+transport.getMaxInterval();
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void sweep(long now)
     {
@@ -116,7 +115,7 @@ public class ServerSessionImpl implements ServerSession
             _bayeux.removeServerSession(ServerSessionImpl.this,true);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     protected List<Extension> getExtensions()
     {
@@ -150,7 +149,7 @@ public class ServerSessionImpl implements ServerSession
 
         if (!_bayeux.extendSend((ServerSessionImpl)from,mutable))
             return;
-        
+
         if (from instanceof LocalSession)
             doDeliver(((LocalSession)from).getServerSession(),message);
         else
@@ -186,7 +185,7 @@ public class ServerSessionImpl implements ServerSession
                 if (listener instanceof MessageListener)
                 {
                     if (!((MessageListener)listener).onMessage(this,from,message))
-                        return; 
+                        return;
                 }
             }
             catch(Exception e)
@@ -216,18 +215,18 @@ public class ServerSessionImpl implements ServerSession
     {
         _handshook.set(true);
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void connect()
     {
         synchronized (_queue)
-        { 
+        {
             _connected.set(true);
-            
+
             if (_connectTimestamp==-1)
             {
                 HttpTransport transport=(HttpTransport)_bayeux.getCurrentTransport();
-                
+
                 if (transport!=null)
                 {
                     _maxQueue=transport.getOption("maxQueue",-1);
@@ -261,7 +260,7 @@ public class ServerSessionImpl implements ServerSession
 
     /* ------------------------------------------------------------ */
     public void disconnect()
-    {       
+    {
         boolean connected=_bayeux.removeServerSession(this,false);
         if (connected)
         {
@@ -274,7 +273,6 @@ public class ServerSessionImpl implements ServerSession
                 flush();
         }
     }
-    
 
     /* ------------------------------------------------------------ */
     public void endBatch()
@@ -310,7 +308,7 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public void addListener(ServerSessionListener listener)
     {
-        _listeners.add((ServerSessionListener)listener);
+        _listeners.add(listener);
     }
 
     /* ------------------------------------------------------------ */
@@ -324,13 +322,13 @@ public class ServerSessionImpl implements ServerSession
     {
         return _queue;
     }
-    
+
     /* ------------------------------------------------------------ */
     public Queue<ServerMessage> getQueue()
     {
         return _queue;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isQueueEmpty()
     {
@@ -339,7 +337,7 @@ public class ServerSessionImpl implements ServerSession
             return _queue.size()==0;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public void addQueue(ServerMessage message)
     {
@@ -348,7 +346,7 @@ public class ServerSessionImpl implements ServerSession
             _queue.add(message);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public void replaceQueue(List<ServerMessage> queue)
     {
@@ -358,7 +356,7 @@ public class ServerSessionImpl implements ServerSession
             _queue.addAll(queue);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public List<ServerMessage> takeQueue()
     {
@@ -370,7 +368,7 @@ public class ServerSessionImpl implements ServerSession
                 if (listener instanceof ServerSession.DeQueueListener)
                     ((ServerSession.DeQueueListener)listener).deQueue(this,_queue);
             }
-            
+
             copy=new ArrayList<ServerMessage>(_queue.size()+2);
             copy.addAll(_queue);
             _queue.clear();
@@ -383,7 +381,7 @@ public class ServerSessionImpl implements ServerSession
     {
         _listeners.remove(listener);
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setScheduler(AbstractServerTransport.Scheduler scheduler)
     {
@@ -393,11 +391,11 @@ public class ServerSessionImpl implements ServerSession
             {
                 _scheduler = null;
             }
-            else 
+            else
             {
                 if (_scheduler!=null && _scheduler!=scheduler)
                     _scheduler.cancel();
-                    
+
                 _scheduler=scheduler;
 
                 if (_queue.size()>0 && _batch==0)
@@ -427,7 +425,7 @@ public class ServerSessionImpl implements ServerSession
                 return;
             }
         }
-        
+
         // do local delivery
         if  (_localSession!=null && _queue.size()>0)
         {
@@ -435,7 +433,7 @@ public class ServerSessionImpl implements ServerSession
             {
                 if (msg!=null)
                     _localSession.receive(msg,msg.asMutable());
-            }   
+            }
         }
     }
 
@@ -467,7 +465,7 @@ public class ServerSessionImpl implements ServerSession
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public void cancelIntervalTimeout()
     {
@@ -523,7 +521,7 @@ public class ServerSessionImpl implements ServerSession
     {
         return _connected.get();
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isHandshook()
     {
@@ -566,7 +564,7 @@ public class ServerSessionImpl implements ServerSession
                     return null;
             }
         }
-        
+
         return message;
     }
 
@@ -576,9 +574,9 @@ public class ServerSessionImpl implements ServerSession
         final ServerTransport transport = _bayeux.getCurrentTransport();
         if (transport==null)
             return null;
-        return new JSON.Literal("{\"reconnect\":\"retry\",\"interval\":" + 
-                (_interval==-1?transport.getInterval():_interval) + 
-                ",\"timeout\":" + 
+        return new JSON.Literal("{\"reconnect\":\"retry\",\"interval\":" +
+                (_interval==-1?transport.getInterval():_interval) +
+                ",\"timeout\":" +
                 (_timeout==-1?transport.getTimeout():_timeout) + "}");
     }
 
@@ -587,44 +585,44 @@ public class ServerSessionImpl implements ServerSession
     {
         _advisedTransport=null;
     }
-    
+
     /* ------------------------------------------------------------ */
     public Object takeAdvice()
     {
         final ServerTransport transport = _bayeux.getCurrentTransport();
-                
+
         if (transport!=null && transport!=_advisedTransport)
         {
             _advisedTransport=transport;
             return getAdvice();
         }
-        
+
         // advice has not changed, so return null.
         return null;
     }
 
     /* ------------------------------------------------------------ */
     public long getTimeout()
-    {   
+    {
         return _timeout;
     }
 
     /* ------------------------------------------------------------ */
     public long getInterval()
-    {   
+    {
         return _interval;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setTimeout(long timeoutMS)
-    {   
+    {
         _timeout=timeoutMS;
         _advisedTransport=null;
     }
 
     /* ------------------------------------------------------------ */
     public void setInterval(long intervalMS)
-    {   
+    {
         _interval=intervalMS;
         _advisedTransport=null;
     }
@@ -644,7 +642,7 @@ public class ServerSessionImpl implements ServerSession
             {
                 channel.unsubscribe(this);
             }
-            
+
             for (ServerSessionListener listener : _listeners)
             {
                 if (listener instanceof ServerSession.RemoveListener)
@@ -671,19 +669,19 @@ public class ServerSessionImpl implements ServerSession
     {
         _subscribedTo.add(channel);
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void unsubscribedTo(ServerChannelImpl channel)
     {
         _subscribedTo.remove(channel);
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void dump(StringBuilder b,String indent)
     {
         b.append(toString());
         b.append('\n');
-        
+
         for (ServerSessionListener child : _listeners)
         {
             b.append(indent);
@@ -691,7 +689,7 @@ public class ServerSessionImpl implements ServerSession
             b.append(child);
             b.append('\n');
         }
-        
+
         if (isLocalSession())
         {
             b.append(indent);
@@ -705,7 +703,7 @@ public class ServerSessionImpl implements ServerSession
     {
         return _id+",lc="+_lastConnect+",li="+_lastInterval;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
