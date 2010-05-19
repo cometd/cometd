@@ -1,6 +1,5 @@
 package org.cometd.client;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -14,13 +13,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.Message.Mutable;
+import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
@@ -43,7 +41,7 @@ import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
 /**
- * When the client is started, a handshake is initialised and the 
+ * When the client is started, a handshake is initialised and the
  * call to start will block until either a successful handshake or
  * all known servers have been tried.
  */
@@ -53,12 +51,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
 
     protected final ScheduledExecutorService _scheduler;
     private volatile Map<String,Object> _advice;
-    
+
     private long _backoffInc=1000;
     private long _backoffMax=30000;
     private int _backoffTries=0;
-   
-    private volatile String _clientId;    
+
+    private volatile String _clientId;
 
     private Handler _connectHandler = new Handler()
     {
@@ -68,7 +66,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             processConnect(mutable);
         }
     };
-    private Map<String, ExpirableCookie> _cookies = new ConcurrentHashMap<String, ExpirableCookie>();   
+    private Map<String, ExpirableCookie> _cookies = new ConcurrentHashMap<String, ExpirableCookie>();
     private Handler _disconnectHandler = new Handler()
     {
         @Override
@@ -76,7 +74,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         {
             processDisconnect(mutable);
         }
-    };    
+    };
 
     private AtomicBoolean _handshakeBatch = new AtomicBoolean();
     private Handler _handshakeHandler = new AbstractClientSession.Handler()
@@ -87,21 +85,20 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             processHandshake(mutable);
         }
     };
-    private final AtomicInteger _messageIds = new AtomicInteger();
     private final Map<String,Object> _options = new TreeMap<String, Object>();
-    
+
     private final Queue<Message.Mutable> _queue = new ConcurrentLinkedQueue<Message.Mutable>();
-    
+
     private Buffer _scheme;
     private final HttpURI _server;
     private volatile State _state = State.DISCONNECTED;
 
     private ClientTransport _transport;
-    
+
     private final TransportRegistry _transportRegistry = new TransportRegistry();
     private final HttpClient _privateHttpClient;
     private final AtomicBoolean _batchInTransit = new AtomicBoolean();
-    
+
     private final Listener _listener = new Listener();
     private final Listener _batchListener = new Listener()
     {
@@ -109,13 +106,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         public void complete()
         {
             _batchInTransit.set(false);
-            if (_batch.get()==0 && _queue.size()>0)
+            if (!isBatching() && _queue.size()>0)
                 sendBatch();
         }
     };
-    
 
-    
+
+
     /* ------------------------------------------------------------ */
     /**
      * @deprecated
@@ -124,7 +121,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     {
         this("http://"+address+uri,httpClient);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @deprecated
@@ -133,7 +130,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     {
         this("http://"+address+uri,httpClient);
     }
-    
+
     /* ------------------------------------------------------------ */
     public BayeuxClient(HttpClient httpClient, String url)
     {
@@ -145,7 +142,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     {
         this(url,Executors.newSingleThreadScheduledExecutor());
     }
-    
+
     /* ------------------------------------------------------------ */
     public BayeuxClient(String url, ClientTransport... transports)
     {
@@ -168,8 +165,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     public BayeuxClient(String url, ScheduledExecutorService scheduler, HttpClient httpClient, ClientTransport... transports)
     {
         this._scheduler = scheduler;
-        
-        
+
+
         if (transports!=null && transports.length>0)
         {
             for (ClientTransport transport : transports)
@@ -185,7 +182,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             }
             else
                 _privateHttpClient=null;
-            
+
             if (!httpClient.isRunning())
             {
                 try
@@ -202,7 +199,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         _server = new HttpURI(url);
 
         _scheme = (HttpSchemes.HTTPS.equals(_server.getScheme()))?HttpSchemes.HTTPS_BUFFER:HttpSchemes.HTTP_BUFFER;
-        
+
         ((AbstractClientSession.AbstractSessionChannel)getChannel(Channel.META_HANDSHAKE)).setHandler(_handshakeHandler);
         ((AbstractClientSession.AbstractSessionChannel)getChannel(Channel.META_CONNECT)).setHandler(_connectHandler);
         ((AbstractClientSession.AbstractSessionChannel)getChannel(Channel.META_DISCONNECT)).setHandler(_disconnectHandler);
@@ -254,14 +251,14 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             Message.Mutable message = newMessage();
             message.setClientId(getId());
             message.setChannel(Channel.META_DISCONNECT);
-            message.setId(_idGen.incrementAndGet());
+            message.setId(newMessageId());
             send(message);
-            while (_batch.get()>0)
+            while (isBatching())
                 endBatch();
         }
         else
             updateState(State.DISCONNECTED);
-        
+
         if (_privateHttpClient!=null)
         {
             try
@@ -343,7 +340,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     {
         return _transportRegistry.getTransport(transport);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see #onConnectException(Throwable)
@@ -355,7 +352,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     {
         handshake(null);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see #onConnectException(Throwable)
@@ -376,19 +373,21 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
                 Log.warn(e);
             }
         }
-        
+
         List<String> allowed = getAllowedTransports();
-        
+
         Message.Mutable message = newMessage();
         if (template!=null)
             message.putAll(template);
         message.setChannel(Channel.META_HANDSHAKE);
         message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD,allowed);
         message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
-        message.setId(_idGen.incrementAndGet());
+        message.setId(newMessageId());
 
+        // TODO: review this: too many batching variables...
         if (!_handshakeBatch.getAndSet(true))
-            _batch.set(1);
+            //_batch.set(1);
+            startBatch();
 
         updateTransport(_transportRegistry.getTransport(allowed.get(0)));
         updateState(State.HANDSHAKING);
@@ -397,10 +396,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
 
     /* ------------------------------------------------------------ */
     /** Blocking Handshake.
-     * Unlike {@link #handshake()}, this call blocks until the handshake 
+     * Unlike {@link #handshake()}, this call blocks until the handshake
      * succeeds or fails.
      * @param waitMs The time to wait in ms for the completion.
-     * @return The state that the client is in after the handshake completes, failed or 
+     * @return The state that the client is in after the handshake completes, failed or
      * the wait expired.
      */
     public State handshake(long waitMs)
@@ -409,7 +408,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         waitFor(waitMs,State.CONNECTED,State.CONNECTING, State.DISCONNECTED, State.UNCONNECTED);
         return _state;
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see #onConnectException(Throwable)
@@ -422,7 +421,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         waitFor(waitMs,State.CONNECTED,State.CONNECTING, State.DISCONNECTED, State.UNCONNECTED);
         return _state;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public boolean isConnected()
@@ -436,7 +435,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         ExpirableCookie expirableCookie = new ExpirableCookie(name,value, -1L);
         _cookies.put(name, expirableCookie);
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setCookie(String name, String value, int maxAge)
     {
@@ -449,7 +448,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         ExpirableCookie expirableCookie = new ExpirableCookie(name,value, expirationTime);
         _cookies.put(name, expirableCookie);
     }
-    
+
     /* ------------------------------------------------------------ */
 
     /* ------------------------------------------------------------ */
@@ -459,7 +458,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     @Override
     public void setOption(String qualifiedName, Object value)
     {
-        _options.put(qualifiedName,value);   
+        _options.put(qualifiedName,value);
     }
 
     /* ------------------------------------------------------------ */
@@ -470,32 +469,20 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     protected void doDisconnected()
     {
         // TODO Auto-generated method stub
-        
-    }    
-    
+
+    }
+
     /* ------------------------------------------------------------ */
     protected void doSend(TransportListener listener, final Message.Mutable... messages)
     {
-        for (int i=0;i<messages.length;i++)
+        for (final Mutable message : messages)
         {
-            final Message.Mutable message=messages[i];
-            if (message.isMeta())
-            {
-                for (Extension extension : _extensions)
-                    if(!extension.sendMeta(this,message))
-                        return;
-            }
-            else
-            {
-                for (Extension extension : _extensions)
-                    if(!extension.send(this,message))
-                        return;
-            }
+            if (!extendSend(message))
+                continue;
 
-            if (_clientId!=null)
+            if (_clientId != null)
                 message.setClientId(_clientId);
         }
-        
         _transport.send(listener,messages);
     }
 
@@ -516,7 +503,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     @Override
     protected ChannelId newChannelId(String channelId)
     {
-        AbstractSessionChannel channel = (AbstractSessionChannel)_channels.get(channelId);
+        AbstractSessionChannel channel = getChannels().get(channelId);
         return (channel==null)?new ChannelId(channelId):channel.getChannelId();
     }
 
@@ -532,7 +519,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     protected void processConnect(Message handshake)
     {
         boolean successful = handshake.isSuccessful();
-        
+
         if (successful)
         {
             switch(_state)
@@ -553,18 +540,18 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             updateState(State.UNCONNECTED);
             _backoffTries++;
         }
-        followAdvice();   
+        followAdvice();
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void processDisconnect(Message handshake)
     {
         boolean successful = handshake.isSuccessful();
-        
+
         if (successful)
             updateState(State.DISCONNECTED);
     }
- 
+
     /* ------------------------------------------------------------ */
     protected void processHandshake(Message handshake)
     {
@@ -581,33 +568,33 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             }
             else if (transport != _transport)
                 updateTransport(transport);
-            
+
             updateState(State.CONNECTING);
             _clientId = handshake.getClientId();
         }
         else
             _backoffTries++;
-        
+
         followAdvice();
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void receive(List<Message.Mutable> incomingMessages)
     {
         for (Message message : incomingMessages)
         {
-            receive(message,(Message.Mutable)message);   
+            receive(message,(Message.Mutable)message);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void send(Message.Mutable message)
     {
         _queue.add(message);
-        if (_batch.get()==0)
+        if (!isBatching())
             sendBatch();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.common.AbstractClientSession#sendBatch()
@@ -631,17 +618,17 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     {
         if (_transport==transport)
             return;
-        
+
         if (_transport != null)
         {
             _transport.reset();
             _transport=null;
         }
-        
+
         transport.init(this,_server);
         _transport=transport;
     }
-    
+
     /* ------------------------------------------------------------ */
     private void followAdvice()
     {
@@ -657,18 +644,18 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             if (advice.containsKey(Message.INTERVAL_FIELD))
                 interval=((Number)advice.get(Message.INTERVAL_FIELD)).longValue();
         }
-        
+
         // TODO backoff interval!
         switch(_state)
         {
             case HANDSHAKING:
                 scheduleHandshake(interval);
                 break;
-                
+
             case CONNECTING:
                 sendConnect();
                 break;
-                
+
             case CONNECTED:
                 _backoffTries=0;
                 scheduleConnect(interval);
@@ -680,33 +667,26 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
                     scheduleConnect(interval);
                     break;
                 }
-                
+
                 if (Message.RECONNECT_HANDSHAKE_VALUE .equals(reconnect))
                 {
                     scheduleHandshake(interval);
                     break;
                 }
-                
+
             case DISCONNECTING:
             case DISCONNECTED:
-                
+
         }
     }
-    
-    
-    /* ------------------------------------------------------------ */
-    private String newMessageId()
-    {
-        return String.valueOf(_messageIds.incrementAndGet());
-    }
-    
+
     /* ------------------------------------------------------------ */
     private void scheduleConnect(long interval)
     {
         long backOff=_backoffTries*_backoffInc;
         if (backOff>_backoffMax)
             backOff=_backoffMax;
-        
+
         _scheduler.schedule(new Runnable()
         {
             public void run()
@@ -717,12 +697,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     }
 
     /* ------------------------------------------------------------ */
-    private void scheduleHandshake(long interval) 
+    private void scheduleHandshake(long interval)
     {
         long backOff=_backoffTries*_backoffInc;
         if (backOff>_backoffMax)
             backOff=_backoffMax;
-        
+
         _scheduler.schedule(new Runnable()
         {
             public void run()
@@ -742,7 +722,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         message.setChannel(Channel.META_CONNECT);
         if (State.CONNECTING.equals(_state))
             message.put(Message.CONNECTION_TYPE_FIELD, _transport.getName());
-        message.setId(_idGen.incrementAndGet());
+        message.setId(newMessageId());
         doSend(_listener,message);
     }
 
@@ -756,7 +736,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             _queue.notifyAll();
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Wait for client state.
      * Wait for one of several states to be achieved by the client.
@@ -768,9 +748,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     {
         if (states.length==0)
             throw new IllegalArgumentException("no stats");
-        
+
         long start = System.currentTimeMillis();
-        
+
         synchronized (_queue)
         {
             while (System.currentTimeMillis()-start<waitMs)
@@ -796,14 +776,14 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             return false;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
         return super.toString()+":"+_server+":"+_state;
     }
-    
+
     /* ------------------------------------------------------------ */
     protected class ClientSessionChannel extends AbstractSessionChannel
     {
@@ -833,11 +813,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             Message.Mutable message = newMessage();
             message.setChannel(_id.toString());
             message.setData(data);
-            message.setId(_idGen.incrementAndGet());
-            
+            message.setId(newMessageId());
+
             send(message);
         }
-        
+
         /* ------------------------------------------------------------ */
         @Override
         public void publish(Object data,Object id)
@@ -847,7 +827,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             message.setData(data);
             if (id!=null)
                 message.setId(id);
-            
+
             send(message);
         }
 
@@ -868,10 +848,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             Message.Mutable message = newMessage();
             message.setChannel(Channel.META_SUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
-            message.setId(_idGen.incrementAndGet());
+            message.setId(newMessageId());
             send(message);
         }
-        
+
         /* ------------------------------------------------------------ */
         /**
          * @see org.cometd.common.AbstractClientSession.AbstractSessionChannel#sendUnSubscribe()
@@ -882,13 +862,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             Message.Mutable message = newMessage();
             message.setChannel(Channel.META_UNSUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
-            message.setId(_idGen.incrementAndGet());
+            message.setId(newMessageId());
 
             send(message);
         }
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private static class ExpirableCookie
@@ -936,18 +916,18 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         {
             return _expirationTime;
         }
-        
-        
+
+
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private class Listener implements TransportListener
     {
         public void complete()
-        {    
+        {
         }
-        
+
         @Override
         public void onConnectException(Throwable x)
         {
@@ -1035,7 +1015,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     {
         CONNECTED, CONNECTING, DISCONNECTED, DISCONNECTING, HANDSHAKING, UNCONNECTED
     };
-    
-    
-    
+
+
+
 }

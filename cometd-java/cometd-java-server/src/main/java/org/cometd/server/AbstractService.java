@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
 //========================================================================
 package org.cometd.server;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,8 +24,8 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.ChannelId;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
@@ -37,7 +36,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 /**
  * Abstract Bayeux Service
  * <p>
- * This class provides convenience methods to assist with the 
+ * This class provides convenience methods to assist with the
  * creation of a Bayeux Services typically used to provide the
  * behaviour associated with a service channel (see {@link Channel#isService()}).
  * Specifically it provides: <ul>
@@ -49,7 +48,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * <li>The objects returned from method invocation are delivered back to the
  * calling client in a private message.
  * </ul>
- * 
+ *
  * @See {@link BayeuxServer#getSession(String)} as an alternative to AbstractService.
  */
 public abstract class AbstractService
@@ -59,7 +58,7 @@ public abstract class AbstractService
     private final LocalSession _session;
     private final Map<String,Method> _methods=new ConcurrentHashMap<String,Method>();
     private final Map<ChannelId,Method> _wild=new ConcurrentHashMap<ChannelId,Method>();
-    
+
     private ThreadPool _threadPool;
     private boolean _seeOwn=false;
     private final Logger _logger;
@@ -68,7 +67,7 @@ public abstract class AbstractService
     /**
      * Instantiate the service. Typically the derived constructor will call @
      * #subscribe(String, String)} to map subscriptions to methods.
-     * 
+     *
      * @param bayeux
      *            The bayeux instance.
      * @param name
@@ -84,7 +83,7 @@ public abstract class AbstractService
     /**
      * Instantiate the service. Typically the derived constructor will call @
      * #subscribe(String, String)} to map subscriptions to methods.
-     * 
+     *
      * @param bayeux
      *            The bayeux instance.
      * @param name
@@ -99,14 +98,7 @@ public abstract class AbstractService
         _name=name;
         _bayeux=(BayeuxServerImpl)bayeux;
         _session=_bayeux.newLocalSession(name);
-        try
-        {
-            _session.handshake();
-        }
-        catch(IOException e)
-        {
-            throw new RuntimeException(e);
-        }
+        _session.handshake();
         _logger=((BayeuxServerImpl)bayeux).getLogger();
     }
 
@@ -124,13 +116,13 @@ public abstract class AbstractService
     {
         return _session;
     }
-    
+
     /* ------------------------------------------------------------ */
     public LocalSession getLocalSession()
     {
         return _session;
     }
-    
+
     /* ------------------------------------------------------------ */
     public ServerSession getServerSession()
     {
@@ -147,7 +139,7 @@ public abstract class AbstractService
     /**
      * Set the threadpool. If the {@link ThreadPool} is a {@link LifeCycle},
      * then it is started by this method.
-     * 
+     *
      * @param pool
      */
     public void setThreadPool(ThreadPool pool)
@@ -179,7 +171,7 @@ public abstract class AbstractService
 
     /* ------------------------------------------------------------ */
     /**
-     * Add a service. 
+     * Add a service.
      * <p>Listen to a channel and map a method to handle
      * received messages. The method must have a unique name and one of the
      * following signatures:
@@ -189,7 +181,7 @@ public abstract class AbstractService
      * <li><code>myMethod(ServerSession from,String channel,Object data,String|Object id)</code>
      * </li>
      * </li>
-     * 
+     *
      * The data parameter can be typed if the type of the data object published
      * by the client is known (typically Map<String,Object>). If the type of the
      * data parameter is {@link Message} then the message object itself is
@@ -206,8 +198,8 @@ public abstract class AbstractService
      * message(s) to different clients and/or channels. It may also publish
      * methods via the normal {@link Bayeux} API.
      * <p>
-     * 
-     * 
+     *
+     *
      * @param channelId
      *            The channel to subscribe to
      * @param methodName
@@ -218,7 +210,7 @@ public abstract class AbstractService
     {
         if (_logger.isDebugEnabled())
             _logger.debug("subscribe "+_name+"#"+methodName+" to "+channelId);
-        
+
         Method method=null;
 
         Class<?> c=this.getClass();
@@ -245,14 +237,14 @@ public abstract class AbstractService
         if (!ServerSession.class.isAssignableFrom(method.getParameterTypes()[0]))
             throw new IllegalArgumentException("Method '" + methodName + "' does not have Session as first parameter");
 
-        
+
         ServerChannel channel=_bayeux.getChannel(channelId,true);
-        
+
         if (channel.isWild())
             _wild.put(new ChannelId(channel.getId()),method);
         else
             _methods.put(channelId,method);
-            
+
         final Method invoke=method;
         channel.addListener(new ServerChannel.MessageListener()
         {
@@ -261,11 +253,11 @@ public abstract class AbstractService
             {
                 if (_seeOwn || from != getServerSession())
                     invoke(invoke,from,message);
-                
+
                 return true;
             }
         });
-        
+
     }
 
     /* ------------------------------------------------------------ */
@@ -280,7 +272,7 @@ public abstract class AbstractService
      * response(s) to channels other than the subscribed channel. If the
      * response is to be sent to the subscribed channel, then the data can
      * simply be returned from the subscription method.
-     * 
+     *
      * @param toClient
      *            The target client
      * @param onChannel
@@ -299,7 +291,7 @@ public abstract class AbstractService
     /**
      * Handle Exception. This method is called when a mapped subscription method
      * throws and exception while handling a message.
-     * 
+     *
      * @param fromClient
      * @param toClient
      * @param msg
@@ -316,7 +308,7 @@ public abstract class AbstractService
     {
         if (_logger.isDebugEnabled())
             _logger.debug("invoke "+_name+"#"+method.getName()+" from "+fromClient+" with "+msg.getData());
-        
+
         if (_threadPool == null)
             doInvoke(method,fromClient,msg);
         else
