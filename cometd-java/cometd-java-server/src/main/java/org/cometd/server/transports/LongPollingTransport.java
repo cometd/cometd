@@ -272,7 +272,7 @@ public abstract class LongPollingTransport extends HttpTransport
         private final ServerSessionImpl _session;
         private final Continuation _continuation;
         private final ServerMessage _reply;
-        private final String _browserId;
+        private String _browserId;
         
         public LongPollScheduler(ServerSessionImpl session, Continuation continuation, ServerMessage reply,String browserId)
         {
@@ -289,6 +289,7 @@ public abstract class LongPollingTransport extends HttpTransport
             {
                 try
                 {
+                    decBrowserId();
                     ((HttpServletResponse)_continuation.getServletResponse()).sendError(503);
                 }
                 catch(IOException e)
@@ -309,6 +310,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
         public void schedule()
         {
+            decBrowserId();
             _continuation.resume();
         }
 
@@ -329,12 +331,24 @@ public abstract class LongPollingTransport extends HttpTransport
 
         public void onComplete(Continuation continuation)
         {
-            decBrowserId(_browserId);
+            decBrowserId();
         }
 
         public void onTimeout(Continuation continuation)
         {
             _session.setScheduler(null);
+        }
+        
+        private void decBrowserId()
+        {
+            synchronized (this)
+            {
+                if (_browserId!=null)
+                {
+                    LongPollingTransport.this.decBrowserId(_browserId);
+                    _browserId=null;
+                }
+            }
         }
         
     }
