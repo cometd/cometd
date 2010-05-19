@@ -9,34 +9,76 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.log.Log;
 
-
-/* ------------------------------------------------------------ */
+/**
+ * <p>Partial implementation of {@link ClientSession}.</p>
+ * <p>It handles extensions and batching, and provides utility methods to be used by subclasses.</p>
+ */
 public abstract class AbstractClientSession implements ClientSession
 {
-    protected final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
-    protected final AttributesMap _attributes = new AttributesMap();
-    protected final ConcurrentMap<String, AbstractSessionChannel> _channels = new ConcurrentHashMap<String, AbstractSessionChannel>();
-    protected final AtomicInteger _batch = new AtomicInteger();
-    protected final List<AbstractSessionChannel> _wild = new CopyOnWriteArrayList<AbstractSessionChannel>();
-    protected final AtomicInteger _idGen = new AtomicInteger(0);
-    
+    private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
+    private final AttributesMap _attributes = new AttributesMap();
+    private final ConcurrentMap<String, AbstractSessionChannel> _channels = new ConcurrentHashMap<String, AbstractSessionChannel>();
+    private final AtomicInteger _batch = new AtomicInteger();
+    private final List<AbstractSessionChannel> _wild = new CopyOnWriteArrayList<AbstractSessionChannel>();
+    private final AtomicInteger _idGen = new AtomicInteger(0);
 
-    /* ------------------------------------------------------------ */
     protected AbstractClientSession()
     {
     }
 
-    /* ------------------------------------------------------------ */
+    protected int newMessageId()
+    {
+        return _idGen.incrementAndGet();
+    }
+
     public void addExtension(Extension extension)
     {
         _extensions.add(extension);
+    }
+
+    public void removeExtension(Extension extension)
+    {
+        _extensions.remove(extension);
+    }
+
+    protected boolean extendSend(Message.Mutable message)
+    {
+        if (message.isMeta())
+        {
+            for (Extension extension : _extensions)
+                if (!extension.sendMeta(this, message))
+                    return false;
+        }
+        else
+        {
+            for (Extension extension : _extensions)
+                if (!extension.send(this, message))
+                    return false;
+        }
+        return true;
+    }
+
+    protected boolean extendRcv(Message.Mutable message)
+    {
+        if (message.isMeta())
+        {
+            for (Extension extension : _extensions)
+                if (!extension.rcvMeta(this, message))
+                    return false;
+        }
+        else
+        {
+            for (Extension extension : _extensions)
+                if (!extension.rcv(this, message))
+                    return false;
+        }
+        return true;
     }
 
     /* ------------------------------------------------------------ */
@@ -44,7 +86,7 @@ public abstract class AbstractClientSession implements ClientSession
 
     /* ------------------------------------------------------------ */
     protected abstract AbstractSessionChannel newChannel(ChannelId channelId);
-    
+
     /* ------------------------------------------------------------ */
     public SessionChannel getChannel(String channelId)
     {
@@ -62,6 +104,11 @@ public abstract class AbstractClientSession implements ClientSession
         return channel;
     }
 
+    protected ConcurrentMap<String, AbstractSessionChannel> getChannels()
+    {
+        return _channels;
+    }
+
     /* ------------------------------------------------------------ */
     public void startBatch()
     {
@@ -70,10 +117,10 @@ public abstract class AbstractClientSession implements ClientSession
 
     /* ------------------------------------------------------------ */
     protected abstract void sendBatch();
-    
+
     /* ------------------------------------------------------------ */
     public void endBatch()
-    {  
+    {
         if (_batch.decrementAndGet()==0)
         {
             sendBatch();
@@ -92,6 +139,11 @@ public abstract class AbstractClientSession implements ClientSession
         {
             endBatch();
         }
+    }
+
+    protected boolean isBatching()
+    {
+        return _batch.get() > 0;
     }
 
     /* ------------------------------------------------------------ */
@@ -132,23 +184,22 @@ public abstract class AbstractClientSession implements ClientSession
         final String id=message.getChannel();
         final AbstractSessionChannel channel=id==null?null:(AbstractSessionChannel)getChannel(id);
         final ChannelId channelId=channel==null?null:channel.getChannelId();
-        
+
         if (channel!=null && channel._handler!=null)
             channel._handler.handle(this,mutable);
-        
+
+        if (!extendRcv(mutable))
+            return;
+
         if (message.isMeta())
         {
-            for (Extension extension : _extensions)
-                if (!extension.rcvMeta(this,mutable))
-                    return;
-
             String error = (String)message.get(Message.ERROR_FIELD);
             boolean successful = message.isSuccessful();
-            
+
             if (channelId!=null)
             {
                 for (AbstractSessionChannel wild : _wild)
-                {       
+                {
                     if (wild._id.matches(channelId))
                     {
                         for (SessionChannel.SessionChannelListener listener : wild._listeners)
@@ -167,7 +218,7 @@ public abstract class AbstractClientSession implements ClientSession
                         }
                     }
                 }
-                
+
                 for (SessionChannel.SessionChannelListener listener : channel._listeners)
                 {
                     try
@@ -184,14 +235,10 @@ public abstract class AbstractClientSession implements ClientSession
         }
         else
         {
-            for (Extension extension : _extensions)
-                if (!extension.rcv(AbstractClientSession.this,mutable))
-                    return;
-
             if (channelId!=null)
             {
                 for (AbstractSessionChannel wild : _wild)
-                {       
+                {
                     try
                     {
                         if (wild._id.matches(channel._id))
@@ -230,6 +277,21 @@ public abstract class AbstractClientSession implements ClientSession
             doDisconnected();
     }
 
+    public void dump(StringBuilder b,String indent)
+    {
+        b.append(toString());
+        b.append('\n');
+
+        int leaves=_channels.size();
+        int i=0;
+        for (AbstractSessionChannel child : _channels.values())
+        {
+            b.append(indent);
+            b.append(" +-");
+            child.dump(b,indent+((++i==leaves)?"   ":" | "));
+        }
+    }
+
     /* ------------------------------------------------------------ */
     protected abstract void doDisconnected();
 
@@ -237,9 +299,9 @@ public abstract class AbstractClientSession implements ClientSession
     /* ------------------------------------------------------------ */
     protected interface Handler
     {
-        void handle(AbstractClientSession session, Message.Mutable mutable);   
+        void handle(AbstractClientSession session, Message.Mutable mutable);
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /** A SessionChannel scoped to this LocalChannel
@@ -250,7 +312,7 @@ public abstract class AbstractClientSession implements ClientSession
         protected CopyOnWriteArrayList<SubscriberListener> _subscriptions = new CopyOnWriteArrayList<SubscriberListener>();
         protected CopyOnWriteArrayList<SessionChannelListener> _listeners = new CopyOnWriteArrayList<SessionChannelListener>();
         protected Handler _handler;
-        
+
         /* ------------------------------------------------------------ */
         protected AbstractSessionChannel(ChannelId id)
         {
@@ -262,7 +324,7 @@ public abstract class AbstractClientSession implements ClientSession
         {
             return _id;
         }
-        
+
         /* ------------------------------------------------------------ */
         public void addListener(SessionChannelListener listener)
         {
@@ -277,10 +339,10 @@ public abstract class AbstractClientSession implements ClientSession
 
         /* ------------------------------------------------------------ */
         protected abstract void sendSubscribe();
-        
+
         /* ------------------------------------------------------------ */
         protected abstract void sendUnSubscribe();
-        
+
         /* ------------------------------------------------------------ */
         public void subscribe(SubscriberListener listener)
         {
@@ -341,13 +403,33 @@ public abstract class AbstractClientSession implements ClientSession
             _handler=handler;
         }
 
+        protected void dump(StringBuilder b,String indent)
+        {
+            b.append(toString());
+            b.append('\n');
+
+            for (SessionChannelListener child : _listeners)
+            {
+                b.append(indent);
+                b.append(" +-");
+                b.append(child);
+                b.append('\n');
+            }
+            for (SubscriberListener child : _subscriptions)
+            {
+                b.append(indent);
+                b.append(" +-");
+                b.append(child);
+                b.append('\n');
+            }
+        }
+
         /* ------------------------------------------------------------ */
         @Override
         public String toString()
         {
             return _id.toString();
         }
-     
-    }
 
+    }
 }

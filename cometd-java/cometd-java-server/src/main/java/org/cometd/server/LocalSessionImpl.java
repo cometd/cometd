@@ -19,7 +19,7 @@ import org.eclipse.jetty.util.ajax.JSON;
 /* ------------------------------------------------------------ */
 /** A LocalSession implementation.
  * <p>
- * This session is local to the {@link BayeuxServer} instance and 
+ * This session is local to the {@link BayeuxServer} instance and
  * communicates with the server without any serialization.
  * The normal Bayeux meta messages are exchanged between the LocalSession
  * and the ServerSession.
@@ -30,7 +30,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     private final Queue<ServerMessage.Mutable> _queue = new ConcurrentLinkedQueue<ServerMessage.Mutable>();
     private final BayeuxServerImpl _bayeux;
     private final String _idHint;
-    
+
     private ServerSessionImpl _session;
 
     /* ------------------------------------------------------------ */
@@ -66,7 +66,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
      */
     @Override
     protected ChannelId newChannelId(String channelId)
-    { 
+    {
         return _bayeux.newChannelId(channelId);
     }
 
@@ -98,33 +98,33 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     {
         handshake(null);
     }
-    
+
     /* ------------------------------------------------------------ */
     public void handshake(Map<String, Object> template)
     {
         if (_session!=null)
             throw new IllegalStateException();
-        
+
         ServerMessage.Mutable message = _bayeux.newMessage();
         if (template!=null)
             message.putAll(template);
         message.setChannel(Channel.META_HANDSHAKE);
-        message.setId(_idGen.incrementAndGet());
-        
+        message.setId(newMessageId());
+
         ServerSessionImpl session = new ServerSessionImpl(_bayeux,this,_idHint);
-        
+
         doSend(session,message);
-        
+
         ServerMessage reply = message.getAssociated();
         if (reply!=null && reply.isSuccessful())
-        {   
+        {
             _session=session;
-            
+
             message.clear();
             message.setChannel(Channel.META_CONNECT);
             message.setClientId(_session.getId());
             message.put(Message.ADVICE_FIELD,LOCAL_ADVICE);
-            message.setId(_idGen.incrementAndGet());
+            message.setId(newMessageId());
 
             doSend(session,message);
             reply = message.getAssociated();
@@ -141,9 +141,9 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setChannel(Channel.META_DISCONNECT);
-            message.setId(_idGen.incrementAndGet());
+            message.setId(newMessageId());
             send(_session,message);
-            while (_batch.get()>0)
+            while (isBatching())
                 endBatch();
         }
     }
@@ -178,12 +178,12 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
      */
     protected void send(ServerSessionImpl session,ServerMessage.Mutable message)
     {
-        if (_batch.get()>0)
+        if (isBatching())
             _queue.add(message);
         else
             doSend(session,message);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Send a message (to the server).
      * <p>
@@ -193,46 +193,19 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
      */
     protected void doSend(ServerSessionImpl session,ServerMessage.Mutable message)
     {
-        if (message.isMeta())
-        {
-            for (Extension extension : _extensions)
-                if(!extension.sendMeta(LocalSessionImpl.this,message))
-                    return;
-        }
-        else
-        {
-            for (Extension extension : _extensions)
-                if(!extension.send(LocalSessionImpl.this,message))
-                    return;
-        }
-        
+        if (!extendSend(message))
+            return;
+
         if (_session!=null)
             message.setClientId(_session.getId());
-            
+
         ServerMessage reply = _bayeux.handle(session,message);
 
-        if (reply!=null)
+        if (reply != null)
         {
-            _bayeux.extendReply(session,reply);
-            if (reply!=null)
+            reply = _bayeux.extendReply(session,reply);
+            if (reply != null)
                 receive(reply,reply.asMutable());
-        }
-    }
-    
-
-    /* ------------------------------------------------------------ */
-    protected void dump(StringBuilder b,String indent)
-    {
-        b.append(toString());
-        b.append('\n');
-
-        int leaves=_channels.size();
-        int i=0;
-        for (AbstractSessionChannel child : _channels.values())
-        {
-            b.append(indent);
-            b.append(" +-");
-            ((LocalChannel)child).dump(b,indent+((++i==leaves)?"   ":" | "));
         }
     }
 
@@ -259,58 +232,36 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         {
             if (_session==null)
                 throw new IllegalStateException("!handshake");
-            
+
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setChannel(_id.toString());
             message.setData(data);
-            
+
             send(_session,message);
             message.setAssociated(null);
         }
-        
+
         /* ------------------------------------------------------------ */
         public void publish(Object data,Object id)
         {
             if (_session==null)
                 throw new IllegalStateException("!handshake");
-            
+
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setChannel(_id.toString());
             message.setData(data);
             if (id!=null)
                 message.setId(id);
-            
+
             send(_session,message);
             message.setAssociated(null);
         }
-        
+
         /* ------------------------------------------------------------ */
         @Override
         public String toString()
         {
             return _id+"@"+LocalSessionImpl.this.toString();
-        }
-        
-        /* ------------------------------------------------------------ */
-        protected void dump(StringBuilder b,String indent)
-        {
-            b.append(toString());
-            b.append('\n');
-           
-            for (SessionChannelListener child : _listeners)
-            {
-                b.append(indent);
-                b.append(" +-");
-                b.append(child);
-                b.append('\n');
-            }
-            for (SubscriberListener child : _subscriptions)
-            {
-                b.append(indent);
-                b.append(" +-");
-                b.append(child);
-                b.append('\n');
-            }
         }
 
         @Override
@@ -320,7 +271,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             message.setChannel(Channel.META_SUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
             message.setClientId(LocalSessionImpl.this.getId());
-            message.setId(_idGen.incrementAndGet());
+            message.setId(newMessageId());
 
             send(_session,message);
             message.setAssociated(null);
@@ -332,7 +283,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setChannel(Channel.META_UNSUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
-            message.setId(_idGen.incrementAndGet());
+            message.setId(newMessageId());
 
             send(_session,message);
             message.setAssociated(null);
