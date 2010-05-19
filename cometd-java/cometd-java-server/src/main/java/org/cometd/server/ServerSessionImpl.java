@@ -18,7 +18,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.server.AbstractServerTransport.OneTimeScheduler;
 import org.cometd.server.AbstractServerTransport.Scheduler;
-import org.cometd.server.transports.HttpTransport;
+import org.cometd.server.transport.HttpTransport;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.ajax.JSON;

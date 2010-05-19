@@ -1,8 +1,7 @@
-package org.cometd.server.transports;
+package org.cometd.server.transport;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -16,15 +15,15 @@ public class JSONPTransport extends LongPollingTransport
     public final static String NAME="callback-polling";
     public final static String MIME_TYPE_OPTION="mimeType";
     public final static String CALLBACK_PARAMETER_OPTION="callbackParameter";
-    
+
     protected String _mimeType="text/javascript;charset=UTF-8";
     private String _callbackParam="jsonp";
-    
+
     public JSONPTransport(BayeuxServerImpl bayeux)
     {
         super(bayeux,NAME);
         addPrefix("jsonp");
-        
+
         setOption(CALLBACK_PARAMETER_OPTION,_callbackParam);
         setOption(MIME_TYPE_OPTION,_mimeType);
         _metaConnectDeliveryOnly=true;
@@ -33,7 +32,7 @@ public class JSONPTransport extends LongPollingTransport
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.cometd.server.transports.JSONTransport#init()
+     * @see org.cometd.server.transport.JSONTransport#init()
      */
     @Override
     protected void init()
@@ -49,7 +48,7 @@ public class JSONPTransport extends LongPollingTransport
     {
         return "GET".equals(request.getMethod()) && request.getParameter(getCallbackParameter())!=null;
     }
-    
+
     /* ------------------------------------------------------------ */
     public String getCallbackParameter()
     {
@@ -63,14 +62,14 @@ public class JSONPTransport extends LongPollingTransport
         if (writer==null)
         {
             response.setContentType(_mimeType);
-            
+
             String callback=request.getParameter(_callbackParam);
             writer = response.getWriter();
             writer.append(callback);
             writer.append("([");
         }
         else
-            writer.append(','); 
+            writer.append(',');
         writer.append(message.getJSON());
         return writer;
     }
@@ -82,6 +81,6 @@ public class JSONPTransport extends LongPollingTransport
         writer.append("])\r\n");
         writer.close();
     }
-    
-    
+
+
 }

@@ -27,9 +27,9 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.ChannelId;
-import org.cometd.server.transports.JSONPTransport;
-import org.cometd.server.transports.JSONTransport;
-import org.cometd.server.transports.WebSocketTransport;
+import org.cometd.server.transport.JSONPTransport;
+import org.cometd.server.transport.JSONTransport;
+import org.cometd.server.transport.WebSocketTransport;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -88,7 +88,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         if (initializeDefaultTransports)
             initializeDefaultTransports();
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Initialize the default transports.
      * This method creates a {@link WebSocketTransport}, a {@link JSONTransport}
@@ -136,7 +136,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 public void run()
                 {
                     _root.doSweep();
-                    
+
                     final long now=System.currentTimeMillis();
                     for (ServerSessionImpl session : _sessions.values())
                         session.sweep(now);
@@ -277,8 +277,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         ServerChannel channel=_root.getChild(new ChannelId(channelId),initializer);
         return channel!=null;
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     public ServerChannel getChannel(String channelId, boolean create)
     {
@@ -535,7 +535,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         return true;
     }
-    
+
     /* ------------------------------------------------------------ */
     void addServerChannel(ServerChannelImpl channel)
     {
@@ -663,7 +663,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             if (_policy != null && !_policy.canHandshake(BayeuxServerImpl.this,session,message))
             {
-                error(reply,"403::Handshake denied");                
+                error(reply,"403::Handshake denied");
                 reply.getAdvice(true).put(Message.RECONNECT_FIELD,Message.RECONNECT_NONE_VALUE);
                 return;
             }

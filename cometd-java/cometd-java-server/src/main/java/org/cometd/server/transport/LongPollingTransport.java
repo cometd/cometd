@@ -1,4 +1,4 @@
-package org.cometd.server.transports;
+package org.cometd.server.transport;
 
 import java.io.IOException;
 import java.io.PrintWriter;

@@ -1,11 +1,9 @@
-package org.cometd.server.transports;
+package org.cometd.server.transport;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.Map;
-import java.util.Queue;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -17,7 +15,6 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.AbstractServerTransport;
-import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -31,15 +28,15 @@ public class WebSocketTransport extends HttpTransport
     public final static String NAME="websocket";
     public final static String PROTOCOL_OPTION="protocol";
     public final static String BUFFER_SIZE_OPTION="bufferSize";
-    
+
     private final WebSocketFactory _factory = new WebSocketFactory();
-    
+
     private ThreadLocal<Addresses> _addresses = new ThreadLocal<Addresses>();
-    
-    
-    
+
+
+
     private String _protocol="";
-    
+
     public WebSocketTransport(BayeuxServerImpl bayeux)
     {
         super(bayeux,NAME);
@@ -62,7 +59,7 @@ public class WebSocketTransport extends HttpTransport
         _protocol=getOption(PROTOCOL_OPTION,_protocol);
         _factory.setBufferSize(getOption(BUFFER_SIZE_OPTION,_factory.getBufferSize()));
     }
-    
+
     @Override
     public boolean accept(HttpServletRequest request)
     {
@@ -77,24 +74,24 @@ public class WebSocketTransport extends HttpTransport
         String host=request.getHeader("Host");
         String origin=request.getHeader("Origin");
         origin=checkOrigin(request,host,origin);
-        
+
         if (origin==null || _protocol!=null && _protocol.length()>0 && !_protocol.equals(protocol))
         {
             response.sendError(403);
             return;
         }
-        
+
         if (isMetaConnectDeliveryOnly())
         {
             Log.warn("MetaConnectDeliveryOnly not implemented for websocket");
             response.sendError(403);
             return;
         }
-        
+
         Addresses addresses=new Addresses();
         addresses._local=new InetSocketAddress(request.getLocalAddr(),request.getLocalPort());
         addresses._remote=new InetSocketAddress(request.getRemoteAddr(),request.getRemotePort());
-        
+
         WebSocket websocket = new WebSocketScheduler(addresses);
         _factory.upgrade(request,response,websocket,origin,protocol);
     }
@@ -105,7 +102,7 @@ public class WebSocketTransport extends HttpTransport
             origin=host;
         return origin;
     }
-    
+
     protected class WebSocketScheduler implements WebSocket, AbstractServerTransport.Scheduler
     {
         protected final Addresses _addresses;
@@ -124,12 +121,12 @@ public class WebSocketTransport extends HttpTransport
                 }
             }
         };
-        
+
         public WebSocketScheduler(Addresses addresses)
         {
             _addresses=addresses;
         }
-        
+
         public void onConnect(Outbound outbound)
         {
             _outbound = outbound;
@@ -139,7 +136,7 @@ public class WebSocketTransport extends HttpTransport
         {
             if (_session!=null)
             {
-                _session.cancelIntervalTimeout(); 
+                _session.cancelIntervalTimeout();
                 _bayeux.cancelTimeout(_timeoutTask);
                 _bayeux.removeServerSession(_session,false);
             }
@@ -152,17 +149,17 @@ public class WebSocketTransport extends HttpTransport
             {
                 WebSocketTransport.this._addresses.set(_addresses);
                 _bayeux.setCurrentTransport(WebSocketTransport.this);
-                
+
                 ServerMessage.Mutable[] messages = ServerMessageImpl.parseMessages(data);
 
                 for (ServerMessage.Mutable message : messages)
                 {
                     boolean connect = Channel.META_CONNECT.equals(message.getChannel());
-         
+
                     // Get the session from the message
                     if (_session==null)
                         _session=(ServerSessionImpl)_bayeux.getSession(message.getClientId());
-                    
+
                     if (!batch && _session!=null && !connect)
                     {
                         // start a batch to group all resulting messages into a single response.
@@ -181,11 +178,11 @@ public class WebSocketTransport extends HttpTransport
                     if (connect && reply.isSuccessful())
                     {
                         _session.setScheduler(this);
-                        
+
                         long timeout=_session.getTimeout();
-                        if (timeout<0) 
+                        if (timeout<0)
                             timeout=_timeout;
-                        
+
                         if (timeout>0 && was_connected)
                         {
                             // delay sending connect reply until dispatch or timeout.
@@ -196,9 +193,9 @@ public class WebSocketTransport extends HttpTransport
                         else if (!was_connected)
                         {
                             _session.startIntervalTimeout();
-                        }   
+                        }
                     }
-                    
+
                     // send the reply (if not delayed)
                     if (reply!=null)
                     {
@@ -250,7 +247,7 @@ public class WebSocketTransport extends HttpTransport
         {
             // TODO should schedule another thread!
             // otherwise a receive can be blocked writing to another client
-            
+
             while (_session!=null)
             {
                 final List<ServerMessage> queue = _session.takeQueue();
@@ -264,7 +261,7 @@ public class WebSocketTransport extends HttpTransport
                 try
                 {
                     if (queue.size()>0)
-                        send(queue);   
+                        send(queue);
                 }
                 catch(IOException e)
                 {
@@ -272,14 +269,14 @@ public class WebSocketTransport extends HttpTransport
                 }
             }
         }
-        
+
         /* ------------------------------------------------------------ */
         protected void send(List<ServerMessage> messages) throws IOException
         {
             String data = JSON.toString(messages);
             _outbound.sendMessage(data);
         }
-        
+
         /* ------------------------------------------------------------ */
         protected void send(ServerMessage message) throws IOException
         {
@@ -287,12 +284,12 @@ public class WebSocketTransport extends HttpTransport
             _outbound.sendMessage("["+data+"]");
         }
     };
-    
-    
-    
+
+
+
     /* ------------------------------------------------------------ */
     /**
-     * @see org.cometd.server.transports.HttpTransport#getCurrentLocalAddress()
+     * @see org.cometd.server.transport.HttpTransport#getCurrentLocalAddress()
      */
     @Override
     public InetSocketAddress getCurrentLocalAddress()
@@ -305,7 +302,7 @@ public class WebSocketTransport extends HttpTransport
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.cometd.server.transports.HttpTransport#getCurrentRemoteAddress()
+     * @see org.cometd.server.transport.HttpTransport#getCurrentRemoteAddress()
      */
     @Override
     public InetSocketAddress getCurrentRemoteAddress()
@@ -321,5 +318,5 @@ public class WebSocketTransport extends HttpTransport
         InetSocketAddress _local;
         InetSocketAddress _remote;
     }
-    
+
 }
