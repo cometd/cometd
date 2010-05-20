@@ -11,6 +11,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.client.SessionChannel;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.log.Log;
 
@@ -303,7 +304,9 @@ public abstract class AbstractClientSession implements ClientSession
     /* ------------------------------------------------------------ */
     /** A channel scoped to this {@link ClientSession}
      */
-    protected abstract static class AbstractSessionChannel implements ClientSessionChannel
+    // TODO: use the commented line when SessionChannel is deleted
+//    protected abstract static class AbstractSessionChannel implements ClientSessionChannel
+    protected abstract static class AbstractSessionChannel implements SessionChannel
     {
         private final ChannelId _id;
         private final CopyOnWriteArrayList<MessageListener> _subscriptions = new CopyOnWriteArrayList<MessageListener>();
