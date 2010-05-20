@@ -242,7 +242,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         }
 
         /* ------------------------------------------------------------ */
-        public void publish(Object data,Object id)
+        public void publish(Object data,Object messageId)
         {
             if (_session==null)
                 throw new IllegalStateException("!handshake");
@@ -250,8 +250,8 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setChannel(getId());
             message.setData(data);
-            if (id!=null)
-                message.setId(id);
+            if (messageId !=null)
+                message.setId(messageId);
 
             send(_session,message);
             message.setAssociated(null);

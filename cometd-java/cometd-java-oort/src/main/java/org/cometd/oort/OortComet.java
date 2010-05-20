@@ -1,8 +1,5 @@
 package org.cometd.oort;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -13,8 +10,8 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.client.SessionChannel;
-import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.util.log.Log;
 
@@ -36,7 +33,7 @@ public class OortComet extends BayeuxClient
         super(oort._httpClient,cometUrl);
         _cometUrl=cometUrl;
         _oort=oort;
-       
+
         // add extension to modify outgoing handshake with oort details
         addExtension(new Extension()
         {
@@ -50,32 +47,32 @@ public class OortComet extends BayeuxClient
                     oort.put("oortSecret",_oort.getSecret());
                     oort.put("comet",_cometUrl);
                     message.getExt(true).put("oort",oort);
-                    if (Log.isDebugEnabled()) 
+                    if (Log.isDebugEnabled())
                         Log.debug(_oort.getURL()+" ==> "+message);
                 }
 
                 return true;
             }
-            
+
             @Override
             public boolean send(ClientSession session, Mutable message)
             {
                 return true;
             }
-            
+
             @Override
             public boolean rcvMeta(ClientSession session, Mutable message)
             {
                 return true;
             }
-            
+
             @Override
             public boolean rcv(ClientSession session, Mutable message)
             {
                 return true;
             }
         });
-        
+
         // Add listener for handshake response
         getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
         {
@@ -83,7 +80,7 @@ public class OortComet extends BayeuxClient
             public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
             {
                 System.err.println("handshake "+message);
-                
+
                 if (successful)
                 {
                     Map<String,Object> ext = message.getExt();
@@ -93,13 +90,13 @@ public class OortComet extends BayeuxClient
                     Map<String,Object> oort = (Map<String,Object>)ext.get("oort");
                     if (oort==null)
                         return;
-                    
+
                     _cometSecret=(String)oort.get("cometSecret");
 
                     startBatch();
 
                     System.err.println("Oort subscriptions for "+this);
-                    
+
                     // subscribe to cloud notificiations
                     getChannel("/oort/cloud").subscribe(new SessionChannel.SubscriberListener()
                     {
@@ -119,8 +116,8 @@ public class OortComet extends BayeuxClient
 
                     getChannel("/oort/cloud").publish(_oort.getKnownComets(),_cometSecret);
                     endBatch();
-                    
-                    if (Log.isDebugEnabled()) 
+
+                    if (Log.isDebugEnabled())
                         Log.debug(_oort.getURL()+" <== "+ext);
                 }
             }
@@ -129,11 +126,11 @@ public class OortComet extends BayeuxClient
 
     public void subscribe(String id)
     {
-        final SessionChannel channel_here = _oort._oortSession.getChannel(id);
-        getChannel(id).subscribe(new SessionChannel.SubscriberListener()
+        final ClientSessionChannel channel_here = _oort._oortSession.getChannel(id);
+        getChannel(id).subscribe(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMessage(SessionChannel channel, Message message)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
                 channel_here.publish(message.getData(),message.getId());
             }
@@ -191,8 +188,8 @@ public class OortComet extends BayeuxClient
         Log.warn("ConnectException: "+x.toString());
         Log.debug(x);
     }
-    
 
-    
+
+
 
 }

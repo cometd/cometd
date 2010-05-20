@@ -60,7 +60,7 @@ public interface ClientSession extends Session
      * @param channelName specific or wild channel name.
      * @return a channel scoped by this session.
      */
-    SessionChannel getChannel(String channelName);
+    ClientSessionChannel getChannel(String channelName);
 
     /**
      * <p>Extension API for client session.</p>

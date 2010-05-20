@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
-import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.log.Log;
 
@@ -87,7 +87,7 @@ public abstract class AbstractClientSession implements ClientSession
     protected abstract AbstractSessionChannel newChannel(ChannelId channelId);
 
     /* ------------------------------------------------------------ */
-    public SessionChannel getChannel(String channelId)
+    public ClientSessionChannel getChannel(String channelId)
     {
         AbstractSessionChannel channel = _channels.get(channelId);
         if (channel==null)
@@ -201,14 +201,12 @@ public abstract class AbstractClientSession implements ClientSession
                 {
                     if (wild.getChannelId().matches(channelId))
                     {
-                        for (SessionChannel.SessionChannelListener listener : wild._listeners)
+                        for (ClientSessionChannel.Listener listener : wild._listeners)
                         {
                             try
                             {
-                                if (listener instanceof SessionChannel.MetaChannelListener)
-                                    ((SessionChannel.MetaChannelListener)listener).onMetaMessage(channel,message,successful,error);
-                                if (listener instanceof SessionChannel.MessageListener)
-                                    ((SessionChannel.MessageListener)listener).onMessage(this,message);
+                                if (listener instanceof ClientSessionChannel.MessageListener)
+                                    ((ClientSessionChannel.MessageListener)listener).onMessage(channel, message);
                             }
                             catch(Exception e)
                             {
@@ -218,12 +216,12 @@ public abstract class AbstractClientSession implements ClientSession
                     }
                 }
 
-                for (SessionChannel.SessionChannelListener listener : channel._listeners)
+                for (ClientSessionChannel.Listener listener : channel._listeners)
                 {
                     try
                     {
-                        if (listener instanceof SessionChannel.MetaChannelListener)
-                            ((SessionChannel.MetaChannelListener)listener).onMetaMessage(channel,message,message.isSuccessful(),error);
+                        if (listener instanceof ClientSessionChannel.MessageListener)
+                            ((ClientSessionChannel.MessageListener)listener).onMessage(channel, message);
                     }
                     catch(Exception e)
                     {
@@ -242,10 +240,10 @@ public abstract class AbstractClientSession implements ClientSession
                     {
                         if (wild.getChannelId().matches(channel.getChannelId()))
                         {
-                            for (SessionChannel.SessionChannelListener listener : wild._listeners)
+                            for (ClientSessionChannel.Listener listener : wild._listeners)
                             {
-                                if (listener instanceof SessionChannel.MessageListener)
-                                    ((SessionChannel.MessageListener)listener).onMessage(this,message);
+                                if (listener instanceof ClientSessionChannel.MessageListener)
+                                    ((ClientSessionChannel.MessageListener)listener).onMessage(channel, message);
                             }
                         }
                     }
@@ -259,7 +257,7 @@ public abstract class AbstractClientSession implements ClientSession
 
         if (channel!=null && (channel.isMeta() || message.getData()!=null))
         {
-            for (SessionChannel.SubscriberListener listener : channel._subscriptions)
+            for (ClientSessionChannel.MessageListener listener : channel._subscriptions)
             {
                 try
                 {
@@ -303,14 +301,14 @@ public abstract class AbstractClientSession implements ClientSession
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    /** A SessionChannel scoped to this LocalChannel
+    /** A channel scoped to this {@link ClientSession}
      */
-    protected abstract static class AbstractSessionChannel implements SessionChannel
+    protected abstract static class AbstractSessionChannel implements ClientSessionChannel
     {
         private final ChannelId _id;
-        private CopyOnWriteArrayList<SubscriberListener> _subscriptions = new CopyOnWriteArrayList<SubscriberListener>();
-        protected CopyOnWriteArrayList<SessionChannelListener> _listeners = new CopyOnWriteArrayList<SessionChannelListener>();
-        protected Handler _handler;
+        private final CopyOnWriteArrayList<MessageListener> _subscriptions = new CopyOnWriteArrayList<MessageListener>();
+        private final CopyOnWriteArrayList<Listener> _listeners = new CopyOnWriteArrayList<Listener>();
+        private Handler _handler;
 
         /* ------------------------------------------------------------ */
         protected AbstractSessionChannel(ChannelId id)
@@ -325,13 +323,13 @@ public abstract class AbstractClientSession implements ClientSession
         }
 
         /* ------------------------------------------------------------ */
-        public void addListener(SessionChannelListener listener)
+        public void addListener(Listener listener)
         {
             _listeners.add(listener);
         }
 
         /* ------------------------------------------------------------ */
-        public void removeListener(SessionChannelListener listener)
+        public void removeListener(Listener listener)
         {
             _listeners.remove(listener);
         }
@@ -343,7 +341,7 @@ public abstract class AbstractClientSession implements ClientSession
         protected abstract void sendUnSubscribe();
 
         /* ------------------------------------------------------------ */
-        public void subscribe(SubscriberListener listener)
+        public void subscribe(MessageListener listener)
         {
             _subscriptions.add(listener);
             // TODO: does not work concurrently, may fail to send
@@ -352,7 +350,7 @@ public abstract class AbstractClientSession implements ClientSession
         }
 
         /* ------------------------------------------------------------ */
-        public void unsubscribe(SubscriberListener listener)
+        public void unsubscribe(MessageListener listener)
         {
             if (_subscriptions.remove(listener) && _subscriptions.size()==0)
             {
@@ -363,7 +361,7 @@ public abstract class AbstractClientSession implements ClientSession
         /* ------------------------------------------------------------ */
         public void unsubscribe()
         {
-            for (SubscriberListener listener : _subscriptions)
+            for (MessageListener listener : _subscriptions)
                 unsubscribe(listener);
         }
 
@@ -408,14 +406,14 @@ public abstract class AbstractClientSession implements ClientSession
             b.append(toString());
             b.append('\n');
 
-            for (SessionChannelListener child : _listeners)
+            for (Listener child : _listeners)
             {
                 b.append(indent);
                 b.append(" +-");
                 b.append(child);
                 b.append('\n');
             }
-            for (SubscriberListener child : _subscriptions)
+            for (MessageListener child : _subscriptions)
             {
                 b.append(indent);
                 b.append(" +-");

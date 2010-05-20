@@ -1,32 +1,25 @@
 package org.cometd.oort;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Session;
-import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerSession;
-import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
@@ -35,9 +28,9 @@ import org.eclipse.jetty.util.log.Log;
  * <p>
  * This class maintains a collection of {@link OortComet} instances to each
  * comet server identified by calls to {@link #observeComet(String)}. The Oort
- * instance is created and configured by {@link OortServlet}. 
+ * instance is created and configured by {@link OortServlet}.
  * <p>
- * The key configuration parameter that must be set is the Oort URL, which is 
+ * The key configuration parameter that must be set is the Oort URL, which is
  * full public URL to the cometd servlet, eg. http://myserver:8080/context/cometd
  * See {@link OortServlet} for more configuration detail.<p>
  * @author gregw
@@ -49,14 +42,14 @@ public class Oort
     public final static String OORT_CLOUD = "oort.cloud";
     public final static String OORT_CHANNELS = "oort.channels";
     public final static String OORT_ATTRIBUTE = "org.cometd.oort.Oort";
-    
+
     final protected String _url;
     final protected String _secret;
     final protected BayeuxServer _bayeux;
     final protected HttpClient _httpClient;
     final protected Random _random=new SecureRandom();
     final protected LocalSession _oortSession;
-    
+
     final protected Map<String,OortComet> _knownCommets = new ConcurrentHashMap<String,OortComet>();
     final protected Set<String> _channels = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
@@ -66,12 +59,12 @@ public class Oort
         _url=id;
         _bayeux=bayeux;
         _secret=Long.toHexString(_random.nextLong());
-        
+
         _httpClient=new HttpClient();
-        
+
         _oortSession=_bayeux.newLocalSession("oort");
         bayeux.addExtension(new OortExtension());
-        
+
         try
         {
             _httpClient.start();
@@ -89,7 +82,7 @@ public class Oort
     {
         return _bayeux;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return The oublic absolute URL of the Oort cometd server.
@@ -109,9 +102,9 @@ public class Oort
     /**
      * Observe an Oort Comet server.
      * <p>
-     * The the comet server is not already observed, start a {@link OortComet} 
+     * The the comet server is not already observed, start a {@link OortComet}
      * instance for it.
-     * 
+     *
      * @param cometUrl
      * @return The {@link OortComet} instance for the comet server.
      */
@@ -141,11 +134,11 @@ public class Oort
 
     /* ------------------------------------------------------------ */
     /**
-     * Pass observed comets. 
+     * Pass observed comets.
      * <p>
-     * Called when another comet server publishes it's list of 
+     * Called when another comet server publishes it's list of
      * known comets to the /oort/cloud channel.  If the list contains
-     * any unknown commets, then {@link #observeComet(String)} is 
+     * any unknown commets, then {@link #observeComet(String)} is
      * called for each.
      * @param comets
      */
@@ -158,7 +151,7 @@ public class Oort
                 if (!_url.equals(comet))
                     observeComet(comet);
             known=getKnownComets();
-            
+
             if (!comets.containsAll(known))
                 _bayeux.getChannel("/oort/cloud",true).publish(_oortSession,known,null);
         }
@@ -203,7 +196,7 @@ public class Oort
         LocalSession local=session.getLocalSession();
         return local==_oortSession;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isOort(LocalSession session)
     {
@@ -230,9 +223,9 @@ public class Oort
         Log.info(this+": "+clientId+" is oort "+oortUrl);
         if (!_knownCommets.containsKey(oortUrl))
             observeComet(oortUrl);
-        
+
         ServerSession session =  _bayeux.getSession(clientId);
-        
+
         session.addExtension(new RemoteOortClientExtension());
     }
 
@@ -270,7 +263,7 @@ public class Oort
             {
                 Message rcv = message.getAssociated();
                 if (Log.isDebugEnabled()) Log.debug(_url+" --> "+rcv);
-                
+
                 Map<String,Object> rcvExt = rcv.getExt();
                 if (rcvExt!=null)
                 {
@@ -283,11 +276,11 @@ public class Oort
                         if (getURL().equals(cometUrl))
                         {
                             String oortSecret = (String)oort.get("oortSecret");
-                            
+
                             oortHandshook(oortUrl,oortSecret,message.getClientId());
-                            
+
                             Object ext=message.get("ext");
-                            
+
                             Map<String,Object> sndExt = (Map<String,Object>)((ext instanceof JSON.Literal)?JSON.parse(ext.toString()):ext);
                             if (sndExt==null)
                                 sndExt = new HashMap<String,Object>();
@@ -300,9 +293,9 @@ public class Oort
                 if (Log.isDebugEnabled()) Log.debug(_url+" <-- "+message);
             }
             return true;
-        }   
+        }
     }
-    
+
 
 
     /* ------------------------------------------------------------ */
@@ -329,7 +322,7 @@ public class Oort
         @Override
         public ServerMessage send(ServerSession to, ServerMessage message)
         {
-            // avoid loops            
+            // avoid loops
             boolean send = !isOort(to) || message.getChannel().startsWith("/oort/");
             return send?message:null;
 
@@ -347,10 +340,10 @@ public class Oort
     /**
      * MessageListener that handles publishes to /oort/cloud
      */
-    protected class RootOortClientListener implements SessionChannel.SubscriberListener
+    protected class RootOortClientListener implements ClientSessionChannel.MessageListener
     {
         @Override
-        public void onMessage(SessionChannel channel, Message msg)
+        public void onMessage(ClientSessionChannel channel, Message msg)
         {
             String channelId = msg.getChannel();
             Object data=msg.getData();
@@ -363,6 +356,6 @@ public class Oort
                 observedComets(comets);
             }
         }
-        
+
     }
 }
