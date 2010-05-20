@@ -10,8 +10,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.cometd.bayeux.Session;
-import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
@@ -37,11 +36,11 @@ public class ChatService extends AbstractService
                 initializer.addListener(noMarkup);
             }
         };
-            
-        if (!bayeux.createIfAbsent("/chat/**",initNoMarkup) ||      
+
+        if (!bayeux.createIfAbsent("/chat/**",initNoMarkup) ||
             !bayeux.createIfAbsent("/service/privatechat",initNoMarkup))
             throw new IllegalStateException();
-        
+
         addService("/service/members", "handleMembership");
         addService("/service/privatechat", "privateChat");
     }
@@ -60,21 +59,21 @@ public class ChatService extends AbstractService
         String userName = (String)data.get("user");
         members.put(userName, client.getId());
         client.addListener(new ServerSession.RemoveListener()
-        { 
+        {
             public void removed(ServerSession session, boolean timeout)
             {
                 members.values().remove(session.getId());
                 broadcastMembers(members.keySet());
             }
         });
-                
+
         broadcastMembers(members.keySet());
     }
 
     private void broadcastMembers(Set<String> members)
     {
         // Broadcast the new members list
-        SessionChannel channel = getClient().getChannel("/chat/members");
+        ClientSessionChannel channel = getLocalSession().getChannel("/chat/members");
         channel.publish(members);
     }
 
@@ -108,12 +107,12 @@ public class ChatService extends AbstractService
             forward.setChannel(room);
             forward.setId(message.getId());
             forward.setData(chat);
-            
+
             // test for lazy messages
             if (text.lastIndexOf("lazy")>0)
                 forward.setLazy(true);
-                
-            
+
+
             for (ServerSession peer : peers)
                 peer.deliver(getClient().getServerSession(),forward);
             client.deliver(getClient().getServerSession(), forward);

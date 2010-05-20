@@ -16,8 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSession;
-import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -380,31 +379,31 @@ public class BayeuxLoadGenerator
         totLatency.set(0L);
     }
 
-    private class HandshakeListener implements SessionChannel.MetaChannelListener
+    private class HandshakeListener implements ClientSessionChannel.MessageListener
     {
         @Override
-        public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+        public void onMessage(ClientSessionChannel channel, Message message)
         {
-            if (successful)
-                bayeuxClients.add((BayeuxClient)channel.getSession());   
+            if (message.isSuccessful())
+                bayeuxClients.add((BayeuxClient)channel.getSession());
         }
     }
 
-    private class DisconnectListener implements SessionChannel.MetaChannelListener
+    private class DisconnectListener implements ClientSessionChannel.MessageListener
     {
         @Override
-        public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+        public void onMessage(ClientSessionChannel channel, Message message)
         {
-            if (successful)
+            if (message.isSuccessful())
                 bayeuxClients.remove((BayeuxClient)channel.getSession());
-                
+
         }
     }
 
-    private class LatencyListener implements SessionChannel.MessageListener
+    private class LatencyListener implements ClientSessionChannel.MessageListener
     {
         @Override
-        public void onMessage(ClientSession session, Message message)
+        public void onMessage(ClientSessionChannel channel, Message message)
         {
             Object data = message.getData();
             if (data != null)
@@ -434,10 +433,10 @@ public class BayeuxLoadGenerator
 
         public void init(String channel, int room)
         {
-            getChannel(channel + "/" + room).subscribe(new SessionChannel.SubscriberListener()
+            getChannel(channel + "/" + room).subscribe(new ClientSessionChannel.MessageListener()
             {
                 @Override
-                public void onMessage(SessionChannel channel, Message message)
+                public void onMessage(ClientSessionChannel channel, Message message)
                 {
                 }
             });

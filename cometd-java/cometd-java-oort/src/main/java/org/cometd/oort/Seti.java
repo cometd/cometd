@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
@@ -15,22 +16,21 @@ import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 
 
 /* ------------------------------------------------------------ */
 /** The Search for Extra Terrestial Intelligence.
- * 
+ *
  * Well in this case, just the search for a user logged onto an
  * Cometd node in an Oort cluster.
  * <p>
- * Seti allows an application to maintain a mapping from userId to 
+ * Seti allows an application to maintain a mapping from userId to
  * comet client ID using the {@link #associate(String, Client)} and
  * {@link #disassociate(String)} methods. Each cometd node keeps its
  * own associate mapping for clients connected to it.
  * <p>
- * The {@link #sendMessage(Collection, String, Object)} and 
+ * The {@link #sendMessage(Collection, String, Object)} and
  * {@link #sendMessage(String, String, Object)} methods may be
  * used to send a message to user(s) anywhere in the Oort cluster
  * and Seti organizes the search of the distributed associate
@@ -39,13 +39,13 @@ import org.eclipse.jetty.util.log.Log;
  * If users can be directed to shards of cometd servers, then
  * each Seti instance must be told it's shard ID and the {@link #userId2Shard(String)}
  * method must be extended to map users to shards.
- * 
+ *
  */
 public class Seti
 {
     public final static String SETI_ATTRIBUTE="org.cometd.oort.Seti";
     public final static String SETI_SHARD="seti.shard";
-    
+
     final String _setiId;
     final String _shardId;
     final Oort _oort;
@@ -54,9 +54,9 @@ public class Seti
     final ServerChannel _setiIdChannel;
     final ServerChannel _setiAllChannel;
     final ServerChannel _setiShardChannel;
-    
+
     final ConcurrentMap<String, Location> _uid2Location = new ConcurrentHashMap<String, Location>();
-    
+
     /* ------------------------------------------------------------ */
     public Seti(Oort oort, String shardId)
     {
@@ -67,15 +67,15 @@ public class Seti
 
         _setiIdChannel=_oort.getBayeux().getChannel("/seti/"+_setiId,true);
         _setiIdChannel.setPersistent(true);
-        
+
         _setiAllChannel=_oort.getBayeux().getChannel("/seti/ALL",true);
         _setiAllChannel.setPersistent(true);
-        
+
         _setiShardChannel=_oort.getBayeux().getChannel("/seti/"+shardId,true);
         _setiShardChannel.setPersistent(true);
-        
+
         _allShardLocation = new ShardLocation("ALL");
-        
+
 
         try
         {
@@ -85,33 +85,33 @@ public class Seti
         {
             throw new RuntimeException(e);
         }
-        
+
         _oort.observeChannel(_setiIdChannel.getId());
-        _session.getChannel(_setiIdChannel.getId()).subscribe(new SessionChannel.SubscriberListener()
+        _session.getChannel(_setiIdChannel.getId()).subscribe(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMessage(SessionChannel channel, Message message)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
                 receive(message);
             }
         });
-        
+
         _oort.observeChannel(_setiAllChannel.getId());
-        _session.getChannel(_setiAllChannel.getId()).subscribe(new SessionChannel.SubscriberListener()
+        _session.getChannel(_setiAllChannel.getId()).subscribe(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMessage(SessionChannel channel, Message message)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
                 receive(message);
             }
         });
-        
-        
+
+
         _oort.observeChannel(_setiShardChannel.getId());
-        _session.getChannel(_setiShardChannel.getId()).subscribe(new SessionChannel.SubscriberListener()
+        _session.getChannel(_setiShardChannel.getId()).subscribe(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMessage(SessionChannel channel, Message message)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
                 receive(message);
             }
@@ -138,7 +138,7 @@ public class Seti
         Location location = _uid2Location.get(toUser);
         if (location==null)
             location = userId2Shard(toUser);
-        
+
         location.sendMessage(toUser,toChannel,data);
     }
 
@@ -148,31 +148,31 @@ public class Seti
         // break toUsers in to shards
         MultiMap shard2users = new MultiMap();
         for (String userId:toUsers)
-        {       
+        {
             ShardLocation shard = userId2Shard(userId);
             shard2users.add(shard,userId);
         }
-        
+
         // for each shard
         for (Map.Entry<ShardLocation,Object> entry : (Set<Map.Entry<ShardLocation,Object>>)shard2users.entrySet())
         {
             // TODO, we could look at all users in shard to see if we
             // know a setiId for each, and if so, break the user list
-            // up into a message for each seti-id. BUT it is probably 
+            // up into a message for each seti-id. BUT it is probably
             // more efficient just to send to the entire shard (unless
             // the number of nodes in the shard is greater than the
             // number of users).
-            
+
             ShardLocation shard = entry.getKey();
             Object lazyUsers = entry.getValue();
-            
+
             if (LazyList.size(lazyUsers)==1)
                 shard.sendMessage((String)lazyUsers,toChannel,message);
             else
                 shard.sendMessage((List<String>)lazyUsers,toChannel,message);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     protected ShardLocation userId2Shard(final String userId)
     {
@@ -186,14 +186,14 @@ public class Seti
 
         if (!(msg.getData() instanceof Map))
             return;
-        
+
         // extract the message details
         Map<String,Object> data = (Map<String,Object>)msg.getData();
         final String toUid=(String)data.get("to");
         final String fromUid=(String)data.get("from");
         final Object message = data.get("message");
         final String on = (String)data.get("on");
-        
+
         // Handle any client locations contained in the message
         if (fromUid!=null)
         {
@@ -202,7 +202,7 @@ public class Seti
                 if (Log.isDebugEnabled()) Log.debug(_oort+":: "+fromUid+" on "+on);
                 _uid2Location.put(fromUid,new SetiLocation("/seti/"+on));
             }
-            else 
+            else
             {
                 final String off = (String)data.get("off");
                 if (off!=null)
@@ -212,21 +212,21 @@ public class Seti
                 }
             }
         }
-        
+
         // deliver message
         if (message!=null && toUid!=null)
         {
             final String toChannel=(String)data.get("channel");
             Location location=_uid2Location.get(toUid);
-            
+
             if (location==null && _setiIdChannel.getId().equals(msg.getChannel()))
                 // was sent to this node, so escalate to the shard.
                 location =userId2Shard(toUid);
-            
+
             if (location!=null)
                 location.receive(toUid,toChannel,message);
         }
-        
+
     }
 
 
@@ -237,14 +237,14 @@ public class Seti
         public void sendMessage(String toUser,String toChannel,Object data);
         public void receive(String toUser,String toChannel,Object data);
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     class LocalLocation implements Location
     {
         ServerSession _session;
-        
+
         LocalLocation(ServerSession session)
         {
             _session=session;
@@ -267,18 +267,18 @@ public class Seti
     /* ------------------------------------------------------------ */
     class SetiLocation implements Location
     {
-        SessionChannel _channel;
+        ClientSessionChannel _channel;
 
         SetiLocation(String channelId)
         {
             _channel=_session.getChannel(channelId);
         }
-        
+
         SetiLocation(SessionChannel channel)
         {
             _channel=channel;
         }
-        
+
         public void sendMessage(String toUser, String toChannel, Object message)
         {
             _channel.publish(new SetiMessage(toUser,toChannel,message));
@@ -286,7 +286,7 @@ public class Seti
 
         public void receive(String toUser, String toChannel, Object message)
         {
-            
+
         }
 
         public boolean equals(Object o)
@@ -294,7 +294,7 @@ public class Seti
             return o instanceof SetiLocation &&
             ((SetiLocation)o)._channel.equals(_channel);
         }
-        
+
         public int hashCode()
         {
             return _channel.hashCode();
@@ -305,13 +305,13 @@ public class Seti
     /* ------------------------------------------------------------ */
     class ShardLocation implements Location
     {
-        SessionChannel _channel;
-        
+        ClientSessionChannel _channel;
+
         ShardLocation(String shardId)
         {
             _channel=_session.getChannel("/seti/"+shardId);
         }
-        
+
         public void sendMessage(final Collection<String> toUsers, final String toChannel, final Object message)
         {
             _channel.publish(new SetiMessage(toUsers,toChannel,message));
@@ -321,17 +321,17 @@ public class Seti
         {
             _channel.publish(new SetiMessage(toUser,toChannel,message));
         }
-        
+
         public void receive(String toUser, String toChannel, Object message)
         {
-            
+
         }
-        
+
         public void associate(final String user)
         {
             _channel.publish(new SetiPresence(user,true));
         }
-        
+
         public void disassociate(final String user)
         {
             _channel.publish(new SetiPresence(user,false));
@@ -353,14 +353,14 @@ public class Seti
             _toChannel=toChannel;
             _message=message;
         }
-        
+
         SetiMessage(Collection<String> toUsers,String toChannel, Object message)
         {
             _toUsers=toUsers;
             _toChannel=toChannel;
             _message=message;
         }
-        
+
         public void fromJSON(Map object)
         {
             throw new UnsupportedOperationException();
@@ -375,9 +375,9 @@ public class Seti
             out.add("channel",_toChannel);
             out.add("from",_setiId);
             out.add("message",_message);
-        }   
+        }
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     class SetiPresence implements JSON.Convertible
@@ -390,7 +390,7 @@ public class Seti
             _user=user;
             _on=on;
         }
-        
+
         public void fromJSON(Map object)
         {
             throw new UnsupportedOperationException();
@@ -407,5 +407,5 @@ public class Seti
     {
         _session.disconnect();
     }
-    
+
 }

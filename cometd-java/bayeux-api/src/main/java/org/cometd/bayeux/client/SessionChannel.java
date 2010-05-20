@@ -1,72 +1,39 @@
 package org.cometd.bayeux.client;
 
-
-import org.cometd.bayeux.BayeuxListener;
-import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 
-
-
-/* ------------------------------------------------------------ */
 /**
- * A client side Channel representation.
- * <p>
- * A SessionChannel is scoped to a particular {@link ClientSession} that is 
- * obtained by a call to {@link ClientSession#getChannel(String)}.
- * </p><p>
- * Typical usage examples are: <pre>
- *     clientSession.getChannel("/foo/bar").subscribe(mySubscriptionListener);
- *     clientSession.getChannel("/foo/bar").publish("Hello");
- *     clientSession.getChannel("/meta/*").addListener(myMetaChannelListener);
- * <pre>
- * 
- * <p>
- * 
+ * @deprecated Use {@link ClientSessionChannel} instead
  */
-public interface SessionChannel extends Channel
+@Deprecated
+public interface SessionChannel extends ClientSessionChannel
 {
-    void addListener(SessionChannelListener listener);
-    void removeListener(SessionChannelListener listener);
-    
-    ClientSession getSession();
-
-    void publish(Object data);
-    void publish(Object data,Object id);
-    
-    void subscribe(SubscriberListener listener);
-    void unsubscribe(SubscriberListener listener);
-    void unsubscribe();
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /**
+     * @deprecated Use {@link MessageListener} instead
      */
-    interface SessionChannelListener extends BayeuxListener
-    {}
-
-    
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    public interface SubscriberListener extends BayeuxListener
+    @Deprecated
+    public abstract class SubscriberListener implements MessageListener
     {
-        void onMessage(SessionChannel channel, Message message);
+        @Override
+        public final void onMessage(ClientSessionChannel channel, Message message)
+        {
+            onMessage((SessionChannel)channel, message);
+        }
+
+        public abstract void onMessage(SessionChannel channel, Message message);
     }
-    
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
     /**
+     * @deprecated Use {@link MessageListener} instead
      */
-    public interface MessageListener extends SessionChannelListener
+    public abstract class MetaChannelListener implements MessageListener
     {
-        void onMessage(ClientSession session, Message message);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    interface MetaChannelListener extends SessionChannelListener
-    {
-        void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error);
+        public final void onMessage(ClientSessionChannel channel, Message message)
+        {
+            Object error = message.get(Message.ERROR_FIELD);
+            onMetaMessage((SessionChannel)channel, message, message.isSuccessful(), error == null ? null : String.valueOf(error));
+        }
+
+        public abstract void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error);
     }
 }

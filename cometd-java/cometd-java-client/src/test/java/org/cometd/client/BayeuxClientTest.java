@@ -1,35 +1,29 @@
 package org.cometd.client;
 
 import java.io.IOException;
-import java.util.Date;
 import java.util.Random;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.bayeux.client.SessionChannel.MetaChannelListener;
 import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
-import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient.State;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.BayeuxServerImpl;
@@ -94,7 +88,7 @@ public class BayeuxClientTest extends TestCase
         _httpClient.start();
 
         _port=_connector.getLocalPort();
-        
+
         _bayeux=(BayeuxServerImpl)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
         if (_bayeux==null)
             throw new IllegalStateException("No Bayeux");
@@ -120,11 +114,11 @@ public class BayeuxClientTest extends TestCase
     public void testClient() throws Exception
     {
         final BlockingArrayQueue<Object> results = new BlockingArrayQueue<Object>();
-        
+
         BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_port+"/cometd");
-        
+
         final AtomicBoolean connected = new AtomicBoolean();
-        
+
         client.getChannel(Channel.META_CONNECT).addListener(new MetaChannelListener()
         {
             @Override
@@ -133,7 +127,7 @@ public class BayeuxClientTest extends TestCase
                 connected.set(successful);
             }
         });
-        
+
         client.getChannel(Channel.META_HANDSHAKE).addListener(new MetaChannelListener()
         {
             @Override
@@ -142,7 +136,7 @@ public class BayeuxClientTest extends TestCase
                 connected.set(false);
             }
         });
-        
+
         client.getChannel("/meta/*").addListener(new MetaChannelListener()
         {
             @Override
@@ -159,7 +153,7 @@ public class BayeuxClientTest extends TestCase
                 }
             }
         });
-        
+
         client.handshake();
 
         Message message = (Message)results.poll(1,TimeUnit.SECONDS);
@@ -205,9 +199,9 @@ public class BayeuxClientTest extends TestCase
     public void testAsync() throws Exception
     {
         BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_port+"/cometd");
-        
+
         final AtomicBoolean connected = new AtomicBoolean();
-        
+
         client.getChannel(Channel.META_CONNECT).addListener(new MetaChannelListener()
         {
             @Override
@@ -216,7 +210,7 @@ public class BayeuxClientTest extends TestCase
                 connected.set(successful);
             }
         });
-        
+
         client.getChannel(Channel.META_HANDSHAKE).addListener(new MetaChannelListener()
         {
             @Override
@@ -225,7 +219,7 @@ public class BayeuxClientTest extends TestCase
                 connected.set(false);
             }
         });
-        
+
         /*
         client.getChannel("/**").addListener(new SessionChannel.MessageListener()
         {
@@ -235,10 +229,10 @@ public class BayeuxClientTest extends TestCase
                 System.err.println("Client: "+message);
             }
         });
-        
+
         _bayeux.getChannel("/**",true).addListener(new ServerChannel.MessageListener()
         {
-            
+
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
             {
@@ -247,10 +241,10 @@ public class BayeuxClientTest extends TestCase
             }
         });
         */
-        
+
 
         final BlockingArrayQueue<String> messages = new BlockingArrayQueue<String>();
-        
+
         client.handshake();
         client.getChannel("/foo/bar").subscribe(new SubscriberListener()
         {
@@ -265,14 +259,14 @@ public class BayeuxClientTest extends TestCase
         client.getChannel("/foo/bar").publish("Hello");
 
         assertTrue(client.waitFor(1000,BayeuxClient.State.CONNECTED));
-        
+
         assertEquals("/foo/bar",messages.poll(1,TimeUnit.SECONDS));
         assertEquals("Hello",messages.poll(1,TimeUnit.SECONDS));
-        
+
         client.disconnect();
         assertTrue(client.waitFor(1000,BayeuxClient.State.DISCONNECTED));
     }
-    
+
     public void testRetry() throws Exception
     {
         final BlockingArrayQueue<Message> queue = new BlockingArrayQueue<Message>(100,100);
@@ -280,7 +274,7 @@ public class BayeuxClientTest extends TestCase
         problem.setSuccessful(false);
 
         final AtomicBoolean connected = new AtomicBoolean(false);
-        
+
         BayeuxClient client = new BayeuxClient(_httpClient,"http://127.0.0.2:"+_port+"/cometd")
         {
             @Override
@@ -321,11 +315,11 @@ public class BayeuxClientTest extends TestCase
                 problem.put("error","P expired");
                 queue.add(problem);
             }
-            
+
         };
-                
+
         client.getChannel(Channel.META_CONNECT).addListener(new SessionChannel.MetaChannelListener()
-        {    
+        {
             @Override
             public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
             {
@@ -342,7 +336,7 @@ public class BayeuxClientTest extends TestCase
         });
 
         client.getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
-        {    
+        {
             @Override
             public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
             {
@@ -358,10 +352,10 @@ public class BayeuxClientTest extends TestCase
             }
         });
 
-        client.getChannel("/**").addListener(new SessionChannel.MessageListener()
+        client.getChannel("/**").addListener(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMessage(ClientSession session, Message message)
+            public void onMessage(ClientSessionChannel session, Message message)
             {
                 if (message.getData()!=null || Channel.META_SUBSCRIBE.equals(message.getChannel()) || Channel.META_DISCONNECT.equals(message.getChannel()))
                 {
@@ -382,7 +376,7 @@ public class BayeuxClientTest extends TestCase
 
         Message message = queue.poll(1,TimeUnit.SECONDS);
         assertFalse(message.isSuccessful());
-        
+
         message = queue.poll(2,TimeUnit.SECONDS);
         assertEquals(0,_filter._code);
         assertTrue(message.isSuccessful());
@@ -396,8 +390,8 @@ public class BayeuxClientTest extends TestCase
         _server.stop();
 
         Thread.sleep(500);
-        
-        
+
+
 
         message=queue.poll(1,TimeUnit.SECONDS);
         assertFalse(message.isSuccessful());
@@ -410,7 +404,7 @@ public class BayeuxClientTest extends TestCase
         _connector.setPort(_port);
         _server.start();
 
-        
+
         message=queue.poll(5,TimeUnit.SECONDS);
         while (message.get("error")!=null && message.get("error").toString().startsWith("P "))
             message=queue.poll(10,TimeUnit.SECONDS);
@@ -427,7 +421,7 @@ public class BayeuxClientTest extends TestCase
         BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_port+"/cometd");
         client.handshake();
 
-        
+
         client.setCookie("foo","bar",1);
         assertNotNull(client.getCookie("foo"));
 
@@ -440,9 +434,9 @@ public class BayeuxClientTest extends TestCase
         assertNotNull(client.getCookie("foo"));
 
         Thread.sleep(1100);
-        
+
         assertNotNull(client.getCookie("foo"));
-        
+
         client.disconnect();
         assertTrue(client.waitFor(1000L,State.DISCONNECTED));
     }
@@ -469,13 +463,13 @@ public class BayeuxClientTest extends TestCase
             clients[i] = client;
 
             client.getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
-            {    
+            {
                 @Override
                 public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
                 {
                     if (connected.getAndSet(false))
                         connections.decrementAndGet();
-                    
+
                     if (successful)
                     {
                         client.getChannel(room).subscribe(new SubscriberListener()
@@ -489,9 +483,9 @@ public class BayeuxClientTest extends TestCase
                     }
                 }
             });
-            
+
             client.getChannel(Channel.META_CONNECT).addListener(new SessionChannel.MetaChannelListener()
-            {    
+            {
                 @Override
                 public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
                 {
@@ -501,7 +495,7 @@ public class BayeuxClientTest extends TestCase
                     }
                 }
             });
-                    
+
             clients[i].handshake();
         }
 
@@ -554,14 +548,14 @@ public class BayeuxClientTest extends TestCase
             assertTrue(client.waitFor(1000L,State.DISCONNECTED));
     }
 
-    
+
     public void testPublish()
         throws Exception
     {
         final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
-        
+
         _bayeux.getChannel("/chat/msg",true).addListener(new ServerChannel.MessageListener()
-        {   
+        {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
             {
@@ -571,17 +565,17 @@ public class BayeuxClientTest extends TestCase
                 return true;
             }
         });
-        
-        
+
+
         BayeuxClient client = new BayeuxClient(_httpClient, "http://localhost:"+_port+"/cometd");
         client.handshake();
         client.getChannel("/chat/msg").publish("Hello World");
-        
+
         String id=results.poll(1,TimeUnit.SECONDS);
         assertEquals(client.getId(),id);
         assertEquals("/chat/msg",results.poll(1,TimeUnit.SECONDS));
         assertEquals("Hello World",results.poll(1,TimeUnit.SECONDS));
-        
+
         client.disconnect();
     }
 
@@ -591,7 +585,7 @@ public class BayeuxClientTest extends TestCase
         final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
 
         _bayeux.getChannel("/chat/msg",true).addListener(new ServerChannel.MessageListener()
-        {   
+        {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
             {
@@ -607,13 +601,13 @@ public class BayeuxClientTest extends TestCase
         client.handshake(1000L);
         assertTrue(client.getId()!=null);
         client.getChannel("/chat/msg").publish("Hello World");
-        
+
         assertEquals(client.getId(),results.poll(1,TimeUnit.SECONDS));
         assertEquals("/chat/msg",results.poll(1,TimeUnit.SECONDS));
         assertEquals("Hello World",results.poll(1,TimeUnit.SECONDS));
 
         client.disconnect();
-        
+
         assertTrue(client.waitFor(1000,State.DISCONNECTED));
     }
 
@@ -632,7 +626,7 @@ public class BayeuxClientTest extends TestCase
             }
         }
     }
-    
+
     private static class TestFilter implements Filter
     {
         volatile int _code=0;
@@ -653,5 +647,5 @@ public class BayeuxClientTest extends TestCase
         {
         }
     }
-    
+
 }

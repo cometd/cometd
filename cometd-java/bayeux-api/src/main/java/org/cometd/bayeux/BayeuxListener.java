@@ -11,5 +11,4 @@ import java.util.EventListener;
  */
 public interface BayeuxListener extends EventListener
 {
-
 }

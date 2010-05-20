@@ -493,7 +493,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     @Override
     protected AbstractSessionChannel newChannel(ChannelId channelId)
     {
-        return new ClientSessionChannel(channelId);
+        return new BayeuxClientChannel(channelId);
     }
 
     /* ------------------------------------------------------------ */
@@ -785,18 +785,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     }
 
     /* ------------------------------------------------------------ */
-    protected class ClientSessionChannel extends AbstractSessionChannel
+    protected class BayeuxClientChannel extends AbstractSessionChannel
     {
-        protected ClientSessionChannel(ChannelId id)
+        protected BayeuxClientChannel(ChannelId id)
         {
             super(id);
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public void addListener(SessionChannelListener listener)
-        {
-            _listeners.add(listener);
         }
 
         /* ------------------------------------------------------------ */
@@ -820,13 +813,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
 
         /* ------------------------------------------------------------ */
         @Override
-        public void publish(Object data,Object id)
+        public void publish(Object data,Object messageId)
         {
             Message.Mutable message = newMessage();
             message.setChannel(getId());
             message.setData(data);
-            if (id!=null)
-                message.setId(id);
+            if (messageId !=null)
+                message.setId(messageId);
 
             send(message);
         }

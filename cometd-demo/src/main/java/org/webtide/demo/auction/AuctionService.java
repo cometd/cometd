@@ -6,12 +6,10 @@ package org.webtide.demo.auction;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletContext;
 
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.SessionChannel;
-import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
@@ -24,18 +22,18 @@ import org.webtide.demo.auction.dao.BidderDao;
 import org.webtide.demo.auction.dao.CategoryDao;
 
 
-public class AuctionService extends AbstractService implements SubscriberListener, BayeuxServer.ChannelListener, BayeuxServer.SubscriptionListener
+public class AuctionService extends AbstractService implements ClientSessionChannel.MessageListener, BayeuxServer.ChannelListener, BayeuxServer.SubscriptionListener
 {
     public static final String AUCTION_ROOT="/auction/";
-    
+
     AuctionDao _auctionDao=new AuctionDao();
     BidderDao _bidderDao=new BidderDao();
     CategoryDao _categoryDao=new CategoryDao();
-    
+
     private Oort _oort;
     private Seti _seti;
     private AtomicInteger _bidders=new AtomicInteger(0);
-    
+
 
     public AuctionService(ServletContext context)
     {
@@ -63,7 +61,7 @@ public class AuctionService extends AbstractService implements SubscriberListene
     public Bidder bidder(ServerSession source, String channel, String bidder, Object messageId)
     {
         Integer id = _bidders.incrementAndGet();
-        
+
         // TODO this is not atomic, but will do for the demo
         String username=bidder.toLowerCase().replace(" ","");
         while(_bidderDao.getBidder(username)!=null)
@@ -73,21 +71,21 @@ public class AuctionService extends AbstractService implements SubscriberListene
         b.setUsername(username);
         _bidderDao.addBidder(b);
         _seti.associate(b.getUsername(),source);
-        return b;   
+        return b;
     }
-    
+
     public List<Category> categories(ServerSession source, String channel, String bidder, Object messageId)
     {
         return _categoryDao.getAllCategories();
     }
 
     public List<Item> search(ServerSession source, String channel, String search, Object messageId)
-    {  
+    {
         return _categoryDao.findItems(search);
     }
 
     public List<Item> category(ServerSession source, String channel, Number categoryId, Object messageId)
-    { 
+    {
         return _categoryDao.getItemsInCategory(categoryId.intValue());
     }
 
@@ -122,7 +120,7 @@ public class AuctionService extends AbstractService implements SubscriberListene
         {
         }
     }
-    
+
     public synchronized void bids(ServerSession source, String channel, Map<String,Object> bidMap, Object messageId)
     {
         // TODO Other half of the non atomic bid hack when used in Oort
@@ -160,17 +158,17 @@ public class AuctionService extends AbstractService implements SubscriberListene
 
 
     @Override
-    public void onMessage(SessionChannel channel, Message message)
+    public void onMessage(ClientSessionChannel channel, Message message)
     {
         // TODO Auto-generated method stub
-        
+
     }
-    
+
     @Override
     public void configureChannel(ConfigurableServerChannel channel)
     {
     }
-    
+
     @Override
     public void channelAdded(ServerChannel channel)
     {
@@ -200,17 +198,17 @@ public class AuctionService extends AbstractService implements SubscriberListene
                     session.deliver(getServerSession(),channel.getId(),highest,null);
             }
         }
-        
+
     }
 
     @Override
     public void unsubscribed(ServerSession session, ServerChannel channel)
     {
         // TODO Auto-generated method stub
-        
+
     }
 
-    
-    
+
+
 }
 
