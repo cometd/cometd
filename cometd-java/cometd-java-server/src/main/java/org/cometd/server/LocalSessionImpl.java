@@ -234,7 +234,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
                 throw new IllegalStateException("!handshake");
 
             ServerMessage.Mutable message = _bayeux.newMessage();
-            message.setChannel(_id.toString());
+            message.setChannel(getId());
             message.setData(data);
 
             send(_session,message);
@@ -248,7 +248,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
                 throw new IllegalStateException("!handshake");
 
             ServerMessage.Mutable message = _bayeux.newMessage();
-            message.setChannel(_id.toString());
+            message.setChannel(getId());
             message.setData(data);
             if (id!=null)
                 message.setId(id);
@@ -261,7 +261,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         @Override
         public String toString()
         {
-            return _id+"@"+LocalSessionImpl.this.toString();
+            return super.toString()+"@"+LocalSessionImpl.this.toString();
         }
 
         @Override
@@ -269,7 +269,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setChannel(Channel.META_SUBSCRIBE);
-            message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
+            message.put(Message.SUBSCRIPTION_FIELD,getId());
             message.setClientId(LocalSessionImpl.this.getId());
             message.setId(newMessageId());
 
@@ -282,7 +282,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setChannel(Channel.META_UNSUBSCRIBE);
-            message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
+            message.put(Message.SUBSCRIPTION_FIELD,getId());
             message.setId(newMessageId());
 
             send(_session,message);

@@ -811,7 +811,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         public void publish(Object data)
         {
             Message.Mutable message = newMessage();
-            message.setChannel(_id.toString());
+            message.setChannel(getId());
             message.setData(data);
             message.setId(newMessageId());
 
@@ -823,7 +823,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         public void publish(Object data,Object id)
         {
             Message.Mutable message = newMessage();
-            message.setChannel(_id.toString());
+            message.setChannel(getId());
             message.setData(data);
             if (id!=null)
                 message.setId(id);
@@ -847,7 +847,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         {
             Message.Mutable message = newMessage();
             message.setChannel(Channel.META_SUBSCRIBE);
-            message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
+            message.put(Message.SUBSCRIPTION_FIELD,getId());
             message.setId(newMessageId());
             send(message);
         }
@@ -861,7 +861,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
         {
             Message.Mutable message = newMessage();
             message.setChannel(Channel.META_UNSUBSCRIBE);
-            message.put(Message.SUBSCRIPTION_FIELD,_id.toString());
+            message.put(Message.SUBSCRIPTION_FIELD,getId());
             message.setId(newMessageId());
 
             send(message);

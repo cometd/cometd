@@ -11,7 +11,6 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.SessionChannel;
-import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.log.Log;
 
@@ -200,7 +199,7 @@ public abstract class AbstractClientSession implements ClientSession
             {
                 for (AbstractSessionChannel wild : _wild)
                 {
-                    if (wild._id.matches(channelId))
+                    if (wild.getChannelId().matches(channelId))
                     {
                         for (SessionChannel.SessionChannelListener listener : wild._listeners)
                         {
@@ -241,7 +240,7 @@ public abstract class AbstractClientSession implements ClientSession
                 {
                     try
                     {
-                        if (wild._id.matches(channel._id))
+                        if (wild.getChannelId().matches(channel.getChannelId()))
                         {
                             for (SessionChannel.SessionChannelListener listener : wild._listeners)
                             {
@@ -260,7 +259,7 @@ public abstract class AbstractClientSession implements ClientSession
 
         if (channel!=null && (channel.isMeta() || message.getData()!=null))
         {
-            for (SubscriberListener listener : channel._subscriptions)
+            for (SessionChannel.SubscriberListener listener : channel._subscriptions)
             {
                 try
                 {
@@ -308,8 +307,8 @@ public abstract class AbstractClientSession implements ClientSession
      */
     protected abstract static class AbstractSessionChannel implements SessionChannel
     {
-        protected final ChannelId _id;
-        protected CopyOnWriteArrayList<SubscriberListener> _subscriptions = new CopyOnWriteArrayList<SubscriberListener>();
+        private final ChannelId _id;
+        private CopyOnWriteArrayList<SubscriberListener> _subscriptions = new CopyOnWriteArrayList<SubscriberListener>();
         protected CopyOnWriteArrayList<SessionChannelListener> _listeners = new CopyOnWriteArrayList<SessionChannelListener>();
         protected Handler _handler;
 
@@ -347,6 +346,7 @@ public abstract class AbstractClientSession implements ClientSession
         public void subscribe(SubscriberListener listener)
         {
             _subscriptions.add(listener);
+            // TODO: does not work concurrently, may fail to send
             if (_subscriptions.size()==1)
                 sendSubscribe();
         }
