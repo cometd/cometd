@@ -32,9 +32,9 @@ public abstract class AbstractClientSession implements ClientSession
     {
     }
 
-    protected int newMessageId()
+    protected String newMessageId()
     {
-        return _idGen.incrementAndGet();
+        return String.valueOf(_idGen.incrementAndGet());
     }
 
     public void addExtension(Extension extension)
@@ -185,9 +185,6 @@ public abstract class AbstractClientSession implements ClientSession
         final AbstractSessionChannel channel=id==null?null:(AbstractSessionChannel)getChannel(id);
         final ChannelId channelId=channel==null?null:channel.getChannelId();
 
-        if (channel!=null && channel._handler!=null)
-            channel._handler.handle(this,mutable);
-
         if (!extendRcv(mutable))
             return;
 
@@ -295,13 +292,6 @@ public abstract class AbstractClientSession implements ClientSession
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    protected interface Handler
-    {
-        void handle(AbstractClientSession session, Message.Mutable mutable);
-    }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /** A channel scoped to this {@link ClientSession}
      */
     // TODO: use the commented line when SessionChannel is deleted
@@ -311,7 +301,6 @@ public abstract class AbstractClientSession implements ClientSession
         private final ChannelId _id;
         private final CopyOnWriteArrayList<MessageListener> _subscriptions = new CopyOnWriteArrayList<MessageListener>();
         private final CopyOnWriteArrayList<ClientSessionChannelListener> _listeners = new CopyOnWriteArrayList<ClientSessionChannelListener>();
-        private Handler _handler;
 
         /* ------------------------------------------------------------ */
         protected AbstractSessionChannel(ChannelId id)
@@ -396,12 +385,6 @@ public abstract class AbstractClientSession implements ClientSession
         public boolean isWild()
         {
             return _id.isWild();
-        }
-
-        /* ------------------------------------------------------------ */
-        public void setHandler(Handler handler)
-        {
-            _handler=handler;
         }
 
         protected void dump(StringBuilder b,String indent)

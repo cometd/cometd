@@ -18,13 +18,10 @@ import org.eclipse.jetty.util.ajax.JSON;
  */
 public abstract class ClientTransport extends AbstractTransport
 {
-    public final static String TIMEOUT_OPTION="timeout";
-    public final static String INTERVAL_OPTION="interval";
-    public final static String MAX_NETWORK_DELAY_OPTION="maxNetworkDelay";
-    
-    protected BayeuxClient _bayeux;
-    protected HttpURI _uri;
-    
+    public final static String TIMEOUT_OPTION = "timeout";
+    public final static String INTERVAL_OPTION = "interval";
+    public final static String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
+
     protected long _timeout=-1;
     protected long _interval=-1;
     protected long _maxNetworkDelay=10000;
@@ -33,18 +30,15 @@ public abstract class ClientTransport extends AbstractTransport
     protected ClientTransport(String name,Map<String,Object> options)
     {
         super(name,options);
-        
+
         setOption(TIMEOUT_OPTION,_timeout);
         setOption(INTERVAL_OPTION,_interval);
         setOption(MAX_NETWORK_DELAY_OPTION,_maxNetworkDelay);
     }
-    
+
     /* ------------------------------------------------------------ */
     public void init(BayeuxClient bayeux, HttpURI uri)
     {
-        _bayeux=bayeux;
-        _uri=uri;
-        
         _timeout=getOption(TIMEOUT_OPTION,_timeout);
         _interval=getOption(INTERVAL_OPTION,_interval);
         _maxNetworkDelay=getOption(MAX_NETWORK_DELAY_OPTION,_maxNetworkDelay);
@@ -52,13 +46,13 @@ public abstract class ClientTransport extends AbstractTransport
 
     /* ------------------------------------------------------------ */
     public abstract void reset();
-    
+
     /* ------------------------------------------------------------ */
     public abstract boolean accept(String version);
-    
+
     /* ------------------------------------------------------------ */
     public abstract void send(TransportListener listener, Message... messages);
-    
+
     /* ------------------------------------------------------------ */
     public Message.Mutable newMessage()
     {

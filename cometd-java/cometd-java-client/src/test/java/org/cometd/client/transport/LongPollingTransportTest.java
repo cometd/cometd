@@ -1,9 +1,5 @@
 package org.cometd.client.transport;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -16,12 +12,15 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
-import org.cometd.client.BayeuxClient;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpURI;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$ $Date$
@@ -29,24 +28,24 @@ import org.junit.Test;
 public class LongPollingTransportTest
 {
     Map<String,Object> _options;
-    
+
     @Before
     public void setup()
     {
         _options=new HashMap<String, Object>();
     }
-    
+
     @Test
     public void testType()
     {
-        ClientTransport transport = new LongPollingTransport(null);
+        ClientTransport transport = LongPollingTransport.create(null);
         assertEquals("long-polling", transport.getName());
     }
 
     @Test
     public void testAccept()
     {
-        ClientTransport transport = new LongPollingTransport(null);
+        ClientTransport transport = LongPollingTransport.create(null);
         assertTrue(transport.accept("1.0"));
     }
 
@@ -377,7 +376,7 @@ public class LongPollingTransportTest
             serverSocket.close();
         }
     }
-    
+
     protected class AbstractTransportListener implements TransportListener
     {
         boolean _suppress;
@@ -410,7 +409,7 @@ public class LongPollingTransportTest
         public void onProtocolError(String info)
         {
         }
-        
+
     }
-    
+
 }

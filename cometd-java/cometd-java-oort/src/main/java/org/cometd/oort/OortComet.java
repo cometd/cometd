@@ -13,6 +13,7 @@ import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.transport.LongPollingTransport;
 import org.eclipse.jetty.util.log.Log;
 
 /**
@@ -30,7 +31,7 @@ public class OortComet extends BayeuxClient
 
     OortComet(Oort oort,String cometUrl)
     {
-        super(oort._httpClient,cometUrl);
+        super(cometUrl, LongPollingTransport.create(null, oort._httpClient));
         _cometUrl=cometUrl;
         _oort=oort;
 

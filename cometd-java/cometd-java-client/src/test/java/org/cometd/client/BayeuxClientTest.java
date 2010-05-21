@@ -25,6 +25,7 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient.State;
+import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
@@ -115,7 +116,7 @@ public class BayeuxClientTest extends TestCase
     {
         final BlockingArrayQueue<Object> results = new BlockingArrayQueue<Object>();
 
-        BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_port+"/cometd");
+        BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient));
 
         final AtomicBoolean connected = new AtomicBoolean();
 
@@ -198,7 +199,7 @@ public class BayeuxClientTest extends TestCase
     /* ------------------------------------------------------------ */
     public void testAsync() throws Exception
     {
-        BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_port+"/cometd");
+        BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient));
 
         final AtomicBoolean connected = new AtomicBoolean();
 
@@ -275,7 +276,7 @@ public class BayeuxClientTest extends TestCase
 
         final AtomicBoolean connected = new AtomicBoolean(false);
 
-        BayeuxClient client = new BayeuxClient(_httpClient,"http://127.0.0.2:"+_port+"/cometd")
+        BayeuxClient client = new BayeuxClient("http://127.0.0.2:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient))
         {
             @Override
             public void onProtocolError(String info)
@@ -418,7 +419,7 @@ public class BayeuxClientTest extends TestCase
 
     public void testCookies() throws Exception
     {
-        BayeuxClient client = new BayeuxClient(_httpClient,"http://localhost:"+_port+"/cometd");
+        BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient));
         client.handshake();
 
 
@@ -458,7 +459,7 @@ public class BayeuxClientTest extends TestCase
         {
             final int cid=i;
             final AtomicBoolean connected=new AtomicBoolean();
-            final BayeuxClient client=new BayeuxClient(_httpClient,"http://localhost:"+_port+"/cometd");
+            final BayeuxClient client=new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient));
             final String room="/channel/"+(i%rooms);
             clients[i] = client;
 
@@ -567,7 +568,7 @@ public class BayeuxClientTest extends TestCase
         });
 
 
-        BayeuxClient client = new BayeuxClient(_httpClient, "http://localhost:"+_port+"/cometd");
+        BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient));
         client.handshake();
         client.getChannel("/chat/msg").publish("Hello World");
 
@@ -597,7 +598,7 @@ public class BayeuxClientTest extends TestCase
         });
 
 
-        BayeuxClient client = new BayeuxClient(_httpClient, "http://localhost:"+_port+"/cometd");
+        BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient));
         client.handshake(1000L);
         assertTrue(client.getId()!=null);
         client.getChannel("/chat/msg").publish("Hello World");

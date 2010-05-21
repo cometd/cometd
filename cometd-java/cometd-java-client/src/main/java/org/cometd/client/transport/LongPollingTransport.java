@@ -18,14 +18,36 @@ import org.eclipse.jetty.util.ajax.JSON;
  */
 public class LongPollingTransport extends ClientTransport
 {
-    private final HttpClient _httpClient;
-
-    public LongPollingTransport(Map<String,Object> options)
+    public static LongPollingTransport create(Map<String, Object> options)
     {
-        super("long-polling",options);
-        _httpClient = new HttpClient();
+        HttpClient httpClient = new HttpClient();
+        httpClient.setIdleTimeout(5000);
+        httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        httpClient.setMaxConnectionsPerAddress(32768);
+        return create(options, httpClient);
     }
-    
+
+    public static LongPollingTransport create(Map<String, Object> options, HttpClient httpClient)
+    {
+        LongPollingTransport transport = new LongPollingTransport(options, httpClient);
+        if (!httpClient.isStarted())
+        {
+            try
+            {
+                httpClient.start();
+            }
+            catch (Exception x)
+            {
+                throw new RuntimeException(x);
+            }
+        }
+        return transport;
+    }
+
+    private final HttpClient _httpClient;
+    private volatile BayeuxClient _bayeuxClient;
+    private volatile HttpURI _uri;
+
     public LongPollingTransport(Map<String,Object> options, HttpClient httpClient)
     {
         super("long-polling",options);
@@ -40,6 +62,8 @@ public class LongPollingTransport extends ClientTransport
     @Override
     public void init(BayeuxClient bayeux, HttpURI uri)
     {
+        _bayeuxClient =bayeux;
+        _uri=uri;
         super.init(bayeux, uri);
     }
 
@@ -48,7 +72,7 @@ public class LongPollingTransport extends ClientTransport
     {
         HttpExchange httpExchange = new TransportExchange(listener);
         httpExchange.setMethod("POST");
-        
+
         // TODO: handle extra path for handshake, connect and disconnect
         if (messages.length==1 && messages[0].isMeta())
             httpExchange.setURL(_uri+messages[0].getChannel());
@@ -60,8 +84,8 @@ public class LongPollingTransport extends ClientTransport
         try
         {
             httpExchange.setRequestContent(new ByteArrayBuffer(content, "UTF-8"));
-            if (_bayeux!=null) // TODO only needed for unit test
-                _bayeux.customize(httpExchange);
+            if (_bayeuxClient != null)
+                _bayeuxClient.customize(httpExchange);
             _httpClient.send(httpExchange);
         }
         catch (Exception x)
@@ -71,9 +95,9 @@ public class LongPollingTransport extends ClientTransport
     }
 
     private class TransportExchange extends ContentExchange
-    {        
+    {
         TransportListener _listener;
-        
+
         private TransportExchange(TransportListener listener)
         {
             super(true);
@@ -123,6 +147,6 @@ public class LongPollingTransport extends ClientTransport
     public void reset()
     {
         // TODO Auto-generated method stub
-        
+
     }
 }

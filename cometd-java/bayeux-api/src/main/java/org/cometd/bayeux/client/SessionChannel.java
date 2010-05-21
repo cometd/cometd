@@ -30,8 +30,11 @@ public interface SessionChannel extends ClientSessionChannel
     {
         public final void onMessage(ClientSessionChannel channel, Message message)
         {
-            Object error = message.get(Message.ERROR_FIELD);
-            onMetaMessage((SessionChannel)channel, message, message.isSuccessful(), error == null ? null : String.valueOf(error));
+            if (message.isMeta())
+            {
+                Object error = message.get(Message.ERROR_FIELD);
+                onMetaMessage((SessionChannel)channel, message, message.isSuccessful(), error == null ? null : String.valueOf(error));
+            }
         }
 
         public abstract void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error);
