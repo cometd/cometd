@@ -1,442 +1,121 @@
 package org.cometd.client;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
 import org.cometd.common.ChannelId;
 import org.cometd.common.HashMapMessage;
-import org.eclipse.jetty.client.Address;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
-
-
-/* ------------------------------------------------------------ */
 /**
- * When the client is started, a handshake is initialised and the
- * call to start will block until either a successful handshake or
- * all known servers have been tried.
+ * @version $Revision$ $Date$
  */
-public class BayeuxClient extends AbstractClientSession implements Bayeux, ClientSession, TransportListener
+public class BayeuxClient extends AbstractClientSession implements Bayeux, TransportListener
 {
     public static final String BAYEUX_VERSION = "1.0";
 
-    protected final ScheduledExecutorService _scheduler;
-    private volatile Map<String,Object> _advice;
+    private final Logger logger = Log.getLogger(getClass().getName());
+    private final TransportRegistry transportRegistry = new TransportRegistry();
+    private final Map<String,Object> options = new ConcurrentHashMap<String, Object>();
+    private final Queue<Message.Mutable> messageQueue = new ConcurrentLinkedQueue<Message.Mutable>();
+    private Map<String, ExpirableCookie> cookies = new ConcurrentHashMap<String, ExpirableCookie>();
+    private final TransportListener listener = new Listener();
+    private final HttpURI url;
+    private volatile Map<String, Object> handshakeFields;
+    private volatile ScheduledExecutorService scheduler;
+    private volatile boolean shutdownScheduler;
+    private volatile boolean handshakeBatch;
+    private volatile ClientTransport transport;
+    private volatile String clientId;
+    private volatile Map<String, Object> advice;
+    private volatile int backoffTries;
+    private volatile long backoffIncrement = 1000;
+    private volatile long maxBackoff = 30000;
+    private volatile State state = State.UNCONNECTED;
 
-    private long _backoffInc=1000;
-    private long _backoffMax=30000;
-    private int _backoffTries=0;
-
-    private volatile String _clientId;
-
-    private Handler _connectHandler = new Handler()
+    public BayeuxClient(String url, ClientTransport transport, ClientTransport... transports)
     {
-        @Override
-        public void handle(AbstractClientSession session, Mutable mutable)
-        {
-            processConnect(mutable);
-        }
-    };
-    private Map<String, ExpirableCookie> _cookies = new ConcurrentHashMap<String, ExpirableCookie>();
-    private Handler _disconnectHandler = new Handler()
-    {
-        @Override
-        public void handle(AbstractClientSession session, Mutable mutable)
-        {
-            processDisconnect(mutable);
-        }
-    };
-
-    private AtomicBoolean _handshakeBatch = new AtomicBoolean();
-    private Handler _handshakeHandler = new AbstractClientSession.Handler()
-    {
-        @Override
-        public void handle(AbstractClientSession session, Mutable mutable)
-        {
-            processHandshake(mutable);
-        }
-    };
-    private final Map<String,Object> _options = new TreeMap<String, Object>();
-
-    private final Queue<Message.Mutable> _queue = new ConcurrentLinkedQueue<Message.Mutable>();
-
-    private Buffer _scheme;
-    private final HttpURI _server;
-    private volatile State _state = State.DISCONNECTED;
-
-    private ClientTransport _transport;
-
-    private final TransportRegistry _transportRegistry = new TransportRegistry();
-    private final HttpClient _privateHttpClient;
-    private final AtomicBoolean _batchInTransit = new AtomicBoolean();
-
-    private final Listener _listener = new Listener();
-    private final Listener _batchListener = new Listener()
-    {
-        @Override
-        public void complete()
-        {
-            _batchInTransit.set(false);
-            if (!isBatching() && _queue.size()>0)
-                sendBatch();
-        }
-    };
-
-
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated
-     */
-    public BayeuxClient(HttpClient httpClient, Address address, String uri)
-    {
-        this("http://"+address+uri,httpClient);
+        this(url, null, transport, transports);
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated
-     */
-    public BayeuxClient(HttpClient httpClient, Address address, String uri, Timer timer)
+    public BayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport transport, ClientTransport... transports)
     {
-        this("http://"+address+uri,httpClient);
+        if (transport == null)
+            throw new IllegalArgumentException("Transport cannot be null");
+
+        this.url = new HttpURI(url);
+        this.scheduler = scheduler;
+
+        transportRegistry.add(transport);
+        for (ClientTransport t : transports)
+            transportRegistry.add(t);
     }
 
-    /* ------------------------------------------------------------ */
-    public BayeuxClient(HttpClient httpClient, String url)
+    public long getBackoffIncrement()
     {
-        this(url, Executors.newSingleThreadScheduledExecutor(),httpClient);
+        return backoffIncrement;
     }
 
-    /* ------------------------------------------------------------ */
-    public BayeuxClient(String url)
+    public void setBackoffIncrement(long backoffIncrement)
     {
-        this(url,Executors.newSingleThreadScheduledExecutor());
+        this.backoffIncrement = backoffIncrement;
     }
 
-    /* ------------------------------------------------------------ */
-    public BayeuxClient(String url, ClientTransport... transports)
+    public long getMaxBackoff()
     {
-        this(url,Executors.newSingleThreadScheduledExecutor(), transports);
+        return maxBackoff;
     }
 
-    /* ------------------------------------------------------------ */
-    public BayeuxClient(String url, HttpClient httpClient)
+    public void setMaxBackoff(long maxBackoff)
     {
-        this(url, Executors.newSingleThreadScheduledExecutor(),httpClient);
+        this.maxBackoff = maxBackoff;
     }
 
-    /* ------------------------------------------------------------ */
-    public BayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport... transports)
+    public String getCookie(String name)
     {
-        this(url, Executors.newSingleThreadScheduledExecutor(),null,transports);
-    }
-
-    /* ------------------------------------------------------------ */
-    public BayeuxClient(String url, ScheduledExecutorService scheduler, HttpClient httpClient, ClientTransport... transports)
-    {
-        this._scheduler = scheduler;
-
-
-        if (transports!=null && transports.length>0)
-        {
-            for (ClientTransport transport : transports)
-                this._transportRegistry.add(transport);
-            _privateHttpClient=null;
-        }
-        else
-        {
-            if (httpClient==null)
-            {
-                Log.debug("created private HttpClient for "+this);
-                httpClient=_privateHttpClient=new HttpClient();
-            }
-            else
-                _privateHttpClient=null;
-
-            if (!httpClient.isRunning())
-            {
-                try
-                {
-                    httpClient.start();
-                }
-                catch(Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
-            _transportRegistry.add(new LongPollingTransport(_options,httpClient));
-        }
-        _server = new HttpURI(url);
-
-        _scheme = (HttpSchemes.HTTPS.equals(_server.getScheme()))?HttpSchemes.HTTPS_BUFFER:HttpSchemes.HTTP_BUFFER;
-
-        ((AbstractClientSession.AbstractSessionChannel)getChannel(Channel.META_HANDSHAKE)).setHandler(_handshakeHandler);
-        ((AbstractClientSession.AbstractSessionChannel)getChannel(Channel.META_CONNECT)).setHandler(_connectHandler);
-        ((AbstractClientSession.AbstractSessionChannel)getChannel(Channel.META_DISCONNECT)).setHandler(_disconnectHandler);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Customize an Exchange. Called when an exchange is about to be sent to
-     * allow Cookies and Credentials to be customized. Default implementation
-     * sets any cookies
-     */
-    public void customize(HttpExchange exchange)
-    {
-        StringBuilder builder = null;
-        for (String cookieName : _cookies.keySet())
-        {
-            if (builder == null)
-                builder = new StringBuilder();
-            else
-                builder.append("; ");
-
-            // Expiration is handled by getCookie()
-            ExpirableCookie cookie = getCookie(cookieName);
-            if (cookie != null)
-            {
-                builder.append(QuotedStringTokenizer.quote(cookie.getName()));
-                builder.append("=");
-                builder.append(QuotedStringTokenizer.quote(cookie.getValue()));
-            }
-        }
-
-        if (builder != null)
-            exchange.setRequestHeader(HttpHeaders.COOKIE,builder.toString());
-
-        if (_scheme!=null)
-            exchange.setScheme(_scheme);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.bayeux.Session#disconnect()
-     */
-    @Override
-    public void disconnect()
-    {
-        if (isConnected())
-        {
-            updateState(State.DISCONNECTING);
-            Message.Mutable message = newMessage();
-            message.setClientId(getId());
-            message.setChannel(Channel.META_DISCONNECT);
-            message.setId(newMessageId());
-            send(message);
-            while (isBatching())
-                endBatch();
-        }
-        else
-            updateState(State.DISCONNECTED);
-
-        if (_privateHttpClient!=null)
-        {
-            try
-            {
-                _privateHttpClient.stop();
-            }
-            catch(Exception e)
-            {
-                Log.warn(e);
-            }
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public List<String> getAllowedTransports()
-    {
-        return _transportRegistry.getAllowedTransports();
-    }
-
-    /* ------------------------------------------------------------ */
-    public ExpirableCookie getCookie(String name)
-    {
-        ExpirableCookie cookie = _cookies.get(name);
+        ExpirableCookie cookie = cookies.get(name);
         if (cookie != null)
         {
             if (cookie.isExpired())
             {
-                _cookies.remove(name);
+                cookies.remove(cookie.getName());
                 cookie = null;
             }
         }
-        return cookie == null ? null : cookie;
+        return cookie == null ? null : cookie.getValue();
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public String getId()
-    {
-        return _clientId;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Set<String> getKnownTransportNames()
-    {
-        return _transportRegistry.getKnownTransports();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.bayeux.Bayeux#getOption(java.lang.String)
-     */
-    @Override
-    public Object getOption(String qualifiedName)
-    {
-        return _options.get(qualifiedName);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.bayeux.Bayeux#getOptionNames()
-     */
-    @Override
-    public Set<String> getOptionNames()
-    {
-        return _options.keySet();
-    }
-
-    /* ------------------------------------------------------------ */
-    public Map<String,Object> getOptions()
-    {
-        return Collections.unmodifiableMap(_options);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Transport getTransport(String transport)
-    {
-        return _transportRegistry.getTransport(transport);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see #onConnectException(Throwable)
-     * @see #onException(Throwable)
-     * @see #onExpire()
-     */
-    @Override
-    public void handshake()
-    {
-        handshake(null);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see #onConnectException(Throwable)
-     * @see #onException(Throwable)
-     * @see #onExpire()
-     */
-    @Override
-    public void handshake(Map<String, Object> template)
-    {
-        if (_privateHttpClient!=null && !_privateHttpClient.isRunning())
-        {
-            try
-            {
-                _privateHttpClient.start();
-            }
-            catch(Exception e)
-            {
-                Log.warn(e);
-            }
-        }
-
-        List<String> allowed = getAllowedTransports();
-
-        Message.Mutable message = newMessage();
-        if (template!=null)
-            message.putAll(template);
-        message.setChannel(Channel.META_HANDSHAKE);
-        message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD,allowed);
-        message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
-        message.setId(newMessageId());
-
-        // TODO: review this: too many batching variables...
-        if (!_handshakeBatch.getAndSet(true))
-            //_batch.set(1);
-            startBatch();
-
-        updateTransport(_transportRegistry.getTransport(allowed.get(0)));
-        updateState(State.HANDSHAKING);
-        doSend(_listener,message);
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Blocking Handshake.
-     * Unlike {@link #handshake()}, this call blocks until the handshake
-     * succeeds or fails.
-     * @param waitMs The time to wait in ms for the completion.
-     * @return The state that the client is in after the handshake completes, failed or
-     * the wait expired.
-     */
-    public State handshake(long waitMs)
-    {
-        handshake(null);
-        waitFor(waitMs,State.CONNECTED,State.CONNECTING, State.DISCONNECTED, State.UNCONNECTED);
-        return _state;
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see #onConnectException(Throwable)
-     * @see #onException(Throwable)
-     * @see #onExpire()
-     */
-    public State handshake(Map<String,Object> template, long waitMs)
-    {
-        handshake(template);
-        waitFor(waitMs,State.CONNECTED,State.CONNECTING, State.DISCONNECTED, State.UNCONNECTED);
-        return _state;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public boolean isConnected()
-    {
-        return _clientId!=null && _state==State.CONNECTED;
-    }
-
-    /* ------------------------------------------------------------ */
     public void setCookie(String name, String value)
     {
-        ExpirableCookie expirableCookie = new ExpirableCookie(name,value, -1L);
-        _cookies.put(name, expirableCookie);
+        setCookie(name, value, -1);
     }
 
-    /* ------------------------------------------------------------ */
     public void setCookie(String name, String value, int maxAge)
     {
         long expirationTime = System.currentTimeMillis();
@@ -444,552 +123,468 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
             expirationTime = -1L;
         else
             expirationTime += TimeUnit.SECONDS.toMillis(maxAge);
-
-        ExpirableCookie expirableCookie = new ExpirableCookie(name,value, expirationTime);
-        _cookies.put(name, expirableCookie);
+        ExpirableCookie expirableCookie = new ExpirableCookie(name, value, expirationTime);
+        cookies.put(name, expirableCookie);
     }
 
-    /* ------------------------------------------------------------ */
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.bayeux.Bayeux#setOption(java.lang.String, java.lang.Object)
-     */
     @Override
-    public void setOption(String qualifiedName, Object value)
+    public String getId()
     {
-        _options.put(qualifiedName,value);
+        return clientId;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.common.AbstractClientSession#doDisconnected()
-     */
     @Override
-    protected void doDisconnected()
+    public boolean isConnected()
     {
-        // TODO Auto-generated method stub
-
+        return state == State.CONNECTED;
     }
 
-    /* ------------------------------------------------------------ */
-    protected void doSend(TransportListener listener, final Message.Mutable... messages)
+    protected State getState()
     {
-        for (final Mutable message : messages)
+        return state;
+    }
+
+    @Override
+    public void handshake()
+    {
+        handshake(null);
+    }
+
+    @Override
+    public void handshake(Map<String, Object> handshakeFields)
+    {
+        initialize();
+        this.handshakeFields = handshakeFields;
+
+        List<String> allowedTransport = getAllowedTransports();
+        Message.Mutable message = newMessage();
+        if (handshakeFields != null)
+            message.putAll(handshakeFields);
+
+        message.setChannel(Channel.META_HANDSHAKE);
+        message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, allowedTransport);
+        message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
+        message.setId(newMessageId());
+
+        // Pick the first transport for the handshake, it will renegotiate if not right
+        ClientTransport initialTransport = transportRegistry.getTransport(allowedTransport.get(0));
+        updateTransport(initialTransport);
+        updateState(State.HANDSHAKING);
+        logger.debug("Handshaking with extra fields {}, transport {}", handshakeFields, initialTransport);
+        handshakeBatch = true;
+        send(message);
+    }
+
+    public State handshake(long waitMs)
+    {
+        return handshake(null, waitMs);
+    }
+
+    public State handshake(Map<String,Object> template, long waitMs)
+    {
+        handshake(template);
+        waitFor(waitMs, State.CONNECTED, State.CONNECTING, State.DISCONNECTED, State.UNCONNECTED);
+        return getState();
+    }
+
+    public boolean waitFor(long waitMs, State state, State... states)
+    {
+        long start = System.currentTimeMillis();
+        List<State> waitForStates = new ArrayList<State>();
+        waitForStates.add(state);
+        waitForStates.addAll(Arrays.asList(states));
+        synchronized (this)
         {
-            if (!extendSend(message))
-                continue;
+            while (System.currentTimeMillis() - start < waitMs)
+            {
+                State currentState = getState();
+                for (State s : waitForStates)
+                {
+                    if (s == currentState)
+                        return true;
+                }
 
-            if (_clientId != null)
-                message.setClientId(_clientId);
+                try
+                {
+                    wait(waitMs);
+                }
+                catch(InterruptedException x)
+                {
+                    return false;
+                }
+            }
+
+            State currentState = getState();
+            for (State s : waitForStates)
+            {
+                if (s == currentState)
+                    return true;
+            }
+
+            return false;
         }
-        _transport.send(listener,messages);
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.common.AbstractClientSession#newChannel(org.cometd.common.ChannelId)
-     */
+    protected void connect()
+    {
+        Message.Mutable message = newMessage();
+        message.setChannel(Channel.META_CONNECT);
+        message.put(Message.CONNECTION_TYPE_FIELD, transport.getName());
+        updateState(State.CONNECTED);
+        logger.debug("Connecting, transport {}", transport);
+        send(message);
+    }
+
+    @Override
+    protected ChannelId newChannelId(String channelId)
+    {
+        // Save some parsing by checking if there is already one
+        AbstractSessionChannel channel = getChannels().get(channelId);
+        return channel == null ? new ChannelId(channelId) : channel.getChannelId();
+    }
+
     @Override
     protected AbstractSessionChannel newChannel(ChannelId channelId)
     {
         return new BayeuxClientChannel(channelId);
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.common.AbstractClientSession#newChannelId(java.lang.String)
-     */
-    @Override
-    protected ChannelId newChannelId(String channelId)
-    {
-        AbstractSessionChannel channel = getChannels().get(channelId);
-        return (channel==null)?new ChannelId(channelId):channel.getChannelId();
-    }
-
-    /* ------------------------------------------------------------ */
-    protected Message.Mutable newMessage()
-    {
-        if (_transport!=null)
-            return _transport.newMessage();
-        return new HashMapMessage();
-    }
-
-    /* ------------------------------------------------------------ */
-    protected void processConnect(Message handshake)
-    {
-        boolean successful = handshake.isSuccessful();
-
-        if (successful)
-        {
-            switch(_state)
-            {
-                case CONNECTED:
-                    break;
-                case CONNECTING:
-                    updateState(State.CONNECTED);
-                    break;
-            }
-            if (_handshakeBatch.getAndSet(false))
-            {
-                endBatch();
-            }
-        }
-        else
-        {
-            updateState(State.UNCONNECTED);
-            _backoffTries++;
-        }
-        followAdvice();
-    }
-
-    /* ------------------------------------------------------------ */
-    protected void processDisconnect(Message handshake)
-    {
-        boolean successful = handshake.isSuccessful();
-
-        if (successful)
-            updateState(State.DISCONNECTED);
-    }
-
-    /* ------------------------------------------------------------ */
-    protected void processHandshake(Message handshake)
-    {
-        boolean successful = handshake.isSuccessful();
-
-        if (successful)
-        {
-            _backoffTries=0;
-            ClientTransport transport = _transportRegistry.negotiate((Object[])handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD), BayeuxClient.BAYEUX_VERSION).get(0);
-            if (transport == null)
-            {
-                // TODO: notify and stop
-                throw new UnsupportedOperationException();
-            }
-            else if (transport != _transport)
-                updateTransport(transport);
-
-            updateState(State.CONNECTING);
-            _clientId = handshake.getClientId();
-        }
-        else
-            _backoffTries++;
-
-        followAdvice();
-    }
-
-    /* ------------------------------------------------------------ */
-    protected void receive(List<Message.Mutable> incomingMessages)
-    {
-        for (Message message : incomingMessages)
-        {
-            receive(message,(Message.Mutable)message);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    protected void send(Message.Mutable message)
-    {
-        _queue.add(message);
-        if (!isBatching())
-            sendBatch();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.common.AbstractClientSession#sendBatch()
-     */
     @Override
     protected void sendBatch()
     {
-        if (_batchInTransit.compareAndSet(false,true))
-        {
-            int size=_queue.size();
-            Message.Mutable[] messages=new Message.Mutable[size];
-
-            for (int i=0;i<size;i++)
-                messages[i] = _queue.poll();
-            doSend(_batchListener,messages);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    protected void updateTransport(ClientTransport transport)
-    {
-        if (_transport==transport)
+        if (handshakeBatch)
             return;
 
-        if (_transport != null)
+        Queue<Message.Mutable> queue = new LinkedList<Message.Mutable>(messageQueue);
+        // Do not call messageQueue.clear(), as it can contain new messages added concurrently
+        messageQueue.removeAll(queue);
+        if (!queue.isEmpty())
         {
-            _transport.reset();
-            _transport=null;
+            logger.debug("Dequeued messages {}", queue);
+            send(queue.toArray(new Message.Mutable[queue.size()]));
         }
-
-        transport.init(this,_server);
-        _transport=transport;
     }
 
-    /* ------------------------------------------------------------ */
-    private void followAdvice()
+    @Override
+    public void disconnect()
     {
-        String reconnect=Message.RECONNECT_RETRY_VALUE;
-        long interval=0;
+        if (isConnected())
+        {
+            updateState(State.DISCONNECTING);
+            Message.Mutable message = newMessage();
+            message.setChannel(Channel.META_DISCONNECT);
+            send(message);
+        }
+        else
+        {
+            terminate();
+        }
+    }
 
-        Map<String, Object> advice = this._advice;
+    @Override
+    protected void doDisconnected()
+    {
+        // TODO: this method should be removed and replaced by handling in receive()
+    }
+
+    @Override
+    public void receive(Message message, Message.Mutable mutable)
+    {
+        logger.debug("Received message {}", message);
+        updateAdvice(message);
+
+        String channelName = message.getChannel();
+
+        if (Channel.META_HANDSHAKE.equals(channelName))
+            processHandshake(message);
+        else if (Channel.META_CONNECT.equals(channelName))
+            processConnect(message);
+        else if (Channel.META_DISCONNECT.equals(channelName))
+            processDisconnect(message);
+
+        super.receive(message, mutable);
+    }
+
+    protected Map<String, Object> getAdvice()
+    {
+        return advice;
+    }
+
+    private void updateAdvice(Message message)
+    {
+        Map<String, Object> advice = message.getAdvice();
+        if (advice != null)
+        {
+            this.advice = advice;
+            logger.debug("Updated advice to {}", advice);
+        }
+    }
+
+    protected void followAdvice()
+    {
+        String action = Message.RECONNECT_RETRY_VALUE;
+        long interval = 0L;
+        Map<String, Object> advice = getAdvice();
         if (advice != null)
         {
             if (advice.containsKey(Message.RECONNECT_FIELD))
-                reconnect=(String)advice.get(Message.RECONNECT_FIELD);
-
+                action = (String)advice.get(Message.RECONNECT_FIELD);
             if (advice.containsKey(Message.INTERVAL_FIELD))
-                interval=((Number)advice.get(Message.INTERVAL_FIELD)).longValue();
+                interval = ((Number)advice.get(Message.INTERVAL_FIELD)).longValue();
         }
 
-        // TODO backoff interval!
-        switch(_state)
+        if (Message.RECONNECT_NONE_VALUE.equals(action))
+        {
+            terminate();
+            return;
+        }
+
+        if (Message.RECONNECT_HANDSHAKE_VALUE.equals(action))
+        {
+            updateState(State.HANDSHAKING);
+        }
+
+        State state = getState();
+        switch (state)
         {
             case HANDSHAKING:
-                scheduleHandshake(interval);
+                scheduleAction(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        handshake(handshakeFields);
+                    }
+                }, interval);
                 break;
-
             case CONNECTING:
-                sendConnect();
-                break;
-
             case CONNECTED:
-                _backoffTries=0;
-                scheduleConnect(interval);
-                break;
-
             case UNCONNECTED:
-                if (Message.RECONNECT_RETRY_VALUE.equals(reconnect))
+                scheduleAction(new Runnable()
                 {
-                    scheduleConnect(interval);
-                    break;
-                }
-
-                if (Message.RECONNECT_HANDSHAKE_VALUE .equals(reconnect))
-                {
-                    scheduleHandshake(interval);
-                    break;
-                }
-
+                    @Override
+                    public void run()
+                    {
+                        connect();
+                    }
+                }, interval);
+                break;
             case DISCONNECTING:
             case DISCONNECTED:
-
+                terminate();
+                break;
+            default:
+                throw new IllegalStateException("Illegal state " + state);
         }
     }
 
-    /* ------------------------------------------------------------ */
-    private void scheduleConnect(long interval)
+    protected void processHandshake(Message handshake)
     {
-        long backOff=_backoffTries*_backoffInc;
-        if (backOff>_backoffMax)
-            backOff=_backoffMax;
-
-        _scheduler.schedule(new Runnable()
+        logger.debug("Processing handshake {}", handshake);
+        if (handshake.isSuccessful())
         {
-            public void run()
+            resetBackoff();
+            Object[] serverTransports = (Object[])handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD);
+            List<ClientTransport> negotiatedTransports = transportRegistry.negotiate(serverTransports, BayeuxClient.BAYEUX_VERSION);
+            ClientTransport newTransport = negotiatedTransports.isEmpty() ? null : negotiatedTransports.get(0);
+            if (newTransport == null)
             {
-                sendConnect();
+                // TODO
+                throw new UnsupportedOperationException();
             }
-        }, interval+backOff, TimeUnit.MILLISECONDS);
-    }
-
-    /* ------------------------------------------------------------ */
-    private void scheduleHandshake(long interval)
-    {
-        long backOff=_backoffTries*_backoffInc;
-        if (backOff>_backoffMax)
-            backOff=_backoffMax;
-
-        _scheduler.schedule(new Runnable()
+            else
+            {
+                clientId = handshake.getClientId();
+                updateTransport(newTransport);
+                updateState(State.CONNECTING);
+                handshakeBatch = false;
+                sendBatch();
+            }
+        }
+        else
         {
-            public void run()
-            {
-                handshake();
-            }
-        }, interval+backOff, TimeUnit.MILLISECONDS);
+            increaseBackoff();
+        }
+        followAdvice();
     }
 
-    /* ------------------------------------------------------------ */
-    private void sendConnect()
+    protected void processConnect(Message connect)
     {
-        Log.debug("Connecting with transport {}", _transport);
-        Message.Mutable message = newMessage();
-        message.setId(newMessageId());
-        message.setClientId(_clientId);
-        message.setChannel(Channel.META_CONNECT);
-        if (State.CONNECTING.equals(_state))
-            message.put(Message.CONNECTION_TYPE_FIELD, _transport.getName());
-        message.setId(newMessageId());
-        doSend(_listener,message);
+        logger.debug("Processing connect {}", connect);
+        if (!connect.isSuccessful())
+        {
+            updateState(State.UNCONNECTED);
+            increaseBackoff();
+        }
+        followAdvice();
     }
 
-    /* ------------------------------------------------------------ */
+    protected void processDisconnect(Message disconnect)
+    {
+        logger.debug("Processing disconnect {}", disconnect);
+        terminate();
+    }
+
+    protected boolean scheduleAction(Runnable action, long interval)
+    {
+        // Prevent NPE in case of concurrent disconnect
+        ScheduledExecutorService scheduler = this.scheduler;
+        if (scheduler != null)
+        {
+            long backoff = calculateBackoff();
+            scheduler.schedule(action, interval + backoff, TimeUnit.MILLISECONDS);
+            return true;
+        }
+        return false;
+    }
+
+    private void increaseBackoff()
+    {
+        ++backoffTries;
+    }
+
+    private void resetBackoff()
+    {
+        backoffTries = 0;
+    }
+
+    private long calculateBackoff()
+    {
+        return Math.min(backoffTries * getBackoffIncrement(), getMaxBackoff());
+    }
+
+    @Override
+    public List<String> getAllowedTransports()
+    {
+        return transportRegistry.getAllowedTransports();
+    }
+
+    @Override
+    public Set<String> getKnownTransportNames()
+    {
+        return transportRegistry.getKnownTransports();
+    }
+
+    @Override
+    public Transport getTransport(String transport)
+    {
+        return transportRegistry.getTransport(transport);
+    }
+
+    protected void initialize()
+    {
+        resetBackoff();
+        advice = null;
+        handshakeBatch = false;
+        messageQueue.clear();
+        if (scheduler == null)
+        {
+            scheduler = Executors.newSingleThreadScheduledExecutor();
+            shutdownScheduler = true;
+        }
+    }
+
+    protected void terminate()
+    {
+        updateState(State.DISCONNECTED);
+        resetBackoff();
+        advice = null;
+        handshakeBatch = false;
+        messageQueue.clear();
+        if (shutdownScheduler)
+        {
+            shutdownScheduler = false;
+            scheduler.shutdownNow();
+            // TODO: await termination ?
+            scheduler = null;
+        }
+    }
+
+    @Override
+    public Object getOption(String qualifiedName)
+    {
+        return options.get(qualifiedName);
+    }
+
+    @Override
+    public void setOption(String qualifiedName, Object value)
+    {
+        options.put(qualifiedName, value);
+    }
+
+    @Override
+    public Set<String> getOptionNames()
+    {
+        return options.keySet();
+    }
+
+    public Map<String,Object> getOptions()
+    {
+        return Collections.unmodifiableMap(options);
+    }
+
+    protected Message.Mutable newMessage()
+    {
+        if (transport!=null)
+            return transport.newMessage();
+        return new HashMapMessage();
+    }
+
+    protected void updateTransport(ClientTransport newTransport)
+    {
+        if (transport == newTransport)
+            return;
+
+        if (transport != null)
+            transport.reset();
+
+        newTransport.init(this, url);
+        Transport oldTransport = transport;
+        transport = newTransport;
+        logger.debug("Updated transport: {} -> {}", oldTransport, newTransport);
+    }
+
+    protected void send(Message.Mutable... messages)
+    {
+        List<Message.Mutable> messageList = Arrays.asList(messages);
+        for (Iterator<Message.Mutable> iterator = messageList.iterator(); iterator.hasNext();)
+        {
+            Message.Mutable message = iterator.next();
+            if (message.getId() == null)
+                message.setId(newMessageId());
+            if (clientId != null)
+                message.setClientId(clientId);
+
+            if (!extendSend(message))
+                iterator.remove();
+        }
+        if (!messageList.isEmpty())
+        {
+            logger.debug("Sending messages {}", messageList);
+            transport.send(listener, messageList.toArray(new Message.Mutable[messageList.size()]));
+        }
+    }
+
+    protected void enqueueSend(Message.Mutable message)
+    {
+        boolean batching = isBatching();
+        if (batching || handshakeBatch)
+        {
+            messageQueue.offer(message);
+            logger.debug("Enqueued message {}, batching {}", message, batching);
+        }
+        else
+        {
+            send(message);
+        }
+    }
+
     private void updateState(State newState)
     {
-        Log.debug("State change: {} -> {}", _state, newState);
-        synchronized (_queue)
-        {
-            this._state = newState;
-            _queue.notifyAll();
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Wait for client state.
-     * Wait for one of several states to be achieved by the client.
-     * @param waitMs the time in MS to wait for a state
-     * @param states The states to wait for
-     * @return True if a waited for state is achieved.
-     */
-    public boolean waitFor(long waitMs,State... states)
-    {
-        if (states.length==0)
-            throw new IllegalArgumentException("no stats");
-
-        long start = System.currentTimeMillis();
-
-        synchronized (_queue)
-        {
-            while (System.currentTimeMillis()-start<waitMs)
-            {
-                for (State s : states)
-                    if (_state==s)
-                        return true;
-                try
-                {
-                    _queue.wait(waitMs);
-                }
-                catch(InterruptedException e)
-                {
-                    long now=System.currentTimeMillis();
-                    waitMs-=now-start;
-                    start=now;
-                }
-            }
-
-            for (State s : states)
-                if (_state==s)
-                    return true;
-            return false;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public String toString()
-    {
-        return super.toString()+":"+_server+":"+_state;
-    }
-
-    /* ------------------------------------------------------------ */
-    protected class BayeuxClientChannel extends AbstractSessionChannel
-    {
-        protected BayeuxClientChannel(ChannelId id)
-        {
-            super(id);
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public ClientSession getSession()
-        {
-            return BayeuxClient.this;
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public void publish(Object data)
-        {
-            Message.Mutable message = newMessage();
-            message.setChannel(getId());
-            message.setData(data);
-            message.setId(newMessageId());
-
-            send(message);
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public void publish(Object data,Object messageId)
-        {
-            Message.Mutable message = newMessage();
-            message.setChannel(getId());
-            message.setData(data);
-            if (messageId !=null)
-                message.setId(messageId);
-
-            send(message);
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public String toString()
-        {
-            return super.toString()+"@"+_clientId;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see org.cometd.common.AbstractClientSession.AbstractSessionChannel#sendSubscribe()
-         */
-        @Override
-        protected void sendSubscribe()
-        {
-            Message.Mutable message = newMessage();
-            message.setChannel(Channel.META_SUBSCRIBE);
-            message.put(Message.SUBSCRIPTION_FIELD,getId());
-            message.setId(newMessageId());
-            send(message);
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see org.cometd.common.AbstractClientSession.AbstractSessionChannel#sendUnSubscribe()
-         */
-        @Override
-        protected void sendUnSubscribe()
-        {
-            Message.Mutable message = newMessage();
-            message.setChannel(Channel.META_UNSUBSCRIBE);
-            message.put(Message.SUBSCRIPTION_FIELD,getId());
-            message.setId(newMessageId());
-
-            send(message);
-        }
-    }
-
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private static class ExpirableCookie
-    {
-        private final String _name;
-        private final String _value;
-        private final long _expirationTime;
-
-        private ExpirableCookie(String name, String value, long expirationTime)
-        {
-            _name=name;
-            _value=value;
-            _expirationTime = expirationTime;
-        }
-
-        private boolean isExpired()
-        {
-            if (_expirationTime < 0) return false;
-            return System.currentTimeMillis() >= _expirationTime;
-        }
-
-        /* ------------------------------------------------------------ */
-        /** Get the name.
-         * @return the name
-         */
-        public String getName()
-        {
-            return _name;
-        }
-
-        /* ------------------------------------------------------------ */
-        /** Get the value.
-         * @return the value
-         */
-        public String getValue()
-        {
-            return _value;
-        }
-
-        /* ------------------------------------------------------------ */
-        /** Get the expirationTime.
-         * @return the expirationTime
-         */
-        public long getExpirationTime()
-        {
-            return _expirationTime;
-        }
-
-
-    }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private class Listener implements TransportListener
-    {
-        public void complete()
-        {
-        }
-
-        @Override
-        public void onConnectException(Throwable x)
-        {
-            BayeuxClient.this.onConnectException(x);
-            if (State.CONNECTED.equals(_state))
-                updateState(State.UNCONNECTED);
-            _backoffTries++;
-            followAdvice();
-            complete();
-        }
-
-        @Override
-        public void onException(Throwable x)
-        {
-            BayeuxClient.this.onException(x);
-            if (State.CONNECTED.equals(_state))
-                updateState(State.UNCONNECTED);
-            _backoffTries++;
-            followAdvice();
-            complete();
-        }
-
-        @Override
-        public void onExpire()
-        {
-            BayeuxClient.this.onExpire();
-            if (State.CONNECTED.equals(_state))
-                updateState(State.UNCONNECTED);
-            _backoffTries++;
-            followAdvice();
-            complete();
-        }
-
-        @Override
-        public void onMessages(List<Message.Mutable> messages)
-        {
-            BayeuxClient.this.onMessages(messages);
-            receive(messages);
-            complete();
-        }
-
-        @Override
-        public void onProtocolError(String info)
-        {
-            BayeuxClient.this.onProtocolError(info);
-            if (State.CONNECTED.equals(_state))
-                updateState(State.UNCONNECTED);
-            _backoffTries++;
-            followAdvice();
-            complete();
-        }
-    }
-
-    @Override
-    public void onConnectException(Throwable x)
-    {
-        Log.warn("onConnectException "+this,x);
-    }
-
-    @Override
-    public void onException(Throwable x)
-    {
-        Log.warn("onException "+this,x);
-    }
-
-    @Override
-    public void onExpire()
-    {
-        Log.warn("onExpire "+this);
+        // TODO: will need notifications when adding waitForState()
+        State oldState = state;
+        state = newState;
+        logger.debug("Updated state: {} -> {}", oldState, newState);
     }
 
     @Override
@@ -998,17 +593,194 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Clien
     }
 
     @Override
-    public void onProtocolError(String info)
+    public void onConnectException(Throwable x)
     {
-        Log.warn("onProtocolError:"+info+" "+this);
     }
 
+    @Override
+    public void onException(Throwable x)
+    {
+    }
+
+    @Override
+    public void onExpire()
+    {
+    }
+
+    @Override
+    public void onProtocolError(String info)
+    {
+    }
+
+    /**
+     * Customizes an Exchange. Called when an exchange is about to be sent to
+     * allow Cookies and Credentials to be customized. Default implementation
+     * sets any cookies
+     */
+    public void customize(HttpExchange exchange)
+    {
+        StringBuilder builder = null;
+        for (String cookieName : cookies.keySet())
+        {
+            if (builder == null)
+                builder = new StringBuilder();
+            else
+                builder.append("; ");
+
+            // Expiration is handled by getCookie()
+            String value = getCookie(cookieName);
+            if (value != null)
+            {
+                builder.append(QuotedStringTokenizer.quote(cookieName));
+                builder.append("=");
+                builder.append(QuotedStringTokenizer.quote(value));
+            }
+        }
+
+        if (builder != null)
+            exchange.setRequestHeader(HttpHeaders.COOKIE, builder.toString());
+    }
+
+    @Override
+    public String toString()
+    {
+        return super.toString() + ":" + url + ":" + getState();
+    }
 
     public enum State
     {
-        CONNECTED, CONNECTING, DISCONNECTED, DISCONNECTING, HANDSHAKING, UNCONNECTED
-    };
+        UNCONNECTED, HANDSHAKING, CONNECTING, CONNECTED, DISCONNECTING, DISCONNECTED
+    }
 
+    private class Listener implements TransportListener
+    {
+        @Override
+        public void onMessages(List<Message.Mutable> messages)
+        {
+            BayeuxClient.this.onMessages(messages);
+            for (Message.Mutable message : messages)
+                receive(message, message);
+        }
 
+        @Override
+        public void onConnectException(Throwable x)
+        {
+            BayeuxClient.this.onConnectException(x);
+            onFailure();
+        }
 
+        @Override
+        public void onException(Throwable x)
+        {
+            BayeuxClient.this.onException(x);
+            onFailure();
+        }
+
+        @Override
+        public void onExpire()
+        {
+            BayeuxClient.this.onExpire();
+            onFailure();
+        }
+
+        @Override
+        public void onProtocolError(String info)
+        {
+            BayeuxClient.this.onProtocolError(info);
+            onFailure();
+        }
+
+        private void onFailure()
+        {
+            if (getState() == State.CONNECTED)
+                updateState(State.UNCONNECTED);
+            increaseBackoff();
+            followAdvice();
+        }
+    }
+
+    private class BayeuxClientChannel extends AbstractSessionChannel
+    {
+        private BayeuxClientChannel(ChannelId channelId)
+        {
+            super(channelId);
+        }
+
+        @Override
+        public ClientSession getSession()
+        {
+            return BayeuxClient.this;
+        }
+
+        @Override
+        protected void sendSubscribe()
+        {
+            Message.Mutable message = newMessage();
+            message.setChannel(Channel.META_SUBSCRIBE);
+            message.put(Message.SUBSCRIPTION_FIELD, getId());
+            enqueueSend(message);
+        }
+
+        @Override
+        protected void sendUnSubscribe()
+        {
+            Message.Mutable message = newMessage();
+            message.setChannel(Channel.META_UNSUBSCRIBE);
+            message.put(Message.SUBSCRIPTION_FIELD, getId());
+            enqueueSend(message);
+        }
+
+        @Override
+        public void publish(Object data)
+        {
+            publish(data, null);
+        }
+
+        @Override
+        public void publish(Object data, Object messageId)
+        {
+            Message.Mutable message = newMessage();
+            message.setChannel(getId());
+            message.setData(data);
+            if (messageId != null)
+                message.setId(String.valueOf(messageId));
+            enqueueSend(message);
+        }
+    }
+
+    private static class ExpirableCookie
+    {
+        private final String name;
+        private final String value;
+        private final long expirationTime;
+
+        private ExpirableCookie(String name, String value, long expirationTime)
+        {
+            this.name = name;
+            this.value = value;
+            this.expirationTime = expirationTime;
+        }
+
+        private boolean isExpired()
+        {
+            long expire = getExpirationTime();
+            if (expire < 0) return false;
+            return System.currentTimeMillis() >= expire;
+        }
+
+        public String getName()
+        {
+            return name;
+        }
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        public long getExpirationTime()
+        {
+            return expirationTime;
+        }
+    }
 }

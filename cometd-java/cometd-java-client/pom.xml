@@ -35,6 +35,30 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>client</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.1.1</version>
+                        <configuration>
+<!--
+                            <systemProperties>
+                                <systemProperty>
+                                    <key>org.eclipse.jetty.util.log.DEBUG</key>
+                                    <value>true</value>
+                                </systemProperty>
+                            </systemProperties>
+-->
+                            <mainClass>org.cometd.client.BayeuxLoadGenerator</mainClass>
+                            <classpathScope>test</classpathScope>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <dependencies>
