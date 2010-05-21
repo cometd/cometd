@@ -22,12 +22,12 @@ public interface ClientSessionChannel extends Channel
     /**
      * @param listener the listener to add
      */
-    void addListener(Listener listener);
+    void addListener(ClientSessionChannelListener listener);
 
     /**
      * @param listener the listener to remove
      */
-    void removeListener(Listener listener);
+    void removeListener(ClientSessionChannelListener listener);
 
     /**
      * @return the client session associated with this channel
@@ -61,14 +61,14 @@ public interface ClientSessionChannel extends Channel
      * <p>Represents a listener on a {@link ClientSessionChannel}.</p>
      * <p>Sub-interfaces specify the exact semantic of the listener.</p>
      */
-    interface Listener extends BayeuxListener
+    interface ClientSessionChannelListener extends BayeuxListener
     {
     }
 
     /**
      * A listener for messages on a {@link ClientSessionChannel}.
      */
-    public interface MessageListener extends Listener
+    public interface MessageListener extends ClientSessionChannelListener
     {
         /**
          * Callback invoked when a message is received on the given {@code channel}.
@@ -77,4 +77,13 @@ public interface ClientSessionChannel extends Channel
          */
         void onMessage(ClientSessionChannel channel, Message message);
     }
+
+    /**
+     * @deprecated Use {@link MessageListener} instead
+     */
+    @Deprecated
+    public interface SubscriberListener
+    {
+    }
+    
 }

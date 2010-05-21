@@ -202,7 +202,7 @@ public abstract class AbstractClientSession implements ClientSession
                 {
                     if (wild.getChannelId().matches(channelId))
                     {
-                        for (ClientSessionChannel.Listener listener : wild._listeners)
+                        for (ClientSessionChannel.ClientSessionChannelListener listener : wild._listeners)
                         {
                             try
                             {
@@ -217,7 +217,7 @@ public abstract class AbstractClientSession implements ClientSession
                     }
                 }
 
-                for (ClientSessionChannel.Listener listener : channel._listeners)
+                for (ClientSessionChannel.ClientSessionChannelListener listener : channel._listeners)
                 {
                     try
                     {
@@ -241,7 +241,7 @@ public abstract class AbstractClientSession implements ClientSession
                     {
                         if (wild.getChannelId().matches(channel.getChannelId()))
                         {
-                            for (ClientSessionChannel.Listener listener : wild._listeners)
+                            for (ClientSessionChannel.ClientSessionChannelListener listener : wild._listeners)
                             {
                                 if (listener instanceof ClientSessionChannel.MessageListener)
                                     ((ClientSessionChannel.MessageListener)listener).onMessage(channel, message);
@@ -310,7 +310,7 @@ public abstract class AbstractClientSession implements ClientSession
     {
         private final ChannelId _id;
         private final CopyOnWriteArrayList<MessageListener> _subscriptions = new CopyOnWriteArrayList<MessageListener>();
-        private final CopyOnWriteArrayList<Listener> _listeners = new CopyOnWriteArrayList<Listener>();
+        private final CopyOnWriteArrayList<ClientSessionChannelListener> _listeners = new CopyOnWriteArrayList<ClientSessionChannelListener>();
         private Handler _handler;
 
         /* ------------------------------------------------------------ */
@@ -326,13 +326,13 @@ public abstract class AbstractClientSession implements ClientSession
         }
 
         /* ------------------------------------------------------------ */
-        public void addListener(Listener listener)
+        public void addListener(ClientSessionChannelListener listener)
         {
             _listeners.add(listener);
         }
 
         /* ------------------------------------------------------------ */
-        public void removeListener(Listener listener)
+        public void removeListener(ClientSessionChannelListener listener)
         {
             _listeners.remove(listener);
         }
@@ -409,7 +409,7 @@ public abstract class AbstractClientSession implements ClientSession
             b.append(toString());
             b.append('\n');
 
-            for (Listener child : _listeners)
+            for (ClientSessionChannelListener child : _listeners)
             {
                 b.append(indent);
                 b.append(" +-");
