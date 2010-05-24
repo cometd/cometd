@@ -7,7 +7,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -267,9 +266,6 @@ public abstract class AbstractClientSession implements ClientSession
                 }
             }
         }
-
-        if (Channel.META_DISCONNECT.equals(id) && message.isSuccessful())
-            doDisconnected();
     }
 
     public void dump(StringBuilder b,String indent)
@@ -286,9 +282,6 @@ public abstract class AbstractClientSession implements ClientSession
             child.dump(b,indent+((++i==leaves)?"   ":" | "));
         }
     }
-
-    /* ------------------------------------------------------------ */
-    protected abstract void doDisconnected();
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

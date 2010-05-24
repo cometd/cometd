@@ -283,12 +283,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
     }
 
     @Override
-    protected void doDisconnected()
-    {
-        // TODO: this method should be removed and replaced by handling in receive()
-    }
-
-    @Override
     public void receive(Message message, Message.Mutable mutable)
     {
         logger.debug("Received message {}", message);

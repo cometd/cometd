@@ -40,14 +40,12 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         _idHint=idHint;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.common.AbstractClientSession#doDisconnected()
-     */
     @Override
-    protected void doDisconnected()
+    public void receive(Message message, Message.Mutable mutable)
     {
-        _session=null;
+        super.receive(message, mutable);
+        if (Channel.META_DISCONNECT.equals(message.getChannel()) && message.isSuccessful())
+            _session = null;
     }
 
     /* ------------------------------------------------------------ */
