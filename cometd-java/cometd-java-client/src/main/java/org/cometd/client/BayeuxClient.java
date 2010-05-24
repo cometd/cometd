@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -432,8 +433,16 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
         if (scheduler != null)
         {
             long backoff = calculateBackoff();
-            scheduler.schedule(action, interval + backoff, TimeUnit.MILLISECONDS);
-            return true;
+            try
+            {
+                scheduler.schedule(action, interval + backoff, TimeUnit.MILLISECONDS);
+                return true;
+            }
+            catch (RejectedExecutionException x)
+            {
+                // It has been shut down
+                logger.debug(x);
+            }
         }
         return false;
     }
