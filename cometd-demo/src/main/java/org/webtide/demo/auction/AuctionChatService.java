@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.ServletContext;
 
 import org.cometd.bayeux.server.BayeuxServer;
@@ -62,7 +61,7 @@ public class AuctionChatService extends AbstractService
             {
                 Log.info("Members: " + members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName, false).publish(getClient(), members, messageId);
+                getBayeux().getChannel(channelName, false).publish(getServerSession(), members, messageId);
             }
         }
         else if (data instanceof Map)
@@ -111,7 +110,7 @@ public class AuctionChatService extends AbstractService
 
                 Log.info("Members: " + members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName, false).publish(getClient(), members, messageId);
+                getBayeux().getChannel(channelName, false).publish(getServerSession(), members, messageId);
 
             }
 
@@ -130,7 +129,7 @@ public class AuctionChatService extends AbstractService
 
                 Log.info("Members: " + members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName, true).publish(getClient(), members, messageId);
+                getBayeux().getChannel(channelName, true).publish(getServerSession(), members, messageId);
             }
         }
     }
