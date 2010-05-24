@@ -13,6 +13,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.client.SessionChannel;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>Partial implementation of {@link ClientSession}.</p>
@@ -24,7 +25,6 @@ public abstract class AbstractClientSession implements ClientSession
     private final AttributesMap _attributes = new AttributesMap();
     private final ConcurrentMap<String, AbstractSessionChannel> _channels = new ConcurrentHashMap<String, AbstractSessionChannel>();
     private final AtomicInteger _batch = new AtomicInteger();
-    private final List<AbstractSessionChannel> _wild = new CopyOnWriteArrayList<AbstractSessionChannel>();
     private final AtomicInteger _idGen = new AtomicInteger(0);
 
     protected AbstractClientSession()
@@ -98,8 +98,6 @@ public abstract class AbstractClientSession implements ClientSession
             if (channel==null)
                 channel=new_channel;
         }
-        if (channel.isWild())
-            _wild.add(channel);
         return channel;
     }
 
@@ -172,98 +170,34 @@ public abstract class AbstractClientSession implements ClientSession
     }
 
     /* ------------------------------------------------------------ */
-    /** Receive a message (from the server)
-     * <p>
-     * This method calls the receive extensions, the ClientSessionListeners and then
-     * the subscribed MessageListeners.
-     * @param message the message to receive.
+    /**
+     * <p>Receives a message (from the server) and process it.</p>
+     * <p>Processing the message involves calling the receive {@link Extension extensions}
+     * and the channel {@link ClientSessionChannel.ClientSessionChannelListener listeners}.</p>
+     * @param message the message received.
+     * @param mutable the mutable version of the message received
      */
     public void receive(final Message message, final Message.Mutable mutable)
     {
-        final String id=message.getChannel();
-        final AbstractSessionChannel channel=id==null?null:(AbstractSessionChannel)getChannel(id);
-        final ChannelId channelId=channel==null?null:channel.getChannelId();
+        String id = message.getChannel();
+        if (id == null)
+            throw new IllegalArgumentException("Bayeux messages must have a channel, " + message);
+
+        AbstractSessionChannel channel = (AbstractSessionChannel)getChannel(id);
+        ChannelId channelId = channel.getChannelId();
 
         if (!extendRcv(mutable))
             return;
 
-        if (message.isMeta())
-        {
-            String error = (String)message.get(Message.ERROR_FIELD);
-            boolean successful = message.isSuccessful();
+        channel.notifyMessageListeners(message);
 
-            if (channelId!=null)
-            {
-                for (AbstractSessionChannel wild : _wild)
-                {
-                    if (wild.getChannelId().matches(channelId))
-                    {
-                        for (ClientSessionChannel.ClientSessionChannelListener listener : wild._listeners)
-                        {
-                            try
-                            {
-                                if (listener instanceof ClientSessionChannel.MessageListener)
-                                    ((ClientSessionChannel.MessageListener)listener).onMessage(channel, message);
-                            }
-                            catch(Exception e)
-                            {
-                                Log.warn(e);
-                            }
-                        }
-                    }
-                }
-
-                for (ClientSessionChannel.ClientSessionChannelListener listener : channel._listeners)
-                {
-                    try
-                    {
-                        if (listener instanceof ClientSessionChannel.MessageListener)
-                            ((ClientSessionChannel.MessageListener)listener).onMessage(channel, message);
-                    }
-                    catch(Exception e)
-                    {
-                        Log.warn(e);
-                    }
-                }
-            }
-        }
-        else
+        for (String channelPattern : channelId.getWilds())
         {
-            if (channelId!=null)
+            ChannelId channelIdPattern = newChannelId(channelPattern);
+            if (channelIdPattern.matches(channelId))
             {
-                for (AbstractSessionChannel wild : _wild)
-                {
-                    try
-                    {
-                        if (wild.getChannelId().matches(channel.getChannelId()))
-                        {
-                            for (ClientSessionChannel.ClientSessionChannelListener listener : wild._listeners)
-                            {
-                                if (listener instanceof ClientSessionChannel.MessageListener)
-                                    ((ClientSessionChannel.MessageListener)listener).onMessage(channel, message);
-                            }
-                        }
-                    }
-                    catch(Exception e)
-                    {
-                        Log.warn(e);
-                    }
-                }
-            }
-        }
-
-        if (channel!=null && (channel.isMeta() || message.getData()!=null))
-        {
-            for (ClientSessionChannel.MessageListener listener : channel._subscriptions)
-            {
-                try
-                {
-                    listener.onMessage(channel,message);
-                }
-                catch(Exception e)
-                {
-                    Log.warn(e);
-                }
+                AbstractSessionChannel wildChannel = (AbstractSessionChannel)getChannel(channelPattern);
+                wildChannel.notifyMessageListeners(message);
             }
         }
     }
@@ -283,14 +217,14 @@ public abstract class AbstractClientSession implements ClientSession
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /** A channel scoped to this {@link ClientSession}
+    /**
+     * <p>A channel scoped to a {@link ClientSession}.</p>
      */
     // TODO: use the commented line when SessionChannel is deleted
 //    protected abstract static class AbstractSessionChannel implements ClientSessionChannel
     protected abstract static class AbstractSessionChannel implements SessionChannel
     {
+        protected final Logger logger = Log.getLogger(getClass().getName());
         private final ChannelId _id;
         private final CopyOnWriteArrayList<MessageListener> _subscriptions = new CopyOnWriteArrayList<MessageListener>();
         private final AtomicInteger _subscriptionCount = new AtomicInteger();
@@ -385,6 +319,41 @@ public abstract class AbstractClientSession implements ClientSession
         public boolean isWild()
         {
             return _id.isWild();
+        }
+
+        protected void notifyMessageListeners(Message message)
+        {
+            for (ClientSessionChannelListener listener : _listeners)
+            {
+                if (listener instanceof ClientSessionChannel.MessageListener)
+                {
+                    try
+                    {
+                        ((MessageListener)listener).onMessage(this, message);
+                    }
+                    catch (Exception x)
+                    {
+                        logger.debug(x);
+                    }
+                }
+            }
+            for (ClientSessionChannelListener listener : _subscriptions)
+            {
+                if (listener instanceof ClientSessionChannel.MessageListener)
+                {
+                    if (message.getData() != null)
+                    {
+                        try
+                        {
+                            ((MessageListener)listener).onMessage(this, message);
+                        }
+                        catch (Exception x)
+                        {
+                            logger.debug(x);
+                        }
+                    }
+                }
+            }
         }
 
         protected void dump(StringBuilder b,String indent)
