@@ -72,14 +72,18 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public BayeuxServerImpl()
     {
-        ((ServerChannelImpl)getChannel(Channel.META_HANDSHAKE,true)).addListener(new HandshakeHandler());
-        ((ServerChannelImpl)getChannel(Channel.META_CONNECT,true)).addListener(new ConnectHandler());
-        ((ServerChannelImpl)getChannel(Channel.META_SUBSCRIBE,true)).addListener(new SubscribeHandler());
-        ((ServerChannelImpl)getChannel(Channel.META_UNSUBSCRIBE,true)).addListener(new UnsubscribeHandler());
-        ((ServerChannelImpl)getChannel(Channel.META_DISCONNECT,true)).addListener(new DisconnectHandler());
+        createIfAbsent(Channel.META_HANDSHAKE);
+        createIfAbsent(Channel.META_CONNECT);
+        createIfAbsent(Channel.META_SUBSCRIBE);
+        createIfAbsent(Channel.META_UNSUBSCRIBE);
+        createIfAbsent(Channel.META_DISCONNECT);
+        ((ServerChannelImpl)getChannel(Channel.META_HANDSHAKE)).addListener(new HandshakeHandler());
+        ((ServerChannelImpl)getChannel(Channel.META_CONNECT)).addListener(new ConnectHandler());
+        ((ServerChannelImpl)getChannel(Channel.META_SUBSCRIBE)).addListener(new SubscribeHandler());
+        ((ServerChannelImpl)getChannel(Channel.META_UNSUBSCRIBE)).addListener(new UnsubscribeHandler());
+        ((ServerChannelImpl)getChannel(Channel.META_DISCONNECT)).addListener(new DisconnectHandler());
 
         _logger=Log.getLogger("bayeux@"+hashCode());
-        _logger.info("STARTED: "+_sessions);
 
         setOption("tickIntervalMs","97");
         setOption("sweepIntervalMs","997");
@@ -544,15 +548,16 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     protected void doPublish(ServerSessionImpl from, ServerChannelImpl to, final ServerMessage.Mutable mutable)
     {
-        // get the parent channels
-        final ServerChannelImpl[] path = new ServerChannelImpl[to.getChannelId().depth()];
-        int leaf=path.length-1;
-        path[leaf]=to;
-        for (int i=leaf;i-->0;)
+        // check the parent channels
+        String parent=to.getChannelId().getParent();
+        while (parent!=null)
         {
-            path[i]=_channels.get(path[i+1].getChannelId().getParent());
-            if (path[i]==null)
+            ServerChannelImpl c = _channels.get(parent.toString());
+            if (c==null)
                 return; // remove in progress
+            if (c.isLazy())
+                mutable.setLazy(true);
+            parent=c.getChannelId().getParent();
         }
         
         // Get the array of listening channels
