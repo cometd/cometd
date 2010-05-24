@@ -1,9 +1,11 @@
 package org.cometd.server;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -23,6 +25,9 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ConfigurableServerChannel.Initializer;
+import org.cometd.bayeux.server.ServerChannel.MessageListener;
+import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
@@ -52,7 +57,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final SecureRandom _random = new SecureRandom();
     private final List<BayeuxServerListener> _listeners = new CopyOnWriteArrayList<BayeuxServerListener>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
-    private final ServerChannelImpl _root=new ServerChannelImpl(this,null,new ChannelId("/"));
     private final ConcurrentMap<String, ServerSessionImpl> _sessions = new ConcurrentHashMap<String, ServerSessionImpl>();
     private final ConcurrentMap<String, ServerChannelImpl> _channels = new ConcurrentHashMap<String, ServerChannelImpl>();
     private final ConcurrentMap<String, Transport> _transports = new ConcurrentHashMap<String, Transport>();
@@ -135,7 +139,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 @Override
                 public void run()
                 {
-                    _root.doSweep();
+                    doSweep();
 
                     final long now=System.currentTimeMillis();
                     for (ServerSessionImpl session : _sessions.values())
@@ -246,12 +250,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public ServerChannelImpl root()
-    {
-        return _root;
-    }
-
-    /* ------------------------------------------------------------ */
     public void setCurrentTransport(AbstractServerTransport transport)
     {
         _currentTransport.set(transport);
@@ -274,8 +272,44 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         if (_channels.containsKey(channelId))
             return false;
-        ServerChannel channel=_root.getChild(new ChannelId(channelId), initializers);
-        return channel!=null;
+        
+        ChannelId id = new ChannelId(channelId);
+        if (id.depth()>1)
+            createIfAbsent(id.getParent());
+        
+        ServerChannelImpl proposed = new ServerChannelImpl(this,id);
+        ServerChannelImpl channel = _channels.putIfAbsent(channelId,proposed);
+        if (channel==null)
+        {
+            // My proposed channel was added to the map, so I'd better initialize it!
+            channel=proposed;
+            try
+            {
+                for (Initializer initializer : initializers)
+                    initializer.configureChannel(channel);
+                for (BayeuxServer.BayeuxServerListener listener : _listeners)
+                {
+                    if (listener instanceof ServerChannel.Initializer)
+                        ((ServerChannel.Initializer)listener).configureChannel(channel);
+                }
+            }
+            finally
+            {
+                channel.initialized();
+            }
+
+            for (BayeuxServer.BayeuxServerListener listener : _listeners)
+            {
+                if (listener instanceof BayeuxServer.ChannelListener)
+                    ((BayeuxServer.ChannelListener)listener).channelAdded(channel);
+            }
+
+            return true;
+        }
+        
+        // somebody else added it before me, so wait until it is initialized
+        channel.waitForInitialized();
+        return false;
     }
 
     /* ------------------------------------------------------------ */
@@ -284,7 +318,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         ServerChannelImpl channel = _channels.get(channelId);
         if (channel==null && create)
-            channel=_root.getChild(new ChannelId(channelId));
+        {
+            createIfAbsent(channelId);
+            channel = _channels.get(channelId);
+        }
         return channel;
     }
 
@@ -406,6 +443,18 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
+    public List<ServerChannelImpl> getChannelChildren(ChannelId id)
+    {
+        ArrayList<ServerChannelImpl> children = new ArrayList<ServerChannelImpl>();
+        for (ServerChannelImpl channel :_channels.values())
+        {
+            if (id.isParentOf(channel.getChannelId()))
+                children.add(channel);
+        }
+        return children;
+    }
+
+    /* ------------------------------------------------------------ */
     public void removeListener(BayeuxServerListener listener)
     {
         _listeners.remove(listener);
@@ -454,7 +503,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
             else if (channel.isMeta())
             {
-                root().doPublish(session,(ServerChannelImpl)channel,message);
+                doPublish(session,(ServerChannelImpl)channel,message);
                 reply = message.getAssociated().asMutable();
             }
             else if (_policy.canPublish(this,session,channel,message))
@@ -492,6 +541,63 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return reply;
     }
 
+    /* ------------------------------------------------------------ */
+    protected void doPublish(ServerSessionImpl from, ServerChannelImpl to, final ServerMessage.Mutable mutable)
+    {
+        // get the parent channels
+        final ServerChannelImpl[] path = new ServerChannelImpl[to.getChannelId().depth()];
+        int leaf=path.length-1;
+        path[leaf]=to;
+        for (int i=leaf;i-->0;)
+        {
+            path[i]=_channels.get(path[i+1].getChannelId().getParent());
+            if (path[i]==null)
+                return; // remove in progress
+        }
+        
+        // Get the array of listening channels
+        final List<String> wildIds=to.getChannelId().getWilds();
+        final ServerChannelImpl[] listening_channels = new ServerChannelImpl[wildIds.size()+1];
+        listening_channels[wildIds.size()]=to;
+        for (int i=wildIds.size();i-->0;)
+            listening_channels[i]=_channels.get(wildIds.get(i));
+        
+        // Call the listeners
+        for (int i=0;i<listening_channels.length;i++)
+        {
+            final ServerChannelImpl channel = listening_channels[i];
+            if (channel==null)
+                continue;
+
+            if (channel.isLazy())
+                mutable.setLazy(true);
+            for (ServerChannelListener listener : channel.getListeners())
+                if (listener instanceof MessageListener)
+                    if (!((MessageListener)listener).onMessage(from,to,mutable))
+                        return;
+        }
+        
+        // Call the subscribers
+        for (int i=0;i<listening_channels.length;i++)
+        {
+            final ServerChannelImpl channel = listening_channels[i];
+            if (channel==null)
+                continue;
+
+            for (ServerSession session : channel.getSubscribers())
+                ((ServerSessionImpl)session).doDeliver(from,mutable.asImmutable());
+        }
+        
+        // Meta handlers
+        if (to.isMeta())
+        {
+            for (ServerChannelListener listener : to.getListeners())
+                if (listener instanceof BayeuxServerImpl.HandlerListener)
+                    ((BayeuxServerImpl.HandlerListener)listener).onMessage(from,mutable);
+        }
+    }
+
+        
     /* ------------------------------------------------------------ */
     public ServerMessage extendReply(ServerSessionImpl session, ServerMessage reply)
     {
@@ -637,16 +743,50 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    protected ServerChannelImpl getRootChannel()
+    public void doSweep()
     {
-        return _root;
+        final Map<String,Integer> dust = new HashMap<String, Integer>();
+        
+        for (ServerChannelImpl channel :_channels.values())
+        {
+           if (!dust.containsKey(channel.getId()))
+               dust.put(channel.getId(),0);
+           String parent=channel.getChannelId().getParent();
+           if (parent!=null)
+           {
+               Integer children=dust.get(parent);
+               dust.put(parent,children==null?0:(children+1));
+           }
+        }
+        
+        for (String channel : dust.keySet())
+        {
+            ServerChannelImpl sci=_channels.get(channel);
+            if (sci!=null)
+                sci.doSweep(dust.get(channel));
+        }
     }
-
+    
     /* ------------------------------------------------------------ */
     public String dump()
     {
         StringBuilder b = new StringBuilder();
-        _root.dump(b,"");
+        
+        ArrayList<ServerChannelImpl> children = new ArrayList<ServerChannelImpl>();
+        for (ServerChannelImpl channel :_channels.values())
+        {
+            if (channel.getChannelId().depth()==1)
+                children.add(channel);
+        }
+        
+        int leaves=children.size();
+        int i=0;
+        for (ServerChannelImpl child : children)
+        {
+            b.append(" +-");
+            child.dump(b,((++i==leaves)?"   ":" | "));
+        }
+        
         return b.toString();
     }
 

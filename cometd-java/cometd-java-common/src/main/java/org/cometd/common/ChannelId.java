@@ -32,41 +32,35 @@ public class ChannelId
     private final String[] _segments;
     private final int _wild;
     private final List<String> _wilds;
+    private final String _parent;
     
     public ChannelId(String name)
     {
         _name=name;
-        if (name == null || name.length() == 0 || name.charAt(0) != '/')
+        if (name == null || name.length() == 0 || name.charAt(0) != '/' || "/".equals(name))
             throw new IllegalArgumentException(name);
         
         String[] wilds;
-        
-        if ("/".equals(name))
-        {
-            _segments=ROOT;
-            wilds=new String[]{};
-        }
-        else
-        {
-            if (name.charAt(name.length() - 1) == '/')
-                name=name.substring(0,name.length() - 1);
 
-            _segments=name.substring(1).split("/");
-            wilds=new String[_segments.length+1];
-            StringBuilder b=new StringBuilder();
-            b.append('/');
-            
-            for (int i=0;i<_segments.length;i++)
-            {
-                if (_segments[i]==null || _segments[i].length()==0)
-                    throw new IllegalArgumentException(name);
-             
-                if (i>0)
-                    b.append(_segments[i-1]).append('/');
-                wilds[_segments.length-i]=b+"**";
-            }
-            wilds[0]=b+"*";
+        if (name.charAt(name.length() - 1) == '/')
+            name=name.substring(0,name.length() - 1);
+
+        _segments=name.substring(1).split("/");
+        wilds=new String[_segments.length+1];
+        StringBuilder b=new StringBuilder();
+        b.append('/');
+
+        for (int i=0;i<_segments.length;i++)
+        {
+            if (_segments[i]==null || _segments[i].length()==0)
+                throw new IllegalArgumentException(name);
+
+            if (i>0)
+                b.append(_segments[i-1]).append('/');
+            wilds[_segments.length-i]=b+"**";
         }
+        wilds[0]=b+"*";
+        _parent=_segments.length==1?null:b.substring(0,b.length()-1);
 
         if (_segments.length == 0)
             _wild=0;
@@ -174,20 +168,42 @@ public class ChannelId
     {
         return _segments.length;
     }
-
-    public boolean isParentOf(ChannelId id)
+    
+    /* ------------------------------------------------------------ */
+    public boolean isAncestorOf(ChannelId id)
     {
         if (isWild() || depth() >= id.depth())
             return false;
 
-        for (int i = _segments.length - 1; i >= 0; --i)
-		{
+        for (int i=_segments.length; i--> 0;)
+        {    
             if (!_segments[i].equals(id._segments[i]))
                 return false;
-		}
+        }
         return true;
     }
+    
+    /* ------------------------------------------------------------ */
+    public boolean isParentOf(ChannelId id)
+    {
+        if (isWild() || depth() != id.depth()-1)
+            return false;
 
+        for (int i=_segments.length; i--> 0;)
+        {    
+            if (!_segments[i].equals(id._segments[i]))
+                return false;
+        }
+        return true;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String getParent()
+    {
+        return _parent;
+    }
+    
+    /* ------------------------------------------------------------ */
     public String getSegment(int i)
     {
         if (i > _segments.length)
