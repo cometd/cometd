@@ -23,9 +23,9 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.ChannelId;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
@@ -270,21 +270,21 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public boolean createIfAbsent(String channelId, ServerChannel.Initializer initializer)
+    public boolean createIfAbsent(String channelId, ServerChannel.Initializer... initializers)
     {
         if (_channels.containsKey(channelId))
             return false;
-        ServerChannel channel=_root.getChild(new ChannelId(channelId),initializer);
+        ServerChannel channel=_root.getChild(new ChannelId(channelId), initializers);
         return channel!=null;
     }
 
-
+    // TODO: remove this method ?
     /* ------------------------------------------------------------ */
     public ServerChannel getChannel(String channelId, boolean create)
     {
         ServerChannelImpl channel = _channels.get(channelId);
         if (channel==null && create)
-            channel=_root.getChild(new ChannelId(channelId),null);
+            channel=_root.getChild(new ChannelId(channelId));
         return channel;
     }
 
@@ -383,6 +383,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public void addExtension(Extension extension)
     {
         _extensions.add(extension);
+    }
+
+    @Override
+    public void removeExtension(Extension extension)
+    {
+        _extensions.remove(extension);
     }
 
     /* ------------------------------------------------------------ */
