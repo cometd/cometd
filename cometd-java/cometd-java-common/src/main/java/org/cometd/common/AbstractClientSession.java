@@ -293,6 +293,7 @@ public abstract class AbstractClientSession implements ClientSession
     {
         private final ChannelId _id;
         private final CopyOnWriteArrayList<MessageListener> _subscriptions = new CopyOnWriteArrayList<MessageListener>();
+        private final AtomicInteger _subscriptionCount = new AtomicInteger();
         private final CopyOnWriteArrayList<ClientSessionChannelListener> _listeners = new CopyOnWriteArrayList<ClientSessionChannelListener>();
 
         /* ------------------------------------------------------------ */
@@ -328,18 +329,24 @@ public abstract class AbstractClientSession implements ClientSession
         /* ------------------------------------------------------------ */
         public void subscribe(MessageListener listener)
         {
-            _subscriptions.add(listener);
-            // TODO: does not work concurrently, may fail to send
-            if (_subscriptions.size()==1)
-                sendSubscribe();
+            boolean added = _subscriptions.add(listener);
+            if (added)
+            {
+                int count = _subscriptionCount.incrementAndGet();
+                if (count == 1)
+                    sendSubscribe();
+            }
         }
 
         /* ------------------------------------------------------------ */
         public void unsubscribe(MessageListener listener)
         {
-            if (_subscriptions.remove(listener) && _subscriptions.size()==0)
+            boolean removed = _subscriptions.remove(listener);
+            if (removed)
             {
-                sendUnSubscribe();
+                int count = _subscriptionCount.decrementAndGet();
+                if (count == 0)
+                    sendUnSubscribe();
             }
         }
 
@@ -407,6 +414,5 @@ public abstract class AbstractClientSession implements ClientSession
         {
             return _id.toString();
         }
-
     }
 }
