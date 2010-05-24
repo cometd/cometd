@@ -278,8 +278,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return channel!=null;
     }
 
-    // TODO: remove this method ?
     /* ------------------------------------------------------------ */
+    @Deprecated
     public ServerChannel getChannel(String channelId, boolean create)
     {
         ServerChannelImpl channel = _channels.get(channelId);
@@ -439,9 +439,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             ServerChannel channel=null;
             if (channelId!=null)
             {
-                channel = getChannel(channelId,false);
+                channel = getChannel(channelId);
                 if (channel==null && _policy.canCreate(this,session,channelId,message))
-                    channel = getChannel(channelId,true);
+                {
+                    createIfAbsent(channelId);
+                    channel = getChannel(channelId);
+                }
             }
 
             if (channel==null)

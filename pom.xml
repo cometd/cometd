@@ -13,8 +13,8 @@
     </description>
 
   <properties>
-    <jetty-version>7.1.1.v20100517</jetty-version>
-    <jetty-maven-version>7.1.0.v20100505</jetty-maven-version>
+    <jetty-version>7.1.2.v20100523</jetty-version>
+    <jetty-maven-version>7.1.2.v20100523</jetty-maven-version>
     <dojo-version>1.4.2</dojo-version>
     <maven-wagon-version>1.0-beta-2</maven-wagon-version>
   </properties>
