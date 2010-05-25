@@ -1,9 +1,8 @@
 package org.cometd.bayeux.server;
 
-
 import java.util.Queue;
 
-import org.cometd.bayeux.BayeuxListener;
+import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
 
@@ -16,7 +15,7 @@ import org.cometd.bayeux.Session;
  * <p>The {@link #deliver(Session, ServerMessage)} and {@link #deliver(Session, String, Object, String)}
  * methods may be used to directly queue messages to a session without publishing them to all subscribers
  * of a channel.</p>
- * 
+ *
  * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
 public interface ServerSession extends Session
@@ -87,7 +86,7 @@ public interface ServerSession extends Session
      * <p>Common interface for {@link ServerSession} listeners.</p>
      * <p>Specific sub-interfaces define what kind of event listeners will be notified.</p>
      */
-    interface ServerSessionListener extends BayeuxListener
+    interface ServerSessionListener extends Bayeux.BayeuxListener
     {
     }
 

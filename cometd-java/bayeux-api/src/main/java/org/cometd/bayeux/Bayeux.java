@@ -1,5 +1,6 @@
 package org.cometd.bayeux;
 
+import java.util.EventListener;
 import java.util.List;
 import java.util.Set;
 
@@ -49,4 +50,12 @@ public interface Bayeux
      * @return the set of configuration options
      */
     Set<String> getOptionNames();
+
+    /**
+     * <p>The common base interface for Bayeux listeners.</p>
+     * <p>Specific sub-interfaces define what kind of events listeners will be notified.</p>
+     */
+    interface BayeuxListener extends EventListener
+    {
+    }
 }

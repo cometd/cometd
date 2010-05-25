@@ -1,6 +1,6 @@
 package org.cometd.bayeux.client;
 
-import org.cometd.bayeux.BayeuxListener;
+import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 
@@ -61,7 +61,7 @@ public interface ClientSessionChannel extends Channel
      * <p>Represents a listener on a {@link ClientSessionChannel}.</p>
      * <p>Sub-interfaces specify the exact semantic of the listener.</p>
      */
-    interface ClientSessionChannelListener extends BayeuxListener
+    interface ClientSessionChannelListener extends Bayeux.BayeuxListener
     {
     }
 
@@ -85,5 +85,4 @@ public interface ClientSessionChannel extends Channel
     public interface SubscriberListener
     {
     }
-
 }

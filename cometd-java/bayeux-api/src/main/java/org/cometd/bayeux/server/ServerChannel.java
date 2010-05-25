@@ -2,7 +2,7 @@ package org.cometd.bayeux.server;
 
 import java.util.Set;
 
-import org.cometd.bayeux.BayeuxListener;
+import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.client.ClientSessionChannel;
 
@@ -65,7 +65,7 @@ public interface ServerChannel extends ConfigurableServerChannel
      * <p>Common interface for {@link ServerChannel} listeners.</p>
      * <p>Specific sub-interfaces define what kind of event listeners will be notified.</p>
      */
-    interface ServerChannelListener extends BayeuxListener
+    interface ServerChannelListener extends Bayeux.BayeuxListener
     {
     }
 
