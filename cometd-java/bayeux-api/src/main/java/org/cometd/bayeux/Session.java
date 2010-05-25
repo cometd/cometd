@@ -17,6 +17,8 @@ import java.util.Set;
  * of {@link org.cometd.bayeux.server.LocalSession} and will be associated
  * with a {@link org.cometd.bayeux.server.ServerSession} instance.</li>
  * </ul>
+ *
+ * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
 public interface Session
 {

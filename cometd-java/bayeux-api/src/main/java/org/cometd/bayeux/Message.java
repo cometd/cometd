@@ -10,6 +10,8 @@ import java.util.Map;
  * Mutability may be deeply enforced by an implementation, so that it is not correct
  * to cast a passed Message, to a Message.Mutable, even if the implementation
  * allows this.</p>
+ *
+ * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
 public interface Message extends Map<String, Object>
 {

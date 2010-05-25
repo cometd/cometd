@@ -15,6 +15,7 @@ public interface Bayeux
 {
     /**
      * @return the set of known transport names of this {@link Bayeux} object.
+     * @see #getAllowedTransports()
      */
     Set<String> getKnownTransportNames();
 
@@ -28,6 +29,7 @@ public interface Bayeux
     /**
      * @return the ordered list of transport names that will be used in the
      * negotiation of transports with the other peer.
+     * @see #getKnownTransportNames()
      */
     List<String> getAllowedTransports();
 
@@ -48,6 +50,7 @@ public interface Bayeux
 
     /**
      * @return the set of configuration options
+     * @see #getOption(String)
      */
     Set<String> getOptionNames();
 
