@@ -90,7 +90,7 @@ public interface BayeuxServer extends Bayeux
      * @param initializers the initializers invoked to configure the channel
      * @return true if the channel was initialized, false otherwise
      */
-    boolean createIfAbsent(String channelId, ServerChannel.Initializer... initializers);
+    boolean createIfAbsent(String channelId, ConfigurableServerChannel.Initializer... initializers);
 
     /**
      * @param clientId the {@link ServerSession} identifier
@@ -152,7 +152,7 @@ public interface BayeuxServer extends Bayeux
      * before any other {@link ServerChannel.ServerChannelListener server channel listeners}
      * that may be added during channel configuration.</p>
      */
-    public interface ChannelListener extends BayeuxServerListener, ServerChannel.Initializer
+    public interface ChannelListener extends BayeuxServerListener, ConfigurableServerChannel.Initializer
     {
         /**
          * Callback invoked when a {@link ServerChannel} has been added to a {@link BayeuxServer} object.
