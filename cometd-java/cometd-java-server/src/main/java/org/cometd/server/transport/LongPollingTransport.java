@@ -25,9 +25,10 @@ public abstract class LongPollingTransport extends HttpTransport
 {
     private final static AtomicInteger __zero = new AtomicInteger(0);
 
-    protected final static String BROWSER_ID_OPTION="browserId";
-    protected final static String MAX_SESSIONS_PER_BROWSER_OPTION="maxSessionsPerBrowser";
-    protected final static String MULTI_SESSION_INTERVAL_OPTION="multiSessionInterval";
+    public final static String PREFIX="long-polling";
+    public final static String BROWSER_ID_OPTION="browserId";
+    public final static String MAX_SESSIONS_PER_BROWSER_OPTION="maxSessionsPerBrowser";
+    public final static String MULTI_SESSION_INTERVAL_OPTION="multiSessionInterval";
 
     private final ConcurrentHashMap<String, AtomicInteger> _browserMap=new ConcurrentHashMap<String, AtomicInteger>();
 
@@ -38,7 +39,7 @@ public abstract class LongPollingTransport extends HttpTransport
     protected LongPollingTransport(BayeuxServerImpl bayeux,String name)
     {
         super(bayeux,name);
-        addPrefix("long-polling");
+        setOptionPrefix(PREFIX);
         setOption(BROWSER_ID_OPTION,_browserId);
         setOption(MAX_SESSIONS_PER_BROWSER_OPTION,_maxSessionsPerBrowser);
         setOption(MULTI_SESSION_INTERVAL_OPTION,_multiSessionInterval);
@@ -65,7 +66,7 @@ public abstract class LongPollingTransport extends HttpTransport
             }
         }
 
-        String browser_id=Long.toHexString(request.getRemotePort()) + Long.toString(_bayeux.randomLong(),36) + Long.toString(System.currentTimeMillis(),36)
+        String browser_id=Long.toHexString(request.getRemotePort()) + Long.toString(getBayeux().randomLong(),36) + Long.toString(System.currentTimeMillis(),36)
                 + Long.toString(request.getRemotePort(),36);
         Cookie cookie=new Cookie(_browserId,browser_id);
         cookie.setPath("/");
@@ -144,7 +145,7 @@ public abstract class LongPollingTransport extends HttpTransport
                     // Get the session from the message
                     if (session==null)
                     {
-                        session=(ServerSessionImpl)_bayeux.getSession(message.getClientId());
+                        session=(ServerSessionImpl)getBayeux().getSession(message.getClientId());
                         if (!batch && session!=null && !message.isMeta())
                         {
                             // start a batch to group all resulting messages into a single response.
@@ -160,7 +161,7 @@ public abstract class LongPollingTransport extends HttpTransport
                     // handle the message
                     // the actual reply is return from the call, but other messages may
                     // also be queued on the session.
-                    ServerMessage reply = _bayeux.handle(session,message);
+                    ServerMessage reply = getBayeux().handle(session,message);
 
                     // Do we have a reply
                     if (reply!=null)
@@ -168,7 +169,7 @@ public abstract class LongPollingTransport extends HttpTransport
                         if (session==null)
                             // This must be a handshake
                             // extract a session from the reply (if we don't already know it
-                            session=(ServerSessionImpl)_bayeux.getSession(reply.getClientId());
+                            session=(ServerSessionImpl)getBayeux().getSession(reply.getClientId());
                         else
                         {
                             // If this is a connect or we can send messages with any response
@@ -190,7 +191,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                     {
                                         Continuation continuation = ContinuationSupport.getContinuation(request);
                                         long timeout=session.getTimeout();
-                                        continuation.setTimeout(timeout==-1?_timeout:timeout);
+                                        continuation.setTimeout(timeout==-1?getTimeout():timeout);
                                         continuation.suspend();
                                         scheduler=new LongPollScheduler(session,continuation,reply,browserId);
                                         session.setScheduler(scheduler);
@@ -210,7 +211,7 @@ public abstract class LongPollingTransport extends HttpTransport
                         // If the reply has not been otherwise handled, send it
                         if (reply!=null)
                         {
-                            reply=_bayeux.extendReply(session,reply);
+                            reply=getBayeux().extendReply(session,reply);
 
                             if (reply!=null)
                                 writer=send(request,response,writer, reply);
@@ -242,7 +243,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
             // send the connect reply
             ServerMessage reply=scheduler.getReply();
-            reply=_bayeux.extendReply(session,reply);
+            reply=getBayeux().extendReply(session,reply);
             writer=send(request,response,writer, reply);
 
             complete(writer);

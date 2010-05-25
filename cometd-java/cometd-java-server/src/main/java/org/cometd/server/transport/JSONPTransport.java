@@ -12,22 +12,23 @@ import org.cometd.server.BayeuxServerImpl;
 
 public class JSONPTransport extends LongPollingTransport
 {
+    public final static String PREFIX="long-polling.jsonp";
     public final static String NAME="callback-polling";
     public final static String MIME_TYPE_OPTION="mimeType";
     public final static String CALLBACK_PARAMETER_OPTION="callbackParameter";
 
-    protected String _mimeType="text/javascript;charset=UTF-8";
+    private String _mimeType="text/javascript;charset=UTF-8";
     private String _callbackParam="jsonp";
 
     public JSONPTransport(BayeuxServerImpl bayeux)
     {
         super(bayeux,NAME);
-        addPrefix("jsonp");
+        setOptionPrefix(PREFIX);
 
         setOption(CALLBACK_PARAMETER_OPTION,_callbackParam);
         setOption(MIME_TYPE_OPTION,_mimeType);
-        _metaConnectDeliveryOnly=true;
-        setOption(META_CONNECT_DELIVERY_OPTION,_metaConnectDeliveryOnly);
+        setMetaConnectDeliveryOnly(true);
+        setOption(META_CONNECT_DELIVERY_OPTION,isMetaConnectDeliveryOnly());
     }
 
     /* ------------------------------------------------------------ */

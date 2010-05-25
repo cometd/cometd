@@ -123,7 +123,7 @@ public class CometdDemo
         comet.setInitParameter("interval","0");
         comet.setInitParameter("maxInterval","20000");
         comet.setInitParameter("multiFrameInterval","5000");
-        comet.setInitParameter("logLevel","0");
+        comet.setInitParameter("logLevel","1");
         comet.setInitOrder(2);
         
         ServletHolder demo=context.addServlet(CometdDemoServlet.class, "/demo");
