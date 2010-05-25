@@ -68,9 +68,9 @@ public class LongPollingTransport extends ClientTransport
     }
 
     @Override
-    public void send(final TransportListener listener, Message... messages)
+    public void send(final TransportListener listener, Message.Mutable... messages)
     {
-        HttpExchange httpExchange = new TransportExchange(listener);
+        HttpExchange httpExchange = new TransportExchange(listener, messages);
         httpExchange.setMethod("POST");
 
         // TODO: handle extra path for handshake, connect and disconnect
@@ -96,12 +96,20 @@ public class LongPollingTransport extends ClientTransport
 
     private class TransportExchange extends ContentExchange
     {
-        TransportListener _listener;
+        private final TransportListener _listener;
+        private final Message.Mutable[] _messages;
 
-        private TransportExchange(TransportListener listener)
+        private TransportExchange(TransportListener listener, Message.Mutable... messages)
         {
             super(true);
             _listener=listener;
+            _messages = messages;
+        }
+
+        @Override
+        protected void onRequestCommitted() throws IOException
+        {
+            _listener.onSending(_messages);
         }
 
         @Override
@@ -146,7 +154,5 @@ public class LongPollingTransport extends ClientTransport
     @Override
     public void reset()
     {
-        // TODO Auto-generated method stub
-
     }
 }

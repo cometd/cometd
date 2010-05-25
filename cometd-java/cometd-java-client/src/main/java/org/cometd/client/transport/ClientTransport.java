@@ -51,7 +51,7 @@ public abstract class ClientTransport extends AbstractTransport
     public abstract boolean accept(String version);
 
     /* ------------------------------------------------------------ */
-    public abstract void send(TransportListener listener, Message... messages);
+    public abstract void send(TransportListener listener, Message.Mutable... messages);
 
     /* ------------------------------------------------------------ */
     public Message.Mutable newMessage()
