@@ -287,6 +287,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             // My proposed channel was added to the map, so I'd better initialize it!
             channel=proposed;
+            _logger.debug("added {}",channel);
             try
             {
                 for (Initializer initializer : initializers)
@@ -657,18 +658,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    void addServerChannel(ServerChannelImpl channel)
-    {
-        ServerChannelImpl old = _channels.putIfAbsent(channel.getId(),channel);
-        if (old!=null)
-            throw new IllegalStateException();
-    }
-
-    /* ------------------------------------------------------------ */
     boolean removeServerChannel(ServerChannelImpl channel)
     {
         if(_channels.remove(channel.getId(),channel))
         {
+            _logger.debug("removed {}",channel);
             for (BayeuxServerListener listener : _listeners)
             {
                 if (listener instanceof BayeuxServer.ChannelListener)
@@ -896,7 +890,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);
                 ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscribe_id);
                 if (channel==null && getSecurityPolicy().canCreate(BayeuxServerImpl.this,from,subscribe_id,message))
-                    channel = (ServerChannelImpl)getChannel(subscribe_id,true);
+                {
+                    createIfAbsent(subscribe_id);
+                    channel = (ServerChannelImpl)getChannel(subscribe_id);
+                }
 
                 if (channel==null)
                     error(reply,"403::cannot create");
