@@ -268,6 +268,8 @@ public class ServerChannelTest extends Assert
         _bayeux.doSweep();
         _bayeux.doSweep();
         assertNull(_bayeux.getChannel("/foo/bar"));
+        _bayeux.doSweep();
+        _bayeux.doSweep();
         assertNull(_bayeux.getChannel("/foo"));
 
         _bayeux.createIfAbsent("/foo/bar");
