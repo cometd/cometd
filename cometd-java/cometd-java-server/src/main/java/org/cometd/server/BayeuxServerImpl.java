@@ -755,9 +755,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
            if (parent!=null)
            {
                Integer children=dust.get(parent);
-               dust.put(parent,children==null?0:(children+1));
+               dust.put(parent,children==null?1:(children+1));
            }
         }
+        System.err.println(dust);
 
         for (String channel : dust.keySet())
         {

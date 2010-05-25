@@ -31,9 +31,10 @@ public class ChatService extends AbstractService
         ServerChannel.Initializer initNoMarkup = new ServerChannel.Initializer()
         {
             @Override
-            public void configureChannel(ConfigurableServerChannel initializer)
+            public void configureChannel(ConfigurableServerChannel channel)
             {
-                initializer.addListener(noMarkup);
+                channel.setPersistent(true);
+                channel.addListener(noMarkup);
             }
         };
 
