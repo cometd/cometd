@@ -6,159 +6,161 @@ import java.util.Queue;
 import org.cometd.bayeux.BayeuxListener;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
-import org.cometd.bayeux.client.SessionChannel;
 
 
 /**
- * Bayeux Server Session.
- * <p>
- * This interface represents the server-side of a bayeux session.
- * The server side of a bayeux session contains the queue of messages
- * to be delivered to the client side of the session.  Messages are
- * normally queued on a server session by being published to a
- * channel to which the session is subscribed, however the {@link #deliver(Session, ServerMessage)}
- * and {@link #deliver(Session, String, Object, Object)} methods may
- * be used to directly queue messages to a session without
- * publishing them to all subscribers for a channel.
- *
- *
+ * <p>Objects implementing this interface are the server-side representation of remote Bayeux clients.</p>
+ * <p>{@link ServerSession} contains the queue of messages to be delivered to the client; messages are
+ * normally queued on a {@link ServerSession} by publishing them to a channel to which the session is
+ * subscribed (via {@link ServerChannel#publish(Session, ServerMessage)}).</p>
+ * <p>The {@link #deliver(Session, ServerMessage)} and {@link #deliver(Session, String, Object, String)}
+ * methods may be used to directly queue messages to a session without publishing them to all subscribers
+ * of a channel.</p>
  */
 public interface ServerSession extends Session
 {
-    /* ------------------------------------------------------------ */
-    /** Add and extension to this session.
-     * @param extension
+    /**
+     * Adds the given extension to this session.
+     * @param extension the extension to add
+     * @see #removeExtension(Extension)
      */
     void addExtension(Extension extension);
 
+    /**
+     * Removes the given extension from this session
+     * @param extension the extension to remove
+     * @see #addExtension(Extension)
+     */
     void removeExtension(Extension extension);
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param listener
+     * Adds the given listener to this session.
+     * @param listener the listener to add
+     * @see #removeListener(ServerSessionListener)
      */
     void addListener(ServerSessionListener listener);
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param listener
+     * Removes the given listener from this session.
+     * @param listener the listener to remove
+     * @see #addListener(ServerSessionListener)
      */
     void removeListener(ServerSessionListener listener);
 
-    /* ------------------------------------------------------------ */
     /**
-     * @return True if this is a session for a local server-side client
+     * @return whether this is a session for a local client on server-side
      */
     boolean isLocalSession();
 
-    /* ------------------------------------------------------------ */
-    /** Get the local session.
-     * @return The LocalSession or null if this is a session for a
-     * remote client.
+    /**
+     * @return the {@link LocalSession} associated with this session,
+     * or null if this is a session representing a remote client.
      */
     LocalSession getLocalSession();
 
-    /* ------------------------------------------------------------ */
     /**
-     * Deliver the message to the session listeners and queue.
-     * <p>
-     * This is different to a {@link SessionChannel#publish(Object)}
-     * call, as the message is delivered only to this client and
-     * not to all subscribers to the channel.  The message should still
-     * have a channel id specified, so that the ClientSession may
-     * identify which handler the message should be delivered to.
-     * @param from
-     * @param msg
+     * <p>Delivers the given message to this session.</p>
+     * <p>This is different from {@link ServerChannel#publish(Session, ServerMessage)}
+     * as the message is delivered only to this session and
+     * not to all subscribers of the channel.</p>
+     * <p>The message should still have a channel id specified, so that the ClientSession
+     * may identify the listeners the message should be delivered to.
+     * @param from the session delivering the message
+     * @param message the message to deliver
+     * @see #deliver(Session, String, Object, String)
      */
-    void deliver(Session from, ServerMessage msg);
+    void deliver(Session from, ServerMessage message);
 
-    /* ------------------------------------------------------------ */
     /**
-     * Deliver the message to the session listeners and queue.
-     * <p>
-     * This is different to a {@link SessionChannel#publish(Object)}
-     * call, as the message is delivered only to this client and
-     * not to all subscribers to the channel.  The message should still
-     * have a channel id specified, so that the ClientSession may
-     * identify which handler the message should be delivered to.
+     * <p>Delivers the given information to this session.</p>
+     * @param from the session delivering the message
+     * @param channel the channel of the message
+     * @param data the data of the message
+     * @param id the id of the message, or null to let the implementation choose an id
+     * @see #deliver(Session, ServerMessage)
      */
     void deliver(Session from, String channel, Object data, String id);
 
-    /* ------------------------------------------------------------ */
     /**
-     * Disconnect this session.
+     * <p>Common interface for {@link ServerSession} listeners.</p>
+     * <p>Specific sub-interfaces define what kind of event listeners will be notified.</p>
      */
-    void disconnect();
-
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     interface ServerSessionListener extends BayeuxListener
-    {}
+    {
+    }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /** Queue a message listener
-     * <p>
-     * Listener called after a session is removed
+    /**
+     * <p>Listeners objects that implement this interface will be notified of session removal.</p>
      */
     public interface RemoveListener extends ServerSessionListener
     {
+        /**
+         * Callback invoked when the session is removed.
+         * @param session the removed session
+         * @param timeout whether the session has been removed because of a timeout
+         */
         public void removed(ServerSession session, boolean timeout);
-    };
+    }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /** Queue a message listener
-     * <p>
-     * Listener called before each message is queued.
+    /**
+     * <p>Listeners objects that implement this interface will be notified of message arrival.</p>
      */
     public interface MessageListener extends ServerSessionListener
     {
         /**
-         * Listener called before each message is queued.
+         * Callback invoked when a message is received.
+         * @param to the session that received the message
+         * @param from the session that sent the message
+         * @param message the message sent
+         * @return whether other listeners should be notified
          */
         public boolean onMessage(ServerSession to, ServerSession from, ServerMessage message);
-    };
+    }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+    /**
+     * <p>Listeners objects that implement this interface will be notified when the session queue
+     * is being drained to actually deliver the messages.</p>
+     */
     public interface DeQueueListener extends ServerSessionListener
     {
-        /* ------------------------------------------------------------ */
         /**
-         * callback to notify that the queue is about to be sent to the
-         * client.  This is the last chance to process the queue and remove
-         * duplicates or merge messages.
+         * <p>Callback invoked to notify that the queue of messages is about to be sent to the
+         * remote client.</p>
+         * <p>This is the last chance to process the queue and remove duplicates or merge messages.</p>
+         * @param session the session whose messages are being sent
+         * @param queue the queue of messages to send
          */
         public void deQueue(ServerSession session,Queue<ServerMessage> queue);
-    };
+    }
 
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+    /**
+     * <p>Listeners objects that implement this interface will be notified when the session queue is full.</p>
+     */
     public interface MaxQueueListener extends ServerSessionListener
     {
-        /* ------------------------------------------------------------ */
         /**
-         * Call back to notify if a message for a client will result in the
-         * message queue exceeding {@link Session#getMaxQueue()}.
-         * This is called with the client instance locked, so it is safe for the
-         * handler to manipulate the queue returned by {@link Session#getQueue()}, but
-         * action in the callback that may result in another Client instance should be
-         * avoided as that would risk deadlock.
-         * @param session Client message is being delivered to
-         * @param from Client message is published from
-         * @param message
-         * @return true if the message should be added to the client queue
+         * <p>Callback invoked to notify when the message queue is exceeding the value
+         * configured for the transport with the option "maxQueue".</p>
+         * @param session the session that will receive the message
+         * @param from the session that is sending the messages
+         * @param message the message that exceeded the max queue capacity
+         * @return true if the message should be added to the session queue
          */
         public boolean queueMaxed(ServerSession session, Session from, Message message);
     }
 
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+    /**
+     * <p>Extension API for {@link ServerSession}.</p>
+     * <p>Implementations of this interface allow to modify incoming and outgoing messages
+     * respectively just before and just after they are handled by the implementation,
+     * either on client side or server side.</p>
+     * <p>Extensions are be registered in order and one extension may allow subsequent
+     * extensions to process the message by returning true from the callback method, or
+     * forbid further processing by returning false.</p>
+     *
+     * @see ServerSession#addExtension(Extension)
+     * @see BayeuxServer.Extension
+     */
     public interface Extension
     {
         /**

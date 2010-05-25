@@ -214,7 +214,7 @@ public interface BayeuxServer extends Bayeux
     }
 
     /**
-     * <p>Extension API for bayeux server.</p>
+     * <p>Extension API for {@link BayeuxServer}.</p>
      * <p>Implementations of this interface allow to modify incoming and outgoing messages
      * respectively just before and just after they are handled by the implementation,
      * either on client side or server side.</p>
