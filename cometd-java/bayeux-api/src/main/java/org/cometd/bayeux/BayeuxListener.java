@@ -1,12 +1,11 @@
 package org.cometd.bayeux;
 
-import java.util.EventListener;
-
-
 /**
  * <p>The common base interface for Bayeux listeners.</p>
  * <p>Specific sub-interfaces define what kind of events listeners will be notified.</p>
+ * @deprecated Use {@link Bayeux.BayeuxListener} instead
  */
-public interface BayeuxListener extends EventListener
+@Deprecated
+public interface BayeuxListener extends Bayeux.BayeuxListener
 {
 }
