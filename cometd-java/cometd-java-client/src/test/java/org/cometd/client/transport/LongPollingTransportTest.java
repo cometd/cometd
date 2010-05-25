@@ -401,6 +401,11 @@ public class LongPollingTransportTest
         }
 
         @Override
+        public void onSending(Mutable[] messages)
+        {
+        }
+
+        @Override
         public void onMessages(List<Mutable> metaMessages)
         {
         }
@@ -409,7 +414,5 @@ public class LongPollingTransportTest
         public void onProtocolError(String info)
         {
         }
-
     }
-
 }

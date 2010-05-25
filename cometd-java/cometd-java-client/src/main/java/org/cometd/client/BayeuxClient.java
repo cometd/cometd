@@ -591,6 +591,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
     }
 
     @Override
+    public void onSending(Message.Mutable[] messages)
+    {
+    }
+
+    @Override
     public void onMessages(List<Message.Mutable> messages)
     {
     }
@@ -657,6 +662,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
 
     private class Listener implements TransportListener
     {
+        @Override
+        public void onSending(Message.Mutable[] messages)
+        {
+            BayeuxClient.this.onSending(messages);
+        }
+
         @Override
         public void onMessages(List<Message.Mutable> messages)
         {
