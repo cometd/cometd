@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
@@ -51,6 +52,15 @@ public class CometdDemoServlet extends GenericServlet
         new ChatService(bayeux);
         bayeux.addExtension(new TimesyncExtension());
         bayeux.addExtension(new AcknowledgedMessagesExtension());
+        
+        bayeux.createIfAbsent("/foo/bar/baz",new ConfigurableServerChannel.Initializer(){
+            @Override
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+            }
+            
+        });
         
         if (bayeux.getLogger().isDebugEnabled())
             System.err.println(bayeux.dump());
