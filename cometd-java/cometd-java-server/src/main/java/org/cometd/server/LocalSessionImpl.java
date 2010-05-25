@@ -240,7 +240,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         }
 
         /* ------------------------------------------------------------ */
-        public void publish(Object data,Object messageId)
+        public void publish(Object data, String messageId)
         {
             if (_session==null)
                 throw new IllegalStateException("!handshake");

@@ -15,13 +15,13 @@ import org.cometd.bayeux.client.SessionChannel;
  * This interface represents the server-side of a bayeux session.
  * The server side of a bayeux session contains the queue of messages
  * to be delivered to the client side of the session.  Messages are
- * normally queued on a server session by being published to a 
+ * normally queued on a server session by being published to a
  * channel to which the session is subscribed, however the {@link #deliver(Session, ServerMessage)}
  * and {@link #deliver(Session, String, Object, Object)} methods may
- * be used to directly queue messages to a session without 
+ * be used to directly queue messages to a session without
  * publishing them to all subscribers for a channel.
- * 
- * 
+ *
+ *
  */
 public interface ServerSession extends Session
 {
@@ -48,10 +48,10 @@ public interface ServerSession extends Session
      * @return True if this is a session for a local server-side client
      */
     boolean isLocalSession();
-    
+
     /* ------------------------------------------------------------ */
     /** Get the local session.
-     * @return The LocalSession or null if this is a session for a 
+     * @return The LocalSession or null if this is a session for a
      * remote client.
      */
     LocalSession getLocalSession();
@@ -60,10 +60,10 @@ public interface ServerSession extends Session
     /**
      * Deliver the message to the session listeners and queue.
      * <p>
-     * This is different to a {@link SessionChannel#publish(Object)} 
+     * This is different to a {@link SessionChannel#publish(Object)}
      * call, as the message is delivered only to this client and
      * not to all subscribers to the channel.  The message should still
-     * have a channel id specified, so that the ClientSession may 
+     * have a channel id specified, so that the ClientSession may
      * identify which handler the message should be delivered to.
      * @param from
      * @param msg
@@ -74,21 +74,21 @@ public interface ServerSession extends Session
     /**
      * Deliver the message to the session listeners and queue.
      * <p>
-     * This is different to a {@link SessionChannel#publish(Object)} 
+     * This is different to a {@link SessionChannel#publish(Object)}
      * call, as the message is delivered only to this client and
      * not to all subscribers to the channel.  The message should still
-     * have a channel id specified, so that the ClientSession may 
+     * have a channel id specified, so that the ClientSession may
      * identify which handler the message should be delivered to.
      */
-    void deliver(Session from, String channel, Object data, Object id);
+    void deliver(Session from, String channel, Object data, String id);
 
     /* ------------------------------------------------------------ */
     /**
      * Disconnect this session.
      */
     void disconnect();
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     interface ServerSessionListener extends BayeuxListener
@@ -104,7 +104,7 @@ public interface ServerSession extends Session
     {
         public void removed(ServerSession session, boolean timeout);
     };
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /** Queue a message listener
@@ -152,7 +152,7 @@ public interface ServerSession extends Session
          */
         public boolean queueMaxed(ServerSession session, Session from, Message message);
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

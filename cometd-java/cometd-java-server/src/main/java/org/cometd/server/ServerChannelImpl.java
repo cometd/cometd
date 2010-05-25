@@ -1,10 +1,7 @@
 package org.cometd.server;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
@@ -106,13 +103,13 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         }
         session.unsubscribedTo(this);
     }
-    
+
     /* ------------------------------------------------------------ */
     public List<ServerChannelListener> getListeners()
     {
         return _listeners;
     }
-    
+
     /* ------------------------------------------------------------ */
     public Set<? extends ServerSession> getSubscribers()
     {
@@ -208,7 +205,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     }
 
     /* ------------------------------------------------------------ */
-    public void publish(Session from, Object data, Object id)
+    public void publish(Session from, Object data, String id)
     {
         if (isWild())
             throw new IllegalStateException("Wild publish");

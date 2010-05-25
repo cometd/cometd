@@ -49,7 +49,7 @@ public interface ClientSessionChannel extends Channel
      * implementation choose the message id.
      * @see Message#getId()
      */
-    void publish(Object data, Object messageId);
+    void publish(Object data, String messageId);
 
     void subscribe(MessageListener listener);
 
@@ -85,5 +85,5 @@ public interface ClientSessionChannel extends Channel
     public interface SubscriberListener
     {
     }
-    
+
 }

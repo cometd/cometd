@@ -5,7 +5,6 @@ import java.io.Reader;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -16,7 +15,7 @@ import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.ajax.JSON;
 
 public class ServerMessageImpl extends AbstractMap<String,Object> implements ServerMessage, JSON.Generator
-{   
+{
     private final ImmutableHashMap<String,Object> _immutable = new NestedMap(16);
     private final MutableMessage _mutable;
 
@@ -123,9 +122,9 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     }
 
     /* ------------------------------------------------------------ */
-    public Object getId()
+    public String getId()
     {
-        return _mutable._id.getValue();
+        return (String)_mutable._id.getValue();
     }
 
     /* ------------------------------------------------------------ */
@@ -217,7 +216,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
         {
             _advice=_mutable.getEntryReference(Message.ADVICE_FIELD);
             _channel=_mutable.getEntryReference(Message.CHANNEL_FIELD);
-            _clientId=_mutable.getEntryReference(Message.CLIENT_FIELD);
+            _clientId=_mutable.getEntryReference(Message.CLIENT_ID_FIELD);
             _data=_mutable.getEntryReference(Message.DATA_FIELD);
             _ext=_mutable.getEntryReference(Message.EXT_FIELD);
             _id=_mutable.getEntryReference(Message.ID_FIELD);
@@ -350,9 +349,9 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             return (Map<String,Object>)ext;
         }
 
-        public Object getId()
+        public String getId()
         {
-            return _id.getValue();
+            return (String)_id.getValue();
         }
 
         public boolean isLazy()
@@ -408,14 +407,14 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             _clientId.setValue(clientId);
         }
 
-        public void setId(Object id)
+        public void setId(String id)
         {
             _id.setValue(id);
         }
 
-        public void setChannel(String channelId)
+        public void setChannel(String channel)
         {
-            _channel.setValue(channelId);
+            _channel.setValue(channel);
         }
 
         public String getJSON()
@@ -428,9 +427,9 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             return ServerMessageImpl.this.isSuccessful();
         }
 
-        public void setSuccessful(boolean success)
+        public void setSuccessful(boolean successful)
         {
-            put(SUCCESSFUL_FIELD,success?Boolean.TRUE:Boolean.FALSE);
+            put(SUCCESSFUL_FIELD, successful ?Boolean.TRUE:Boolean.FALSE);
         }
 
         public String toString()
@@ -456,7 +455,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             _jsonString=null;
         } ;
     };
-    
+
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -465,7 +464,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     {
         __fieldStrings.put(Message.ADVICE_FIELD,Message.ADVICE_FIELD);
         __fieldStrings.put(Message.CHANNEL_FIELD,Message.CHANNEL_FIELD);
-        __fieldStrings.put(Message.CLIENT_FIELD,Message.CLIENT_FIELD);
+        __fieldStrings.put(Message.CLIENT_ID_FIELD,Message.CLIENT_ID_FIELD);
         __fieldStrings.put(Message.DATA_FIELD,Message.DATA_FIELD);
         __fieldStrings.put(Message.ERROR_FIELD,Message.ERROR_FIELD);
         __fieldStrings.put(Message.EXT_FIELD,Message.EXT_FIELD);
@@ -487,7 +486,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
 
     /* ------------------------------------------------------------ */
     /** Add a JSON convertor.
-     * Add a JSON convertor to the JSON instance used to convert 
+     * Add a JSON convertor to the JSON instance used to convert
      * message fields.
      * @see JSON#addConvertor(Class, org.eclipse.jetty.util.ajax.JSON.Convertor)
      */
@@ -495,10 +494,10 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     {
         __json.addConvertor(forClass,convertor);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Add a JSON convertor.
-     * Add a JSON convertor to the JSON instance used to convert 
+     * Add a JSON convertor to the JSON instance used to convert
      * message fields.
      * @see JSON#addConvertorFor(String, org.eclipse.jetty.util.ajax.JSON.Convertor)
      */
@@ -506,7 +505,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     {
         __json.addConvertorFor(name,convertor);
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private static JSON __json=new JSON()
@@ -526,7 +525,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             String s=new String(buffer,offset,length);
             return s;
         }
-        
+
     };
 
     /* ------------------------------------------------------------ */
@@ -585,13 +584,13 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             return __msgJSON;
         }
     };
-    
+
 
     /* ------------------------------------------------------------ */
     public static ServerMessage.Mutable[] parseMessages(Reader reader) throws IOException
     {
         JSON.ReaderSource source=new JSON.ReaderSource(reader);
-        
+
         Object batch=__batchJSON.parse(source);
 
         if (batch == null)
@@ -619,5 +618,5 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
     {
         return (ServerMessage.Mutable)__msgJSON.parse(new JSON.StringSource(s));
     }
-   
+
 }

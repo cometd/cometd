@@ -21,13 +21,13 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel.Initializer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ConfigurableServerChannel.Initializer;
 import org.cometd.bayeux.server.ServerChannel.MessageListener;
 import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
@@ -276,11 +276,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         if (_channels.containsKey(channelId))
             return false;
-        
+
         ChannelId id = new ChannelId(channelId);
         if (id.depth()>1)
             createIfAbsent(id.getParent());
-        
+
         ServerChannelImpl proposed = new ServerChannelImpl(this,id);
         ServerChannelImpl channel = _channels.putIfAbsent(channelId,proposed);
         if (channel==null)
@@ -310,7 +310,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             return true;
         }
-        
+
         // somebody else added it before me, so wait until it is initialized
         channel.waitForInitialized();
         return false;
@@ -559,14 +559,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 mutable.setLazy(true);
             parent=c.getChannelId().getParent();
         }
-        
+
         // Get the array of listening channels
         final List<String> wildIds=to.getChannelId().getWilds();
         final ServerChannelImpl[] listening_channels = new ServerChannelImpl[wildIds.size()+1];
         listening_channels[wildIds.size()]=to;
         for (int i=wildIds.size();i-->0;)
             listening_channels[i]=_channels.get(wildIds.get(i));
-        
+
         // Call the listeners
         for (int i=0;i<listening_channels.length;i++)
         {
@@ -581,7 +581,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     if (!((MessageListener)listener).onMessage(from,to,mutable))
                         return;
         }
-        
+
         // Call the subscribers
         for (int i=0;i<listening_channels.length;i++)
         {
@@ -592,7 +592,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             for (ServerSession session : channel.getSubscribers())
                 ((ServerSessionImpl)session).doDeliver(from,mutable.asImmutable());
         }
-        
+
         // Meta handlers
         if (to.isMeta())
         {
@@ -602,7 +602,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
-        
+
     /* ------------------------------------------------------------ */
     public ServerMessage extendReply(ServerSessionImpl session, ServerMessage reply)
     {
@@ -741,7 +741,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         reply.setAssociated(message);
 
         reply.setChannel(message.getChannel());
-        Object id=message.getId();
+        String id=message.getId();
         if (id != null)
             reply.setId(id);
         return reply;
@@ -751,7 +751,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public void doSweep()
     {
         final Map<String,Integer> dust = new HashMap<String, Integer>();
-        
+
         for (ServerChannelImpl channel :_channels.values())
         {
            if (!dust.containsKey(channel.getId()))
@@ -763,7 +763,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                dust.put(parent,children==null?0:(children+1));
            }
         }
-        
+
         for (String channel : dust.keySet())
         {
             ServerChannelImpl sci=_channels.get(channel);
@@ -771,19 +771,19 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 sci.doSweep(dust.get(channel));
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public String dump()
     {
         StringBuilder b = new StringBuilder();
-        
+
         ArrayList<ServerChannelImpl> children = new ArrayList<ServerChannelImpl>();
         for (ServerChannelImpl channel :_channels.values())
         {
             if (channel.getChannelId().depth()==1)
                 children.add(channel);
         }
-        
+
         int leaves=children.size();
         int i=0;
         for (ServerChannelImpl child : children)
@@ -791,7 +791,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             b.append(" +-");
             child.dump(b,((++i==leaves)?"   ":" | "));
         }
-        
+
         return b.toString();
     }
 
@@ -826,7 +826,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             addServerSession(session);
 
             reply.setSuccessful(true);
-            reply.put(Message.CLIENT_FIELD,session.getId());
+            reply.put(Message.CLIENT_ID_FIELD,session.getId());
             reply.put(Message.VERSION_FIELD,"1.0");
             reply.put(Message.MIN_VERSION_FIELD,"1.0");
             reply.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD,getAllowedTransports());

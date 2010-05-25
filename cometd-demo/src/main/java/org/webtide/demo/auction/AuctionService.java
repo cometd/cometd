@@ -89,7 +89,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         return _categoryDao.getItemsInCategory(categoryId.intValue());
     }
 
-    public synchronized void bid(ServerSession source, String channel, Map<String,Object> bidMap, Object messageId)
+    public synchronized void bid(ServerSession source, String channel, Map<String,Object> bidMap, String messageId)
     {
         try
         {
