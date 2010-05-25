@@ -31,6 +31,8 @@ public interface ServerSession extends Session
      */
     void addExtension(Extension extension);
 
+    void removeExtension(Extension extension);
+
     /* ------------------------------------------------------------ */
     /**
      * @param listener
