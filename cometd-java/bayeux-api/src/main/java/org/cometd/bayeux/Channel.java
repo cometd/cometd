@@ -25,6 +25,8 @@ package org.cometd.bayeux;
  * "/foo/bar/bob" and "/foo/bar/wibble/bip".<br/>
  * Wildcards can only be specified as last segment of a channel; therefore channel
  * "/foo/&#42;/bar/** is an invalid channel.</p>
+ *
+ * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
 public interface Channel
 {
