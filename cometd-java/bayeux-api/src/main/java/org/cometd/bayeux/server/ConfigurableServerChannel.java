@@ -25,6 +25,8 @@ import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
  * important that the creation of a channel is atomic so that its
  * configuration is executed only once, and so that it is guaranteed that
  * it happens before any message can be published or received by the channel.</p>
+ *
+ * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
 public interface ConfigurableServerChannel extends Channel
 {

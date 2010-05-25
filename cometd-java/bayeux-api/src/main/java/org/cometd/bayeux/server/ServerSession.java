@@ -16,6 +16,8 @@ import org.cometd.bayeux.Session;
  * <p>The {@link #deliver(Session, ServerMessage)} and {@link #deliver(Session, String, Object, String)}
  * methods may be used to directly queue messages to a session without publishing them to all subscribers
  * of a channel.</p>
+ * 
+ * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
 public interface ServerSession extends Session
 {
@@ -108,11 +110,14 @@ public interface ServerSession extends Session
     public interface MessageListener extends ServerSessionListener
     {
         /**
-         * Callback invoked when a message is received.
+         * <p>Callback invoked when a message is received.</p>
+         * <p>Implementors can decide to return false to signal that the message should not be
+         * processed, meaning that other listeners will not be notified and that the message
+         * will be discarded.</p>
          * @param to the session that received the message
          * @param from the session that sent the message
          * @param message the message sent
-         * @return whether other listeners should be notified
+         * @return whether the processing of the message should continue
          */
         public boolean onMessage(ServerSession to, ServerSession from, ServerMessage message);
     }
