@@ -39,18 +39,6 @@ public interface ServerChannel extends ConfigurableServerChannel
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
-     */
-    boolean isLazy();
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return
-     */
-    boolean isPersistent();
-
-    /* ------------------------------------------------------------ */
-    /**
      * Publish a message to the channel.
      * <p>
      * Delivered a message to all the {@link ServerSession}'s

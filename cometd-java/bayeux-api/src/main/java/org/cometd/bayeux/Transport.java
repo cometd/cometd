@@ -2,6 +2,7 @@ package org.cometd.bayeux;
 
 import java.util.Set;
 
+// TODO: javadocs
 public interface Transport
 {
     /* ------------------------------------------------------------ */
@@ -10,14 +11,14 @@ public interface Transport
      * negotiations and with the {@link Bayeux#setAllowedTransports(String...)} method.
      */
     String getName();
-    
+
     /* ------------------------------------------------------------ */
     Object getOption(String name);
-    
+
     /* ------------------------------------------------------------ */
     Set<String> getOptionNames();
 
     /* ------------------------------------------------------------ */
     String getOptionPrefix();
-    
+
 }

@@ -128,6 +128,12 @@ public class ServerSessionImpl implements ServerSession
         _extensions.add(extension);
     }
 
+    @Override
+    public void removeExtension(Extension extension)
+    {
+        _extensions.remove(extension);
+    }
+
     /* ------------------------------------------------------------ */
     public void batch(Runnable batch)
     {
