@@ -1,13 +1,9 @@
 package org.cometd.server;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.cometd.bayeux.Transport;
-import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerTransport;
 import org.eclipse.jetty.util.ajax.JSON;
 
@@ -24,17 +20,19 @@ public abstract class AbstractServerTransport implements ServerTransport
     public final static String MAX_LAZY_OPTION="maxLazyTimeout";
     public final static String META_CONNECT_DELIVERY_OPTION="metaConnectDeliverOnly";
     
-    final protected BayeuxServerImpl _bayeux;
-    public long _interval=0;
-    public long _maxInterval=10000;
-    protected long _timeout=10000;
-    public long _maxLazyTimeout=5000;
-    public boolean _metaConnectDeliveryOnly=false;
-    public Object _advice;
+    private final BayeuxServerImpl _bayeux;
+    private long _interval=0;
+    private long _maxInterval=10000;
+    private long _timeout=10000;
+    private long _maxLazyTimeout=5000;
+    private boolean _metaConnectDeliveryOnly=false;
+    private Object _advice;
+
+    private String _optionPrefix="";
+    private String[] _prefix=new String[]{};
 
     private final String _name;
     private final Map<String,Object> _options;
-    private final List<String> _prefix=new ArrayList<String>();
     
 
     /* ------------------------------------------------------------ */
@@ -64,38 +62,6 @@ public abstract class AbstractServerTransport implements ServerTransport
         setOption(META_CONNECT_DELIVERY_OPTION,_metaConnectDeliveryOnly);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Add an option name prefix segment.
-     * <p> Normally this is called by the super class constructors to establish 
-     * a naming hierarchy for options and iteracts with the {@link #setOption(String, Object)}
-     * method to create a naming hierarchy for options.
-     * For example the following sequence of calls:<pre>
-     *   setOption("foo","x");
-     *   setOption("bar","y");
-     *   addPrefix("long-polling");
-     *   setOption("foo","z");
-     *   setOption("whiz","p");
-     *   addPrefix("jsonp");
-     *   setOption("bang","q");
-     *   setOption("bar","r");
-     * </pre>
-     * will establish the following option names and values:<pre>
-     *   foo: x
-     *   bar: y
-     *   long-polling.foo: z
-     *   long-polling.whiz: p
-     *   long-polling.jsonp.bang: q
-     *   long-polling.jsonp.bar: r
-     * </pre>
-     * The various {@link #getOption(String)} methods will search this
-     * name tree for the most specific match.
-     * 
-     * @param segment name
-     */
-    protected void addPrefix(String segment)
-    {
-        _prefix.add(segment);
-    }
     
     /* ------------------------------------------------------------ */
     public Object getAdvice()
@@ -248,14 +214,48 @@ public abstract class AbstractServerTransport implements ServerTransport
         names.add(MAX_LAZY_OPTION);
         return names;
     }
-
+    
     /* ------------------------------------------------------------ */
     public String getOptionPrefix()
     {
-        String prefix=null;
-        for (String segment:_prefix)
-            prefix = prefix==null?segment:(prefix+"."+segment);
-        return prefix;
+        return _optionPrefix;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Set the option name prefix segment.
+     * <p> Normally this is called by the super class constructors to establish 
+     * a naming hierarchy for options and iteracts with the {@link #setOption(String, Object)}
+     * method to create a naming hierarchy for options.
+     * For example the following sequence of calls:<pre>
+     *   setOption("foo","x");
+     *   setOption("bar","y");
+     *   setOptionPrefix("long-polling");
+     *   setOption("foo","z");
+     *   setOption("whiz","p");
+     *   setOptionPrefix("long-polling.jsonp");
+     *   setOption("bang","q");
+     *   setOption("bar","r");
+     * </pre>
+     * will establish the following option names and values:<pre>
+     *   foo: x
+     *   bar: y
+     *   long-polling.foo: z
+     *   long-polling.whiz: p
+     *   long-polling.jsonp.bang: q
+     *   long-polling.jsonp.bar: r
+     * </pre>
+     * The various {@link #getOption(String)} methods will search this
+     * name tree for the most specific match.
+     * 
+     * @param segment name
+     * @throws IllegalArgumentException if the new prefix is not prefixed by the old prefix.
+     */
+    public void setOptionPrefix(String prefix)
+    {
+        if (!prefix.startsWith(_optionPrefix))
+            throw new IllegalArgumentException(_optionPrefix+" not prefix of "+prefix);
+        _optionPrefix=prefix;
+        _prefix=prefix.split("\\.");
     }
     
     /* ------------------------------------------------------------ */
@@ -278,12 +278,13 @@ public abstract class AbstractServerTransport implements ServerTransport
     {
         _metaConnectDeliveryOnly=meta;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setOption(String name, Object value)
     {
-        String prefix=getOptionPrefix();
-        _options.put(prefix==null?name:(prefix+"."+name),value);
+        if (_optionPrefix!=null && _optionPrefix.length()>0)
+            name=_optionPrefix+"."+name;
+        _options.put(name,value);
     }
 
     /* ------------------------------------------------------------ */
@@ -305,6 +306,64 @@ public abstract class AbstractServerTransport implements ServerTransport
         _advice=new JSON.Literal("{\"reconnect\":\"retry\",\"interval\":" + _interval + ",\"timeout\":" + _timeout + "}");
     }
     
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Get the bayeux.
+     * @return the bayeux
+     */
+    public BayeuxServerImpl getBayeux()
+    {
+        return _bayeux;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the interval.
+     * @param interval the interval to set
+     */
+    public void setInterval(long interval)
+    {
+        _interval = interval;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the maxInterval.
+     * @param maxInterval the maxInterval to set
+     */
+    public void setMaxInterval(long maxInterval)
+    {
+        _maxInterval = maxInterval;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the timeout.
+     * @param timeout the timeout to set
+     */
+    public void setTimeout(long timeout)
+    {
+        _timeout = timeout;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the maxLazyTimeout.
+     * @param maxLazyTimeout the maxLazyTimeout to set
+     */
+    public void setMaxLazyTimeout(long maxLazyTimeout)
+    {
+        _maxLazyTimeout = maxLazyTimeout;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the advice.
+     * @param advice the advice to set
+     */
+    public void setAdvice(Object advice)
+    {
+        _advice = advice;
+    }
+
+
+
     /* ------------------------------------------------------------ */
     public interface Scheduler
     {

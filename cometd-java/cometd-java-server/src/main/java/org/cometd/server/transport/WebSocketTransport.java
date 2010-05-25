@@ -22,35 +22,32 @@ import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketFactory;
 
 
-
 public class WebSocketTransport extends HttpTransport
 {
+    public final static String PREFIX="ws";
     public final static String NAME="websocket";
     public final static String PROTOCOL_OPTION="protocol";
     public final static String BUFFER_SIZE_OPTION="bufferSize";
 
     private final WebSocketFactory _factory = new WebSocketFactory();
-
     private ThreadLocal<Addresses> _addresses = new ThreadLocal<Addresses>();
-
-
 
     private String _protocol="";
 
     public WebSocketTransport(BayeuxServerImpl bayeux)
     {
         super(bayeux,NAME);
-        addPrefix("ws");
+        setOptionPrefix(PREFIX);
         setOption(PROTOCOL_OPTION,_protocol);
         setOption(BUFFER_SIZE_OPTION,_factory.getBufferSize());
-        _metaConnectDeliveryOnly=false;
-        setOption(META_CONNECT_DELIVERY_OPTION,_metaConnectDeliveryOnly);
-        _timeout=15000;
-        setOption(TIMEOUT_OPTION,_timeout);
-        _interval=2500;
-        setOption(INTERVAL_OPTION,_interval);
-        _maxInterval=15000;
-        setOption(MAX_INTERVAL_OPTION,_maxInterval);
+        setMetaConnectDeliveryOnly(false);
+        setOption(META_CONNECT_DELIVERY_OPTION,isMetaConnectDeliveryOnly());
+        setTimeout(15000);
+        setOption(TIMEOUT_OPTION,getTimeout());
+        setInterval(2500);
+        setOption(INTERVAL_OPTION,getInterval());
+        setMaxInterval(15000);
+        setOption(MAX_INTERVAL_OPTION,getMaxInterval());
     }
 
     @Override
@@ -137,8 +134,8 @@ public class WebSocketTransport extends HttpTransport
             if (_session!=null)
             {
                 _session.cancelIntervalTimeout();
-                _bayeux.cancelTimeout(_timeoutTask);
-                _bayeux.removeServerSession(_session,false);
+                getBayeux().cancelTimeout(_timeoutTask);
+                getBayeux().removeServerSession(_session,false);
             }
         }
 
@@ -148,7 +145,7 @@ public class WebSocketTransport extends HttpTransport
             try
             {
                 WebSocketTransport.this._addresses.set(_addresses);
-                _bayeux.setCurrentTransport(WebSocketTransport.this);
+                getBayeux().setCurrentTransport(WebSocketTransport.this);
 
                 ServerMessage.Mutable[] messages = ServerMessageImpl.parseMessages(data);
 
@@ -158,7 +155,7 @@ public class WebSocketTransport extends HttpTransport
 
                     // Get the session from the message
                     if (_session==null)
-                        _session=(ServerSessionImpl)_bayeux.getSession(message.getClientId());
+                        _session=(ServerSessionImpl)getBayeux().getSession(message.getClientId());
 
                     if (!batch && _session!=null && !connect)
                     {
@@ -173,7 +170,7 @@ public class WebSocketTransport extends HttpTransport
                     // handle the message
                     // the actual reply is return from the call, but other messages may
                     // also be queued on the session.
-                    ServerMessage reply = _bayeux.handle(_session,message);
+                    ServerMessage reply = getBayeux().handle(_session,message);
 
                     if (connect && reply.isSuccessful())
                     {
@@ -181,12 +178,12 @@ public class WebSocketTransport extends HttpTransport
 
                         long timeout=_session.getTimeout();
                         if (timeout<0)
-                            timeout=_timeout;
+                            timeout=getTimeout();
 
                         if (timeout>0 && was_connected)
                         {
                             // delay sending connect reply until dispatch or timeout.
-                            _bayeux.startTimeout(_timeoutTask,timeout);
+                            getBayeux().startTimeout(_timeoutTask,timeout);
                             _connectReply=reply;
                             reply=null;
                         }
@@ -199,7 +196,7 @@ public class WebSocketTransport extends HttpTransport
                     // send the reply (if not delayed)
                     if (reply!=null)
                     {
-                        reply=_bayeux.extendReply(_session,reply);
+                        reply=getBayeux().extendReply(_session,reply);
 
                         if (batch)
                         {
@@ -215,12 +212,12 @@ public class WebSocketTransport extends HttpTransport
             }
             catch(IOException e)
             {
-                _bayeux.getLogger().warn("",e);
+                getBayeux().getLogger().warn("",e);
             }
             finally
             {
                 WebSocketTransport.this._addresses.set(null);
-                _bayeux.setCurrentTransport(null);
+                getBayeux().setCurrentTransport(null);
                 // if we started a batch - end it now
                 if (batch)
                     _session.endBatch();
@@ -254,7 +251,7 @@ public class WebSocketTransport extends HttpTransport
 
                 if (_connectReply!=null)
                 {
-                    queue.add(_bayeux.extendReply(_session,_connectReply));
+                    queue.add(getBayeux().extendReply(_session,_connectReply));
                     _connectReply=null;
                     _session.startIntervalTimeout();
                 }
@@ -265,7 +262,7 @@ public class WebSocketTransport extends HttpTransport
                 }
                 catch(IOException e)
                 {
-                    _bayeux.getLogger().warn("io ",e);
+                    getBayeux().getLogger().warn("io ",e);
                 }
             }
         }

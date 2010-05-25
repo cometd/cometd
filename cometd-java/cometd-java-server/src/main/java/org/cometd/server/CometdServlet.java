@@ -137,7 +137,9 @@ public class CometdServlet extends GenericServlet
         if (_logLevel>=CONFIG_LEVEL)
         {
             for (Map.Entry<String, Object> entry : _bayeux.getOptions().entrySet())
-                getServletContext().log(entry.getKey()+"="+entry.getValue());
+            {
+                _bayeux.getLogger().info(entry.getKey()+"="+entry.getValue());
+            }
         }
 
         _transports=new HttpTransport[_bayeux.getAllowedTransports().size()];

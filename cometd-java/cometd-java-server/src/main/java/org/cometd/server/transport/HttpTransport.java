@@ -104,6 +104,4 @@ public abstract class HttpTransport extends AbstractServerTransport
 
         return null;
     }
-
-
 }

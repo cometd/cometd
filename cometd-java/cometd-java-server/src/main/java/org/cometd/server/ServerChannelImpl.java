@@ -1,5 +1,6 @@
 package org.cometd.server;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -113,7 +114,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     /* ------------------------------------------------------------ */
     public Set<? extends ServerSession> getSubscribers()
     {
-        return _subscribers;
+        return Collections.unmodifiableSet(_subscribers);
     }
 
     /* ------------------------------------------------------------ */

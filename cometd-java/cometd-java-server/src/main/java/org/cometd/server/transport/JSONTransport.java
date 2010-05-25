@@ -11,18 +11,20 @@ import org.cometd.server.BayeuxServerImpl;
 
 public class JSONTransport extends LongPollingTransport
 {
+    public final static String PREFIX="long-polling.json";
     public final static String NAME="long-polling";
     public final static String MIME_TYPE_OPTION="mimeType";
 
-    protected String _mimeType="application/json;charset=UTF-8";
+    private String _mimeType="application/json;charset=UTF-8";
 
 
     public JSONTransport(BayeuxServerImpl bayeux)
     {
         super(bayeux,NAME);
-        addPrefix("json");
+        setOptionPrefix(PREFIX);
         setOption(MIME_TYPE_OPTION,_mimeType);
-        _metaConnectDeliveryOnly=false;
+        setMetaConnectDeliveryOnly(false);
+        setOption(META_CONNECT_DELIVERY_OPTION,isMetaConnectDeliveryOnly());
     }
 
     @Override
