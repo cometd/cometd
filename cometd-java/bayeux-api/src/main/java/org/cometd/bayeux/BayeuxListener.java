@@ -3,11 +3,9 @@ package org.cometd.bayeux;
 import java.util.EventListener;
 
 
-/* ------------------------------------------------------------ */
-/** A Bayeux Listener.
- * <p>
- * The Bayeux API makes extensive use of EventListeners.
- * This interface is the parent of all Bayeux EventListeners.
+/**
+ * <p>The common base interface for Bayeux listeners.</p>
+ * <p>Specific sub-interfaces define what kind of events listeners will be notified.</p>
  */
 public interface BayeuxListener extends EventListener
 {

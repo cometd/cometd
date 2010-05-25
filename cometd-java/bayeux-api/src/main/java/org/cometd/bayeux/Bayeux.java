@@ -8,6 +8,7 @@ import java.util.Set;
  * server-side configuration and usage of the Bayeux object.</p>
  * <p>The {@link Bayeux} object handles configuration options and a set of
  * transports that is negotiated with the server.</p>
+ * @see Transport
  */
 public interface Bayeux
 {
