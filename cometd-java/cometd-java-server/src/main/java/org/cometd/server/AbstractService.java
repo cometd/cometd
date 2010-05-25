@@ -49,7 +49,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * calling client in a private message.
  * </ul>
  *
- * @See {@link BayeuxServer#getSession(String)} as an alternative to AbstractService.
+ * @see {@link BayeuxServer#getSession(String)} as an alternative to AbstractService.
  */
 public abstract class AbstractService
 {
@@ -282,7 +282,7 @@ public abstract class AbstractService
      * @param id
      *            The id of the message (or null for a random id).
      */
-    protected void send(ServerSession toClient, String onChannel, Object data, Object id)
+    protected void send(ServerSession toClient, String onChannel, Object data, String id)
     {
         toClient.deliver(_session.getServerSession(),onChannel,data,id);
     }
@@ -328,7 +328,7 @@ public abstract class AbstractService
     {
         String channel=msg.getChannel();
         Object data=msg.getData();
-        Object id=msg.getId();
+        String id=msg.getId();
 
         if (method != null)
         {
@@ -344,13 +344,9 @@ public abstract class AbstractService
                         reply=method.invoke(this,fromClient,arg);
                         break;
                     case 3:
-                        if (id!=null && String.class.equals(method.getParameterTypes()[2]))
-                            id=id.toString();
                         reply=method.invoke(this,fromClient,arg,id);
                         break;
                     case 4:
-                        if (id!=null && String.class.equals(method.getParameterTypes()[3]))
-                            id=id.toString();
                         reply=method.invoke(this,fromClient,channel,arg,id);
                         break;
                 }

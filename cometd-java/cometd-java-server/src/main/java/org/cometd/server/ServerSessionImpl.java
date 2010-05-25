@@ -157,7 +157,7 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    public void deliver(Session from, String channelId, Object data, Object id)
+    public void deliver(Session from, String channelId, Object data, String id)
     {
         ServerMessage.Mutable mutable = _bayeux.newMessage();
         mutable.setChannel(channelId);

@@ -3,7 +3,6 @@ package org.cometd.bayeux.server;
 import java.util.Set;
 
 import org.cometd.bayeux.BayeuxListener;
-import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.client.SessionChannel;
 
@@ -12,7 +11,7 @@ import org.cometd.bayeux.client.SessionChannel;
 /* ------------------------------------------------------------ */
 /** Server side representation of a Bayeux Channel.
  * <p>
- * The ServerChannel is the entity that holds the set of 
+ * The ServerChannel is the entity that holds the set of
  * {@link ServerSession}s that are subscribed to a channel.
  * A message published to a ServerChannel will be delivered to
  * all the {@link ServerSession}'s subscribed to the channel.
@@ -25,25 +24,25 @@ import org.cometd.bayeux.client.SessionChannel;
  */
 public interface ServerChannel extends ConfigurableServerChannel
 {
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return
      */
     Set<? extends ServerSession> getSubscribers();
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return
      */
     boolean isBroadcast();  // !meta and !service;
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return
      */
     boolean isLazy();
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return
@@ -54,9 +53,9 @@ public interface ServerChannel extends ConfigurableServerChannel
     /**
      * Publish a message to the channel.
      * <p>
-     * Delivered a message to all the {@link ServerSession}'s 
+     * Delivered a message to all the {@link ServerSession}'s
      * subscribed to the channel.
-     * 
+     *
      * @param message
      */
     void publish(Session from, ServerMessage message);
@@ -65,19 +64,19 @@ public interface ServerChannel extends ConfigurableServerChannel
     /**
      * Publish a message to the channel.
      * <p>
-     * Delivered a message to all the {@link ServerSession}'s 
+     * Delivered a message to all the {@link ServerSession}'s
      * subscribed to the channel.
-     * @param data 
+     * @param data
      */
-    void publish(Session from, Object data, Object id);
+    void publish(Session from, Object data, String id);
 
 
     /* ------------------------------------------------------------ */
     /** Remove a channel
      */
     void remove();
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /**
@@ -93,7 +92,7 @@ public interface ServerChannel extends ConfigurableServerChannel
     {
         boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message);
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /**

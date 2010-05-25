@@ -751,7 +751,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
         }
 
         @Override
-        public void publish(Object data, Object messageId)
+        public void publish(Object data, String messageId)
         {
             Message.Mutable message = newMessage();
             message.setChannel(getId());

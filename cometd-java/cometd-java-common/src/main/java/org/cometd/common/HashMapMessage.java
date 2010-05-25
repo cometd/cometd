@@ -45,7 +45,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         @Override
         protected Object[] newArray(int size)
         {
-            return new Message[size]; 
+            return new Message[size];
         }
 
         @Override
@@ -60,16 +60,16 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
             return __msgJSON;
         }
     };
-    
+
     private Message _associated;
     private boolean _lazy=false;
-    
+
 
     /* ------------------------------------------------------------ */
     public HashMapMessage()
     {
     }
-    
+
 
     /* ------------------------------------------------------------ */
     public void addJSON(Appendable buffer)
@@ -113,7 +113,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     /* ------------------------------------------------------------ */
     public String getClientId()
     {
-        return (String)get(CLIENT_FIELD);
+        return (String)get(CLIENT_ID_FIELD);
     }
 
     /* ------------------------------------------------------------ */
@@ -135,7 +135,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     }
 
     /* ------------------------------------------------------------ */
-    public Object getId()
+    public String getId()
     {
         return (String)get(ID_FIELD);
     }
@@ -181,7 +181,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         Object ext=getExt();
         if (ext==null && !create)
             return null;
-        
+
         if (ext instanceof Map)
             return (Map<String,Object>)ext;
 
@@ -200,14 +200,14 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     /* ------------------------------------------------------------ */
     /**
      * Lazy messages are queued but do not wake up waiting clients.
-     * 
+     *
      * @return true if message is lazy
      */
     public boolean isLazy()
     {
         return _lazy;
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -224,7 +224,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         Boolean bool=(Boolean)get(Message.SUCCESSFUL_FIELD);
         return bool != null && bool.booleanValue();
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setAssociated(Message associated)
     {
@@ -234,7 +234,7 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     /* ------------------------------------------------------------ */
     /**
      * Lazy messages are queued but do not wake up waiting clients.
-     * 
+     *
      * @param lazy
      *            true if message is lazy
      */
@@ -249,14 +249,14 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         return getJSON();
     }
 
-    public void setChannel(String channelId)
+    public void setChannel(String channel)
     {
-        put(CHANNEL_FIELD,channelId);
+        put(CHANNEL_FIELD, channel);
     }
 
     public void setClientId(String clientId)
     {
-        put(CLIENT_FIELD,clientId);
+        put(CLIENT_ID_FIELD,clientId);
     }
 
     public void setData(Object data)
@@ -264,14 +264,14 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
         put(DATA_FIELD,data);
     }
 
-    public void setId(Object id)
+    public void setId(String id)
     {
         put(ID_FIELD,id);
     }
 
-    public void setSuccessful(boolean success)
+    public void setSuccessful(boolean successful)
     {
-        put(SUCCESSFUL_FIELD,success?Boolean.TRUE:Boolean.FALSE);
+        put(SUCCESSFUL_FIELD, successful ?Boolean.TRUE:Boolean.FALSE);
     }
 
 
