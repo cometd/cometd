@@ -72,6 +72,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public BayeuxServerImpl()
     {
+        _logger=Log.getLogger("bayeux@"+hashCode());
+        
         createIfAbsent(Channel.META_HANDSHAKE);
         createIfAbsent(Channel.META_CONNECT);
         createIfAbsent(Channel.META_SUBSCRIBE);
@@ -83,7 +85,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         ((ServerChannelImpl)getChannel(Channel.META_UNSUBSCRIBE)).addListener(new UnsubscribeHandler());
         ((ServerChannelImpl)getChannel(Channel.META_DISCONNECT)).addListener(new DisconnectHandler());
 
-        _logger=Log.getLogger("bayeux@"+hashCode());
 
         setOption("tickIntervalMs","97");
         setOption("sweepIntervalMs","997");
