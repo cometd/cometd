@@ -39,7 +39,7 @@ org.cometd.ReloadExtension = function(configuration)
 {
     var _cometd;
     var _debug;
-    var _state = {};
+    var _state = null;
     var _cookieMaxAge = configuration && configuration.cookieMaxAge || 5;
 
     function _reload()
@@ -52,13 +52,12 @@ org.cometd.ReloadExtension = function(configuration)
                 'max-age': _cookieMaxAge,
                 expires: new Date(new Date().getTime() + _cookieMaxAge * 1000)
             });
-            _state = {};
         }
     }
 
     function _similarState(oldState)
     {
-        // We want to check here that the Cometd object
+        // We want to check here that the CometD object
         // did not change much between reloads.
         // We just check the URL for now, but in future
         // further checks may involve the transport type
@@ -85,8 +84,8 @@ org.cometd.ReloadExtension = function(configuration)
 
         if (channel == '/meta/handshake')
         {
+            _state = {};
             _state.url = _cometd.getURL();
-            _state.subscriptions = {};
 
             var cookie = org.cometd.COOKIE.get('org.cometd.reload');
             // Is there a saved handshake response from a prior load ?
@@ -108,10 +107,14 @@ org.cometd.ReloadExtension = function(configuration)
                         _debug('Reload extension restoring state', oldState);
                         setTimeout(function()
                         {
-                            _state.handshakeResponse = oldState.handshakeResponse;
-                            _state.subscriptions = oldState.subscriptions;
                             _debug('Reload extension replaying handshake response', oldState.handshakeResponse);
-                            _cometd.receive(oldState.handshakeResponse);
+                            _state.handshakeResponse = oldState.handshakeResponse;
+                            _state.transportType = oldState.transportType;
+                            _state.reloading = true;
+                            var response = _cometd._mixin(true, {}, _state.handshakeResponse);
+                            response.supportedConnectionTypes = [_state.transportType];
+                            _cometd.receive(response);
+                            _debug('Reload extension replayed handshake response', response);
                         }, 0);
                         // This handshake is aborted, as we will replay the prior handshake response
                         return null;
@@ -127,31 +130,23 @@ org.cometd.ReloadExtension = function(configuration)
                 }
             }
         }
-        else if (channel == '/meta/subscribe')
+        else if (channel == '/meta/connect')
         {
-            // Are we already subscribed ?
-            if (_state.subscriptions[message.subscription])
+            if (!_state.transportType)
             {
-                _debug('Reload extension restoring subscription to', message.subscription);
-
-                // Consume the subscribe message, as we are already subscribed
-                setTimeout(function()
-                {
-                    _debug('Reload extension replaying subscription to', message.subscription);
-                    _cometd.receive({
-                        channel: '/meta/subscribe',
-                        subscription: message.subscription,
-                        successful: true
-                    });
-                }, 0);
-
-                // This subscription is aborted, as we will replay a previous one
-                return null;
+                _state.transportType = message.connectionType;
+                _debug('Reload extension tracked transport type', _state.transportType);
             }
-        }
-        else if (channel == '/meta/disconnect')
-        {
-            _state = {};
+
+            if (_state.reloading)
+            {
+                delete _state.reloading;
+                if (!message.advice)
+                {
+                    message.advice = {};
+                }
+                message.advice.timeout = 0;
+            }
         }
         return message;
     };
@@ -163,19 +158,17 @@ org.cometd.ReloadExtension = function(configuration)
             switch (message.channel)
             {
                 case '/meta/handshake':
-                    // Save successful handshake response
-                    _state.handshakeResponse = message;
-                    _debug('Reload extension tracked handshake response', message);
+                    // If the handshake response is already present, then we're replaying it.
+                    // Since the replay may have modified the handshake response, do not record it here.
+                    if (!_state.handshakeResponse)
+                    {
+                        // Save successful handshake response
+                        _state.handshakeResponse = message;
+                        _debug('Reload extension tracked handshake response', message);
+                    }
                     break;
-                case '/meta/subscribe':
-                    // Track subscriptions
-                    _state.subscriptions[message.subscription] = true;
-                    _debug('Reload extension tracked subscription', message);
-                    break;
-                case '/meta/unsubscribe':
-                    // Track unsubscriptions
-                    delete _state.subscriptions[message.subscription];
-                    _debug('Reload extension tracked unsubscription', message);
+                case '/meta/disconnect':
+                    _state = null;
                     break;
                 default:
                     break;

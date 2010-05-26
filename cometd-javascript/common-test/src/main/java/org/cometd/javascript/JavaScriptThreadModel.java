@@ -1,4 +1,4 @@
-package org.cometd;
+package org.cometd.javascript;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -62,6 +62,9 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
     public void run()
     {
         context = Context.enter();
+        context.setGeneratingDebug(true);
+        context.setGeneratingSource(true);
+        context.setOptimizationLevel(-1);
         try
         {
             while (running)
@@ -87,7 +90,6 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         {
             public Object call() throws IOException
             {
-                System.err.println("src "+url);
                 return context.evaluateReader(rootScope, new InputStreamReader(url.openStream()), url.toExternalForm(), 1, null);
             }
         });
@@ -110,13 +112,13 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         }
     }
 
-    public Object evaluate(final String script)
+    public Object evaluate(final String scriptName, final String script)
     {
         FutureTask<Object> future = new FutureTask<Object>(new Callable<Object>()
         {
             public Object call()
             {
-                return context.evaluateString(rootScope, script, nextScriptName(), 1, null);
+                return context.evaluateString(rootScope, script, scriptName == null ? nextScriptName() : scriptName, 1, null);
             }
         });
         submit(future);

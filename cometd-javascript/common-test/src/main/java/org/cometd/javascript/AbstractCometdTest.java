@@ -12,7 +12,7 @@
 // limitations under the License.
 // ========================================================================
 
-package org.cometd;
+package org.cometd.javascript;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -23,7 +23,6 @@ import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
 
 import junit.framework.TestCase;
-
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
@@ -50,6 +49,7 @@ public abstract class AbstractCometdTest extends TestCase
     protected String cometServletPath = "/cometd";
     protected String cometdURL;
     protected int longPollingPeriod = 5000;
+    protected int expirationPeriod = 2500;
     private HttpCookieStore cookies;
 
     @Override
@@ -117,7 +117,7 @@ public abstract class AbstractCometdTest extends TestCase
             org.mozilla.javascript.Context.exit();
         }
 
-        threadModel.evaluate("var maxConnections = " + getMaxConnections() + ";");
+        threadModel.evaluate(null, "var maxConnections = " + getMaxConnections() + ";");
         threadModel.define(XMLHttpRequestClient.class);
         threadModel.define(XMLHttpRequestExchange.class);
     }
@@ -162,7 +162,12 @@ public abstract class AbstractCometdTest extends TestCase
 
     protected <T> T evaluateScript(String script)
     {
-        return (T) threadModel.evaluate(script);
+        return (T)evaluateScript(null, script);
+    }
+
+    protected <T> T evaluateScript(String scriptName, String script)
+    {
+        return (T)threadModel.evaluate(scriptName, script);
     }
 
     protected void defineClass(Class clazz) throws InvocationTargetException, InstantiationException, IllegalAccessException

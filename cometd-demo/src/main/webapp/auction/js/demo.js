@@ -736,11 +736,14 @@ var auctionBehaviour =
 Behaviour.register(auctionBehaviour);
 Behaviour.addLoadEvent(function()
 {
-	$('username').focus();
-	dojox.cometd.subscribe(bidHandler._serviceRoot + 'categories', catalogDisplay, "displayCategories");
-	dojox.cometd.subscribe(bidHandler._serviceRoot + 'category', catalogDisplay, "displayItems");
-	dojox.cometd.subscribe(bidHandler._serviceRoot + 'search', catalogDisplay, "displayItems");
-	dojox.cometd.subscribe(bidHandler._serviceRoot + 'bidder', bidHandler, "handleRegistration");
+    setTimeout(function()
+    {
+        $('username').focus();
+        dojox.cometd.subscribe(bidHandler._serviceRoot + 'categories', catalogDisplay, "displayCategories");
+        dojox.cometd.subscribe(bidHandler._serviceRoot + 'category', catalogDisplay, "displayItems");
+        dojox.cometd.subscribe(bidHandler._serviceRoot + 'search', catalogDisplay, "displayItems");
+        dojox.cometd.subscribe(bidHandler._serviceRoot + 'bidder', bidHandler, "handleRegistration");
+    }, 100);
 });
 
 

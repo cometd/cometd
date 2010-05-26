@@ -3,7 +3,7 @@ package org.cometd.javascript.jquery;
 import java.io.File;
 import java.net.URL;
 
-import org.cometd.AbstractCometdTest;
+import org.cometd.javascript.AbstractCometdTest;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 
@@ -43,7 +43,7 @@ public abstract class AbstractCometdJQueryTest extends AbstractCometdTest
         evaluateScript("window.location = '" + contextURL + "'");
         URL cometdURL = new URL(contextURL + "/org/cometd.js");
         evaluateURL(cometdURL);
-        URL jqueryURL = new URL(contextURL + "/jquery/jquery-1.3.2.js");
+        URL jqueryURL = new URL(contextURL + "/jquery/jquery-1.4.2.js");
         evaluateURL(jqueryURL);
         URL jqueryJSONURL = new URL(contextURL + "/jquery/jquery.json-2.2.js");
         evaluateURL(jqueryJSONURL);

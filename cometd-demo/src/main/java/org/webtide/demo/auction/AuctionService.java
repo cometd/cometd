@@ -58,7 +58,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         addService("/service"+AUCTION_ROOT+"categories", "categories");
     }
 
-    public Bidder bidder(ServerSession source, String channel, String bidder, Object messageId)
+    public Bidder bidder(ServerSession source, String channel, String bidder, String messageId)
     {
         Integer id = _bidders.incrementAndGet();
 
@@ -74,17 +74,17 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         return b;
     }
 
-    public List<Category> categories(ServerSession source, String channel, String bidder, Object messageId)
+    public List<Category> categories(ServerSession source, String channel, String bidder, String messageId)
     {
         return _categoryDao.getAllCategories();
     }
 
-    public List<Item> search(ServerSession source, String channel, String search, Object messageId)
+    public List<Item> search(ServerSession source, String channel, String search, String messageId)
     {
         return _categoryDao.findItems(search);
     }
 
-    public List<Item> category(ServerSession source, String channel, Number categoryId, Object messageId)
+    public List<Item> category(ServerSession source, String channel, Number categoryId, String messageId)
     {
         return _categoryDao.getItemsInCategory(categoryId.intValue());
     }
@@ -121,7 +121,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         }
     }
 
-    public synchronized void bids(ServerSession source, String channel, Map<String,Object> bidMap, Object messageId)
+    public synchronized void bids(ServerSession source, String channel, Map<String,Object> bidMap, String messageId)
     {
         // TODO Other half of the non atomic bid hack when used in Oort
         Integer itemId = ((Number)bidMap.get("itemId")).intValue();
@@ -150,18 +150,9 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         }
     }
 
-    /*
-    public void subscribed(ServerSession client, Channel channel)
-    {
-    }
-    */
-
-
     @Override
     public void onMessage(ClientSessionChannel channel, Message message)
     {
-        // TODO Auto-generated method stub
-
     }
 
     @Override
@@ -181,7 +172,6 @@ public class AuctionService extends AbstractService implements ClientSessionChan
     @Override
     public void channelRemoved(String channelId)
     {
-        // TODO Auto-generated method stub
     }
 
     @Override
@@ -207,8 +197,5 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         // TODO Auto-generated method stub
 
     }
-
-
-
 }
 

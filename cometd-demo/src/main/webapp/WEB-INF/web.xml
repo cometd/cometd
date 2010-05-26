@@ -24,7 +24,7 @@
     </filter-mapping>
     -->
     
-    <!-- Filter to support FF cross domain origin headers -->
+    <!-- Filter to support cross domain requests -->
     <filter>
         <filter-name>cross-origin</filter-name>
         <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
@@ -42,7 +42,7 @@
         <!--async-supported>true</async-supported-->
         <init-param>
             <param-name>timeout</param-name>
-            <param-value>30000</param-value>
+            <param-value>20000</param-value>
         </init-param>
         <init-param>
             <param-name>interval</param-name>
@@ -62,7 +62,7 @@
         </init-param>
         <init-param>
             <param-name>logLevel</param-name>
-            <param-value>1</param-value>
+            <param-value>0</param-value>
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>
@@ -85,7 +85,7 @@
             <param-name>oort.url</param-name>
             <param-value>http://localhost:8080/cometd</param-value>
         </init-param>
-        <!-- Define the Oort cloud
+        <!-- Define the Oort cloud (comma separated list of other oort.urls in the cluster)
         <init-param>
             <param-name>oort.cloud</param-name>
             <param-value>http://localhost:8081/cometd</param-value>
@@ -111,7 +111,6 @@
         <servlet-class>org.webtide.demo.auction.AuctionServlet</servlet-class>
         <load-on-startup>5</load-on-startup>
     </servlet>
-
 
 </web-app>
 
