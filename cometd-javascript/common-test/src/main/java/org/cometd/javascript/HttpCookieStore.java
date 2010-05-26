@@ -1,4 +1,4 @@
-package org.cometd;
+package org.cometd.javascript;
 
 import java.text.SimpleDateFormat;
 import java.util.HashMap;

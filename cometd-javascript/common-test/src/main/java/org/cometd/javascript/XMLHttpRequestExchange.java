@@ -1,4 +1,4 @@
-package org.cometd;
+package org.cometd.javascript;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -22,9 +22,9 @@ public class XMLHttpRequestExchange extends ScriptableObject
     {
     }
 
-    public void jsConstructor(Object threadModel, Scriptable scope, Scriptable thiz, Function function, String method, String url)
+    public void jsConstructor(Object threadModel, Scriptable scope, Scriptable thiz, Function function, String method, String url, boolean async)
     {
-        exchange = new CometdExchange((ThreadModel)threadModel, scope, thiz, function, method, url);
+        exchange = new CometdExchange((ThreadModel)threadModel, scope, thiz, function, method, url, async);
     }
 
     public String getClassName()
@@ -37,9 +37,25 @@ public class XMLHttpRequestExchange extends ScriptableObject
         return exchange;
     }
 
+    public boolean isAsynchronous()
+    {
+        return exchange.isAsynchronous();
+    }
+
+    public void await() throws InterruptedException
+    {
+        exchange.waitForDone();
+        exchange.notifyReadyStateChange();
+    }
+
     public void jsFunction_addRequestHeader(String name, String value)
     {
         exchange.addRequestHeader(name, value);
+    }
+
+    public void jsFunction_setOnReadyStateChange(Scriptable thiz, Function function)
+    {
+        exchange.setOnReadyStateChange(thiz, function);
     }
 
     public String jsGet_method()
@@ -96,14 +112,15 @@ public class XMLHttpRequestExchange extends ScriptableObject
 
         private final ThreadModel threads;
         private final Scriptable scope;
-        private final Scriptable thiz;
-        private final Function function;
+        private volatile Scriptable thiz;
+        private volatile Function function;
+        private final boolean async;
         private volatile boolean aborted;
         private volatile ReadyState readyState = ReadyState.UNSENT;
         private volatile String responseText;
         private volatile String responseStatusText;
 
-        public CometdExchange(ThreadModel threads, Scriptable scope, Scriptable thiz, Function function, String method, String url)
+        public CometdExchange(ThreadModel threads, Scriptable scope, Scriptable thiz, Function function, String method, String url, boolean async)
         {
             super(true);
             this.threads = threads;
@@ -112,11 +129,24 @@ public class XMLHttpRequestExchange extends ScriptableObject
             this.function = function;
             setMethod(method == null ? "GET" : method.toUpperCase());
             setURL(url);
+            this.async = async;
             aborted = false;
             readyState = ReadyState.OPENED;
             responseStatusText = null;
             getRequestFields().clear();
-            notifyReadyStateChange();
+            if (async)
+                notifyReadyStateChange();
+        }
+
+        public boolean isAsynchronous()
+        {
+            return async;
+        }
+
+        private void setOnReadyStateChange(Scriptable thiz, Function function)
+        {
+            this.thiz = thiz;
+            this.function = function;
         }
 
         private void notifyReadyStateChange()
@@ -131,7 +161,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
             aborted = true;
             responseText = null;
             getRequestFields().clear();
-            if (readyState == ReadyState.HEADERS_RECEIVED || readyState == ReadyState.LOADING)
+            if (!async || readyState == ReadyState.HEADERS_RECEIVED || readyState == ReadyState.LOADING)
             {
                 readyState = ReadyState.DONE;
                 notifyReadyStateChange();
@@ -181,8 +211,11 @@ public class XMLHttpRequestExchange extends ScriptableObject
         {
             if (!aborted)
             {
-                readyState = ReadyState.HEADERS_RECEIVED;
-                notifyReadyStateChange();
+                if (async)
+                {
+                    readyState = ReadyState.HEADERS_RECEIVED;
+                    notifyReadyStateChange();
+                }
             }
         }
 
@@ -192,10 +225,13 @@ public class XMLHttpRequestExchange extends ScriptableObject
             super.onResponseContent(buffer);
             if (!aborted)
             {
-                if (readyState != ReadyState.LOADING)
+                if (async)
                 {
-                    readyState = ReadyState.LOADING;
-                    notifyReadyStateChange();
+                    if (readyState != ReadyState.LOADING)
+                    {
+                        readyState = ReadyState.LOADING;
+                        notifyReadyStateChange();
+                    }
                 }
             }
         }
@@ -207,7 +243,8 @@ public class XMLHttpRequestExchange extends ScriptableObject
             {
                 responseText = getResponseContent();
                 readyState = ReadyState.DONE;
-                notifyReadyStateChange();
+                if (async)
+                    notifyReadyStateChange();
             }
         }
     }

@@ -194,16 +194,11 @@
             _membersSubscription = $.cometd.subscribe('/chat/members', _self.members);
         }
 
-        function _connectionEstablished()
+        function _connectionInitialized()
         {
-            _self.receive({
-                data: {
-                    user: 'system',
-                    chat: 'Connection to Server Opened'
-                }
-            });
             $.cometd.batch(function()
             {
+                _subscribe();
                 $.cometd.publish('/service/members', {
                     user: _username,
                     room: '/chat/demo'
@@ -213,6 +208,19 @@
                     membership: 'join',
                     chat: _username + ' has joined'
                 });
+            });
+        }
+
+        function _connectionEstablished()
+        {
+            _self.receive({
+                data: {
+                    user: 'system',
+                    chat: 'Connection to Server Opened'
+                }
+            });
+            $.cometd.publish('/service/members', {
+                room: '/chat/demo'
             });
         }
 
@@ -237,12 +245,6 @@
             });
         }
 
-        function _metaHandshake(message)
-        {
-        	if (message.successful)
-        		_subscribe();
-        }
-        
         function _metaConnect(message)
         {
             if (_disconnecting)
@@ -265,21 +267,25 @@
             }
         }
 
+        function _metaHandshake(message)
+        {
+            if (message.successful)
+            {
+                _connectionInitialized();
+            }
+        }
+
         $.cometd.addListener('/meta/handshake', _metaHandshake);
         $.cometd.addListener('/meta/connect', _metaConnect);
 
         // Restore the state, if present
         if (state)
         {
-            _connected = state.connected === true;
-            if (_connected)
+            setTimeout(function()
             {
-                setTimeout(function()
-                {
-                    _self.join(state.username);
-                    _connectionEstablished();
-                }, 0);
-            }
+                // This will perform the handshake
+                _self.join(state.username);
+            }, 0);
         }
 
         $(window).unload(function()
@@ -290,14 +296,17 @@
         		// Save the application state only if the user was chatting
         		if (_wasConnected && _username)
         		{
+                    var expires = new Date();
+                    expires.setTime(expires.getTime() + 5 * 1000);
         			org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
-        				connected: _wasConnected,
         				username: _username
-        			}), { 'max-age': 10 });
+                    }), { 'max-age': 5, expires: expires });
         		}
             }
         	else
+            {
         		$.cometd.disconnect();
+            }
         });
     }
 

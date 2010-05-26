@@ -1,4 +1,3 @@
-
 dojo.require("dojox.cometd");
 dojo.require("dojox.cometd.timestamp");
 dojo.require("dojox.cometd.ack");
@@ -77,7 +76,16 @@ var room = {
 
     _unsubscribe: function()
     {
-
+        if (room._chatSubscription)
+        {
+            dojox.cometd.unsubscribe(room._chatSubscription);
+        }
+        room._chatSubscription = null;
+        if (room._membersSubscription)
+        {
+            dojox.cometd.unsubscribe(room._membersSubscription);
+        }
+        room._membersSubscription = null;
     },
 
     _subscribe: function()
@@ -178,16 +186,11 @@ var room = {
         members.innerHTML = list;
     },
 
-    _connectionEstablished: function()
+    _connectionInitialized: function()
     {
-        room.receive({
-            data: {
-                user: 'system',
-                chat: 'Connection to Server Opened'
-            }
-        });
         dojox.cometd.batch(function()
         {
+            room._subscribe();
             dojox.cometd.publish('/service/members', {
                 user: room._username,
                 room: '/chat/demo'
@@ -197,6 +200,19 @@ var room = {
                 membership: 'join',
                 chat: room._username + ' has joined'
             });
+        });
+    },
+
+    _connectionEstablished: function()
+    {
+        room.receive({
+            data: {
+                user: 'system',
+                chat: 'Connection to Server Opened'
+            }
+        });
+        dojox.cometd.publish('/service/members', {
+            room: '/chat/demo'
         });
     },
 
@@ -224,7 +240,9 @@ var room = {
     _metaHandshake: function(message)
     {
     	if (message.successful)
-    		room._subscribe();
+        {
+            room._connectionInitialized();
+        }
     },
     
     _metaConnect: function(message)

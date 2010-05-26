@@ -1,4 +1,4 @@
-package org.cometd;
+package org.cometd.javascript;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -18,7 +18,7 @@ public interface ThreadModel
 
     Object evaluate(URL url) throws IOException;
 
-    Object evaluate(String script);
+    Object evaluate(String scriptName, String script);
 
     Object execute(Scriptable scope, Scriptable thiz, Function function, Object... arguments);
 

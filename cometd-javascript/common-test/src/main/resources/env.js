@@ -58,7 +58,7 @@ var window = this;
             var log = formatter.format(new java.util.Date());
             log += ' ' + java.lang.Thread.currentThread().getId();
             log += ' ' + text;
-            java.lang.System.out.println(log);
+            java.lang.System.err.println(log);
         }
 
         return {
@@ -96,7 +96,8 @@ var window = this;
     };
     window.clearTimeout = function(handle)
     {
-        handle.cancel(true);
+        if (handle)
+            handle.cancel(true);
     };
     window.setInterval = function(fn, period)
     {
@@ -148,10 +149,10 @@ var window = this;
         window.console.debug('Event: ', event);
         if (event.type)
         {
+            var self = this;
+
             if (this.uuid && events[this.uuid][event.type])
             {
-                var self = this;
-
                 events[this.uuid][event.type].forEach(function(fn)
                 {
                     fn.call(self, event);
@@ -163,6 +164,26 @@ var window = this;
         }
     };
 
+    /**
+     * Performs a GET request to retrieve the content of the given URL,
+     * simulating the behavior of a browser calling the URL of the src
+     * attribute of the script tag.
+     *
+     * @param url the URL to make the request to
+     */
+    function makeScriptRequest(url)
+    {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", url, true);
+        xhr.onreadystatechange = function()
+        {
+            if (this.readyState === XMLHttpRequest.DONE && this.status === 200)
+            {
+                eval(this.responseText);
+            }
+        };
+        xhr.send();
+    }
 
     var _domNodes = new java.util.HashMap();
     /**
@@ -173,8 +194,10 @@ var window = this;
     function makeNode(javaNode)
     {
         if (!javaNode) return null;
-        if (_domNodes.containsKey(javaNode)) return _domNodes.get(javaNode);
-        var jsNode = javaNode.getNodeType() == Packages.org.w3c.dom.Node.ELEMENT_NODE ? new DOMElement(javaNode) : new DOMNode(javaNode);
+        if (_domNodes.containsKey(javaNode))
+            return _domNodes.get(javaNode);
+        var isElement = javaNode.getNodeType() == Packages.org.w3c.dom.Node.ELEMENT_NODE;
+        var jsNode = isElement ? new DOMElement(javaNode) : new DOMNode(javaNode);
         _domNodes.put(javaNode, jsNode);
         return jsNode;
     }
@@ -317,7 +340,10 @@ var window = this;
         this._file = stream;
         this._dom = Packages.javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(stream);
 
-        if (!_domNodes.containsKey(this._dom)) _domNodes.put(this._dom, this);
+        if (!_domNodes.containsKey(this._dom))
+            _domNodes.put(this._dom, this);
+
+        this._dom.addEventListener('DOMNodeInserted', Packages.org.cometd.javascript.ScriptInjectionEventListener(threadModel, window, window, makeScriptRequest), false);
     };
     DOMDocument.prototype = extend(new DOMNode(), {
         // START OFFICIAL DOM
@@ -337,8 +363,7 @@ var window = this;
         },
         createTextNode: function(text)
         {
-            return makeNode(this._dom.createTextNode(
-                    text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")));
+            return makeNode(this._dom.createTextNode(text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")));
         },
         createComment: function(text)
         {
@@ -806,14 +831,12 @@ var window = this;
             },
             open: function(method, url, async, user, password)
             {
-                if (async !== undefined && !async) throw 'NOT_SUPPORTED_ERR';
-
                 // Abort previous exchange
                 this.abort();
 
                 var absolute = /^https?:\/\//.test(url);
                 var absoluteURL = absolute ? url : window.location.href + url;
-                this._exchange = new XMLHttpRequestExchange(threadModel, this, this, this.onreadystatechange, method, absoluteURL);
+                this._exchange = new XMLHttpRequestExchange(threadModel, this, this, this.onreadystatechange, method, absoluteURL, async);
             },
             setRequestHeader: function(header, value)
             {
@@ -824,6 +847,7 @@ var window = this;
             send: function(data)
             {
                 if (this.readyState !== XMLHttpRequest.OPENED) throw 'INVALID_STATE_ERR';
+                this._exchange.setOnReadyStateChange(this, this.onreadystatechange);
                 if (this._exchange.method == 'GET') data = null;
                 if (data) this._exchange.setRequestContent(data);
                 _xhrClient.send(this._exchange);
