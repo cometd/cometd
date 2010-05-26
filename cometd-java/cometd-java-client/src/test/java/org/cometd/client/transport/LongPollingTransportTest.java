@@ -401,7 +401,7 @@ public class LongPollingTransportTest
         }
 
         @Override
-        public void onSending(Mutable[] messages)
+        public void onSending(Message[] messages)
         {
         }
 

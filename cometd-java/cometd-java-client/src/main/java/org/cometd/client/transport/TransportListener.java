@@ -9,7 +9,7 @@ import org.cometd.bayeux.Message;
  */
 public interface TransportListener
 {
-    void onSending(Message.Mutable[] messages);
+    void onSending(Message[] messages);
 
     void onMessages(List<Message.Mutable> messages);
 

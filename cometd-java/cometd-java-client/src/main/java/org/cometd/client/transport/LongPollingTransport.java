@@ -97,9 +97,9 @@ public class LongPollingTransport extends ClientTransport
     private class TransportExchange extends ContentExchange
     {
         private final TransportListener _listener;
-        private final Message.Mutable[] _messages;
+        private final Message[] _messages;
 
-        private TransportExchange(TransportListener listener, Message.Mutable... messages)
+        private TransportExchange(TransportListener listener, Message... messages)
         {
             super(true);
             _listener=listener;
