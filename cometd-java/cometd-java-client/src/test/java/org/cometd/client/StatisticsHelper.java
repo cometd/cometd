@@ -19,17 +19,17 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class StatisticsHelper implements Runnable
 {
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final com.sun.management.OperatingSystemMXBean operatingSystem;
     private final CompilationMXBean jitCompiler;
     private final MemoryMXBean heapMemory;
+    private final AtomicInteger starts = new AtomicInteger();
     private volatile MemoryPoolMXBean youngMemoryPool;
     private volatile MemoryPoolMXBean survivorMemoryPool;
     private volatile MemoryPoolMXBean oldMemoryPool;
     private volatile ScheduledFuture<?> memoryPoller;
     private volatile GarbageCollectorMXBean youngCollector;
     private volatile GarbageCollectorMXBean oldCollector;
-    private final AtomicInteger starts = new AtomicInteger();
+    private volatile ScheduledExecutorService scheduler;
     private volatile boolean polling;
     private volatile long lastYoungUsed;
     private volatile long startYoungCollections;
@@ -128,6 +128,7 @@ public class StatisticsHelper implements Runnable
         long youngGenerationHeap = heapMemoryUsage.getMax() - oldMemoryPool.getUsage().getMax();
         System.err.println("Young Generation Heap Size: " + mebiBytes(youngGenerationHeap) + " MiB");
 
+        scheduler = Executors.newSingleThreadScheduledExecutor();
         polling = false;
         memoryPoller = scheduler.scheduleWithFixedDelay(this, 0, 500, TimeUnit.MILLISECONDS);
 
@@ -163,6 +164,7 @@ public class StatisticsHelper implements Runnable
         long youngCollections = youngCollector.getCollectionCount() - startYoungCollections;
 
         memoryPoller.cancel(false);
+        scheduler.shutdown();
 
         System.err.println("- - - - - - - - - - - - - - - - - - - - ");
         System.err.println("Statistics Ended at " + new Date());
