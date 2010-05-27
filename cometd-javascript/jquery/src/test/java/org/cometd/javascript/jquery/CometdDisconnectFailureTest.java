@@ -1,8 +1,6 @@
 package org.cometd.javascript.jquery;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -12,10 +10,10 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.cometd.javascript.Latch;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.mozilla.javascript.ScriptableObject;
 
 /**
  * Tests that failing the disconnect, the comet communication is aborted anyway
@@ -34,19 +32,20 @@ public class CometdDisconnectFailureTest extends AbstractCometdJQueryTest
 
     public void testDisconnectFailure() throws Exception
     {
-        defineClass(Listener.class);
+        defineClass(Latch.class);
+
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("$.cometd.init({url: '" + cometdURL + "', logLevel: 'debug'})");
+        assertTrue(readyLatch.await(1000));
 
-        // Wait for the long poll
-        Thread.sleep(1000);
+        evaluateScript("var disconnectLatch = new Latch(1);");
+        Latch disconnectLatch = get("disconnectLatch");
+        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
 
-        evaluateScript("var disconnectListener = new Listener();");
-        Listener disconnectListener = get("disconnectListener");
-        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);");
-
-        disconnectListener.expect(1);
         evaluateScript("$.cometd.disconnect();");
-        assertTrue(disconnectListener.await(1000));
+        assertTrue(disconnectLatch.await(1000));
 
         // The test ends here, as we cannot get any information about the fact that
         // the long poll call returned (which we would have liked to, confirming that
@@ -59,35 +58,8 @@ public class CometdDisconnectFailureTest extends AbstractCometdJQueryTest
         // callback to signal this, and any connect listener will not be notified.
     }
 
-    public static class Listener extends ScriptableObject
-    {
-        private CountDownLatch latch;
-
-        public String getClassName()
-        {
-            return "Listener";
-        }
-
-        public void expect(int messageCount)
-        {
-            latch = new CountDownLatch(messageCount);
-        }
-
-        public void jsFunction_handle(Object message)
-        {
-            latch.countDown();
-        }
-
-        public boolean await(long timeout) throws InterruptedException
-        {
-            return latch.await(timeout, TimeUnit.MILLISECONDS);
-        }
-    }
-
     public static class DisconnectThrowingFilter implements Filter
     {
-        private int messages;
-
         public void init(FilterConfig filterConfig) throws ServletException
         {
         }
@@ -99,9 +71,9 @@ public class CometdDisconnectFailureTest extends AbstractCometdJQueryTest
 
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            ++messages;
-            // The fourth message will be the disconnect, throw
-            if (messages == 4) throw new IOException();
+            String uri = request.getRequestURI();
+            if (uri.endsWith("disconnect"))
+                throw new IOException();
             chain.doFilter(request, response);
         }
 

@@ -2,6 +2,7 @@ package org.cometd.javascript.jquery.extension;
 
 import java.net.URL;
 
+import org.cometd.javascript.Latch;
 import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ext.TimesyncExtension;
@@ -23,6 +24,7 @@ public class CometdTimeSyncExtensionTest extends AbstractCometdJQueryTest
         URL jqueryTimesyncExtensionURL = new URL(contextURL + "/jquery/jquery.cometd-timesync.js");
         evaluateURL(jqueryTimesyncExtensionURL);
 
+        defineClass(Latch.class);
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
 
         evaluateScript("var inTimeSync = undefined;");
@@ -49,8 +51,11 @@ public class CometdTimeSyncExtensionTest extends AbstractCometdJQueryTest
                 "    return message;" +
                 "}" +
                 "});");
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
         evaluateScript("$.cometd.handshake();");
-        Thread.sleep(500); // Wait for the long poll
+        assertTrue(readyLatch.await(1000));
 
         // Both client and server should support timesync
         Object outTimeSync = get("outTimeSync");
@@ -64,7 +69,6 @@ public class CometdTimeSyncExtensionTest extends AbstractCometdJQueryTest
         int networkLag = ((Number)get("networkLag")).intValue();
         assertTrue(networkLag > 0);
 
-        evaluateScript("$.cometd.disconnect();");
-        Thread.sleep(500); // Wait for the disconnect to return
+        evaluateScript("$.cometd.disconnect(true);");
     }
 }
