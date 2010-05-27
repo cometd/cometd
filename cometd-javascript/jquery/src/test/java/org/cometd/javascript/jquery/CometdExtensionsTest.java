@@ -1,5 +1,6 @@
 package org.cometd.javascript.jquery;
 
+import org.cometd.javascript.Latch;
 import org.mozilla.javascript.ScriptableObject;
 
 /**
@@ -9,6 +10,7 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
 {
     public void testRegisterUnregister() throws Exception
     {
+        defineClass(Latch.class);
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         evaluateScript("var inCount = 0;");
         evaluateScript("var outCount = 0;");
@@ -20,8 +22,14 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
                 "});");
         evaluateScript("$.cometd.registerExtension('testempty', {});");
 
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("$.cometd.handshake();");
-        Thread.sleep(500); // Wait for the long poll
+        assertTrue(readyLatch.await(1000));
+
+        // Wait for the long poll to be established
+        Thread.sleep(500);
 
         Number inCount = get("inCount");
         Number outCount = get("outCount");
@@ -33,71 +41,93 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
         unregistered = evaluateScript("$.cometd.unregisterExtension('testout');");
         assertTrue(unregistered);
 
+        evaluateScript("var publishLatch = new Latch(1);");
+        Latch publishLatch = get("publishLatch");
+        evaluateScript("$.cometd.addListener('/meta/publish', function(message) { publishLatch.countDown(); });");
         evaluateScript("$.cometd.publish('/echo', 'ping');");
-        Thread.sleep(500); // Wait for the publish to return
+        assertTrue(publishLatch.await(1000));
+
         inCount = get("inCount");
         outCount = get("outCount");
         assertEquals(2, inCount.intValue());
         assertEquals(3, outCount.intValue());
 
-        evaluateScript("$.cometd.disconnect();");
-        Thread.sleep(500); // Wait for the disconnect to return
+        evaluateScript("$.cometd.disconnect(true);");
     }
 
     public void testExtensions() throws Exception
     {
-        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        defineClass(Latch.class);
         defineClass(Listener.class);
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
 
-        StringBuilder script = new StringBuilder();
-        script.append("var listener = new Listener();");
-        script.append("$.cometd.registerExtension('testext', {" +
+        evaluateScript("" +
+                "var listener = new Listener();" +
+                "$.cometd.registerExtension('testext', {" +
                 "incoming: function(message) { listener.incoming(message); return message;}," +
                 "outgoing: function(message) { listener.outgoing(message); return message;}" +
                 "});");
-        evaluateScript(script.toString());
         Listener listener = get("listener");
 
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("$.cometd.handshake();");
-        Thread.sleep(500); // Wait for the long poll
+        assertTrue(readyLatch.await(1000));
+
+        // Wait for the long poll to be established
+        // Cannot rely on latches for this, since we need to intercept the connect2
+        Thread.sleep(500);
+
         assertEquals(3, listener.getOutgoingMessageCount()); // handshake, connect1, connect2
         assertEquals(2, listener.getIncomingMessageCount()); // handshake, connect1
 
         listener.reset();
-        script.setLength(0);
-        script.append("var subscription = $.cometd.subscribe('/echo', window.console, window.console.debug);");
-        evaluateScript(script.toString());
-        Thread.sleep(500); // Wait for subscribe to happen
+        evaluateScript("var subscribeLatch = new Latch(1);");
+        Latch subscribeLatch = get("subscribeLatch");
+        evaluateScript("$.cometd.addListener('/meta/subscribe', subscribeLatch, 'countDown');");
+        evaluateScript("var messageLatch = new Latch(1);");
+        Latch messageLatch = get("messageLatch");
+        evaluateScript("var subscription = $.cometd.subscribe('/echo', messageLatch, 'countDown');");
+        assertTrue(subscribeLatch.await(1000));
         assertEquals(1, listener.getOutgoingMessageCount()); // subscribe
         assertEquals(1, listener.getIncomingMessageCount()); // subscribe
 
         listener.reset();
-        script.setLength(0);
-        script.append("$.cometd.publish('/echo', 'test');");
-        evaluateScript(script.toString());
-        Thread.sleep(500); // Wait for subscribe to happen
+        evaluateScript("var publishLatch = new Latch(1);");
+        Latch publishLatch = get("publishLatch");
+        evaluateScript("$.cometd.addListener('/meta/publish', publishLatch, 'countDown');");
+        evaluateScript("$.cometd.publish('/echo', 'test');");
+        assertTrue(publishLatch.await(1000));
+        assertTrue(messageLatch.await(1000));
         assertEquals(1, listener.getOutgoingMessageCount()); // publish
         assertEquals(2, listener.getIncomingMessageCount()); // publish, message
 
         listener.reset();
-        script.setLength(0);
-        script.append("$.cometd.unsubscribe(subscription);");
-        evaluateScript(script.toString());
-        Thread.sleep(500); // Wait for subscribe to happen
+        evaluateScript("var unsubscribeLatch = new Latch(1);");
+        Latch unsubscribeLatch = get("unsubscribeLatch");
+        evaluateScript("$.cometd.addListener('/meta/unsubscribe', unsubscribeLatch, 'countDown');");
+        evaluateScript("$.cometd.unsubscribe(subscription);");
+        assertTrue(unsubscribeLatch.await(1000));
         assertEquals(1, listener.getOutgoingMessageCount()); // unsubscribe
         assertEquals(1, listener.getIncomingMessageCount()); // unsubscribe
 
+        readyLatch.reset(1);
         listener.reset();
-        script.setLength(0);
-        script.append("$.cometd.disconnect();");
-        evaluateScript(script.toString());
-        Thread.sleep(500); // Wait for disconnect to happen
+        evaluateScript("$.cometd.disconnect(true);");
+        assertTrue(readyLatch.await(1000));
+
+        // Wait for the connect to return
+        Thread.sleep(500);
+
         assertEquals(1, listener.getOutgoingMessageCount()); // disconnect
         assertEquals(2, listener.getIncomingMessageCount()); // connect2, disconnect
     }
 
     public void testExtensionOrder() throws Exception
     {
+        defineClass(Latch.class);
+
         // Default incoming extension order is reverse
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
 
@@ -121,13 +151,15 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
                        "{" +
                        "    if (message.ext1 === 1 && message.ext2 === 1) ok = true;" +
                        "});");
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("$.cometd.handshake();");
-        Thread.sleep(1000); // Wait for long poll
+        assertTrue(readyLatch.await(1000));
 
         assertTrue((Boolean)get("ok"));
 
-        evaluateScript("$.cometd.disconnect();");
-        Thread.sleep(1000);
+        evaluateScript("$.cometd.disconnect(true);");
 
         evaluateScript("$.cometd.unregisterExtension('ext1');");
         evaluateScript("$.cometd.unregisterExtension('ext2');");
@@ -149,14 +181,13 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
                        "    return message;" +
                        "} " +
                        "});");
-
+        readyLatch.reset(1);
         evaluateScript("$.cometd.handshake();");
-        Thread.sleep(1000); // Wait for long poll
+        assertTrue(readyLatch.await(1000));
 
         assertTrue((Boolean)get("ok"));
 
-        evaluateScript("$.cometd.disconnect();");
-        Thread.sleep(1000);
+        evaluateScript("$.cometd.disconnect(true);");
     }
 
     public void testExtensionRegistrationCallbacks() throws Exception

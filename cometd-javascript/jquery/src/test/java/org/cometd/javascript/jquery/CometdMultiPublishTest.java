@@ -16,6 +16,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.cometd.javascript.Latch;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -37,30 +38,32 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
 
     public void testMultiPublish() throws Throwable
     {
+        defineClass(Latch.class);
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/connect', readyLatch, 'countDown');");
         evaluateScript("$.cometd.init({url: '" + cometdURL + "', logLevel: 'debug'});");
+        assertTrue(readyLatch.await(1000));
 
-        // Wait for the long poll
-        Thread.sleep(1000);
-
-        defineClass(Listener.class);
-        evaluateScript("var listener = new Listener();");
-        Listener listener = get("listener");
-        evaluateScript("$.cometd.subscribe('/echo', listener, listener.listen);");
-        // Wait for subscribe to return
-        Thread.sleep(1000);
+        evaluateScript("var subscribeLatch = new Latch(1);");
+        Latch subscribeLatch = get("subscribeLatch");
+        evaluateScript("$.cometd.addListener('/meta/subscribe', subscribeLatch, 'countDown');");
+        evaluateScript("var latch = new Latch(1);");
+        Latch latch = get("latch");
+        evaluateScript("$.cometd.subscribe('/echo', latch, latch.countDown);");
+        assertTrue(subscribeLatch.await(1000));
 
         defineClass(Handler.class);
         evaluateScript("var handler = new Handler();");
         Handler handler = get("handler");
         evaluateScript("$.cometd.addListener('/meta/publish', handler, handler.handle);");
-        evaluateScript("var disconnect = new Listener();");
-        Listener disconnect = get("disconnect");
-        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnect, disconnect.listen);");
+        evaluateScript("var disconnect = new Latch(1);");
+        Latch disconnect = get("disconnect");
+        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnect, disconnect.countDown);");
 
-        listener.expect(1);
         AtomicReference<List<Throwable>> failures = new AtomicReference<List<Throwable>>(new ArrayList<Throwable>());
         handler.expect(failures, 4);
-        disconnect.expect(1);
+        disconnect.reset(1);
 
         // These publish are sent without waiting each one to return,
         // so they will be queued. The second publish will fail, we
@@ -71,35 +74,10 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
                 "$.cometd.publish('/echo', {id: 4});" +
                 "$.cometd.disconnect();");
 
-        assertTrue(listener.await(1000));
-        assertTrue(handler.await(1000));
+        assertTrue(latch.await(1000));
+        assertTrue(failures.get().toString(), handler.await(1000));
         assertTrue(failures.get().toString(), failures.get().isEmpty());
         assertTrue(disconnect.await(1000));
-    }
-
-    public static class Listener extends ScriptableObject
-    {
-        private CountDownLatch latch;
-
-        public String getClassName()
-        {
-            return "Listener";
-        }
-
-        public void jsFunction_listen(Object message)
-        {
-            latch.countDown();
-        }
-
-        public void expect(int count)
-        {
-            latch = new CountDownLatch(count);
-        }
-
-        public boolean await(long timeout) throws InterruptedException
-        {
-            return latch.await(timeout, TimeUnit.MILLISECONDS);
-        }
     }
 
     public static class Handler extends ScriptableObject
@@ -116,26 +94,28 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
         public void jsFunction_handle(Object jsMessage)
         {
             Map message = (Map)jsToJava(jsMessage);
-            System.out.println("SIMON, message = " + message);
             Boolean successful = (Boolean)message.get("successful");
             ++id;
             if (id == 1)
             {
                 // First publish should succeed
-                if (successful == null || !successful) failures.get().add(new AssertionError("Publish " + id + " expected successful"));
+                if (successful == null || !successful)
+                    failures.get().add(new AssertionError("Publish " + id + " expected successful"));
             }
             else if (id == 2 || id == 3 || id == 4)
             {
                 // Second publish should fail because of the server
-                // Third and fourth are soft failed by the comet implementation
+                // Third and fourth are soft failed by the CometD implementation
                 if (successful == null || successful)
                 {
                     failures.get().add(new AssertionError("Publish " + id + " expected unsuccessful"));
                 }
                 else
                 {
-                    int dataId = (Integer)((Map)((Map)message.get("request")).get("data")).get("id");
-                    if (dataId != id) failures.get().add(new AssertionError("data id " + dataId + ", expecting " + id));
+                    Map data = (Map)((Map)message.get("request")).get("data");
+                    int dataId = ((Number)data.get("id")).intValue();
+                    if (dataId != id)
+                        failures.get().add(new AssertionError("data id " + dataId + ", expecting " + id));
                 }
             }
             latch.countDown();
@@ -168,9 +148,12 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
 
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            ++messages;
-            // The sixth message will be the second publish, throw
-            if (messages == 6) throw new IOException();
+            String uri = request.getRequestURI();
+            if (!uri.endsWith("handshake") && !uri.endsWith("connect"))
+                ++messages;
+            // The third non-handshake and non-connect message will be the second publish, throw
+            if (messages == 3)
+                throw new IOException();
             chain.doFilter(request, response);
         }
 

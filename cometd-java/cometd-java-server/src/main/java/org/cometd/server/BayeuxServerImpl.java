@@ -73,7 +73,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public BayeuxServerImpl()
     {
         _logger=Log.getLogger("bayeux@"+hashCode());
-        
+
         createIfAbsent(Channel.META_HANDSHAKE);
         createIfAbsent(Channel.META_CONNECT);
         createIfAbsent(Channel.META_SUBSCRIBE);
@@ -852,10 +852,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (adviceIn != null)
             {
                 Long timeout=(Long)adviceIn.get("timeout");
-                session.setTimeout(timeout==null?0:timeout.longValue());
-
+                session.setTimeout(timeout==null?-1:timeout);
                 Long interval=(Long)adviceIn.get("interval");
-                session.setInterval(interval==null?0:interval.longValue());
+                session.setInterval(interval==null?-1:interval);
+            }
+            else
+            {
+                session.setTimeout(-1L);
+                session.setInterval(-1L);
             }
 
             // send advice

@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -17,7 +16,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -29,11 +27,6 @@ import org.mozilla.javascript.ScriptableObject;
 public class CometdMaxNetworkDelayTest extends AbstractCometdJQueryTest
 {
     private final long maxNetworkDelay = 2000;
-
-    @Override
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-    }
 
     @Override
     protected void customizeContext(ServletContextHandler context) throws Exception
@@ -70,6 +63,8 @@ public class CometdMaxNetworkDelayTest extends AbstractCometdJQueryTest
         // canceling the request.
         assertTrue(publishListener.await(2 * maxNetworkDelay));
         assertTrue(failures.get().toString(), failures.get().isEmpty());
+
+        evaluateScript("$.cometd.disconnect(true);");
     }
 
     public static class Listener extends ScriptableObject
@@ -104,8 +99,6 @@ public class CometdMaxNetworkDelayTest extends AbstractCometdJQueryTest
 
     private class DelayingFilter implements Filter
     {
-        private final AtomicInteger messages = new AtomicInteger();
-
         public void init(FilterConfig filterConfig) throws ServletException
         {
         }
@@ -117,10 +110,10 @@ public class CometdMaxNetworkDelayTest extends AbstractCometdJQueryTest
 
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            // Messages are: handshake, first connect, second connect, publish
-            // We hold the publish longer than the maxNetworkDelay
-            if (messages.incrementAndGet() == 4)
+            String uri = request.getRequestURI();
+            if (!uri.endsWith("handshake") && !uri.endsWith("connect"))
             {
+                // We hold the publish longer than the maxNetworkDelay
                 try
                 {
                     Thread.sleep(2 * maxNetworkDelay);

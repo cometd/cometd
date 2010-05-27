@@ -1,13 +1,10 @@
 package org.cometd.javascript.jquery;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
+import org.cometd.javascript.Latch;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
-import org.mozilla.javascript.ScriptableObject;
 
 /**
  * @version $Revision$ $Date$
@@ -25,45 +22,21 @@ public class CometdCrossOriginTest extends AbstractCometdJQueryTest
 
     public void testCrossOriginSupported() throws Exception
     {
+        defineClass(Latch.class);
         String crossOriginCometdURL = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("$.cometd.configure({" +
                        "url: '" + crossOriginCometdURL + "', " +
                        "requestHeaders: { Origin: 'http://localhost:8080' }, " +
                        "logLevel: 'debug'" +
                        "});");
-        defineClass(Listener.class);
-        evaluateScript("var connectListener = new Listener();");
-        Listener connectListener = get("connectListener");
-        evaluateScript("$.cometd.addListener('/meta/connect', function(message) { if (message.successful) connectListener.countDown(); });");
-        connectListener.expect(1);
+        evaluateScript("var connectLatch = new Latch(1);");
+        Latch connectLatch = get("connectLatch");
+        evaluateScript("$.cometd.addListener('/meta/connect', function(message) { if (message.successful) connectLatch.countDown(); });");
         evaluateScript("$.cometd.handshake();");
 
-        assertTrue(connectListener.await(1000));
+        assertTrue(connectLatch.await(1000));
         assertEquals("long-polling", evaluateScript("$.cometd.getTransport().getType()"));
-    }
 
-    public static class Listener extends ScriptableObject
-    {
-        private CountDownLatch latch;
-
-        public String getClassName()
-        {
-            return "Listener";
-        }
-
-        public void expect(int messageCount)
-        {
-            latch = new CountDownLatch(messageCount);
-        }
-
-        public void jsFunction_countDown()
-        {
-            latch.countDown();
-        }
-
-        public boolean await(long timeout) throws InterruptedException
-        {
-            return latch.await(timeout, TimeUnit.MILLISECONDS);
-        }
+        evaluateScript("$.cometd.disconnect(true);");
     }
 }

@@ -167,9 +167,11 @@ public abstract class LongPollingTransport extends HttpTransport
                     if (reply!=null)
                     {
                         if (session==null)
+                        {
                             // This must be a handshake
                             // extract a session from the reply (if we don't already know it
                             session=(ServerSessionImpl)getBayeux().getSession(reply.getClientId());
+                        }
                         else
                         {
                             // If this is a connect or we can send messages with any response
@@ -182,16 +184,19 @@ public abstract class LongPollingTransport extends HttpTransport
                             // special handling for connect
                             if (connect)
                             {
+                                long timeout = session.getTimeout();
+                                if (timeout<0)
+                                    timeout = getTimeout();
+
                                 // Should we suspend?
                                 // If the writer is non null, we have already started sending a response, so we should not suspend
-                                if(was_connected && writer==null && reply.isSuccessful() && session.isQueueEmpty())
+                                if(timeout>0 && was_connected && writer==null && reply.isSuccessful() && session.isQueueEmpty())
                                 {
                                     String browserId=getBrowserId(request,response);
                                     if (incBrowserId(browserId,request,reply))
                                     {
                                         Continuation continuation = ContinuationSupport.getContinuation(request);
-                                        long timeout=session.getTimeout();
-                                        continuation.setTimeout(timeout==-1?getTimeout():timeout);
+                                        continuation.setTimeout(timeout);
                                         continuation.suspend();
                                         scheduler=new LongPollScheduler(session,continuation,reply,browserId);
                                         session.setScheduler(scheduler);

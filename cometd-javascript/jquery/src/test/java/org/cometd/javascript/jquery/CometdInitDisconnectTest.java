@@ -14,27 +14,24 @@
 
 package org.cometd.javascript.jquery;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import org.mozilla.javascript.ScriptableObject;
+import org.cometd.javascript.Latch;
 
 /**
  * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
  */
 public class CometdInitDisconnectTest extends AbstractCometdJQueryTest
 {
-    public void testCometInitDisconnect() throws Exception
+    public void testInitDisconnect() throws Exception
     {
+        defineClass(Latch.class);
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
-        defineClass(Listener.class);
-        evaluateScript("var listener = new Listener();");
-        Listener listener = get("listener");
-        String script = "$.cometd.addListener('/**', listener, listener.handle);" +
+        evaluateScript("var latch = new Latch(2);");
+        Latch latch = get("latch");
+        String script = "$.cometd.addListener('/**', function(message) { window.console.info(message.channel); latch.countDown(); });" +
                         // Expect 2 messages: handshake and connect
-                        "listener.expect(2); $.cometd.handshake();";
+                        "$.cometd.handshake();";
         evaluateScript(script);
-        assertTrue(listener.await(1000));
+        assertTrue(latch.await(1000));
 
         // Wait for the long poll to happen, so that we're sure
         // the disconnect is sent after the long poll
@@ -43,42 +40,16 @@ public class CometdInitDisconnectTest extends AbstractCometdJQueryTest
         String status = evaluateScript("$.cometd.getStatus();");
         assertEquals("connected", status);
 
-        evaluateScript("listener.expect(1); $.cometd.disconnect();");
-        assertTrue(listener.await(1000));
-
-        // Wait for the disconnect to happen
-        Thread.sleep(1000);
+        // Expect disconnect and connect
+        latch.reset(2);
+        evaluateScript("$.cometd.disconnect(true);");
+        assertTrue(latch.await(1000));
 
         status = evaluateScript("$.cometd.getStatus();");
         assertEquals("disconnected", status);
 
         // Make sure there are no attempts to reconnect
-        evaluateScript("listener.expect(1);");
-        assertFalse(listener.await(longPollingPeriod * 2));
-    }
-
-    public static class Listener extends ScriptableObject
-    {
-        private CountDownLatch latch;
-
-        public void jsFunction_expect(int messageCount)
-        {
-            latch = new CountDownLatch(messageCount);
-        }
-
-        public String getClassName()
-        {
-            return "Listener";
-        }
-
-        public void jsFunction_handle(Object message)
-        {
-            latch.countDown();
-        }
-
-        public boolean await(long timeout) throws InterruptedException
-        {
-            return latch.await(timeout, TimeUnit.MILLISECONDS);
-        }
+        latch.reset(1);
+        assertFalse(latch.await(longPollingPeriod * 3));
     }
 }

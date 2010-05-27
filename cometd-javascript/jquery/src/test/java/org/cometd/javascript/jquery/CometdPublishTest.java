@@ -1,9 +1,6 @@
 package org.cometd.javascript.jquery;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import org.mozilla.javascript.ScriptableObject;
+import org.cometd.javascript.Latch;
 
 /**
  * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
@@ -12,57 +9,31 @@ public class CometdPublishTest extends AbstractCometdJQueryTest
 {
     public void testPublish() throws Exception
     {
-        defineClass(Listener.class);
+        defineClass(Latch.class);
+
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("$.cometd.init({url: '" + cometdURL + "', logLevel: 'debug'})");
+        assertTrue(readyLatch.await(1000));
 
-        // Wait for the long poll
-        Thread.sleep(1000);
+        evaluateScript("var echoLatch = new Latch(1);");
+        Latch echoLatch = get("echoLatch");
+        evaluateScript("var subscription = $.cometd.subscribe('/echo', echoLatch, echoLatch.countDown);");
+        evaluateScript("var publishLatch = new Latch(1);");
+        Latch publishLatch = get("publishLatch");
+        evaluateScript("$.cometd.addListener('/meta/publish', publishLatch, publishLatch.countDown);");
 
-        evaluateScript("var echoListener = new Listener();");
-        Listener echoListener = get("echoListener");
-        evaluateScript("var subscription = $.cometd.subscribe('/echo', echoListener, echoListener.handle);");
-        evaluateScript("var publishListener = new Listener();");
-        Listener publishListener = get("publishListener");
-        evaluateScript("$.cometd.addListener('/meta/publish', publishListener, publishListener.handle);");
-
-        echoListener.jsFunction_expect(1);
-        publishListener.jsFunction_expect(1);
         evaluateScript("$.cometd.publish('/echo', 'test');");
-        assertTrue(echoListener.await(1000));
-        assertTrue(publishListener.await(1000));
+        assertTrue(echoLatch.await(1000));
+        assertTrue(publishLatch.await(1000));
 
-        evaluateScript("var disconnectListener = new Listener();");
-        Listener disconnectListener = get("disconnectListener");
-        disconnectListener.jsFunction_expect(1);
-        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);");
+        evaluateScript("var disconnectLatch = new Latch(1);");
+        Latch disconnectLatch = get("disconnectLatch");
+        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
         evaluateScript("$.cometd.disconnect();");
-        assertTrue(disconnectListener.await(1000));
+        assertTrue(disconnectLatch.await(1000));
         String status = evaluateScript("$.cometd.getStatus();");
         assertEquals("disconnected", status);
-    }
-
-    public static class Listener extends ScriptableObject
-    {
-        private CountDownLatch latch;
-
-        public void jsFunction_expect(int messageCount)
-        {
-            latch = new CountDownLatch(messageCount);
-        }
-
-        public String getClassName()
-        {
-            return "Listener";
-        }
-
-        public void jsFunction_handle(Object message)
-        {
-            latch.countDown();
-        }
-
-        public boolean await(long timeout) throws InterruptedException
-        {
-            return latch.await(timeout, TimeUnit.MILLISECONDS);
-        }
     }
 }

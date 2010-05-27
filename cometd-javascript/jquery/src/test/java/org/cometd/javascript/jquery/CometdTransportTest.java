@@ -2,6 +2,8 @@ package org.cometd.javascript.jquery;
 
 import java.util.Arrays;
 
+import org.cometd.javascript.Latch;
+
 /**
  * @version $Revision$ $Date$
  */
@@ -9,6 +11,7 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
 {
     public void testTransport() throws Exception
     {
+        defineClass(Latch.class);
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
         Object[] transportTypes = (Object[])jsToJava(evaluateScript("$.cometd.getTransportTypes()"));
         // The spec requires at least these 2 transports
@@ -24,6 +27,7 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
                 "};");
 
         String localTransport =
+                "var readyLatch = new Latch(1);" +
                 "function LocalTransport()" +
                 "{" +
                 "    var _super = new org.cometd.RequestTransport();" +
@@ -74,6 +78,7 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
                 "                    \"advice\":{\"reconnect\":\"retry\",\"interval\":0,\"timeout\":5000}" +
                 "                }]';" +
                 "                timeout = 5000;" +
+                "                readyLatch.countDown();" +
                 "                break;" +
                 "            case 4:" +
                 "                response = '[{" +
@@ -104,13 +109,19 @@ public class CometdTransportTest extends AbstractCometdJQueryTest
         // The server does not support a 'local' transport, so use 'long-polling'
         assertTrue((Boolean)evaluateScript("$.cometd.registerTransport('long-polling', localTransport);"));
 
+        Latch readyLatch = get("readyLatch");
         evaluateScript("$.cometd.handshake();");
-        Thread.sleep(500);
+        assertTrue(readyLatch.await(1000));
+
         assertEquals(3, ((Number)evaluateScript("localTransport.getSends();")).intValue());
         assertEquals("connected", evaluateScript("$.cometd.getStatus();"));
+
+        readyLatch.reset(1);
+        evaluateScript("$.cometd.addListener('/meta/disconnect', readyLatch, 'countDown');");
         evaluateScript("$.cometd.disconnect();");
+        assertTrue(readyLatch.await(1000));
+
         assertEquals(4, ((Number)evaluateScript("localTransport.getSends();")).intValue());
-        Thread.sleep(500);
         assertEquals("disconnected", evaluateScript("$.cometd.getStatus();"));
     }
 }

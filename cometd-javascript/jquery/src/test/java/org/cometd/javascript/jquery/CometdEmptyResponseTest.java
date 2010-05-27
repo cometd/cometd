@@ -16,49 +16,38 @@ import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 
 /**
- * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
+ * @version $Revision$ $Date$
  */
-public class CometdSubscribeFailureTest extends AbstractCometdJQueryTest
+public class CometdEmptyResponseTest extends AbstractCometdJQueryTest
 {
     @Override
     protected void customizeContext(ServletContextHandler context) throws Exception
     {
         super.customizeContext(context);
-        SubscribeThrowingFilter filter = new SubscribeThrowingFilter();
+        EmptyResponseFilter filter = new EmptyResponseFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
         context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
     }
 
-    public void testSubscribeFailure() throws Exception
+    public void testEmptyResponse() throws Exception
     {
         defineClass(Latch.class);
-        evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("$.cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
-        evaluateScript("$.cometd.init({url: '" + cometdURL + "', logLevel: 'debug'})");
-        assertTrue(readyLatch.await(1000));
-
-        evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
+        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("var handshakeLatch = new Latch(1);");
+        Latch handshakeLatch = get("handshakeLatch");
         evaluateScript("var failureLatch = new Latch(1);");
         Latch failureLatch = get("failureLatch");
-        String script = "$.cometd.addListener('/meta/subscribe', subscribeLatch, subscribeLatch.countDown);";
-        script += "$.cometd.addListener('/meta/unsuccessful', failureLatch, failureLatch.countDown);";
-        evaluateScript(script);
+        evaluateScript("$.cometd.addListener('/meta/handshake', handshakeLatch, 'countDown');");
+        evaluateScript("$.cometd.addListener('/meta/unsuccessful', failureLatch, 'countDown');");
 
-        evaluateScript("$.cometd.subscribe('/echo', subscribeLatch, subscribeLatch.countDown);");
-        assertTrue(subscribeLatch.await(1000));
+        evaluateScript("$.cometd.handshake();");
+        assertTrue(handshakeLatch.await(1000));
         assertTrue(failureLatch.await(1000));
-
-        // Be sure there is no backoff
-        evaluateScript("var backoff = $.cometd.getBackoffPeriod();");
-        int backoff = ((Number)get("backoff")).intValue();
-        assertEquals(0, backoff);
 
         evaluateScript("$.cometd.disconnect(true);");
     }
 
-    public static class SubscribeThrowingFilter implements Filter
+    public static class EmptyResponseFilter implements Filter
     {
         public void init(FilterConfig filterConfig) throws ServletException
         {
@@ -71,10 +60,7 @@ public class CometdSubscribeFailureTest extends AbstractCometdJQueryTest
 
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            String uri = request.getRequestURI();
-            if (!uri.endsWith("handshake") && !uri.endsWith("connect"))
-                throw new IOException();
-            chain.doFilter(request, response);
+            response.setContentType("application/json;charset=UTF-8");
         }
 
         public void destroy()

@@ -1,24 +1,20 @@
 package org.cometd.javascript.jquery;
 
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.BayeuxServerImpl;
+import org.cometd.javascript.Latch;
 import org.cometd.server.AbstractService;
-import org.mozilla.javascript.ScriptableObject;
+import org.cometd.server.BayeuxServerImpl;
 
 /**
  * @version $Revision$ $Date$
  */
 public class CometdDeliverTest extends AbstractCometdJQueryTest
 {
-    private DeliverService service;
-
     protected void customizeBayeux(BayeuxServerImpl bayeux)
     {
-        service = new DeliverService(bayeux);
+        new DeliverService(bayeux);
     }
 
     public void testDeliver() throws Exception
@@ -26,58 +22,37 @@ public class CometdDeliverTest extends AbstractCometdJQueryTest
         defineClass(Latch.class);
 
         evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+
+        evaluateScript("var pushLatch = new Latch(1);");
+        Latch pushLatch = get("pushLatch");
         evaluateScript("var _data;");
-        evaluateScript("$.cometd.addListener('/deliver', function(message) { _data = message.data; });");
+        evaluateScript("$.cometd.addListener('/service/deliver', function(message) { _data = message.data; pushLatch.countDown(); });");
 
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("$.cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("$.cometd.handshake();");
-
-        // Wait for the handshake to complete
-        Thread.sleep(1000);
+        assertTrue(readyLatch.await(1000));
 
         evaluateScript("var latch = new Latch(1);");
         Latch latch = get("latch");
         evaluateScript("var listener = $.cometd.addListener('/meta/publish', function(message) { latch.countDown(); });");
-        evaluateScript("$.cometd.publish('/deliver', { deliver: false });");
+        evaluateScript("$.cometd.publish('/service/deliver', { deliver: false });");
         assertTrue(latch.await(1000));
+        assertFalse(pushLatch.await(1000));
         evaluateScript("$.cometd.removeListener(listener);");
         evaluateScript("window.assert(_data === undefined);");
 
         evaluateScript("latch = new Latch(1);");
         evaluateScript("listener = $.cometd.addListener('/meta/publish', function(message) { latch.countDown(); });");
-        evaluateScript("$.cometd.publish('/deliver', { deliver: true });");
+        evaluateScript("$.cometd.publish('/service/deliver', { deliver: true });");
         assertTrue(latch.await(1000));
         evaluateScript("$.cometd.removeListener(listener);");
-        // Wait for the listener to be notified
-        Thread.sleep(500);
+        // Wait for the listener to be notified from the server
+        assertTrue(pushLatch.await(1000));
         evaluateScript("window.assert(_data !== undefined);");
 
-        evaluateScript("$.cometd.disconnect();");
-        Thread.sleep(500);
-    }
-
-    public static class Latch extends ScriptableObject
-    {
-        private volatile CountDownLatch latch;
-
-        public String getClassName()
-        {
-            return "Latch";
-        }
-
-        public void jsConstructor(int count)
-        {
-            latch = new CountDownLatch(count);
-        }
-
-        public boolean await(long timeout) throws InterruptedException
-        {
-            return latch.await(timeout, TimeUnit.MILLISECONDS);
-        }
-
-        public void jsFunction_countDown()
-        {
-            latch.countDown();
-        }
+        evaluateScript("$.cometd.disconnect(true);");
     }
 
     public static class DeliverService extends AbstractService
@@ -85,12 +60,12 @@ public class CometdDeliverTest extends AbstractCometdJQueryTest
         public DeliverService(BayeuxServerImpl bayeux)
         {
             super(bayeux, "deliver");
-            addService("/deliver", "deliver");
+            addService("/service/deliver", "deliver");
         }
 
         public void deliver(ServerSession remote, String channel, Object messageData, String messageId)
         {
-            Map<String, ?> data = (Map<String,?>)messageData;
+            Map<String, ?> data = (Map<String, ?>)messageData;
             Boolean deliver = (Boolean) data.get("deliver");
             if (deliver)
             {
