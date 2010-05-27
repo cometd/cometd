@@ -75,7 +75,7 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
                 "$.cometd.disconnect();");
 
         assertTrue(latch.await(1000));
-        assertTrue(failures.get().toString(), handler.await(1000));
+        assertTrue(handler.await(1000));
         assertTrue(failures.get().toString(), failures.get().isEmpty());
         assertTrue(disconnect.await(1000));
     }

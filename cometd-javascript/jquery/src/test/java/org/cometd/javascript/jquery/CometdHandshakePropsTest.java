@@ -22,32 +22,6 @@ public class CometdHandshakePropsTest extends AbstractCometdJQueryTest
         bayeux.setSecurityPolicy(new TokenSecurityPolicy());
     }
 
-/*
-    // TODO: fix this
-    public void testHandshakeNoProps() throws Exception
-    {
-        defineClass(Latch.class);
-        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
-        evaluateScript("var handshakeListener = new Listener();");
-        Listener handshakeListener = (Listener)get("handshakeListener");
-        evaluateScript("$.cometd.addListener('/meta/handshake', handshakeListener, handshakeListener.handle);");
-        evaluateScript("var disconnectListener = new Listener();");
-        Listener disconnectListener = (Listener)get("disconnectListener");
-        evaluateScript("$.cometd.addListener('/meta/disconnect', disconnectListener, disconnectListener.handle);");
-
-        // Start without the token; this makes the handshake fail
-        handshakeListener.expect(1);
-        evaluateScript("$.cometd.handshake({})");
-        assertTrue(handshakeListener.await(1000));
-
-        // Wait for retries etc.
-        Thread.sleep(1000);
-
-        String status = evaluateScript("$.cometd.getStatus();");
-        assertEquals("disconnected", status);
-    }
-*/
-
     public void testHandshakeProps() throws Exception
     {
         defineClass(Latch.class);
