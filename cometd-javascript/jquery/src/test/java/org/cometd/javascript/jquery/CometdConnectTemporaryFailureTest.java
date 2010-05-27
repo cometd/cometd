@@ -76,8 +76,6 @@ public class CometdConnectTemporaryFailureTest extends AbstractCometdJQueryTest
         assertEquals(1L, handshakeLatch.jsGet_count());
         assertEquals(1L, failureLatch.jsGet_count());
 
-        Thread.sleep(15000);
-
         evaluateScript("$.cometd.disconnect(true);");
     }
 

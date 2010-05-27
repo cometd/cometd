@@ -151,12 +151,23 @@ public class AuctionService extends AbstractService implements ClientSessionChan
     }
 
     @Override
-    public void onMessage(ClientSessionChannel channel, Message message)
+    public void subscribed(ServerSession session, ServerChannel channel)
     {
+        if (!session.isLocalSession()&&channel.getId().startsWith(AUCTION_ROOT+"item"))
+        {
+            String itemIdS=channel.getId().substring((AUCTION_ROOT+"item").length());
+            if (itemIdS.indexOf('/')<0)
+            {
+                Integer itemId=Integer.decode(itemIdS);
+                Bid highest = _auctionDao.getHighestBid(itemId);
+                if (highest!=null)
+                    session.deliver(getServerSession(),channel.getId(),highest,null);
+            }
+        }
     }
 
     @Override
-    public void configureChannel(ConfigurableServerChannel channel)
+    public void unsubscribed(ServerSession session, ServerChannel channel)
     {
     }
 
@@ -175,27 +186,12 @@ public class AuctionService extends AbstractService implements ClientSessionChan
     }
 
     @Override
-    public void subscribed(ServerSession session, ServerChannel channel)
+    public void onMessage(ClientSessionChannel channel, Message message)
     {
-        if (!session.isLocalSession()&&channel.getId().startsWith(AUCTION_ROOT+"item"))
-        {
-            String itemIdS=channel.getId().substring((AUCTION_ROOT+"item").length());
-            if (itemIdS.indexOf('/')<0)
-            {
-                Integer itemId=Integer.decode(itemIdS);
-                Bid highest = _auctionDao.getHighestBid(itemId);
-                if (highest!=null)
-                    session.deliver(getServerSession(),channel.getId(),highest,null);
-            }
-        }
-
     }
 
     @Override
-    public void unsubscribed(ServerSession session, ServerChannel channel)
+    public void configureChannel(ConfigurableServerChannel channel)
     {
-        // TODO Auto-generated method stub
-
     }
 }
-

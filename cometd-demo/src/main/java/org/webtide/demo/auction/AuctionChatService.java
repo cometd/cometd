@@ -95,7 +95,7 @@ public class AuctionChatService extends AbstractService
                             _seti.disassociate(userName);
                         if (timeout)
                         {
-                            ServerChannel channel=getBayeux().getChannel(channelName,false);
+                            ServerChannel channel=getBayeux().getChannel(channelName);
                             if (channel!=null)
                             {
                                 Map<String,Object> leave = new HashMap<String,Object>();
@@ -110,7 +110,7 @@ public class AuctionChatService extends AbstractService
 
                 Log.info("Members: " + members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName, false).publish(getServerSession(), members, messageId);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
 
             }
 
@@ -129,7 +129,7 @@ public class AuctionChatService extends AbstractService
 
                 Log.info("Members: " + members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName, true).publish(getServerSession(), members, messageId);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
             }
         }
     }

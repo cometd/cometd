@@ -915,19 +915,18 @@ org.cometd.Cometd = function(name)
             _notifyListeners('/meta/handshake', message);
             _notifyListeners('/meta/unsuccessful', message);
 
-            var retry = !_isDisconnected() && _advice.reconnect != 'none';
-            if (!retry)
-            {
-                _resetBackoff();
-                _setStatus('disconnected');
-            }
-
             // Only try again if we haven't been disconnected and
             // the advice permits us to retry the handshake
+            var retry = !_isDisconnected() && _advice.reconnect != 'none';
             if (retry)
             {
                 _increaseBackoff();
                 _delayedHandshake();
+            }
+            else
+            {
+                _resetBackoff();
+                _setStatus('disconnected');
             }
         }
     }
@@ -950,19 +949,18 @@ org.cometd.Cometd = function(name)
         _notifyListeners('/meta/handshake', failureMessage);
         _notifyListeners('/meta/unsuccessful', failureMessage);
 
-        var retry = !_isDisconnected() && _advice.reconnect != 'none';
-        if (!retry)
-        {
-            _resetBackoff();
-            _setStatus('disconnected');
-        }
-
         // Only try again if we haven't been disconnected and
         // the advice permits us to retry the handshake
+        var retry = !_isDisconnected() && _advice.reconnect != 'none';
         if (retry)
         {
             _increaseBackoff();
             _delayedHandshake();
+        }
+        else
+        {
+            _resetBackoff();
+            _setStatus('disconnected');
         }
     }
 
