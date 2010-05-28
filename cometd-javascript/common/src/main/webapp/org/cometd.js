@@ -899,6 +899,7 @@ org.cometd.Cometd = function(name)
             switch (action)
             {
                 case 'retry':
+                    _resetBackoff();
                     _delayedConnect();
                     break;
                 case 'none':
