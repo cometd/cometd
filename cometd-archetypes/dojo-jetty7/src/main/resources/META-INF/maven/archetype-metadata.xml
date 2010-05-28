@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<archetype-descriptor name="cometd-archetype-jquery-jetty7">
+<archetype-descriptor name="cometd-archetype-dojo-jetty7">
     <requiredProperties>
         <requiredProperty key="jettyVersion">
             <defaultValue>${jetty-version}</defaultValue>
