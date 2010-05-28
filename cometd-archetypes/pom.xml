@@ -14,7 +14,7 @@
 
     <modules>
         <!--<module>dojo-jetty6</module>-->
-        <!--<module>jquery-jetty6</module>-->
+        <module>jquery-jetty6</module>
         <!--<module>dojo-jetty7</module>-->
         <module>jquery-jetty7</module>
     </modules>
