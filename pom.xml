@@ -104,12 +104,13 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.1.2.v20100523</jetty-version>
+        <jetty-version>7.1.3.v20100526</jetty-version>
+        <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
         <maven-wagon-version>1.0-beta-2</maven-wagon-version>
     </properties>
 
     <modules>
-        <!--module>cometd-archetypes</module-->
+        <module>cometd-archetypes</module>
         <module>cometd-java</module>
         <module>cometd-javascript</module>
         <module>cometd-demo</module>
@@ -226,7 +227,7 @@
                 <plugin>
                     <groupId>org.mortbay.jetty</groupId>
                     <artifactId>jetty-maven-plugin</artifactId>
-                    <version>${jetty-version}</version>
+                    <version>${jetty-plugin-version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
