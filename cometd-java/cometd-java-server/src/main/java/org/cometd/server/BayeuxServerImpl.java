@@ -105,10 +105,32 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      */
     public void initializeDefaultTransports()
     {
-        addTransport(new WebSocketTransport(this));
+        List<String> allowedTransports = new ArrayList<String>();
+        // Special handling for the WebSocket transport: we add it only if it is available
+        boolean websocketAvailable = isWebSocketAvailable();
+        if (websocketAvailable)
+        {
+            addTransport(new WebSocketTransport(this));
+            allowedTransports.add(WebSocketTransport.NAME);
+        }
         addTransport(new JSONTransport(this));
+        allowedTransports.add(JSONTransport.NAME);
         addTransport(new JSONPTransport(this));
-        setAllowedTransports(WebSocketTransport.NAME,JSONTransport.NAME,JSONPTransport.NAME);
+        allowedTransports.add(JSONPTransport.NAME);
+        setAllowedTransports(allowedTransports);
+    }
+
+    private boolean isWebSocketAvailable()
+    {
+        try
+        {
+            getClass().getClassLoader().loadClass("org.eclipse.jetty.websocket.WebSocket");
+            return true;
+        }
+        catch (ClassNotFoundException x)
+        {
+            return false;
+        }
     }
 
     /* ------------------------------------------------------------ */
