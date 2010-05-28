@@ -2,7 +2,7 @@
 <archetype-descriptor name="cometd-archetype-dojo-jetty6">
     <requiredProperties>
         <requiredProperty key="jettyVersion">
-            <defaultValue>6.1.22</defaultValue>
+            <defaultValue>6.1.24</defaultValue>
         </requiredProperty>
         <requiredProperty key="cometdVersion">
             <defaultValue>${project.version}</defaultValue>
