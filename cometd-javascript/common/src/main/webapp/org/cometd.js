@@ -206,7 +206,7 @@ org.cometd.Cometd = function(name)
                     continue;
                 }
 
-                if (deep && typeof prop === "object" && prop !== null)
+                if (deep && typeof prop === 'object' && prop !== null)
                 {
                     if (prop instanceof Array)
                     {
@@ -521,7 +521,7 @@ org.cometd.Cometd = function(name)
         _notify(channel, message);
 
         // Notify the globbing listeners
-        var channelParts = channel.split("/");
+        var channelParts = channel.split('/');
         var last = channelParts.length - 1;
         for (var i = last; i > 0; --i)
         {
@@ -566,7 +566,7 @@ org.cometd.Cometd = function(name)
     {
         _cancelDelayedSend();
         var delay = _advice.interval + _backoff;
-        _debug('Function scheduled in', delay, "ms, interval =", _advice.interval, "backoff =", _backoff, operation);
+        _debug('Function scheduled in', delay, 'ms, interval =', _advice.interval, 'backoff =', _backoff, operation);
         _scheduledSend = _setTimeout(operation, delay);
     }
 
@@ -875,8 +875,7 @@ org.cometd.Cometd = function(name)
             {
                 throw 'Could not negotiate transport with server; client ' +
                       _transports.findTransportTypes(message.version, _crossDomain) +
-                      ", server " +
-                      message.supportedConnectionTypes;
+                      ', server ' + message.supportedConnectionTypes;
             }
             else if (_transport != newTransport)
             {
@@ -1747,6 +1746,8 @@ org.cometd.Cometd = function(name)
         return _status;
     };
 
+    this.isDisconnected = _isDisconnected;
+
     /**
      * Sets the backoff period used to increase the backoff time when retrying an unsuccessful or failed message.
      * Default value is 1 second, which means if there is a persistent failure the retries will happen
@@ -2299,7 +2300,7 @@ org.cometd.Cometd = function(name)
                     body: org.cometd.JSON.toJSON(envelope.messages),
                     onSuccess: function(response)
                     {
-                        _debug("Transport", self, 'received response', response);
+                        _debug('Transport', self, 'received response', response);
                         var success = false;
                         try
                         {
@@ -2307,7 +2308,7 @@ org.cometd.Cometd = function(name)
                             if (received.length === 0)
                             {
                                 _supportsCrossDomain = false;
-                                self.transportFailure(envelope, request, "no response", null);
+                                self.transportFailure(envelope, request, 'no response', null);
                             }
                             else
                             {
@@ -2321,7 +2322,7 @@ org.cometd.Cometd = function(name)
                             if (!success)
                             {
                                 _supportsCrossDomain = false;
-                                self.transportFailure(envelope, request, "bad response", x);
+                                self.transportFailure(envelope, request, 'bad response', x);
                             }
                         }
                     },
@@ -2427,7 +2428,7 @@ org.cometd.Cometd = function(name)
                                 var received = self.convertToMessages(responses);
                                 if (received.length === 0)
                                 {
-                                    self.transportFailure(envelope, request, "no response", null);
+                                    self.transportFailure(envelope, request, 'no response', null);
                                 }
                                 else
                                 {
@@ -2440,7 +2441,7 @@ org.cometd.Cometd = function(name)
                                 _debug(x);
                                 if (!success)
                                 {
-                                    self.transportFailure(envelope, request, "bad response", x);
+                                    self.transportFailure(envelope, request, 'bad response', x);
                                 }
                             }
                         },
@@ -2480,19 +2481,19 @@ org.cometd.Cometd = function(name)
     {
         var _super = new org.cometd.Transport();
         var that = org.cometd.Transport.derive(_super);
-        // By default, support WebSocket
         var _webSocket;
+        // By default, support WebSocket
         var _supportsWebSocket = true;
         var _envelope;
         var _state;
         var _metaConnectEnvelope;
-        var _timeouts={};
+        var _timeouts = {};
         var _WebSocket;
 
         if (window.WebSocket)
         {
             _WebSocket=window.WebSocket;
-            _state=_WebSocket.CLOSED;
+            _state = _WebSocket.CLOSED;
         }
 
         function _doSend(envelope,metaConnect)
@@ -2526,35 +2527,34 @@ org.cometd.Cometd = function(name)
                 // Keep the semantic of calling response callbacks asynchronously after the request
                 _setTimeout(function()
                 {
-                    envelope.onFailure(_webSocket, "failed", null);
+                    envelope.onFailure(_webSocket, 'failed', null);
                 },0);
             }
         }
 
         that.accept = function(version, crossDomain)
         {
-            return _supportsWebSocket && _WebSocket!==null && typeof _WebSocket === "function";
+            return _supportsWebSocket && _WebSocket!==null && typeof _WebSocket === 'function';
         };
 
-        that.send = function(envelope,metaConnect)
+        that.send = function(envelope, metaConnect)
         {
-            _debug("ws doSend",envelope,metaConnect);
+            _debug('Transport', this, 'sending', envelope, 'metaConnect', metaConnect);
 
-            // remember the envelope
+            // Remember the envelope
             if (metaConnect)
             {
-                _metaConnectEnvelope=envelope;
+                _metaConnectEnvelope = envelope;
             }
             else
             {
-                _envelope=envelope;
+                _envelope = envelope;
             }
 
-            // do we have an open websocket?
+            // Do we have an open websocket?
             if (_state === _WebSocket.OPEN)
             {
-                // yes - use it
-                _doSend(envelope,metaConnect);
+                _doSend(envelope, metaConnect);
             }
             else
             {
@@ -2562,14 +2562,14 @@ org.cometd.Cometd = function(name)
 
                 // Mangle the URL, changing the scheme from 'http' to 'ws'
                 var url = envelope.url.replace(/^http/, 'ws');
-                _info("WS url "+url);
+                _debug('Transport', this, 'URL', url);
 
-                var self=this;
+                var self = this;
                 var webSocket = new _WebSocket(url);
 
                 webSocket.onopen = function()
                 {
-                    _debug("Opened ",webSocket);
+                    _debug('Opened', webSocket);
                     // once the websocket is open, send the envelope.
                     _state = _WebSocket.OPEN;
                     _webSocket = webSocket;
@@ -2578,11 +2578,11 @@ org.cometd.Cometd = function(name)
 
                 webSocket.onclose = function()
                 {
-                    _debug("Closed ",webSocket);
+                    _debug('Closed', webSocket);
                     if (_state !== _WebSocket.OPEN)
                     {
                         _supportsWebSocket = false;
-                        envelope.onFailure(webSocket, "can't open", null);
+                        envelope.onFailure(webSocket, 'cannot open', null);
                     }
                     else
                     {
@@ -2598,7 +2598,7 @@ org.cometd.Cometd = function(name)
 
                 webSocket.onmessage = function(message)
                 {
-                    _debug("onmessage",message);
+                    _debug('Message', message);
                     if (_state === _WebSocket.OPEN)
                     {
                         var rcvdMessages = self.convertToMessages(message.data);
@@ -2610,23 +2610,23 @@ org.cometd.Cometd = function(name)
                             var msg = rcvdMessages[i];
 
                             // is this coming with a meta connect response?
-                            if ("/meta/connect"==msg.channelId)
+                            if ('/meta/connect' == msg.channelId) // TODO: msg.channel ?
                             {
                                 mc = true;
                             }
 
                             // cancel and delete any pending timeouts for meta messages and publish responses
-                            _debug("timeouts", _timeouts, org.cometd.JSON.toJSON(_timeouts));
+                            _debug('timeouts', _timeouts, org.cometd.JSON.toJSON(_timeouts));
 
                             if (!msg.data && msg.id && _timeouts[msg.id])
                             {
-                                _debug("timeout ",_timeouts[msg.id]);
+                                _debug('timeout', _timeouts[msg.id]);
                                 clearTimeout(_timeouts[msg.id]);
                                 delete _timeouts[msg.id];
                             }
 
                             // check for disconnect
-                            if ("/meta/disconnect"==msg.channel && msg.successful)
+                            if ('/meta/disconnect' == msg.channel && msg.successful)
                             {
                                 webSocket.close();
                             }
@@ -2643,7 +2643,7 @@ org.cometd.Cometd = function(name)
                     }
                     else
                     {
-                        envelope.onFailure(webSocket, "closed", null);
+                        envelope.onFailure(webSocket, 'closed', null);
                     }
                 };
             }
@@ -2651,7 +2651,7 @@ org.cometd.Cometd = function(name)
 
         that.reset = function()
         {
-            _debug("reset", _webSocket);
+            _debug('reset', _webSocket);
             _super.reset();
             if (_webSocket)
             {
