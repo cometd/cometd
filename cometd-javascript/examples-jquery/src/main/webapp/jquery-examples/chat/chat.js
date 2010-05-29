@@ -68,7 +68,7 @@
 
             $.cometd.configure({
                 url: cometdURL,
-                logLevel: 'debug'
+                logLevel: 'info'
             });
             $.cometd.handshake();
 
@@ -196,13 +196,10 @@
 
         function _connectionInitialized()
         {
+            // first time connection for this client, so subscribe tell everybody.
             $.cometd.batch(function()
             {
                 _subscribe();
-                $.cometd.publish('/service/members', {
-                    user: _username,
-                    room: '/chat/demo'
-                });
                 $.cometd.publish('/chat/demo', {
                     user: _username,
                     membership: 'join',
@@ -213,6 +210,8 @@
 
         function _connectionEstablished()
         {
+            // connection establish (maybe not for first time), so just
+            // tell local user and update membership 
             _self.receive({
                 data: {
                     user: 'system',
@@ -220,6 +219,7 @@
                 }
             });
             $.cometd.publish('/service/members', {
+                user: _username,
                 room: '/chat/demo'
             });
         }

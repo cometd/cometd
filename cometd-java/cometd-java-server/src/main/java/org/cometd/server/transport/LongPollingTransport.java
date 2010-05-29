@@ -29,11 +29,12 @@ public abstract class LongPollingTransport extends HttpTransport
     public final static String BROWSER_ID_OPTION="browserId";
     public final static String MAX_SESSIONS_PER_BROWSER_OPTION="maxSessionsPerBrowser";
     public final static String MULTI_SESSION_INTERVAL_OPTION="multiSessionInterval";
+    public final static String LONGPOLLS_PER_BROWSER_OPTION="longPollsPerBrowser";
 
     private final ConcurrentHashMap<String, AtomicInteger> _browserMap=new ConcurrentHashMap<String, AtomicInteger>();
 
     protected String _browserId="BAYEUX_BROWSER";
-    private int _maxSessionsPerBrowser=1;
+    private int _maxSessionsPerBrowser=2;
     private long _multiSessionInterval=2000;
 
     protected LongPollingTransport(BayeuxServerImpl bayeux,String name)
@@ -89,7 +90,9 @@ public abstract class LongPollingTransport extends HttpTransport
                 count=new_count;
         }
 
-        if (count.incrementAndGet()>_maxSessionsPerBrowser)
+        // TODO, the maxSessionsPerBrowser should be parameterized on user-agent
+        int sessions=count.incrementAndGet();
+        if (sessions>_maxSessionsPerBrowser)
         {
             Map<String,Object> advice=reply.asMutable().getAdvice(true);
             advice.put("multiple-clients",Boolean.TRUE);
@@ -120,7 +123,7 @@ public abstract class LongPollingTransport extends HttpTransport
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         // is this a resumed connect?
-        LongPollScheduler scheduler=(LongPollScheduler)request.getAttribute("dispatcher");
+        LongPollScheduler scheduler=(LongPollScheduler)request.getAttribute("cometd.scheduler");
         if (scheduler==null)
         {
             // No - process messages
@@ -171,6 +174,10 @@ public abstract class LongPollingTransport extends HttpTransport
                             // This must be a handshake
                             // extract a session from the reply (if we don't already know it
                             session=(ServerSessionImpl)getBayeux().getSession(reply.getClientId());
+
+                            // get the user agent while we are at it.
+                            if (session!=null)
+                                session.setUserAgent(request.getHeader("User-Agent"));
                         }
                         else
                         {
@@ -187,24 +194,31 @@ public abstract class LongPollingTransport extends HttpTransport
                                 long timeout = session.getTimeout();
                                 if (timeout<0)
                                     timeout = getTimeout();
-
+                                
                                 // Should we suspend?
                                 // If the writer is non null, we have already started sending a response, so we should not suspend
                                 if(timeout>0 && was_connected && writer==null && reply.isSuccessful() && session.isQueueEmpty())
-                                {
+                                {   
+                                    // cancel previous scheduler to cancel any prior waiting long poll
+                                    // this should also dec the Browser ID
+                                    session.setScheduler(null);
+                                    
+                                    // If we don't have too many long polls from this browser
                                     String browserId=getBrowserId(request,response);
                                     if (incBrowserId(browserId,request,reply))
                                     {
+                                        // suspend and wait for messages
                                         Continuation continuation = ContinuationSupport.getContinuation(request);
                                         continuation.setTimeout(timeout);
                                         continuation.suspend();
                                         scheduler=new LongPollScheduler(session,continuation,reply,browserId);
                                         session.setScheduler(scheduler);
-                                        request.setAttribute("dispatcher",scheduler);
+                                        request.setAttribute("cometd.scheduler",scheduler);
                                         reply=null;
                                     }
                                     else
                                     {
+                                        // Advise multiple clients from browser
                                         session.reAdvise();
                                     }
                                 }
@@ -287,7 +301,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
         public void cancel()
         {
-            if (_continuation!=null && _continuation.isSuspended() )
+            if (_continuation!=null && _continuation.isSuspended() && !_continuation.isExpired())
             {
                 try
                 {
@@ -352,6 +366,5 @@ public abstract class LongPollingTransport extends HttpTransport
                 }
             }
         }
-
     }
 }

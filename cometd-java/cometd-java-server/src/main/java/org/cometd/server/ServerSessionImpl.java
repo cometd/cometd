@@ -44,7 +44,7 @@ public class ServerSessionImpl implements ServerSession
     private final Set<ServerChannelImpl> _subscribedTo = Collections.newSetFromMap(new ConcurrentHashMap<ServerChannelImpl, Boolean>());
 
     private AbstractServerTransport.Scheduler _scheduler;
-    private transient ServerTransport _advisedTransport;
+    private ServerTransport _advisedTransport;
 
     private int _maxQueue=-1;
     private long _timeout=-1;
@@ -53,7 +53,7 @@ public class ServerSessionImpl implements ServerSession
     private long _maxLazy=-1;
     private boolean _metaConnectDelivery;
     private int _batch;
-
+    private String _userAgent;
     private long _connectTimestamp=-1;
     private long _intervalTimestamp;
     private long _lastInterval;
@@ -98,6 +98,24 @@ public class ServerSessionImpl implements ServerSession
         HttpTransport transport=(HttpTransport)_bayeux.getCurrentTransport();
         if (transport!=null)
             _intervalTimestamp=System.currentTimeMillis()+transport.getMaxInterval();
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the userAgent.
+     * @return the userAgent
+     */
+    public String getUserAgent()
+    {
+        return _userAgent;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the userAgent.
+     * @param userAgent the userAgent to set
+     */
+    public void setUserAgent(String userAgent)
+    {
+        _userAgent = userAgent;
     }
 
     /* ------------------------------------------------------------ */
@@ -395,6 +413,8 @@ public class ServerSessionImpl implements ServerSession
         {
             if (scheduler == null)
             {
+                if (_scheduler!=null)
+                    _scheduler.cancel();
                 _scheduler = null;
             }
             else

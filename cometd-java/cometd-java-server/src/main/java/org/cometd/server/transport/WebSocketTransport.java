@@ -89,7 +89,7 @@ public class WebSocketTransport extends HttpTransport
         addresses._local=new InetSocketAddress(request.getLocalAddr(),request.getLocalPort());
         addresses._remote=new InetSocketAddress(request.getRemoteAddr(),request.getRemotePort());
 
-        WebSocket websocket = new WebSocketScheduler(addresses);
+        WebSocket websocket = new WebSocketScheduler(addresses,request.getHeader("User-Agent"));
         _factory.upgrade(request,response,websocket,origin,protocol);
     }
 
@@ -103,6 +103,7 @@ public class WebSocketTransport extends HttpTransport
     protected class WebSocketScheduler implements WebSocket, AbstractServerTransport.Scheduler
     {
         protected final Addresses _addresses;
+        protected final String _userAgent;
         protected ServerSessionImpl _session;
         protected Outbound _outbound;
         protected ServerMessage _connectReply;
@@ -119,9 +120,10 @@ public class WebSocketTransport extends HttpTransport
             }
         };
 
-        public WebSocketScheduler(Addresses addresses)
+        public WebSocketScheduler(Addresses addresses,String userAgent)
         {
             _addresses=addresses;
+            _userAgent=userAgent;
         }
 
         public void onConnect(Outbound outbound)
@@ -150,7 +152,7 @@ public class WebSocketTransport extends HttpTransport
                 ServerMessage.Mutable[] messages = ServerMessageImpl.parseMessages(data);
 
                 for (ServerMessage.Mutable message : messages)
-                {
+                { 
                     boolean connect = Channel.META_CONNECT.equals(message.getChannel());
 
                     // Get the session from the message
@@ -174,6 +176,7 @@ public class WebSocketTransport extends HttpTransport
 
                     if (connect && reply.isSuccessful())
                     {
+                        _session.setUserAgent(_userAgent);
                         _session.setScheduler(this);
 
                         long timeout=_session.getTimeout();

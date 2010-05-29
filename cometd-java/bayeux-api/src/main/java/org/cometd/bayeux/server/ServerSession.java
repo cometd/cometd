@@ -82,6 +82,15 @@ public interface ServerSession extends Session
      */
     void deliver(Session from, String channel, Object data, String id);
 
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * <p>Get the clients user agent</p>
+     * @return The string indicating the client user agent, or null if not known
+     */
+    String getUserAgent();
+    
+    
     /**
      * <p>Common interface for {@link ServerSession} listeners.</p>
      * <p>Specific sub-interfaces define what kind of event listeners will be notified.</p>
