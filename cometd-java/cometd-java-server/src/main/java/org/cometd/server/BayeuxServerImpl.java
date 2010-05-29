@@ -873,15 +873,23 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             Map<String,Object> adviceIn=message.getAdvice();
             if (adviceIn != null)
             {
+                // set the client timeout and interval, or if empty
+                // advice is sent, return to the defaults
+                
+                // TODO ask permission to change these values ?
+                // problem is that having timeout=0 is OK for 1  
+                // request, but no for many.
+                
                 Long timeout=(Long)adviceIn.get("timeout");
                 session.setTimeout(timeout==null?-1:timeout);
                 Long interval=(Long)adviceIn.get("interval");
                 session.setInterval(interval==null?-1:interval);
             }
-            else
+            else if (session.getTimeout()==0)
             {
-                session.setTimeout(-1L);
-                session.setInterval(-1L);
+                // TODO check permissions for this
+                // Don't allow a session to be left in a busy timeout
+                session.setTimeout(-1);
             }
 
             // send advice

@@ -137,16 +137,6 @@ org.cometd.ReloadExtension = function(configuration)
                 _state.transportType = message.connectionType;
                 _debug('Reload extension tracked transport type', _state.transportType);
             }
-
-            if (_state.reloading)
-            {
-                delete _state.reloading;
-                if (!message.advice)
-                {
-                    message.advice = {};
-                }
-                message.advice.timeout = 0;
-            }
         }
         return message;
     };
