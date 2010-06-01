@@ -29,7 +29,8 @@
         /* connect listener to report advice */        
         dojox.cometd.addListener("/meta/connect", function (message)
         {
-            dojo.byId('advice').innerHTML=org.cometd.JSON.toJSON(message.advice);
+            if (message.advice)
+                dojo.byId('advice').innerHTML=org.cometd.JSON.toJSON(message.advice);
         });
 
         /* Initialized cometd */
