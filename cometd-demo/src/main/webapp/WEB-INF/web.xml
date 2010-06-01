@@ -13,7 +13,7 @@
     </context-param>
 
     <!-- Portability Filter, needed only to run on non Jetty or non Servlet-3.0 containers -->
-    <!-- 
+    <!--
     <filter>
         <filter-name>continuation</filter-name>
         <filter-class>org.eclipse.jetty.continuation.ContinuationFilter</filter-class>
@@ -23,11 +23,11 @@
         <url-pattern>/cometd/*</url-pattern>
     </filter-mapping>
     -->
-    
+
     <!-- Filter to support cross domain requests -->
     <filter>
         <filter-name>cross-origin</filter-name>
-        <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+        <filter-class>org.webtide.demo.WebSocketCrossOriginFilter</filter-class>
         <!--async-supported>true</async-supported-->
     </filter>
     <filter-mapping>
