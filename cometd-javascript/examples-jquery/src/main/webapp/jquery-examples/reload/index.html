@@ -9,8 +9,8 @@
     <script type="text/javascript" src="../../jquery/jquery.cookie.js"></script>
     <script type="text/javascript" src="../../jquery/jquery.cometd.js"></script>
     <script type="text/javascript" src="../../jquery/jquery.cometd-reload.js"></script>
-    
-    
+
+
     <script type="text/javascript">
     (function($)
     {
@@ -25,7 +25,7 @@
                 $('#current').html(message.clientId);
                 org.cometd.COOKIE.set('demoLastCometdID', message.clientId, {
                     'max-age': 300,
-                    'path' : '/',
+                    path : '/',
                     expires: new Date(new Date().getTime() + 300 * 1000)
                 });
             }
@@ -40,10 +40,12 @@
         $.cometd.addListener("/meta/connect", function(message)
         {
             if (message.advice)
+            {
                 $('#advice').html(org.cometd.JSON.toJSON(message.advice));
+            }
         });
 
-        /* Initialized cometd */
+        /* Initialize CometD */
         var cometURL = new String(document.location).replace(/\/jquery-examples\/.*$/, '') + "/cometd";
         $.cometd.init({ url: cometURL, logLevel: "debug" });
 
@@ -54,7 +56,7 @@
         });
 
       });
-      
+
      })(jQuery);
 
     </script>
@@ -65,9 +67,9 @@
 <a href="../..">Main Demo index</a><br/>
 
 <p>
-    This test shows how a page can be loaded and resume a CometD connection with the same 
+    This test shows how a page can be loaded and resume a CometD connection with the same
     client ID.  This allows site navigation and page loads to be done without needing to
-    reestablish an entire cometd session on the server (the client still needs to resubscribe 
+    reestablish an entire CometD session on the server (the client still needs to resubscribe
     so that it can define local callbacks in the newly loaded page).
 </p>
 <p>

@@ -7,7 +7,7 @@
         dojo.require("dojox.cometd");
         dojo.require("dojox.cometd.reload");
 
-        /* handshake listener to report client IDs */        
+        /* handshake listener to report client IDs */
         dojox.cometd.addListener("/meta/handshake", function (message)
         {
             if (message.successful)
@@ -16,7 +16,7 @@
                 dojo.byId('current').innerHTML=message.clientId;
                 org.cometd.COOKIE.set('demoLastCometdID', message.clientId, {
                     'max-age': 300,
-                    'path' : '/',
+                    path : '/',
                     expires: new Date(new Date().getTime() + 300 * 1000)
                 });
             }
@@ -27,21 +27,22 @@
             }
         });
 
-        /* connect listener to report advice */        
+        /* connect listener to report advice */
         dojox.cometd.addListener("/meta/connect", function (message)
         {
             if (message.advice)
+            {
                 dojo.byId('advice').innerHTML=org.cometd.JSON.toJSON(message.advice);
+            }
         });
 
-        /* Initialized cometd */
+        /* Initialize CometD */
         var cometURL = new String(document.location).replace(/\/dojo-examples\/.*$/, '') + "/cometd";
-        dojox.cometd.init({ url: cometURL, logLevel: "debug" });
+        dojox.cometd.init({ url: cometURL, logLevel: 'debug' });
 
         /* Setup reload extension */
         dojo.addOnUnload(dojox.cometd, "reload");
 
-        
     </script>
 </head>
 <body>
@@ -50,9 +51,9 @@
 <a href="../..">Main Demo index</a><br/>
 
 <p>
-    This test shows how a page can be loaded and resume a CometD connection with the same 
+    This test shows how a page can be loaded and resume a CometD connection with the same
     client ID.  This allows site navigation and page loads to be done without needing to
-    reestablish an entire cometd session on the server (the client still needs to resubscribe 
+    reestablish an entire CometD session on the server (the client still needs to resubscribe
     so that it can define local callbacks in the newly loaded page).
 </p>
 <p>
