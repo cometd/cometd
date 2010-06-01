@@ -35,8 +35,8 @@
         });
 
         /* Initialized cometd */
-        var cometURL = new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/dojo-examples\/.*$/, '') + "/cometd";
-        dojox.cometd.init({ url: cometURL, logLevel: "info" });
+        var cometURL = new String(document.location).replace(/\/dojo-examples\/.*$/, '') + "/cometd";
+        dojox.cometd.init({ url: cometURL, logLevel: "debug" });
 
         /* Setup reload extension */
         dojo.addOnUnload(dojox.cometd, "reload");
