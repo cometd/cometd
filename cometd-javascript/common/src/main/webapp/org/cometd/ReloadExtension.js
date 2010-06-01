@@ -50,6 +50,7 @@ org.cometd.ReloadExtension = function(configuration)
             _debug('Reload extension saving cookie value', cookie);
             org.cometd.COOKIE.set('org.cometd.reload', cookie, {
                 'max-age': _cookieMaxAge,
+                'path': '/',
                 expires: new Date(new Date().getTime() + _cookieMaxAge * 1000)
             });
         }
@@ -95,8 +96,7 @@ org.cometd.ReloadExtension = function(configuration)
                 {
                     // Remove the cookie, not needed anymore
                     org.cometd.COOKIE.set('org.cometd.reload', '', {
-                        'max-age': 0,
-                        expires: new Date(new Date().getTime() - 1000)
+                        'path': '/'
                     });
 
                     _debug('Reload extension found cookie value', cookie);
