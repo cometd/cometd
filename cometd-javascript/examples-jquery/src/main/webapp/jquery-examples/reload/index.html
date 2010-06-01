@@ -38,12 +38,13 @@
         /* connect listener to report advice */
         $.cometd.addListener("/meta/connect", function(message)
         {
-            $('#advice').html(org.cometd.JSON.toJSON(message.advice));
+            if (message.advice)
+                $('#advice').html(org.cometd.JSON.toJSON(message.advice));
         });
 
         /* Initialized cometd */
-        var cometURL = new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/jquery-examples\/.*$/, '') + "/cometd";
-        $.cometd.init({ url: cometURL, logLevel: "info" });
+        var cometURL = new String(document.location).replace(/\/jquery-examples\/.*$/, '') + "/cometd";
+        $.cometd.init({ url: cometURL, logLevel: "debug" });
 
         /* Setup reload extension */
         $(window).unload(function()
