@@ -68,7 +68,7 @@
 
             $.cometd.configure({
                 url: cometdURL,
-                logLevel: 'info'
+                logLevel: 'debug'
             });
             $.cometd.handshake();
 
@@ -211,7 +211,7 @@
         function _connectionEstablished()
         {
             // connection establish (maybe not for first time), so just
-            // tell local user and update membership 
+            // tell local user and update membership
             _self.receive({
                 data: {
                     user: 'system',
@@ -290,22 +290,22 @@
 
         $(window).unload(function()
         {
-        	if ($.cometd.reload)
-        	{
-        		$.cometd.reload();
-        		// Save the application state only if the user was chatting
-        		if (_wasConnected && _username)
-        		{
+            if ($.cometd.reload)
+            {
+                $.cometd.reload();
+                // Save the application state only if the user was chatting
+                if (_wasConnected && _username)
+                {
                     var expires = new Date();
                     expires.setTime(expires.getTime() + 5 * 1000);
-        			org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
-        				username: _username
+                    org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
+                        username: _username
                     }), { 'max-age': 5, expires: expires });
-        		}
+                }
             }
-        	else
+            else
             {
-        		$.cometd.disconnect();
+                $.cometd.disconnect();
             }
         });
     }
