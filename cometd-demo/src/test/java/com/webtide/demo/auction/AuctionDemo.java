@@ -90,7 +90,7 @@ public class AuctionDemo
         cometd_holder.setInitParameter("maxInterval","100000");
         cometd_holder.setInitParameter("multiFrameInterval","1500");
         cometd_holder.setInitParameter("directDeliver","true");
-        cometd_holder.setInitParameter("logLevel","3");
+        cometd_holder.setInitParameter("logLevel","0");
         cometd_holder.setInitOrder(1);
         context.addServlet(cometd_holder, "/cometd/*");
         

@@ -245,15 +245,16 @@ public class WebSocketTransport extends HttpTransport
             // TODO should schedule another thread!
             // otherwise a receive can be blocked writing to another client
 
-            while (_session!=null)
+            final ServerSessionImpl session=_session;
+            if (session!=null)
             {
-                final List<ServerMessage> queue = _session.takeQueue();
+                final List<ServerMessage> queue = session.takeQueue();
 
                 if (_connectReply!=null)
                 {
-                    queue.add(getBayeux().extendReply(_session,_connectReply));
+                    queue.add(getBayeux().extendReply(session,_connectReply));
                     _connectReply=null;
-                    _session.startIntervalTimeout();
+                    session.startIntervalTimeout();
                 }
                 try
                 {
