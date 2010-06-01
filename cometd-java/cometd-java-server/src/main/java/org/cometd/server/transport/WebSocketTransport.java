@@ -4,17 +4,16 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.util.List;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
-import org.cometd.server.AbstractServerTransport;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -152,7 +151,7 @@ public class WebSocketTransport extends HttpTransport
                 ServerMessage.Mutable[] messages = ServerMessageImpl.parseMessages(data);
 
                 for (ServerMessage.Mutable message : messages)
-                { 
+                {
                     boolean connect = Channel.META_CONNECT.equals(message.getChannel());
 
                     // Get the session from the message
@@ -179,9 +178,7 @@ public class WebSocketTransport extends HttpTransport
                         _session.setUserAgent(_userAgent);
                         _session.setScheduler(this);
 
-                        long timeout=_session.getTimeout();
-                        if (timeout<0)
-                            timeout=getTimeout();
+                        long timeout=_session.calculateTimeout(getTimeout());
 
                         if (timeout>0 && was_connected)
                         {
