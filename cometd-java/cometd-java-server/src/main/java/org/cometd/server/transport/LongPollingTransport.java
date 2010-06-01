@@ -77,7 +77,7 @@ public abstract class LongPollingTransport extends HttpTransport
         return browser_id;
     }
 
-    protected boolean incBrowserId(String browserId,HttpServletRequest request, ServerMessage reply)
+    protected boolean incBrowserId(String browserId)
     {
         if (_maxSessionsPerBrowser<0)
             return true;
@@ -195,7 +195,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
                                     // If we don't have too many long polls from this browser
                                     String browserId=getBrowserId(request,response);
-                                    if (incBrowserId(browserId,request,reply))
+                                    if (incBrowserId(browserId))
                                     {
                                         // suspend and wait for messages
                                         Continuation continuation = ContinuationSupport.getContinuation(request);
