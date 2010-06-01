@@ -25,6 +25,7 @@
                 $('#current').html(message.clientId);
                 org.cometd.COOKIE.set('demoLastCometdID', message.clientId, {
                     'max-age': 300,
+                    'path' : '/',
                     expires: new Date(new Date().getTime() + 300 * 1000)
                 });
             }
