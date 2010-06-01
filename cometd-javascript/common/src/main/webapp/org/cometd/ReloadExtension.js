@@ -89,6 +89,7 @@ org.cometd.ReloadExtension = function(configuration)
             _state.url = _cometd.getURL();
 
             var cookie = org.cometd.COOKIE.get('org.cometd.reload');
+            _debug('Reload extension found cookie value', cookie);
             // Is there a saved handshake response from a prior load ?
             if (cookie)
             {
@@ -99,7 +100,6 @@ org.cometd.ReloadExtension = function(configuration)
                         'path': '/'
                     });
 
-                    _debug('Reload extension found cookie value', cookie);
                     var oldState = org.cometd.JSON.fromJSON(cookie);
 
                     if (oldState && oldState.handshakeResponse && _similarState(oldState))
