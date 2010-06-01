@@ -877,6 +877,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 session.updateTransientTimeout(timeout==null?-1:timeout);
                 Long interval=(Long)adviceIn.get("interval");
                 session.updateTransientInterval(interval==null?-1:interval);
+                // Force the server to send the advice, as the client may
+                // have forgotten it (for example because of a reload)
+                session.reAdvise();
             }
             else
             {
