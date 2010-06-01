@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
@@ -94,15 +95,6 @@ public abstract class LongPollingTransport extends HttpTransport
         int sessions=count.incrementAndGet();
         if (sessions>_maxSessionsPerBrowser)
         {
-            Map<String,Object> advice=reply.asMutable().getAdvice(true);
-            advice.put("multiple-clients",Boolean.TRUE);
-            if (_multiSessionInterval > 0)
-            {
-                advice.put("reconnect","retry");
-                advice.put("interval",_multiSessionInterval);
-            }
-            else
-                advice.put("reconnect","none");
             count.decrementAndGet();
             return false;
         }
@@ -191,18 +183,16 @@ public abstract class LongPollingTransport extends HttpTransport
                             // special handling for connect
                             if (connect)
                             {
-                                long timeout = session.getTimeout();
-                                if (timeout<0)
-                                    timeout = getTimeout();
-                                
+                                long timeout = session.calculateTimeout(getTimeout());
+
                                 // Should we suspend?
                                 // If the writer is non null, we have already started sending a response, so we should not suspend
                                 if(timeout>0 && was_connected && writer==null && reply.isSuccessful() && session.isQueueEmpty())
-                                {   
+                                {
                                     // cancel previous scheduler to cancel any prior waiting long poll
                                     // this should also dec the Browser ID
                                     session.setScheduler(null);
-                                    
+
                                     // If we don't have too many long polls from this browser
                                     String browserId=getBrowserId(request,response);
                                     if (incBrowserId(browserId,request,reply))
@@ -218,12 +208,25 @@ public abstract class LongPollingTransport extends HttpTransport
                                     }
                                     else
                                     {
-                                        // Advise multiple clients from browser
+                                        // Advise multiple clients from same browser
+                                        Map<String, Object> advice = reply.asMutable().getAdvice(true);
+                                        advice.put("multiple-clients", true);
+                                        if (_multiSessionInterval > 0)
+                                        {
+                                            advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
+                                            advice.put(Message.INTERVAL_FIELD, _multiSessionInterval);
+                                        }
+                                        else
+                                        {
+                                            advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+                                        }
                                         session.reAdvise();
                                     }
                                 }
                                 else if (session.isConnected())
+                                {
                                     session.startIntervalTimeout();
+                                }
                             }
                         }
 

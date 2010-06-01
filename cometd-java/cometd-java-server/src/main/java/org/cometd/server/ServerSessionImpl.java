@@ -47,6 +47,8 @@ public class ServerSessionImpl implements ServerSession
     private ServerTransport _advisedTransport;
 
     private int _maxQueue=-1;
+    private long _transientTimeout=-1;
+    private long _transientInterval=-1;
     private long _timeout=-1;
     private long _interval=-1;
     private long _maxInterval;
@@ -600,10 +602,13 @@ public class ServerSessionImpl implements ServerSession
         final ServerTransport transport = _bayeux.getCurrentTransport();
         if (transport==null)
             return null;
-        return new JSON.Literal("{\"reconnect\":\"retry\",\"interval\":" +
-                (_interval==-1?transport.getInterval():_interval) +
-                ",\"timeout\":" +
-                (_timeout==-1?transport.getTimeout():_timeout) + "}");
+
+        long timeout = calculateTimeout(transport.getTimeout());
+        long interval = calculateInterval(transport.getInterval());
+
+        return new JSON.Literal("{\"reconnect\":\"retry\"," +
+                "\"interval\":" + interval + "," +
+                "\"timeout\":" + timeout + "}");
     }
 
     /* ------------------------------------------------------------ */
@@ -737,4 +742,65 @@ public class ServerSessionImpl implements ServerSession
         return _id;
     }
 
+    public long calculateTimeout(long defaultTimeout)
+    {
+        if (_transientTimeout >= 0)
+            return _transientTimeout;
+
+        if (_timeout >= 0)
+            return _timeout;
+
+        return defaultTimeout;
+    }
+
+    public long calculateInterval(long defaultInterval)
+    {
+        if (_transientInterval >= 0)
+            return _transientInterval;
+
+        if (_interval >= 0)
+            return _interval;
+
+        return defaultInterval;
+    }
+
+    /**
+     * Updates the transient timeout with the given value.
+     * If the transient timeout was already set, then it will be reset,
+     * to avoid that badly behaving clients always send timeout = 0
+     * which will result in a busy polling loop.
+     * @param timeout the value to update the timeout to if not already set
+     * @see #updateTransientInterval(long)
+     */
+    public void updateTransientTimeout(long timeout)
+    {
+        if (_transientTimeout >= 0)
+        {
+            // Ignore the update and reset
+            // This is to avoid that badly behaving client always
+            // send a timeout=0 which will result in a busy loop
+            _transientTimeout = -1;
+        }
+        else
+        {
+            _transientTimeout = timeout;
+        }
+    }
+
+    /**
+     * Updates the transient timeout with the given value.
+     * @param interval the value to update the interval to if not already set
+     * @see #updateTransientTimeout(long)
+     */
+    public void updateTransientInterval(long interval)
+    {
+        if (_transientInterval >= 0)
+        {
+            _transientInterval = -1;
+        }
+        else
+        {
+            _transientInterval = interval;
+        }
+    }
 }

@@ -170,7 +170,6 @@ org.cometd.Cometd = function(name)
     var _handshakeProps;
     var _reestablish = false;
     var _connected = false;
-    var _savedTimeout = -1;
 
     /**
      * Mixes in the given objects into the target object by copying the properties.
@@ -746,17 +745,6 @@ org.cometd.Cometd = function(name)
             if (!_connected)
             {
                 message.advice = { timeout: 0 };
-                _savedTimeout=_advice.timeout;
-                _advice.timeout=0;
-            }
-            else if (_savedTimeout>=0)
-            {
-                // restore normal advice
-                _advice.timeout=_savedTimeout;
-                _savedTimeout=-1;
-                
-                // TODO resend any configured timeout
-                message.advice = {};
             }
 
             _setStatus('connecting');
