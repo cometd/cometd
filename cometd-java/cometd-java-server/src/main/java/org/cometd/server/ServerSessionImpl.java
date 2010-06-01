@@ -603,8 +603,8 @@ public class ServerSessionImpl implements ServerSession
         if (transport==null)
             return null;
 
-        long timeout = calculateTimeout(transport.getTimeout());
-        long interval = calculateInterval(transport.getInterval());
+        long timeout = getTimeout() < 0 ? transport.getTimeout() : getTimeout();
+        long interval = getInterval() < 0 ? transport.getInterval() : getInterval();
 
         return new JSON.Literal("{\"reconnect\":\"retry\"," +
                 "\"interval\":" + interval + "," +
