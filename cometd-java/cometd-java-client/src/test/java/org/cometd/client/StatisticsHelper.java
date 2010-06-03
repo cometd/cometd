@@ -106,11 +106,11 @@ public class StatisticsHelper implements Runnable
         lastOldUsed = old;
     }
 
-    public void startStatistics()
+    public boolean startStatistics()
     {
         // Support for multiple nodes
         if (starts.incrementAndGet() > 1)
-            return;
+            return false;
 
         System.gc();
 
@@ -146,13 +146,15 @@ public class StatisticsHelper implements Runnable
         startTime = System.nanoTime();
         startProcessCPUTime = operatingSystem.getProcessCpuTime();
         startJITCTime = jitCompiler.getTotalCompilationTime();
+
+        return true;
     }
 
-    public void stopStatistics()
+    public boolean stopStatistics()
     {
         // Support for multiple nodes
         if (starts.decrementAndGet() > 0)
-            return;
+            return false;
 
         long elapsedJITCTime = jitCompiler.getTotalCompilationTime() - startJITCTime;
         long elapsedProcessCPUTime = operatingSystem.getProcessCpuTime() - startProcessCPUTime;
@@ -178,6 +180,8 @@ public class StatisticsHelper implements Runnable
         System.err.println("Garbage Generated in Old Generation: " + mebiBytes(totalOldUsed) + " MiB");
 
         System.err.println("Average CPU Load: " + ((float)elapsedProcessCPUTime * 100 / elapsedTime) + "/" + (100 * operatingSystem.getAvailableProcessors()));
+
+        return true;
     }
 
     public float percent(long dividend, long divisor)
