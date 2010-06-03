@@ -85,22 +85,28 @@ public class BayeuxDemoServer
 
         public void startStatistics(ServerSession remote, Message message)
         {
-            helper.startStatistics();
-            statisticsHandler.statsReset();
+            boolean started = helper.startStatistics();
+            if (started)
+            {
+                statisticsHandler.statsReset();
+            }
         }
 
         public void stopStatistics(ServerSession remote, Message message) throws Exception
         {
-            helper.stopStatistics();
-            System.err.println("Requests (total/failed/max): " + statisticsHandler.getDispatched() + "/" +
-                    (statisticsHandler.getResponses4xx() + statisticsHandler.getResponses5xx()) + "/" +
-                    statisticsHandler.getDispatchedActiveMax());
-            System.err.println("Requests times (total/avg/max - stddev): " +
-                    statisticsHandler.getDispatchedTimeTotal() + "/" +
-                    ((Double)statisticsHandler.getDispatchedTimeMean()).longValue() + "/" +
-                    statisticsHandler.getDispatchedTimeMax() + " ms - " +
-                    ((Double)statisticsHandler.getDispatchedTimeStdDev()).longValue());
-            System.err.println();
+            boolean stopped = helper.stopStatistics();
+            if (stopped)
+            {
+                System.err.println("Requests (total/failed/max): " + statisticsHandler.getDispatched() + "/" +
+                        (statisticsHandler.getResponses4xx() + statisticsHandler.getResponses5xx()) + "/" +
+                        statisticsHandler.getDispatchedActiveMax());
+                System.err.println("Requests times (total/avg/max - stddev): " +
+                        statisticsHandler.getDispatchedTimeTotal() + "/" +
+                        ((Double)statisticsHandler.getDispatchedTimeMean()).longValue() + "/" +
+                        statisticsHandler.getDispatchedTimeMax() + " ms - " +
+                        ((Double)statisticsHandler.getDispatchedTimeStdDev()).longValue());
+                System.err.println();
+            }
         }
     }
 }
