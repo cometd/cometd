@@ -107,7 +107,7 @@ public class BayeuxLoadGenerator
         int clients = 100;
         int batchCount = 1000;
         int batchSize = 10;
-        long batchPause = 10;
+        long batchPause = 10000;
         int messageSize = 50;
         boolean randomize = true;
 
@@ -163,7 +163,7 @@ public class BayeuxLoadGenerator
                     // reply to handshakes, connects and subscribes
                     if (i % 10 == 0)
                     {
-                        Thread.sleep(100);
+                        sleep(100000);
                     }
                 }
             }
@@ -183,7 +183,7 @@ public class BayeuxLoadGenerator
             int currentSize = bayeuxClients.size();
             while (currentSize != clients)
             {
-                Thread.sleep(250);
+                sleep(250000);
                 System.err.println("Waiting for clients " + currentSize + "/" + clients);
                 if (lastSize == currentSize)
                 {
@@ -228,7 +228,7 @@ public class BayeuxLoadGenerator
                 value = "" + batchSize;
             batchSize = Integer.parseInt(value);
 
-            System.err.print("batch pause [" + batchPause + "]: ");
+            System.err.print("batch pause (\u00B5s) [" + batchPause + "]: ");
             value = console.readLine().trim();
             if (value.length() == 0)
                 value = "" + batchPause;
@@ -296,7 +296,7 @@ public class BayeuxLoadGenerator
                 client.endBatch();
 
                 if (batchPause > 0)
-                    Thread.sleep(batchPause);
+                    sleep(batchPause);
             }
             long end = System.nanoTime();
 
@@ -373,7 +373,7 @@ public class BayeuxLoadGenerator
         while (arrived < expected)
         {
             System.err.println("Waiting for messages to arrive " + arrived + "/" + expected);
-            Thread.sleep(500);
+            sleep(500000);
             if (lastArrived == arrived)
             {
                 --retries;
@@ -477,6 +477,32 @@ public class BayeuxLoadGenerator
         wallLatencies.clear();
         sendTimes.clear();
         arrivalTimes.clear();
+    }
+
+    /**
+     * <p>Unfortunately, {@link Thread#sleep(long)} on many platforms has a resolution of 1 ms
+     * or even of 10 ms, so calling <code>Thread.sleep(2)</code> often results in a 10 ms sleep.<br/>
+     * The same applies for {@link Thread#sleep(long, int)} and {@link Object#wait(long, int)}:
+     * they are not accurate.</p>
+     * <p>This is not good since we need to be able to control more accurately the request rate.</p>
+     * <p>{@link System#nanoTime()} is precise enough, but we would need to loop continuously
+     * checking the nano time until the sleep period is elapsed; to avoid busy looping, this
+     * method calls {@link Thread#yield()}.</p>
+     *
+     * @param micros the microseconds to sleep
+     */
+    private void sleep(long micros) throws InterruptedException
+    {
+        if (micros > 10000)
+        {
+            TimeUnit.MICROSECONDS.sleep(micros);
+        }
+        else
+        {
+            long end = System.nanoTime() + TimeUnit.MICROSECONDS.toNanos(micros);
+            while (System.nanoTime() < end)
+                Thread.yield();
+        }
     }
 
     private class HandshakeListener implements ClientSessionChannel.MessageListener
