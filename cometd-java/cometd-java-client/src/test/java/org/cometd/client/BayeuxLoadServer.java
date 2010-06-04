@@ -163,8 +163,8 @@ public class BayeuxLoadServer
             finally
             {
                 long end = System.nanoTime();
-                boolean cancelled = task.cancel(false);
-                if (!cancelled)
+                task.cancel(false);
+                if (longRequest.get())
                 {
                     onLongRequestEnded(requestId, end - start);
                 }
