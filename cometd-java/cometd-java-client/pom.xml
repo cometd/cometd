@@ -27,7 +27,7 @@
                                 <argument>-Xmn256m</argument>
                                 <argument>-cp</argument>
                                 <classpath />
-                                <argument>org.cometd.client.BayeuxDemoServer</argument>
+                                <argument>org.cometd.client.BayeuxLoadServer</argument>
                             </arguments>
                             <classpathScope>test</classpathScope>
                         </configuration>
