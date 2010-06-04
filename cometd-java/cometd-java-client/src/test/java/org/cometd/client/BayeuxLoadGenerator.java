@@ -172,7 +172,6 @@ public class BayeuxLoadGenerator
                 for (int i = 0; i < currentClients - clients; ++i)
                 {
                     LoadBayeuxClient client = bayeuxClients.get(currentClients - i - 1);
-                    client.getChannel(Channel.META_DISCONNECT).addListener(disconnectListener);
                     client.destroy();
                 }
             }
@@ -276,7 +275,6 @@ public class BayeuxLoadGenerator
                         .append("\"user\":").append(clientIndex).append(",")
                         .append("\"chat\":\"").append(chat).append("\",")
                         .append("\"start\":").toString();
-//                Object message = new JSON.Literal("{\"user\":\"User-" + clientIndex + "\",\"chat\":\"" + chat + "\"}");
                 client.startBatch();
                 for (int b = 0; b < batchSize; ++b)
                 {
@@ -490,10 +488,11 @@ public class BayeuxLoadGenerator
      * method calls {@link Thread#yield()}.</p>
      *
      * @param micros the microseconds to sleep
+     * @throws InterruptedException if interrupted while sleeping
      */
     private void sleep(long micros) throws InterruptedException
     {
-        if (micros > 10000)
+        if (micros >= 10000)
         {
             TimeUnit.MICROSECONDS.sleep(micros);
         }
