@@ -5,8 +5,9 @@ import org.cometd.Client;
 import org.cometd.Message;
 import org.cometd.server.BayeuxService;
 import org.cometd.server.continuation.ContinuationCometdServlet;
+import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -16,7 +17,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 /**
  * @version $Revision$ $Date$
  */
-public class BayeuxServer
+public class BayeuxLoadServer
 {
     public static void main(String[] args) throws Exception
     {
@@ -37,11 +38,15 @@ public class BayeuxServer
         QueuedThreadPool threadPool = new QueuedThreadPool();
         server.setThreadPool(threadPool);
 
-        HandlerCollection handlers = new HandlerCollection();
-        server.setHandler(handlers);
+        StatisticsHandler statisticsHandler = new StatisticsHandler();
+        server.setHandler(statisticsHandler);
+
+        // Add more handlers if needed
+
+        HandlerContainer handler = statisticsHandler;
 
         String contextPath = "";
-        ServletContextHandler context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(handler, contextPath, ServletContextHandler.SESSIONS);
 
         // Setup default servlet to serve static files
         context.addServlet(DefaultServlet.class, "/");
@@ -62,28 +67,46 @@ public class BayeuxServer
         server.start();
 
         Bayeux bayeux = cometServlet.getBayeux();
-        new StatisticsService(bayeux);
+        new StatisticsService(bayeux, statisticsHandler);
     }
 
     public static class StatisticsService extends BayeuxService
     {
         private final StatisticsHelper helper = new StatisticsHelper();
+        private final StatisticsHandler statisticsHandler;
 
-        private StatisticsService(Bayeux bayeux)
+        private StatisticsService(Bayeux bayeux, StatisticsHandler statisticsHandler)
         {
             super(bayeux, "statistics-service");
+            this.statisticsHandler = statisticsHandler;
             subscribe("/service/statistics/start", "startStatistics");
             subscribe("/service/statistics/stop", "stopStatistics");
         }
 
         public void startStatistics(Client remote, Message message)
         {
-            helper.startStatistics();
+            boolean started = helper.startStatistics();
+            if (started)
+            {
+                statisticsHandler.statsReset();
+            }
         }
 
         public void stopStatistics(Client remote, Message message) throws Exception
         {
-            helper.stopStatistics();
+            boolean stopped = helper.stopStatistics();
+            if (stopped)
+            {
+                System.err.println("Requests (total/failed/max): " + statisticsHandler.getDispatched() + "/" +
+                        (statisticsHandler.getResponses4xx() + statisticsHandler.getResponses5xx()) + "/" +
+                        statisticsHandler.getDispatchedActiveMax());
+                System.err.println("Requests times (total/avg/max - stddev): " +
+                        statisticsHandler.getDispatchedTimeTotal() + "/" +
+                        ((Double)statisticsHandler.getDispatchedTimeMean()).longValue() + "/" +
+                        statisticsHandler.getDispatchedTimeMax() + " ms - " +
+                        ((Double)statisticsHandler.getDispatchedTimeStdDev()).longValue());
+                System.err.println();
+            }
         }
     }
 }

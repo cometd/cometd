@@ -16,7 +16,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.Bayeux;
 import org.cometd.Client;
-import org.cometd.ClientListener;
 import org.cometd.Message;
 import org.cometd.MessageListener;
 import org.eclipse.jetty.client.HttpClient;
@@ -25,19 +24,22 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class BayeuxLoadGenerator
 {
+    private final Random random = new Random();
     private final StatisticsHelper helper = new StatisticsHelper();
     private final List<LoadBayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<LoadBayeuxClient>());
     private final Map<Integer, Integer> rooms = new HashMap<Integer, Integer>();
+    private final AtomicLong messageIds = new AtomicLong();
     private final AtomicLong start = new AtomicLong();
     private final AtomicLong end = new AtomicLong();
+    private final AtomicLong responses = new AtomicLong();
     private final AtomicLong messages = new AtomicLong();
+    private final AtomicLong minWallLatency = new AtomicLong();
+    private final AtomicLong maxWallLatency = new AtomicLong();
+    private final AtomicLong totWallLatency = new AtomicLong();
     private final AtomicLong minLatency = new AtomicLong();
     private final AtomicLong maxLatency = new AtomicLong();
     private final AtomicLong totLatency = new AtomicLong();
-    private final ConcurrentMap<Long, AtomicLong> latencies = new ConcurrentHashMap<Long, AtomicLong>();
-    private final ClientListener subscribeListener = new SubscribeListener();
-    private final ClientListener latencyListener = new LatencyListener();
-    private final ClientListener disconnectListener = new DisconnectListener();
+    private final ConcurrentMap<Long, AtomicLong> wallLatencies = new ConcurrentHashMap<Long, AtomicLong>();
     private final HttpClient httpClient;
 
     public static void main(String[] args) throws Exception
@@ -60,10 +62,16 @@ public class BayeuxLoadGenerator
         this.httpClient = httpClient;
     }
 
+    private int nextRandom(int limit)
+    {
+        synchronized (this)
+        {
+            return random.nextInt(limit);
+        }
+    }
+
     public void generateLoad() throws Exception
     {
-        Random random = new Random();
-
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
 
         System.err.print("protocol [http]: ");
@@ -97,7 +105,7 @@ public class BayeuxLoadGenerator
         int clients = 100;
         int batchCount = 1000;
         int batchSize = 10;
-        long batchPause = 10;
+        long batchPause = 10000;
         int messageSize = 50;
         boolean randomize = true;
 
@@ -118,6 +126,9 @@ public class BayeuxLoadGenerator
         if (value.length() == 0)
             value = "" + roomsPerClient;
         roomsPerClient = Integer.parseInt(value);
+
+        DisconnectListener disconnectListener = new DisconnectListener();
+        LatencyListener latencyListener = new LatencyListener();
 
         while (true)
         {
@@ -140,24 +151,15 @@ public class BayeuxLoadGenerator
             {
                 for (int i = 0; i < clients - currentClients; ++i)
                 {
-                    LoadBayeuxClient client = new LoadBayeuxClient(httpClient, url);
-                    client.addListener(subscribeListener);
-                    client.addListener(latencyListener);
+                    LoadBayeuxClient client = new LoadBayeuxClient(url, httpClient, channel, rooms, roomsPerClient, latencyListener);
+                    client.addListener(disconnectListener);
                     client.start();
-
-                    client.startBatch();
-                    for (int j = 0; j < roomsPerClient; ++j)
-                    {
-                        int room = random.nextInt(rooms);
-                        client.init(channel, room);
-                    }
-                    client.endBatch();
 
                     // Give some time to the server to accept connections and
                     // reply to handshakes, connects and subscribes
                     if (i % 10 == 0)
                     {
-                        Thread.sleep(100);
+                        sleep(100000);
                     }
                 }
             }
@@ -166,7 +168,6 @@ public class BayeuxLoadGenerator
                 for (int i = 0; i < currentClients - clients; ++i)
                 {
                     LoadBayeuxClient client = bayeuxClients.get(currentClients - i - 1);
-                    client.addListener(disconnectListener);
                     client.destroy();
                 }
             }
@@ -177,7 +178,7 @@ public class BayeuxLoadGenerator
             int currentSize = bayeuxClients.size();
             while (currentSize != clients)
             {
-                Thread.sleep(250);
+                sleep(250000);
                 System.err.println("Waiting for clients " + currentSize + "/" + clients);
                 if (lastSize == currentSize)
                 {
@@ -200,7 +201,10 @@ public class BayeuxLoadGenerator
             else
             {
                 if (currentSize == 0)
+                {
+                    System.err.println("All clients disconnected, exiting");
                     break;
+                }
 
                 System.err.println("Clients ready");
             }
@@ -219,7 +223,7 @@ public class BayeuxLoadGenerator
                 value = "" + batchSize;
             batchSize = Integer.parseInt(value);
 
-            System.err.print("batch pause [" + batchPause + "]: ");
+            System.err.print("batch pause (\u00B5s) [" + batchPause + "]: ");
             value = console.readLine().trim();
             if (value.length() == 0)
                 value = "" + batchPause;
@@ -240,19 +244,21 @@ public class BayeuxLoadGenerator
                 value = "" + randomize;
             randomize = Boolean.parseBoolean(value);
 
-            helper.startStatistics();
             // Send a message to the server to signal the start of the test
             LoadBayeuxClient statsClient = bayeuxClients.get(0);
             statsClient.begin();
 
+            helper.startStatistics();
+
             long start = System.nanoTime();
             int clientIndex = -1;
             long expected = 0;
+            StringBuilder message = new StringBuilder();
             for (int i = 0; i < batchCount; ++i)
             {
                 if (randomize)
                 {
-                    clientIndex = random.nextInt(bayeuxClients.size());
+                    clientIndex = nextRandom(bayeuxClients.size());
                 }
                 else
                 {
@@ -260,8 +266,11 @@ public class BayeuxLoadGenerator
                     if (clientIndex >= bayeuxClients.size())
                         clientIndex = 0;
                 }
-                BayeuxClient client = bayeuxClients.get(clientIndex);
-                Object message = new JSON.Literal("{\"user\":\"User-" + clientIndex + "\",\"chat\":\"" + chat + "\"}");
+                LoadBayeuxClient client = bayeuxClients.get(clientIndex);
+                String partialMessage = new StringBuilder()
+                        .append("\"user\":").append(clientIndex).append(",")
+                        .append("\"chat\":\"").append(chat).append("\",")
+                        .append("\"start\":").toString();
                 client.startBatch();
                 for (int b = 0; b < batchSize; ++b)
                 {
@@ -269,58 +278,79 @@ public class BayeuxLoadGenerator
                     Integer clientsPerRoom = null;
                     while (clientsPerRoom == null || clientsPerRoom == 0)
                     {
-                        room = random.nextInt(rooms);
+                        room = nextRandom(rooms);
                         clientsPerRoom = this.rooms.get(room);
                     }
-                    client.publish(channel + "/" + room, message, "" + System.nanoTime());
+                    message.setLength(0);
+                    message.append("{").append(partialMessage).append(System.nanoTime()).append("}");
+                    client.publish(channel + "/" + room, new JSON.Literal(message.toString()), String.valueOf(messageIds.incrementAndGet()));
                     expected += clientsPerRoom;
                 }
                 client.endBatch();
 
                 if (batchPause > 0)
-                    Thread.sleep(batchPause);
+                    sleep(batchPause);
             }
             long end = System.nanoTime();
 
-            statsClient.end();
             helper.stopStatistics();
 
             long elapsedNanos = end - start;
             if (elapsedNanos > 0)
             {
-                System.err.print("Messages - Elapsed | Rate = ");
+                System.err.print("Outgoing: Elapsed | Rate = ");
                 System.err.print(TimeUnit.NANOSECONDS.toMillis(elapsedNanos));
                 System.err.print(" ms | ");
                 System.err.print(batchCount * batchSize * 1000L * 1000L * 1000L / elapsedNanos);
-                System.err.println(" sends/s ");
+                System.err.print(" messages/s - ");
+                System.err.print(batchCount * 1000L * 1000L * 1000L / elapsedNanos);
+                System.err.println(" requests/s");
             }
 
             waitForMessages(expected);
+
+            // Send a message to the server to signal the end of the test
+            statsClient.end();
+
             printReport(expected);
+        }
+
+        httpClient.stop();
+    }
+
+    private void updateLatencies(long startTime, long endTime)
+    {
+        long wallLatency = endTime - startTime;
+
+        // Update the latencies using a non-blocking algorithm
+        updateMin(minWallLatency, wallLatency);
+        updateMax(maxWallLatency, wallLatency);
+        totWallLatency.addAndGet(wallLatency);
+
+        wallLatencies.putIfAbsent(wallLatency, new AtomicLong(0L));
+        wallLatencies.get(wallLatency).incrementAndGet();
+    }
+
+    private void updateMax(AtomicLong max, long value)
+    {
+        long oldValue = max.get();
+        while (value > oldValue)
+        {
+            if (max.compareAndSet(oldValue, value))
+                break;
+            oldValue = max.get();
         }
     }
 
-    private void updateLatencies(long start, long end)
+    private void updateMin(AtomicLong min, long value)
     {
-        long latency = end - start;
-
-        // Update the latencies using a non-blocking algorithm
-        long oldMinLatency = minLatency.get();
-        while (latency < oldMinLatency)
+        long oldValue = min.get();
+        while (value < oldValue)
         {
-            if (minLatency.compareAndSet(oldMinLatency, latency)) break;
-            oldMinLatency = minLatency.get();
+            if (min.compareAndSet(oldValue, value))
+                break;
+            oldValue = min.get();
         }
-        long oldMaxLatency = maxLatency.get();
-        while (latency > oldMaxLatency)
-        {
-            if (maxLatency.compareAndSet(oldMaxLatency, latency)) break;
-            oldMaxLatency = maxLatency.get();
-        }
-        totLatency.addAndGet(latency);
-
-        latencies.putIfAbsent(latency, new AtomicLong(0L));
-        latencies.get(latency).incrementAndGet();
     }
 
     private boolean waitForMessages(long expected) throws InterruptedException
@@ -332,7 +362,7 @@ public class BayeuxLoadGenerator
         while (arrived < expected)
         {
             System.err.println("Waiting for messages to arrive " + arrived + "/" + expected);
-            Thread.sleep(500);
+            sleep(500000);
             if (lastArrived == arrived)
             {
                 --retries;
@@ -359,32 +389,34 @@ public class BayeuxLoadGenerator
 
     public void printReport(long expectedCount)
     {
-        long responseCount = messages.get();
+        long messageCount = messages.get();
         System.err.print("Messages - Success/Expected = ");
-        System.err.print(responseCount);
+        System.err.print(messageCount);
         System.err.print("/");
         System.err.println(expectedCount);
 
         long elapsedNanos = end.get() - start.get();
         if (elapsedNanos > 0)
         {
-            System.err.print("Messages - Elapsed/Rate = ");
+            System.err.print("Incoming - Elapsed | Rate = ");
             System.err.print(TimeUnit.NANOSECONDS.toMillis(elapsedNanos));
-            System.err.print(" ms / ");
-            System.err.print(responseCount * 1000 * 1000 * 1000 / elapsedNanos);
-            System.err.println(" messages/s ");
+            System.err.print(" ms | ");
+            System.err.print(messageCount * 1000L * 1000L * 1000L / elapsedNanos);
+            System.err.print(" messages/s - ");
+            System.err.print(responses.get() * 1000L * 1000L * 1000L / elapsedNanos);
+            System.err.println(" responses/s");
         }
 
-        if (latencies.size() > 1)
+        if (wallLatencies.size() > 1)
         {
             long maxLatencyBucketFrequency = 0L;
             long[] latencyBucketFrequencies = new long[20];
-            long latencyRange = maxLatency.get() - minLatency.get();
-            for (Iterator<Map.Entry<Long, AtomicLong>> entries = latencies.entrySet().iterator(); entries.hasNext();)
+            long latencyRange = maxWallLatency.get() - minWallLatency.get();
+            for (Iterator<Map.Entry<Long, AtomicLong>> entries = wallLatencies.entrySet().iterator(); entries.hasNext();)
             {
                 Map.Entry<Long, AtomicLong> entry = entries.next();
                 long latency = entry.getKey();
-                Long bucketIndex = latencyRange == 0 ? 0 : (latency - minLatency.get()) * latencyBucketFrequencies.length / latencyRange;
+                Long bucketIndex = latencyRange == 0 ? 0 : (latency - minWallLatency.get()) * latencyBucketFrequencies.length / latencyRange;
                 int index = bucketIndex.intValue() == latencyBucketFrequencies.length ? latencyBucketFrequencies.length - 1 : bucketIndex.intValue();
                 long value = entry.getValue().get();
                 latencyBucketFrequencies[index] += value;
@@ -392,7 +424,7 @@ public class BayeuxLoadGenerator
                 entries.remove();
             }
 
-            System.err.println("Messages - Latency Distribution Curve (X axis: Frequency, Y axis: Latency):");
+            System.err.println("Messages - Wall Latency Distribution Curve (X axis: Frequency, Y axis: Latency):");
             for (int i = 0; i < latencyBucketFrequencies.length; ++i)
             {
                 long latencyBucketFrequency = latencyBucketFrequencies[i];
@@ -402,37 +434,62 @@ public class BayeuxLoadGenerator
                 System.err.print("@");
                 for (int j = value + 1; j < latencyBucketFrequencies.length; ++j) System.err.print(" ");
                 System.err.print("  _  ");
-                System.err.print(TimeUnit.NANOSECONDS.toMillis((latencyRange * (i + 1) / latencyBucketFrequencies.length) + minLatency.get()));
+                System.err.print(TimeUnit.NANOSECONDS.toMillis((latencyRange * (i + 1) / latencyBucketFrequencies.length) + minWallLatency.get()));
                 System.err.println(" ms (" + latencyBucketFrequency + ")");
             }
         }
 
-        System.err.print("Messages - Latency Min/Ave/Max = ");
+        System.err.print("Messages - Wall Latency Min/Ave/Max = ");
+        System.err.print(TimeUnit.NANOSECONDS.toMillis(minWallLatency.get()) + "/");
+        System.err.print(messageCount == 0 ? "-/" : TimeUnit.NANOSECONDS.toMillis(totWallLatency.get() / messageCount) + "/");
+        System.err.println(TimeUnit.NANOSECONDS.toMillis(maxWallLatency.get()) + " ms");
+
+        System.err.print("Messages - Network Latency Min/Ave/Max = ");
         System.err.print(TimeUnit.NANOSECONDS.toMillis(minLatency.get()) + "/");
-        System.err.print(responseCount == 0 ? "-/" : TimeUnit.NANOSECONDS.toMillis(totLatency.get() / responseCount) + "/");
+        System.err.print(messageCount == 0 ? "-/" : TimeUnit.NANOSECONDS.toMillis(totLatency.get() / messageCount) + "/");
         System.err.println(TimeUnit.NANOSECONDS.toMillis(maxLatency.get()) + " ms");
     }
 
     private void reset()
     {
+        messageIds.set(0L);
         start.set(0L);
         end.set(0L);
+        responses.set(0L);
         messages.set(0L);
+        minWallLatency.set(Long.MAX_VALUE);
+        maxWallLatency.set(0L);
+        totWallLatency.set(0L);
         minLatency.set(Long.MAX_VALUE);
         maxLatency.set(0L);
         totLatency.set(0L);
+        wallLatencies.clear();
     }
 
-    private class SubscribeListener implements MessageListener
+    /**
+     * <p>Unfortunately, {@link Thread#sleep(long)} on many platforms has a resolution of 1 ms
+     * or even of 10 ms, so calling <code>Thread.sleep(2)</code> often results in a 10 ms sleep.<br/>
+     * The same applies for {@link Thread#sleep(long, int)} and {@link Object#wait(long, int)}:
+     * they are not accurate.</p>
+     * <p>This is not good since we need to be able to control more accurately the request rate.</p>
+     * <p>{@link System#nanoTime()} is precise enough, but we would need to loop continuously
+     * checking the nano time until the sleep period is elapsed; to avoid busy looping, this
+     * method calls {@link Thread#yield()}.</p>
+     *
+     * @param micros the microseconds to sleep
+     * @throws InterruptedException if interrupted while sleeping
+     */
+    private void sleep(long micros) throws InterruptedException
     {
-        public void deliver(Client fromClient, Client toClient, Message message)
+        if (micros >= 10000)
         {
-            if (Bayeux.META_SUBSCRIBE.equals(message.get(Bayeux.CHANNEL_FIELD)) &&
-                (Boolean)message.get(Bayeux.SUCCESSFUL_FIELD))
-            {
-                toClient.removeListener(this);
-                bayeuxClients.add((LoadBayeuxClient)toClient);
-            }
+            TimeUnit.MICROSECONDS.sleep(micros);
+        }
+        else
+        {
+            long end = System.nanoTime() + TimeUnit.MICROSECONDS.toNanos(micros);
+            while (System.nanoTime() < end)
+                Thread.yield();
         }
     }
 
@@ -472,20 +529,51 @@ public class BayeuxLoadGenerator
 
     private class LoadBayeuxClient extends BayeuxClient
     {
-        private List<Integer> subscriptions = new ArrayList<Integer>();
+        private final List<Integer> subscriptions = new ArrayList<Integer>();
+        private final String channel;
+        private final int rooms;
+        private final int roomsPerClient;
+        private final MessageListener listener;
 
-        private LoadBayeuxClient(HttpClient client, String url)
+        private LoadBayeuxClient(String url, HttpClient client, String channel, int rooms, int roomsPerClient, MessageListener listener)
         {
             super(client, url);
+            this.channel = channel;
+            this.rooms = rooms;
+            this.roomsPerClient = roomsPerClient;
+            this.listener = listener;
+        }
+
+        @Override
+        protected void metaHandshake(boolean success, boolean reestablish, Message message)
+        {
+            if (success)
+            {
+                bayeuxClients.add(this);
+                startBatch();
+                try
+                {
+                    for (int j = 0; j < roomsPerClient; ++j)
+                    {
+                        int room = nextRandom(rooms);
+                        init(channel, room);
+                    }
+                }
+                finally
+                {
+                    endBatch();
+                }
+            }
         }
 
         public void init(String channel, int room)
         {
+            addListener(listener);
             subscribe(channel + "/" + room);
 
-            Integer clientsPerRoom = rooms.get(room);
+            Integer clientsPerRoom = BayeuxLoadGenerator.this.rooms.get(room);
             if (clientsPerRoom == null) clientsPerRoom = 0;
-            rooms.put(room, ++clientsPerRoom);
+            BayeuxLoadGenerator.this.rooms.put(room, ++clientsPerRoom);
 
             subscriptions.add(room);
         }
@@ -496,8 +584,8 @@ public class BayeuxLoadGenerator
 
             for (Integer room : subscriptions)
             {
-                Integer clientsPerRoom = rooms.get(room);
-                rooms.put(room, --clientsPerRoom);
+                Integer clientsPerRoom = BayeuxLoadGenerator.this.rooms.get(room);
+                BayeuxLoadGenerator.this.rooms.put(room, --clientsPerRoom);
             }
 
             subscriptions.clear();
