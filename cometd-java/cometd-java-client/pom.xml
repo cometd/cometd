@@ -21,6 +21,8 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-XX:+UseParallelOldGC</argument>
+                                <argument>-XX:+PrintCommandLineFlags</argument>
                                 <argument>-Xmx512m</argument>
                                 <argument>-Xms512m</argument>
                                 <argument>-Xmn256m</argument>
