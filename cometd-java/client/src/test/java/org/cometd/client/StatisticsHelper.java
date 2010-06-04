@@ -19,17 +19,17 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class StatisticsHelper implements Runnable
 {
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final com.sun.management.OperatingSystemMXBean operatingSystem;
     private final CompilationMXBean jitCompiler;
     private final MemoryMXBean heapMemory;
+    private final AtomicInteger starts = new AtomicInteger();
     private volatile MemoryPoolMXBean youngMemoryPool;
     private volatile MemoryPoolMXBean survivorMemoryPool;
     private volatile MemoryPoolMXBean oldMemoryPool;
     private volatile ScheduledFuture<?> memoryPoller;
     private volatile GarbageCollectorMXBean youngCollector;
     private volatile GarbageCollectorMXBean oldCollector;
-    private final AtomicInteger starts = new AtomicInteger();
+    private volatile ScheduledExecutorService scheduler;
     private volatile boolean polling;
     private volatile long lastYoungUsed;
     private volatile long startYoungCollections;
@@ -106,11 +106,11 @@ public class StatisticsHelper implements Runnable
         lastOldUsed = old;
     }
 
-    public void startStatistics()
+    public boolean startStatistics()
     {
         // Support for multiple nodes
         if (starts.incrementAndGet() > 1)
-            return;
+            return false;
 
         System.gc();
 
@@ -128,6 +128,7 @@ public class StatisticsHelper implements Runnable
         long youngGenerationHeap = heapMemoryUsage.getMax() - oldMemoryPool.getUsage().getMax();
         System.err.println("Young Generation Heap Size: " + mebiBytes(youngGenerationHeap) + " MiB");
 
+        scheduler = Executors.newSingleThreadScheduledExecutor();
         polling = false;
         memoryPoller = scheduler.scheduleWithFixedDelay(this, 0, 500, TimeUnit.MILLISECONDS);
 
@@ -145,13 +146,15 @@ public class StatisticsHelper implements Runnable
         startTime = System.nanoTime();
         startProcessCPUTime = operatingSystem.getProcessCpuTime();
         startJITCTime = jitCompiler.getTotalCompilationTime();
+
+        return true;
     }
 
-    public void stopStatistics()
+    public boolean stopStatistics()
     {
         // Support for multiple nodes
         if (starts.decrementAndGet() > 0)
-            return;
+            return false;
 
         long elapsedJITCTime = jitCompiler.getTotalCompilationTime() - startJITCTime;
         long elapsedProcessCPUTime = operatingSystem.getProcessCpuTime() - startProcessCPUTime;
@@ -163,6 +166,7 @@ public class StatisticsHelper implements Runnable
         long youngCollections = youngCollector.getCollectionCount() - startYoungCollections;
 
         memoryPoller.cancel(false);
+        scheduler.shutdown();
 
         System.err.println("- - - - - - - - - - - - - - - - - - - - ");
         System.err.println("Statistics Ended at " + new Date());
@@ -176,7 +180,8 @@ public class StatisticsHelper implements Runnable
         System.err.println("Garbage Generated in Old Generation: " + mebiBytes(totalOldUsed) + " MiB");
 
         System.err.println("Average CPU Load: " + ((float)elapsedProcessCPUTime * 100 / elapsedTime) + "/" + (100 * operatingSystem.getAvailableProcessors()));
-        System.err.println();
+
+        return true;
     }
 
     public float percent(long dividend, long divisor)
