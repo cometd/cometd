@@ -1,12 +1,27 @@
 package org.cometd.client;
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.server.HandlerContainer;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -41,9 +56,12 @@ public class BayeuxLoadServer
         StatisticsHandler statisticsHandler = new StatisticsHandler();
         server.setHandler(statisticsHandler);
 
+        RequestQoSHandler requestQoSHandler = new RequestQoSHandler();
+        statisticsHandler.setHandler(requestQoSHandler);
+
         // Add more handlers if needed
 
-        HandlerContainer handler = statisticsHandler;
+        HandlerContainer handler = requestQoSHandler;
 
         String contextPath = "";
         ServletContextHandler context = new ServletContextHandler(handler, contextPath, ServletContextHandler.SESSIONS);
@@ -106,6 +124,83 @@ public class BayeuxLoadServer
                         statisticsHandler.getDispatchedTimeMax() + " ms - " +
                         ((Double)statisticsHandler.getDispatchedTimeStdDev()).longValue());
                 System.err.println();
+            }
+        }
+    }
+
+    private static class RequestQoSHandler extends HandlerWrapper
+    {
+        private final long maxRequestTime = 200;
+        private final AtomicLong requestIds = new AtomicLong();
+        private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+        @Override
+        protected void doStop() throws Exception
+        {
+            super.doStop();
+            scheduler.shutdown();
+        }
+
+        @Override
+        public void handle(String target, Request request, final HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+        {
+            final long requestId = requestIds.incrementAndGet();
+            final AtomicBoolean longRequest = new AtomicBoolean(false);
+            final Thread thread = Thread.currentThread();
+            ScheduledFuture<?> task = scheduler.scheduleWithFixedDelay(new Runnable()
+            {
+                public void run()
+                {
+                    onLongRequestDetected(requestId, httpRequest, thread);
+                    longRequest.set(true);
+                }
+            }, maxRequestTime, maxRequestTime, TimeUnit.MILLISECONDS);
+            long start = System.nanoTime();
+            try
+            {
+                super.handle(target, request, httpRequest, httpResponse);
+            }
+            finally
+            {
+                long end = System.nanoTime();
+                boolean cancelled = task.cancel(false);
+                if (!cancelled)
+                {
+                    onLongRequestEnded(requestId, end - start);
+                }
+            }
+        }
+
+        private void onLongRequestDetected(long requestId, HttpServletRequest request, Thread thread)
+        {
+            StackTraceElement[] stackFrames = thread.getStackTrace();
+            StringBuilder builder = new StringBuilder();
+            builder.append(request.getRequestURI()).append("\n");
+            for (Enumeration<String> headers = request.getHeaderNames(); headers.hasMoreElements();)
+            {
+                String name = headers.nextElement();
+                builder.append(name).append("=").append(Collections.list(request.getHeaders(name))).append("\n");
+            }
+            builder.append(request.getRemoteAddr()).append(":").append(request.getRemotePort()).append(" => ");
+            builder.append(request.getLocalAddr()).append(":").append(request.getLocalPort()).append("\n");
+            builder.append(thread).append("\n");
+            formatStackFrames(stackFrames, builder);
+            System.err.println("Request #" + requestId + " is lasting too much (> " + maxRequestTime + " ms)\n" + builder);
+        }
+
+        private void onLongRequestEnded(long requestId, long time)
+        {
+            System.err.println("Request #" + requestId + " lasted " + TimeUnit.NANOSECONDS.toMillis(time) + " ms");
+        }
+
+        private void formatStackFrames(StackTraceElement[] stackFrames, StringBuilder builder)
+        {
+            for (int i = 0; i < stackFrames.length; ++i)
+            {
+                StackTraceElement stackFrame = stackFrames[i];
+                for (int j = 0; j < i; ++j)
+                    builder.append(" ");
+                builder.append(stackFrame).append("\n");
             }
         }
     }
