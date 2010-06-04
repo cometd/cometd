@@ -205,7 +205,7 @@ org.cometd.Cometd = function(name)
                     continue;
                 }
 
-                if (deep && typeof prop === "object" && prop !== null)
+                if (deep && typeof prop === 'object' && prop !== null)
                 {
                     if (prop instanceof Array)
                     {
@@ -548,7 +548,7 @@ org.cometd.Cometd = function(name)
         _notify(channel, message);
 
         // Notify the globbing listeners
-        var channelParts = channel.split("/");
+        var channelParts = channel.split('/');
         var last = channelParts.length - 1;
         for (var i = last; i > 0; --i)
         {
@@ -873,8 +873,7 @@ org.cometd.Cometd = function(name)
             {
                 throw 'Could not negotiate transport with server; client ' +
                       _transports.findTransportTypes(message.version, _crossDomain) +
-                      ", server " +
-                      message.supportedConnectionTypes;
+                      ', server ' + message.supportedConnectionTypes;
             }
             else
             {
@@ -898,6 +897,7 @@ org.cometd.Cometd = function(name)
             {
                 if (_advice.reconnect != 'none')
                 {
+                    _resetBackoff();
                     _delayedConnect();
                 }
                 else
@@ -1526,7 +1526,7 @@ org.cometd.Cometd = function(name)
 
         if (disconnectProps === undefined)
         {
-            if (typeof sync !== "boolean")
+            if (typeof sync !== 'boolean')
             {
                 disconnectProps = sync;
                 sync = false;
