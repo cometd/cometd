@@ -36,9 +36,18 @@ public class BayeuxLoadServer
 {
     public static void main(String[] args) throws Exception
     {
+        boolean qos=false;
+        boolean stats=false;
         int port = 8080;
-        if (args.length > 0)
-            port = Integer.parseInt(args[0]);
+        
+        for (String arg : args)
+        {
+            qos |= "--qos".equals(arg);
+            stats |= "--stats".equals(arg);
+            if (!arg.startsWith("--"))
+                port = Integer.parseInt(arg);
+        }
+            
 
         Server server = new Server();
         SelectChannelConnector connector = new SelectChannelConnector();
@@ -52,16 +61,24 @@ public class BayeuxLoadServer
 
         QueuedThreadPool threadPool = new QueuedThreadPool();
         server.setThreadPool(threadPool);
+        
+        HandlerWrapper handler = server;
+        StatisticsHandler statisticsHandler = null;
+        if (stats)
+        {
+            statisticsHandler = new StatisticsHandler();
+            handler.setHandler(statisticsHandler);
+            handler = statisticsHandler;
+        }
 
-        StatisticsHandler statisticsHandler = new StatisticsHandler();
-        server.setHandler(statisticsHandler);
-
-        RequestQoSHandler requestQoSHandler = new RequestQoSHandler();
-        statisticsHandler.setHandler(requestQoSHandler);
+        if (qos)
+        {
+            RequestQoSHandler requestQoSHandler = new RequestQoSHandler();
+            handler.setHandler(requestQoSHandler); 
+            handler = requestQoSHandler;
+        }
 
         // Add more handlers if needed
-
-        HandlerContainer handler = requestQoSHandler;
 
         String contextPath = "";
         ServletContextHandler context = new ServletContextHandler(handler, contextPath, ServletContextHandler.SESSIONS);
@@ -104,7 +121,7 @@ public class BayeuxLoadServer
         public void startStatistics(ServerSession remote, Message message)
         {
             boolean started = helper.startStatistics();
-            if (started)
+            if (started && statisticsHandler!=null)
             {
                 statisticsHandler.statsReset();
             }
@@ -113,7 +130,7 @@ public class BayeuxLoadServer
         public void stopStatistics(ServerSession remote, Message message) throws Exception
         {
             boolean stopped = helper.stopStatistics();
-            if (stopped)
+            if (stopped && statisticsHandler!=null)
             {
                 System.err.println("Requests (total/failed/max): " + statisticsHandler.getDispatched() + "/" +
                         (statisticsHandler.getResponses4xx() + statisticsHandler.getResponses5xx()) + "/" +
@@ -130,7 +147,7 @@ public class BayeuxLoadServer
 
     private static class RequestQoSHandler extends HandlerWrapper
     {
-        private final long maxRequestTime = 200;
+        private final long maxRequestTime = 500;
         private final AtomicLong requestIds = new AtomicLong();
         private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
@@ -185,7 +202,7 @@ public class BayeuxLoadServer
             builder.append(request.getLocalAddr()).append(":").append(request.getLocalPort()).append("\n");
             builder.append(thread).append("\n");
             formatStackFrames(stackFrames, builder);
-            System.err.println("Request #" + requestId + " is lasting too much (> " + maxRequestTime + " ms)\n" + builder);
+            System.err.println("Request #" + requestId + " is too slow (> " + maxRequestTime + " ms)\n" + builder);
         }
 
         private void onLongRequestEnded(long requestId, long time)

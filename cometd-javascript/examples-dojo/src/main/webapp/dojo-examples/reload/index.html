@@ -38,7 +38,7 @@
 
         /* Initialize CometD */
         var cometURL = new String(document.location).replace(/\/dojo-examples\/.*$/, '') + "/cometd";
-        dojox.cometd.init({ url: cometURL, logLevel: 'debug' });
+        dojox.cometd.init({ url: cometURL, logLevel: "info" });
 
         /* Setup reload extension */
         dojo.addOnUnload(dojox.cometd, "reload");
