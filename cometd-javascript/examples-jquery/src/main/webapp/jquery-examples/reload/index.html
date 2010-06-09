@@ -47,7 +47,7 @@
 
         /* Initialize CometD */
         var cometURL = new String(document.location).replace(/\/jquery-examples\/.*$/, '') + "/cometd";
-        $.cometd.init({ url: cometURL, logLevel: "debug" });
+        $.cometd.init({ url: cometURL, logLevel: "info" });
 
         /* Setup reload extension */
         $(window).unload(function()
