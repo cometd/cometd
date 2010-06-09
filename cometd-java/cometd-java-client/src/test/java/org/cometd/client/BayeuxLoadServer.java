@@ -121,26 +121,31 @@ public class BayeuxLoadServer
         public void startStatistics(ServerSession remote, Message message)
         {
             boolean started = helper.startStatistics();
-            if (started && statisticsHandler!=null)
+            if (started)
             {
-                statisticsHandler.statsReset();
+                if (statisticsHandler!=null)
+                {
+                    statisticsHandler.statsReset();
+                }
             }
         }
 
         public void stopStatistics(ServerSession remote, Message message) throws Exception
         {
             boolean stopped = helper.stopStatistics();
-            if (stopped && statisticsHandler!=null)
+            if (stopped)
             {
-                System.err.println("Requests (total/failed/max): " + statisticsHandler.getDispatched() + "/" +
-                        (statisticsHandler.getResponses4xx() + statisticsHandler.getResponses5xx()) + "/" +
-                        statisticsHandler.getDispatchedActiveMax());
-                System.err.println("Requests times (total/avg/max - stddev): " +
-                        statisticsHandler.getDispatchedTimeTotal() + "/" +
-                        ((Double)statisticsHandler.getDispatchedTimeMean()).longValue() + "/" +
-                        statisticsHandler.getDispatchedTimeMax() + " ms - " +
-                        ((Double)statisticsHandler.getDispatchedTimeStdDev()).longValue());
-                System.err.println();
+                if (statisticsHandler!=null)
+                {
+                    System.err.println("Requests (total/failed/max): " + statisticsHandler.getDispatched() + "/" +
+                            (statisticsHandler.getResponses4xx() + statisticsHandler.getResponses5xx()) + "/" +
+                            statisticsHandler.getDispatchedActiveMax());
+                    System.err.println("Requests times (total/avg/max - stddev): " +
+                            statisticsHandler.getDispatchedTimeTotal() + "/" +
+                            ((Double)statisticsHandler.getDispatchedTimeMean()).longValue() + "/" +
+                            statisticsHandler.getDispatchedTimeMax() + " ms - " +
+                            ((Double)statisticsHandler.getDispatchedTimeStdDev()).longValue());
+                }
             }
         }
     }
