@@ -113,10 +113,10 @@ public class StatisticsHelper implements Runnable
             return false;
 
         System.gc();
-
-        System.err.println("----------------------------------------");
+        System.err.println("\n========================================");           
         System.err.println("Statistics Started at " + new Date());
         System.err.println("Operative System: " + operatingSystem.getName() + " " + operatingSystem.getVersion() + " " + operatingSystem.getArch());
+        System.err.println("JVM : "+System.getProperty("java.vm.vendor")+" "+System.getProperty("java.vm.name")+" runtime "+System.getProperty("java.vm.version")+" "+System.getProperty("java.runtime.version"));
         System.err.println("Processors: " + operatingSystem.getAvailableProcessors());
         long totalMemory = operatingSystem.getTotalPhysicalMemorySize();
         long freeMemory = operatingSystem.getFreePhysicalMemorySize();
@@ -127,7 +127,8 @@ public class StatisticsHelper implements Runnable
         System.err.println("Max Heap Size: " + mebiBytes(heapMemoryUsage.getMax()) + " MiB");
         long youngGenerationHeap = heapMemoryUsage.getMax() - oldMemoryPool.getUsage().getMax();
         System.err.println("Young Generation Heap Size: " + mebiBytes(youngGenerationHeap) + " MiB");
-
+        System.err.println("- - - - - - - - - - - - - - - - - - - - ");   
+        
         scheduler = Executors.newSingleThreadScheduledExecutor();
         polling = false;
         memoryPoller = scheduler.scheduleWithFixedDelay(this, 0, 500, TimeUnit.MILLISECONDS);
@@ -180,7 +181,7 @@ public class StatisticsHelper implements Runnable
         System.err.println("Garbage Generated in Old Generation: " + mebiBytes(totalOldUsed) + " MiB");
 
         System.err.println("Average CPU Load: " + ((float)elapsedProcessCPUTime * 100 / elapsedTime) + "/" + (100 * operatingSystem.getAvailableProcessors()));
-
+        System.err.println("----------------------------------------\n");  
         return true;
     }
 
