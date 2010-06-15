@@ -144,23 +144,6 @@
 
     <build>
         <defaultGoal>install</defaultGoal>
-        <extensions>
-            <extension>
-                <groupId>org.apache.maven.wagon</groupId>
-                <artifactId>wagon-ssh-external</artifactId>
-                <version>${maven-wagon-version}</version>
-            </extension>
-            <extension>
-                <groupId>org.apache.maven.wagon</groupId>
-                <artifactId>wagon-ssh</artifactId>
-                <version>${maven-wagon-version}</version>
-            </extension>
-            <extension>
-                <groupId>org.apache.maven.wagon</groupId>
-                <artifactId>wagon-webdav</artifactId>
-                <version>${maven-wagon-version}</version>
-            </extension>
-        </extensions>
         <plugins>
             <plugin>
                 <artifactId>maven-enforcer-plugin</artifactId>
