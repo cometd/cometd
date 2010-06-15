@@ -156,6 +156,9 @@
                         <configuration>
                             <rules>
                                 <requirePluginVersions />
+                                <requireMavenVersion>
+                                    <version>[2.0.9,)</version>
+                                </requireMavenVersion>
                             </rules>
                         </configuration>
                     </execution>
@@ -181,24 +184,6 @@
                         </manifestEntries>
                     </archive>
                 </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>requirements</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <requireMavenVersion>
-                                    <version>[2.0.9,)</version>
-                                </requireMavenVersion>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-release-plugin</artifactId>
