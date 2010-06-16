@@ -301,13 +301,17 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    public void endBatch()
+    public boolean endBatch()
     {
         synchronized (_queue)
         {
             if (--_batch==0 && _queue.size()>0)
+            {
                 flush();
+                return true;
+            }
         }
+        return false;
     }
 
     /* ------------------------------------------------------------ */

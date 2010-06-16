@@ -116,12 +116,14 @@ public abstract class AbstractClientSession implements ClientSession
     protected abstract void sendBatch();
 
     /* ------------------------------------------------------------ */
-    public void endBatch()
+    public boolean endBatch()
     {
         if (_batch.decrementAndGet()==0)
         {
             sendBatch();
+            return true;
         }
+        return false;
     }
 
     /* ------------------------------------------------------------ */

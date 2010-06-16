@@ -83,8 +83,9 @@ public interface Session
 
     /**
      * @deprecated use {@link #batch(Runnable)}
+     * @return True if the batch ended and there were messages to send.
      */
-    void endBatch();
+    boolean endBatch();
 
     /**
      * @deprecated use {@link #batch(Runnable)}
