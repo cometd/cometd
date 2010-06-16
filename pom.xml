@@ -103,7 +103,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.1.3.v20100526</jetty-version>
+        <jetty-version>7.1.4.v20100610</jetty-version>
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
         <maven-wagon-version>1.0-beta-2</maven-wagon-version>
     </properties>
