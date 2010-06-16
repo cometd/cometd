@@ -46,17 +46,25 @@ public class BayeuxLoadGenerator
 
     public static void main(String[] args) throws Exception
     {
-        HttpClient httpClient = new HttpClient();
-        httpClient.setMaxConnectionsPerAddress(40000);
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setMaxThreads(500);
-        threadPool.setDaemon(true);
-        httpClient.setThreadPool(threadPool);
-        httpClient.setIdleTimeout(5000);
-        httpClient.start();
+        try
+        {
+            HttpClient httpClient = new HttpClient();
+            httpClient.setMaxConnectionsPerAddress(40000);
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            threadPool.setMaxThreads(500);
+            threadPool.setDaemon(true);
+            httpClient.setThreadPool(threadPool);
+            httpClient.setIdleTimeout(5000);
+            httpClient.start();
 
-        BayeuxLoadGenerator generator = new BayeuxLoadGenerator(httpClient);
-        generator.generateLoad();
+            BayeuxLoadGenerator generator = new BayeuxLoadGenerator(httpClient);
+            generator.generateLoad();
+        }
+        catch (Exception x)
+        {
+            x.printStackTrace();
+            throw x;
+        }
     }
 
     public BayeuxLoadGenerator(HttpClient httpClient)
@@ -318,6 +326,8 @@ public class BayeuxLoadGenerator
             statsClient.end();
 
             printReport(expected);
+
+            reset();
         }
 
         httpClient.stop();
@@ -567,8 +577,8 @@ public class BayeuxLoadGenerator
                     end.set(endTime);
                     messages.incrementAndGet();
                     String messageId = message.getId();
-                    Long sendTime = sendTimes.remove(messageId);
-                    Long arrivalTime = arrivalTimes.remove(messageId);
+                    Long sendTime = sendTimes.get(messageId);
+                    Long arrivalTime = arrivalTimes.get(messageId);
                     updateLatencies(startTime, sendTime, arrivalTime, endTime);
                 }
             }
