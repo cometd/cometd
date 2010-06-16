@@ -31,6 +31,17 @@ public class JSONPTransport extends LongPollingTransport
         setOption(META_CONNECT_DELIVERY_OPTION,isMetaConnectDeliveryOnly());
     }
 
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.server.transport.LongPollingTransport#isAlwaysFlushingAfterHandle()
+     */
+    @Override
+    protected boolean isAlwaysFlushingAfterHandle()
+    {
+        return true;
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.server.transport.JSONTransport#init()

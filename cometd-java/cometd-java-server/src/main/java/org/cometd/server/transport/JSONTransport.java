@@ -18,6 +18,7 @@ public class JSONTransport extends LongPollingTransport
     private String _mimeType="application/json;charset=UTF-8";
 
 
+    /* ------------------------------------------------------------ */
     public JSONTransport(BayeuxServerImpl bayeux)
     {
         super(bayeux,NAME);
@@ -27,6 +28,18 @@ public class JSONTransport extends LongPollingTransport
         setOption(META_CONNECT_DELIVERY_OPTION,isMetaConnectDeliveryOnly());
     }
 
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.server.transport.LongPollingTransport#isAlwaysFlushingAfterHandle()
+     */
+    @Override
+    protected boolean isAlwaysFlushingAfterHandle()
+    {
+        return false;
+    }
+
+    /* ------------------------------------------------------------ */
     @Override
     protected void init()
     {
@@ -34,18 +47,21 @@ public class JSONTransport extends LongPollingTransport
         _mimeType=getOption(MIME_TYPE_OPTION,_mimeType);
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     public boolean accept(HttpServletRequest request)
     {
         return "POST".equals(request.getMethod());
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     public boolean isMetaConnectDeliveryOnly()
     {
         return false;
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     protected PrintWriter send(HttpServletRequest request,HttpServletResponse response,PrintWriter writer, ServerMessage message) throws IOException
     {
@@ -61,6 +77,7 @@ public class JSONTransport extends LongPollingTransport
         return writer;
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     protected void complete(PrintWriter writer) throws IOException
     {

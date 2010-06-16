@@ -613,6 +613,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (channel==null)
                 continue;
 
+            // TODO make this fair on all subscribers
             for (ServerSession session : channel.getSubscribers())
                 ((ServerSessionImpl)session).doDeliver(from,mutable.asImmutable());
         }

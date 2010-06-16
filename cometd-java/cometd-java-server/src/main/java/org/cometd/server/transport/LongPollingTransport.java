@@ -257,7 +257,7 @@ public abstract class LongPollingTransport extends HttpTransport
                     
                     // flush session if not done by the batch
                     // since some browsers well order script gets
-                    if (!ended)
+                    if (!ended && isAlwaysFlushingAfterHandle())
                         session.flush();
                 }
             }
@@ -290,6 +290,12 @@ public abstract class LongPollingTransport extends HttpTransport
         return writer;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return true if the transport always flushes at the end of a call to {@link #handle(HttpServletRequest, HttpServletResponse)}.
+     */
+    abstract protected boolean isAlwaysFlushingAfterHandle();
+    
     abstract protected PrintWriter send(HttpServletRequest request,HttpServletResponse response,PrintWriter writer, ServerMessage message) throws IOException;
 
     abstract protected void complete(PrintWriter writer) throws IOException;
