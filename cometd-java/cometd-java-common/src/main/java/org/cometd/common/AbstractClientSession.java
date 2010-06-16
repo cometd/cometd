@@ -335,7 +335,7 @@ public abstract class AbstractClientSession implements ClientSession
                     }
                     catch (Exception x)
                     {
-                        logger.debug(x);
+                        logger.info(x);
                     }
                 }
             }
@@ -351,7 +351,7 @@ public abstract class AbstractClientSession implements ClientSession
                         }
                         catch (Exception x)
                         {
-                            logger.debug(x);
+                            logger.info(x);
                         }
                     }
                 }
