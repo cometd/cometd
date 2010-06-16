@@ -88,10 +88,10 @@ public class CometdDemo
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
 
-        MovedContextHandler moved = new MovedContextHandler(contexts,"/","/cometd");
-        moved.setDiscardPathInfo(true);
+        // MovedContextHandler moved = new MovedContextHandler(contexts,"/","/cometd");
+        // moved.setDiscardPathInfo(true);
 
-        ServletContextHandler context = new ServletContextHandler(contexts,"/cometd",ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(contexts,"/",ServletContextHandler.SESSIONS);
 
         final BayeuxServerImpl bayeux = new BayeuxServerImpl();
         bayeux.initializeDefaultTransports();
@@ -123,7 +123,7 @@ public class CometdDemo
         comet.setInitParameter("interval","0");
         comet.setInitParameter("maxInterval","20000");
         comet.setInitParameter("multiFrameInterval","5000");
-        comet.setInitParameter("logLevel","0");
+        comet.setInitParameter("logLevel","3");
         comet.setInitOrder(2);
         
         ServletHolder demo=context.addServlet(CometdDemoServlet.class, "/demo");

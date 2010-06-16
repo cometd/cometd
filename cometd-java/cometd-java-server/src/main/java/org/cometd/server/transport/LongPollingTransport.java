@@ -137,11 +137,14 @@ public abstract class LongPollingTransport extends HttpTransport
                 // for each message
                 for (ServerMessage.Mutable message : messages)
                 {
+                    // Is this a connect?
+                    boolean connect = Channel.META_CONNECT.equals(message.getChannel());
+                    
                     // Get the session from the message
                     if (session==null)
                     {
                         session=(ServerSessionImpl)getBayeux().getSession(message.getClientId());
-                        if (!batch && session!=null && !message.isMeta())
+                        if (!batch && session!=null && !connect)
                         {
                             // start a batch to group all resulting messages into a single response.
                             batch=true;
@@ -151,7 +154,6 @@ public abstract class LongPollingTransport extends HttpTransport
 
                     // remember the connected status
                     boolean was_connected=session!=null && session.isConnected();
-                    boolean connect = Channel.META_CONNECT.equals(message.getChannel());
 
                     // handle the message
                     // the actual reply is return from the call, but other messages may
@@ -250,7 +252,14 @@ public abstract class LongPollingTransport extends HttpTransport
             {
                 // if we started a batch - end it now
                 if (batch)
-                    session.endBatch();
+                {
+                    boolean ended=session.endBatch();
+                    
+                    // flush session if not done by the batch
+                    // since some browsers well order script gets
+                    if (!ended)
+                        session.flush();
+                }
             }
         }
         else
