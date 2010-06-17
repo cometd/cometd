@@ -23,7 +23,6 @@ public class XMLHttpRequestClient extends ScriptableObject
     {
         httpClient = new HttpClient();
         httpClient.setMaxConnectionsPerAddress(maxConnections);
-        httpClient.setSoTimeout(0);
         httpClient.setIdleTimeout(300000);
         httpClient.setTimeout(300000);
         httpClient.setConnectorType(HttpClient.CONNECTOR_SOCKET);
