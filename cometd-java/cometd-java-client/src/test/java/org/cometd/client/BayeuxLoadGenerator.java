@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -141,7 +143,9 @@ public class BayeuxLoadGenerator
         DisconnectListener disconnectListener = new DisconnectListener();
         LatencyListener latencyListener = new LatencyListener();
 
-        LoadBayeuxClient statsClient = new LoadBayeuxClient(url, httpClient, null);
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(8);
+
+        LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, httpClient, null);
         statsClient.handshake();
 
         while (true)
@@ -165,7 +169,7 @@ public class BayeuxLoadGenerator
             {
                 for (int i = 0; i < clients - currentClients; ++i)
                 {
-                    LoadBayeuxClient client = new LoadBayeuxClient(url, httpClient, latencyListener);
+                    LoadBayeuxClient client = new LoadBayeuxClient(url, scheduler, httpClient, latencyListener);
                     client.getChannel(Channel.META_HANDSHAKE).addListener(handshakeListener);
                     client.getChannel(Channel.META_DISCONNECT).addListener(disconnectListener);
                     client.handshake();
@@ -333,6 +337,10 @@ public class BayeuxLoadGenerator
         }
 
         statsClient.disconnect();
+        statsClient.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+
+        scheduler.shutdown();
+        scheduler.awaitTermination(1000, TimeUnit.MILLISECONDS);
 
         httpClient.stop();
     }
@@ -584,8 +592,6 @@ public class BayeuxLoadGenerator
                     Long sendTime = sendTimes.get(messageId);
                     Long arrivalTime = arrivalTimes.get(messageId);
                     updateLatencies(startTime, sendTime, arrivalTime, endTime);
-                    if (TimeUnit.NANOSECONDS.toMillis(endTime - startTime) > 2000)
-                        System.err.println("SIMON: " + message);
                 }
             }
         }
@@ -596,9 +602,9 @@ public class BayeuxLoadGenerator
         private final List<Integer> subscriptions = new ArrayList<Integer>();
         private final ClientSessionChannel.MessageListener latencyListener;
 
-        private LoadBayeuxClient(String url, HttpClient httpClient, ClientSessionChannel.MessageListener listener)
+        private LoadBayeuxClient(String url, ScheduledExecutorService scheduler, HttpClient httpClient, ClientSessionChannel.MessageListener listener)
         {
-            super(url, LongPollingTransport.create(null, httpClient));
+            super(url, scheduler, LongPollingTransport.create(null, httpClient));
             this.latencyListener = listener;
         }
 
