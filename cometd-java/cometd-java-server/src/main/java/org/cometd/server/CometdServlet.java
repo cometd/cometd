@@ -17,7 +17,6 @@ package org.cometd.server;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
-
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -230,9 +229,5 @@ public class CometdServlet extends GenericServlet
         {
             session.cancelSchedule();
         }
-
     }
-
-
-
 }
