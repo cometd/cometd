@@ -30,16 +30,18 @@ package org.cometd.bayeux;
  */
 public interface Channel
 {
+    /** Constant representing the meta prefix */
+    public static final String META = "/meta";
     /** Constant representing the handshake meta channel. */
-    public final static String META_HANDSHAKE="/meta/handshake";
+    public final static String META_HANDSHAKE = META + "/handshake";
     /** Constant representing the connect meta channel */
-    public final static String META_CONNECT="/meta/connect";
+    public final static String META_CONNECT = META + "/connect";
     /** Constant representing the subscribe meta channel */
-    public final static String META_SUBSCRIBE="/meta/subscribe";
+    public final static String META_SUBSCRIBE = META + "/subscribe";
     /** Constant representing the unsubscribe meta channel */
-    public final static String META_UNSUBSCRIBE="/meta/unsubscribe";
+    public final static String META_UNSUBSCRIBE = META + "/unsubscribe";
     /** Constant representing the disconnect meta channel */
-    public final static String META_DISCONNECT="/meta/disconnect";
+    public final static String META_DISCONNECT = META + "/disconnect";
 
     /**
      * @return The channel id
