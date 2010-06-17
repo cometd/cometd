@@ -404,7 +404,7 @@ public class BayeuxLoadGenerator
             System.err.print(TimeUnit.NANOSECONDS.toMillis(elapsedNanos));
             System.err.print(" ms | ");
             System.err.print(messageCount * 1000L * 1000L * 1000L / elapsedNanos);
-            System.err.print(" messages/s");
+            System.err.println(" messages/s");
         }
 
         if (wallLatencies.size() > 1)
