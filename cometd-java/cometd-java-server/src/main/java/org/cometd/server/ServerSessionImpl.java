@@ -489,11 +489,11 @@ public class ServerSessionImpl implements ServerSession
     {
         synchronized (_queue)
         {
-            Scheduler dispatcher=_scheduler;
-            if (dispatcher!=null)
+            Scheduler scheduler=_scheduler;
+            if (scheduler!=null)
             {
                 _scheduler=null;
-                dispatcher.cancel();
+                scheduler.cancel();
             }
         }
     }
