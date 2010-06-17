@@ -126,6 +126,9 @@ public class BayeuxLoadGenerator
         DisconnectListener disconnectListener = new DisconnectListener();
         LatencyListener latencyListener = new LatencyListener();
 
+        LoadBayeuxClient statsClient = new LoadBayeuxClient(url, httpClient, channel, rooms, roomsPerClient, null);
+        statsClient.start();
+
         while (true)
         {
             System.err.println("-----");
@@ -241,7 +244,6 @@ public class BayeuxLoadGenerator
             randomize = Boolean.parseBoolean(value);
 
             // Send a message to the server to signal the start of the test
-            LoadBayeuxClient statsClient = bayeuxClients.get(0);
             statsClient.begin();
 
             helper.startStatistics();
@@ -310,6 +312,10 @@ public class BayeuxLoadGenerator
 
             printReport(expected);
         }
+
+        statsClient.disconnect();
+        // Wait for the disconnect to complete
+        Thread.sleep(1000);
 
         httpClient.stop();
     }
@@ -532,7 +538,7 @@ public class BayeuxLoadGenerator
         @Override
         protected void metaHandshake(boolean success, boolean reestablish, Message message)
         {
-            if (success)
+            if (success && listener != null)
             {
                 bayeuxClients.add(this);
                 startBatch();
