@@ -141,6 +141,9 @@ public class BayeuxLoadGenerator
         DisconnectListener disconnectListener = new DisconnectListener();
         LatencyListener latencyListener = new LatencyListener();
 
+        LoadBayeuxClient statsClient = new LoadBayeuxClient(url, httpClient, null);
+        statsClient.handshake();
+
         while (true)
         {
             System.err.println("-----");
@@ -257,7 +260,6 @@ public class BayeuxLoadGenerator
             randomize = Boolean.parseBoolean(value);
 
             // Send a message to the server to signal the start of the test
-            LoadBayeuxClient statsClient = bayeuxClients.get(0);
             statsClient.begin();
 
             helper.startStatistics();
@@ -329,6 +331,8 @@ public class BayeuxLoadGenerator
 
             reset();
         }
+
+        statsClient.disconnect();
 
         httpClient.stop();
     }
@@ -580,6 +584,8 @@ public class BayeuxLoadGenerator
                     Long sendTime = sendTimes.get(messageId);
                     Long arrivalTime = arrivalTimes.get(messageId);
                     updateLatencies(startTime, sendTime, arrivalTime, endTime);
+                    if (TimeUnit.NANOSECONDS.toMillis(endTime - startTime) > 2000)
+                        System.err.println("SIMON: " + message);
                 }
             }
         }
