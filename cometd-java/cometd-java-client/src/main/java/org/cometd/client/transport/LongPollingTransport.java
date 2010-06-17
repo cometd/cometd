@@ -3,7 +3,10 @@ package org.cometd.client.transport;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.client.ContentExchange;
@@ -47,6 +50,7 @@ public class LongPollingTransport extends ClientTransport
     private final HttpClient _httpClient;
     private volatile BayeuxClient _bayeuxClient;
     private volatile HttpURI _uri;
+    private volatile boolean _appendMessageType;
 
     public LongPollingTransport(Map<String,Object> options, HttpClient httpClient)
     {
@@ -62,8 +66,15 @@ public class LongPollingTransport extends ClientTransport
     @Override
     public void init(BayeuxClient bayeux, HttpURI uri)
     {
-        _bayeuxClient =bayeux;
-        _uri=uri;
+        _bayeuxClient = bayeux;
+        _uri = uri;
+        Pattern uriRegexp = Pattern.compile("(^https?://(([^:/\\?#]+)(:(\\d+))?))?([^\\?#]*)(.*)?");
+        Matcher uriMatcher = uriRegexp.matcher(uri.toString());
+        if (uriMatcher.matches())
+        {
+            String afterPath = uriMatcher.group(7);
+            _appendMessageType = afterPath == null || afterPath.trim().length() == 0;
+        }
         super.init(bayeux, uri);
     }
 
@@ -73,11 +84,16 @@ public class LongPollingTransport extends ClientTransport
         HttpExchange httpExchange = new TransportExchange(listener, messages);
         httpExchange.setMethod("POST");
 
-        // TODO: handle extra path for handshake, connect and disconnect
-        if (messages.length==1 && messages[0].isMeta())
-            httpExchange.setURL(_uri+messages[0].getChannel());
-        else
-            httpExchange.setURL(_uri.toString());
+        httpExchange.setURL(_uri.toString());
+        if (_appendMessageType && messages.length == 1 && messages[0].isMeta())
+        {
+            String type = messages[0].getChannel().substring(Channel.META.length());
+            String url = _uri.toString();
+            if (url.endsWith("/"))
+                url = url.substring(0, url.length() - 1);
+            url += type;
+            httpExchange.setURL(url);
+        }
 
         String content = JSON.toString(messages);
         httpExchange.setRequestContentType("application/json;charset=UTF-8");
