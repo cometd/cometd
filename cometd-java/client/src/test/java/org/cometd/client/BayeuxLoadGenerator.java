@@ -510,18 +510,18 @@ public class BayeuxLoadGenerator
     {
         public void deliver(Client fromClient, Client toClient, Message message)
         {
-            Object data = message.get(Bayeux.DATA_FIELD);
+            Map<String, Object> data = (Map<String, Object>)message.get(Bayeux.DATA_FIELD);
             if (data != null)
             {
-                String msgId = (String)message.get(Bayeux.ID_FIELD);
-                if (msgId != null)
+                Long startTime = ((Number)data.get("start")).longValue();
+                if (startTime != null)
                 {
                     long arrivalTime = System.nanoTime();
                     if (start.get() == 0L)
                         start.set(arrivalTime);
                     end.set(arrivalTime);
                     messages.incrementAndGet();
-                    updateLatencies(Long.parseLong(msgId), arrivalTime);
+                    updateLatencies(startTime, arrivalTime);
                 }
             }
         }
