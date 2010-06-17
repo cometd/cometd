@@ -31,14 +31,10 @@ public class BayeuxLoadGenerator
     private final AtomicLong messageIds = new AtomicLong();
     private final AtomicLong start = new AtomicLong();
     private final AtomicLong end = new AtomicLong();
-    private final AtomicLong responses = new AtomicLong();
     private final AtomicLong messages = new AtomicLong();
     private final AtomicLong minWallLatency = new AtomicLong();
     private final AtomicLong maxWallLatency = new AtomicLong();
     private final AtomicLong totWallLatency = new AtomicLong();
-    private final AtomicLong minLatency = new AtomicLong();
-    private final AtomicLong maxLatency = new AtomicLong();
-    private final AtomicLong totLatency = new AtomicLong();
     private final ConcurrentMap<Long, AtomicLong> wallLatencies = new ConcurrentHashMap<Long, AtomicLong>();
     private final HttpClient httpClient;
 
@@ -402,9 +398,7 @@ public class BayeuxLoadGenerator
             System.err.print(TimeUnit.NANOSECONDS.toMillis(elapsedNanos));
             System.err.print(" ms | ");
             System.err.print(messageCount * 1000L * 1000L * 1000L / elapsedNanos);
-            System.err.print(" messages/s - ");
-            System.err.print(responses.get() * 1000L * 1000L * 1000L / elapsedNanos);
-            System.err.println(" responses/s");
+            System.err.print(" messages/s");
         }
 
         if (wallLatencies.size() > 1)
@@ -443,11 +437,6 @@ public class BayeuxLoadGenerator
         System.err.print(TimeUnit.NANOSECONDS.toMillis(minWallLatency.get()) + "/");
         System.err.print(messageCount == 0 ? "-/" : TimeUnit.NANOSECONDS.toMillis(totWallLatency.get() / messageCount) + "/");
         System.err.println(TimeUnit.NANOSECONDS.toMillis(maxWallLatency.get()) + " ms");
-
-        System.err.print("Messages - Network Latency Min/Ave/Max = ");
-        System.err.print(TimeUnit.NANOSECONDS.toMillis(minLatency.get()) + "/");
-        System.err.print(messageCount == 0 ? "-/" : TimeUnit.NANOSECONDS.toMillis(totLatency.get() / messageCount) + "/");
-        System.err.println(TimeUnit.NANOSECONDS.toMillis(maxLatency.get()) + " ms");
     }
 
     private void reset()
@@ -455,14 +444,10 @@ public class BayeuxLoadGenerator
         messageIds.set(0L);
         start.set(0L);
         end.set(0L);
-        responses.set(0L);
         messages.set(0L);
         minWallLatency.set(Long.MAX_VALUE);
         maxWallLatency.set(0L);
         totWallLatency.set(0L);
-        minLatency.set(Long.MAX_VALUE);
-        maxLatency.set(0L);
-        totLatency.set(0L);
         wallLatencies.clear();
     }
 
