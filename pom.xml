@@ -102,8 +102,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.1.0.v20100505</jetty-version>
-        <maven-wagon-version>1.0-beta-2</maven-wagon-version>
+        <jetty-version>7.1.4.v20100610</jetty-version>
+        <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
     </properties>
 
     <modules>
@@ -285,7 +285,7 @@
                 <plugin>
                     <groupId>org.mortbay.jetty</groupId>
                     <artifactId>jetty-maven-plugin</artifactId>
-                    <version>${jetty-version}</version>
+                    <version>${jetty-plugin-version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
