@@ -39,6 +39,9 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class BayeuxClient extends AbstractClientSession implements Bayeux, TransportListener
 {
+    public static final String BACKOFF_INCREMENT_OPTION = "backoffIncrement";
+    public static final String MAX_BACKOFF_OPTION = "maxBackoff";
+
     public static final String BAYEUX_VERSION = "1.0";
 
     private final Logger logger = Log.getLogger(getClass().getName());
@@ -56,8 +59,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
     private volatile String clientId;
     private volatile Map<String, Object> advice;
     private volatile int backoffTries;
-    private volatile long backoffIncrement = 1000;
-    private volatile long maxBackoff = 30000;
+    private volatile long backoffIncrement;
+    private volatile long maxBackoff;
     private volatile State state = State.UNCONNECTED;
 
     public BayeuxClient(String url, ClientTransport transport, ClientTransport... transports)
@@ -83,19 +86,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
         return backoffIncrement;
     }
 
-    public void setBackoffIncrement(long backoffIncrement)
-    {
-        this.backoffIncrement = backoffIncrement;
-    }
-
     public long getMaxBackoff()
     {
         return maxBackoff;
-    }
-
-    public void setMaxBackoff(long maxBackoff)
-    {
-        this.maxBackoff = maxBackoff;
     }
 
     public String getCookie(String name)
@@ -285,7 +278,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
     @Override
     public void receive(Message message, Message.Mutable mutable)
     {
-        logger.debug("Received message {}", message);
+        logger.debug("Received message {} by {}", message, this);
         updateAdvice(message);
 
         String channelName = message.getChannel();
@@ -476,6 +469,16 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
 
     protected void initialize()
     {
+        Long backoffIncrement = (Long)getOption(BACKOFF_INCREMENT_OPTION);
+        if (backoffIncrement == null)
+            backoffIncrement = 1000L;
+        this.backoffIncrement = backoffIncrement;
+
+        Long maxBackoff = (Long)getOption(MAX_BACKOFF_OPTION);
+        if (maxBackoff == null)
+            maxBackoff = 30000L;
+        this.maxBackoff = maxBackoff;
+
         resetBackoff();
         advice = null;
         handshakeBatch = false;
