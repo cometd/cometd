@@ -429,13 +429,13 @@ public class BayeuxLoadGenerator
         long elapsedNanos = end.get() - start.get();
         if (elapsedNanos > 0)
         {
-            System.err.print("Incoming - Elapsed | Rate = ");
+            System.err.print("Incoming - Elapsed = ");
             System.err.print(TimeUnit.NANOSECONDS.toMillis(elapsedNanos));
-            System.err.print(" ms | ");
+            System.err.print(" ms | Rate = ");
             System.err.print(messageCount * 1000L * 1000L * 1000L / elapsedNanos);
-            System.err.print(" messages/s - ");
+            System.err.print(" mesg/s ");
             System.err.print(responses.get() * 1000L * 1000L * 1000L / elapsedNanos);
-            System.err.println(" responses/s");
+            System.err.printf(" resp/s (%.2f%%)\n",100.0*responses.get()/messageCount);
         }
 
         if (wallLatencies.size() > 1)
