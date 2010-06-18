@@ -22,6 +22,18 @@ import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.util.log.Log;
 
+
+/* ------------------------------------------------------------ */
+/** Abstract Long Polling Transport.
+ * <p>
+ * Transports based on this class can be configured with servlet init parameters:<dl>
+ * <dt>browserId</dt><dd>The Cookie name used to save a browser ID.</dd>
+ * <dt>maxSessionsPerBrowser</dt><dd>The maximum number of long polling sessions allowed per browser.</dd>
+ * <dt>multiSessionInterval</dt><dd>The polling interval to use once max session per browser is exceeded.</dd>
+ * <dt>autoBatch</dt><dd>If true a batch will be automatically created to span the handling of messages received from a session.</dd>
+ * </dl>
+ * 
+ */
 public abstract class LongPollingTransport extends HttpTransport
 {
     private final static AtomicInteger __zero = new AtomicInteger(0);
@@ -30,13 +42,14 @@ public abstract class LongPollingTransport extends HttpTransport
     public final static String BROWSER_ID_OPTION="browserId";
     public final static String MAX_SESSIONS_PER_BROWSER_OPTION="maxSessionsPerBrowser";
     public final static String MULTI_SESSION_INTERVAL_OPTION="multiSessionInterval";
-    public final static String LONGPOLLS_PER_BROWSER_OPTION="longPollsPerBrowser";
+    public final static String AUTOBATCH_OPTION="autoBatch";
 
     private final ConcurrentHashMap<String, AtomicInteger> _browserMap=new ConcurrentHashMap<String, AtomicInteger>();
 
     protected String _browserId="BAYEUX_BROWSER";
     private int _maxSessionsPerBrowser=2;
     private long _multiSessionInterval=2000;
+    private boolean _autoBatch=true;
 
     protected LongPollingTransport(BayeuxServerImpl bayeux,String name)
     {
@@ -45,6 +58,7 @@ public abstract class LongPollingTransport extends HttpTransport
         setOption(BROWSER_ID_OPTION,_browserId);
         setOption(MAX_SESSIONS_PER_BROWSER_OPTION,_maxSessionsPerBrowser);
         setOption(MULTI_SESSION_INTERVAL_OPTION,_multiSessionInterval);
+        setOption(AUTOBATCH_OPTION,_autoBatch);
     }
 
     @Override
@@ -54,6 +68,7 @@ public abstract class LongPollingTransport extends HttpTransport
         _browserId=getOption(BROWSER_ID_OPTION,_browserId);
         _maxSessionsPerBrowser=getOption(MAX_SESSIONS_PER_BROWSER_OPTION,_maxSessionsPerBrowser);
         _multiSessionInterval=getOption(MULTI_SESSION_INTERVAL_OPTION,_multiSessionInterval);
+        _autoBatch=getOption(AUTOBATCH_OPTION,_autoBatch);
     }
 
     protected String getBrowserId(HttpServletRequest request, HttpServletResponse response)
@@ -125,7 +140,8 @@ public abstract class LongPollingTransport extends HttpTransport
 
             // Don't know the session until first message or handshake response.
             ServerSessionImpl session=null;
-
+            boolean connect=false;
+            
             try
             {
                 ServerMessage.Mutable[] messages = parseMessages(request);
@@ -138,13 +154,13 @@ public abstract class LongPollingTransport extends HttpTransport
                 for (ServerMessage.Mutable message : messages)
                 {
                     // Is this a connect?
-                    boolean connect = Channel.META_CONNECT.equals(message.getChannel());
+                    connect = Channel.META_CONNECT.equals(message.getChannel());
                     
                     // Get the session from the message
                     if (session==null)
                     {
                         session=(ServerSessionImpl)getBayeux().getSession(message.getClientId());
-                        if (!batch && session!=null && !connect)
+                        if (_autoBatch&& !batch && session!=null && !connect)
                         {
                             // start a batch to group all resulting messages into a single response.
                             batch=true;
@@ -260,6 +276,8 @@ public abstract class LongPollingTransport extends HttpTransport
                     if (!ended && isAlwaysFlushingAfterHandle())
                         session.flush();
                 }
+                else if (!connect && isAlwaysFlushingAfterHandle())
+                session.flush();
             }
         }
         else
