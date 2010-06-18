@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -647,14 +648,31 @@ public class BayeuxLoadGenerator
             subscriptions.clear();
         }
 
-        public void begin()
+        public void begin() throws InterruptedException
         {
-            getChannel("/service/statistics/start").publish(new HashMap<String, Object>());
+            notifyServer("/service/statistics/start");
         }
 
-        public void end()
+        public void end() throws InterruptedException
         {
-            getChannel("/service/statistics/stop").publish(new HashMap<String, Object>());
+            notifyServer("/service/statistics/stop");
+        }
+
+        private void notifyServer(String channelName) throws InterruptedException
+        {
+            final CountDownLatch latch = new CountDownLatch(1);
+            ClientSessionChannel channel = getChannel(channelName);
+            channel.addListener(new ClientSessionChannel.MessageListener()
+            {
+                @Override
+                public void onMessage(ClientSessionChannel channel, Message message)
+                {
+                    channel.removeListener(this);
+                    latch.countDown();
+                }
+            });
+            channel.publish(new HashMap<String, Object>());
+            latch.await();
         }
 
         @Override
