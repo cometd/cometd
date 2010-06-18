@@ -137,10 +137,15 @@ public class BayeuxLoadServer
             if (started)
             {
                 if (statisticsHandler != null)
+                {
                     statisticsHandler.statsReset();
+                }
 
                 if (requestLatencyHandler != null)
+                {
                     requestLatencyHandler.reset();
+                    requestLatencyHandler.disableCurrent();
+                }
             }
         }
 
@@ -164,6 +169,7 @@ public class BayeuxLoadServer
                 if (requestLatencyHandler != null)
                 {
                     requestLatencyHandler.print();
+                    requestLatencyHandler.disableCurrent();
                 }
             }
         }
@@ -267,6 +273,14 @@ public class BayeuxLoadServer
         private final AtomicLong maxLatency = new AtomicLong();
         private final AtomicLong totLatency = new AtomicLong();
         private final ConcurrentMap<Long, AtomicLong> latencies = new ConcurrentHashMap<Long, AtomicLong>();
+        private final ThreadLocal<Boolean> currentEnabled = new ThreadLocal<Boolean>()
+        {
+            @Override
+            protected Boolean initialValue()
+            {
+                return Boolean.TRUE;
+            }
+        };
 
         @Override
         public void handle(String target, Request request, final HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
@@ -279,7 +293,14 @@ public class BayeuxLoadServer
             finally
             {
                 long end = System.nanoTime();
-                updateLatencies(begin, end);
+                if (currentEnabled.get())
+                {
+                    updateLatencies(begin, end);
+                }
+                else
+                {
+                    currentEnabled.set(true);
+                }
             }
         }
 
@@ -357,6 +378,11 @@ public class BayeuxLoadServer
                     System.err.println(" ms (" + latencyBucketFrequency + ")");
                 }
             }
+        }
+
+        public void disableCurrent()
+        {
+            currentEnabled.set(false);
         }
     }
 }
