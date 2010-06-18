@@ -317,9 +317,9 @@ public class BayeuxLoadGenerator
             long elapsedNanos = end - start;
             if (elapsedNanos > 0)
             {
-                System.err.print("Outgoing: Elapsed | Rate = ");
+                System.err.print("Outgoing: Elapsed = ");
                 System.err.print(TimeUnit.NANOSECONDS.toMillis(elapsedNanos));
-                System.err.print(" ms | ");
+                System.err.print(" ms | Rate = ");
                 System.err.print(batchCount * batchSize * 1000L * 1000L * 1000L / elapsedNanos);
                 System.err.print(" messages/s - ");
                 System.err.print(batchCount * 1000L * 1000L * 1000L / elapsedNanos);
@@ -433,9 +433,9 @@ public class BayeuxLoadGenerator
             System.err.print(TimeUnit.NANOSECONDS.toMillis(elapsedNanos));
             System.err.print(" ms | Rate = ");
             System.err.print(messageCount * 1000L * 1000L * 1000L / elapsedNanos);
-            System.err.print(" mesg/s ");
+            System.err.print(" messages/s - ");
             System.err.print(responses.get() * 1000L * 1000L * 1000L / elapsedNanos);
-            System.err.printf(" resp/s (%.2f%%)\n",100.0*responses.get()/messageCount);
+            System.err.printf(" responses/s (%.2f%%)\n", 100.0 * responses.get() / messageCount);
         }
 
         if (wallLatencies.size() > 1)
@@ -457,7 +457,7 @@ public class BayeuxLoadGenerator
 
             System.err.println("Messages - Wall Latency Distribution Curve (X axis: Frequency, Y axis: Latency):");
             double percentile=0.0;
-            
+
             for (int i = 0; i < latencyBucketFrequencies.length; ++i)
             {
                 long latencyBucketFrequency = latencyBucketFrequencies[i];
@@ -482,7 +482,6 @@ public class BayeuxLoadGenerator
                 if (last<99.9 && percentile>=99.9)
                     System.err.print(" ^99.9%");
                 System.err.println();
-      
             }
         }
 
