@@ -61,7 +61,7 @@ public class AuctionChatService extends AbstractService
             {
                 Log.info("Members: " + members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName, false).publish(getServerSession(), members, messageId);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
             }
         }
         else if (data instanceof Map)

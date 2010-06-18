@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.client.SessionChannel;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -222,9 +221,7 @@ public abstract class AbstractClientSession implements ClientSession
     /**
      * <p>A channel scoped to a {@link ClientSession}.</p>
      */
-    // TODO: use the commented line when SessionChannel is deleted
-//    protected abstract static class AbstractSessionChannel implements ClientSessionChannel
-    protected abstract static class AbstractSessionChannel implements SessionChannel
+    protected abstract static class AbstractSessionChannel implements ClientSessionChannel
     {
         protected final Logger logger = Log.getLogger(getClass().getName());
         private final ChannelId _id;

@@ -36,9 +36,9 @@ public class ChatService extends AbstractService
         final Map<String, String> members = roomMembers;
         String userName = (String)data.get("user");
         members.put(userName, session.getId());
-        
+
         session.addListener(new ServerSession.RemoveListener()
-        { 
+        {
             @Override
             public void removed(ServerSession session, boolean timeout)
             {
@@ -46,16 +46,16 @@ public class ChatService extends AbstractService
                 broadcastMembers(members.keySet());
             }
         });
-        
+
         broadcastMembers(members.keySet());
     }
 
     private void broadcastMembers(Set<String> members)
     {
         // Broadcast the new members list
-        ServerChannel channel = getBayeux().getChannel("/chat/members", false);
+        ServerChannel channel = getBayeux().getChannel("/chat/members");
         if (channel != null)
-            channel.publish(getClient(), members, null);
+            channel.publish(getServerSession(), members, null);
     }
 
     public void privateChat(ServerSession session, Map<String, Object> data)
@@ -84,7 +84,7 @@ public class ChatService extends AbstractService
             message.put("scope", "private");
             for (ServerSession peer : peers)
                 peer.deliver(getLocalSession(),roomName, message, null);
-            
+
             getServerSession().deliver(getLocalSession(), roomName, message, null);
         }
     }

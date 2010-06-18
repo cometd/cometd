@@ -22,8 +22,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import junit.framework.TestCase;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.SessionChannel;
-import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.client.BayeuxClient.State;
@@ -150,17 +149,17 @@ public class AckExtensionTest extends TestCase
 
         client.addExtension(new AckExtension());
 
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
-                if (successful)
+                if (message.isSuccessful())
                 {
-                    client.getChannel("/chat/demo").subscribe(new SubscriberListener()
+                    client.getChannel("/chat/demo").subscribe(new ClientSessionChannel.MessageListener()
                     {
                         @Override
-                        public void onMessage(SessionChannel channel, Message message)
+                        public void onMessage(ClientSessionChannel channel, Message message)
                         {
                             messages.add(message);
                         }
@@ -175,7 +174,7 @@ public class AckExtensionTest extends TestCase
 
         assertEquals(0,messages.size());
 
-        ServerChannel publicChat = _bayeux.getChannel("/chat/demo", true);
+        ServerChannel publicChat = _bayeux.getChannel("/chat/demo");
         assertTrue(publicChat != null);
 
         for(int i=0; i<5;i++)

@@ -109,15 +109,6 @@ public abstract class AbstractService
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @deprecated use {@link #getLocalSession()} or {@link #getServerSession()}
-     */
-    public LocalSession getClient()
-    {
-        return _session;
-    }
-
-    /* ------------------------------------------------------------ */
     public LocalSession getLocalSession()
     {
         return _session;
@@ -237,8 +228,8 @@ public abstract class AbstractService
         if (!ServerSession.class.isAssignableFrom(method.getParameterTypes()[0]))
             throw new IllegalArgumentException("Method '" + methodName + "' does not have Session as first parameter");
 
-
-        ServerChannel channel=_bayeux.getChannel(channelId,true);
+        _bayeux.createIfAbsent(channelId);
+        ServerChannel channel=_bayeux.getChannel(channelId);
 
         if (channel.isWild())
             _wild.put(new ChannelId(channel.getId()),method);

@@ -7,69 +7,17 @@ import java.util.Map;
 import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public class HashMapMessage extends HashMap<String,Object> implements Message.Mutable, JSON.Generator
+public class HashMapMessage extends HashMap<String, Object> implements Message.Mutable, JSON.Generator
 {
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private static JSON __json=new JSON()
-    {
-    };
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private static JSON __msgJSON=new JSON()
-    {
-        @Override
-        protected Map newMap()
-        {
-            return new HashMapMessage();
-        }
-
-        @Override
-        protected JSON contextFor(String field)
-        {
-            return __json;
-        }
-    };
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private static JSON __batchJSON=new JSON()
-    {
-        @Override
-        protected Map newMap()
-        {
-            return new HashMapMessage();
-        }
-
-        @Override
-        protected Object[] newArray(int size)
-        {
-            return new Message[size];
-        }
-
-        @Override
-        protected JSON contextFor(String field)
-        {
-            return __json;
-        }
-
-        @Override
-        protected JSON contextForArray()
-        {
-            return __msgJSON;
-        }
-    };
+    private static JSON __json=new JSON();
 
     private Message _associated;
     private boolean _lazy=false;
-
 
     /* ------------------------------------------------------------ */
     public HashMapMessage()
     {
     }
-
 
     /* ------------------------------------------------------------ */
     public void addJSON(Appendable buffer)
@@ -143,12 +91,9 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     /* ------------------------------------------------------------ */
     public String getJSON()
     {
-        StringBuffer buf=new StringBuffer(__json.getStringBufferSize());
-        synchronized(buf)
-        {
-            __json.appendMap(buf,this);
-            return buf.toString();
-        }
+        Appendable buf=new StringBuilder(__json.getStringBufferSize());
+        __json.appendMap(buf,this);
+        return buf.toString();
     }
 
     /* ------------------------------------------------------------ */
@@ -221,8 +166,8 @@ public class HashMapMessage extends HashMap<String,Object> implements Message.Mu
     /* ------------------------------------------------------------ */
     public boolean isSuccessful()
     {
-        Boolean bool=(Boolean)get(Message.SUCCESSFUL_FIELD);
-        return bool != null && bool.booleanValue();
+        Boolean value=(Boolean)get(Message.SUCCESSFUL_FIELD);
+        return value != null && value;
     }
 
     /* ------------------------------------------------------------ */

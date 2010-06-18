@@ -101,7 +101,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
             if (bidder!=null)
             {
                 // TODO This is a horrible race because there is no clusterwide DB for
-                // atomic determinition of the highest bid.
+                // atomic determination of the highest bid.
                 // live with it! it's a demo!!!!
 
                 Bid highest = _auctionDao.getHighestBid(itemId);
@@ -112,7 +112,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
                     bid.setAmount(amount);
                     bid.setBidder(bidder);
                     _auctionDao.saveAuctionBid(bid);
-                    getBayeux().getChannel(AUCTION_ROOT+"item"+itemId,true).publish(getClient(),bid,messageId);
+                    getBayeux().getChannel(AUCTION_ROOT+"item"+itemId).publish(getServerSession(), bid, messageId);
                 }
             }
         }

@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,16 +16,16 @@ package org.cometd.server.ext;
 
 import java.util.Map;
 
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.ajax.JSON;
 
 /* ------------------------------------------------------------ */
 /**
  * Timesync extension (server side).
- * 
+ *
  * With each handshake or connect, the extension sends timestamps within the ext
  * field like:
  * <code>{ext:{timesync:{tc:12345567890,l:23,o:4567},...},...}</code> where:
@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.ajax.JSON;
  * <li>l is the network lag that the client has calculated.
  * <li>o is the clock offset that the client has calculated.
  * </ul>
- * 
+ *
  * <p>
  * A cometd server that supports timesync, can respond with an ext field like:
  * <code>{ext:{timesync:{tc:12345567890,ts:1234567900,p:123,a:3},...},...}</code>
@@ -77,7 +77,7 @@ public class TimesyncExtension implements Extension
     /**
      * timesync responses are not set if the measured accuracy is less than the
      * accuracyTarget.
-     * 
+     *
      * @return accuracy target in ms (default 25ms)
      */
     public int getAccuracyTarget()
@@ -89,7 +89,7 @@ public class TimesyncExtension implements Extension
     /**
      * timesync responses are not set if the measured accuracy is less than the
      * accuracyTarget.
-     * 
+     *
      * @param target
      *            accuracy target in ms
      */
@@ -98,7 +98,7 @@ public class TimesyncExtension implements Extension
         _accuracyTarget=target;
     }
 
-    
+
     /* ------------------------------------------------------------ */
     public boolean rcv(ServerSession from, Mutable message)
     {
@@ -114,7 +114,7 @@ public class TimesyncExtension implements Extension
             Map<String,Object> sync=(Map<String,Object>)ext.get("timesync");
             if (sync != null)
             {
-                sync.put("ts",new Long(System.currentTimeMillis()));
+                sync.put("ts", System.currentTimeMillis());
                 Number lag=(Number)sync.get("l");
                 if (lag != null && from != null)
                     from.setAttribute("lag",lag);
@@ -162,7 +162,7 @@ public class TimesyncExtension implements Extension
                         // is a OK ?
                         if (l == 0 || a >= _accuracyTarget || a <= -_accuracyTarget)
                         {
-                            Map<String,Object> extOut=(Map<String,Object>)message.getExt(true);
+                            Map<String,Object> extOut = message.getExt(true);
                             JSON.Literal timesync=new JSON.Literal("{\"tc\":" + tc + ",\"ts\":" + ts + ",\"p\":" + (System.currentTimeMillis() - ts)
                                     + ",\"a\":" + a + "}");
 

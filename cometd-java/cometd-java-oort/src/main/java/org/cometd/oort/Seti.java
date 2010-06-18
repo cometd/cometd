@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
@@ -61,21 +61,28 @@ public class Seti
     public Seti(Oort oort, String shardId)
     {
         _oort=oort;
-        _session = _oort.getBayeux().newLocalSession("seti");
+        BayeuxServer bayeux = _oort.getBayeux();
+
+        _session = bayeux.newLocalSession("seti");
         _setiId=_oort.getURL().replace("://","_").replace("/","_").replace(":","_");
         _shardId=shardId;
 
-        _setiIdChannel=_oort.getBayeux().getChannel("/seti/"+_setiId,true);
+        String channel = "/seti/"+_setiId;
+        bayeux.createIfAbsent(channel);
+        _setiIdChannel= bayeux.getChannel(channel);
         _setiIdChannel.setPersistent(true);
 
-        _setiAllChannel=_oort.getBayeux().getChannel("/seti/ALL",true);
+        channel = "/seti/ALL";
+        bayeux.createIfAbsent(channel);
+        _setiAllChannel= bayeux.getChannel(channel);
         _setiAllChannel.setPersistent(true);
 
-        _setiShardChannel=_oort.getBayeux().getChannel("/seti/"+shardId,true);
+        channel = "/seti/"+shardId;
+        bayeux.createIfAbsent(channel);
+        _setiShardChannel= bayeux.getChannel(channel);
         _setiShardChannel.setPersistent(true);
 
         _allShardLocation = new ShardLocation("ALL");
-
 
         try
         {
@@ -272,11 +279,6 @@ public class Seti
         SetiLocation(String channelId)
         {
             _channel=_session.getChannel(channelId);
-        }
-
-        SetiLocation(SessionChannel channel)
-        {
-            _channel=channel;
         }
 
         public void sendMessage(String toUser, String toChannel, Object message)

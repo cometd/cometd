@@ -9,10 +9,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.ServletContext;
 
-import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
@@ -62,7 +60,7 @@ public class OortChatService extends AbstractService
             {
                 Log.info("Members: " + members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName, false).publish(getClient(), members, messageId);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
             }
         }
         else if (data instanceof Map)
@@ -89,7 +87,7 @@ public class OortChatService extends AbstractService
 
                 joiner.addListener(new ServerSession.RemoveListener()
                 {
-                    
+
                     @Override
                     public void removed(ServerSession session, boolean timeout)
                     {
@@ -97,7 +95,7 @@ public class OortChatService extends AbstractService
                             _seti.disassociate(userName);
                         if (timeout)
                         {
-                            ServerChannel channel=getBayeux().getChannel(channelName,false);
+                            ServerChannel channel=getBayeux().getChannel(channelName);
                             if (channel!=null)
                             {
                                 Map<String,Object> leave = new HashMap<String,Object>();
@@ -112,7 +110,7 @@ public class OortChatService extends AbstractService
 
                 Log.info("Members: " + members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName, false).publish(getClient(), members, messageId);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
 
             }
 
@@ -131,7 +129,7 @@ public class OortChatService extends AbstractService
 
                 Log.info("Members: " + members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName, true).publish(getClient(), members, messageId);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
             }
         }
     }

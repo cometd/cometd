@@ -17,9 +17,6 @@ import junit.framework.TestCase;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.client.SessionChannel;
-import org.cometd.bayeux.client.SessionChannel.MetaChannelListener;
-import org.cometd.bayeux.client.SessionChannel.SubscriberListener;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
@@ -120,28 +117,28 @@ public class BayeuxClientTest extends TestCase
 
         final AtomicBoolean connected = new AtomicBoolean();
 
-        client.getChannel(Channel.META_CONNECT).addListener(new MetaChannelListener()
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
-                connected.set(successful);
+                connected.set(message.isSuccessful());
             }
         });
 
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new MetaChannelListener()
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
                 connected.set(false);
             }
         });
 
-        client.getChannel("/meta/*").addListener(new MetaChannelListener()
+        client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
                 try
                 {
@@ -167,10 +164,10 @@ public class BayeuxClientTest extends TestCase
         assertEquals(Channel.META_CONNECT,message.getChannel());
         assertTrue(message.isSuccessful());
 
-        client.getChannel("/a/channel").subscribe(new SubscriberListener()
+        client.getChannel("/a/channel").subscribe(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMessage(SessionChannel channel, Message message)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
                 try
                 {
@@ -203,54 +200,31 @@ public class BayeuxClientTest extends TestCase
 
         final AtomicBoolean connected = new AtomicBoolean();
 
-        client.getChannel(Channel.META_CONNECT).addListener(new MetaChannelListener()
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
-                connected.set(successful);
+                connected.set(message.isSuccessful());
             }
         });
 
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new MetaChannelListener()
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
                 connected.set(false);
             }
         });
 
-        /*
-        client.getChannel("/**").addListener(new SessionChannel.MessageListener()
-        {
-            @Override
-            public void onMessage(ClientSession session, Message message)
-            {
-                System.err.println("Client: "+message);
-            }
-        });
-
-        _bayeux.getChannel("/**",true).addListener(new ServerChannel.MessageListener()
-        {
-
-            @Override
-            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
-            {
-                System.err.println("Servr: "+message);
-                return true;
-            }
-        });
-        */
-
-
         final BlockingArrayQueue<String> messages = new BlockingArrayQueue<String>();
 
         client.handshake();
-        client.getChannel("/foo/bar").subscribe(new SubscriberListener()
+        client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMessage(SessionChannel channel, Message message)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
                 System.err.println("message "+message);
                 messages.add(channel.getId());
@@ -319,12 +293,12 @@ public class BayeuxClientTest extends TestCase
 
         };
 
-        client.getChannel(Channel.META_CONNECT).addListener(new SessionChannel.MetaChannelListener()
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
-                connected.set(successful);
+                connected.set(message.isSuccessful());
                 try
                 {
                     queue.offer(message);
@@ -336,10 +310,10 @@ public class BayeuxClientTest extends TestCase
             }
         });
 
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
                 connected.set(false);
                 try
@@ -457,26 +431,25 @@ public class BayeuxClientTest extends TestCase
 
         for (int i=0;i<clients.length;i++)
         {
-            final int cid=i;
             final AtomicBoolean connected=new AtomicBoolean();
             final BayeuxClient client=new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient));
             final String room="/channel/"+(i%rooms);
             clients[i] = client;
 
-            client.getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
+            client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
             {
                 @Override
-                public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+                public void onMessage(ClientSessionChannel channel, Message message)
                 {
                     if (connected.getAndSet(false))
                         connections.decrementAndGet();
 
-                    if (successful)
+                    if (message.isSuccessful())
                     {
-                        client.getChannel(room).subscribe(new SubscriberListener()
+                        client.getChannel(room).subscribe(new ClientSessionChannel.MessageListener()
                         {
                             @Override
-                            public void onMessage(SessionChannel channel, Message message)
+                            public void onMessage(ClientSessionChannel channel, Message message)
                             {
                                 received.incrementAndGet();
                             }
@@ -485,12 +458,12 @@ public class BayeuxClientTest extends TestCase
                 }
             });
 
-            client.getChannel(Channel.META_CONNECT).addListener(new SessionChannel.MetaChannelListener()
+            client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
             {
                 @Override
-                public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+                public void onMessage(ClientSessionChannel channel, Message message)
                 {
-                    if (!connected.getAndSet(successful))
+                    if (!connected.getAndSet(message.isSuccessful()))
                     {
                         connections.incrementAndGet();
                     }
@@ -550,12 +523,13 @@ public class BayeuxClientTest extends TestCase
     }
 
 
-    public void testPublish()
-        throws Exception
+    public void testPublish() throws Exception
     {
         final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
 
-        _bayeux.getChannel("/chat/msg",true).addListener(new ServerChannel.MessageListener()
+        String channelName = "/chat/msg";
+        _bayeux.createIfAbsent(channelName);
+        _bayeux.getChannel(channelName).addListener(new ServerChannel.MessageListener()
         {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
@@ -570,11 +544,11 @@ public class BayeuxClientTest extends TestCase
 
         BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient));
         client.handshake();
-        client.getChannel("/chat/msg").publish("Hello World");
+        client.getChannel(channelName).publish("Hello World");
 
         String id=results.poll(1,TimeUnit.SECONDS);
         assertEquals(client.getId(),id);
-        assertEquals("/chat/msg",results.poll(1,TimeUnit.SECONDS));
+        assertEquals(channelName,results.poll(1,TimeUnit.SECONDS));
         assertEquals("Hello World",results.poll(1,TimeUnit.SECONDS));
 
         client.disconnect();
@@ -585,7 +559,9 @@ public class BayeuxClientTest extends TestCase
     {
         final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
 
-        _bayeux.getChannel("/chat/msg",true).addListener(new ServerChannel.MessageListener()
+        String channelName = "/chat/msg";
+        _bayeux.createIfAbsent(channelName);
+        _bayeux.getChannel(channelName).addListener(new ServerChannel.MessageListener()
         {
             @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
@@ -601,10 +577,10 @@ public class BayeuxClientTest extends TestCase
         BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient));
         client.handshake(1000L);
         assertTrue(client.getId()!=null);
-        client.getChannel("/chat/msg").publish("Hello World");
+        client.getChannel(channelName).publish("Hello World");
 
         assertEquals(client.getId(),results.poll(1,TimeUnit.SECONDS));
-        assertEquals("/chat/msg",results.poll(1,TimeUnit.SECONDS));
+        assertEquals(channelName,results.poll(1,TimeUnit.SECONDS));
         assertEquals("Hello World",results.poll(1,TimeUnit.SECONDS));
 
         client.disconnect();

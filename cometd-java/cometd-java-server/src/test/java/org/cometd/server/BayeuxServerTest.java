@@ -45,11 +45,21 @@ public class BayeuxServerTest extends Assert
         _bayeux.addListener(new SessListener());
         _bayeux.addListener(new CListener());
 
-        ServerChannelImpl foobar = (ServerChannelImpl)_bayeux.getChannel("/foo/bar",true);
-        ServerChannelImpl foostar = (ServerChannelImpl)_bayeux.getChannel("/foo/*",true);
-        ServerChannelImpl starstar = (ServerChannelImpl)_bayeux.getChannel("/**",true);
-        ServerChannelImpl foobob = (ServerChannelImpl)_bayeux.getChannel("/foo/bob",true);
-        ServerChannelImpl wibble = (ServerChannelImpl)_bayeux.getChannel("/wibble",true);
+        String channelName = "/foo/bar";
+        _bayeux.createIfAbsent(channelName);
+        ServerChannelImpl foobar = (ServerChannelImpl)_bayeux.getChannel(channelName);
+        channelName = "/foo/*";
+        _bayeux.createIfAbsent(channelName);
+        ServerChannelImpl foostar = (ServerChannelImpl)_bayeux.getChannel(channelName);
+        channelName = "/**";
+        _bayeux.createIfAbsent(channelName);
+        ServerChannelImpl starstar = (ServerChannelImpl)_bayeux.getChannel(channelName);
+        channelName = "/foo/bob";
+        _bayeux.createIfAbsent(channelName);
+        ServerChannelImpl foobob = (ServerChannelImpl)_bayeux.getChannel(channelName);
+        channelName = "/wibble";
+        _bayeux.createIfAbsent(channelName);
+        ServerChannelImpl wibble = (ServerChannelImpl)_bayeux.getChannel(channelName);
 
         assertEquals("channelAdded",_events.poll());
         assertEquals(_bayeux.getChannel("/foo"),_events.poll());
