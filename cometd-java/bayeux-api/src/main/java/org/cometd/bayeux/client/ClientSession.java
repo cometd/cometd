@@ -50,7 +50,7 @@ public interface ClientSession extends Session
      * <p>This method will always return a channel, even if the
      * the channel has not been created on the server side.  The server
      * side channel is only involved once a publish or subscribe method
-     * is called on the SessionChannel returned by this method.</p>
+     * is called on the channel returned by this method.</p>
      * <p>Typical usage examples are:</p>
      * <pre>
      *     clientSession.getChannel("/foo/bar").subscribe(mySubscriptionListener);

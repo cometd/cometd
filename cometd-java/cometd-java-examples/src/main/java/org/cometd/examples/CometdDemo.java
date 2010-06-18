@@ -16,17 +16,14 @@ package org.cometd.examples;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
-import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
 import org.cometd.server.DefaultSecurityPolicy;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.MovedContextHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -74,7 +71,7 @@ public class CometdDemo
         server.addConnector(bconnector);
 
 
-        /* 
+        /*
         SslSelectChannelConnector ssl_connector=new SslSelectChannelConnector();
         ssl_connector.setPort(port-80+443);
         ssl_connector.setKeystore(base+"/examples/src/test/resources/keystore");
@@ -96,12 +93,12 @@ public class CometdDemo
         final BayeuxServerImpl bayeux = new BayeuxServerImpl();
         bayeux.initializeDefaultTransports();
         context.setAttribute(BayeuxServer.ATTRIBUTE,bayeux);
-        
+
         context.setBaseResource(
                 new ResourceCollection(new Resource[]
                 {
                         Resource.newResource("../../cometd-demo/src/main/webapp/"),
-                        
+
                         Resource.newResource("../../cometd-javascript/common/src/main/webapp/"),
                         Resource.newResource("../../cometd-javascript/jquery/src/main/webapp/"),
                         Resource.newResource("../../cometd-javascript/examples-jquery/src/main/webapp/"),
@@ -115,7 +112,7 @@ public class CometdDemo
         // Cometd servlet
 
         ServletHolder dftServlet = context.addServlet(DefaultServlet.class, "/");
-       
+
         dftServlet.setInitOrder(1);
 
         ServletHolder comet = context.addServlet(CometdServlet.class, "/cometd/*");
@@ -125,38 +122,38 @@ public class CometdDemo
         comet.setInitParameter("multiFrameInterval","5000");
         comet.setInitParameter("logLevel","3");
         comet.setInitOrder(2);
-        
+
         ServletHolder demo=context.addServlet(CometdDemoServlet.class, "/demo");
         demo.setInitOrder(3);
-        
+
         server.start();
 
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy());
-        
+
         // Demo lazy messages
         if (Boolean.getBoolean("LAZY"))
         {
             bayeux.addExtension(new BayeuxServer.Extension()
             {
-                
+
                 public boolean sendMeta(ServerSession to, Mutable message)
                 {
                     // TODO Auto-generated method stub
                     return false;
                 }
-                
+
                 public boolean send(Mutable message)
                 {
                     // TODO Auto-generated method stub
                     return false;
                 }
-                
+
                 public boolean rcvMeta(ServerSession from, Mutable message)
                 {
                     // TODO Auto-generated method stub
                     return false;
                 }
-                
+
                 public boolean rcv(ServerSession from, Mutable message)
                 {
                     if (message.getChannel().startsWith("/chat/") && message.getData()!=null && message.getData().toString().indexOf("lazy")>=0)
@@ -169,7 +166,9 @@ public class CometdDemo
         // Demo lazy messages
         if (Boolean.getBoolean("LAZYCHAT"))
         {
-            final ServerChannel chat_demo = bayeux.getChannel("/chat/demo",true);
+            String channelName = "/chat/demo";
+            bayeux.createIfAbsent(channelName);
+            final ServerChannel chat_demo = bayeux.getChannel(channelName);
             chat_demo.setLazy(true);
             chat_demo.setPersistent(true);
         }

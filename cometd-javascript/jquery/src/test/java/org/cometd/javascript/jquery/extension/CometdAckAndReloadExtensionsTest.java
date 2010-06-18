@@ -109,7 +109,7 @@ public class CometdAckAndReloadExtensionsTest extends AbstractCometdJQueryTest
 
         public void emit(String content)
         {
-            getBayeux().getChannel("/test", true).publish(getClient(), content, null);
+            getBayeux().getChannel("/test").publish(getServerSession(), content, null);
         }
     }
 }

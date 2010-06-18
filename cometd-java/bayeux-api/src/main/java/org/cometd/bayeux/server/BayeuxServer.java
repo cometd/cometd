@@ -68,16 +68,6 @@ public interface BayeuxServer extends Bayeux
     ServerChannel getChannel(String channelId);
 
     /**
-     * @param channelId the channel identifier
-     * @param create whether to create the channel if it does not exist
-     * @return a {@link ServerChannel} with the given {@code channelId}
-     * @deprecated Use {@link #createIfAbsent(String, ConfigurableServerChannel.Initializer...)} and
-     * {@link #getChannel(String)} instead
-     */
-    @Deprecated
-    ServerChannel getChannel(String channelId, boolean create);
-
-    /**
      * <p>Creates a {@link ServerChannel} and initializes it atomically.</p>
      * <p>This method can be used instead of adding a {@link ChannelListener}
      * to atomically initialize a channel. The initializer will be called before
@@ -249,6 +239,7 @@ public interface BayeuxServer extends Bayeux
          * @param message the outgoing message
          * @return true if message processing should continue, false if it should stop
          */
+        // TODO: why it has one less parameter ?
         boolean send(ServerMessage.Mutable message);
 
         /**

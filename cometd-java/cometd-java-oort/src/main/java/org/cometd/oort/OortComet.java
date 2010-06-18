@@ -11,7 +11,6 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.client.SessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
 import org.eclipse.jetty.util.log.Log;
@@ -75,14 +74,14 @@ public class OortComet extends BayeuxClient
         });
 
         // Add listener for handshake response
-        getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
+        getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
                 System.err.println("handshake "+message);
 
-                if (successful)
+                if (message.isSuccessful())
                 {
                     Map<String,Object> ext = message.getExt();
                     if (ext==null)
@@ -94,29 +93,32 @@ public class OortComet extends BayeuxClient
 
                     _cometSecret=(String)oort.get("cometSecret");
 
-                    startBatch();
-
-                    System.err.println("Oort subscriptions for "+this);
-
-                    // subscribe to cloud notificiations
-                    getChannel("/oort/cloud").subscribe(new SessionChannel.SubscriberListener()
+                    batch(new Runnable()
                     {
-                        @Override
-                        public void onMessage(SessionChannel channel, Message message)
+                        public void run()
                         {
-                            Object[] data = (Object[])message.getData();
-                            Set<String> comets = new HashSet<String>();
-                            for (Object o:data)
-                                comets.add(o.toString());
-                            _oort.observedComets(comets);
+                            System.err.println("Oort subscriptions for "+this);
+
+                            // subscribe to cloud notifications
+                            getChannel("/oort/cloud").subscribe(new ClientSessionChannel.MessageListener()
+                            {
+                                @Override
+                                public void onMessage(ClientSessionChannel channel, Message message)
+                                {
+                                    Object[] data = (Object[])message.getData();
+                                    Set<String> comets = new HashSet<String>();
+                                    for (Object o:data)
+                                        comets.add(o.toString());
+                                    _oort.observedComets(comets);
+                                }
+                            });
+
+                            for (String id : _oort._channels)
+                                subscribe(id);
+
+                            getChannel("/oort/cloud").publish(_oort.getKnownComets(),_cometSecret);
                         }
                     });
-
-                    for (String id : _oort._channels)
-                        subscribe(id);
-
-                    getChannel("/oort/cloud").publish(_oort.getKnownComets(),_cometSecret);
-                    endBatch();
 
                     if (Log.isDebugEnabled())
                         Log.debug(_oort.getURL()+" <== "+ext);

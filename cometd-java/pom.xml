@@ -25,11 +25,6 @@
         <module>cometd-java-examples</module>
     </modules>
 
-    <build>
-        <plugins>
-        </plugins>
-    </build>
-
     <dependencyManagement>
         <dependencies>
             <dependency>

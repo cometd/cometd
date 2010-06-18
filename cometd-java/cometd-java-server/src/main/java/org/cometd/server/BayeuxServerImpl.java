@@ -79,11 +79,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         createIfAbsent(Channel.META_SUBSCRIBE);
         createIfAbsent(Channel.META_UNSUBSCRIBE);
         createIfAbsent(Channel.META_DISCONNECT);
-        ((ServerChannelImpl)getChannel(Channel.META_HANDSHAKE)).addListener(new HandshakeHandler());
-        ((ServerChannelImpl)getChannel(Channel.META_CONNECT)).addListener(new ConnectHandler());
-        ((ServerChannelImpl)getChannel(Channel.META_SUBSCRIBE)).addListener(new SubscribeHandler());
-        ((ServerChannelImpl)getChannel(Channel.META_UNSUBSCRIBE)).addListener(new UnsubscribeHandler());
-        ((ServerChannelImpl)getChannel(Channel.META_DISCONNECT)).addListener(new DisconnectHandler());
+        getChannel(Channel.META_HANDSHAKE).addListener(new HandshakeHandler());
+        getChannel(Channel.META_CONNECT).addListener(new ConnectHandler());
+        getChannel(Channel.META_SUBSCRIBE).addListener(new SubscribeHandler());
+        getChannel(Channel.META_UNSUBSCRIBE).addListener(new UnsubscribeHandler());
+        getChannel(Channel.META_DISCONNECT).addListener(new DisconnectHandler());
 
 
         setOption("tickIntervalMs","97");
@@ -234,7 +234,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         Object val=getOption(name);
         if (val instanceof Long)
-            return ((Long)val).longValue();
+            return (Long)val;
         if (val!=null)
             return Long.valueOf(val.toString());
         return dft;
@@ -338,19 +338,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         // somebody else added it before me, so wait until it is initialized
         channel.waitForInitialized();
         return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public ServerChannel getChannel(String channelId, boolean create)
-    {
-        ServerChannelImpl channel = _channels.get(channelId);
-        if (channel==null && create)
-        {
-            createIfAbsent(channelId);
-            channel = _channels.get(channelId);
-        }
-        return channel;
     }
 
     /* ------------------------------------------------------------ */
@@ -459,9 +446,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public void addListener(BayeuxServerListener listener)
     {
-        if (!(listener instanceof BayeuxServerListener))
-            throw new IllegalArgumentException("!BayeuxServerListener");
-        _listeners.add((BayeuxServerListener)listener);
+        if (listener == null)
+            throw new NullPointerException();
+        _listeners.add(listener);
     }
 
     /* ------------------------------------------------------------ */
@@ -496,7 +483,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      */
     public ServerMessage handle(ServerSessionImpl session, ServerMessage.Mutable message)
     {
-        ServerMessage.Mutable reply=null;
+        ServerMessage.Mutable reply;
 
         if (_logger.isDebugEnabled())
             _logger.debug(">  "+message+" "+session);
@@ -576,7 +563,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         String parent=to.getChannelId().getParent();
         while (parent!=null)
         {
-            ServerChannelImpl c = _channels.get(parent.toString());
+            ServerChannelImpl c = _channels.get(parent);
             if (c==null)
                 return; // remove in progress
             if (c.isLazy())
@@ -592,30 +579,28 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             listening_channels[i]=_channels.get(wildIds.get(i));
 
         // Call the listeners
-        for (int i=0;i<listening_channels.length;i++)
+        for (final ServerChannelImpl channel : listening_channels)
         {
-            final ServerChannelImpl channel = listening_channels[i];
-            if (channel==null)
+            if (channel == null)
                 continue;
 
             if (channel.isLazy())
                 mutable.setLazy(true);
             for (ServerChannelListener listener : channel.getListeners())
                 if (listener instanceof MessageListener)
-                    if (!((MessageListener)listener).onMessage(from,to,mutable))
+                    if (!((MessageListener)listener).onMessage(from, to, mutable))
                         return;
         }
 
         // Call the subscribers
-        for (int i=0;i<listening_channels.length;i++)
+        for (final ServerChannelImpl channel : listening_channels)
         {
-            final ServerChannelImpl channel = listening_channels[i];
-            if (channel==null)
+            if (channel == null)
                 continue;
 
             // TODO make this fair on all subscribers
             for (ServerSession session : channel.getSubscribers())
-                ((ServerSessionImpl)session).doDeliver(from,mutable.asImmutable());
+                ((ServerSessionImpl)session).doDeliver(from, mutable.asImmutable());
         }
 
         // Meta handlers
@@ -934,7 +919,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 {
                     if (from.isLocalSession() || !channel.isMeta() && !channel.isService())
                     {
-                        if (channel.subscribe((ServerSessionImpl)from))
+                        if (channel.subscribe(from))
                             reply.setSuccessful(true);
                         else
                             error(reply,"403::subscribe failed");
@@ -974,7 +959,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 else
                 {
                     if (from.isLocalSession() || !channel.isMeta() && !channel.isService())
-                        channel.unsubscribe((ServerSessionImpl)from);
+                        channel.unsubscribe(from);
                     reply.setSuccessful(true);
                 }
             }

@@ -77,12 +77,4 @@ public interface ClientSessionChannel extends Channel
          */
         void onMessage(ClientSessionChannel channel, Message message);
     }
-
-    /**
-     * @deprecated Use {@link MessageListener} instead
-     */
-    @Deprecated
-    public interface SubscriberListener
-    {
-    }
 }

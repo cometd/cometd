@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import junit.framework.TestCase;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.ext.TimesyncClientExtension;
 import org.cometd.client.transport.LongPollingTransport;
@@ -39,9 +39,6 @@ import org.eclipse.jetty.util.resource.FileResource;
 
 public class TimeExtensionTest extends TestCase
 {
-    public static int RECEIVE_LOCK_DURATION = Integer.getInteger(
-            "receive.lock_duration", 2000).intValue();
-
     Server _server;
     Connector _connector;
     EventListener _listener;
@@ -72,12 +69,11 @@ public class TimeExtensionTest extends TestCase
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
 
-        ServletContextHandler context = new ServletContextHandler(contexts, "/", ServletContextHandler.NO_SECURITY
-                | ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
 
         File file = new File("target/cometd-demo");
         if (!file.exists())
-            file.mkdir();
+            assertTrue(file.mkdir());
 
         context.setBaseResource(FileResource.newResource(file.toURI().toURL()));
 
@@ -126,10 +122,10 @@ public class TimeExtensionTest extends TestCase
         final BayeuxClient client = new BayeuxClient("http://localhost:"+port+"/cometd", LongPollingTransport.create(null));
         client.addExtension(new TimesyncClientExtension());
 
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
                 messages.add(message);
             }
@@ -159,10 +155,10 @@ public class TimeExtensionTest extends TestCase
 
         client.addExtension(new TimesyncClientExtension());
 
-        client.getChannel("/meta/*").addListener(new SessionChannel.MetaChannelListener()
+        client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMetaMessage(SessionChannel channel, Message message, boolean successful, String error)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
                 messages.add(message);
             }

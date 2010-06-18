@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.SessionChannel;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.transport.LongPollingTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -28,15 +28,14 @@ public class SimpleEchoBayeuxClient
     HttpClient _httpClient;
     boolean _connected;
 
-    SessionChannel.SubscriberListener _alphaListener = new SessionChannel.SubscriberListener()
+    ClientSessionChannel.MessageListener _alphaListener = new ClientSessionChannel.MessageListener()
     {
-
         @Override
-        public void onMessage(SessionChannel channel, Message message)
+        public void onMessage(ClientSessionChannel channel, Message message)
         {
             Map<String,Object> data=message.getDataAsMap();
 
-            String user = "unknown";
+            String user;
             if (data!=null)
             {
                 user = (String)data.get("user");
@@ -73,11 +72,12 @@ public class SimpleEchoBayeuxClient
 
         _client = new BayeuxClient("http://" + host + ":" + port + uri, LongPollingTransport.create(null, _httpClient));
 
-        _client.getChannel(Channel.META_CONNECT).addListener(new SessionChannel.MetaChannelListener()
+        _client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMetaMessage(SessionChannel channel, Message message, boolean success, String error)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
+                boolean success = message.isSuccessful();
                 if (success && !_connected)
                 {
                     System.err.println("Reconnected!");
@@ -91,12 +91,12 @@ public class SimpleEchoBayeuxClient
         });
 
 
-        _client.getChannel(Channel.META_HANDSHAKE).addListener(new SessionChannel.MetaChannelListener()
+        _client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             @Override
-            public void onMetaMessage(SessionChannel channel, Message message, boolean success, String error)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
-                if (success)
+                if (message.isSuccessful())
                 {
                     _client.getChannel("/foo/alpha").subscribe(_alphaListener);
                     Object msg=new JSON.Literal("{\"user\":\""+_who+"\",\"chat\":\"Has joined\"}");
@@ -155,7 +155,7 @@ public class SimpleEchoBayeuxClient
     }
 
 
-    public static final void main(String[] args)
+    public static void main(String[] args)
     {
         try
         {
@@ -163,7 +163,7 @@ public class SimpleEchoBayeuxClient
             String serverCometdUrl = (args.length > 0? args[0] : "/cometd/cometd");
 
             //arg1: server port
-            int serverPort = (args.length >= 2 ? Integer.valueOf(args[1]).intValue() : 8080);
+            int serverPort = (args.length >= 2 ? Integer.valueOf(args[1]) : 8080);
 
             //arg2: username (not necessary)
             String user = (args.length >= 3 ? args[2] : "anonymous");

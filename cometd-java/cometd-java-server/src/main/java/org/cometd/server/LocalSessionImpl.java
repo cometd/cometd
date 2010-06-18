@@ -209,7 +209,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    /** A SessionChannel scoped to this LocalChannel
+    /** A channel scoped to this local session
      */
     protected class LocalChannel extends AbstractSessionChannel
     {

@@ -162,7 +162,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     /* ------------------------------------------------------------ */
     public void addListener(ServerChannelListener listener)
     {
-        _listeners.add((ServerChannelListener)listener);
+        _listeners.add(listener);
     }
 
     /* ------------------------------------------------------------ */
@@ -233,7 +233,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
             if (!session.isHandshook())
                 unsubscribe(session);
         }
-        
+
         if (!isPersistent() && _subscribers.size()==0 && children==0 && ++_used>2)
             remove();
     }

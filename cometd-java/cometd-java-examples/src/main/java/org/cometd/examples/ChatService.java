@@ -115,8 +115,8 @@ public class ChatService extends AbstractService
 
 
             for (ServerSession peer : peers)
-                peer.deliver(getClient().getServerSession(),forward);
-            client.deliver(getClient().getServerSession(), forward);
+                peer.deliver(getServerSession(), forward);
+            client.deliver(getServerSession(), forward);
         }
     }
 }

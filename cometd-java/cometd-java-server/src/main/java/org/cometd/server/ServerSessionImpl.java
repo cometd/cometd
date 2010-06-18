@@ -157,9 +157,9 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public void batch(Runnable batch)
     {
+        startBatch();
         try
         {
-            startBatch();
             batch.run();
         }
         finally

@@ -153,7 +153,7 @@ public class Oort
             known=getKnownComets();
 
             if (!comets.containsAll(known))
-                _bayeux.getChannel("/oort/cloud",true).publish(_oortSession,known,null);
+                _bayeux.getChannel("/oort/cloud").publish(_oortSession,known,null);
         }
     }
 
