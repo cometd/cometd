@@ -456,6 +456,8 @@ public class BayeuxLoadGenerator
             }
 
             System.err.println("Messages - Wall Latency Distribution Curve (X axis: Frequency, Y axis: Latency):");
+            double percentile=0.0;
+            
             for (int i = 0; i < latencyBucketFrequencies.length; ++i)
             {
                 long latencyBucketFrequency = latencyBucketFrequencies[i];
@@ -466,7 +468,21 @@ public class BayeuxLoadGenerator
                 for (int j = value + 1; j < latencyBucketFrequencies.length; ++j) System.err.print(" ");
                 System.err.print("  _  ");
                 System.err.print(TimeUnit.NANOSECONDS.toMillis((latencyRange * (i + 1) / latencyBucketFrequencies.length) + minWallLatency.get()));
-                System.err.println(" ms (" + latencyBucketFrequency + ")");
+                System.err.printf(" ms (%d, %.2f%%)",latencyBucketFrequency,(100.0*latencyBucketFrequency/messageCount));
+                double last=percentile;
+                percentile+=(100.0*latencyBucketFrequency/messageCount);
+                if (last<50.0 && percentile>=50.0)
+                    System.err.print(" ^50%");
+                if (last<85.0 && percentile>=85.0)
+                    System.err.print(" ^85%");
+                if (last<95.0 && percentile>=95.0)
+                    System.err.print(" ^95%");
+                if (last<99.0 && percentile>=99.0)
+                    System.err.print(" ^99%");
+                if (last<99.9 && percentile>=99.9)
+                    System.err.print(" ^99.9%");
+                System.err.println();
+      
             }
         }
 
