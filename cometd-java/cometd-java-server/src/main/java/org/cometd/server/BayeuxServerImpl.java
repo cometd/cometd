@@ -380,13 +380,15 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         if(removed==session)
         {
+            boolean connected = ((ServerSessionImpl)session).removed(timedout);
+            
             for (BayeuxServerListener listener : _listeners)
             {
                 if (listener instanceof BayeuxServer.SessionListener)
                     ((SessionListener)listener).sessionRemoved(session,timedout);
             }
 
-            return ((ServerSessionImpl)session).removed(timedout);
+            return connected;
         }
         else
             return false;
