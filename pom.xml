@@ -87,14 +87,14 @@
 
     <distributionManagement>
         <repository>
-            <id>cometdReleases</id>
+            <id>oss.sonatype.org</id>
             <name>CometD Maven2 Repository</name>
-            <url>http://oss.repository.sonatype.org/service/local/staging/deploy/maven2</url>
+            <url>http://oss.sonatype.org/service/local/staging/deploy/maven2</url>
         </repository>
         <snapshotRepository>
-            <id>cometdSnapshots</id>
+            <id>oss.sonatype.org</id>
             <name>CometD Maven2 Snapshot Repository</name>
-            <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
+            <url>http://oss.sonatype.org/content/repositories/cometd-snapshots</url>
         </snapshotRepository>
     </distributionManagement>
 
