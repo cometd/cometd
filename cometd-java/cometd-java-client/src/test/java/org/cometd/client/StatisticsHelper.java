@@ -108,81 +108,88 @@ public class StatisticsHelper implements Runnable
 
     public boolean startStatistics()
     {
-        // Support for multiple nodes
-        if (starts.incrementAndGet() > 1)
-            return false;
+        // Support for multiple nodes requires to ignore start requests after the first
+        // but also requires that requests after the first wait until the initialization
+        // is completed (otherwise node #2 may start the run while the server is GC'ing)
+        synchronized (this)
+        {
+            if (starts.incrementAndGet() > 1)
+                return false;
 
-        System.gc();
-        System.err.println("\n========================================");           
-        System.err.println("Statistics Started at " + new Date());
-        System.err.println("Operative System: " + operatingSystem.getName() + " " + operatingSystem.getVersion() + " " + operatingSystem.getArch());
-        System.err.println("JVM : "+System.getProperty("java.vm.vendor")+" "+System.getProperty("java.vm.name")+" runtime "+System.getProperty("java.vm.version")+" "+System.getProperty("java.runtime.version"));
-        System.err.println("Processors: " + operatingSystem.getAvailableProcessors());
-        long totalMemory = operatingSystem.getTotalPhysicalMemorySize();
-        long freeMemory = operatingSystem.getFreePhysicalMemorySize();
-        System.err.println("System Memory: " + percent(totalMemory - freeMemory, totalMemory) + "% used of " + gibiBytes(totalMemory) + " GiB");
+            System.gc();
+            System.err.println("\n========================================");
+            System.err.println("Statistics Started at " + new Date());
+            System.err.println("Operative System: " + operatingSystem.getName() + " " + operatingSystem.getVersion() + " " + operatingSystem.getArch());
+            System.err.println("JVM : "+System.getProperty("java.vm.vendor")+" "+System.getProperty("java.vm.name")+" runtime "+System.getProperty("java.vm.version")+" "+System.getProperty("java.runtime.version"));
+            System.err.println("Processors: " + operatingSystem.getAvailableProcessors());
+            long totalMemory = operatingSystem.getTotalPhysicalMemorySize();
+            long freeMemory = operatingSystem.getFreePhysicalMemorySize();
+            System.err.println("System Memory: " + percent(totalMemory - freeMemory, totalMemory) + "% used of " + gibiBytes(totalMemory) + " GiB");
 
-        MemoryUsage heapMemoryUsage = heapMemory.getHeapMemoryUsage();
-        System.err.println("Used Heap Size: " + mebiBytes(heapMemoryUsage.getUsed()) + " MiB");
-        System.err.println("Max Heap Size: " + mebiBytes(heapMemoryUsage.getMax()) + " MiB");
-        long youngGenerationHeap = heapMemoryUsage.getMax() - oldMemoryPool.getUsage().getMax();
-        System.err.println("Young Generation Heap Size: " + mebiBytes(youngGenerationHeap) + " MiB");
-        System.err.println("- - - - - - - - - - - - - - - - - - - - ");   
-        
-        scheduler = Executors.newSingleThreadScheduledExecutor();
-        polling = false;
-        memoryPoller = scheduler.scheduleWithFixedDelay(this, 0, 500, TimeUnit.MILLISECONDS);
+            MemoryUsage heapMemoryUsage = heapMemory.getHeapMemoryUsage();
+            System.err.println("Used Heap Size: " + mebiBytes(heapMemoryUsage.getUsed()) + " MiB");
+            System.err.println("Max Heap Size: " + mebiBytes(heapMemoryUsage.getMax()) + " MiB");
+            long youngGenerationHeap = heapMemoryUsage.getMax() - oldMemoryPool.getUsage().getMax();
+            System.err.println("Young Generation Heap Size: " + mebiBytes(youngGenerationHeap) + " MiB");
+            System.err.println("- - - - - - - - - - - - - - - - - - - - ");
 
-        lastYoungUsed = 0;
-        startYoungCollections = youngCollector.getCollectionCount();
-        startYoungCollectionsTime = youngCollector.getCollectionTime();
-        totalYoungUsed = 0;
-        lastSurvivorUsed = 0;
-        totalSurvivorUsed = 0;
-        lastOldUsed = 0;
-        startOldCollections = oldCollector.getCollectionCount();
-        startOldCollectionsTime = oldCollector.getCollectionTime();
-        totalOldUsed = 0;
+            scheduler = Executors.newSingleThreadScheduledExecutor();
+            polling = false;
+            memoryPoller = scheduler.scheduleWithFixedDelay(this, 0, 500, TimeUnit.MILLISECONDS);
 
-        startTime = System.nanoTime();
-        startProcessCPUTime = operatingSystem.getProcessCpuTime();
-        startJITCTime = jitCompiler.getTotalCompilationTime();
+            lastYoungUsed = 0;
+            startYoungCollections = youngCollector.getCollectionCount();
+            startYoungCollectionsTime = youngCollector.getCollectionTime();
+            totalYoungUsed = 0;
+            lastSurvivorUsed = 0;
+            totalSurvivorUsed = 0;
+            lastOldUsed = 0;
+            startOldCollections = oldCollector.getCollectionCount();
+            startOldCollectionsTime = oldCollector.getCollectionTime();
+            totalOldUsed = 0;
 
-        return true;
+            startTime = System.nanoTime();
+            startProcessCPUTime = operatingSystem.getProcessCpuTime();
+            startJITCTime = jitCompiler.getTotalCompilationTime();
+
+            return true;
+        }
     }
 
     public boolean stopStatistics()
     {
-        // Support for multiple nodes
-        if (starts.decrementAndGet() > 0)
-            return false;
+        synchronized (this)
+        {
+            if (starts.decrementAndGet() > 0)
+                return false;
 
-        long elapsedJITCTime = jitCompiler.getTotalCompilationTime() - startJITCTime;
-        long elapsedProcessCPUTime = operatingSystem.getProcessCpuTime() - startProcessCPUTime;
-        long elapsedTime = System.nanoTime() - startTime;
+            long elapsedJITCTime = jitCompiler.getTotalCompilationTime() - startJITCTime;
+            long elapsedProcessCPUTime = operatingSystem.getProcessCpuTime() - startProcessCPUTime;
+            long elapsedTime = System.nanoTime() - startTime;
 
-        long elapsedOldCollectionsTime = oldCollector.getCollectionTime() - startOldCollectionsTime;
-        long oldCollections = oldCollector.getCollectionCount() - startOldCollections;
-        long elapsedYoungCollectionsTime = youngCollector.getCollectionTime() - startYoungCollectionsTime;
-        long youngCollections = youngCollector.getCollectionCount() - startYoungCollections;
+            long elapsedOldCollectionsTime = oldCollector.getCollectionTime() - startOldCollectionsTime;
+            long oldCollections = oldCollector.getCollectionCount() - startOldCollections;
+            long elapsedYoungCollectionsTime = youngCollector.getCollectionTime() - startYoungCollectionsTime;
+            long youngCollections = youngCollector.getCollectionCount() - startYoungCollections;
 
-        memoryPoller.cancel(false);
-        scheduler.shutdown();
+            memoryPoller.cancel(false);
+            scheduler.shutdown();
 
-        System.err.println("- - - - - - - - - - - - - - - - - - - - ");
-        System.err.println("Statistics Ended at " + new Date());
-        System.err.println("Elapsed time: " + TimeUnit.NANOSECONDS.toMillis(elapsedTime) + " ms");
-        System.err.println("\tTime in JIT compilation: " + elapsedJITCTime + " ms");
-        System.err.println("\tTime in Young Generation GC: " + elapsedYoungCollectionsTime + " ms (" + youngCollections + " collections)");
-        System.err.println("\tTime in Old Generation GC: " + elapsedOldCollectionsTime + " ms (" + oldCollections + " collections)");
+            System.err.println("- - - - - - - - - - - - - - - - - - - - ");
+            System.err.println("Statistics Ended at " + new Date());
+            System.err.println("Elapsed time: " + TimeUnit.NANOSECONDS.toMillis(elapsedTime) + " ms");
+            System.err.println("\tTime in JIT compilation: " + elapsedJITCTime + " ms");
+            System.err.println("\tTime in Young Generation GC: " + elapsedYoungCollectionsTime + " ms (" + youngCollections + " collections)");
+            System.err.println("\tTime in Old Generation GC: " + elapsedOldCollectionsTime + " ms (" + oldCollections + " collections)");
 
-        System.err.println("Garbage Generated in Young Generation: " + mebiBytes(totalYoungUsed) + " MiB");
-        System.err.println("Garbage Generated in Survivor Generation: " + mebiBytes(totalSurvivorUsed) + " MiB");
-        System.err.println("Garbage Generated in Old Generation: " + mebiBytes(totalOldUsed) + " MiB");
+            System.err.println("Garbage Generated in Young Generation: " + mebiBytes(totalYoungUsed) + " MiB");
+            System.err.println("Garbage Generated in Survivor Generation: " + mebiBytes(totalSurvivorUsed) + " MiB");
+            System.err.println("Garbage Generated in Old Generation: " + mebiBytes(totalOldUsed) + " MiB");
 
-        System.err.println("Average CPU Load: " + ((float)elapsedProcessCPUTime * 100 / elapsedTime) + "/" + (100 * operatingSystem.getAvailableProcessors()));
-        System.err.println("----------------------------------------\n");  
-        return true;
+            System.err.println("Average CPU Load: " + ((float)elapsedProcessCPUTime * 100 / elapsedTime) + "/" + (100 * operatingSystem.getAvailableProcessors()));
+            System.err.println("----------------------------------------\n");
+            return true;
+        }
     }
 
     public float percent(long dividend, long divisor)
