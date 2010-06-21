@@ -268,6 +268,7 @@ public class BayeuxLoadGenerator
             statsClient.begin();
 
             helper.startStatistics();
+            System.err.println("Testing "+bayeuxClients.size()+" clients in "+rooms+" rooms\nSendding "+batchCount+" batches of "+batchSize+"x"+messageSize+"B messages every "+batchPause+"\u00B5s");
 
             long start = System.nanoTime();
             int clientIndex = -1;
