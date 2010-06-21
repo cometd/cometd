@@ -78,14 +78,16 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     {
         if (!session.isHandshook())
             return false;
-        _subscribers.add(session);
-        session.subscribedTo(this);
-        for (ServerChannelListener listener : _listeners)
-            if (listener instanceof SubscriptionListener)
-                ((SubscriptionListener)listener).subscribed(session,this);
-        for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
-            if (listener instanceof BayeuxServer.SubscriptionListener)
-                ((BayeuxServer.SubscriptionListener)listener).subscribed(session,this);
+        if (_subscribers.add(session))
+        {
+            session.subscribedTo(this);
+            for (ServerChannelListener listener : _listeners)
+                if (listener instanceof SubscriptionListener)
+                    ((SubscriptionListener)listener).subscribed(session,this);
+            for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
+                if (listener instanceof BayeuxServer.SubscriptionListener)
+                    ((BayeuxServer.SubscriptionListener)listener).subscribed(session,this);
+        }
         _used=0;
         return true;
     }
@@ -95,6 +97,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     {
         if(_subscribers.remove(session))
         {
+            session.unsubscribedTo(this);
             for (ServerChannelListener listener : _listeners)
                 if (listener instanceof SubscriptionListener)
                     ((SubscriptionListener)listener).unsubscribed(session,this);
@@ -102,7 +105,6 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
                 if (listener instanceof BayeuxServer.SubscriptionListener)
                     ((BayeuxServer.SubscriptionListener)listener).unsubscribed(session,this);
         }
-        session.unsubscribedTo(this);
     }
 
     /* ------------------------------------------------------------ */
