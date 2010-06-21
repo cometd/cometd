@@ -133,43 +133,50 @@ public class BayeuxLoadServer
 
         public void startStatistics(ServerSession remote, Message message)
         {
-            boolean started = helper.startStatistics();
-            if (started)
+            // Multiple nodes must wait that initialization is completed
+            synchronized (this)
             {
-                if (statisticsHandler != null)
+                boolean started = helper.startStatistics();
+                if (started)
                 {
-                    statisticsHandler.statsReset();
-                }
+                    if (statisticsHandler != null)
+                    {
+                        statisticsHandler.statsReset();
+                    }
 
-                if (requestLatencyHandler != null)
-                {
-                    requestLatencyHandler.reset();
-                    requestLatencyHandler.disableCurrent();
+                    if (requestLatencyHandler != null)
+                    {
+                        requestLatencyHandler.reset();
+                        requestLatencyHandler.disableCurrent();
+                    }
                 }
             }
         }
 
         public void stopStatistics(ServerSession remote, Message message) throws Exception
         {
-            boolean stopped = helper.stopStatistics();
-            if (stopped)
+            synchronized (this)
             {
-                if (statisticsHandler != null)
+                boolean stopped = helper.stopStatistics();
+                if (stopped)
                 {
-                    System.err.println("Requests (total/failed/max): " + statisticsHandler.getDispatched() + "/" +
-                            (statisticsHandler.getResponses4xx() + statisticsHandler.getResponses5xx()) + "/" +
-                            statisticsHandler.getDispatchedActiveMax());
-                    System.err.println("Requests times (total/avg/max - stddev): " +
-                            statisticsHandler.getDispatchedTimeTotal() + "/" +
-                            ((Double)statisticsHandler.getDispatchedTimeMean()).longValue() + "/" +
-                            statisticsHandler.getDispatchedTimeMax() + " ms - " +
-                            ((Double)statisticsHandler.getDispatchedTimeStdDev()).longValue());
-                }
+                    if (statisticsHandler != null)
+                    {
+                        System.err.println("Requests (total/failed/max): " + statisticsHandler.getDispatched() + "/" +
+                                (statisticsHandler.getResponses4xx() + statisticsHandler.getResponses5xx()) + "/" +
+                                statisticsHandler.getDispatchedActiveMax());
+                        System.err.println("Requests times (total/avg/max - stddev): " +
+                                statisticsHandler.getDispatchedTimeTotal() + "/" +
+                                ((Double)statisticsHandler.getDispatchedTimeMean()).longValue() + "/" +
+                                statisticsHandler.getDispatchedTimeMax() + " ms - " +
+                                ((Double)statisticsHandler.getDispatchedTimeStdDev()).longValue());
+                    }
 
-                if (requestLatencyHandler != null)
-                {
-                    requestLatencyHandler.print();
-                    requestLatencyHandler.disableCurrent();
+                    if (requestLatencyHandler != null)
+                    {
+                        requestLatencyHandler.print();
+                        requestLatencyHandler.disableCurrent();
+                    }
                 }
             }
         }
