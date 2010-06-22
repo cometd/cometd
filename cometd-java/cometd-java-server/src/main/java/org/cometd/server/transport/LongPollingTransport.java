@@ -276,8 +276,8 @@ public abstract class LongPollingTransport extends HttpTransport
                     if (!ended && isAlwaysFlushingAfterHandle())
                         session.flush();
                 }
-                else if (!connect && isAlwaysFlushingAfterHandle())
-                session.flush();
+                else if (session!=null && !connect && isAlwaysFlushingAfterHandle())
+                    session.flush();
             }
         }
         else
