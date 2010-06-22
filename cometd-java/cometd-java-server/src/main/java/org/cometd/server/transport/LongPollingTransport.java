@@ -160,12 +160,19 @@ public abstract class LongPollingTransport extends HttpTransport
                     if (session==null)
                     {
                         session=(ServerSessionImpl)getBayeux().getSession(message.getClientId());
-                        if (_autoBatch&& !batch && session!=null && !connect)
+                        if (_autoBatch && !batch && session!=null && !connect)
                         {
                             // start a batch to group all resulting messages into a single response.
                             batch=true;
                             session.startBatch();
                         }
+                    }
+
+                    if (connect && session!=null)
+                    {
+                        // cancel previous scheduler to cancel any prior waiting long poll
+                        // this should also dec the Browser ID
+                        session.setScheduler(null);
                     }
 
                     // remember the connected status
@@ -207,10 +214,6 @@ public abstract class LongPollingTransport extends HttpTransport
                                 // If the writer is non null, we have already started sending a response, so we should not suspend
                                 if(timeout>0 && was_connected && writer==null && reply.isSuccessful() && session.isQueueEmpty())
                                 {
-                                    // cancel previous scheduler to cancel any prior waiting long poll
-                                    // this should also dec the Browser ID
-                                    session.setScheduler(null);
-
                                     // If we don't have too many long polls from this browser
                                     String browserId=getBrowserId(request,response);
                                     if (incBrowserId(browserId))

@@ -55,6 +55,7 @@ var room = {
         // Restore the state, if present
         if (state)
         {
+            dojo.byId('username').value=state.username;
             setTimeout(function()
             {
                 // This will perform the handshake
