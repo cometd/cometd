@@ -623,9 +623,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         if (reply!=null && !extendSend(session,reply.asMutable()))
             reply=null;
 
-        if (_logger.isDebugEnabled())
-            _logger.debug("<  "+reply);
-
         return reply;
     }
 
@@ -655,16 +652,26 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             ListIterator<Extension> i = _extensions.listIterator(_extensions.size());
             while(i.hasPrevious())
                 if (!i.previous().sendMeta(to,message))
+                {
+                    if (_logger.isDebugEnabled())
+                        _logger.debug("!  "+message);
                     return false;
+                }
         }
         else
         {
             ListIterator<Extension> i = _extensions.listIterator(_extensions.size());
             while(i.hasPrevious())
                 if (!i.previous().send(message))
+                {
+                    if (_logger.isDebugEnabled())
+                        _logger.debug("!  "+message);
                     return false;
+                }
         }
 
+        if (_logger.isDebugEnabled())
+            _logger.debug("<  "+message);
         return true;
     }
 
