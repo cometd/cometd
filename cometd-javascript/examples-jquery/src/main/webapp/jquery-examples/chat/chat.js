@@ -7,6 +7,14 @@
         var state = stateCookie ? org.cometd.JSON.fromJSON(stateCookie) : null;
         var chat = new Chat(state);
 
+        // restore some values
+        if (state)
+        {
+            $('#username').val(state.username);
+            $('#useServer').attr('checked',state.useServer);
+            $('#altServer').val(state.altServer);
+        }
+        
         // Setup UI
         $('#join').show();
         $('#joined').hide();
@@ -299,7 +307,9 @@
                     var expires = new Date();
                     expires.setTime(expires.getTime() + 5 * 1000);
                     org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
-                        username: _username
+                        username: _username,
+                        useServer: $('#useServer').attr('checked'),
+                        altServer: $('#altServer').val()
                     }), { 'max-age': 5, expires: expires });
                 }
             }

@@ -420,13 +420,17 @@ public class ServerSessionImpl implements ServerSession
             if (scheduler == null)
             {
                 if (_scheduler!=null)
+                {
                     _scheduler.cancel();
-                _scheduler = null;
+                    _scheduler = null;
+                }
             }
             else
             {
                 if (_scheduler!=null && _scheduler!=scheduler)
+                {
                     _scheduler.cancel();
+                }
 
                 _scheduler=scheduler;
 

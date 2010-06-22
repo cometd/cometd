@@ -41,6 +41,7 @@ org.cometd.ReloadExtension = function(configuration)
     var _debug;
     var _state = null;
     var _cookieMaxAge = configuration && configuration.cookieMaxAge || 5;
+    var _batch = false;
 
     function _reload()
     {
@@ -116,6 +117,13 @@ org.cometd.ReloadExtension = function(configuration)
                             _cometd.receive(response);
                             _debug('Reload extension replayed handshake response', response);
                         }, 0);
+                        
+                        // delay any sends until first connect is complete.
+                        if (!_batch)
+                        {
+                            _batch=true;
+                            _cometd.startBatch();
+                        }
                         // This handshake is aborted, as we will replay the prior handshake response
                         return null;
                     }
@@ -159,6 +167,11 @@ org.cometd.ReloadExtension = function(configuration)
                     break;
                 case '/meta/disconnect':
                     _state = null;
+                    break;
+                case '/meta/connect':
+                    if (_batch)
+                        _cometd.endBatch();
+                    _batch=false;
                     break;
                 default:
                     break;
