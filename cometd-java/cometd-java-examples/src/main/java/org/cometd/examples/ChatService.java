@@ -113,9 +113,9 @@ public class ChatService extends AbstractService
             if (text.lastIndexOf("lazy")>0)
                 forward.setLazy(true);
 
-
             for (ServerSession peer : peers)
-                peer.deliver(getServerSession(), forward);
+                if (peer!=client)
+                    peer.deliver(getServerSession(), forward);
             client.deliver(getServerSession(), forward);
         }
     }
