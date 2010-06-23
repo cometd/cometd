@@ -4,9 +4,9 @@ import java.util.Map;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
@@ -40,7 +40,7 @@ public class AcknowledgedMessagesExtension implements Extension
     }
 
     /* ------------------------------------------------------------ */
-    public boolean send(Mutable message)
+    public boolean send(ServerSession to, Mutable message)
     {
         return true;
     }
@@ -75,5 +75,5 @@ public class AcknowledgedMessagesExtension implements Extension
 
         return true;
     }
-    
+
 }

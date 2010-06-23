@@ -381,7 +381,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         if(removed==session)
         {
             boolean connected = ((ServerSessionImpl)session).removed(timedout);
-            
+
             for (BayeuxServerListener listener : _listeners)
             {
                 if (listener instanceof BayeuxServer.SessionListener)
@@ -662,7 +662,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             ListIterator<Extension> i = _extensions.listIterator(_extensions.size());
             while(i.hasPrevious())
-                if (!i.previous().send(message))
+                if (!i.previous().send(to, message))
                 {
                     if (_logger.isDebugEnabled())
                         _logger.debug("!  "+message);
@@ -811,8 +811,19 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     abstract class HandlerListener implements ServerChannel.ServerChannelListener
     {
-        public abstract void onMessage(final ServerSessionImpl from, final ServerMessage.Mutable message);
+        protected boolean isSessionUnknown(ServerSession session)
+        {
+            return session == null || getSession(session.getId()) == null;
+        }
 
+        protected void unknownSession(Mutable reply)
+        {
+            error(reply,"402::Unknown client");
+            if (!Channel.META_DISCONNECT.equals(reply.getChannel()))
+                reply.put(Message.ADVICE_FIELD, _handshakeAdvice);
+        }
+
+        public abstract void onMessage(final ServerSessionImpl from, final ServerMessage.Mutable message);
     }
 
     /* ------------------------------------------------------------ */
@@ -842,7 +853,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             reply.put(Message.VERSION_FIELD,"1.0");
             reply.put(Message.MIN_VERSION_FIELD,"1.0");
             reply.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD,getAllowedTransports());
-
         }
     }
 
@@ -855,10 +865,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             ServerMessage.Mutable reply=createReply(message);
 
-            if (session == null)
+            if (isSessionUnknown(session))
             {
-                error(reply,"402::Unknown client");
-                reply.put(Message.ADVICE_FIELD,_handshakeAdvice);
+                unknownSession(reply);
                 return;
             }
 
@@ -898,10 +907,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         public void onMessage(final ServerSessionImpl from, final Mutable message)
         {
             ServerMessage.Mutable reply=createReply(message);
-            if (from == null)
+            if (isSessionUnknown(from))
             {
-                error(reply,"402::Unknown client");
-                reply.put(Message.ADVICE_FIELD,_handshakeAdvice);
+                unknownSession(reply);
                 return;
             }
 
@@ -926,15 +934,28 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     error(reply,"403::cannot subscribe");
                 else
                 {
-                    if (from.isLocalSession() || !channel.isMeta() && !channel.isService())
+                    // Reduces the window of time where a server-side expiration
+                    // or a concurrent disconnect causes the invalid client to be
+                    // registered as subscriber and hence being kept alive by the
+                    // fact that the channel references it.
+                    if (!isSessionUnknown(from))
                     {
-                        if (channel.subscribe(from))
-                            reply.setSuccessful(true);
+                        if (from.isLocalSession() || !channel.isMeta() && !channel.isService())
+                        {
+                            if (channel.subscribe(from))
+                                reply.setSuccessful(true);
+                            else
+                                error(reply,"403::subscribe failed");
+                        }
                         else
-                            error(reply,"403::subscribe failed");
+                        {
+                            reply.setSuccessful(true);
+                        }
                     }
                     else
-                        reply.setSuccessful(true);
+                    {
+                        unknownSession(reply);
+                    }
                 }
             }
         }
@@ -947,10 +968,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         public void onMessage(final ServerSessionImpl from, final Mutable message)
         {
             ServerMessage.Mutable reply=createReply(message);
-            if (from == null)
+            if (isSessionUnknown(from))
             {
-                error(reply,"402::Unknown client");
-                reply.put(Message.ADVICE_FIELD,_handshakeAdvice);
+                unknownSession(reply);
                 return;
             }
 
@@ -982,9 +1002,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         public void onMessage(final ServerSessionImpl session, final Mutable message)
         {
             ServerMessage.Mutable reply=createReply(message);
-            if (session == null)
+            if (isSessionUnknown(session))
             {
-                error(reply,"402::Unknown client");
+                unknownSession(reply);
                 return;
             }
 

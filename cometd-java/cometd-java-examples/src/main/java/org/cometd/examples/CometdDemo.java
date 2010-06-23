@@ -138,20 +138,17 @@ public class CometdDemo
 
                 public boolean sendMeta(ServerSession to, Mutable message)
                 {
-                    // TODO Auto-generated method stub
-                    return false;
+                    return true;
                 }
 
-                public boolean send(Mutable message)
+                public boolean send(ServerSession to, Mutable message)
                 {
-                    // TODO Auto-generated method stub
-                    return false;
+                    return true;
                 }
 
                 public boolean rcvMeta(ServerSession from, Mutable message)
                 {
-                    // TODO Auto-generated method stub
-                    return false;
+                    return true;
                 }
 
                 public boolean rcv(ServerSession from, Mutable message)

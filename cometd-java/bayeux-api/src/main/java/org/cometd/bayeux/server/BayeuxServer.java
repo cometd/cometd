@@ -239,8 +239,7 @@ public interface BayeuxServer extends Bayeux
          * @param message the outgoing message
          * @return true if message processing should continue, false if it should stop
          */
-        // TODO: why it has one less parameter ?
-        boolean send(ServerMessage.Mutable message);
+        boolean send(ServerSession to, ServerMessage.Mutable message);
 
         /**
          * Callback method invoked every time a meta message is outgoing.
