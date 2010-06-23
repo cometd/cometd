@@ -1745,6 +1745,9 @@ org.cometd.Cometd = function(name)
         return _status;
     };
 
+    /**
+     * Returns whether this instance has been disconnected.
+     */
     this.isDisconnected = _isDisconnected;
 
     /**
