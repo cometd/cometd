@@ -315,7 +315,7 @@ public abstract class AbstractService
     }
 
     /* ------------------------------------------------------------ */
-    private void doInvoke(Method method, ServerSession fromClient, ServerMessage msg)
+    protected void doInvoke(Method method, ServerSession fromClient, ServerMessage msg)
     {
         String channel=msg.getChannel();
         Object data=msg.getData();
