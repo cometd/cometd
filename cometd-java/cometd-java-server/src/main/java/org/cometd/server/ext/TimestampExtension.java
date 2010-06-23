@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,9 +17,9 @@ package org.cometd.server.ext;
 import java.util.TimeZone;
 
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.DateCache;
 
 public class TimestampExtension implements Extension
@@ -43,7 +43,7 @@ public class TimestampExtension implements Extension
         _dateCache=new DateCache(format);
         _dateCache.setTimeZone(tz);
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -67,7 +67,7 @@ public class TimestampExtension implements Extension
     /**
      * @see org.cometd.bayeux.server.BayeuxServer.Extension#send(org.cometd.bayeux.server.ServerMessage.Mutable)
      */
-    public boolean send(Mutable message)
+    public boolean send(ServerSession to, Mutable message)
     {
         message.put(Message.TIMESTAMP_FIELD,_dateCache.format(System.currentTimeMillis()));
         return true;

@@ -124,7 +124,7 @@ public class TimesyncExtension implements Extension
     }
 
     /* ------------------------------------------------------------ */
-    public boolean send(Mutable message)
+    public boolean send(ServerSession to, Mutable message)
     {
         return true;
     }
