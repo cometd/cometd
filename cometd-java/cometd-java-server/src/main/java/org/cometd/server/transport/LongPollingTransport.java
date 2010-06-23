@@ -32,12 +32,10 @@ import org.eclipse.jetty.util.log.Log;
  * <dt>multiSessionInterval</dt><dd>The polling interval to use once max session per browser is exceeded.</dd>
  * <dt>autoBatch</dt><dd>If true a batch will be automatically created to span the handling of messages received from a session.</dd>
  * </dl>
- * 
+ *
  */
 public abstract class LongPollingTransport extends HttpTransport
 {
-    private final static AtomicInteger __zero = new AtomicInteger(0);
-
     public final static String PREFIX="long-polling";
     public final static String BROWSER_ID_OPTION="browserId";
     public final static String MAX_SESSIONS_PER_BROWSER_OPTION="maxSessionsPerBrowser";
@@ -47,7 +45,7 @@ public abstract class LongPollingTransport extends HttpTransport
     private final ConcurrentHashMap<String, AtomicInteger> _browserMap=new ConcurrentHashMap<String, AtomicInteger>();
 
     protected String _browserId="BAYEUX_BROWSER";
-    private int _maxSessionsPerBrowser=2;
+    private int _maxSessionsPerBrowser=1;
     private long _multiSessionInterval=2000;
     private boolean _autoBatch=true;
 
@@ -92,38 +90,62 @@ public abstract class LongPollingTransport extends HttpTransport
         return browser_id;
     }
 
-    protected boolean incBrowserId(String browserId)
+    protected boolean addBrowserSession(String browserId, String clientId)
     {
-        if (_maxSessionsPerBrowser<0)
+        if (_maxSessionsPerBrowser < 0)
             return true;
+        if (_maxSessionsPerBrowser == 0)
+            return false;
 
-        AtomicInteger count = _browserMap.get(browserId);
-        if (count==null)
+        AtomicInteger sessions = _browserMap.get(browserId);
+        if (sessions == null)
         {
-            AtomicInteger new_count = new AtomicInteger();
-            count=_browserMap.putIfAbsent(browserId,new_count);
-            if (count==null)
-                count=new_count;
+            AtomicInteger newSessions = new AtomicInteger();
+            sessions = _browserMap.putIfAbsent(browserId, newSessions);
+            if (sessions == null)
+                sessions = newSessions;
         }
 
-        // TODO, the maxSessionsPerBrowser should be parameterized on user-agent
-        int sessions=count.incrementAndGet();
-        if (sessions>_maxSessionsPerBrowser)
+        // Synchronization is necessary to avoid modifying
+        // a structure that has been removed from the map
+        synchronized (sessions)
         {
-            count.decrementAndGet();
+            // The entry could have been removed concurrently by removeBrowserSession()
+            if (!_browserMap.containsKey(browserId))
+                _browserMap.put(browserId, sessions);
+
+            // TODO, the maxSessionsPerBrowser should be parametrized on user-agent
+            if (sessions.getAndIncrement() < _maxSessionsPerBrowser)
+            {
+                return true;
+            }
+
             return false;
         }
-
-        return true;
     }
 
-    protected void decBrowserId(String browserId)
+    protected boolean removeBrowserSession(String browserId, String clientId)
     {
-        AtomicInteger count = _browserMap.get(browserId);
-        if (count!=null && count.decrementAndGet()==0)
+        AtomicInteger sessions = _browserMap.get(browserId);
+        if (sessions != null)
         {
-            _browserMap.remove(browserId,__zero);
+            // Synchronization is necessary to avoid modifying the
+            // structure after the if statement but before the remove call
+            synchronized (sessions)
+            {
+                if (sessions.decrementAndGet() == 0)
+                {
+                    _browserMap.remove(browserId, sessions);
+                    return true;
+                }
+            }
         }
+        return false;
+    }
+
+    protected AtomicInteger getBrowserSessions(String browserId)
+    {
+        return _browserMap.get(browserId);
     }
 
     @Override
@@ -141,7 +163,7 @@ public abstract class LongPollingTransport extends HttpTransport
             // Don't know the session until first message or handshake response.
             ServerSessionImpl session=null;
             boolean connect=false;
-            
+
             try
             {
                 ServerMessage.Mutable[] messages = parseMessages(request);
@@ -155,7 +177,7 @@ public abstract class LongPollingTransport extends HttpTransport
                 {
                     // Is this a connect?
                     connect = Channel.META_CONNECT.equals(message.getChannel());
-                    
+
                     // Get the session from the message
                     if (session==null)
                     {
@@ -216,7 +238,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                 {
                                     // If we don't have too many long polls from this browser
                                     String browserId=getBrowserId(request,response);
-                                    if (incBrowserId(browserId))
+                                    if (addBrowserSession(browserId, session.getId()))
                                     {
                                         // suspend and wait for messages
                                         Continuation continuation = ContinuationSupport.getContinuation(request);
@@ -273,7 +295,7 @@ public abstract class LongPollingTransport extends HttpTransport
                 if (batch)
                 {
                     boolean ended=session.endBatch();
-                    
+
                     // flush session if not done by the batch
                     // since some browsers well order script gets
                     if (!ended && isAlwaysFlushingAfterHandle())
@@ -316,7 +338,7 @@ public abstract class LongPollingTransport extends HttpTransport
      * @return true if the transport always flushes at the end of a call to {@link #handle(HttpServletRequest, HttpServletResponse)}.
      */
     abstract protected boolean isAlwaysFlushingAfterHandle();
-    
+
     abstract protected PrintWriter send(HttpServletRequest request,HttpServletResponse response,PrintWriter writer, ServerMessage message) throws IOException;
 
     abstract protected void complete(PrintWriter writer) throws IOException;
@@ -345,7 +367,8 @@ public abstract class LongPollingTransport extends HttpTransport
                 try
                 {
                     decBrowserId();
-                    ((HttpServletResponse)_continuation.getServletResponse()).sendError(503);
+                    HttpServletResponse response = (HttpServletResponse)_continuation.getServletResponse();
+                    response.sendError(HttpServletResponse.SC_REQUEST_TIMEOUT);
                 }
                 catch(IOException e)
                 {
@@ -400,7 +423,7 @@ public abstract class LongPollingTransport extends HttpTransport
             {
                 if (_browserId!=null)
                 {
-                    LongPollingTransport.this.decBrowserId(_browserId);
+                    LongPollingTransport.this.removeBrowserSession(_browserId, _session.getId());
                     _browserId=null;
                 }
             }
