@@ -203,7 +203,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         if (isWild())
             throw new IllegalStateException("Wild publish");
         ServerMessage.Mutable mutable = msg.asMutable();
-        if(_bayeux.extendSend(null,mutable))
+        if(_bayeux.extendSend((ServerSessionImpl)from,null,mutable))
             _bayeux.doPublish((ServerSessionImpl)from,this,mutable);
     }
 
@@ -220,7 +220,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         mutable.setData(data);
         mutable.setId(id);
 
-        if(_bayeux.extendSend(null,mutable))
+        if(_bayeux.extendSend((ServerSessionImpl)from,null,mutable))
         {
             ServerSessionImpl session=(ServerSessionImpl)((from instanceof LocalSession)?(((LocalSession)from).getServerSession()):((ServerSession)from));
             _bayeux.doPublish(session,this,mutable);

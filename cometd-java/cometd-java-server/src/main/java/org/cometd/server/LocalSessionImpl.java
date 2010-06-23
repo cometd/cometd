@@ -186,10 +186,10 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     /** Send a message (to the server).
      * <p>
      * Extends and sends the message without batching.
-     * @param session The ServerSession to send as. This normally the current server session, but during handshake it is a proposed server session.
+     * @param from The ServerSession to send as. This normally the current server session, but during handshake it is a proposed server session.
      * @param message The message to send.
      */
-    protected void doSend(ServerSessionImpl session,ServerMessage.Mutable message)
+    protected void doSend(ServerSessionImpl from,ServerMessage.Mutable message)
     {
         if (!extendSend(message))
             return;
@@ -197,11 +197,11 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         if (_session!=null)
             message.setClientId(_session.getId());
 
-        ServerMessage reply = _bayeux.handle(session,message);
+        ServerMessage reply = _bayeux.handle(from,message);
 
         if (reply != null)
         {
-            reply = _bayeux.extendReply(session,reply);
+            reply = _bayeux.extendReply(from,(_session!=null&&_session.isHandshook())?_session:null,reply);
             if (reply != null)
                 receive(reply,reply.asMutable());
         }

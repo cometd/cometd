@@ -135,13 +135,12 @@ public class CometdDemo
         {
             bayeux.addExtension(new BayeuxServer.Extension()
             {
-
                 public boolean sendMeta(ServerSession to, Mutable message)
                 {
                     return true;
                 }
 
-                public boolean send(ServerSession to, Mutable message)
+                public boolean send(ServerSession from, Mutable message)
                 {
                     return true;
                 }

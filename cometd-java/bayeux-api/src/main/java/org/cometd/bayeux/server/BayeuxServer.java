@@ -235,15 +235,15 @@ public interface BayeuxServer extends Bayeux
 
         /**
          * Callback method invoked every time a normal message is outgoing.
-         * @param to the session receiving the message, or null for a publish
+         * @param from the session that sent the message
          * @param message the outgoing message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean send(ServerSession to, ServerMessage.Mutable message);
+        boolean send(ServerSession from, ServerMessage.Mutable message);
 
         /**
          * Callback method invoked every time a meta message is outgoing.
-         * @param to the session receiving the message
+         * @param to the session the message is sent to
          * @param message the outgoing meta message
          * @return true if message processing should continue, false if it should stop
          */

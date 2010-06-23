@@ -173,7 +173,7 @@ public class ServerSessionImpl implements ServerSession
     {
         ServerMessage.Mutable mutable = message.asMutable();
 
-        if (!_bayeux.extendSend((ServerSessionImpl)from,mutable))
+        if (!_bayeux.extendSend((ServerSessionImpl)from,this,mutable))
             return;
 
         if (from instanceof LocalSession)

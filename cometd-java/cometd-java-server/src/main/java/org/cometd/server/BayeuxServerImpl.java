@@ -616,11 +616,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
 
     /* ------------------------------------------------------------ */
-    public ServerMessage extendReply(ServerSessionImpl session, ServerMessage reply)
+    public ServerMessage extendReply(ServerSessionImpl from, ServerSessionImpl to, ServerMessage reply)
     {
-        if (session!=null)
-            reply = session.extendSend(reply);
-        if (reply!=null && !extendSend(session,reply.asMutable()))
+        if (to!=null)
+            reply = to.extendSend(reply);
+        if (reply!=null && !extendSend(from,to,reply.asMutable()))
             reply=null;
 
         return reply;
@@ -645,29 +645,33 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    protected boolean extendSend(ServerSessionImpl to, ServerMessage.Mutable message)
+    protected boolean extendSend(ServerSessionImpl from, ServerSessionImpl to, ServerMessage.Mutable message)
     {
         if (message.isMeta())
         {
             ListIterator<Extension> i = _extensions.listIterator(_extensions.size());
             while(i.hasPrevious())
+            {
                 if (!i.previous().sendMeta(to,message))
                 {
                     if (_logger.isDebugEnabled())
                         _logger.debug("!  "+message);
                     return false;
                 }
+            }
         }
         else
         {
             ListIterator<Extension> i = _extensions.listIterator(_extensions.size());
             while(i.hasPrevious())
-                if (!i.previous().send(to, message))
+            {
+                if (!i.previous().send(from,message))
                 {
                     if (_logger.isDebugEnabled())
                         _logger.debug("!  "+message);
                     return false;
                 }
+            }
         }
 
         if (_logger.isDebugEnabled())

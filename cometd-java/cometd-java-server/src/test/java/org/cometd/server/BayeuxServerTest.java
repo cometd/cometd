@@ -254,7 +254,7 @@ public class BayeuxServerTest extends Assert
                 return true;
             }
 
-            public boolean send(ServerSession to, Mutable message)
+            public boolean send(ServerSession from, Mutable message)
             {
                 if ("three".equals(message.getData()))
                     message.setData("four");
