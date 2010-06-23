@@ -66,7 +66,7 @@ import org.eclipse.jetty.util.log.Log;
  * client will wait between reconnects</dd>
  *
  * <dt>maxInterval</dt>
- * <dd>The max client side poll timeout in milliseconds (default 30000). A
+ * <dd>The max client side poll timeout in milliseconds (default 10000). A
  * client will be removed if a connection is not received in this time.
  *
  * <dt>maxLazyLatency</dt>
