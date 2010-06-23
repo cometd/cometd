@@ -161,6 +161,12 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     }
 
     /* ------------------------------------------------------------ */
+    public boolean isHandshook()
+    {
+        return _session!=null && _session.isHandshook();
+    }
+
+    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {

@@ -38,6 +38,12 @@ public interface Session
      * @see #disconnect()
      */
     boolean isConnected();
+    
+    /**
+     * <p>A handshook session is a session where the handshake has successfully completed>
+     * @return whether the session is handshook
+     */
+    boolean isHandshook();
 
     /**
      * Disconnects this session, ending the link between the client and the server peers.

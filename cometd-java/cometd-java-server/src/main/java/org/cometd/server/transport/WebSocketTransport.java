@@ -157,8 +157,13 @@ public class WebSocketTransport extends HttpTransport
                     // Get the session from the message
                     if (_session==null)
                         _session=(ServerSessionImpl)getBayeux().getSession(message.getClientId());
-
-                    if (!batch && _session!=null && !connect)
+                    else if (!_session.isHandshook())
+                    {
+                        batch=false;
+                        _session=null;
+                    }
+                    
+                    if (!batch && _session!=null && !connect && !message.isMeta())
                     {
                         // start a batch to group all resulting messages into a single response.
                         batch=true;

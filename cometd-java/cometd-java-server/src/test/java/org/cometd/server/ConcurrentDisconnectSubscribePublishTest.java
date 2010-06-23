@@ -26,13 +26,25 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
         this.bayeux = bayeux;
     }
 
-    public void testToBeRemoved()
-    {
-    }
-
-    public void NOtestDisconnectSubscribe() throws Exception
+    public void testDisconnectSubscribe() throws Exception
     {
         final AtomicBoolean subscribed = new AtomicBoolean(false);
+        new BayeuxServer.SubscriptionListener()
+        {
+            @Override
+            public void unsubscribed(ServerSession session, ServerChannel channel)
+            {
+            }
+            
+            @Override
+            public void subscribed(ServerSession session, ServerChannel channel)
+            {
+                subscribed.set(true);
+            }
+        };
+        
+        
+        final AtomicBoolean serviced = new AtomicBoolean(false);
         new AbstractService(bayeux, "test")
         {
             {
@@ -41,7 +53,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
 
             public void metaSubscribe(ServerSession remote, Message message)
             {
-                subscribed.set(true);
+                serviced.set(remote!=null && remote.isHandshook());
             }
         };
 
@@ -79,12 +91,14 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
         httpClient.send(disconnect);
         assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
         assertEquals(200, disconnect.getResponseStatus());
-        assertFalse(subscribed.get());
+        
+        assertFalse("not subscribed",subscribed.get());
+        assertFalse("not serviced",serviced.get());
         // The response to the subscribe must be that the client is unknown
         assertTrue(disconnect.getResponseContent().contains("402::"));
     }
 
-    public void NOtestDisconnectPublish() throws Exception
+    public void testDisconnectPublish() throws Exception
     {
         final String channel = "/foo";
         final AtomicInteger publishes = new AtomicInteger();
@@ -151,7 +165,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
         assertTrue(disconnect.getResponseContent().contains("402::"));
     }
 
-    public void NOtestConcurrentDisconnectPublish() throws Exception
+    public void testConcurrentDisconnectPublish() throws Exception
     {
         final String channel = "/foo";
         final CountDownLatch publishLatch = new CountDownLatch(1);
@@ -175,13 +189,13 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
             }
 
             @Override
-            public boolean send(ServerSession to, ServerMessage.Mutable message)
+            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
             {
                 return true;
             }
 
             @Override
-            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
+            public boolean send(ServerSession to, ServerMessage.Mutable message)
             {
                 if (channel.equals(message.getChannel()))
                 {
