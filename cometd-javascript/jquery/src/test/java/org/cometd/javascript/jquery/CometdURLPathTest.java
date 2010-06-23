@@ -183,7 +183,7 @@ public class CometdURLPathTest extends AbstractCometdJQueryTest
         }
 
         @Override
-        public boolean send(Mutable message)
+        public boolean send(ServerSession from, Mutable message)
         {
             return true;
         }

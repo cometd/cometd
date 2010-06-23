@@ -124,13 +124,13 @@ public class TimesyncExtension implements Extension
     }
 
     /* ------------------------------------------------------------ */
-    public boolean send(ServerSession to, Mutable message)
+    public boolean send(ServerSession from, Mutable message)
     {
         return true;
     }
 
     /* ------------------------------------------------------------ */
-    public boolean sendMeta(ServerSession to, Mutable message)
+    public boolean sendMeta(ServerSession session, Mutable message)
     {
         ServerMessage associated=message.getAssociated();
         if (associated != null)

@@ -196,7 +196,7 @@ public class WebSocketTransport extends HttpTransport
                     // send the reply (if not delayed)
                     if (reply!=null)
                     {
-                        reply=getBayeux().extendReply(_session,reply);
+                        reply=getBayeux().extendReply(_session,_session,reply);
 
                         if (batch)
                         {
@@ -252,7 +252,7 @@ public class WebSocketTransport extends HttpTransport
 
                 if (_connectReply!=null)
                 {
-                    queue.add(getBayeux().extendReply(session,_connectReply));
+                    queue.add(getBayeux().extendReply(session,session,_connectReply));
                     _connectReply=null;
                     session.startIntervalTimeout();
                 }

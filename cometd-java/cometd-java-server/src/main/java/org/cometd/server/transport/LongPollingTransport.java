@@ -276,7 +276,7 @@ public abstract class LongPollingTransport extends HttpTransport
                         // If the reply has not been otherwise handled, send it
                         if (reply!=null)
                         {
-                            reply=getBayeux().extendReply(session,reply);
+                            reply=getBayeux().extendReply(session,session,reply);
 
                             if (reply!=null)
                                 writer=send(request,response,writer, reply);
@@ -317,7 +317,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
             // send the connect reply
             ServerMessage reply=scheduler.getReply();
-            reply=getBayeux().extendReply(session,reply);
+            reply=getBayeux().extendReply(session,session,reply);
             writer=send(request,response,writer, reply);
 
             complete(writer);

@@ -40,7 +40,7 @@ public class AcknowledgedMessagesExtension implements Extension
     }
 
     /* ------------------------------------------------------------ */
-    public boolean send(ServerSession to, Mutable message)
+    public boolean send(ServerSession from, Mutable message)
     {
         return true;
     }
