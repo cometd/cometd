@@ -182,12 +182,17 @@ public abstract class LongPollingTransport extends HttpTransport
                     if (session==null)
                     {
                         session=(ServerSessionImpl)getBayeux().getSession(message.getClientId());
-                        if (_autoBatch && !batch && session!=null && !connect)
+                        if (_autoBatch && !batch && session!=null && !connect && !message.isMeta())
                         {
                             // start a batch to group all resulting messages into a single response.
                             batch=true;
                             session.startBatch();
                         }
+                    }
+                    else if (!session.isHandshook())
+                    {
+                        batch=false;
+                        session=null;
                     }
 
                     if (connect && session!=null)

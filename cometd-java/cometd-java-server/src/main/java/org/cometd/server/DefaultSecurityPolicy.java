@@ -9,10 +9,9 @@ import org.cometd.common.ChannelId;
 
 public class DefaultSecurityPolicy implements SecurityPolicy
 {
-
     public boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message)
     {
-        return session==null || session.isLocalSession() || !ChannelId.isMeta(channelId);
+        return session!=null && session.isLocalSession() || !ChannelId.isMeta(channelId);
     }
 
     public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
@@ -22,12 +21,12 @@ public class DefaultSecurityPolicy implements SecurityPolicy
 
     public boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage messsage)
     {
-        return !channel.isMeta();
+        return session!=null && session.isHandshook() && !channel.isMeta();
     }
 
     public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage messsage)
     {
-        return  session==null || session.isLocalSession() || !channel.isMeta();
+        return session!=null && session.isLocalSession() || !channel.isMeta();
     }
 
 }

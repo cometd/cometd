@@ -55,9 +55,9 @@ public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
         assertEquals(200, subscribe.getResponseStatus());
 
         assertEquals(0, extension.rcvs.size());
-        assertEquals(0, extension.rcvMetas.size());
+        assertEquals(4, extension.rcvMetas.size());
         assertEquals(1, extension.sends.size());
-        assertEquals(0, extension.sendMetas.size());
+        assertEquals(4, extension.sendMetas.size());
     }
 
     private class CountingExtension implements BayeuxServer.Extension
@@ -77,11 +77,7 @@ public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
         @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
-            if (!Channel.META_HANDSHAKE.equals(message.getChannel()) &&
-                    !Channel.META_SUBSCRIBE.equals(message.getChannel()))
-            {
-                rcvMetas.add(message);
-            }
+            rcvMetas.add(message);
             return true;
         }
 
@@ -95,11 +91,7 @@ public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
         @Override
         public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
         {
-            if (!Channel.META_HANDSHAKE.equals(message.getChannel()) &&
-                    !Channel.META_SUBSCRIBE.equals(message.getChannel()))
-            {
-                sendMetas.add(message);
-            }
+            sendMetas.add(message);
             return true;
         }
     }

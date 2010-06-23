@@ -132,6 +132,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
     {
         return state == State.CONNECTED;
     }
+    
+    @Override
+    public boolean isHandshook()
+    {
+        return state == State.CONNECTED || state==State.CONNECTING;
+    }
 
     protected State getState()
     {
