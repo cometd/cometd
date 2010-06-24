@@ -155,7 +155,8 @@ public class WebSocketTransport extends HttpTransport
                     boolean connect = Channel.META_CONNECT.equals(message.getChannel());
 
                     // Get the session from the message
-                    if (_session==null)
+                    String client_id=message.getClientId();
+                    if (_session==null || client_id!=null && !client_id.equals(_session.getId()))
                         _session=(ServerSessionImpl)getBayeux().getSession(message.getClientId());
                     else if (!_session.isHandshook())
                     {

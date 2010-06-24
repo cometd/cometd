@@ -179,9 +179,10 @@ public abstract class LongPollingTransport extends HttpTransport
                     connect = Channel.META_CONNECT.equals(message.getChannel());
 
                     // Get the session from the message
-                    if (session==null)
+                    String client_id=message.getClientId();
+                    if (session==null || client_id!=null && !client_id.equals(session.getId()))
                     {
-                        session=(ServerSessionImpl)getBayeux().getSession(message.getClientId());
+                        session=(ServerSessionImpl)getBayeux().getSession(client_id);
                         if (_autoBatch && !batch && session!=null && !connect && !message.isMeta())
                         {
                             // start a batch to group all resulting messages into a single response.
