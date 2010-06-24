@@ -67,7 +67,7 @@ public class TimestampExtension implements Extension
     /**
      * @see org.cometd.bayeux.server.BayeuxServer.Extension#send(org.cometd.bayeux.server.ServerMessage.Mutable)
      */
-    public boolean send(ServerSession from, Mutable message)
+    public boolean send(ServerSession from, ServerSession to, Mutable message)
     {
         message.put(Message.TIMESTAMP_FIELD,_dateCache.format(System.currentTimeMillis()));
         return true;
