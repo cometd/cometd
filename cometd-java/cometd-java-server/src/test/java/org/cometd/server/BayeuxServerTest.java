@@ -169,6 +169,10 @@ public class BayeuxServerTest extends Assert
         ClientSessionChannel foobar0=session0.getChannel("/foo/bar");
         foobar0.subscribe(listener);
         foobar0.subscribe(listener);
+
+        ClientSessionChannel foostar0=session0.getChannel("/foo/*");
+        foostar0.subscribe(listener);
+        
         assertEquals(3,_bayeux.getChannel("/foo/bar").getSubscribers().size());
         assertEquals(session0,foobar0.getSession());
         assertEquals("/foo/bar",foobar0.getId());
@@ -179,14 +183,17 @@ public class BayeuxServerTest extends Assert
 
         foobar0.publish("hello");
 
+        assertEquals(session0.getId(),events.poll());
+        assertEquals("hello",events.poll());
+        assertEquals(session0.getId(),events.poll());
+        assertEquals("hello",events.poll());
+        assertEquals(session0.getId(),events.poll());
+        assertEquals("hello",events.poll());
         assertEquals(session1.getId(),events.poll());
         assertEquals("hello",events.poll());
         assertEquals(session2.getId(),events.poll());
         assertEquals("hello",events.poll());
-        assertEquals(session0.getId(),events.poll());
-        assertEquals("hello",events.poll());
-        assertEquals(session0.getId(),events.poll());
-        assertEquals("hello",events.poll());
+        foostar0.unsubscribe(listener);
 
         session1.batch(new Runnable()
         {
@@ -220,6 +227,9 @@ public class BayeuxServerTest extends Assert
         foobar0.unsubscribe();
         assertEquals(2,_bayeux.getChannel("/foo/bar").getSubscribers().size());
 
+        
+        
+        
         assertTrue(session0.isConnected());
         assertTrue(session1.isConnected());
         assertTrue(session2.isConnected());
