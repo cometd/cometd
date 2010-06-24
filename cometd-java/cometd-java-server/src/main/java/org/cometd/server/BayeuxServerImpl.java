@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -575,13 +576,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         // Get the array of listening channels
         final List<String> wildIds=to.getChannelId().getWilds();
-        final ServerChannelImpl[] listening_channels = new ServerChannelImpl[wildIds.size()+1];
-        listening_channels[wildIds.size()]=to;
+        final ServerChannelImpl[] wild_channels = new ServerChannelImpl[wildIds.size()];
         for (int i=wildIds.size();i-->0;)
-            listening_channels[i]=_channels.get(wildIds.get(i));
+            wild_channels[i]=_channels.get(wildIds.get(i));
 
-        // Call the listeners
-        for (final ServerChannelImpl channel : listening_channels)
+        // Call the wild listeners
+        for (final ServerChannelImpl channel : wild_channels)
         {
             if (channel == null)
                 continue;
@@ -593,15 +593,37 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     if (!((MessageListener)listener).onMessage(from, to, mutable))
                         return;
         }
+        
+        // Call the leaf listeners
+        if (to.isLazy())
+            mutable.setLazy(true);
+        for (ServerChannelListener listener : to.getListeners())
+            if (listener instanceof MessageListener)
+                if (!((MessageListener)listener).onMessage(from, to, mutable))
+                    return;
+        
 
-        // Call the subscribers
-        for (final ServerChannelImpl channel : listening_channels)
+        // Call the wild subscribers
+        HashSet<String> wild_subscribers=null;
+        for (final ServerChannelImpl channel : wild_channels)
         {
             if (channel == null)
                 continue;
 
-            // TODO make this fair on all subscribers
             for (ServerSession session : channel.getSubscribers())
+            {
+                if (wild_subscribers==null)
+                    wild_subscribers=new HashSet<String>();
+                
+                if (wild_subscribers.add(session.getId()))
+                    ((ServerSessionImpl)session).doDeliver(from, mutable.asImmutable());
+            }
+        }
+
+        // Call the leaf subscribers
+        for (ServerSession session : to.getSubscribers())
+        {
+            if (wild_subscribers==null || !wild_subscribers.contains(session.getId()))
                 ((ServerSessionImpl)session).doDeliver(from, mutable.asImmutable());
         }
 
