@@ -665,7 +665,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             ListIterator<Extension> i = _extensions.listIterator(_extensions.size());
             while(i.hasPrevious())
             {
-                if (!i.previous().send(from,message))
+                if (!i.previous().send(from,to,message))
                 {
                     if (_logger.isDebugEnabled())
                         _logger.debug("!  "+message);

@@ -195,7 +195,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
             }
 
             @Override
-            public boolean send(ServerSession to, ServerMessage.Mutable message)
+            public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
             {
                 if (channel.equals(message.getChannel()))
                 {

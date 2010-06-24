@@ -78,7 +78,7 @@ public class ExtensionPublishSentTest extends AbstractBayeuxClientServerTest
         }
 
         @Override
-        public boolean send(ServerSession to, ServerMessage.Mutable message)
+        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
         {
             sends.add(message);
             return true;
