@@ -7,7 +7,7 @@ import org.cometd.Bayeux;
 /**
  * @version $Revision$ $Date$
  */
-public class BayeuxBrowserMappingTest extends AbstractBayeuxServerTest
+public class BrowserMappingTest extends AbstractBayeuxServerTest
 {
     private AbstractBayeux bayeux;
 
