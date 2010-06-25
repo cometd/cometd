@@ -51,6 +51,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.cometd.java</groupId>
+            <artifactId>cometd-api</artifactId>
+            <version>${cometdVersion}</version>
+        </dependency>
+        <dependency>
             <groupId>org.cometd.javascript</groupId>
             <artifactId>cometd-javascript-jquery</artifactId>
             <version>${cometdVersion}</version>
