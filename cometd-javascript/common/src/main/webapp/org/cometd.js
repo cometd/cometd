@@ -1767,6 +1767,11 @@ org.cometd.Cometd = function(name)
     };
 
     /**
+     * Returns whether this instance has been disconnected.
+     */
+    this.isDisconnected = _isDisconnected;
+
+    /**
      * Sets the backoff period used to increase the backoff time when retrying an unsuccessful or failed message.
      * Default value is 1 second, which means if there is a persistent failure the retries will happen
      * after 1 second, then after 2 seconds, then after 3 seconds, etc. So for example with 15 seconds of
