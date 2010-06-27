@@ -249,7 +249,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                         // suspend and wait for messages
                                         Continuation continuation = ContinuationSupport.getContinuation(request);
                                         continuation.setTimeout(timeout);
-                                        continuation.suspend();
+                                        continuation.suspend(response);
                                         scheduler=new LongPollScheduler(session,continuation,reply,browserId);
                                         session.setScheduler(scheduler);
                                         request.setAttribute("cometd.scheduler",scheduler);
