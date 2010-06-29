@@ -2,6 +2,7 @@ package org.cometd.server;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.text.ParseException;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Set;
@@ -11,6 +12,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.common.ChannelId;
 import org.cometd.util.ImmutableHashMap;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.ajax.JSON;
 
@@ -587,32 +589,43 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
         }
     };
 
-
     /* ------------------------------------------------------------ */
-    public static ServerMessage.Mutable[] parseMessages(Reader reader) throws IOException
+    public static ServerMessage.Mutable[] parseMessages(Reader reader, boolean jsonDebug) throws ParseException, IOException
     {
-        JSON.ReaderSource source=new JSON.ReaderSource(reader);
+        if (jsonDebug)
+            return parseMessages(IO.toString(reader));
 
-        Object batch=__batchJSON.parse(source);
-
-        if (batch == null)
-            return new ServerMessage.Mutable[0];
-        if (batch.getClass().isArray())
-            return (ServerMessage.Mutable[])batch;
-        return new ServerMessage.Mutable[]
-        {(ServerMessage.Mutable)batch};
+        try
+        {
+            Object batch=__batchJSON.parse(new JSON.ReaderSource(reader));
+            if (batch == null)
+                return new ServerMessage.Mutable[0];
+            if (batch.getClass().isArray())
+                return (ServerMessage.Mutable[])batch;
+            return new ServerMessage.Mutable[]{(ServerMessage.Mutable)batch};
+        }
+        catch (Exception x)
+        {
+            throw (ParseException)new ParseException("", -1).initCause(x);
+        }
     }
 
     /* ------------------------------------------------------------ */
-    public static ServerMessage.Mutable[] parseMessages(String s) throws IOException
+    public static ServerMessage.Mutable[] parseMessages(String s) throws ParseException
     {
-        Object batch=__batchJSON.parse(new JSON.StringSource(s));
-        if (batch == null)
-            return new ServerMessage.Mutable[0];
-        if (batch.getClass().isArray())
-            return (ServerMessage.Mutable[])batch;
-        return new ServerMessage.Mutable[]
-        {(ServerMessage.Mutable)batch};
+        try
+        {
+            Object batch=__batchJSON.parse(new JSON.StringSource(s));
+            if (batch == null)
+                return new ServerMessage.Mutable[0];
+            if (batch.getClass().isArray())
+                return (ServerMessage.Mutable[])batch;
+            return new ServerMessage.Mutable[]{(ServerMessage.Mutable)batch};
+        }
+        catch (Exception x)
+        {
+            throw (ParseException)new ParseException(s, -1).initCause(x);
+        }
     }
 
     /* ------------------------------------------------------------ */

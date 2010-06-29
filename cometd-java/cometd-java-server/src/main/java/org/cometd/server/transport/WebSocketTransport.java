@@ -3,6 +3,7 @@ package org.cometd.server.transport;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
+import java.text.ParseException;
 import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -73,14 +74,14 @@ public class WebSocketTransport extends HttpTransport
 
         if (origin==null || _protocol!=null && _protocol.length()>0 && !_protocol.equals(protocol))
         {
-            response.sendError(403);
+            response.sendError(400);
             return;
         }
 
         if (isMetaConnectDeliveryOnly())
         {
             Log.warn("MetaConnectDeliveryOnly not implemented for websocket");
-            response.sendError(403);
+            response.sendError(500);
             return;
         }
 
@@ -163,7 +164,7 @@ public class WebSocketTransport extends HttpTransport
                         batch=false;
                         _session=null;
                     }
-                    
+
                     if (!batch && _session!=null && !connect && !message.isMeta())
                     {
                         // start a batch to group all resulting messages into a single response.
@@ -220,6 +221,10 @@ public class WebSocketTransport extends HttpTransport
             {
                 getBayeux().getLogger().warn("",e);
             }
+            catch (ParseException e)
+            {
+                handleJSONParseException(e.getMessage(), e.getCause());
+            }
             finally
             {
                 WebSocketTransport.this._addresses.set(null);
@@ -228,6 +233,11 @@ public class WebSocketTransport extends HttpTransport
                 if (batch)
                     _session.endBatch();
             }
+        }
+
+        protected void handleJSONParseException(String json, Throwable exception)
+        {
+            getBayeux().getLogger().debug("Error parsing JSON: " + json, exception);
         }
 
         public void onMessage(byte frame, byte[] data, int offset, int length)
