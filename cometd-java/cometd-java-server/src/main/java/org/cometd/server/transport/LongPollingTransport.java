@@ -2,6 +2,7 @@ package org.cometd.server.transport;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -295,6 +296,10 @@ public abstract class LongPollingTransport extends HttpTransport
                 if (writer!=null)
                     complete(writer);
             }
+            catch (ParseException x)
+            {
+                handleJSONParseException(request, response, x.getMessage(), x.getCause());
+            }
             finally
             {
                 // if we started a batch - end it now
@@ -328,6 +333,12 @@ public abstract class LongPollingTransport extends HttpTransport
 
             complete(writer);
         }
+    }
+
+    protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws ServletException, IOException
+    {
+        getBayeux().getLogger().debug("Error parsing JSON: " + json, exception);
+        response.sendError(HttpServletResponse.SC_BAD_REQUEST);
     }
 
     private PrintWriter sendQueue(HttpServletRequest request, HttpServletResponse response,ServerSessionImpl session, PrintWriter writer)
