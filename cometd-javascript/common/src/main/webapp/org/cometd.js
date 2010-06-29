@@ -994,6 +994,7 @@ org.cometd.Cometd = function(name)
         else
         {
             // Notify the listeners after the status change but before the next action
+            _info('Connect failed:', message.error);
             _notifyListeners('/meta/connect', message);
             _notifyListeners('/meta/unsuccessful', message);
 
@@ -1124,6 +1125,7 @@ org.cometd.Cometd = function(name)
         }
         else
         {
+            _info('Subscription to', message.subscription, 'failed:', message.error);
             _notifyListeners('/meta/subscribe', message);
             _notifyListeners('/meta/unsuccessful', message);
         }
@@ -1154,6 +1156,7 @@ org.cometd.Cometd = function(name)
         }
         else
         {
+            _info('Unsubscription to', message.subscription, 'failed:', message.error);
             _notifyListeners('/meta/unsubscribe', message);
             _notifyListeners('/meta/unsuccessful', message);
         }
@@ -1198,6 +1201,7 @@ org.cometd.Cometd = function(name)
             }
             else
             {
+                _info('Publish failed:', message.error);
                 _notifyListeners('/meta/publish', message);
                 _notifyListeners('/meta/unsuccessful', message);
             }
