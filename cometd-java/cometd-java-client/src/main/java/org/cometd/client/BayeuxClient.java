@@ -132,11 +132,16 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
     {
         return state == State.CONNECTED;
     }
-    
+
     @Override
     public boolean isHandshook()
     {
-        return state == State.CONNECTED || state==State.CONNECTING;
+        return state == State.CONNECTED || state == State.CONNECTING;
+    }
+
+    public boolean isDisconnected()
+    {
+        return state == State.DISCONNECTING || state == State.DISCONNECTED;
     }
 
     protected State getState()
@@ -593,10 +598,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
 
     private void updateState(State newState)
     {
-        // TODO: will need notifications when adding waitForState()
         State oldState = state;
         state = newState;
         logger.debug("Updated state: {} -> {}", oldState, newState);
+        synchronized (this)
+        {
+            notifyAll();
+        }
     }
 
     @Override
