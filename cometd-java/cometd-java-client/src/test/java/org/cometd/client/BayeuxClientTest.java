@@ -48,6 +48,7 @@ public class BayeuxClientTest extends TestCase
     private int _port;
     private BayeuxServerImpl _bayeux;
 
+    @Override
     protected void setUp() throws Exception
     {
         // Manually construct context to avoid hassles with webapp classloaders for now.
@@ -92,23 +93,23 @@ public class BayeuxClientTest extends TestCase
             throw new IllegalStateException("No Bayeux");
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see junit.framework.TestCase#tearDown()
-     */
     @Override
     protected void tearDown() throws Exception
     {
         if (_httpClient!=null)
+        {
             _httpClient.stop();
-        _httpClient=null;
+            _httpClient=null;
+        }
 
         if (_server!=null)
+        {
             _server.stop();
-        _server=null;
+            _server.join();
+            _server=null;
+        }
     }
 
-    /* ------------------------------------------------------------ */
     public void testClient() throws Exception
     {
         final BlockingArrayQueue<Object> results = new BlockingArrayQueue<Object>();
@@ -140,15 +141,8 @@ public class BayeuxClientTest extends TestCase
             @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                try
-                {
-                    System.out.println("<<"+message+" @ "+channel);
-                    results.offer(message);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
+                System.out.println("<<"+message+" @ "+channel);
+                results.offer(message);
             }
         });
 
@@ -164,36 +158,36 @@ public class BayeuxClientTest extends TestCase
         assertEquals(Channel.META_CONNECT,message.getChannel());
         assertTrue(message.isSuccessful());
 
-        client.getChannel("/a/channel").subscribe(new ClientSessionChannel.MessageListener()
+        ClientSessionChannel.MessageListener subscriber = new ClientSessionChannel.MessageListener()
         {
             @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                try
-                {
-                    System.out.println("a<"+message+" @ "+channel);
-                    results.offer(message);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
+                System.out.println("a<" + message + " @ " + channel);
+                results.offer(message);
             }
-        });
+        };
+        ClientSessionChannel aChannel = client.getChannel("/a/channel");
+        aChannel.subscribe(subscriber);
 
         message = (Message)results.poll(1,TimeUnit.SECONDS);
         assertEquals(Channel.META_SUBSCRIBE,message.getChannel());
         assertTrue(message.isSuccessful());
 
-        client.getChannel("/a/channel").publish("data");
+        String data = "data";
+        aChannel.publish(data);
         message = (Message)results.poll(1,TimeUnit.SECONDS);
-        assertEquals("data",message.getData());
+        assertEquals(data, message.getData());
+
+        aChannel.unsubscribe(subscriber);
+        message = (Message)results.poll(1,TimeUnit.SECONDS);
+        assertEquals(Channel.META_UNSUBSCRIBE,message.getChannel());
+        assertTrue(message.isSuccessful());
 
         client.disconnect();
         assertTrue(client.waitFor(1000,BayeuxClient.State.DISCONNECTED));
     }
 
-    /* ------------------------------------------------------------ */
     public void testAsync() throws Exception
     {
         BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient));
@@ -221,6 +215,7 @@ public class BayeuxClientTest extends TestCase
         final BlockingArrayQueue<String> messages = new BlockingArrayQueue<String>();
 
         client.handshake();
+
         client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener()
         {
             @Override
@@ -250,7 +245,7 @@ public class BayeuxClientTest extends TestCase
 
         final AtomicBoolean connected = new AtomicBoolean(false);
 
-        BayeuxClient client = new BayeuxClient("http://127.0.0.2:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient))
+        BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient))
         {
             @Override
             public void onProtocolError(String info)
@@ -299,14 +294,7 @@ public class BayeuxClientTest extends TestCase
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 connected.set(message.isSuccessful());
-                try
-                {
-                    queue.offer(message);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
+                queue.offer(message);
             }
         });
 
@@ -316,14 +304,7 @@ public class BayeuxClientTest extends TestCase
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 connected.set(false);
-                try
-                {
-                    queue.offer(message);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
+                queue.offer(message);
             }
         });
 
@@ -334,54 +315,47 @@ public class BayeuxClientTest extends TestCase
             {
                 if (message.getData()!=null || Channel.META_SUBSCRIBE.equals(message.getChannel()) || Channel.META_DISCONNECT.equals(message.getChannel()))
                 {
-                    try
-                    {
-                        queue.offer(message);
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
+                    queue.offer(message);
                 }
             }
         });
 
         _filter._code=503;
+
+        long backoffIncrement = 1000L;
+        client.setOption(BayeuxClient.BACKOFF_INCREMENT_OPTION, backoffIncrement);
         client.handshake();
 
         Message message = queue.poll(1,TimeUnit.SECONDS);
+        assertSame(problem, message);
         assertFalse(message.isSuccessful());
-
-        message = queue.poll(2,TimeUnit.SECONDS);
+        Object error = message.get("error");
+        assertTrue(error instanceof String);
+        assertTrue(((String)error).contains("protocol error"));
         assertEquals(0,_filter._code);
+
+        message = queue.poll(2*backoffIncrement,TimeUnit.MILLISECONDS);
         assertTrue(message.isSuccessful());
-        String id = client.getId();
-        assertTrue(id!=null);
+        assertNotNull(client.getId());
 
         message = queue.poll(1,TimeUnit.SECONDS);
         assertEquals(Channel.META_CONNECT,message.getChannel());
         assertTrue(message.isSuccessful());
 
+        // Abruptly stop the server, client must reconnect
         _server.stop();
-
+        _server.join();
         Thread.sleep(500);
 
-
-
-        message=queue.poll(1,TimeUnit.SECONDS);
-        assertFalse(message.isSuccessful());
-
         while ((message=queue.poll(1,TimeUnit.SECONDS))!=null)
-        {
             assertFalse(message.isSuccessful());
-        }
 
         _connector.setPort(_port);
         _server.start();
 
-
         message=queue.poll(5,TimeUnit.SECONDS);
-        while (message.get("error")!=null && message.get("error").toString().startsWith("P "))
+        error = message.get("error");
+        while (error != null && error.toString().startsWith("P "))
             message=queue.poll(10,TimeUnit.SECONDS);
 
         assertFalse(message.isSuccessful());
@@ -395,7 +369,6 @@ public class BayeuxClientTest extends TestCase
     {
         BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient));
         client.handshake();
-
 
         client.setCookie("foo","bar",1);
         assertNotNull(client.getCookie("foo"));
@@ -554,8 +527,7 @@ public class BayeuxClientTest extends TestCase
         client.disconnect();
     }
 
-    public void testWaitFor()
-    throws Exception
+    public void testWaitFor() throws Exception
     {
         final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
 
@@ -573,10 +545,13 @@ public class BayeuxClientTest extends TestCase
             }
         });
 
-
         BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient));
-        client.handshake(1000L);
-        assertTrue(client.getId()!=null);
+        long wait = 1000L;
+        long start = System.nanoTime();
+        client.handshake(wait);
+        long stop = System.nanoTime();
+        assertTrue(TimeUnit.NANOSECONDS.toMillis(stop - start) < wait);
+        assertNotNull(client.getId());
         client.getChannel(channelName).publish("Hello World");
 
         assertEquals(client.getId(),results.poll(1,TimeUnit.SECONDS));
@@ -584,7 +559,6 @@ public class BayeuxClientTest extends TestCase
         assertEquals("Hello World",results.poll(1,TimeUnit.SECONDS));
 
         client.disconnect();
-
         assertTrue(client.waitFor(1000,State.DISCONNECTED));
     }
 
@@ -624,5 +598,4 @@ public class BayeuxClientTest extends TestCase
         {
         }
     }
-
 }
