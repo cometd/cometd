@@ -39,8 +39,8 @@ import org.eclipse.jetty.util.StringUtil;
 public class ContinuationCometdServlet extends AbstractCometdServlet
 {
     public final static int __DEFAULT_REFS_THRESHOLD=0;
-    protected int _refsThreshold=__DEFAULT_REFS_THRESHOLD;
-    String _responseBuffer;
+    private int _refsThreshold=__DEFAULT_REFS_THRESHOLD;
+    private String _responseBuffer;
 
     @Override
     public void init() throws ServletException
@@ -57,7 +57,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
             else if (server.startsWith("jetty/"))
                 _responseBuffer="org.eclipse.jetty.server.ResponseBuffer";
             else
-                _refsThreshold=0;
+                _refsThreshold=__DEFAULT_REFS_THRESHOLD;
         }
 
         super.init();
@@ -247,7 +247,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                         if (buffer != null)
                         {
                             // Send pre-prepared buffer
-                            request.setAttribute("org.mortbay.jetty.ResponseBuffer",buffer);
+                            request.setAttribute(_responseBuffer,buffer);
                             if (metaConnectReply instanceof MessageImpl)
                                 ((MessageImpl)metaConnectReply).decRef();
                             metaConnectReply=null;
@@ -273,7 +273,7 @@ public class ContinuationCometdServlet extends AbstractCometdServlet
                             buffer.flip();
 
                             mesgImpl.setBuffer(buffer);
-                            request.setAttribute("org.mortbay.jetty.ResponseBuffer",buffer);
+                            request.setAttribute(_responseBuffer,buffer);
                             metaConnectReply=null;
                             if (metaConnectReply instanceof MessageImpl)
                                 ((MessageImpl)metaConnectReply).decRef();
