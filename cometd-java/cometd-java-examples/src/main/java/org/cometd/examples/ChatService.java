@@ -68,8 +68,7 @@ public class ChatService extends AbstractService
             }
         });
 
-        client.deliver(null,"/chat/members",members.keySet(),null);
-        // broadcastMembers(members.keySet());
+        broadcastMembers(members.keySet());
     }
 
     private void broadcastMembers(Set<String> members)
