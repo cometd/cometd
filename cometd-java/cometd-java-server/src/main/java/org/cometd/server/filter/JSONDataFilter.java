@@ -101,14 +101,12 @@ public class JSONDataFilter implements DataFilter
         if (map == null)
             return null;
 
-        System.err.println("BEFORE: "+map);
         Iterator iter=map.entrySet().iterator();
         while(iter.hasNext())
         {
             Map.Entry entry=(Map.Entry)iter.next();
             entry.setValue(filter(from,to,entry.getValue()));
         }
-        System.err.println("AFTER: "+map+ " "+map.get("chat"));
 
         return map;
     }
