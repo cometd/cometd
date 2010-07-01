@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.ServletException;
@@ -58,6 +59,17 @@ public abstract class LongPollingTransport extends HttpTransport
         setOption(MAX_SESSIONS_PER_BROWSER_OPTION,_maxSessionsPerBrowser);
         setOption(MULTI_SESSION_INTERVAL_OPTION,_multiSessionInterval);
         setOption(AUTOBATCH_OPTION,_autoBatch);
+    }
+
+    @Override
+    public Set<String> getOptionNames()
+    {
+        Set<String> options = super.getOptionNames();
+        options.add(BROWSER_ID_OPTION);
+        options.add(MAX_SESSIONS_PER_BROWSER_OPTION);
+        options.add(MULTI_SESSION_INTERVAL_OPTION);
+        options.add(AUTOBATCH_OPTION);
+        return options;
     }
 
     @Override
