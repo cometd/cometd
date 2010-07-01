@@ -6,6 +6,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -27,6 +28,14 @@ public abstract class HttpTransport extends AbstractServerTransport
     protected HttpTransport(BayeuxServerImpl bayeux,String name)
     {
         super(bayeux,name);
+    }
+
+    @Override
+    public Set<String> getOptionNames()
+    {
+        Set<String> options = super.getOptionNames();
+        options.add(JSON_DEBUG_OPTION);
+        return options;
     }
 
     @Override
