@@ -1,8 +1,10 @@
 package org.cometd.util;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.cometd.util.ImmutableHashMap.MutableEntry;
@@ -10,7 +12,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 
-public class TestImmutableHashMap 
+public class ImmutableHashMapTest 
 {
     @Test
     public void testMap()
@@ -184,4 +186,22 @@ public class TestImmutableHashMap
     
     }
 
+    @Test
+    public void testMapOfMaps()
+    {
+        ImmutableHashMap<String,Object> map = new ImmutableHashMap<String,Object>();
+        Map<String,Object> data = new HashMap<String,Object>();
+        try {  map.put("data", data); Assert.assertTrue(false); } catch (UnsupportedOperationException e) { Assert.assertTrue(true);}
+        map.asMutable().put("data", data);
+        data.put("field", "value");
+        Assert.assertEquals("{data={field=value}}", map.toString());
+        
+        Entry<String, Object> dataRef=map.asMutable().getEntry("data");
+        ((Map<String,Object>)dataRef.getValue()).put("field","other");
+        Assert.assertEquals("{data={field=other}}", map.toString());
+        
+        dataRef=map.getEntryReference("data");
+        try {  ((Map<String,Object>)dataRef.getValue()).put("field","nope"); Assert.assertTrue(false); } catch (UnsupportedOperationException e) { Assert.assertTrue(true);}
+        Assert.assertEquals("{data={field=other}}", map.toString());      
+    }
 }

@@ -1,10 +1,13 @@
 package org.cometd.server;
 
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import junit.framework.Assert;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.util.ImmutableHashMap;
 import org.junit.Test;
 
 
@@ -59,5 +62,31 @@ public class ServerMessageTest
         Assert.assertEquals("/foo/bar",immutable.values().iterator().next());
 
         
+    }
+
+    @Test
+    public void testData() throws Exception
+    {
+    	ServerMessageImpl message = new ServerMessageImpl();
+    	ImmutableHashMap<String, Object> data = new ImmutableHashMap<String, Object>();
+    	data.asMutable().put("field", "value");
+    	message.asMutable().put("data", data.asMutable());
+    	
+    	Assert.assertEquals("|{\"data\":{\"field\":\"value\"}}|", message.toString());
+
+    	Map<String,Object> d2=((Map<String,Object>)message.asMutable().getData());
+        Iterator<Entry<String,Object>> iter=d2.entrySet().iterator();
+        while(iter.hasNext())
+        {
+            Map.Entry entry=(Map.Entry)iter.next();
+            entry.setValue("other");
+        }
+        
+        Assert.assertTrue(data.asMutable()==d2);
+
+    	Assert.assertEquals("{field=other}", d2.toString());
+    	Assert.assertEquals("{field=other}", message.getData().toString());
+    	Assert.assertEquals("|{\"data\":{\"field\":\"other\"}}|", message.toString());
+    	
     }
 }

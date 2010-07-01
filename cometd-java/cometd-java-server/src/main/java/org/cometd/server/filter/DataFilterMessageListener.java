@@ -29,8 +29,11 @@ public class DataFilterMessageListener implements ServerChannel.MessageListener
             if (data==null)
                 return false;
         }
+        System.err.println("ORIG: "+orig);
+        System.err.println("FILTERED: "+data);
         if (data!=orig)
             message.setData(data);
+        System.err.println("MESSAGE: "+message);
         return true;
     }
 
