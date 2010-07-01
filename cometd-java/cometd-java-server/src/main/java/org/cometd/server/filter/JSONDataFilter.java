@@ -96,19 +96,21 @@ public class JSONDataFilter implements DataFilter
         return array;
     }
 
-    protected Object filterMap(ServerSession from, ServerChannel to, Map object)
+    protected Object filterMap(ServerSession from, ServerChannel to, Map map)
     {
-        if (object == null)
+        if (map == null)
             return null;
 
-        Iterator iter=object.entrySet().iterator();
+        System.err.println("BEFORE: "+map);
+        Iterator iter=map.entrySet().iterator();
         while(iter.hasNext())
         {
             Map.Entry entry=(Map.Entry)iter.next();
             entry.setValue(filter(from,to,entry.getValue()));
         }
+        System.err.println("AFTER: "+map+ " "+map.get("chat"));
 
-        return object;
+        return map;
     }
 
     protected Object filterJSON(ServerSession from, ServerChannel to, JSON.Generator generator)

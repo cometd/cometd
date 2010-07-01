@@ -40,6 +40,8 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     private final ImmutableEntrySet _immutableSet;
     private final MutableEntrySet _mutableSet;
     private int _size;
+    private ImmutableHashMap<?,Object> _parent;
+	
 
     /* ------------------------------------------------------------ */
     public ImmutableHashMap()
@@ -177,6 +179,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     /* ------------------------------------------------------------ */
     public class Mutable extends AbstractMap<K, V> implements Map<K,V>
     {
+        /* ------------------------------------------------------------ */
         public ImmutableHashMap<K,V> asImmutable()
         {
             return ImmutableHashMap.this;
@@ -423,11 +426,9 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         ImmutableEntry(ImmutableHashMap<K,V> map,int hash, K k, V v) 
         {
             _map=map;
-            _value = v;
-            if (_value!=null)
-                _map._size++;
             _key = k;
             _hash = hash;
+            _mutable.setValue(v);
         }
         
         public K getKey()
@@ -485,10 +486,25 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
 
         public V setValue(V value)
         {
-            _immutable._map.onChange(_immutable._key);
-
+            ImmutableHashMap map = _immutable._map;
+            while(map!=null)
+            {
+                map.onChange(_immutable._key);
+                map=map._parent;
+            }
+            
             V old = _immutable._value;
+            if (old instanceof ImmutableHashMap.Mutable)
+            {
+            	if (((ImmutableHashMap.Mutable)old).asImmutable()._parent!=null)
+            		throw new IllegalStateException("Mutable DAG!");
+            	((ImmutableHashMap.Mutable)old).asImmutable()._parent=null;
+            }
+            
             _immutable._value = value;
+
+            if (value instanceof ImmutableHashMap.Mutable)
+            	((ImmutableHashMap.Mutable)value).asImmutable()._parent=_immutable._map;
 
             if (old!=null && _immutable._value==null)
                 _immutable._map._size--;

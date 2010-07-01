@@ -18,7 +18,15 @@ import org.eclipse.jetty.util.ajax.JSON;
 
 public class ServerMessageImpl extends AbstractMap<String,Object> implements ServerMessage, JSON.Generator
 {
-    private final ImmutableHashMap<String,Object> _immutable = new NestedMap(16);
+    private final ImmutableHashMap<String,Object> _immutable = new ImmutableHashMap<String,Object>(16)
+    {
+    	@Override
+    	protected void onChange(String key) throws UnsupportedOperationException
+    	{
+    		_jsonString=null;
+    	}
+    } ;
+
     private final MutableMessage _mutable;
 
     private volatile ServerMessage _associated;
@@ -284,7 +292,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             Map<String, Object> data=(Map<String, Object>)_data.getValue();
             if (create && data==null)
             {
-                data=new NestedMap(16).asMutable();
+                data=new ImmutableHashMap<String,Object>(16).asMutable();;
                 _data.setValue(data);
             }
             return data;
@@ -300,7 +308,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             }
             if (create && advice==null)
             {
-                advice=new NestedMap(16).asMutable();;
+                advice=new ImmutableHashMap<String,Object>(8).asMutable();
                 _advice.setValue(advice);
             }
             return (Map<String, Object>)advice;
@@ -347,7 +355,7 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
                 return (Map<String,Object>)ext;
             }
 
-            ext=new NestedMap().asMutable();
+            ext=new ImmutableHashMap<String,Object>(16).asMutable();;
             _ext.setValue(ext);
             return (Map<String,Object>)ext;
         }
@@ -441,25 +449,6 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
             return getJSON();
         }
     }
-
-    class NestedMap extends ImmutableHashMap<String,Object>
-    {
-        protected NestedMap()
-        {
-        }
-
-        protected NestedMap(int size)
-        {
-            super(size);
-        }
-
-        @Override
-        protected void onChange(String key) throws UnsupportedOperationException
-        {
-            _jsonString=null;
-        } ;
-    };
-
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

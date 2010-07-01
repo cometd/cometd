@@ -18,6 +18,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.cometd.server.filter.DataFilterMessageListener;
+import org.cometd.server.filter.JSONDataFilter;
 import org.cometd.server.filter.NoMarkupFilter;
 
 public class ChatService extends AbstractService
@@ -27,7 +28,7 @@ public class ChatService extends AbstractService
     public ChatService(BayeuxServer bayeux)
     {
         super(bayeux, "chat");
-        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(new NoMarkupFilter());
+        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(new NoMarkupFilter(),new FuckFilter());
         ServerChannel.Initializer initNoMarkup = new ServerChannel.Initializer()
         {
             @Override
@@ -118,5 +119,17 @@ public class ChatService extends AbstractService
                     peer.deliver(getServerSession(), forward);
             client.deliver(getServerSession(), forward);
         }
+    }
+    
+    class FuckFilter extends JSONDataFilter
+    {
+		@Override
+		protected Object filterString(String string) 
+		{
+			System.err.println("DEFUCK: "+string);
+			
+			return string.indexOf("fuck")>=0 ? null : string;
+		}
+    	
     }
 }
