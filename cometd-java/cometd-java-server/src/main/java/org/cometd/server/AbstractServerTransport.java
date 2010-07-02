@@ -25,7 +25,7 @@ public abstract class AbstractServerTransport implements ServerTransport
     public final static String MAX_INTERVAL_OPTION="maxInterval";
     public final static String MAX_LAZY_OPTION="maxLazyTimeout";
     public final static String META_CONNECT_DELIVERY_OPTION="metaConnectDeliverOnly";
-    
+
     private final BayeuxServerImpl _bayeux;
     private long _interval=0;
     private long _maxInterval=10000;
@@ -39,7 +39,7 @@ public abstract class AbstractServerTransport implements ServerTransport
 
     private final String _name;
     private final Map<String,Object> _options;
-    
+
 
     /* ------------------------------------------------------------ */
     /** Construct a ServerTransport.
@@ -68,7 +68,7 @@ public abstract class AbstractServerTransport implements ServerTransport
         setOption(META_CONNECT_DELIVERY_OPTION,_metaConnectDeliveryOnly);
     }
 
-    
+
     /* ------------------------------------------------------------ */
     public Object getAdvice()
     {
@@ -83,7 +83,7 @@ public abstract class AbstractServerTransport implements ServerTransport
     {
         return _interval;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the maxInterval.
      * @return the maxInterval
@@ -102,7 +102,7 @@ public abstract class AbstractServerTransport implements ServerTransport
     {
         return _maxLazyTimeout;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.bayeux.Transport#getName()
@@ -111,7 +111,7 @@ public abstract class AbstractServerTransport implements ServerTransport
     {
         return _name;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get an option value.
      * Get an option value by searching the option name tree.  The option
@@ -131,7 +131,7 @@ public abstract class AbstractServerTransport implements ServerTransport
     public Object getOption(String name)
     {
         Object value = _options.get(name);
-        
+
         String prefix=null;
         for (String segment:_prefix)
         {
@@ -142,7 +142,7 @@ public abstract class AbstractServerTransport implements ServerTransport
         }
         return value;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get option or default value.
      * @see #getOption(String)
@@ -159,7 +159,7 @@ public abstract class AbstractServerTransport implements ServerTransport
             return ((Boolean)value).booleanValue();
         return Boolean.parseBoolean(value.toString());
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get option or default value.
      * @see #getOption(String)
@@ -193,7 +193,7 @@ public abstract class AbstractServerTransport implements ServerTransport
             return ((Number)value).longValue();
         return Long.parseLong(value.toString());
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get option or default value.
      * @see #getOption(String)
@@ -214,19 +214,22 @@ public abstract class AbstractServerTransport implements ServerTransport
     public Set<String> getOptionNames()
     {
         Set<String> names = new HashSet<String>();
-        names.add(INTERVAL_OPTION);
-        names.add(MAX_INTERVAL_OPTION);
-        names.add(TIMEOUT_OPTION);
-        names.add(MAX_LAZY_OPTION);
+        for (String name : _options.keySet())
+        {
+            int lastdot=name.lastIndexOf('.');
+            if (lastdot>=0)
+                name=name.substring(lastdot+1);
+            names.add(name);
+        }
         return names;
     }
-    
+
     /* ------------------------------------------------------------ */
     public String getOptionPrefix()
     {
         return _optionPrefix;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Set the option name prefix segment.
      * <p> Normally this is called by the super class constructors to establish 
@@ -263,7 +266,7 @@ public abstract class AbstractServerTransport implements ServerTransport
         _optionPrefix=prefix;
         _prefix=prefix.split("\\.");
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the timeout.
      * @return the timeout
@@ -272,7 +275,7 @@ public abstract class AbstractServerTransport implements ServerTransport
     {
         return _timeout;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isMetaConnectDeliveryOnly()
     {
@@ -315,9 +318,9 @@ public abstract class AbstractServerTransport implements ServerTransport
 
         _advice=new JSON.Literal("{\"reconnect\":\"retry\",\"interval\":" + _interval + ",\"timeout\":" + _timeout + "}");
     }
-    
-    
-    
+
+
+
     /* ------------------------------------------------------------ */
     /** Get the bayeux.
      * @return the bayeux
@@ -386,7 +389,7 @@ public abstract class AbstractServerTransport implements ServerTransport
         void cancel();
         void schedule();
     }
-    
+
     /* ------------------------------------------------------------ */
     public interface OneTimeScheduler extends Scheduler
     {}
