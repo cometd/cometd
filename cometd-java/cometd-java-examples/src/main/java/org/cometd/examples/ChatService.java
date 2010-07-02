@@ -41,7 +41,7 @@ public class ChatService extends AbstractService
         };
 
         if (!bayeux.createIfAbsent("/chat/**",initNoMarkup) ||
-            !bayeux.createIfAbsent("/service/privatechat",initNoMarkup))
+                !bayeux.createIfAbsent("/service/privatechat",initNoMarkup))
             throw new IllegalStateException();
 
         addService("/service/members", "handleMembership");
@@ -121,15 +121,15 @@ public class ChatService extends AbstractService
             client.deliver(getServerSession(), forward);
         }
     }
-    
+
     class BadWordFilter extends JSONDataFilter
     {
-		@Override
-		protected Object filterString(String string) 
-		{
-			if (string.indexOf("dang")>=0)
-				throw new DataFilter.Abort();
-			return string;
-		}
+        @Override
+        protected Object filterString(String string) 
+        {
+            if (string.indexOf("dang")>=0)
+                throw new DataFilter.Abort();
+            return string;
+        }
     }
 }

@@ -45,48 +45,48 @@ public class ServerMessageTest
         Assert.assertEquals("8",immutable.getDataAsMap().get("x"));
         Assert.assertEquals("9",immutable.getDataAsMap().get("y"));
     }
-    
+
     @Test
     public void testSpecific() throws Exception
     {
         ServerMessageImpl.Mutable mutable= new ServerMessageImpl().asMutable();
         ServerMessage immutable = mutable.asImmutable();
-        
+
         mutable.put("channel","/foo/bar");
-        
+
         Assert.assertEquals(1,mutable.size());
-        
+
         Assert.assertEquals("/foo/bar",mutable.getChannel());
         Assert.assertEquals("/foo/bar",immutable.getChannel());
         Assert.assertEquals("channel",immutable.keySet().iterator().next());
         Assert.assertEquals("/foo/bar",immutable.values().iterator().next());
 
-        
+
     }
 
     @Test
     public void testData() throws Exception
     {
-    	ServerMessageImpl message = new ServerMessageImpl();
-    	ImmutableHashMap<String, Object> data = new ImmutableHashMap<String, Object>();
-    	data.asMutable().put("field", "value");
-    	message.asMutable().put("data", data.asMutable());
-    	
-    	Assert.assertEquals("|{\"data\":{\"field\":\"value\"}}|", message.toString());
+        ServerMessageImpl message = new ServerMessageImpl();
+        ImmutableHashMap<String, Object> data = new ImmutableHashMap<String, Object>();
+        data.asMutable().put("field", "value");
+        message.asMutable().put("data", data.asMutable());
 
-    	Map<String,Object> d2=((Map<String,Object>)message.asMutable().getData());
+        Assert.assertEquals("|{\"data\":{\"field\":\"value\"}}|", message.toString());
+
+        Map<String,Object> d2=((Map<String,Object>)message.asMutable().getData());
         Iterator<Entry<String,Object>> iter=d2.entrySet().iterator();
         while(iter.hasNext())
         {
             Map.Entry entry=(Map.Entry)iter.next();
             entry.setValue("other");
         }
-        
+
         Assert.assertTrue(data.asMutable()==d2);
 
-    	Assert.assertEquals("{field=other}", d2.toString());
-    	Assert.assertEquals("{field=other}", message.getData().toString());
-    	Assert.assertEquals("|{\"data\":{\"field\":\"other\"}}|", message.toString());
-    	
+        Assert.assertEquals("{field=other}", d2.toString());
+        Assert.assertEquals("{field=other}", message.getData().toString());
+        Assert.assertEquals("|{\"data\":{\"field\":\"other\"}}|", message.toString());
+
     }
 }

@@ -593,7 +593,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     if (!((MessageListener)listener).onMessage(from, to, mutable))
                         return;
         }
-        
+
         // Call the leaf listeners
         if (to.isLazy())
             mutable.setLazy(true);
@@ -601,7 +601,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (listener instanceof MessageListener)
                 if (!((MessageListener)listener).onMessage(from, to, mutable))
                     return;
-        
+
 
         // Call the wild subscribers
         HashSet<String> wild_subscribers=null;
@@ -614,7 +614,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             {
                 if (wild_subscribers==null)
                     wild_subscribers=new HashSet<String>();
-                
+
                 if (wild_subscribers.add(session.getId()))
                     ((ServerSessionImpl)session).doDeliver(from, mutable.asImmutable());
             }
@@ -792,14 +792,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         for (ServerChannelImpl channel :_channels.values())
         {
-           if (!dust.containsKey(channel.getId()))
-               dust.put(channel.getId(),0);
-           String parent=channel.getChannelId().getParent();
-           if (parent!=null)
-           {
-               Integer children=dust.get(parent);
-               dust.put(parent,children==null?1:(children+1));
-           }
+            if (!dust.containsKey(channel.getId()))
+                dust.put(channel.getId(),0);
+            String parent=channel.getChannelId().getParent();
+            if (parent!=null)
+            {
+                Integer children=dust.get(parent);
+                dust.put(parent,children==null?1:(children+1));
+            }
         }
 
         for (String channel : dust.keySet())
@@ -808,11 +808,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (sci!=null)
                 sci.doSweep(dust.get(channel));
         }
-        
+
         for(ServerTransport transport : _transports.values())
         {
-        	if (transport instanceof AbstractServerTransport)
-        		((AbstractServerTransport)transport).doSweep();
+            if (transport instanceof AbstractServerTransport)
+                ((AbstractServerTransport)transport).doSweep();
         }
     }
 

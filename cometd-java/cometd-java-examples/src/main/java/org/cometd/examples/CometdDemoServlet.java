@@ -52,16 +52,16 @@ public class CometdDemoServlet extends GenericServlet
         new ChatService(bayeux);
         bayeux.addExtension(new TimesyncExtension());
         bayeux.addExtension(new AcknowledgedMessagesExtension());
-        
+
         bayeux.createIfAbsent("/foo/bar/baz",new ConfigurableServerChannel.Initializer(){
             @Override
             public void configureChannel(ConfigurableServerChannel channel)
             {
                 channel.setPersistent(true);
             }
-            
+
         });
-        
+
         if (bayeux.getLogger().isDebugEnabled())
             System.err.println(bayeux.dump());
     }
@@ -76,8 +76,8 @@ public class CometdDemoServlet extends GenericServlet
 
         public Object doEcho(ServerSession session, Object data)
         {
-	    Log.info("ECHO from "+session+" "+data);
-	    return data;
+            Log.info("ECHO from "+session+" "+data);
+            return data;
         }
     }
 
@@ -120,7 +120,7 @@ public class CometdDemoServlet extends GenericServlet
                 Log.warn(e);
             }
         }
-        */
+         */
     }
 
     @Override

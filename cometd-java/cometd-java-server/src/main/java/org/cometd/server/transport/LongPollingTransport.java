@@ -48,7 +48,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
     private final ConcurrentHashMap<String, AtomicInteger> _browserMap=new ConcurrentHashMap<String, AtomicInteger>();
     private final Map<String,AtomicInteger> _browserSweep = new ConcurrentHashMap<String,AtomicInteger>();
-    
+
     protected String _browserId="BAYEUX_BROWSER";
     private int _maxSessionsPerBrowser=1;
     private long _multiSessionInterval=2000;
@@ -88,7 +88,7 @@ public abstract class LongPollingTransport extends HttpTransport
         }
 
         String browser_id=Long.toHexString(request.getRemotePort()) + Long.toString(getBayeux().randomLong(),36) + Long.toString(System.currentTimeMillis(),36)
-                + Long.toString(request.getRemotePort(),36);
+        + Long.toString(request.getRemotePort(),36);
         Cookie cookie=new Cookie(_browserId,browser_id);
         cookie.setPath("/");
         cookie.setMaxAge(-1);
@@ -119,11 +119,11 @@ public abstract class LongPollingTransport extends HttpTransport
 
         // increment
         int sessions=count.incrementAndGet();
-        
+
         // If was zero, remove from the sweep
         if (sessions==1)
-        	_browserSweep.remove(browserId);
-        	
+            _browserSweep.remove(browserId);
+
         // TODO, the maxSessionsPerBrowser should be parameterized on user-agent
         if (sessions>_maxSessionsPerBrowser)
         {
@@ -139,7 +139,7 @@ public abstract class LongPollingTransport extends HttpTransport
         AtomicInteger count = _browserMap.get(browserId);
         if (count!=null && count.decrementAndGet()==0)
         {
-        	_browserSweep.put(browserId,new AtomicInteger(0));
+            _browserSweep.put(browserId,new AtomicInteger(0));
         }
     }
 
@@ -158,7 +158,7 @@ public abstract class LongPollingTransport extends HttpTransport
             // Don't know the session until first message or handshake response.
             ServerSessionImpl session=null;
             boolean connect=false;
-            
+
             try
             {
                 ServerMessage.Mutable[] messages = parseMessages(request);
@@ -172,7 +172,7 @@ public abstract class LongPollingTransport extends HttpTransport
                 {
                     // Is this a connect?
                     connect = Channel.META_CONNECT.equals(message.getChannel());
-                    
+
                     // Get the session from the message
                     String client_id=message.getClientId();
                     if (session==null || client_id!=null && !client_id.equals(session.getId()))
@@ -300,7 +300,7 @@ public abstract class LongPollingTransport extends HttpTransport
                 if (batch)
                 {
                     boolean ended=session.endBatch();
-                    
+
                     // flush session if not done by the batch
                     // since some browsers well order script gets
                     if (!ended && isAlwaysFlushingAfterHandle())
@@ -334,41 +334,41 @@ public abstract class LongPollingTransport extends HttpTransport
         getBayeux().getLogger().debug("Error parsing JSON: " + json, exception);
         response.sendError(HttpServletResponse.SC_BAD_REQUEST);
     }
-    
+
     /**
      * Sweep the transport for old Browser IDs
      * @see org.cometd.server.AbstractServerTransport#doSweep()
      */
     protected void doSweep()
     {
-    	long now = System.currentTimeMillis();
-    	if (_lastSweep!=0)
-    	{
-    		// Calculate the maximum sweeps that a browser ID can be 0 as the
-    		// maximum interval time divided by the sweep period, doubled for safety
-        	int maxSweeps = (int)(2*getMaxInterval()/(now-_lastSweep));
-        	
-        	for (Map.Entry<String, AtomicInteger> entry: _browserSweep.entrySet())
-        	{
-        		AtomicInteger count = entry.getValue();
-        		// if the ID has been in the sweep map for 3 sweeps
-        		if (count.incrementAndGet()>maxSweeps)
-        		{
-        			String key=entry.getKey();
-        			// remove it from both browser Maps
-        			if (_browserSweep.remove(key)==count && _browserMap.get(key).get()==0)
-        			{
-        				_browserMap.remove(key);
-        				getBayeux().getLogger().debug("Swept browser  ID {}",key);
-        			}
-        		}
-        	}
-    	}
-    	_lastSweep=now;
+        long now = System.currentTimeMillis();
+        if (_lastSweep!=0)
+        {
+            // Calculate the maximum sweeps that a browser ID can be 0 as the
+            // maximum interval time divided by the sweep period, doubled for safety
+            int maxSweeps = (int)(2*getMaxInterval()/(now-_lastSweep));
+
+            for (Map.Entry<String, AtomicInteger> entry: _browserSweep.entrySet())
+            {
+                AtomicInteger count = entry.getValue();
+                // if the ID has been in the sweep map for 3 sweeps
+                if (count.incrementAndGet()>maxSweeps)
+                {
+                    String key=entry.getKey();
+                    // remove it from both browser Maps
+                    if (_browserSweep.remove(key)==count && _browserMap.get(key).get()==0)
+                    {
+                        _browserMap.remove(key);
+                        getBayeux().getLogger().debug("Swept browser  ID {}",key);
+                    }
+                }
+            }
+        }
+        _lastSweep=now;
     }
 
     private PrintWriter sendQueue(HttpServletRequest request, HttpServletResponse response,ServerSessionImpl session, PrintWriter writer)
-        throws IOException
+    throws IOException
     {
         final List<ServerMessage> queue = session.takeQueue();
         for (ServerMessage m:queue)
@@ -381,7 +381,7 @@ public abstract class LongPollingTransport extends HttpTransport
      * @return true if the transport always flushes at the end of a call to {@link #handle(HttpServletRequest, HttpServletResponse)}.
      */
     abstract protected boolean isAlwaysFlushingAfterHandle();
-    
+
     abstract protected PrintWriter send(HttpServletRequest request,HttpServletResponse response,PrintWriter writer, ServerMessage message) throws IOException;
 
     abstract protected void complete(PrintWriter writer) throws IOException;

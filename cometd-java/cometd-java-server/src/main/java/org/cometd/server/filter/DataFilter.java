@@ -13,26 +13,26 @@ public interface DataFilter
      * @return the transformed data or null if the message should be aborted
      */
     public abstract Object filter(ServerSession from, ServerChannel channel, Object data);
-    
-    
+
+
     /**
      * Abort the message by throwing this exception
      *
      */
     public class Abort extends RuntimeException
     {
-    	public Abort()
-    	{
-    		super();
-    	}
-    	public Abort(String msg)
-    	{
-    		super(msg);
-    	}
-    	public Abort(String msg,Throwable cause)
-    	{
-    		super(msg,cause);
-    	}
-    	
+        public Abort()
+        {
+            super();
+        }
+        public Abort(String msg)
+        {
+            super(msg);
+        }
+        public Abort(String msg,Throwable cause)
+        {
+            super(msg,cause);
+        }
+
     }
 }

@@ -20,11 +20,11 @@ public class ServerMessageImpl extends AbstractMap<String,Object> implements Ser
 {
     private final ImmutableHashMap<String,Object> _immutable = new ImmutableHashMap<String,Object>(16)
     {
-    	@Override
-    	protected void onChange(String key) throws UnsupportedOperationException
-    	{
-    		_jsonString=null;
-    	}
+        @Override
+        protected void onChange(String key) throws UnsupportedOperationException
+        {
+            _jsonString=null;
+        }
     } ;
 
     private final MutableMessage _mutable;
