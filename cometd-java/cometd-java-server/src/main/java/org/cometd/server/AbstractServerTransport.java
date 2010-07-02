@@ -10,6 +10,12 @@ import org.eclipse.jetty.util.ajax.JSON;
 
 /* ------------------------------------------------------------ */
 /** The base class of all server transports.
+ * <p>
+ * Each derived Transport class should declare all options that it supports 
+ * by calling {@link #setOption(String, Object)} for each option.
+ * Then during the call the {@link #init()}, each transport should 
+ * call the variants of {@link #getOption(String)} to obtained the configured 
+ * value for the option.  
  * 
  */
 public abstract class AbstractServerTransport implements ServerTransport
@@ -280,6 +286,10 @@ public abstract class AbstractServerTransport implements ServerTransport
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @param name
+     * @param value
+     */
     public void setOption(String name, Object value)
     {
         if (_optionPrefix!=null && _optionPrefix.length()>0)
