@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -34,7 +33,7 @@ import org.eclipse.jetty.util.log.Log;
  * <dt>multiSessionInterval</dt><dd>The polling interval to use once max session per browser is exceeded.</dd>
  * <dt>autoBatch</dt><dd>If true a batch will be automatically created to span the handling of messages received from a session.</dd>
  * </dl>
- * 
+ *
  */
 public abstract class LongPollingTransport extends HttpTransport
 {
@@ -73,7 +72,7 @@ public abstract class LongPollingTransport extends HttpTransport
         _autoBatch=getOption(AUTOBATCH_OPTION,_autoBatch);
     }
 
-    protected String getBrowserId(HttpServletRequest request, HttpServletResponse response)
+    protected String findBrowserId(HttpServletRequest request)
     {
         Cookie[] cookies=request.getCookies();
         if (cookies != null)
@@ -84,9 +83,15 @@ public abstract class LongPollingTransport extends HttpTransport
                     return cookie.getValue();
             }
         }
+        return null;
+    }
 
-        String browser_id=Long.toHexString(request.getRemotePort()) + Long.toString(getBayeux().randomLong(),36) + Long.toString(System.currentTimeMillis(),36)
-        + Long.toString(request.getRemotePort(),36);
+    protected String setBrowserId(HttpServletRequest request, HttpServletResponse response)
+    {
+        String browser_id = Long.toHexString(request.getRemotePort()) +
+                Long.toString(getBayeux().randomLong(),36) +
+                Long.toString(System.currentTimeMillis(),36) +
+                Long.toString(request.getRemotePort(),36);
         Cookie cookie=new Cookie(_browserId,browser_id);
         cookie.setPath("/");
         cookie.setMaxAge(-1);
@@ -103,6 +108,8 @@ public abstract class LongPollingTransport extends HttpTransport
     {
         if (_maxSessionsPerBrowser<0)
             return true;
+        if (_maxSessionsPerBrowser==0)
+            return false;
 
         AtomicInteger count = _browserMap.get(browserId);
         if (count==null)
@@ -110,9 +117,7 @@ public abstract class LongPollingTransport extends HttpTransport
             AtomicInteger new_count = new AtomicInteger();
             count=_browserMap.putIfAbsent(browserId,new_count);
             if (count==null)
-            {
                 count=new_count;
-            }
         }
 
         // increment
@@ -215,7 +220,14 @@ public abstract class LongPollingTransport extends HttpTransport
 
                             // get the user agent while we are at it.
                             if (session!=null)
-                                session.setUserAgent(request.getHeader("User-Agent"));
+                            {
+                                String userAgent = request.getHeader("User-Agent");
+                                session.setUserAgent(userAgent);
+
+                                String browserId = findBrowserId(request);
+                                if (browserId == null)
+                                    setBrowserId(request, response);
+                            }
                         }
                         else
                         {
@@ -236,8 +248,8 @@ public abstract class LongPollingTransport extends HttpTransport
                                 if(timeout>0 && was_connected && writer==null && reply.isSuccessful() && session.isQueueEmpty())
                                 {
                                     // If we don't have too many long polls from this browser
-                                    String browserId=getBrowserId(request,response);
-                                    if (incBrowserId(browserId))
+                                    String browserId=findBrowserId(request);
+                                    if (browserId != null && incBrowserId(browserId))
                                     {
                                         // suspend and wait for messages
                                         Continuation continuation = ContinuationSupport.getContinuation(request);
