@@ -48,7 +48,7 @@ var room = {
         });
 
         dojo.query("#leaveButton").onclick(room, "leave");
-        
+
         // Check if there was a saved application state
         var stateCookie = org.cometd.COOKIE?org.cometd.COOKIE.get('org.cometd.demo.state'):null;
         var state = stateCookie ? org.cometd.JSON.fromJSON(stateCookie) : null;
@@ -115,6 +115,7 @@ var room = {
         {
             dojox.cometd.publish("/chat/demo", {
                 user: room._username,
+                membership: 'leave',
                 chat: room._username + " has left"
             });
             room._unsubscribe();
@@ -218,7 +219,7 @@ var room = {
     _connectionEstablished: function()
     {
         // connection establish (maybe not for first time), so just
-        // tell local user and update membership 
+        // tell local user and update membership
         room.receive({
             data: {
                 user: 'system',
@@ -251,7 +252,7 @@ var room = {
             }
         });
     },
-    
+
     _metaHandshake: function(message)
     {
     	if (message.successful)
@@ -259,7 +260,7 @@ var room = {
             room._connectionInitialized();
         }
     },
-    
+
     _metaConnect: function(message)
     {
         if (room._disconnecting)

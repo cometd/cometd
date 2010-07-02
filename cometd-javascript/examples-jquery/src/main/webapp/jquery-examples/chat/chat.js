@@ -14,7 +14,7 @@
             $('#useServer').attr('checked',state.useServer);
             $('#altServer').val(state.altServer);
         }
-        
+
         // Setup UI
         $('#join').show();
         $('#joined').hide();
@@ -91,6 +91,7 @@
             {
                 $.cometd.publish('/chat/demo', {
                     user: _username,
+                    membership: 'leave',
                     chat: _username + ' has left'
                 });
                 _unsubscribe();
