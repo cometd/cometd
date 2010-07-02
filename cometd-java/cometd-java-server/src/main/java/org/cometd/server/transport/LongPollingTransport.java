@@ -38,8 +38,6 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class LongPollingTransport extends HttpTransport
 {
-    private final static AtomicInteger __zero = new AtomicInteger(0);
-
     public final static String PREFIX="long-polling";
     public final static String BROWSER_ID_OPTION="browserId";
     public final static String MAX_SESSIONS_PER_BROWSER_OPTION="maxSessionsPerBrowser";
@@ -437,11 +435,6 @@ public abstract class LongPollingTransport extends HttpTransport
         public ServerSessionImpl getSession()
         {
             return _session;
-        }
-
-        public Continuation getContinuation()
-        {
-            return _continuation;
         }
 
         public ServerMessage getReply()
