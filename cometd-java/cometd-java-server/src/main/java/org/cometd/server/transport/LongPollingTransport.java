@@ -249,7 +249,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                 {
                                     // If we don't have too many long polls from this browser
                                     String browserId=findBrowserId(request);
-                                    if (browserId != null && incBrowserId(browserId))
+                                    if (browserId == null || incBrowserId(browserId))
                                     {
                                         // suspend and wait for messages
                                         Continuation continuation = ContinuationSupport.getContinuation(request);
