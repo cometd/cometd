@@ -88,7 +88,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
 
         setOption("tickIntervalMs","97");
-        setOption("sweepIntervalMs","2997");
+        setOption("sweepIntervalMs","997");
     }
 
     /* ------------------------------------------------------------ */
