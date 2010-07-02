@@ -3,6 +3,7 @@ package org.cometd.client.transport;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.util.ajax.JSON;
  */
 public class LongPollingTransport extends ClientTransport
 {
+
     public static LongPollingTransport create(Map<String, Object> options)
     {
         HttpClient httpClient = new HttpClient();
@@ -55,6 +57,8 @@ public class LongPollingTransport extends ClientTransport
     }
 
     private final HttpClient _httpClient;
+    private final List<HttpExchange> _exchanges = new ArrayList<HttpExchange>();
+    private volatile boolean _aborted;
     private volatile BayeuxClient _bayeuxClient;
     private volatile HttpURI _uri;
     private volatile boolean _appendMessageType;
@@ -73,6 +77,7 @@ public class LongPollingTransport extends ClientTransport
     @Override
     public void init(BayeuxClient bayeux, HttpURI uri)
     {
+        _aborted = false;
         _bayeuxClient = bayeux;
         _uri = uri;
         Pattern uriRegexp = Pattern.compile("(^https?://(([^:/\\?#]+)(:(\\d+))?))?([^\\?#]*)(.*)?");
@@ -83,6 +88,22 @@ public class LongPollingTransport extends ClientTransport
             _appendMessageType = afterPath == null || afterPath.trim().length() == 0;
         }
         super.init(bayeux, uri);
+    }
+
+    @Override
+    public void abort()
+    {
+        synchronized (this)
+        {
+            _aborted = true;
+            for (HttpExchange exchange : _exchanges)
+                exchange.cancel();
+        }
+    }
+
+    @Override
+    public void reset()
+    {
     }
 
     @Override
@@ -109,6 +130,14 @@ public class LongPollingTransport extends ClientTransport
             httpExchange.setRequestContent(new ByteArrayBuffer(content, "UTF-8"));
             if (_bayeuxClient != null)
                 _bayeuxClient.customize(httpExchange);
+
+            synchronized (this)
+            {
+                if (_aborted)
+                    throw new IllegalStateException("Aborted");
+                _exchanges.add(httpExchange);
+            }
+
             _httpClient.send(httpExchange);
         }
         catch (Exception x)
@@ -192,6 +221,7 @@ public class LongPollingTransport extends ClientTransport
         @Override
         protected void onResponseComplete() throws IOException
         {
+            complete();
             if (getResponseStatus() == 200)
             {
                 String content=getResponseContent();
@@ -212,24 +242,30 @@ public class LongPollingTransport extends ClientTransport
         @Override
         protected void onConnectionFailed(Throwable x)
         {
+            complete();
             _listener.onConnectException(x);
         }
 
         @Override
         protected void onException(Throwable x)
         {
+            complete();
             _listener.onException(x);
         }
 
         @Override
         protected void onExpire()
         {
+            complete();
             _listener.onExpire();
         }
-    }
 
-    @Override
-    public void reset()
-    {
+        private void complete()
+        {
+            synchronized (LongPollingTransport.this)
+            {
+                _exchanges.remove(this);
+            }
+        }
     }
 }

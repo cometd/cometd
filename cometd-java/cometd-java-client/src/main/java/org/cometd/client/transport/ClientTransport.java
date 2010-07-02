@@ -44,6 +44,8 @@ public abstract class ClientTransport extends AbstractTransport
         _maxNetworkDelay=getOption(MAX_NETWORK_DELAY_OPTION,_maxNetworkDelay);
     }
 
+    public abstract void abort();
+
     /* ------------------------------------------------------------ */
     public abstract void reset();
 
