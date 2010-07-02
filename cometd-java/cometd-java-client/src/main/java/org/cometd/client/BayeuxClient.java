@@ -286,6 +286,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
         }
     }
 
+    public void abort()
+    {
+        transport.abort();
+        terminate();
+    }
+
     @Override
     public void receive(Message message, Message.Mutable mutable)
     {
