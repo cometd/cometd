@@ -117,10 +117,10 @@ public class CometdDemo
 
         ServletHolder comet = context.addServlet(CometdServlet.class, "/cometd/*");
         comet.setInitParameter("timeout","20000");
-        comet.setInitParameter("interval","0");
+        comet.setInitParameter("interval","100");
         comet.setInitParameter("maxInterval","10000");
         comet.setInitParameter("multiFrameInterval","5000");
-        comet.setInitParameter("logLevel","3");
+        comet.setInitParameter("logLevel","1");
         comet.setInitOrder(2);
 
         ServletHolder demo=context.addServlet(CometdDemoServlet.class, "/demo");
