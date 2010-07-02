@@ -206,7 +206,7 @@ public class MultipleClientSessionsTest
 
         // Disconnect this client normally, the last client must switch to long poll
         client4.disconnect();
-        client4.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+        assertTrue(client4.waitFor(1000, BayeuxClient.State.DISCONNECTED));
 
         // Be sure the last client had the time to switch to long poll mode
         Thread.sleep(timeout + multiSessionInterval);
@@ -219,6 +219,6 @@ public class MultipleClientSessionsTest
         assertTrue(advice == null || !advice.containsKey("multiple-clients"));
 
         client5.disconnect();
-        client5.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+        assertTrue(client5.waitFor(1000, BayeuxClient.State.DISCONNECTED));
     }
 }
