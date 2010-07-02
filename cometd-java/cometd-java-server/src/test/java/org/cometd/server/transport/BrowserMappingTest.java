@@ -18,6 +18,7 @@ public class BrowserMappingTest extends AbstractBayeuxServerTest
         this.bayeux = bayeux;
     }
 
+    /*
     public void testBayeuxBrowserMapping() throws Exception
     {
         LongPollingTransport transport = new JSONTransport(bayeux);
@@ -42,4 +43,5 @@ public class BrowserMappingTest extends AbstractBayeuxServerTest
         browserClients = transport.getBrowserSessions(browserId);
         assertNull(browserClients);
     }
+    */
 }
