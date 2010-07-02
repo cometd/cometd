@@ -41,7 +41,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     private final MutableEntrySet _mutableSet;
     private int _size;
     private ImmutableHashMap<?,Object> _parent;
-	
+
 
     /* ------------------------------------------------------------ */
     public ImmutableHashMap()
@@ -79,10 +79,10 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     {
         if (key == null)
             throw new IllegalArgumentException();
-        
+
         final int hash = key.hashCode();
         final int index=hash & (_entries.length-1);
-        
+
         for (ImmutableEntry<K,V> e = _entries[index]; e != null; e = e._next) 
         {
             if (e._hash == hash && key.equals(e._key)) 
@@ -90,7 +90,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         }
         return null;
     }    
-    
+
     /* ------------------------------------------------------------ */
     /** Get an entry reference.
      * <p>
@@ -110,10 +110,10 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     {
         if (key == null)
             throw new IllegalArgumentException();
-        
+
         final int hash = key.hashCode();
         final int index=hash & (_entries.length-1);
-        
+
         ImmutableEntry<K,V> e = _entries[index];
         if (e!=null)
         {
@@ -121,17 +121,17 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
                 return e;
             throw new IllegalStateException(key+" is not top level");
         }
-        
+
         return null;
     }    
-    
+
     /* ------------------------------------------------------------ */
     /** Called if the map is about to be changed.
      * @param key The key to be changed, or null if multiple keys.
      * @throws UnsupportedOperationException If change is not allowed/
      */
     protected void onChange(K key)
-        throws UnsupportedOperationException 
+    throws UnsupportedOperationException 
     {
     }
 
@@ -166,15 +166,15 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         }
         return null;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public int size()
     {
         return _size;
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     public class Mutable extends AbstractMap<K, V> implements Map<K,V>
@@ -184,7 +184,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         {
             return ImmutableHashMap.this;
         }
-        
+
         /* ------------------------------------------------------------ */
         @Override
         public Set<java.util.Map.Entry<K, V>> entrySet()
@@ -238,10 +238,10 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         {
             if (key == null)
                 throw new IllegalArgumentException();
-            
+
             final int hash = key.hashCode();
             final int index=hash & (_entries.length-1);
-            
+
             for (ImmutableEntry<K,V> e = _entries[index]; e != null; e = e._next) 
             {
                 if (e._hash == hash && key.equals(e._key)) 
@@ -271,10 +271,10 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         {
             if (key == null)
                 throw new IllegalArgumentException();
-            
+
             final int hash = key.hashCode();
             final int index=hash & (_entries.length-1);
-            
+
             ImmutableEntry<K,V> e = _entries[index];
             if (e!=null)
             {
@@ -282,26 +282,26 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
                     return e._mutable;
                 throw new IllegalStateException(key+" is not top level");
             }
-            
+
             e = new ImmutableEntry<K,V>(ImmutableHashMap.this,hash,key,null);
             _entries[index] = e;
-            
+
             return e._mutable;
         }    
-        
-        
+
+
         /* ------------------------------------------------------------ */
         @Override
         public V put(K key, V value) 
         {
             if (key == null)
                 throw new IllegalArgumentException();
-            
+
             onChange(key);
-            
+
             final int hash = key.hashCode();
             final int index=hash & (_entries.length-1);
-            
+
             ImmutableEntry<K,V> last = null;
             for (ImmutableEntry<K,V> e = _entries[index]; e != null; e = e._next) 
             {
@@ -326,7 +326,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         public void clear()
         {
             onChange(null);
-            
+
             for (int i=_entries.length; i-->0;)
             {
                 int depth=0;
@@ -352,10 +352,10 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
                 throw new IllegalArgumentException();
 
             onChange((K)key);
-            
+
             final int hash = key.hashCode();
             final int index=hash & (_entries.length-1);
-            
+
             for (ImmutableEntry<K,V> e = _entries[index]; e != null; e = e._next) 
             {
                 if (e._hash == hash && key.equals(e._key)) 
@@ -374,7 +374,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         {
             return _size;
         }
-        
+
     }
 
 
@@ -394,7 +394,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             return _size;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     class ImmutableEntrySet extends AbstractSet<java.util.Map.Entry<K, V>>
@@ -430,7 +430,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             _hash = hash;
             _mutable.setValue(v);
         }
-        
+
         public K getKey()
         {
             return _key;
@@ -454,7 +454,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         {
             return _mutable;
         }
-        
+
         @Override
         public String toString()
         {
@@ -466,12 +466,12 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     public static final class MutableEntry<K,V> implements Map.Entry<K,V>
     {
         final ImmutableEntry<K, V> _immutable;
-        
+
         MutableEntry(ImmutableEntry<K, V> immutable)
         {
             _immutable=immutable;
         }
-        
+
         public K getKey()
         {
             return _immutable._key;
@@ -492,19 +492,19 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
                 map.onChange(_immutable._key);
                 map=map._parent;
             }
-            
+
             V old = _immutable._value;
             if (old instanceof ImmutableHashMap.Mutable)
             {
-            	if (((ImmutableHashMap.Mutable)old).asImmutable()._parent!=null)
-            		throw new IllegalStateException("Mutable DAG!");
-            	((ImmutableHashMap.Mutable)old).asImmutable()._parent=null;
+                if (((ImmutableHashMap.Mutable)old).asImmutable()._parent!=null)
+                    throw new IllegalStateException("Mutable DAG!");
+                ((ImmutableHashMap.Mutable)old).asImmutable()._parent=null;
             }
-            
+
             _immutable._value = value;
 
             if (value instanceof ImmutableHashMap.Mutable)
-            	((ImmutableHashMap.Mutable)value).asImmutable()._parent=_immutable._map;
+                ((ImmutableHashMap.Mutable)value).asImmutable()._parent=_immutable._map;
 
             if (old!=null && _immutable._value==null)
                 _immutable._map._size--;
@@ -518,14 +518,14 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         {
             return _immutable;
         }
-        
+
         @Override
         public String toString()
         {
             return super.toString()+"("+_immutable._key+","+_immutable._value+")";
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     class EntryIterator 
@@ -533,7 +533,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
         protected int _index=0;
         protected ImmutableEntry<K,V> _entry;
         protected ImmutableEntry<K,V> _last;
-        
+
         EntryIterator()
         {
             while(_entry==null && _index<_entries.length)
@@ -545,7 +545,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
                 }
             }
         }
-        
+
         public boolean hasNext()
         {
             return _entry!=null;
@@ -556,7 +556,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             if (_entry==null)
                 throw new NoSuchElementException();
             ImmutableEntry<K,V> entry=_entry;
-            
+
             _entry=_entry._next;
             while(_entry!=null && _entry._value==null)
             {
@@ -574,7 +574,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             return entry;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     class ImmutableEntryIterator extends EntryIterator implements Iterator<java.util.Map.Entry<K,V>>
@@ -592,7 +592,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             throw new UnsupportedOperationException();
         }  
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     class MutableEntryIterator extends EntryIterator implements Iterator<java.util.Map.Entry<K,V>>

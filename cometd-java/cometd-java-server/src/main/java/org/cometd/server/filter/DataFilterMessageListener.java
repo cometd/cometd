@@ -13,39 +13,39 @@ public class DataFilterMessageListener implements ServerChannel.MessageListener
 {
     final BayeuxServerImpl _bayeux;
     final List<DataFilter> _filters;
-    
+
     public DataFilterMessageListener(BayeuxServer bayeux, DataFilter... filters)
     {
-    	_bayeux=(BayeuxServerImpl)bayeux;
+        _bayeux=(BayeuxServerImpl)bayeux;
         _filters=Arrays.asList(filters);
     }
-    
+
     @Override
     public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
     {
-    	try
-    	{
-    		Object data = message.getData();
-    		final Object orig = data;
-    		for (DataFilter filter : _filters)
-    		{
-    			data=filter.filter(from,channel,data);
-    			if (data==null)
-    				return false;
-    		}
-    		if (data!=orig)
-    			message.setData(data);
-    		return true;
-    	}
-    	catch(DataFilter.Abort a)
-    	{
-    		_bayeux.getLogger().debug(a);
-    	}
-    	catch(Exception e)
-    	{
-    		_bayeux.getLogger().warn(e);
-    	}
-		return false;
+        try
+        {
+            Object data = message.getData();
+            final Object orig = data;
+            for (DataFilter filter : _filters)
+            {
+                data=filter.filter(from,channel,data);
+                if (data==null)
+                    return false;
+            }
+            if (data!=orig)
+                message.setData(data);
+            return true;
+        }
+        catch(DataFilter.Abort a)
+        {
+            _bayeux.getLogger().debug(a);
+        }
+        catch(Exception e)
+        {
+            _bayeux.getLogger().warn(e);
+        }
+        return false;
     }
 
 }
