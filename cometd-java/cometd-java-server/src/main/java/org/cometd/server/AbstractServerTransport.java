@@ -372,7 +372,13 @@ public abstract class AbstractServerTransport implements ServerTransport
         _advice = advice;
     }
 
-
+    /* ------------------------------------------------------------ */
+    /** 
+     * Housekeeping sweep, called a regular intervals
+     */
+    protected void doSweep()
+    {
+    }
 
     /* ------------------------------------------------------------ */
     public interface Scheduler
