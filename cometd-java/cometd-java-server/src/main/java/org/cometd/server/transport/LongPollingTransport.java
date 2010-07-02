@@ -96,6 +96,11 @@ public abstract class LongPollingTransport extends HttpTransport
         return browser_id;
     }
 
+    /**
+     * Increment the browser ID count.
+     * @param browserId
+     * @return true if the browser ID count is below the max sessions per browser value.  If false is returned, the count is not incremented.
+     */
     protected boolean incBrowserId(String browserId)
     {
         if (_maxSessionsPerBrowser<0)
