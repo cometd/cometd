@@ -116,11 +116,11 @@ public class CometdDemo
         dftServlet.setInitOrder(1);
 
         ServletHolder comet = context.addServlet(CometdServlet.class, "/cometd/*");
-        comet.setInitParameter("timeout","60000");
+        comet.setInitParameter("timeout","20000");
         comet.setInitParameter("interval","0");
-        comet.setInitParameter("maxInterval","20000");
+        comet.setInitParameter("maxInterval","10000");
         comet.setInitParameter("multiFrameInterval","5000");
-        comet.setInitParameter("logLevel","1");
+        comet.setInitParameter("logLevel","3");
         comet.setInitOrder(2);
 
         ServletHolder demo=context.addServlet(CometdDemoServlet.class, "/demo");

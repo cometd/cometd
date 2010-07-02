@@ -5,7 +5,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.text.ParseException;
 import java.util.List;
-import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -49,15 +48,6 @@ public class WebSocketTransport extends HttpTransport
         setOption(INTERVAL_OPTION,getInterval());
         setMaxInterval(15000);
         setOption(MAX_INTERVAL_OPTION,getMaxInterval());
-    }
-
-    @Override
-    public Set<String> getOptionNames()
-    {
-        Set<String> options = super.getOptionNames();
-        options.add(PROTOCOL_OPTION);
-        options.add(BUFFER_SIZE_OPTION);
-        return options;
     }
 
     @Override
