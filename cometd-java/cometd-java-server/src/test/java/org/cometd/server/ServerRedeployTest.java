@@ -2,6 +2,7 @@ package org.cometd.server;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.http.HttpStatus;
 
 /**
  * @version $Revision$ $Date$
@@ -49,6 +50,6 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest
 
         // Expect the connect to be back with an exception
         assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        assertEquals(408, connect.getResponseStatus());
+        assertEquals(HttpStatus.REQUEST_TIMEOUT_408,connect.getResponseStatus());
     }
 }

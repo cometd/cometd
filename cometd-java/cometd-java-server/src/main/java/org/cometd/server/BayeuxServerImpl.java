@@ -60,7 +60,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
     private final ConcurrentMap<String, ServerSessionImpl> _sessions = new ConcurrentHashMap<String, ServerSessionImpl>();
     private final ConcurrentMap<String, ServerChannelImpl> _channels = new ConcurrentHashMap<String, ServerChannelImpl>();
-    private final ConcurrentMap<String, Transport> _transports = new ConcurrentHashMap<String, Transport>();
+    private final ConcurrentMap<String, ServerTransport> _transports = new ConcurrentHashMap<String, ServerTransport>();
     private final List<String> _allowedTransports = new CopyOnWriteArrayList<String>();
     private final ThreadLocal<AbstractServerTransport> _currentTransport = new ThreadLocal<AbstractServerTransport>();
     private final Map<String,Object> _options = new TreeMap<String, Object>();
@@ -88,7 +88,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
 
         setOption("tickIntervalMs","97");
-        setOption("sweepIntervalMs","997");
+        setOption("sweepIntervalMs","2997");
     }
 
     /* ------------------------------------------------------------ */
@@ -744,7 +744,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public void addTransport(Transport transport)
     {
-        _transports.put(transport.getName(),transport);
+        _transports.put(transport.getName(),(ServerTransport)transport);
     }
 
     /* ------------------------------------------------------------ */
@@ -807,6 +807,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             ServerChannelImpl sci=_channels.get(channel);
             if (sci!=null)
                 sci.doSweep(dust.get(channel));
+        }
+        
+        for(ServerTransport transport : _transports.values())
+        {
+        	if (transport instanceof AbstractServerTransport)
+        		((AbstractServerTransport)transport).doSweep();
         }
     }
 

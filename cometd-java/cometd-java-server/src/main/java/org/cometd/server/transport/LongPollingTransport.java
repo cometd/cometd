@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -46,11 +47,13 @@ public abstract class LongPollingTransport extends HttpTransport
     public final static String AUTOBATCH_OPTION="autoBatch";
 
     private final ConcurrentHashMap<String, AtomicInteger> _browserMap=new ConcurrentHashMap<String, AtomicInteger>();
-
+    private final Map<String,AtomicInteger> _browserSweep = new ConcurrentHashMap<String,AtomicInteger>();
+    
     protected String _browserId="BAYEUX_BROWSER";
     private int _maxSessionsPerBrowser=1;
     private long _multiSessionInterval=2000;
     private boolean _autoBatch=true;
+    private long _lastSweep;
 
     protected LongPollingTransport(BayeuxServerImpl bayeux,String name)
     {
@@ -104,11 +107,19 @@ public abstract class LongPollingTransport extends HttpTransport
             AtomicInteger new_count = new AtomicInteger();
             count=_browserMap.putIfAbsent(browserId,new_count);
             if (count==null)
+            {
                 count=new_count;
+            }
         }
 
-        // TODO, the maxSessionsPerBrowser should be parameterized on user-agent
+        // increment
         int sessions=count.incrementAndGet();
+        
+        // If was zero, remove from the sweep
+        if (sessions==1)
+        	_browserSweep.remove(browserId);
+        	
+        // TODO, the maxSessionsPerBrowser should be parameterized on user-agent
         if (sessions>_maxSessionsPerBrowser)
         {
             count.decrementAndGet();
@@ -123,7 +134,7 @@ public abstract class LongPollingTransport extends HttpTransport
         AtomicInteger count = _browserMap.get(browserId);
         if (count!=null && count.decrementAndGet()==0)
         {
-            _browserMap.remove(browserId,__zero);
+        	_browserSweep.put(browserId,new AtomicInteger(0));
         }
     }
 
@@ -318,6 +329,38 @@ public abstract class LongPollingTransport extends HttpTransport
         getBayeux().getLogger().debug("Error parsing JSON: " + json, exception);
         response.sendError(HttpServletResponse.SC_BAD_REQUEST);
     }
+    
+    /**
+     * Sweep the transport for old Browser IDs
+     * @see org.cometd.server.AbstractServerTransport#doSweep()
+     */
+    protected void doSweep()
+    {
+    	long now = System.currentTimeMillis();
+    	if (_lastSweep!=0)
+    	{
+    		// Calculate the maximum sweeps that a browser ID can be 0 as the
+    		// maximum interval time divided by the sweep period, doubled for safety
+        	int maxSweeps = (int)(2*getMaxInterval()/(now-_lastSweep));
+        	
+        	for (Map.Entry<String, AtomicInteger> entry: _browserSweep.entrySet())
+        	{
+        		AtomicInteger count = entry.getValue();
+        		// if the ID has been in the sweep map for 3 sweeps
+        		if (count.incrementAndGet()>maxSweeps)
+        		{
+        			String key=entry.getKey();
+        			// remove it from both browser Maps
+        			if (_browserSweep.remove(key)==count && _browserMap.get(key).get()==0)
+        			{
+        				_browserMap.remove(key);
+        				getBayeux().getLogger().debug("Swept browser  ID {}",key);
+        			}
+        		}
+        	}
+    	}
+    	_lastSweep=now;
+    }
 
     private PrintWriter sendQueue(HttpServletRequest request, HttpServletResponse response,ServerSessionImpl session, PrintWriter writer)
         throws IOException
@@ -362,7 +405,7 @@ public abstract class LongPollingTransport extends HttpTransport
                 try
                 {
                     decBrowserId();
-                    ((HttpServletResponse)_continuation.getServletResponse()).sendError(503);
+                    ((HttpServletResponse)_continuation.getServletResponse()).sendError(HttpServletResponse.SC_REQUEST_TIMEOUT);
                 }
                 catch(IOException e)
                 {
