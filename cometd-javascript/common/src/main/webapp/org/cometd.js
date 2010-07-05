@@ -152,6 +152,7 @@ org.cometd.Cometd = function(name)
     var _maxNetworkDelay;
     var _requestHeaders;
     var _appendMessageTypeToURL;
+    var _autoBatch;
     var _crossDomain = false;
     var _transports = new org.cometd.TransportRegistry();
     var _transport;
@@ -339,6 +340,7 @@ org.cometd.Cometd = function(name)
         _maxNetworkDelay = configuration.maxNetworkDelay || 10000;
         _requestHeaders = configuration.requestHeaders || {};
         _appendMessageTypeToURL = configuration.appendMessageTypeToURL !== false;
+        _autoBatch = configuration.autoBatch === true;
         _defaultAdvice.timeout = configuration.timeout || 60000;
         _defaultAdvice.interval = configuration.interval || 0;
         _defaultAdvice.reconnect = configuration.reconnect || 'retry';
@@ -649,7 +651,7 @@ org.cometd.Cometd = function(name)
                 }
             }
         };
-        _debug('Send, sync =', sync, envelope, org.cometd.JSON.toJSON(envelope));
+        _debug('Send, sync =', sync, envelope);
         _transport.send(envelope, longpoll);
     }
 
@@ -2071,6 +2073,25 @@ org.cometd.Cometd = function(name)
             _metaConnectRequest = null;
         }
 
+        function _coalesceEnvelopes(envelope)
+        {
+            while (_envelopes.length > 0)
+            {
+                var envelopeAndRequest = _envelopes[0];
+                var newEnvelope = envelopeAndRequest[0];
+                var newRequest = envelopeAndRequest[1];
+                if (newEnvelope.url === envelope.url &&
+                        newEnvelope.sync === envelope.sync)
+                {
+                    _envelopes.shift();
+                    envelope.messages = envelope.messages.concat(newEnvelope.messages);
+                    _debug('Coalesced', newEnvelope.messages.length, 'messages from request', newRequest.id);
+                    continue;
+                }
+                break;
+            }
+        }
+
         function _complete(request, success)
         {
             var self = this;
@@ -2090,7 +2111,12 @@ org.cometd.Cometd = function(name)
                 _debug('Transport dequeued request', nextRequest.id);
                 if (success)
                 {
+                    if (_autoBatch)
+                    {
+                        _coalesceEnvelopes(nextEnvelope);
+                    }
                     _queueSend.call(this, nextEnvelope);
+                    _debug('Transport completed request', request.id, nextEnvelope);
                 }
                 else
                 {
