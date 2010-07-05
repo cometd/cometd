@@ -13,7 +13,7 @@
     </context-param>
 
     <!-- Portability Filter, needed only to run on non Jetty or non Servlet-3.0 containers -->
-<!--
+    <!--
     <filter>
         <filter-name>continuation</filter-name>
         <filter-class>org.eclipse.jetty.continuation.ContinuationFilter</filter-class>
@@ -22,25 +22,24 @@
         <filter-name>continuation</filter-name>
         <url-pattern>/cometd/*</url-pattern>
     </filter-mapping>
--->
-<!--
--->
+    -->
+
+    <!-- Filter to support cross domain requests -->
     <filter>
         <filter-name>cross-origin</filter-name>
-        <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+        <filter-class>org.webtide.demo.WebSocketCrossOriginFilter</filter-class>
+        <!--async-supported>true</async-supported-->
     </filter>
     <filter-mapping>
         <filter-name>cross-origin</filter-name>
         <url-pattern>/cometd/*</url-pattern>
     </filter-mapping>
 
+    <!-- Cometd Servlet -->
     <servlet>
         <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.continuation.ContinuationCometdServlet</servlet-class>
-        <init-param>
-            <param-name>filters</param-name>
-            <param-value>/WEB-INF/filters.json</param-value>
-        </init-param>
+        <servlet-class>org.cometd.server.CometdServlet</servlet-class>
+        <!--async-supported>true</async-supported-->
         <init-param>
             <param-name>timeout</param-name>
             <param-value>20000</param-value>
@@ -54,23 +53,18 @@
             <param-value>10000</param-value>
         </init-param>
         <init-param>
-            <param-name>maxLazyLatency</param-name>
+            <param-name>maxLazyTimeout</param-name>
             <param-value>5000</param-value>
         </init-param>
         <init-param>
-            <param-name>multiFrameInterval</param-name>
+            <param-name>long-polling.multiSessionInterval</param-name>
             <param-value>2000</param-value>
         </init-param>
         <init-param>
             <param-name>logLevel</param-name>
             <param-value>0</param-value>
         </init-param>
-        <init-param>
-            <param-name>channelIdCacheLimit</param-name>
-            <param-value>-1</param-value>
-        </init-param>
         <load-on-startup>1</load-on-startup>
-        <!--<async-supported>true</async-supported>-->
     </servlet>
     <servlet-mapping>
         <servlet-name>cometd</servlet-name>
@@ -83,6 +77,7 @@
         <load-on-startup>2</load-on-startup>
     </servlet>
 
+    <!-- Configure Oort Cloud, used by Auction demo -->
     <servlet>
         <servlet-name>oort</servlet-name>
         <servlet-class>org.cometd.oort.OortServlet</servlet-class>
@@ -90,8 +85,7 @@
             <param-name>oort.url</param-name>
             <param-value>http://localhost:8080/cometd</param-value>
         </init-param>
-        <!-- Set oort.cloud to a comma separated list of other oort.urls in the cluster -->
-        <!--
+        <!-- Define the Oort cloud (comma separated list of other oort.urls in the cluster)
         <init-param>
             <param-name>oort.cloud</param-name>
             <param-value>http://localhost:8081/cometd</param-value>
@@ -100,6 +94,7 @@
         <load-on-startup>3</load-on-startup>
     </servlet>
 
+    <!-- Configure Seti ID management, used by Auction demo -->
     <servlet>
         <servlet-name>seti</servlet-name>
         <servlet-class>org.cometd.oort.SetiServlet</servlet-class>
@@ -110,6 +105,7 @@
         <load-on-startup>4</load-on-startup>
     </servlet>
 
+    <!-- Auction demo Servlet-->
     <servlet>
         <servlet-name>auctionDemo</servlet-name>
         <servlet-class>org.webtide.demo.auction.AuctionServlet</servlet-class>

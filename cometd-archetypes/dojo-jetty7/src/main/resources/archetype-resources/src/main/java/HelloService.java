@@ -6,26 +6,26 @@ package ${package};
 import java.util.Map;
 import java.util.HashMap;
 
-import org.cometd.Bayeux;
-import org.cometd.Client;
-import org.cometd.Message;
-import org.cometd.server.BayeuxService;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.AbstractService;
 
-public class HelloService extends BayeuxService
+public class HelloService extends AbstractService
 {
-    public HelloService(Bayeux bayeux)
+    public HelloService(BayeuxServer bayeux)
     {
         super(bayeux, "hello");
-        subscribe("/service/hello", "processHello");
+        addService("/service/hello", "processHello");
     }
 
-    public void processHello(Client remote, Message message)
+    public void processHello(ServerSession remote, Message message)
     {
-        Map<String, Object> input = (Map<String, Object>)message.getData();
+        Map<String, Object> input = message.getDataAsMap();
         String name = (String)input.get("name");
 
         Map<String, Object> output = new HashMap<String, Object>();
         output.put("greeting", "Hello, " + name);
-        remote.deliver(getClient(), "/hello", output, null);
+        remote.deliver(getServerSession(), "/hello", output, null);
     }
 }

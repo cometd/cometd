@@ -3,9 +3,17 @@
     $(document).ready(function()
     {
         // Check if there was a saved application state
-        var stateCookie = org.cometd.COOKIE.get('org.cometd.demo.state');
+        var stateCookie = org.cometd.COOKIE?org.cometd.COOKIE.get('org.cometd.demo.state'):null;
         var state = stateCookie ? org.cometd.JSON.fromJSON(stateCookie) : null;
         var chat = new Chat(state);
+
+        // restore some values
+        if (state)
+        {
+            $('#username').val(state.username);
+            $('#useServer').attr('checked',state.useServer);
+            $('#altServer').val(state.altServer);
+        }
 
         // Setup UI
         $('#join').show();
@@ -83,6 +91,7 @@
             {
                 $.cometd.publish('/chat/demo', {
                     user: _username,
+                    membership: 'leave',
                     chat: _username + ' has left'
                 });
                 _unsubscribe();
@@ -196,13 +205,10 @@
 
         function _connectionInitialized()
         {
+            // first time connection for this client, so subscribe tell everybody.
             $.cometd.batch(function()
             {
                 _subscribe();
-                $.cometd.publish('/service/members', {
-                    user: _username,
-                    room: '/chat/demo'
-                });
                 $.cometd.publish('/chat/demo', {
                     user: _username,
                     membership: 'join',
@@ -213,6 +219,8 @@
 
         function _connectionEstablished()
         {
+            // connection establish (maybe not for first time), so just
+            // tell local user and update membership
             _self.receive({
                 data: {
                     user: 'system',
@@ -220,6 +228,7 @@
                 }
             });
             $.cometd.publish('/service/members', {
+                user: _username,
                 room: '/chat/demo'
             });
         }
@@ -290,15 +299,24 @@
 
         $(window).unload(function()
         {
-            $.cometd.reload();
-            // Save the application state only if the user was chatting
-            if (_wasConnected && _username)
+            if ($.cometd.reload)
             {
-                var expires = new Date();
-                expires.setTime(expires.getTime() + 5 * 1000);
-                org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
-                    username: _username
-                }), { 'max-age': 5, expires: expires });
+                $.cometd.reload();
+                // Save the application state only if the user was chatting
+                if (_wasConnected && _username)
+                {
+                    var expires = new Date();
+                    expires.setTime(expires.getTime() + 5 * 1000);
+                    org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
+                        username: _username,
+                        useServer: $('#useServer').attr('checked'),
+                        altServer: $('#altServer').val()
+                    }), { 'max-age': 5, expires: expires });
+                }
+            }
+            else
+            {
+                $.cometd.disconnect();
             }
         });
     }

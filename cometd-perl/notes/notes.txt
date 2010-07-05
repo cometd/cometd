@@ -1,3 +1,0 @@
-# may need this to recycle TIME_WAIT connections faster
-
-echo '1' >/proc/sys/net/ipv4/tcp_tw_recycle

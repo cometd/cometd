@@ -1,41 +1,42 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>org.cometd</groupId>
         <artifactId>cometd-project</artifactId>
-        <version>1.1.2-SNAPSHOT</version>
+        <version>2.0.0.RC3-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.cometd.java</groupId>
-    <artifactId>cometd-java-project</artifactId>
+    <artifactId>cometd-java</artifactId>
     <packaging>pom</packaging>
     <name>CometD :: Java</name>
 
+    <properties>
+    </properties>
+
     <modules>
-        <module>api</module>
-        <module>server</module>
-        <module>client</module>
-        <module>oort</module>
-        <module>examples</module>
+        <module>bayeux-api</module>
+        <module>cometd-java-common</module>
+        <module>cometd-java-server</module>
+        <module>cometd-java-client</module>
+        <module>cometd-java-oort</module>
+        <module>cometd-java-examples</module>
     </modules>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.cometd.java</groupId>
-                <artifactId>cometd-api</artifactId>
-                <version>${project.version}</version>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>1.5.6</version>
             </dependency>
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
-                <version>3.8.2</version>
-            </dependency>
-            <dependency>
-                <groupId>javax.servlet</groupId>
-                <artifactId>servlet-api</artifactId>
-                <version>2.5</version>
+                <version>4.8.1</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

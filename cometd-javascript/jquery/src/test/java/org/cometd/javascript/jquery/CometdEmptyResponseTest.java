@@ -10,7 +10,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.cometd.Bayeux;
 import org.cometd.javascript.Latch;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
@@ -61,7 +60,7 @@ public class CometdEmptyResponseTest extends AbstractCometdJQueryTest
 
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            response.setContentType(Bayeux.JSON_CONTENT_TYPE);
+            response.setContentType("application/json;charset=UTF-8");
         }
 
         public void destroy()

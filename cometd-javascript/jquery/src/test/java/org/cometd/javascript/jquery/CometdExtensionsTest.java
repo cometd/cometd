@@ -117,6 +117,9 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.disconnect(true);");
         assertTrue(readyLatch.await(1000));
 
+        // Wait for the connect to return
+        Thread.sleep(500);
+
         assertEquals(1, listener.getOutgoingMessageCount()); // disconnect
         assertEquals(2, listener.getIncomingMessageCount()); // connect2, disconnect
     }

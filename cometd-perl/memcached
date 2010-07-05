@@ -1,3 +1,0 @@
-#!/bin/sh
-
-/usr/local/bin/memcached -d -m 8 -l 127.0.0.1 -p 11211

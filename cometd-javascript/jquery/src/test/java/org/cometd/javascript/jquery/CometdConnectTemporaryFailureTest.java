@@ -16,7 +16,7 @@ import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 
 /**
- * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
+ * @version $Revision$ $Date$
  */
 public class CometdConnectTemporaryFailureTest extends AbstractCometdJQueryTest
 {

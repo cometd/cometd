@@ -2,22 +2,19 @@ package org.cometd.javascript.jquery;
 
 import java.util.Map;
 
-import org.cometd.Bayeux;
-import org.cometd.Client;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.javascript.Latch;
-import org.cometd.server.AbstractBayeux;
-import org.cometd.server.BayeuxService;
+import org.cometd.server.AbstractService;
+import org.cometd.server.BayeuxServerImpl;
 
 /**
  * @version $Revision$ $Date$
  */
 public class CometdDeliverTest extends AbstractCometdJQueryTest
 {
-    private DeliverService service;
-
-    protected void customizeBayeux(AbstractBayeux bayeux)
+    protected void customizeBayeux(BayeuxServerImpl bayeux)
     {
-        service = new DeliverService(bayeux);
+        new DeliverService(bayeux);
     }
 
     public void testDeliver() throws Exception
@@ -58,21 +55,21 @@ public class CometdDeliverTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.disconnect(true);");
     }
 
-    public static class DeliverService extends BayeuxService
+    public static class DeliverService extends AbstractService
     {
-        public DeliverService(Bayeux bayeux)
+        public DeliverService(BayeuxServerImpl bayeux)
         {
             super(bayeux, "deliver");
-            subscribe("/service/deliver", "deliver");
+            addService("/service/deliver", "deliver");
         }
 
-        public void deliver(Client remote, String channel, Object messageData, String messageId)
+        public void deliver(ServerSession remote, String channel, Object messageData, String messageId)
         {
-            Map<String, ?> data = (Map<String,?>)messageData;
+            Map<String, ?> data = (Map<String, ?>)messageData;
             Boolean deliver = (Boolean) data.get("deliver");
             if (deliver)
             {
-                remote.deliver(getClient(), channel, messageData, messageId);
+                remote.deliver(getServerSession(), channel, messageData, messageId);
             }
         }
     }

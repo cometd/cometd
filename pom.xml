@@ -1,15 +1,24 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.cometd</groupId>
     <artifactId>cometd-project</artifactId>
     <packaging>pom</packaging>
     <name>CometD</name>
-    <version>1.1.2-SNAPSHOT</version>
-    <url>http://www.cometd.org</url>
+    <version>2.0.0.RC3-SNAPSHOT</version>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jetty-version>7.1.4.v20100610</jetty-version>
+        <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
+    </properties>
+
+    <url>http://cometd.org</url>
     <description>
         The CometD project is a scalable HTTP-based event routing bus that uses the AJAX push technology pattern known as "Comet"
     </description>
+
     <inceptionYear>2008</inceptionYear>
 
     <issueManagement>
@@ -78,33 +87,27 @@
 
     <distributionManagement>
         <repository>
-            <id>cometdReleases</id>
+            <id>oss.sonatype.org</id>
             <name>CometD Maven2 Repository</name>
-            <url>http://oss.repository.sonatype.org/service/local/staging/deploy/maven2</url>
+            <url>http://oss.sonatype.org/service/local/staging/deploy/maven2</url>
         </repository>
         <snapshotRepository>
-            <id>cometdSnapshots</id>
+            <id>oss.sonatype.org</id>
             <name>CometD Maven2 Snapshot Repository</name>
-            <url>http://oss.repository.sonatype.org/content/repositories/cometd-snapshots</url>
+            <url>http://oss.sonatype.org/content/repositories/cometd-snapshots</url>
         </snapshotRepository>
     </distributionManagement>
 
     <scm>
-        <connection>scm:svn:http://svn.cometd.org</connection>
-        <developerConnection>scm:svn:https://svn.cometd.org</developerConnection>
-        <url>http://svn.cometd.org</url>
+        <connection>scm:svn:http://svn.cometd.org/branches/cometd2</connection>
+        <developerConnection>scm:svn:https://svn.cometd.org/branches/cometd2</developerConnection>
+        <url>http://svn.cometd.org/branches/cometd2</url>
     </scm>
 
     <organization>
         <name>Dojo Foundation</name>
         <url>http://dojofoundation.org</url>
     </organization>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.1.4.v20100610</jetty-version>
-        <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
-    </properties>
 
     <modules>
         <module>cometd-archetypes</module>
@@ -167,9 +170,11 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
-                    <verbose>false</verbose>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                    <showDeprecation>true</showDeprecation>
+                    <showWarnings>true</showWarnings>
+                    <compilerArgument>-Xlint:all,-serial,-unchecked</compilerArgument>
                 </configuration>
             </plugin>
             <plugin>

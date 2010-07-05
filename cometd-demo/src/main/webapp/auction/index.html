@@ -1,52 +1,52 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
-    <META http-equiv="Pragma" content="no-cache">
-    <META http-equiv="Cache-Control" content="no-cache,no-store">
-    <META HTTP-EQUIV="Content-Script-Type" CONTENT="text/javascript">
-    <title>CometD Oort Auction</title>
-    <link rel="stylesheet" type="text/css" href="css/styles.css"/>
-
-    <script type="text/javascript" src="../dojo/dojo.js"></script>
-
-    <!-- These scripts should all be ported to dojo -->
-    <script type='text/javascript' src='js/prototype.js'></script>
-    <script type="text/javascript" src='js/scriptaculous.js'></script>
-    <script type="text/javascript" src='js/behaviour.js'></script>
-    <script type="text/javascript" src='js/builder.js'></script>
-    <script type="text/javascript" src='js/effects.js'></script>
-    <script type="text/javascript" src='js/controls.js'></script>
-    <script type="text/javascript" src='js/dragdrop.js'></script>
-    <script type='text/javascript' src='js/editinplace.js'></script>
-    <script type='text/javascript' src='js/dwr-util.js'></script>
-
-    <script type="text/javascript">
-        dojo.require('dojox.cometd');
-        dojo.require("dojox.cometd.timesync");
-
-        dojo.addOnLoad(function()
+  <META http-equiv="Pragma" content="no-cache">
+  <META http-equiv="Cache-Control" content="no-cache,no-store">
+  <META HTTP-EQUIV="Content-Script-Type" CONTENT="text/javascript">
+  <title>CometD Oort Auction</title>
+  <link rel="stylesheet" type="text/css" href="css/styles.css" />
+  
+  <script type="text/javascript" src="../dojo/dojo.js"></script>
+  
+  <!-- These scripts should all be ported to dojo -->
+  <script type='text/javascript' src='js/prototype.js'></script>
+  <script type="text/javascript" src='js/scriptaculous.js'></script>
+  <script type="text/javascript" src='js/behaviour.js'></script>
+  <script type="text/javascript" src='js/builder.js'></script>
+  <script type="text/javascript" src='js/effects.js'></script>
+  <script type="text/javascript" src='js/controls.js'></script>
+  <script type="text/javascript" src='js/dragdrop.js'></script>
+  <script type='text/javascript' src='js/editinplace.js'></script>
+  <script type='text/javascript' src='js/dwr-util.js'></script>
+  
+  <script type="text/javascript">
+    dojo.require('dojox.cometd');
+    dojo.require("dojox.cometd.timesync");
+    dojo.require("dojox.cometd.ack");
+    
+    dojo.addOnLoad(function()
+    {
+        var cometURL = (new String(document.location).replace(/\/auction\/.*$/, '')) + "/cometd";
+        dojox.cometd.init({ url: cometURL, logLevel: "info" });  
+	
+        var tick=function()
         {
-            var cometURL = (new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/auction\/.*$/, '')) + "/cometd";
-            dojox.cometd.init({ url: cometURL, logLevel: "info" });
+            var now=dojox.cometd.timesync.getServerDate();
+            dojo.byId("time").innerHTML=now.toUTCString();
+            now=now.getTime();
+            var next=""+(1+now/1000);
+            next=parseInt(next.split('.')[0])*1000+10;
+            dojox.cometd.timesync.setTimeout(tick,next);
+        };
+        setTimeout(tick,1000);
+    });
+    dojo.addOnUnload(dojox.cometd, "disconnect");  
+  </script>
 
-            var tick = function()
-            {
-                var now = dojox.cometd.timesync.getServerDate();
-                dojo.byId("time").innerHTML = now.toUTCString();
-                now = now.getTime();
-                var next = "" + (1 + now / 1000);
-                next = parseInt(next.split('.')[0]) * 1000 + 10;
-                dojox.cometd.timesync.setTimeout(tick, next);
-            };
-            setTimeout(tick, 1000);
-        });
-        dojo.addOnUnload(dojox.cometd, "disconnect");
-    </script>
-
-    <script type='text/javascript' src='js/demo.js'></script>
+  <script type='text/javascript' src='js/demo.js'></script>
 </head>
 
 <body>
