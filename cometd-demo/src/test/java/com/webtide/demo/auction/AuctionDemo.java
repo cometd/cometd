@@ -19,7 +19,7 @@ import org.cometd.oort.Oort;
 import org.cometd.oort.OortServlet;
 import org.cometd.oort.Seti;
 import org.cometd.oort.SetiServlet;
-import org.cometd.server.continuation.ContinuationCometdServlet;
+import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -52,7 +52,7 @@ public class AuctionDemo
     public static void main(String[] args) throws Exception
     {
         AuctionDemo d8080=new AuctionDemo(8080);
-        AuctionDemo d8081=new AuctionDemo(8081);
+        // AuctionDemo d8081=new AuctionDemo(8081);
     }
 
     /* ------------------------------------------------------------ */
@@ -80,23 +80,24 @@ public class AuctionDemo
         context.setBaseResource(new ResourceCollection(new Resource[]
         {
             Resource.newResource(base+"/src/main/webapp/"),
-            Resource.newResource(base+"/target/cometd-demo-1.0.beta9-SNAPSHOT/"),
+            Resource.newResource(base+"/target/cometd-demo-2.0.beta1-SNAPSHOT/"),
         }));
         
         // Cometd servlet
-        ServletHolder cometd_holder = new ServletHolder(ContinuationCometdServlet.class);
+        ServletHolder cometd_holder = new ServletHolder(CometdServlet.class);
         cometd_holder.setInitParameter("timeout","200000");
         cometd_holder.setInitParameter("interval","100");
         cometd_holder.setInitParameter("maxInterval","100000");
         cometd_holder.setInitParameter("multiFrameInterval","1500");
         cometd_holder.setInitParameter("directDeliver","true");
-        cometd_holder.setInitParameter("logLevel","1");
+        cometd_holder.setInitParameter("logLevel","0");
         cometd_holder.setInitOrder(1);
         context.addServlet(cometd_holder, "/cometd/*");
         
         ServletHolder oort_holder = new ServletHolder(OortServlet.class);
         oort_holder.setInitParameter(Oort.OORT_URL,"http://localhost:"+port+"/cometd");
-        oort_holder.setInitParameter(Oort.OORT_CLOUD,(port==8080)?"http://localhost:"+8081+"/cometd":"http://localhost:"+8080+"/cometd");
+        oort_holder.setInitParameter(Oort.OORT_CLOUD,"");
+        // oort_holder.setInitParameter(Oort.OORT_CLOUD,(port==8080)?"http://localhost:"+8081+"/cometd":"http://localhost:"+8080+"/cometd");
         oort_holder.setInitOrder(2);
         context.addServlet(oort_holder, "/oort/*");
 

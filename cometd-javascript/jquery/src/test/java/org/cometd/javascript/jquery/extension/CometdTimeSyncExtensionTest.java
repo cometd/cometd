@@ -4,7 +4,7 @@ import java.net.URL;
 
 import org.cometd.javascript.Latch;
 import org.cometd.javascript.jquery.AbstractCometdJQueryTest;
-import org.cometd.server.AbstractBayeux;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ext.TimesyncExtension;
 
 /**
@@ -12,7 +12,7 @@ import org.cometd.server.ext.TimesyncExtension;
  */
 public class CometdTimeSyncExtensionTest extends AbstractCometdJQueryTest
 {
-    protected void customizeBayeux(AbstractBayeux bayeux)
+    protected void customizeBayeux(BayeuxServerImpl bayeux)
     {
         bayeux.addExtension(new TimesyncExtension());
     }

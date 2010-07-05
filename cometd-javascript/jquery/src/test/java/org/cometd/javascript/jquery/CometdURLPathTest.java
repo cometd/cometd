@@ -2,12 +2,13 @@ package org.cometd.javascript.jquery;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.cometd.Bayeux;
-import org.cometd.Client;
-import org.cometd.Extension;
-import org.cometd.Message;
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.server.BayeuxServer.Extension;
+import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.javascript.Latch;
-import org.cometd.server.AbstractBayeux;
+import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.transport.HttpTransport;
 
 /**
  * @version $Revision$ $Date$
@@ -15,7 +16,7 @@ import org.cometd.server.AbstractBayeux;
 public class CometdURLPathTest extends AbstractCometdJQueryTest
 {
     @Override
-    protected void customizeBayeux(AbstractBayeux bayeux)
+    protected void customizeBayeux(BayeuxServerImpl bayeux)
     {
         bayeux.addExtension(new BayeuxURLExtension(bayeux));
     }
@@ -162,39 +163,45 @@ public class CometdURLPathTest extends AbstractCometdJQueryTest
 
     public static class BayeuxURLExtension implements Extension
     {
-        private final Bayeux bayeux;
+        private final BayeuxServerImpl bayeux;
 
-        public BayeuxURLExtension(Bayeux bayeux)
+        public BayeuxURLExtension(BayeuxServerImpl bayeux)
         {
             this.bayeux = bayeux;
         }
 
-        public Message rcv(Client from, Message message)
+        @Override
+        public boolean rcv(ServerSession from, Mutable message)
         {
-            return message;
+            return true;
         }
 
-        public Message rcvMeta(Client from, Message message)
+        @Override
+        public boolean rcvMeta(ServerSession from, Mutable message)
         {
-            return message;
+            return true;
         }
 
-        public Message send(Client from, Message message)
+        @Override
+        public boolean send(ServerSession from, ServerSession to, Mutable message)
         {
-            return message;
+            return true;
         }
 
-        public Message sendMeta(Client from, Message message)
+        @Override
+        public boolean sendMeta(ServerSession to, Mutable message)
         {
-            if (Bayeux.META_HANDSHAKE.equals(message.getChannel()) ||
-                    Bayeux.META_CONNECT.equals(message.getChannel()) ||
-                    Bayeux.META_DISCONNECT.equals(message.getChannel()))
+            if (Channel.META_HANDSHAKE.equals(message.getChannel()) ||
+                Channel.META_CONNECT.equals(message.getChannel()) ||
+                Channel.META_DISCONNECT.equals(message.getChannel()))
             {
-                HttpServletRequest request = bayeux.getCurrentRequest();
+                HttpTransport transport = (HttpTransport)bayeux.getCurrentTransport();
+                HttpServletRequest request = transport.getCurrentRequest();
                 String uri = request.getRequestURI();
                 message.getExt(true).put("uri", uri);
             }
-            return message;
+            return true;
         }
     }
+
 }

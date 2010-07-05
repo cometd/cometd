@@ -9,15 +9,13 @@ cometd-perl       - The Perl server (ALPHA)
 cometd-twisted    - The Python server (ALPHA)
 
 
-If you have checked out the source release, follow the instructions at
-http://cometd.org/documentation/building
+RUNNING COMETD DEMO
 
 If you have downloaded the release bundle, then the CometD is already built for you.
-
 To run the demonstration with Maven:
 
     $ cd cometd-demo
-    $ mvn jetty:deploy-war
+    $ mvn jetty:run
 
 then point your browser at http://localhost:8080
 
@@ -29,4 +27,33 @@ with commands like
     cd $MY_SERVER
     <command to run my server>
 
-Then point your browser at http://localhost:8080/cometd
+
+BUILDING COMETD
+
+If you have checked out the source release, follow the instructions at
+http://cometd.org/documentation/building, or just to
+
+  $ mvn install
+
+
+
+LOAD TESTING
+
+
+To run load testing, open two windows. In the server window run:
+
+  $ cd cometd-java/cometd-java-client
+  $ mvn -Pserver exec:exec
+
+In the client window (potentially on another machine), run
+
+  $ cd cometd-java/cometd-java-client
+  $ mvn -Pclient exec:java
+
+Then answer the questions (defaults gives a reasonable result)
+to generate load. Keep running batches until the reported JIT time
+is zero before considering the actual results obtained.
+
+
+
+

@@ -41,6 +41,7 @@ org.cometd.ReloadExtension = function(configuration)
     var _debug;
     var _state = null;
     var _cookieMaxAge = configuration && configuration.cookieMaxAge || 5;
+    var _batch = false;
 
     function _reload()
     {
@@ -50,6 +51,7 @@ org.cometd.ReloadExtension = function(configuration)
             _debug('Reload extension saving cookie value', cookie);
             org.cometd.COOKIE.set('org.cometd.reload', cookie, {
                 'max-age': _cookieMaxAge,
+                path: '/',
                 expires: new Date(new Date().getTime() + _cookieMaxAge * 1000)
             });
         }
@@ -88,6 +90,7 @@ org.cometd.ReloadExtension = function(configuration)
             _state.url = _cometd.getURL();
 
             var cookie = org.cometd.COOKIE.get('org.cometd.reload');
+            _debug('Reload extension found cookie value', cookie);
             // Is there a saved handshake response from a prior load ?
             if (cookie)
             {
@@ -95,11 +98,9 @@ org.cometd.ReloadExtension = function(configuration)
                 {
                     // Remove the cookie, not needed anymore
                     org.cometd.COOKIE.set('org.cometd.reload', '', {
-                        'max-age': 0,
-                        expires: new Date(new Date().getTime() - 1000)
+                        path: '/'
                     });
 
-                    _debug('Reload extension found cookie value', cookie);
                     var oldState = org.cometd.JSON.fromJSON(cookie);
 
                     if (oldState && oldState.handshakeResponse && _similarState(oldState))
@@ -116,6 +117,13 @@ org.cometd.ReloadExtension = function(configuration)
                             _cometd.receive(response);
                             _debug('Reload extension replayed handshake response', response);
                         }, 0);
+                        
+                        // delay any sends until first connect is complete.
+                        if (!_batch)
+                        {
+                            _batch=true;
+                            _cometd.startBatch();
+                        }
                         // This handshake is aborted, as we will replay the prior handshake response
                         return null;
                     }
@@ -136,16 +144,6 @@ org.cometd.ReloadExtension = function(configuration)
             {
                 _state.transportType = message.connectionType;
                 _debug('Reload extension tracked transport type', _state.transportType);
-            }
-
-            if (_state.reloading)
-            {
-                delete _state.reloading;
-                if (!message.advice)
-                {
-                    message.advice = {};
-                }
-                message.advice.timeout = 0;
             }
         }
         return message;
@@ -169,6 +167,11 @@ org.cometd.ReloadExtension = function(configuration)
                     break;
                 case '/meta/disconnect':
                     _state = null;
+                    break;
+                case '/meta/connect':
+                    if (_batch)
+                        _cometd.endBatch();
+                    _batch=false;
                     break;
                 default:
                     break;

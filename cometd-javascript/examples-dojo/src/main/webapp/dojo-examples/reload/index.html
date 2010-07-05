@@ -7,17 +7,42 @@
         dojo.require("dojox.cometd");
         dojo.require("dojox.cometd.reload");
 
-        var cometURL = new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/dojo-examples\/.*$/, '') + "/cometd";
+        /* handshake listener to report client IDs */
+        dojox.cometd.addListener("/meta/handshake", function (message)
+        {
+            if (message.successful)
+            {
+                dojo.byId('previous').innerHTML=org.cometd.COOKIE.get('demoLastCometdID');
+                dojo.byId('current').innerHTML=message.clientId;
+                org.cometd.COOKIE.set('demoLastCometdID', message.clientId, {
+                    'max-age': 300,
+                    path : '/',
+                    expires: new Date(new Date().getTime() + 300 * 1000)
+                });
+            }
+            else
+            {
+                dojo.byId('previous').innerHTML='Handshake Failed';
+                dojo.byId('current').innerHTML='Handshake Failed';
+            }
+        });
+
+        /* connect listener to report advice */
+        dojox.cometd.addListener("/meta/connect", function (message)
+        {
+            if (message.advice)
+            {
+                dojo.byId('advice').innerHTML=org.cometd.JSON.toJSON(message.advice);
+            }
+        });
+
+        /* Initialize CometD */
+        var cometURL = new String(document.location).replace(/\/dojo-examples\/.*$/, '') + "/cometd";
         dojox.cometd.init({ url: cometURL, logLevel: "info" });
 
-        dojox.cometd.subscribe("/some/channel", function()
-        {
-        });
-        dojox.cometd.subscribe("/some/other/channel", function()
-        {
-        });
-
+        /* Setup reload extension */
         dojo.addOnUnload(dojox.cometd, "reload");
+
     </script>
 </head>
 <body>
@@ -26,10 +51,30 @@
 <a href="../..">Main Demo index</a><br/>
 
 <p>
-    This test shows how a page can be reloaded and resume a CometD connection. <br />
-    If you reload this page and watch with firebug, you will see that the existing
-    CometD connection and clientId is reused, and that additional subscription
-    messages are hidden. <br />
+    This test shows how a page can be loaded and resume a CometD connection with the same
+    client ID.  This allows site navigation and page loads to be done without needing to
+    reestablish an entire CometD session on the server (the client still needs to resubscribe
+    so that it can define local callbacks in the newly loaded page).
+</p>
+<p>
+    <blockquote>
+    <a href=".">RELOAD</a>, <a href="../../jquery-examples/reload/">JQUERY</a>
+    </blockquote>
+</p>
+<p>
+      The ID's below should be the same after this page is reloaded: <blockquote>
+    <table border='0'>
+      <tr>
+        <td>Previous ID:</td><td><span id='previous'></span></td>
+      </tr>
+      <tr>
+        <td>Current ID:</td><td><span id='current'></span></td>
+      </tr>
+      <tr>
+        <td>Advice:</td><td><pre id='advice'></pre></td>
+      </tr>
+    </table>
+    </blockquote>
     A full fledged reload example is available in the jQuery chat example.
 </p>
 

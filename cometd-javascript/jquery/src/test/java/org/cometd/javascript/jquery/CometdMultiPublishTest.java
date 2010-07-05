@@ -99,12 +99,13 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
             if (id == 1)
             {
                 // First publish should succeed
-                if (successful == null || !successful) failures.get().add(new AssertionError("Publish " + id + " expected successful"));
+                if (successful == null || !successful)
+                    failures.get().add(new AssertionError("Publish " + id + " expected successful"));
             }
             else if (id == 2 || id == 3 || id == 4)
             {
                 // Second publish should fail because of the server
-                // Third and fourth are soft failed by the comet implementation
+                // Third and fourth are soft failed by the CometD implementation
                 if (successful == null || successful)
                 {
                     failures.get().add(new AssertionError("Publish " + id + " expected unsuccessful"));
@@ -113,7 +114,8 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
                 {
                     Map data = (Map)((Map)message.get("request")).get("data");
                     int dataId = ((Number)data.get("id")).intValue();
-                    if (dataId != id) failures.get().add(new AssertionError("data id " + dataId + ", expecting " + id));
+                    if (dataId != id)
+                        failures.get().add(new AssertionError("data id " + dataId + ", expecting " + id));
                 }
             }
             latch.countDown();

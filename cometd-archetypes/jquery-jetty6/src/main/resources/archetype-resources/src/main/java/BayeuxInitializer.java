@@ -9,13 +9,13 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
-import org.cometd.Bayeux;
+import org.cometd.bayeux.server.BayeuxServer;
 
 public class BayeuxInitializer extends GenericServlet
 {
     public void init() throws ServletException
     {
-        Bayeux bayeux = (Bayeux)getServletContext().getAttribute(Bayeux.ATTRIBUTE);
+        BayeuxServer bayeux = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
         new HelloService(bayeux);
     }
 

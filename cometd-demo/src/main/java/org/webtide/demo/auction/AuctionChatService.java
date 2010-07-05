@@ -9,19 +9,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.ServletContext;
 
-import org.cometd.Bayeux;
-import org.cometd.Channel;
-import org.cometd.Client;
-import org.cometd.RemoveListener;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
-import org.cometd.server.BayeuxService;
+import org.cometd.server.AbstractService;
 import org.eclipse.jetty.util.log.Log;
 
-public class AuctionChatService extends BayeuxService
+public class AuctionChatService extends AbstractService
 {
     /**
      * A map(channel, map(userName, clientId))
@@ -32,7 +30,7 @@ public class AuctionChatService extends BayeuxService
 
     public AuctionChatService(ServletContext context)
     {
-        super((Bayeux)context.getAttribute(Bayeux.ATTRIBUTE), "chat");
+        super((BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE), "chat");
 
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
         if (_oort==null)
@@ -41,11 +39,11 @@ public class AuctionChatService extends BayeuxService
         if (_seti==null)
             throw new RuntimeException("!"+Seti.SETI_ATTRIBUTE);
 
-        subscribe("/auction/chat/**", "trackMembers");
-        subscribe("/service/auction/chat", "privateChat");
+        addService("/auction/chat/**", "trackMembers");
+        addService("/service/auction/chat", "privateChat");
     }
 
-    public void trackMembers(final Client joiner, final String channelName, Object data, final String messageId)
+    public void trackMembers(final ServerSession joiner, final String channelName, Object data, final String messageId)
     {
         if (data instanceof Object[])
         {
@@ -63,7 +61,7 @@ public class AuctionChatService extends BayeuxService
             {
                 Log.info("Members: " + members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName, false).publish(getClient(), members, messageId);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
             }
         }
         else if (data instanceof Map)
@@ -88,15 +86,16 @@ public class AuctionChatService extends BayeuxService
                 if (!_oort.isOort(joiner))
                     _seti.associate(userName,joiner);
 
-                joiner.addListener(new RemoveListener(){
+                joiner.addListener(new ServerSession.RemoveListener(){
 
-                    public void removed(String clientId, boolean timeout)
+                    @Override
+                    public void removed(ServerSession session, boolean timeout)
                     {
                         if (!_oort.isOort(joiner))
                             _seti.disassociate(userName);
                         if (timeout)
                         {
-                            Channel channel=getBayeux().getChannel(channelName,false);
+                            ServerChannel channel=getBayeux().getChannel(channelName);
                             if (channel!=null)
                             {
                                 Map<String,Object> leave = new HashMap<String,Object>();
@@ -111,7 +110,7 @@ public class AuctionChatService extends BayeuxService
 
                 Log.info("Members: " + members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName, false).publish(getClient(), members, messageId);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
 
             }
 
@@ -130,12 +129,12 @@ public class AuctionChatService extends BayeuxService
 
                 Log.info("Members: " + members);
                 // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName, true).publish(getClient(), members, messageId);
+                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
             }
         }
     }
 
-    public void privateChat(Client source, String channel, Map<String, Object> data, String messageId)
+    public void privateChat(ServerSession source, String channel, Map<String, Object> data, String messageId)
     {
         String toUid=(String)data.get("peer");
         String toChannel=(String)data.get("room");
