@@ -1,0 +1,9 @@
+* PORTS USED *
+
+80   - Perlbal ( reproxies to cometd http server, see eventserver.pl )
+2022 - Perlbal cometd connector service ( event server connects here, also telnet and issue commands ) NOT CURRENTLY USED
+8065 - Perlbal manager ( telnet to and issue commands )
+8001 - Cometd http server ( see eventserver.pl )
+5000 - Cometd manager ( telnet to and issue commands )
+8000 - Simple test server for the event system, use telnet ( see tools/atomstream.pl )
+

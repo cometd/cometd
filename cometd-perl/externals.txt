@@ -1,0 +1,4 @@
+perlbal-lib http://code.sixapart.com/svn/perlbal/trunk/lib
+easydbi-lib http://svn.xantus.org/poco-easydbi/trunk/POE-Component-EasyDBI/lib
+poe-filter-json-lib http://svn.xantus.org/poe-filter-json/trunk/POE-Filter-JSON/lib
+sprocket-lib http://svn.xantus.org/sprocket/trunk/Sprocket/lib

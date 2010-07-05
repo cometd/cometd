@@ -1,0 +1,25 @@
+** TODO **
+
+Legend:
+[ ] Not done
+[_] Untested, but done
+[*] Done
+[?] May not be needed
+[+] Started, not done
+
+[+] Get dojo js working with the whole system
+[+] http-polling
+[ ] forever iframe
+[ ] Fix event server reconnect code, with incremental backoff
+[*] Client and Server
+[*] Rename poco cometd * to Sprocket
+[*] Perlbal service
+[+] Subscription system
+[*] Event system
+[*] Manager plugin
+[+] HTTPD plugin
+[+] Tests
+[+] ArcheType compatable js lib
+[ ] Apache::Backend::Cometd ( see Apache::Backend::POE )
+[ ] Config file in conf/ for eventserver.pl
+[ ] update POE::Filter::JSON to use JSON::Syck or create POE::Filter::JSON::Syck

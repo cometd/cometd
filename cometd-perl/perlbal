@@ -1,0 +1,144 @@
+#!/usr/bin/perl -w
+
+eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
+    if 0; # not running under some shell
+#
+
+=head1 NAME
+
+Perlbal - Reverse-proxy load balancer and webserver
+
+=head1 DESCRIPTION
+
+For now, see example configuration files in conf/
+
+=head1 AUTHORS
+
+ Brad Fitzpatrick, <brad@danga.com>
+ Mark Smith, <marksmith@danga.com>
+
+=head1 SEE ALSO
+
+ http://www.danga.com/perlbal/
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2004, Danga Interactice, Inc.
+Copyright 2005, Six Apart, Ltd.
+
+You can use and redistribute Perlbal under the same terms as Perl itself.
+
+=cut
+
+
+use strict;
+use warnings;
+use lib 'lib';
+use Perlbal;
+
+my $opt_daemonize;
+my $opt_config;
+my $opt_help;
+my $opt_version;
+my $opt_drop_privs = [];
+usage(1) unless
+    Getopt::Long::GetOptions(
+                             'daemon'   => \$opt_daemonize,
+                             'config=s' => \$opt_config,
+                             'help'     => \$opt_help,
+                             'version'  => \$opt_version,
+                             'drop-privs=s' => $opt_drop_privs,
+               );
+
+my $default_config = "/etc/perlbal/perlbal.conf";
+
+usage(0) if $opt_help;
+
+sub usage {
+    my $rv = shift;
+    print STDERR <<USAGE;
+Usage: perlbal [OPTS]
+  --help                                This usage info
+  --version                             Print perlbal release version
+  --config=[file]                       Specify Perlbal config file
+                                        (default: $default_config)
+  --daemon                              Daemonize
+  --drop-privs=<uid|user>[,gid|group]   Drop effective privileges.
+                                        (gid is optional)
+USAGE
+
+    exit($rv);
+}
+
+$opt_config = $default_config if ! $opt_config && -e $default_config;
+
+if ($opt_version) {
+    print STDOUT "Perlbal version $Perlbal::VERSION\n";
+    exit 0;
+}
+
+if ( @$opt_drop_privs && $< != 0 ) {
+    # real uid isn't root
+    print STDERR "Can't drop privileges if not ran with root privileges first!\n\n";
+    usage(1);
+}
+
+# load user config
+if ($opt_config && ! Perlbal::load_config($opt_config, sub { print STDOUT "$_[0]\n"; })) {
+    die "Error starting up.\n";
+}
+
+# FIXME: warn harder if web_server services are enabled
+# warn a little less about reproxying --- or, make reproxying support explicit?  yes!  security!
+
+if ($Perlbal::AIO_MODE eq "none") {
+    print STDERR "WARNING:  AIO mode disabled or not available.  \n".
+                 "          Perlbal will run slowly under load if you're doing any\n".
+                 "          disk operations. (e.g. web_server mode).\n";
+}
+
+unless (Perlbal::Socket->WatchedSockets() > 0) {
+    die "No services or management port configured.  Nothing to do.  Stopping.\n";
+}
+
+if ($opt_daemonize) {
+    Perlbal::daemonize();
+} else {
+    print "Running.\n";
+}
+
+if ( @$opt_drop_privs ) {
+    my ( $uid, $gid ) = split( ',', join( ',', @$opt_drop_privs ) );
+    # not a number, resolve by user name
+    if ( $uid !~ m/^\d+$/ ) {
+        my $u = getpwnam( $uid );
+        die "unknown user: $uid! You could try using the uid instead"
+            unless( defined( $u ) );
+        $uid = $u;
+    }
+    # not a number, resolve by group name
+    if ( defined( $gid ) && $gid !~ m/^\d+$/ ) {
+        my $g = getgrnam( $gid );
+        die "unknown group: $gid! You could try using the gid instead"
+            unless( defined( $g ) );
+        $gid = $g;
+    }
+    
+    # drop the group first, then the user
+    set_egid( $gid ) if defined( $gid );
+    set_euid( $uid ) if ( $uid );
+    print "Dropped privileges to $uid".( defined( $gid ) ? ":$gid" : '' )."\n";
+}
+
+exit 0 if Perlbal::run();
+exit 1;
+
+# util functions to 
+sub set_euid { $> = $_[ 0 ]; die "could not set the effective uid: $_[ 0 ]" unless( $_[ 0 ] == $> ); }
+sub set_egid { $) = $_[ 0 ]; die "could not set the effective gid: $_[ 0 ]" unless( $_[ 0 ] == $) ); }
+
+# Local Variables:
+# mode: perl
+# c-basic-indent: 4
+# indent-tabs-mode: nil
+# End:
