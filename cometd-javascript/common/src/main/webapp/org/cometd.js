@@ -941,7 +941,7 @@ org.cometd.Cometd = function(name)
             request: message,
             xhr: xhr,
             advice: {
-                action: 'retry',
+                reconnect: 'retry',
                 interval: _backoff
             }
         };
@@ -1034,7 +1034,7 @@ org.cometd.Cometd = function(name)
             request: message,
             xhr: xhr,
             advice: {
-                action: 'retry',
+                reconnect: 'retry',
                 interval: _backoff
             }
         };
@@ -1101,7 +1101,7 @@ org.cometd.Cometd = function(name)
             request: message,
             xhr: xhr,
             advice: {
-                action: 'none',
+                reconnect: 'none',
                 interval: 0
             }
         };
@@ -1132,7 +1132,7 @@ org.cometd.Cometd = function(name)
             request: message,
             xhr: xhr,
             advice: {
-                action: 'none',
+                reconnect: 'none',
                 interval: 0
             }
         };
@@ -1163,7 +1163,7 @@ org.cometd.Cometd = function(name)
             request: message,
             xhr: xhr,
             advice: {
-                action: 'none',
+                reconnect: 'none',
                 interval: 0
             }
         };
@@ -1209,7 +1209,7 @@ org.cometd.Cometd = function(name)
             request: message,
             xhr: xhr,
             advice: {
-                action: 'none',
+                reconnect: 'none',
                 interval: 0
             }
         };
