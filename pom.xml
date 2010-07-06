@@ -10,7 +10,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.1.4.v20100610</jetty-version>
+        <jetty-version>7.1.5.v20100705</jetty-version>
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
     </properties>
 
@@ -89,19 +89,19 @@
         <repository>
             <id>oss.sonatype.org</id>
             <name>CometD Maven2 Repository</name>
-            <url>http://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
         </repository>
         <snapshotRepository>
             <id>oss.sonatype.org</id>
             <name>CometD Maven2 Snapshot Repository</name>
-            <url>http://oss.sonatype.org/content/repositories/cometd-snapshots</url>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
 
     <scm>
         <connection>scm:svn:http://svn.cometd.org/trunk</connection>
         <developerConnection>scm:svn:https://svn.cometd.org/trunk</developerConnection>
-        <url>http://svn.cometd.org/trunk</url>
+        <url>http://svn.cometd.org</url>
     </scm>
 
     <organization>
@@ -193,6 +193,7 @@
             <plugin>
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
                     <tagBase>https://svn.cometd.org/tags</tagBase>
                     <goals>deploy</goals>
                     <preparationGoals>clean install</preparationGoals>
