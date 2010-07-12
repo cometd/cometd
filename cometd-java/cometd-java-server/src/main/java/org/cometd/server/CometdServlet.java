@@ -47,15 +47,9 @@ public class CometdServlet extends GenericServlet
     public static final int CONFIG_LEVEL=1;
     public static final int INFO_LEVEL=2;
     public static final int DEBUG_LEVEL=3;
-    public static final String CLIENT_ATTR="org.cometd.server.client";
-    public static final String TRANSPORT_ATTR="org.cometd.server.transport";
-    public static final String MESSAGE_PARAM="message";
-    public static final String TUNNEL_INIT_PARAM="tunnelInit";
-    public static final String HTTP_CLIENT_ID="BAYEUX_HTTP_CLIENT";
 
     private BayeuxServerImpl _bayeux;
     private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<HttpServletRequest>();
-    private String _transportParameter;
     private int _logLevel;
     private HttpTransport[] _transports;
 
@@ -99,7 +93,7 @@ public class CometdServlet extends GenericServlet
                 _bayeux.getLogger().setDebugEnabled(true);
         }
 
-        // Get any specific options as init paramters
+        // Get any specific options as init parameter
         HashSet<String> qualified_names = new HashSet<String>();
         for (String name :_bayeux.getKnownTransportNames())
         {
@@ -178,30 +172,26 @@ public class CometdServlet extends GenericServlet
 
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        HttpTransport transport=null;
-
-        // handle forced transport
-        if (_transportParameter!=null)
+        if ("OPTIONS".equals(request.getMethod()))
         {
-            String transport_name=request.getParameter(_transportParameter);
-            if (transport_name!=null)
-                transport= (HttpTransport)_bayeux.getTransport(transport_name);
+            serviceOptions(request, response);
+            return;
         }
 
-        if (transport==null)
+        HttpTransport transport=null;
+        for (HttpTransport t : _transports)
         {
-            for (HttpTransport t : _transports)
+            if (t!=null && t.accept(request))
             {
-                if (t!=null && t.accept(request))
-                {
-                    transport=t;
-                    break;
-                }
+                transport=t;
+                break;
             }
         }
 
         if (transport==null)
-            response.sendError(400,"bad transport");
+        {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown Bayeux Transport");
+        }
         else
         {
             try
@@ -216,6 +206,18 @@ public class CometdServlet extends GenericServlet
                 transport.setCurrentRequest(null);
             }
         }
+    }
+
+    protected void serviceOptions(HttpServletRequest request, HttpServletResponse response)
+    {
+        // OPTIONS requests are made by browsers that are CORS compliant
+        // (see http://www.w3.org/TR/cors/) during a "preflight request".
+        // Preflight requests happen for each different new URL, then results are cached
+        // by the browser.
+        // For the Bayeux protocol, preflight requests happen for URLs such as
+        // "/cometd/handshake", "/cometd/connect", etc, since the Bayeux clients append
+        // the Bayeux message type to the base Bayeux server URL.
+        // Just return 200 OK, there is nothing more to add to such requests.
     }
 
     /* ------------------------------------------------------------ */
