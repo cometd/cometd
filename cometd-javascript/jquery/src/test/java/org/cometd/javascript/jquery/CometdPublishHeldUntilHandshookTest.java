@@ -36,8 +36,11 @@ public class CometdPublishHeldUntilHandshookTest extends AbstractCometdJQueryTes
                 "$.cometd.addListener('/meta/connect', function(message)" +
                 "{" +
                 "   /* Copy the array so that from now on it is not modified anymore */" +
-                "   savedChannels = channels.slice(0);" +
-                "   latch.countDown();" +
+                "   if (!savedChannels)" +
+                "   {" +
+                "       savedChannels = channels.slice(0);" +
+                "       latch.countDown();" +
+                "   }" +
                 "});" +
                 "");
         Latch latch = (Latch)get("latch");
