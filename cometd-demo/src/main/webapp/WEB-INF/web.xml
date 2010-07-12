@@ -27,7 +27,7 @@
     <!-- Filter to support cross domain requests -->
     <filter>
         <filter-name>cross-origin</filter-name>
-        <filter-class>org.webtide.demo.WebSocketCrossOriginFilter</filter-class>
+        <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
         <!--async-supported>true</async-supported-->
     </filter>
     <filter-mapping>
