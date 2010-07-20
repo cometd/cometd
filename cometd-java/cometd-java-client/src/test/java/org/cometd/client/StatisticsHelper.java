@@ -6,6 +6,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryPoolMXBean;
 import java.lang.management.MemoryUsage;
+import java.lang.management.OperatingSystemMXBean;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -19,16 +20,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class StatisticsHelper implements Runnable
 {
-    private final com.sun.management.OperatingSystemMXBean operatingSystem;
+    private final OperatingSystemMXBean operatingSystem;
     private final CompilationMXBean jitCompiler;
     private final MemoryMXBean heapMemory;
     private final AtomicInteger starts = new AtomicInteger();
     private volatile MemoryPoolMXBean youngMemoryPool;
     private volatile MemoryPoolMXBean survivorMemoryPool;
     private volatile MemoryPoolMXBean oldMemoryPool;
+    private volatile boolean hasMemoryPools;
     private volatile ScheduledFuture<?> memoryPoller;
     private volatile GarbageCollectorMXBean youngCollector;
     private volatile GarbageCollectorMXBean oldCollector;
+    private volatile boolean hasCollectors;
     private volatile ScheduledExecutorService scheduler;
     private volatile boolean polling;
     private volatile long lastYoungUsed;
@@ -47,9 +50,10 @@ public class StatisticsHelper implements Runnable
 
     public StatisticsHelper()
     {
-        this.operatingSystem = (com.sun.management.OperatingSystemMXBean)ManagementFactory.getOperatingSystemMXBean();
+        this.operatingSystem = ManagementFactory.getOperatingSystemMXBean();
         this.jitCompiler = ManagementFactory.getCompilationMXBean();
         this.heapMemory = ManagementFactory.getMemoryMXBean();
+
         List<MemoryPoolMXBean> memoryPools = ManagementFactory.getMemoryPoolMXBeans();
         for (MemoryPoolMXBean memoryPool : memoryPools)
         {
@@ -60,6 +64,8 @@ public class StatisticsHelper implements Runnable
             else if ("PS Old Gen".equals(memoryPool.getName()))
                 oldMemoryPool = memoryPool;
         }
+        hasMemoryPools = youngMemoryPool != null && survivorMemoryPool != null && oldMemoryPool != null;
+
         List<GarbageCollectorMXBean> garbageCollectors = ManagementFactory.getGarbageCollectorMXBeans();
         for (GarbageCollectorMXBean garbageCollector : garbageCollectors)
         {
@@ -68,39 +74,43 @@ public class StatisticsHelper implements Runnable
             else if ("PS MarkSweep".equals(garbageCollector.getName()))
                 oldCollector = garbageCollector;
         }
+        hasCollectors = youngCollector != null && oldCollector != null;
     }
 
     public void run()
     {
+        if (!hasMemoryPools)
+            return;
+
         long young = youngMemoryPool.getUsage().getUsed();
         long survivor = survivorMemoryPool.getUsage().getUsed();
         long old = oldMemoryPool.getUsage().getUsed();
 
         if (!polling)
-        {
-            polling = true;
-        }
-        else
-        {
-            if (lastYoungUsed <= young)
             {
-                totalYoungUsed += young - lastYoungUsed;
-            }
-
-            if (lastSurvivorUsed <= survivor)
-            {
-                totalSurvivorUsed += survivor - lastSurvivorUsed;
-            }
-
-            if (lastOldUsed <= old)
-            {
-                totalOldUsed += old - lastOldUsed;
+                polling = true;
             }
             else
             {
-                // May need something more here, like "how much was collected"
+                if (lastYoungUsed <= young)
+                {
+                    totalYoungUsed += young - lastYoungUsed;
+                }
+
+                if (lastSurvivorUsed <= survivor)
+                {
+                    totalSurvivorUsed += survivor - lastSurvivorUsed;
+                }
+
+                if (lastOldUsed <= old)
+                {
+                    totalOldUsed += old - lastOldUsed;
+                }
+                else
+                {
+                    // May need something more here, like "how much was collected"
+                }
             }
-        }
         lastYoungUsed = young;
         lastSurvivorUsed = survivor;
         lastOldUsed = old;
@@ -122,15 +132,30 @@ public class StatisticsHelper implements Runnable
             System.err.println("Operative System: " + operatingSystem.getName() + " " + operatingSystem.getVersion() + " " + operatingSystem.getArch());
             System.err.println("JVM : "+System.getProperty("java.vm.vendor")+" "+System.getProperty("java.vm.name")+" runtime "+System.getProperty("java.vm.version")+" "+System.getProperty("java.runtime.version"));
             System.err.println("Processors: " + operatingSystem.getAvailableProcessors());
-            long totalMemory = operatingSystem.getTotalPhysicalMemorySize();
-            long freeMemory = operatingSystem.getFreePhysicalMemorySize();
-            System.err.println("System Memory: " + percent(totalMemory - freeMemory, totalMemory) + "% used of " + gibiBytes(totalMemory) + " GiB");
+            if (operatingSystem instanceof com.sun.management.OperatingSystemMXBean)
+            {
+                com.sun.management.OperatingSystemMXBean os = (com.sun.management.OperatingSystemMXBean)operatingSystem;
+                long totalMemory = os.getTotalPhysicalMemorySize();
+                long freeMemory = os.getFreePhysicalMemorySize();
+                System.err.println("System Memory: " + percent(totalMemory - freeMemory, totalMemory) + "% used of " + gibiBytes(totalMemory) + " GiB");
+            }
+            else
+            {
+                System.err.println("System Memory: N/A");
+            }
 
             MemoryUsage heapMemoryUsage = heapMemory.getHeapMemoryUsage();
             System.err.println("Used Heap Size: " + mebiBytes(heapMemoryUsage.getUsed()) + " MiB");
             System.err.println("Max Heap Size: " + mebiBytes(heapMemoryUsage.getMax()) + " MiB");
-            long youngGenerationHeap = heapMemoryUsage.getMax() - oldMemoryPool.getUsage().getMax();
-            System.err.println("Young Generation Heap Size: " + mebiBytes(youngGenerationHeap) + " MiB");
+            if (hasMemoryPools)
+            {
+                long youngGenerationHeap = heapMemoryUsage.getMax() - oldMemoryPool.getUsage().getMax();
+                System.err.println("Young Generation Heap Size: " + mebiBytes(youngGenerationHeap) + " MiB");
+            }
+            else
+            {
+                System.err.println("Young Generation Heap Size: N/A");
+            }
             System.err.println("- - - - - - - - - - - - - - - - - - - - ");
 
             scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -138,18 +163,28 @@ public class StatisticsHelper implements Runnable
             memoryPoller = scheduler.scheduleWithFixedDelay(this, 0, 500, TimeUnit.MILLISECONDS);
 
             lastYoungUsed = 0;
-            startYoungCollections = youngCollector.getCollectionCount();
-            startYoungCollectionsTime = youngCollector.getCollectionTime();
+            if (hasCollectors)
+            {
+                startYoungCollections = youngCollector.getCollectionCount();
+                startYoungCollectionsTime = youngCollector.getCollectionTime();
+            }
             totalYoungUsed = 0;
             lastSurvivorUsed = 0;
             totalSurvivorUsed = 0;
             lastOldUsed = 0;
-            startOldCollections = oldCollector.getCollectionCount();
-            startOldCollectionsTime = oldCollector.getCollectionTime();
+            if (hasCollectors)
+            {
+                startOldCollections = oldCollector.getCollectionCount();
+                startOldCollectionsTime = oldCollector.getCollectionTime();
+            }
             totalOldUsed = 0;
 
             startTime = System.nanoTime();
-            startProcessCPUTime = operatingSystem.getProcessCpuTime();
+            if (operatingSystem instanceof com.sun.management.OperatingSystemMXBean)
+            {
+                com.sun.management.OperatingSystemMXBean os = (com.sun.management.OperatingSystemMXBean)operatingSystem;
+                startProcessCPUTime = os.getProcessCpuTime();
+            }
             startJITCTime = jitCompiler.getTotalCompilationTime();
 
             return true;
@@ -163,30 +198,51 @@ public class StatisticsHelper implements Runnable
             if (starts.decrementAndGet() > 0)
                 return false;
 
-            long elapsedJITCTime = jitCompiler.getTotalCompilationTime() - startJITCTime;
-            long elapsedProcessCPUTime = operatingSystem.getProcessCpuTime() - startProcessCPUTime;
-            long elapsedTime = System.nanoTime() - startTime;
-
-            long elapsedOldCollectionsTime = oldCollector.getCollectionTime() - startOldCollectionsTime;
-            long oldCollections = oldCollector.getCollectionCount() - startOldCollections;
-            long elapsedYoungCollectionsTime = youngCollector.getCollectionTime() - startYoungCollectionsTime;
-            long youngCollections = youngCollector.getCollectionCount() - startYoungCollections;
-
             memoryPoller.cancel(false);
             scheduler.shutdown();
 
             System.err.println("- - - - - - - - - - - - - - - - - - - - ");
             System.err.println("Statistics Ended at " + new Date());
+            long elapsedTime = System.nanoTime() - startTime;
             System.err.println("Elapsed time: " + TimeUnit.NANOSECONDS.toMillis(elapsedTime) + " ms");
+            long elapsedJITCTime = jitCompiler.getTotalCompilationTime() - startJITCTime;
             System.err.println("\tTime in JIT compilation: " + elapsedJITCTime + " ms");
-            System.err.println("\tTime in Young Generation GC: " + elapsedYoungCollectionsTime + " ms (" + youngCollections + " collections)");
-            System.err.println("\tTime in Old Generation GC: " + elapsedOldCollectionsTime + " ms (" + oldCollections + " collections)");
+            if (hasCollectors)
+            {
+                long elapsedYoungCollectionsTime = youngCollector.getCollectionTime() - startYoungCollectionsTime;
+                long youngCollections = youngCollector.getCollectionCount() - startYoungCollections;
+                System.err.println("\tTime in Young Generation GC: " + elapsedYoungCollectionsTime + " ms (" + youngCollections + " collections)");
+                long elapsedOldCollectionsTime = oldCollector.getCollectionTime() - startOldCollectionsTime;
+                long oldCollections = oldCollector.getCollectionCount() - startOldCollections;
+                System.err.println("\tTime in Old Generation GC: " + elapsedOldCollectionsTime + " ms (" + oldCollections + " collections)");
+            }
+            else
+            {
+                System.err.println("\tTime in GC: N/A");
+            }
 
-            System.err.println("Garbage Generated in Young Generation: " + mebiBytes(totalYoungUsed) + " MiB");
-            System.err.println("Garbage Generated in Survivor Generation: " + mebiBytes(totalSurvivorUsed) + " MiB");
-            System.err.println("Garbage Generated in Old Generation: " + mebiBytes(totalOldUsed) + " MiB");
+            if (hasMemoryPools)
+            {
+                System.err.println("Garbage Generated in Young Generation: " + mebiBytes(totalYoungUsed) + " MiB");
+                System.err.println("Garbage Generated in Survivor Generation: " + mebiBytes(totalSurvivorUsed) + " MiB");
+                System.err.println("Garbage Generated in Old Generation: " + mebiBytes(totalOldUsed) + " MiB");
+            }
+            else
+            {
+                System.err.println("Garbage Generated: N/A");
+            }
 
-            System.err.println("Average CPU Load: " + ((float)elapsedProcessCPUTime * 100 / elapsedTime) + "/" + (100 * operatingSystem.getAvailableProcessors()));
+            if (operatingSystem instanceof com.sun.management.OperatingSystemMXBean)
+            {
+                com.sun.management.OperatingSystemMXBean os = (com.sun.management.OperatingSystemMXBean)operatingSystem;
+                long elapsedProcessCPUTime = os.getProcessCpuTime() - startProcessCPUTime;
+                System.err.println("Average CPU Load: " + ((float)elapsedProcessCPUTime * 100 / elapsedTime) + "/" + (100 * operatingSystem.getAvailableProcessors()));
+            }
+            else
+            {
+                System.err.println("Average CPU Load: N/A");
+            }
+
             System.err.println("----------------------------------------\n");
             return true;
         }
