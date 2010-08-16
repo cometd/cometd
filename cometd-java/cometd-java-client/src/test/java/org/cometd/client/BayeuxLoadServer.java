@@ -1,5 +1,7 @@
 package org.cometd.client;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -27,6 +29,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -43,6 +46,7 @@ public class BayeuxLoadServer
 
     public static void main(String[] args) throws Exception
     {
+        boolean ssl = false;
         boolean qos = false;
         boolean stats = false;
         boolean reqs = false;
@@ -50,6 +54,7 @@ public class BayeuxLoadServer
 
         for (String arg : args)
         {
+            ssl |= "--ssl".equals(arg);
             qos |= "--qos".equals(arg);
             stats |= "--stats".equals(arg);
             reqs |= "--reqs".equals(arg);
@@ -58,7 +63,22 @@ public class BayeuxLoadServer
         }
 
         Server server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector();
+        SelectChannelConnector connector;
+        if (ssl)
+        {
+            SslSelectChannelConnector sslConnector = new SslSelectChannelConnector();
+            File keyStoreFile = new File("src/test/resources/keystore.jks");
+            if (!keyStoreFile.exists())
+                throw new FileNotFoundException(keyStoreFile.getAbsolutePath());
+            sslConnector.setKeystore(keyStoreFile.getAbsolutePath());
+            sslConnector.setPassword("storepwd");
+            sslConnector.setKeyPassword("keypwd");
+            connector = sslConnector;
+        }
+        else
+        {
+            connector = new SelectChannelConnector();
+        }
         // Make sure the OS is configured properly for load testing;
         // see http://docs.codehaus.org/display/JETTY/HighLoadServers
         connector.setAcceptQueueSize(2048);
