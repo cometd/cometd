@@ -618,7 +618,8 @@ public class BayeuxClientTest extends TestCase
     {
         final String channelName = "/service/test";
         final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
-        final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final CountDownLatch publishLatch = new CountDownLatch(1);
+        final CountDownLatch failureLatch = new CountDownLatch(1);
         BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient))
         {
             @Override
@@ -636,11 +637,17 @@ public class BayeuxClientTest extends TestCase
             }
 
             @Override
-            protected void send(Message.Mutable... messages)
+            public void onSending(Message[] messages)
             {
                 if (messages.length == 1 && channelName.equals(messages[0].getChannel()))
-                    publishLatch.get().countDown();
-                super.send(messages);
+                    publishLatch.countDown();
+            }
+
+            @Override
+            public void onException(Throwable x)
+            {
+                if (x instanceof IllegalStateException)
+                    failureLatch.countDown();
             }
         };
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
@@ -656,24 +663,18 @@ public class BayeuxClientTest extends TestCase
         // Wait for connect
         assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
 
-        try
-        {
-            client.getChannel(channelName).publish(new HashMap<String, Object>());
-            fail();
-        }
-        catch (IllegalStateException x)
-        {
-            // Expected
-        }
+        client.getChannel(channelName).publish(new HashMap<String, Object>());
+        assertTrue(failureLatch.await(1000, TimeUnit.MILLISECONDS));
+
         // Publish must not be sent
-        assertFalse(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(publishLatch.await(1000, TimeUnit.MILLISECONDS));
         assertFalse(client.isConnected());
 
         connectLatch.set(new CountDownLatch(1));
         client.handshake();
         assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
         // Check that publish has not been queued and is not sent on restart
-        assertFalse(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(publishLatch.await(1000, TimeUnit.MILLISECONDS));
 
         client.disconnect();
     }

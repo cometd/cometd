@@ -725,9 +725,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
 
         protected void sendSubscribe()
         {
-            if (!isConnected())
-                throw new IllegalStateException("Not connected");
-
             Message.Mutable message = newMessage();
             message.setChannel(Channel.META_SUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD, getId());
@@ -736,9 +733,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
 
         protected void sendUnSubscribe()
         {
-            if (!isConnected())
-                throw new IllegalStateException("Not connected");
-
             Message.Mutable message = newMessage();
             message.setChannel(Channel.META_UNSUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD, getId());
@@ -752,9 +746,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
 
         public void publish(Object data, String messageId)
         {
-            if (!isConnected())
-                throw new IllegalStateException("Not connected");
-
             Message.Mutable message = newMessage();
             message.setChannel(getId());
             message.setData(data);
