@@ -3,7 +3,6 @@ package org.cometd.server.ext;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -63,28 +62,24 @@ public class ExtensionPublishSentTest extends AbstractBayeuxClientServerTest
         private final List<Message> sends = new ArrayList<Message>();
         private final List<Message> sendMetas = new ArrayList<Message>();
 
-        @Override
         public boolean rcv(ServerSession from, ServerMessage.Mutable message)
         {
             rcvs.add(message);
             return true;
         }
 
-        @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
             rcvMetas.add(message);
             return true;
         }
 
-        @Override
         public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
         {
             sends.add(message);
             return true;
         }
 
-        @Override
         public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
         {
             sendMetas.add(message);

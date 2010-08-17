@@ -124,7 +124,6 @@ public class TimeExtensionTest extends TestCase
 
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 messages.add(message);
@@ -157,7 +156,6 @@ public class TimeExtensionTest extends TestCase
 
         client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 messages.add(message);

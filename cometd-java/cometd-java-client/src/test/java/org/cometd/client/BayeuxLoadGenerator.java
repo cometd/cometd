@@ -556,7 +556,6 @@ public class BayeuxLoadGenerator
             this.roomsPerClient = roomsPerClient;
         }
 
-        @Override
         public void onMessage(ClientSessionChannel channel, Message message)
         {
             if (message.isSuccessful())
@@ -565,7 +564,6 @@ public class BayeuxLoadGenerator
                 bayeuxClients.add(client);
                 client.batch(new Runnable()
                 {
-                    @Override
                     public void run()
                     {
                         for (int j = 0; j < roomsPerClient; ++j)
@@ -581,7 +579,6 @@ public class BayeuxLoadGenerator
 
     private class DisconnectListener implements ClientSessionChannel.MessageListener
     {
-        @Override
         public void onMessage(ClientSessionChannel channel, Message message)
         {
             if (message.isSuccessful())
@@ -591,7 +588,6 @@ public class BayeuxLoadGenerator
 
     private class LatencyListener implements ClientSessionChannel.MessageListener
     {
-        @Override
         public void onMessage(ClientSessionChannel channel, Message message)
         {
             Map<String, Object> data = message.getDataAsMap();
@@ -665,7 +661,6 @@ public class BayeuxLoadGenerator
             ClientSessionChannel channel = getChannel(channelName);
             channel.addListener(new ClientSessionChannel.MessageListener()
             {
-                @Override
                 public void onMessage(ClientSessionChannel channel, Message message)
                 {
                     channel.removeListener(this);

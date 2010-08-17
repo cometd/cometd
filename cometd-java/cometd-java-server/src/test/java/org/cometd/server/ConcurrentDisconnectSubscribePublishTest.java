@@ -31,19 +31,17 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
         final AtomicBoolean subscribed = new AtomicBoolean(false);
         new BayeuxServer.SubscriptionListener()
         {
-            @Override
             public void unsubscribed(ServerSession session, ServerChannel channel)
             {
             }
-            
-            @Override
+
             public void subscribed(ServerSession session, ServerChannel channel)
             {
                 subscribed.set(true);
             }
         };
-        
-        
+
+
         final AtomicBoolean serviced = new AtomicBoolean(false);
         new AbstractService(bayeux, "test")
         {
@@ -91,7 +89,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
         httpClient.send(disconnect);
         assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
         assertEquals(200, disconnect.getResponseStatus());
-        
+
         assertFalse("not subscribed",subscribed.get());
         assertFalse("not serviced",serviced.get());
         // The response to the subscribe must be that the client is unknown
@@ -176,25 +174,21 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
 
         bayeux.addExtension(new BayeuxServer.Extension()
         {
-            @Override
             public boolean rcv(ServerSession from, ServerMessage.Mutable message)
             {
                 return true;
             }
 
-            @Override
             public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
             {
                 return true;
             }
 
-            @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
             {
                 return true;
             }
 
-            @Override
             public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
             {
                 if (channel.equals(message.getChannel()))
@@ -211,12 +205,10 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                         // Step 2: add a listener to be notified when the client is removed
                         bayeux.addListener(new BayeuxServer.SessionListener()
                         {
-                            @Override
                             public void sessionAdded(ServerSession session)
                             {
                             }
 
-                            @Override
                             public void sessionRemoved(ServerSession session, boolean timedout)
                             {
                                 try
@@ -236,12 +228,10 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                         // Step 3: add a listener to be notified when the client is unsubscribed from the channel
                         bayeux.getChannel(channel).addListener(new ServerChannel.SubscriptionListener()
                         {
-                            @Override
                             public void subscribed(ServerSession session, ServerChannel channel)
                             {
                             }
 
-                            @Override
                             public void unsubscribed(ServerSession session, ServerChannel channel)
                             {
                                 // Step 8: the client detects that is disconnected and unsubscribes itself from the channel

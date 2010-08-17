@@ -170,25 +170,21 @@ public class CometdURLPathTest extends AbstractCometdJQueryTest
             this.bayeux = bayeux;
         }
 
-        @Override
         public boolean rcv(ServerSession from, Mutable message)
         {
             return true;
         }
 
-        @Override
         public boolean rcvMeta(ServerSession from, Mutable message)
         {
             return true;
         }
 
-        @Override
         public boolean send(ServerSession from, ServerSession to, Mutable message)
         {
             return true;
         }
 
-        @Override
         public boolean sendMeta(ServerSession to, Mutable message)
         {
             if (Channel.META_HANDSHAKE.equals(message.getChannel()) ||
@@ -203,5 +199,4 @@ public class CometdURLPathTest extends AbstractCometdJQueryTest
             return true;
         }
     }
-
 }

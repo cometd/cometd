@@ -440,7 +440,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _extensions.add(extension);
     }
 
-    @Override
     public void removeExtension(Extension extension)
     {
         _extensions.remove(extension);

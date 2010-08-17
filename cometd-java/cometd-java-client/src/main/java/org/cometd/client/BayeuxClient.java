@@ -121,19 +121,16 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
         cookies.put(name, expirableCookie);
     }
 
-    @Override
     public String getId()
     {
         return clientId;
     }
 
-    @Override
     public boolean isConnected()
     {
         return state == State.CONNECTED;
     }
 
-    @Override
     public boolean isHandshook()
     {
         return state == State.CONNECTED || state == State.CONNECTING;
@@ -149,13 +146,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
         return state;
     }
 
-    @Override
     public void handshake()
     {
         handshake(null);
     }
 
-    @Override
     public void handshake(Map<String, Object> handshakeFields)
     {
         initialize();
@@ -240,7 +235,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
         send(message);
     }
 
-    @Override
     protected ChannelId newChannelId(String channelId)
     {
         // Save some parsing by checking if there is already one
@@ -248,13 +242,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
         return channel == null ? new ChannelId(channelId) : channel.getChannelId();
     }
 
-    @Override
     protected AbstractSessionChannel newChannel(ChannelId channelId)
     {
         return new BayeuxClientChannel(channelId);
     }
 
-    @Override
     protected void sendBatch()
     {
         if (handshakeBatch)
@@ -270,7 +262,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
         }
     }
 
-    @Override
     public void disconnect()
     {
         if (isConnected())
@@ -355,7 +346,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
             case HANDSHAKING:
                 scheduleAction(new Runnable()
                 {
-                    @Override
                     public void run()
                     {
                         handshake(handshakeFields);
@@ -367,7 +357,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
             case UNCONNECTED:
                 scheduleAction(new Runnable()
                 {
-                    @Override
                     public void run()
                     {
                         connect();
@@ -466,19 +455,16 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
         return Math.min(backoffTries * getBackoffIncrement(), getMaxBackoff());
     }
 
-    @Override
     public List<String> getAllowedTransports()
     {
         return transportRegistry.getAllowedTransports();
     }
 
-    @Override
     public Set<String> getKnownTransportNames()
     {
         return transportRegistry.getKnownTransports();
     }
 
-    @Override
     public Transport getTransport(String transport)
     {
         return transportRegistry.getTransport(transport);
@@ -523,19 +509,16 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
         }
     }
 
-    @Override
     public Object getOption(String qualifiedName)
     {
         return options.get(qualifiedName);
     }
 
-    @Override
     public void setOption(String qualifiedName, Object value)
     {
         options.put(qualifiedName, value);
     }
 
-    @Override
     public Set<String> getOptionNames()
     {
         return options.keySet();
@@ -613,32 +596,26 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
         }
     }
 
-    @Override
     public void onSending(Message[] messages)
     {
     }
 
-    @Override
     public void onMessages(List<Message.Mutable> messages)
     {
     }
 
-    @Override
     public void onConnectException(Throwable x)
     {
     }
 
-    @Override
     public void onException(Throwable x)
     {
     }
 
-    @Override
     public void onExpire()
     {
     }
 
-    @Override
     public void onProtocolError(String info)
     {
     }
@@ -685,13 +662,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
 
     private class Listener implements TransportListener
     {
-        @Override
         public void onSending(Message[] messages)
         {
             BayeuxClient.this.onSending(messages);
         }
 
-        @Override
         public void onMessages(List<Message.Mutable> messages)
         {
             BayeuxClient.this.onMessages(messages);
@@ -699,28 +674,24 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
                 receive(message, message);
         }
 
-        @Override
         public void onConnectException(Throwable x)
         {
             BayeuxClient.this.onConnectException(x);
             onFailure();
         }
 
-        @Override
         public void onException(Throwable x)
         {
             BayeuxClient.this.onException(x);
             onFailure();
         }
 
-        @Override
         public void onExpire()
         {
             BayeuxClient.this.onExpire();
             onFailure();
         }
 
-        @Override
         public void onProtocolError(String info)
         {
             BayeuxClient.this.onProtocolError(info);
@@ -743,13 +714,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
             super(channelId);
         }
 
-        @Override
         public ClientSession getSession()
         {
             return BayeuxClient.this;
         }
 
-        @Override
         protected void sendSubscribe()
         {
             Message.Mutable message = newMessage();
@@ -758,7 +727,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
             enqueueSend(message);
         }
 
-        @Override
         protected void sendUnSubscribe()
         {
             Message.Mutable message = newMessage();
@@ -767,13 +735,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
             enqueueSend(message);
         }
 
-        @Override
         public void publish(Object data)
         {
             publish(data, null);
         }
 
-        @Override
         public void publish(Object data, String messageId)
         {
             Message.Mutable message = newMessage();

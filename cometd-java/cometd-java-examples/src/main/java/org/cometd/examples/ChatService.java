@@ -32,7 +32,6 @@ public class ChatService extends AbstractService
         final DataFilterMessageListener noMarkup = new DataFilterMessageListener(bayeux,new NoMarkupFilter(),new BadWordFilter());
         ServerChannel.Initializer initNoMarkup = new ServerChannel.Initializer()
         {
-            @Override
             public void configureChannel(ConfigurableServerChannel channel)
             {
                 channel.setPersistent(true);
@@ -125,7 +124,7 @@ public class ChatService extends AbstractService
     class BadWordFilter extends JSONDataFilter
     {
         @Override
-        protected Object filterString(String string) 
+        protected Object filterString(String string)
         {
             if (string.indexOf("dang")>=0)
                 throw new DataFilter.Abort();

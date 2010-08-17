@@ -84,7 +84,6 @@ public abstract class HttpTransport extends AbstractServerTransport
     /**
      * @see org.cometd.bayeux.server.ServerTransport#getCurrentLocalAddress()
      */
-    @Override
     public InetSocketAddress getCurrentLocalAddress()
     {
         HttpServletRequest request=getCurrentRequest();
@@ -98,7 +97,6 @@ public abstract class HttpTransport extends AbstractServerTransport
     /**
      * @see org.cometd.bayeux.server.ServerTransport#getCurrentRemoteAddress()
      */
-    @Override
     public InetSocketAddress getCurrentRemoteAddress()
     {
         HttpServletRequest request=getCurrentRequest();
@@ -107,6 +105,6 @@ public abstract class HttpTransport extends AbstractServerTransport
 
         return null;
     }
-    
-    
+
+
 }

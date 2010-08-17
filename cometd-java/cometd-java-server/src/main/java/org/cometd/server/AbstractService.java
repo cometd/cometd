@@ -239,7 +239,6 @@ public abstract class AbstractService
         final Method invoke=method;
         channel.addListener(new ServerChannel.MessageListener()
         {
-            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
             {
                 if (_seeOwn || from != getServerSession())

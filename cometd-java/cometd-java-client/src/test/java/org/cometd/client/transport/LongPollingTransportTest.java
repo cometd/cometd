@@ -381,36 +381,30 @@ public class LongPollingTransportTest
     {
         boolean _suppress;
 
-        @Override
         public void onConnectException(Throwable x)
         {
             if (!_suppress)
                 x.printStackTrace();
         }
 
-        @Override
         public void onException(Throwable x)
         {
             if (!_suppress)
                 x.printStackTrace();
         }
 
-        @Override
         public void onExpire()
         {
         }
 
-        @Override
         public void onSending(Message[] messages)
         {
         }
 
-        @Override
         public void onMessages(List<Mutable> metaMessages)
         {
         }
 
-        @Override
         public void onProtocolError(String info)
         {
         }
