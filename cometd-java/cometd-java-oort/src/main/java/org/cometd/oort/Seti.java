@@ -96,7 +96,6 @@ public class Seti
         _oort.observeChannel(_setiIdChannel.getId());
         _session.getChannel(_setiIdChannel.getId()).subscribe(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 receive(message);
@@ -106,7 +105,6 @@ public class Seti
         _oort.observeChannel(_setiAllChannel.getId());
         _session.getChannel(_setiAllChannel.getId()).subscribe(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 receive(message);
@@ -117,7 +115,6 @@ public class Seti
         _oort.observeChannel(_setiShardChannel.getId());
         _session.getChannel(_setiShardChannel.getId()).subscribe(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 receive(message);

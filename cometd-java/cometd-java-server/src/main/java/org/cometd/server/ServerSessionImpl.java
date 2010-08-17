@@ -1,8 +1,8 @@
 package org.cometd.server;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,7 +41,7 @@ public class ServerSessionImpl implements ServerSession
     private final AttributesMap _attributes = new AttributesMap();
     private final AtomicBoolean _connected = new AtomicBoolean();
     private final AtomicBoolean _handshook = new AtomicBoolean();
-    private final Set<ServerChannelImpl> _subscribedTo = Collections.newSetFromMap(new ConcurrentHashMap<ServerChannelImpl, Boolean>());
+    private final Map<ServerChannelImpl, Boolean> _subscribedTo = new ConcurrentHashMap<ServerChannelImpl, Boolean>();
 
     private AbstractServerTransport.Scheduler _scheduler;
     private ServerTransport _advisedTransport;
@@ -148,7 +148,6 @@ public class ServerSessionImpl implements ServerSession
         _extensions.add(extension);
     }
 
-    @Override
     public void removeExtension(Extension extension)
     {
         _extensions.remove(extension);
@@ -677,7 +676,7 @@ public class ServerSessionImpl implements ServerSession
         boolean handshook = _handshook.getAndSet(false);
         if (connected || handshook)
         {
-            for (ServerChannelImpl channel : _subscribedTo)
+            for (ServerChannelImpl channel : _subscribedTo.keySet())
             {
                 channel.unsubscribe(this);
             }
@@ -706,7 +705,7 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     protected void subscribedTo(ServerChannelImpl channel)
     {
-        _subscribedTo.add(channel);
+        _subscribedTo.put(channel, Boolean.TRUE);
     }
 
     /* ------------------------------------------------------------ */

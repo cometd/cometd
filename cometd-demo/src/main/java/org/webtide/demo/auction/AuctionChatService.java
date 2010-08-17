@@ -86,9 +86,8 @@ public class AuctionChatService extends AbstractService
                 if (!_oort.isOort(joiner))
                     _seti.associate(userName,joiner);
 
-                joiner.addListener(new ServerSession.RemoveListener(){
-
-                    @Override
+                joiner.addListener(new ServerSession.RemoveListener()
+                {
                     public void removed(ServerSession session, boolean timeout)
                     {
                         if (!_oort.isOort(joiner))
@@ -105,7 +104,6 @@ public class AuctionChatService extends AbstractService
                             }
                         }
                     }
-
                 });
 
                 Log.info("Members: " + members);

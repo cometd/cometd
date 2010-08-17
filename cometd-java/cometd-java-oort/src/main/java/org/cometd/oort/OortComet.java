@@ -37,7 +37,6 @@ public class OortComet extends BayeuxClient
         // add extension to modify outgoing handshake with oort details
         addExtension(new Extension()
         {
-            @Override
             public boolean sendMeta(ClientSession session, Mutable message)
             {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel()))
@@ -54,19 +53,16 @@ public class OortComet extends BayeuxClient
                 return true;
             }
 
-            @Override
             public boolean send(ClientSession session, Mutable message)
             {
                 return true;
             }
 
-            @Override
             public boolean rcvMeta(ClientSession session, Mutable message)
             {
                 return true;
             }
 
-            @Override
             public boolean rcv(ClientSession session, Mutable message)
             {
                 return true;
@@ -76,7 +72,6 @@ public class OortComet extends BayeuxClient
         // Add listener for handshake response
         getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 System.err.println("handshake "+message);
@@ -102,7 +97,6 @@ public class OortComet extends BayeuxClient
                             // subscribe to cloud notifications
                             getChannel("/oort/cloud").subscribe(new ClientSessionChannel.MessageListener()
                             {
-                                @Override
                                 public void onMessage(ClientSessionChannel channel, Message message)
                                 {
                                     Object[] data = (Object[])message.getData();
@@ -113,7 +107,7 @@ public class OortComet extends BayeuxClient
                                 }
                             });
 
-                            for (String id : _oort._channels)
+                            for (String id : _oort._channels.keySet())
                                 subscribe(id);
 
                             getChannel("/oort/cloud").publish(_oort.getKnownComets(),_cometSecret);
@@ -132,7 +126,6 @@ public class OortComet extends BayeuxClient
         final ClientSessionChannel channel_here = _oort._oortSession.getChannel(id);
         getChannel(id).subscribe(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 channel_here.publish(message.getData(),message.getId());
@@ -191,8 +184,4 @@ public class OortComet extends BayeuxClient
         Log.warn("ConnectException: "+x.toString());
         Log.debug(x);
     }
-
-
-
-
 }

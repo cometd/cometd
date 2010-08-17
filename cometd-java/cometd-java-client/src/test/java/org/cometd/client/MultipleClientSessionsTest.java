@@ -77,7 +77,6 @@ public class MultipleClientSessionsTest
         final BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null));
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 browserCookie.set(client.getCookie("BAYEUX_BROWSER"));
@@ -98,7 +97,6 @@ public class MultipleClientSessionsTest
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<Message>();
         client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 connects1.offer(message);
@@ -117,7 +115,6 @@ public class MultipleClientSessionsTest
         client2.setCookie("BAYEUX_BROWSER", cookie);
         client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 connects2.offer(message);
@@ -133,7 +130,6 @@ public class MultipleClientSessionsTest
         client3.setCookie("BAYEUX_BROWSER", cookie);
         client3.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 connects3.offer(message);

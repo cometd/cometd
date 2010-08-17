@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +24,7 @@ import org.cometd.bayeux.client.ClientSession.Extension;
 
 /**
  * AckExtension
- * 
+ *
  * This client-side extension enables the client to acknowledge to the server
  * the messages that the client has received.
  * For the acknowledgement to work, the server must be configured with the
@@ -37,26 +37,22 @@ import org.cometd.bayeux.client.ClientSession.Extension;
  * can arrive via both long poll and normal response.
  * Messages are not acknowledged one by one, but instead a group of messages is
  * acknowledged when long poll returns.
- * 
+ *
  * @author dyu
  */
 
 public class AckExtension implements Extension
 {
-
     public static final String EXT_FIELD = "ack";
-    
+
     private volatile boolean _serverSupportsAcks = false;
     private volatile int _ackId = -1;
 
-    
-    @Override
     public boolean rcv(ClientSession session, Mutable message)
     {
         return true;
     }
 
-    @Override
     public boolean rcvMeta(ClientSession session, Mutable message)
     {
         if(Channel.META_HANDSHAKE.equals(message.getChannel()))
@@ -64,7 +60,7 @@ public class AckExtension implements Extension
             Map<String,Object> ext = message.getExt(false);
             _serverSupportsAcks = ext!=null && Boolean.TRUE.equals(ext.get(EXT_FIELD));
         }
-        else if(_serverSupportsAcks && Boolean.TRUE.equals(message.get(Message.SUCCESSFUL_FIELD)) 
+        else if(_serverSupportsAcks && Boolean.TRUE.equals(message.get(Message.SUCCESSFUL_FIELD))
                 && Channel.META_CONNECT.equals(message.getChannel()))
         {
             Map<String,Object> ext = message.getExt(false);
@@ -75,17 +71,15 @@ public class AckExtension implements Extension
                     _ackId = ((Number)ack).intValue();
             }
         }
-        
+
         return true;
     }
 
-    @Override
     public boolean send(ClientSession session, Mutable message)
     {
         return true;
     }
 
-    @Override
     public boolean sendMeta(ClientSession session, Mutable message)
     {
         if(Channel.META_HANDSHAKE.equals(message.getChannel()))
@@ -97,8 +91,7 @@ public class AckExtension implements Extension
         {
             message.getExt(true).put(EXT_FIELD, _ackId);
         }
-        
+
         return true;
     }
-    
 }

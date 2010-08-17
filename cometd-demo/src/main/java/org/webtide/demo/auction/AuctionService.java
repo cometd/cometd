@@ -150,7 +150,6 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         }
     }
 
-    @Override
     public void subscribed(ServerSession session, ServerChannel channel)
     {
         if (!session.isLocalSession()&&channel.getId().startsWith(AUCTION_ROOT+"item"))
@@ -166,12 +165,10 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         }
     }
 
-    @Override
     public void unsubscribed(ServerSession session, ServerChannel channel)
     {
     }
 
-    @Override
     public void channelAdded(ServerChannel channel)
     {
         if (channel.getId().startsWith(AUCTION_ROOT+"item"))
@@ -180,17 +177,14 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         }
     }
 
-    @Override
     public void channelRemoved(String channelId)
     {
     }
 
-    @Override
     public void onMessage(ClientSessionChannel channel, Message message)
     {
     }
 
-    @Override
     public void configureChannel(ConfigurableServerChannel channel)
     {
     }

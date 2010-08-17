@@ -87,8 +87,6 @@ public class OortChatService extends AbstractService
 
                 joiner.addListener(new ServerSession.RemoveListener()
                 {
-
-                    @Override
                     public void removed(ServerSession session, boolean timeout)
                     {
                         if (!_oort.isOort(joiner))

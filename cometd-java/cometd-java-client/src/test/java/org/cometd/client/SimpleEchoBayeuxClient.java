@@ -30,7 +30,6 @@ public class SimpleEchoBayeuxClient
 
     ClientSessionChannel.MessageListener _alphaListener = new ClientSessionChannel.MessageListener()
     {
-        @Override
         public void onMessage(ClientSessionChannel channel, Message message)
         {
             Map<String,Object> data=message.getDataAsMap();
@@ -74,7 +73,6 @@ public class SimpleEchoBayeuxClient
 
         _client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 boolean success = message.isSuccessful();
@@ -93,7 +91,6 @@ public class SimpleEchoBayeuxClient
 
         _client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 if (message.isSuccessful())

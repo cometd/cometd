@@ -151,14 +151,12 @@ public class AckExtensionTest extends TestCase
 
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 if (message.isSuccessful())
                 {
                     client.getChannel("/chat/demo").subscribe(new ClientSessionChannel.MessageListener()
                     {
-                        @Override
                         public void onMessage(ClientSessionChannel channel, Message message)
                         {
                             messages.add(message);
@@ -228,8 +226,4 @@ public class AckExtensionTest extends TestCase
         client.disconnect();
         assertTrue(client.waitFor(1000L,State.DISCONNECTED));
     }
-
-
-
-
 }

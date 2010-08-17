@@ -17,7 +17,6 @@ package org.cometd.examples;
 
 
 import java.io.IOException;
-
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -25,13 +24,12 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.AbstractService;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.ext.TimesyncExtension;
 import org.eclipse.jetty.util.log.Log;
@@ -53,13 +51,12 @@ public class CometdDemoServlet extends GenericServlet
         bayeux.addExtension(new TimesyncExtension());
         bayeux.addExtension(new AcknowledgedMessagesExtension());
 
-        bayeux.createIfAbsent("/foo/bar/baz",new ConfigurableServerChannel.Initializer(){
-            @Override
+        bayeux.createIfAbsent("/foo/bar/baz",new ConfigurableServerChannel.Initializer()
+        {
             public void configureChannel(ConfigurableServerChannel channel)
             {
                 channel.setPersistent(true);
             }
-
         });
 
         if (bayeux.getLogger().isDebugEnabled())
@@ -123,7 +120,6 @@ public class CometdDemoServlet extends GenericServlet
          */
     }
 
-    @Override
     public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
     {
         ((HttpServletResponse)res).sendError(503);

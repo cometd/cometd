@@ -88,7 +88,6 @@ public class ConsoleChatClient
     {
         client.batch(new Runnable()
         {
-            @Override
             public void run()
             {
                 ClientSessionChannel chatChannel = client.getChannel("/chat/demo");
@@ -129,7 +128,6 @@ public class ConsoleChatClient
 
     private class InitializerListener implements ClientSessionChannel.MessageListener
     {
-        @Override
         public void onMessage(ClientSessionChannel channel, Message message)
         {
             if (message.isSuccessful())
@@ -144,7 +142,6 @@ public class ConsoleChatClient
         private boolean wasConnected;
         private boolean connected;
 
-        @Override
         public void onMessage(ClientSessionChannel channel, Message message)
         {
             if (client.isDisconnected())
@@ -169,7 +166,6 @@ public class ConsoleChatClient
 
     private class ChatListener implements ClientSessionChannel.MessageListener
     {
-        @Override
         public void onMessage(ClientSessionChannel channel, Message message)
         {
             Map<String, Object> data = message.getDataAsMap();
@@ -181,7 +177,6 @@ public class ConsoleChatClient
 
     private class MembersListener implements ClientSessionChannel.MessageListener
     {
-        @Override
         public void onMessage(ClientSessionChannel channel, Message message)
         {
             Object[] members = (Object[])message.getData();

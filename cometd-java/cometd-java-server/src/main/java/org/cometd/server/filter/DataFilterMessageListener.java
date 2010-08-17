@@ -5,8 +5,8 @@ import java.util.List;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
-import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 
 public class DataFilterMessageListener implements ServerChannel.MessageListener
@@ -20,7 +20,6 @@ public class DataFilterMessageListener implements ServerChannel.MessageListener
         _filters=Arrays.asList(filters);
     }
 
-    @Override
     public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
     {
         try

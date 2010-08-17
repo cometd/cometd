@@ -120,7 +120,6 @@ public class BayeuxClientTest extends TestCase
 
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 connected.set(message.isSuccessful());
@@ -129,7 +128,6 @@ public class BayeuxClientTest extends TestCase
 
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 connected.set(false);
@@ -138,7 +136,6 @@ public class BayeuxClientTest extends TestCase
 
         client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 System.out.println("<<"+message+" @ "+channel);
@@ -160,7 +157,6 @@ public class BayeuxClientTest extends TestCase
 
         ClientSessionChannel.MessageListener subscriber = new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 System.out.println("a<" + message + " @ " + channel);
@@ -196,7 +192,6 @@ public class BayeuxClientTest extends TestCase
 
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 connected.set(message.isSuccessful());
@@ -205,7 +200,6 @@ public class BayeuxClientTest extends TestCase
 
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 connected.set(false);
@@ -218,7 +212,6 @@ public class BayeuxClientTest extends TestCase
 
         client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 System.err.println("message "+message);
@@ -290,7 +283,6 @@ public class BayeuxClientTest extends TestCase
 
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 connected.set(message.isSuccessful());
@@ -300,7 +292,6 @@ public class BayeuxClientTest extends TestCase
 
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 connected.set(false);
@@ -310,7 +301,6 @@ public class BayeuxClientTest extends TestCase
 
         client.getChannel("/**").addListener(new ClientSessionChannel.MessageListener()
         {
-            @Override
             public void onMessage(ClientSessionChannel session, Message message)
             {
                 if (message.getData()!=null || Channel.META_SUBSCRIBE.equals(message.getChannel()) || Channel.META_DISCONNECT.equals(message.getChannel()))
@@ -411,7 +401,6 @@ public class BayeuxClientTest extends TestCase
 
             client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
             {
-                @Override
                 public void onMessage(ClientSessionChannel channel, Message message)
                 {
                     if (connected.getAndSet(false))
@@ -421,7 +410,6 @@ public class BayeuxClientTest extends TestCase
                     {
                         client.getChannel(room).subscribe(new ClientSessionChannel.MessageListener()
                         {
-                            @Override
                             public void onMessage(ClientSessionChannel channel, Message message)
                             {
                                 received.incrementAndGet();
@@ -433,7 +421,6 @@ public class BayeuxClientTest extends TestCase
 
             client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
             {
-                @Override
                 public void onMessage(ClientSessionChannel channel, Message message)
                 {
                     if (!connected.getAndSet(message.isSuccessful()))
@@ -504,7 +491,6 @@ public class BayeuxClientTest extends TestCase
         _bayeux.createIfAbsent(channelName);
         _bayeux.getChannel(channelName).addListener(new ServerChannel.MessageListener()
         {
-            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
             {
                 results.add(from.getId());
@@ -535,7 +521,6 @@ public class BayeuxClientTest extends TestCase
         _bayeux.createIfAbsent(channelName);
         _bayeux.getChannel(channelName).addListener(new ServerChannel.MessageListener()
         {
-            @Override
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
             {
                 results.add(from.getId());

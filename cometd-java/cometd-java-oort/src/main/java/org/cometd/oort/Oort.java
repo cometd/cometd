@@ -1,13 +1,13 @@
 package org.cometd.oort;
 
 import java.security.SecureRandom;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -51,7 +51,7 @@ public class Oort
     final protected LocalSession _oortSession;
 
     final protected Map<String,OortComet> _knownCommets = new ConcurrentHashMap<String,OortComet>();
-    final protected Set<String> _channels = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    final protected ConcurrentMap<String, Boolean> _channels = new ConcurrentHashMap<String, Boolean>();
 
     /* ------------------------------------------------------------ */
     Oort(String id,BayeuxServer bayeux)
@@ -183,7 +183,7 @@ public class Oort
      */
     public void observeChannel(String channelId)
     {
-        if (_channels.add(channelId))
+        if (_channels.putIfAbsent(channelId, Boolean.TRUE) == null)
         {
             for (OortComet comet : _knownCommets.values())
                 comet.subscribe(channelId);
@@ -238,25 +238,21 @@ public class Oort
      */
     protected class OortExtension implements Extension
     {
-        @Override
         public boolean rcv(ServerSession from, Mutable message)
         {
             return true;
         }
 
-        @Override
         public boolean rcvMeta(ServerSession from, Mutable message)
         {
             return true;
         }
 
-        @Override
         public boolean send(ServerSession from, ServerSession to, Mutable message)
         {
             return true;
         }
 
-        @Override
         public boolean sendMeta(ServerSession to, Mutable message)
         {
             if (message.getChannel().equals(Channel.META_HANDSHAKE) && message.isSuccessful())
@@ -306,20 +302,16 @@ public class Oort
      */
     protected class RemoteOortClientExtension implements org.cometd.bayeux.server.ServerSession.Extension
     {
-
-        @Override
         public boolean rcv(ServerSession session, Mutable message)
         {
             return true;
         }
 
-        @Override
         public boolean rcvMeta(ServerSession session, Mutable message)
         {
             return true;
         }
 
-        @Override
         public ServerMessage send(ServerSession to, ServerMessage message)
         {
             // avoid loops
@@ -328,7 +320,6 @@ public class Oort
 
         }
 
-        @Override
         public boolean sendMeta(ServerSession session, Mutable message)
         {
             return true;
@@ -342,7 +333,6 @@ public class Oort
      */
     protected class RootOortClientListener implements ClientSessionChannel.MessageListener
     {
-        @Override
         public void onMessage(ClientSessionChannel channel, Message msg)
         {
             String channelId = msg.getChannel();
@@ -356,6 +346,5 @@ public class Oort
                 observedComets(comets);
             }
         }
-
     }
 }
