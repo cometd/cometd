@@ -1,10 +1,13 @@
 package org.cometd.client;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -23,6 +26,7 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient.State;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.common.ChannelId;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
@@ -545,6 +549,190 @@ public class BayeuxClientTest extends TestCase
 
         client.disconnect();
         assertTrue(client.waitFor(1000,State.DISCONNECTED));
+    }
+
+    public void testURLWithImplicitPort() throws Exception
+    {
+        final AtomicReference<Throwable> failure = new AtomicReference<Throwable>();
+        final CountDownLatch latch = new CountDownLatch(1);
+        BayeuxClient client = new BayeuxClient("http://localhost/cometd", LongPollingTransport.create(null, _httpClient))
+        {
+            @Override
+            public void onConnectException(Throwable x)
+            {
+                if (failure.get() == null)
+                {
+                    failure.set(x);
+                    latch.countDown();
+                }
+            }
+        };
+        client.handshake();
+        assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+        assertNotNull(failure.get());
+        assertTrue(failure.get() instanceof java.net.ConnectException);
+    }
+
+    public void testAbortThenRestart() throws Exception
+    {
+        final AtomicReference<CountDownLatch> handshakeLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient));
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.isSuccessful())
+                    handshakeLatch.get().countDown();
+            }
+        });
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.isSuccessful())
+                    connectLatch.get().countDown();
+            }
+        });
+        client.handshake();
+
+        // Wait for connect
+        assertTrue(handshakeLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+
+        client.abort();
+        assertFalse(client.isConnected());
+
+        // Restart
+        handshakeLatch.set(new CountDownLatch(1));
+        connectLatch.set(new CountDownLatch(1));
+        client.handshake();
+        assertTrue(handshakeLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(client.isConnected());
+
+        client.disconnect();
+    }
+
+    public void testAbortBeforePublishThenRestart() throws Exception
+    {
+        final String channelName = "/service/test";
+        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient))
+        {
+            @Override
+            protected AbstractSessionChannel newChannel(ChannelId channelId)
+            {
+                return new BayeuxClientChannel(channelId)
+                {
+                    @Override
+                    public void publish(Object data)
+                    {
+                        abort();
+                        super.publish(data);
+                    }
+                };
+            }
+
+            @Override
+            protected void send(Message.Mutable... messages)
+            {
+                if (messages.length == 1 && channelName.equals(messages[0].getChannel()))
+                    publishLatch.get().countDown();
+                super.send(messages);
+            }
+        };
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.isSuccessful())
+                    connectLatch.get().countDown();
+            }
+        });
+        client.handshake();
+
+        // Wait for connect
+        assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+
+        try
+        {
+            client.getChannel(channelName).publish(new HashMap<String, Object>());
+            fail();
+        }
+        catch (IllegalStateException x)
+        {
+            // Expected
+        }
+        // Publish must not be sent
+        assertFalse(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(client.isConnected());
+
+        connectLatch.set(new CountDownLatch(1));
+        client.handshake();
+        assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        // Check that publish has not been queued and is not sent on restart
+        assertFalse(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
+
+        client.disconnect();
+    }
+
+    public void testAbortAfterPublishThenRestart() throws Exception
+    {
+        final String channelName = "/test";
+        final AtomicBoolean abort = new AtomicBoolean(false);
+        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        BayeuxClient client = new BayeuxClient("http://localhost:"+_port+"/cometd", LongPollingTransport.create(null, _httpClient))
+        {
+            @Override
+            protected void send(Message.Mutable... messages)
+            {
+                if (messages.length == 1 && channelName.equals(messages[0].getChannel()) && abort.get())
+                {
+                    abort();
+                    publishLatch.get().countDown();
+                }
+                super.send(messages);
+            }
+        };
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.isSuccessful())
+                    connectLatch.get().countDown();
+            }
+        });
+        client.handshake();
+
+        // Wait for connect
+        assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+
+        ClientSessionChannel channel = client.getChannel(channelName);
+        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        channel.subscribe(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                messageLatch.get().countDown();
+            }
+        });
+
+        abort.set(true);
+        channel.publish(new HashMap<String, Object>());
+        assertTrue(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(client.isConnected());
+
+        // Message must not be received
+        assertFalse(messageLatch.get().await(1000, TimeUnit.MILLISECONDS));
+
+        connectLatch.set(new CountDownLatch(1));
+        client.handshake();
+        assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+
+        client.disconnect();
     }
 
     private class DumpThread extends Thread
