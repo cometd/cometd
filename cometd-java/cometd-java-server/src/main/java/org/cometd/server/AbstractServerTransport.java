@@ -11,12 +11,12 @@ import org.eclipse.jetty.util.ajax.JSON;
 /* ------------------------------------------------------------ */
 /** The base class of all server transports.
  * <p>
- * Each derived Transport class should declare all options that it supports 
+ * Each derived Transport class should declare all options that it supports
  * by calling {@link #setOption(String, Object)} for each option.
- * Then during the call the {@link #init()}, each transport should 
- * call the variants of {@link #getOption(String)} to obtained the configured 
- * value for the option.  
- * 
+ * Then during the call the {@link #init()}, each transport should
+ * call the variants of {@link #getOption(String)} to obtained the configured
+ * value for the option.
+ *
  */
 public abstract class AbstractServerTransport implements ServerTransport
 {
@@ -47,7 +47,7 @@ public abstract class AbstractServerTransport implements ServerTransport
      * <p>The construct is passed the {@link BayeuxServerImpl} instance for
      * the transport.  The {@link BayeuxServerImpl#getOptions()} map is
      * populated with the default options known by this transport. The options
-     * are then inspected again when {@link #init()} is called, to set the 
+     * are then inspected again when {@link #init()} is called, to set the
      * actual values used.  The options are arranged into a naming hierarchy
      * by derived classes adding prefix segments by calling add {@link #addPrefix(String)}.
      * Calls to {@link #getOption(String)} will use the list of prefixes
@@ -121,7 +121,7 @@ public abstract class AbstractServerTransport implements ServerTransport
      *   addPrefix("long-polling");
      *   addPrefix("jsonp");
      * </pre>
-     * then a call to getOption("foobar") will look for the 
+     * then a call to getOption("foobar") will look for the
      * most specific value with names:<pre>
      *   long-polling.json.foobar
      *   long-polling.foobar
@@ -154,9 +154,9 @@ public abstract class AbstractServerTransport implements ServerTransport
     {
         Object value = getOption(option);
         if (value==null)
-            return false;
+            return dftValue;
         if (value instanceof Boolean)
-            return ((Boolean)value).booleanValue();
+            return (Boolean)value;
         return Boolean.parseBoolean(value.toString());
     }
 
@@ -171,7 +171,7 @@ public abstract class AbstractServerTransport implements ServerTransport
     {
         Object value = getOption(option);
         if (value==null)
-            return -1;
+            return dftValue;
         if (value instanceof Number)
             return ((Number)value).intValue();
         return Integer.parseInt(value.toString());
@@ -188,7 +188,7 @@ public abstract class AbstractServerTransport implements ServerTransport
     {
         Object value = getOption(option);
         if (value==null)
-            return -1;
+            return dftValue;
         if (value instanceof Number)
             return ((Number)value).longValue();
         return Long.parseLong(value.toString());
@@ -204,7 +204,7 @@ public abstract class AbstractServerTransport implements ServerTransport
     public String getOption(String option, String dftValue)
     {
         Object value = getOption(option);
-        return (value==null)?dftValue:value.toString();
+        return value == null ? dftValue : value.toString();
     }
 
     /* ------------------------------------------------------------ */
@@ -232,7 +232,7 @@ public abstract class AbstractServerTransport implements ServerTransport
 
     /* ------------------------------------------------------------ */
     /** Set the option name prefix segment.
-     * <p> Normally this is called by the super class constructors to establish 
+     * <p> Normally this is called by the super class constructors to establish
      * a naming hierarchy for options and iteracts with the {@link #setOption(String, Object)}
      * method to create a naming hierarchy for options.
      * For example the following sequence of calls:<pre>
@@ -255,7 +255,7 @@ public abstract class AbstractServerTransport implements ServerTransport
      * </pre>
      * The various {@link #getOption(String)} methods will search this
      * name tree for the most specific match.
-     * 
+     *
      * @param segment name
      * @throws IllegalArgumentException if the new prefix is not prefixed by the old prefix.
      */
@@ -376,7 +376,7 @@ public abstract class AbstractServerTransport implements ServerTransport
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Housekeeping sweep, called a regular intervals
      */
     protected void doSweep()
