@@ -244,8 +244,32 @@ public class ServerChannelTest extends Assert
         assertEquals("Hello World",session0.getQueue().poll().getData());
         assertEquals("FooStar",session0.getQueue().poll().getData());
         assertEquals("StarStar",session0.getQueue().poll().getData());
+    }
 
+    @Test
+    public void testPublishFromSweptChannelSucceeds() throws Exception
+    {
+        _bayeux.createIfAbsent("/foo/**");
+        ServerChannelImpl fooStarStar = (ServerChannelImpl)_bayeux.getChannel("/foo/**");
 
+        ServerSessionImpl session1 = newServerSession();
+        fooStarStar.subscribe(session1);
+
+        _bayeux.createIfAbsent("/foo/bar");
+        ServerChannel fooBar = _bayeux.getChannel("/foo/bar");
+
+        // Need to sweep 3 times before the channel is removed
+        _bayeux.doSweep();
+        _bayeux.doSweep();
+        _bayeux.doSweep();
+        assertNull(_bayeux.getChannel(fooBar.getId()));
+
+        ServerSessionImpl session0 = newServerSession();
+        ServerMessage.Mutable message = _bayeux.newMessage();
+        message.setData("test");
+        fooBar.publish(session0, message);
+
+        assertEquals(1, session1.getQueue().size());
     }
 
     @Test
