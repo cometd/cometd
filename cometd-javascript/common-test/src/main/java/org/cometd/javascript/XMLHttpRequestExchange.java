@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 import org.eclipse.jetty.client.ContentExchange;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.mozilla.javascript.Function;
@@ -22,9 +24,9 @@ public class XMLHttpRequestExchange extends ScriptableObject
     {
     }
 
-    public void jsConstructor(Object threadModel, Scriptable scope, Scriptable thiz, Function function, String method, String url, boolean async)
+    public void jsConstructor(Object cookieStore, Object threadModel, Scriptable scope, Scriptable thiz, Function function, String method, String url, boolean async)
     {
-        exchange = new CometdExchange((ThreadModel)threadModel, scope, thiz, function, method, url, async);
+        exchange = new CometdExchange((HttpCookieStore)cookieStore, (ThreadModel)threadModel, scope, thiz, function, method, url, async);
     }
 
     public String getClassName()
@@ -103,6 +105,11 @@ public class XMLHttpRequestExchange extends ScriptableObject
         return exchange.getResponseHeader(name);
     }
 
+    public void send(HttpClient httpClient) throws Exception
+    {
+        exchange.send(httpClient);
+    }
+
     public static class CometdExchange extends ContentExchange
     {
         public enum ReadyState
@@ -110,6 +117,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
             UNSENT, OPENED, HEADERS_RECEIVED, LOADING, DONE
         }
 
+        private final HttpCookieStore cookieStore;
         private final ThreadModel threads;
         private final Scriptable scope;
         private volatile Scriptable thiz;
@@ -120,9 +128,10 @@ public class XMLHttpRequestExchange extends ScriptableObject
         private volatile String responseText;
         private volatile String responseStatusText;
 
-        public CometdExchange(ThreadModel threads, Scriptable scope, Scriptable thiz, Function function, String method, String url, boolean async)
+        public CometdExchange(HttpCookieStore cookieStore, ThreadModel threads, Scriptable scope, Scriptable thiz, Function function, String method, String url, boolean async)
         {
             super(true);
+            this.cookieStore = cookieStore;
             this.threads = threads;
             this.scope = scope;
             this.thiz = thiz;
@@ -152,6 +161,14 @@ public class XMLHttpRequestExchange extends ScriptableObject
         private void notifyReadyStateChange()
         {
             threads.execute(scope, thiz, function);
+        }
+
+        public void send(HttpClient httpClient) throws Exception
+        {
+            String cookies = cookieStore.jsFunction_get(getScheme().toString("UTF-8"), getAddress().toString(), "");
+            if (cookies.length() > 0)
+                setRequestHeader(HttpHeaders.COOKIE, cookies);
+            httpClient.send(this);
         }
 
         @Override
@@ -204,6 +221,24 @@ public class XMLHttpRequestExchange extends ScriptableObject
         {
             super.onResponseStatus(version, status, statusText);
             this.responseStatusText = new String(statusText.asArray(), "UTF-8");
+        }
+
+        @Override
+        protected void onResponseHeader(Buffer name, Buffer value) throws IOException
+        {
+            super.onResponseHeader(name, value);
+            int headerName = HttpHeaders.CACHE.getOrdinal(name);
+            if (headerName == HttpHeaders.SET_COOKIE_ORDINAL)
+            {
+                try
+                {
+                    cookieStore.jsFunction_set(getScheme().toString("UTF-8"), getAddress().toString(), "", value.toString("UTF-8"));
+                }
+                catch (Exception x)
+                {
+                    throw (IOException)new IOException().initCause(x);
+                }
+            }
         }
 
         @Override
