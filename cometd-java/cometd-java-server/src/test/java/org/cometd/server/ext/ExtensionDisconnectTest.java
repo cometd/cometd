@@ -39,7 +39,7 @@ public class ExtensionDisconnectTest extends AbstractBayeuxClientServerTest
         assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
         assertEquals(200, handshake.getResponseStatus());
 
-        String clientId = extractClientId(handshake.getResponseContent());
+        String clientId = extractClientId(handshake);
 
         ContentExchange disconnect = newBayeuxExchange("[{" +
                                                     "\"channel\": \"/meta/disconnect\"," +

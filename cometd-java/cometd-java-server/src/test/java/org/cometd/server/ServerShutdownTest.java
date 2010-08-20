@@ -2,6 +2,7 @@ package org.cometd.server;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.http.HttpHeaders;
 
 /**
  * @version $Revision$ $Date$
@@ -21,14 +22,17 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest
         assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
         assertEquals(200, handshake.getResponseStatus());
 
-        String clientId = extractClientId(handshake.getResponseContent());
+        String clientId = extractClientId(handshake);
+        String bayeuxCookie = extractBayeuxCookie(handshake);
 
         ContentExchange connect = newBayeuxExchange("" +
                 "[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
-                "\"connectionType\": \"long-polling\"" +
+                "\"connectionType\": \"long-polling\"," +
+                "\"advice\": { \"timeout\": 0 }" +
                 "}]");
+        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
         assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
         assertEquals(200, connect.getResponseStatus());
@@ -39,6 +43,7 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
+        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
 
         // Wait for the connect to arrive to the server

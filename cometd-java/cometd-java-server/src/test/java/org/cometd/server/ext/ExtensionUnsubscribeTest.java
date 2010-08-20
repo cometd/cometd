@@ -39,7 +39,7 @@ public class ExtensionUnsubscribeTest extends AbstractBayeuxClientServerTest
         assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
         assertEquals(200, handshake.getResponseStatus());
 
-        String clientId = extractClientId(handshake.getResponseContent());
+        String clientId = extractClientId(handshake);
 
         String channel = "/foo";
         ContentExchange subscribe = newBayeuxExchange("[{" +
