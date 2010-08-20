@@ -230,6 +230,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
         Message.Mutable message = newMessage();
         message.setChannel(Channel.META_CONNECT);
         message.put(Message.CONNECTION_TYPE_FIELD, transport.getName());
+        if (state == State.CONNECTING)
+        {
+            // First connect, add advice
+            message.getAdvice(true).put("timeout", 0);
+        }
         updateState(State.CONNECTED);
         logger.debug("Connecting, transport {}", transport);
         send(message);
@@ -500,10 +505,17 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux, Trans
     protected void terminate()
     {
         updateState(State.DISCONNECTED);
+
         resetBackoff();
+
         advice = null;
         handshakeBatch = false;
         messageQueue.clear();
+
+        // Do not clear the transport field, as this will result in
+        // NPEs when concurrent threads try to use this BayeuxClient
+        // instance after it has been terminated by another thread
+
         if (shutdownScheduler)
         {
             shutdownScheduler = false;
