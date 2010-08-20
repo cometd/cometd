@@ -23,7 +23,6 @@ import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.util.log.Log;
 
-
 /* ------------------------------------------------------------ */
 /** Abstract Long Polling Transport.
  * <p>
@@ -201,8 +200,7 @@ public abstract class LongPollingTransport extends HttpTransport
                         session.setScheduler(null);
                     }
 
-                    // remember the connected status
-                    boolean was_connected=session!=null && session.isConnected();
+                    boolean wasConnected = session != null && session.isConnected();
 
                     // handle the message
                     // the actual reply is return from the call, but other messages may
@@ -232,39 +230,50 @@ public abstract class LongPollingTransport extends HttpTransport
                         else
                         {
                             // If this is a connect or we can send messages with any response
-                            if  (connect || !(isMetaConnectDeliveryOnly()||session.isMetaConnectDeliveryOnly()))
+                            if  (connect || !(isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly()))
                             {
-                                // send the queued messages
-                                writer=sendQueue(request,response,session,writer);
+                                // Send the queued messages
+                                writer = sendQueue(request,response,session,writer);
                             }
 
-                            // special handling for connect
+                            // Special handling for connect
                             if (connect)
                             {
                                 long timeout = session.calculateTimeout(getTimeout());
+                                // Support old clients that do not send advice:{timeout:0} on the first connect
+                                if (timeout > 0 && !wasConnected)
+                                    timeout = 0;
 
-                                // Should we suspend?
                                 // If the writer is non null, we have already started sending a response, so we should not suspend
-                                if(timeout>0 && was_connected && writer==null && reply.isSuccessful() && session.isQueueEmpty())
+                                if (writer == null && reply.isSuccessful() && session.isQueueEmpty())
                                 {
-                                    // If we don't have too many long polls from this browser
-                                    String browserId=findBrowserId(request);
-                                    if (browserId == null || incBrowserId(browserId))
+                                    String browserId = findBrowserId(request);
+                                    if (browserId != null && incBrowserId(browserId))
                                     {
-                                        // suspend and wait for messages
-                                        Continuation continuation = ContinuationSupport.getContinuation(request);
-                                        continuation.setTimeout(timeout);
-                                        continuation.suspend(response);
-                                        scheduler=new LongPollScheduler(session,continuation,reply,browserId);
-                                        session.setScheduler(scheduler);
-                                        request.setAttribute("cometd.scheduler",scheduler);
-                                        reply=null;
+                                        if (timeout > 0)
+                                        {
+                                            // Suspend and wait for messages
+                                            Continuation continuation = ContinuationSupport.getContinuation(request);
+                                            continuation.setTimeout(timeout);
+                                            continuation.suspend(response);
+                                            scheduler=new LongPollScheduler(session,continuation,reply,browserId);
+                                            session.setScheduler(scheduler);
+                                            request.setAttribute("cometd.scheduler",scheduler);
+                                            reply=null;
+                                        }
+                                        else
+                                        {
+                                            decBrowserId(browserId);
+                                        }
                                     }
                                     else
                                     {
                                         // Advise multiple clients from same browser
                                         Map<String, Object> advice = reply.asMutable().getAdvice(true);
-                                        advice.put("multiple-clients", true);
+
+                                        if (browserId != null)
+                                            advice.put("multiple-clients", true);
+                                        
                                         if (_multiSessionInterval > 0)
                                         {
                                             advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
@@ -277,10 +286,9 @@ public abstract class LongPollingTransport extends HttpTransport
                                         session.reAdvise();
                                     }
                                 }
-                                else if (session.isConnected())
-                                {
+
+                                if (reply != null && session.isConnected())
                                     session.startIntervalTimeout();
-                                }
                             }
                         }
 

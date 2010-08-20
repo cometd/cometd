@@ -1,14 +1,17 @@
 package org.cometd.client;
 
+import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -20,7 +23,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -31,7 +36,7 @@ public class MultipleClientSessionsTest
     private Server server;
     private String cometdURL;
     private long timeout = 5000L;
-    private long multiSessionInterval = timeout / 5;
+    private BayeuxServerImpl bayeux;
 
     @Before
     public void init() throws Exception
@@ -49,10 +54,8 @@ public class MultipleClientSessionsTest
         // Setup comet servlet
         CometdServlet cometdServlet = new CometdServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
-        cometdServletHolder.setInitParameter("timeout", String.valueOf(5000));
+        cometdServletHolder.setInitParameter("timeout", String.valueOf(timeout));
         cometdServletHolder.setInitParameter("logLevel", "2");
-        cometdServletHolder.setInitParameter("long-polling.timeout", String.valueOf(timeout));
-        cometdServletHolder.setInitParameter("long-polling.multiSessionInterval", String.valueOf(multiSessionInterval));
         String cometdServletPath = "/cometd";
         context.addServlet(cometdServletHolder, cometdServletPath + "/*");
 
@@ -61,6 +64,8 @@ public class MultipleClientSessionsTest
         int port = connector.getLocalPort();
         String contextURL = "http://localhost:" + port + contextPath;
         cometdURL = contextURL + cometdServletPath;
+
+        bayeux = cometdServlet.getBayeux();
     }
 
     @After
@@ -71,28 +76,85 @@ public class MultipleClientSessionsTest
     }
 
     @Test
-    public void testCookieSentOnHandshakeResponse() throws Exception
+    public void testMultipleClientSession_WithOneMaxSessionPerBrowser_WithNoMultiSessionInterval() throws Exception
     {
-        final AtomicReference<String> browserCookie = new AtomicReference<String>();
-        final BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null));
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        org.cometd.server.transport.LongPollingTransport transport = (org.cometd.server.transport.LongPollingTransport)bayeux.getTransport("long-polling");
+        transport.setOption(org.cometd.server.transport.LongPollingTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
+        transport.setOption(org.cometd.server.transport.LongPollingTransport.MULTI_SESSION_INTERVAL_OPTION, 0);
+        // Force re-initialization
+        Method init = transport.getClass().getDeclaredMethod("init");
+        init.setAccessible(true);
+        init.invoke(transport);
+
+        BayeuxClient client1 = new BayeuxClient(cometdURL, LongPollingTransport.create(null));
+        final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<Message>();
+        final CountDownLatch latch1 = new CountDownLatch(2);
+        client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                browserCookie.set(client.getCookie("BAYEUX_BROWSER"));
+                connects1.offer(message);
+                latch1.countDown();
             }
         });
-        client.handshake();
-        assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
-        assertNotNull(browserCookie.get());
+        client1.handshake();
+        try
+        {
+            assertTrue(client1.waitFor(1000, BayeuxClient.State.CONNECTED));
+            String cookie = client1.getCookie("BAYEUX_BROWSER");
+            assertNotNull(cookie);
 
-        client.disconnect();
-        assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+            // Give some time to the first client to establish the long poll before the second client
+            Thread.sleep(500);
+
+            BayeuxClient client2 = new BayeuxClient(cometdURL, LongPollingTransport.create(null));
+            final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<Message>();
+            final CountDownLatch latch2 = new CountDownLatch(1);
+            client2.setCookie("BAYEUX_BROWSER", cookie);
+            client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+            {
+                public void onMessage(ClientSessionChannel channel, Message message)
+                {
+                    connects2.offer(message);
+                    latch2.countDown();
+                }
+            });
+            client2.handshake();
+            assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
+
+            assertTrue(latch2.await(1000, TimeUnit.MILLISECONDS));
+            assertEquals(1, connects2.size());
+            assertEquals(Message.RECONNECT_NONE_VALUE, connects2.peek().getAdvice().get(Message.RECONNECT_FIELD));
+            assertSame(Boolean.TRUE, connects2.peek().getAdvice().get("multiple-clients"));
+
+            // Give some time to the second client to process the disconnect
+            Thread.sleep(500);
+            assertFalse(client2.isConnected());
+
+            assertTrue(latch1.await(timeout, TimeUnit.MILLISECONDS));
+            assertEquals(2, connects1.size());
+            assertTrue(client1.isConnected());
+        }
+        finally
+        {
+            client1.disconnect();
+            assertTrue(client1.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        }
     }
 
     @Test
-    public void testMultipleClientSessions() throws Exception
+    public void testMultipleClientSession_WithOneMaxSessionPerBrowser_WithMultiSessionInterval() throws Exception
     {
+        long multiSessionInterval = timeout / 5;
+
+        org.cometd.server.transport.LongPollingTransport transport = (org.cometd.server.transport.LongPollingTransport)bayeux.getTransport("long-polling");
+        transport.setOption(org.cometd.server.transport.LongPollingTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
+        transport.setOption(org.cometd.server.transport.LongPollingTransport.MULTI_SESSION_INTERVAL_OPTION, multiSessionInterval);
+        // Force re-initialization
+        Method init = transport.getClass().getDeclaredMethod("init");
+        init.setAccessible(true);
+        init.invoke(transport);
+
         BayeuxClient client1 = new BayeuxClient(cometdURL, LongPollingTransport.create(null));
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<Message>();
         client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
@@ -139,7 +201,6 @@ public class MultipleClientSessionsTest
         assertTrue(client3.waitFor(1000, BayeuxClient.State.CONNECTED));
 
         // Sleep for a while
-        assertEquals(timeout, 5 * multiSessionInterval);
         Thread.sleep(2 * multiSessionInterval);
 
         // The first client must remain in long poll mode
@@ -150,16 +211,14 @@ public class MultipleClientSessionsTest
         Message lastConnect2 = new LinkedList<Message>(connects2).getLast();
         Map<String,Object> advice2 = lastConnect2.getAdvice();
         assertNotNull(advice2);
-        assertTrue(advice2.containsKey("multiple-clients"));
-        assertEquals(true, advice2.get("multiple-clients"));
+        assertSame(Boolean.TRUE, advice2.get("multiple-clients"));
 
         // Third client must be in normal poll mode
         assertTrue(connects3.size() > 1);
         Message lastConnect3 = new LinkedList<Message>(connects3).getLast();
         Map<String,Object> advice3 = lastConnect3.getAdvice();
         assertNotNull(advice3);
-        assertTrue(advice3.containsKey("multiple-clients"));
-        assertEquals(true, advice3.get("multiple-clients"));
+        assertSame(Boolean.TRUE, advice3.get("multiple-clients"));
 
         // Wait for the first client to re-issue a long poll
         Thread.sleep(timeout);
@@ -216,5 +275,115 @@ public class MultipleClientSessionsTest
 
         client5.disconnect();
         assertTrue(client5.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+    }
+
+    @Test
+    public void testMultipleClientSession_WithTwoMaxSessionPerBrowser_WithMultiSessionInterval() throws Exception
+    {
+        long multiSessionInterval = timeout / 5;
+
+        org.cometd.server.transport.LongPollingTransport transport = (org.cometd.server.transport.LongPollingTransport)bayeux.getTransport("long-polling");
+        transport.setOption(org.cometd.server.transport.LongPollingTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 2);
+        transport.setOption(org.cometd.server.transport.LongPollingTransport.MULTI_SESSION_INTERVAL_OPTION, multiSessionInterval);
+        // Force re-initialization
+        Method init = transport.getClass().getDeclaredMethod("init");
+        init.setAccessible(true);
+        init.invoke(transport);
+
+        BayeuxClient client1 = new BayeuxClient(cometdURL, LongPollingTransport.create(null));
+        final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<Message>();
+        client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                connects1.offer(message);
+            }
+        });
+        client1.handshake();
+        assertTrue(client1.waitFor(1000, BayeuxClient.State.CONNECTED));
+        String cookie = client1.getCookie("BAYEUX_BROWSER");
+        assertNotNull(cookie);
+
+        // Give some time to the first client to establish the long poll before the second client
+        Thread.sleep(500);
+
+        BayeuxClient client2 = new BayeuxClient(cometdURL, LongPollingTransport.create(null));
+        final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<Message>();
+        client2.setCookie("BAYEUX_BROWSER", cookie);
+        client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                connects2.offer(message);
+            }
+        });
+        client2.handshake();
+        assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
+
+        Thread.sleep(500);
+
+        BayeuxClient client3 = new BayeuxClient(cometdURL, LongPollingTransport.create(null));
+        final ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<Message>();
+        client3.setCookie("BAYEUX_BROWSER", cookie);
+        client3.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                connects3.offer(message);
+            }
+        });
+        client3.handshake();
+        assertTrue(client3.waitFor(1000, BayeuxClient.State.CONNECTED));
+
+        // Sleep for a while
+        Thread.sleep(2 * multiSessionInterval);
+
+        // The first client must remain in long poll mode
+        assertEquals(1, connects1.size());
+
+        // Second client must remain in long poll mode
+        assertEquals(1, connects2.size());
+
+        // Third client must be in normal poll mode
+        assertTrue(connects3.size() > 1);
+        Message lastConnect3 = new LinkedList<Message>(connects3).getLast();
+        Map<String,Object> advice3 = lastConnect3.getAdvice();
+        assertNotNull(advice3);
+        assertSame(Boolean.TRUE, advice3.get("multiple-clients"));
+
+        // Wait for the first and second clients to re-issue a long poll
+        Thread.sleep(timeout);
+
+        // First and second clients must still be in long poll mode
+        assertEquals(2, connects1.size());
+        assertEquals(2, connects2.size());
+
+        // Abort abruptly the first client
+        // Third client must switch to long poll
+        client1.abort();
+
+        // Sleep another timeout to be sure client1 does not poll
+        Thread.sleep(timeout);
+        assertEquals(2, connects1.size());
+
+        // Loop until client3 switched to long poll
+        for (int i = 0; i < 10; ++i)
+        {
+            lastConnect3 = new LinkedList<Message>(connects3).getLast();
+            advice3 = lastConnect3.getAdvice();
+            if (advice3 == null || !advice3.containsKey("multiple-clients"))
+                break;
+            Thread.sleep(timeout / 10);
+        }
+
+        lastConnect3 = new LinkedList<Message>(connects3).getLast();
+        advice3 = lastConnect3.getAdvice();
+        assertTrue(advice3 == null || !advice3.containsKey("multiple-clients"));
+
+        client2.disconnect();
+        assertTrue(client2.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+
+        client3.disconnect();
+        assertTrue(client3.waitFor(1000, BayeuxClient.State.DISCONNECTED));
     }
 }
