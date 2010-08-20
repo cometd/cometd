@@ -38,7 +38,7 @@ public class BayeuxServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
         assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
         assertEquals(200, handshake.getResponseStatus());
 
-        String clientId = extractClientId(handshake.getResponseContent());
+        String clientId = extractClientId(handshake);
 
         ContentExchange subscribe = newBayeuxExchange("[{" +
                                                    "\"channel\": \"/meta/subscribe\"," +

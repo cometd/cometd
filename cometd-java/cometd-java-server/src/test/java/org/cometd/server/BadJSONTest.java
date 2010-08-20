@@ -20,7 +20,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
         assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
         assertEquals(200, handshake.getResponseStatus());
 
-        String clientId = extractClientId(handshake.getResponseContent());
+        String clientId = extractClientId(handshake);
 
         ContentExchange connect = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/connect\"," +

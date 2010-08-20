@@ -6,7 +6,10 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 
 /**
@@ -31,13 +34,26 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
         super.tearDown();
     }
 
-    protected String extractClientId(String handshake)
+    protected String extractClientId(ContentExchange handshake) throws UnsupportedEncodingException
     {
-        Matcher matcher = Pattern.compile("\"clientId\"\\s*:\\s*\"([^\"]*)\"").matcher(handshake);
+        String content = handshake.getResponseContent();
+        Matcher matcher = Pattern.compile("\"clientId\"\\s*:\\s*\"([^\"]*)\"").matcher(content);
         assertTrue(matcher.find());
         String clientId = matcher.group(1);
         assertTrue(clientId.length() > 0);
         return clientId;
+    }
+
+    protected String extractBayeuxCookie(ContentExchange handshake)
+    {
+        HttpFields headers = handshake.getResponseFields();
+        Buffer cookie = headers.get(HttpHeaders.SET_COOKIE_BUFFER);
+        String cookieName = "BAYEUX_BROWSER";
+        Matcher matcher = Pattern.compile(cookieName + "=([^;]*)").matcher(cookie.toString());
+        assertTrue(matcher.find());
+        String bayeuxCookie = matcher.group(1);
+        assertTrue(bayeuxCookie.length() > 0);
+        return cookieName + "=" + bayeuxCookie;
     }
 
     protected ContentExchange newBayeuxExchange(String requestBody) throws UnsupportedEncodingException
