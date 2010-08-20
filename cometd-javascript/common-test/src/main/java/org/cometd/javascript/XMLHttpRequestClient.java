@@ -1,6 +1,5 @@
 package org.cometd.javascript;
 
-import java.io.IOException;
 import java.io.InterruptedIOException;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -34,9 +33,9 @@ public class XMLHttpRequestClient extends ScriptableObject
         return "XMLHttpRequestClient";
     }
 
-    public void jsFunction_send(XMLHttpRequestExchange exchange) throws IOException
+    public void jsFunction_send(XMLHttpRequestExchange exchange) throws Exception
     {
-        httpClient.send(exchange.getHttpExchange());
+        exchange.send(httpClient);
         try
         {
             if (!exchange.isAsynchronous())

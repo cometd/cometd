@@ -836,7 +836,7 @@ var window = this;
 
                 var absolute = /^https?:\/\//.test(url);
                 var absoluteURL = absolute ? url : window.location.href + url;
-                this._exchange = new XMLHttpRequestExchange(threadModel, this, this, this.onreadystatechange, method, absoluteURL, async);
+                this._exchange = new XMLHttpRequestExchange(cookies, threadModel, this, this, this.onreadystatechange, method, absoluteURL, async);
             },
             setRequestHeader: function(header, value)
             {
