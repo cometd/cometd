@@ -12,6 +12,7 @@ import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.http.HttpHeaders;
 
 /**
  * @version $Revision$ $Date$
@@ -40,12 +41,14 @@ public class ExtensionConnectTest extends AbstractBayeuxClientServerTest
         assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
+        String bayeuxCookie = extractBayeuxCookie(handshake);
 
         ContentExchange connect = newBayeuxExchange("[{" +
                                                  "\"channel\": \"/meta/connect\"," +
                                                  "\"clientId\": \"" + clientId + "\"," +
                                                  "\"connectionType\": \"long-polling\"" +
                                                  "}]");
+        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
         assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
         assertEquals(200, connect.getResponseStatus());

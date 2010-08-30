@@ -40,14 +40,14 @@ public class ExtensionPublishSentTest extends AbstractBayeuxClientServerTest
 
         String clientId = extractClientId(handshake);
 
-        ContentExchange connect = newBayeuxExchange("[{" +
+        ContentExchange publish = newBayeuxExchange("[{" +
                                                  "\"channel\": \"/test\"," +
                                                  "\"clientId\": \"" + clientId + "\"," +
                                                  "\"data\": {}" +
                                                  "}]");
-        httpClient.send(connect);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        assertEquals(200, connect.getResponseStatus());
+        httpClient.send(publish);
+        assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
+        assertEquals(200, publish.getResponseStatus());
 
         assertEquals(1, extension.rcvs.size());
         assertEquals(1, extension.rcvMetas.size());
