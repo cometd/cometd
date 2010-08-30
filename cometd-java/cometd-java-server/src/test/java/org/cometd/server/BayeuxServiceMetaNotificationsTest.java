@@ -8,6 +8,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.http.HttpHeaders;
 
 /**
  * @version $Revision$ $Date$
@@ -76,12 +77,14 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
         assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
+        String bayeuxCookie = extractBayeuxCookie(handshake);
 
         ContentExchange connect = newBayeuxExchange("[{" +
                                                  "\"channel\": \"/meta/connect\"," +
                                                  "\"clientId\": \"" + clientId + "\"," +
                                                  "\"connectionType\": \"long-polling\"" +
                                                  "}]");
+        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
         assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
         assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());

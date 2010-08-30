@@ -2,6 +2,7 @@ package org.cometd.server;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.http.HttpHeaders;
 
 /**
  * @version $Revision$ $Date$
@@ -21,12 +22,14 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
         assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
+        String bayeuxCookie = extractBayeuxCookie(handshake);
 
         ContentExchange connect = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
+        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
         assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
         assertEquals(200, connect.getResponseStatus());
@@ -37,6 +40,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"");
                 //"}]"); Bad JSON, missing this line
+        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(badConnect);
         assertEquals(HttpExchange.STATUS_COMPLETED, badConnect.waitForDone());
         assertEquals(400, badConnect.getResponseStatus());
