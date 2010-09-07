@@ -325,7 +325,11 @@ public abstract class AbstractService
             try
             {
                 Class<?>[] args=method.getParameterTypes();
-                Object arg=Message.class.isAssignableFrom(args[1])?msg:data;
+                Object arg;
+                if (args.length==4)
+                    arg=ServerMessage.class.isAssignableFrom(args[2])?msg:data;
+                else
+                    arg=ServerMessage.class.isAssignableFrom(args[1])?msg:data;
 
                 Object reply=null;
                 switch(method.getParameterTypes().length)
