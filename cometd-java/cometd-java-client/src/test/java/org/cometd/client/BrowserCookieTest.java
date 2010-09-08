@@ -41,7 +41,7 @@ public class BrowserCookieTest
         CometdServlet cometdServlet = new CometdServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
         cometdServletHolder.setInitParameter("timeout", String.valueOf(5000L));
-        cometdServletHolder.setInitParameter("logLevel", "2");
+        cometdServletHolder.setInitParameter("logLevel", "3");
         String cometdServletPath = "/cometd";
         context.addServlet(cometdServletHolder, cometdServletPath + "/*");
 
