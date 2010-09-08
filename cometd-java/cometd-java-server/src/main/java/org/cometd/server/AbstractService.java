@@ -316,45 +316,47 @@ public abstract class AbstractService
     /* ------------------------------------------------------------ */
     protected void doInvoke(Method method, ServerSession fromClient, ServerMessage msg)
     {
-        String channel=msg.getChannel();
-        Object data=msg.getData();
-        String id=msg.getId();
+        String channel = msg.getChannel();
+        Object data = msg.getData();
+        String id = msg.getId();
 
         if (method != null)
         {
             try
             {
-                Class<?>[] args=method.getParameterTypes();
-                Object arg;
-                if (args.length==4)
-                    arg=ServerMessage.class.isAssignableFrom(args[2])?msg:data;
-                else
-                    arg=ServerMessage.class.isAssignableFrom(args[1])?msg:data;
+                Class<?>[] parameterTypes = method.getParameterTypes();
+                int messageParameterIndex = parameterTypes.length == 4 ? 2 : 1;
+                Object messageArgument = data;
+                if (ServerMessage.class.isAssignableFrom(parameterTypes[messageParameterIndex]) ||
+                        Message.class.isAssignableFrom(parameterTypes[messageParameterIndex]))
+                {
+                    messageArgument = msg;
+                }
 
-                Object reply=null;
-                switch(method.getParameterTypes().length)
+                Object reply = null;
+                switch (method.getParameterTypes().length)
                 {
                     case 2:
-                        reply=method.invoke(this,fromClient,arg);
+                        reply = method.invoke(this, fromClient, messageArgument);
                         break;
                     case 3:
-                        reply=method.invoke(this,fromClient,arg,id);
+                        reply = method.invoke(this, fromClient, messageArgument, id);
                         break;
                     case 4:
-                        reply=method.invoke(this,fromClient,channel,arg,id);
+                        reply = method.invoke(this, fromClient, channel, messageArgument, id);
                         break;
                 }
 
                 if (reply != null)
-                    send(fromClient,channel,reply,id);
+                    send(fromClient, channel, reply, id);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                exception(method.toString(),fromClient,_session,msg,e);
+                exception(method.toString(), fromClient, _session, msg, e);
             }
-            catch(Error e)
+            catch (Error e)
             {
-                exception(method.toString(),fromClient,_session,msg,e);
+                exception(method.toString(), fromClient, _session, msg, e);
             }
         }
     }
