@@ -14,6 +14,7 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,8 +22,8 @@ import org.junit.Test;
 
 public class BayeuxServerTest extends Assert
 {
-    Queue<Object> _events = new ConcurrentLinkedQueue<Object>();
-    BayeuxServerImpl _bayeux = new BayeuxServerImpl();
+    private final Queue<Object> _events = new ConcurrentLinkedQueue<Object>();
+    private final BayeuxServerImpl _bayeux = new BayeuxServerImpl();
 
     private ServerSessionImpl newServerSession()
     {
@@ -34,8 +35,16 @@ public class BayeuxServerTest extends Assert
     }
 
     @Before
-    public void setup()
+    public void init() throws Exception
     {
+        _bayeux.start();
+    }
+
+    @After
+    public void destroy() throws Exception
+    {
+        _bayeux.stop();
+        _events.clear();
     }
 
     @Test
@@ -172,7 +181,7 @@ public class BayeuxServerTest extends Assert
 
         ClientSessionChannel foostar0=session0.getChannel("/foo/*");
         foostar0.subscribe(listener);
-        
+
         assertEquals(3,_bayeux.getChannel("/foo/bar").getSubscribers().size());
         assertEquals(session0,foobar0.getSession());
         assertEquals("/foo/bar",foobar0.getId());
@@ -227,9 +236,9 @@ public class BayeuxServerTest extends Assert
         foobar0.unsubscribe();
         assertEquals(2,_bayeux.getChannel("/foo/bar").getSubscribers().size());
 
-        
-        
-        
+
+
+
         assertTrue(session0.isConnected());
         assertTrue(session1.isConnected());
         assertTrue(session2.isConnected());

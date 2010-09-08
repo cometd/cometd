@@ -60,12 +60,6 @@ public abstract class AbstractServerTransport implements ServerTransport
         _name=name;
         _options=bayeux.getOptions();
         _bayeux=bayeux;
-
-        setOption(TIMEOUT_OPTION,_timeout);
-        setOption(INTERVAL_OPTION,_interval);
-        setOption(MAX_INTERVAL_OPTION,_maxInterval);
-        setOption(MAX_LAZY_OPTION,_maxLazyTimeout);
-        setOption(META_CONNECT_DELIVERY_OPTION,_metaConnectDeliveryOnly);
     }
 
 

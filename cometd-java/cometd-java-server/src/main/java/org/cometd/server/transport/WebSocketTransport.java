@@ -38,16 +38,6 @@ public class WebSocketTransport extends HttpTransport
     {
         super(bayeux,NAME);
         setOptionPrefix(PREFIX);
-        setOption(PROTOCOL_OPTION,_protocol);
-        setOption(BUFFER_SIZE_OPTION,_factory.getBufferSize());
-        setMetaConnectDeliveryOnly(false);
-        setOption(META_CONNECT_DELIVERY_OPTION,isMetaConnectDeliveryOnly());
-        setTimeout(15000);
-        setOption(TIMEOUT_OPTION,getTimeout());
-        setInterval(2500);
-        setOption(INTERVAL_OPTION,getInterval());
-        setMaxInterval(15000);
-        setOption(MAX_INTERVAL_OPTION,getMaxInterval());
     }
 
     @Override
@@ -55,6 +45,12 @@ public class WebSocketTransport extends HttpTransport
     {
         _protocol=getOption(PROTOCOL_OPTION,_protocol);
         _factory.setBufferSize(getOption(BUFFER_SIZE_OPTION,_factory.getBufferSize()));
+
+        // Change the default values for this transport to better suited ones
+        // but only if they were not specifically set for this transport
+        setTimeout(getOption(PREFIX + "." + TIMEOUT_OPTION, 15000L));
+        setInterval(getOption(PREFIX + "." + INTERVAL_OPTION, 2500L));
+        setMaxInterval(getOption(PREFIX + "." + MAX_INTERVAL_OPTION, 15000L));
     }
 
     @Override

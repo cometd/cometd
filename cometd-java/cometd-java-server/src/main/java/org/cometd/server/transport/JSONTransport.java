@@ -2,7 +2,6 @@ package org.cometd.server.transport;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -23,12 +22,9 @@ public class JSONTransport extends LongPollingTransport
     {
         super(bayeux,NAME);
         setOptionPrefix(PREFIX);
-        setOption(MIME_TYPE_OPTION,_mimeType);
-        setMetaConnectDeliveryOnly(false);
-        setOption(META_CONNECT_DELIVERY_OPTION,isMetaConnectDeliveryOnly());
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.server.transport.LongPollingTransport#isAlwaysFlushingAfterHandle()
