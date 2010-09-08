@@ -2,7 +2,6 @@ package org.cometd.server.transport;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -24,14 +23,9 @@ public class JSONPTransport extends LongPollingTransport
     {
         super(bayeux,NAME);
         setOptionPrefix(PREFIX);
-
-        setOption(CALLBACK_PARAMETER_OPTION,_callbackParam);
-        setOption(MIME_TYPE_OPTION,_mimeType);
-        setMetaConnectDeliveryOnly(true);
-        setOption(META_CONNECT_DELIVERY_OPTION,isMetaConnectDeliveryOnly());
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.server.transport.LongPollingTransport#isAlwaysFlushingAfterHandle()
@@ -52,6 +46,8 @@ public class JSONPTransport extends LongPollingTransport
         super.init();
         _callbackParam=getOption(CALLBACK_PARAMETER_OPTION,_callbackParam);
         _mimeType=getOption(MIME_TYPE_OPTION,_mimeType);
+        // This transport must deliver only via /meta/connect
+        setMetaConnectDeliveryOnly(true);
     }
 
     /* ------------------------------------------------------------ */

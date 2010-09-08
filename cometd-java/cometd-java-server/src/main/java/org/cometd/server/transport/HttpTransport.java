@@ -27,7 +27,6 @@ public abstract class HttpTransport extends AbstractServerTransport
     protected HttpTransport(BayeuxServerImpl bayeux,String name)
     {
         super(bayeux,name);
-        setOption(JSON_DEBUG_OPTION, _jsonDebug);
     }
 
     @Override

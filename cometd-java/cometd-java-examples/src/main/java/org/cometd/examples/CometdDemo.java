@@ -18,7 +18,6 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.eclipse.jetty.server.Server;
@@ -89,11 +88,6 @@ public class CometdDemo
         // moved.setDiscardPathInfo(true);
 
         ServletContextHandler context = new ServletContextHandler(contexts,"/",ServletContextHandler.SESSIONS);
-
-        final BayeuxServerImpl bayeux = new BayeuxServerImpl();
-        bayeux.initializeDefaultTransports();
-        context.setAttribute(BayeuxServer.ATTRIBUTE,bayeux);
-
         context.setBaseResource(
                 new ResourceCollection(new Resource[]
                 {
@@ -109,13 +103,13 @@ public class CometdDemo
                 }));
 
 
-        // Cometd servlet
-
         ServletHolder dftServlet = context.addServlet(DefaultServlet.class, "/");
-
         dftServlet.setInitOrder(1);
 
-        ServletHolder comet = context.addServlet(CometdServlet.class, "/cometd/*");
+        // Cometd servlet
+        CometdServlet cometdServlet = new CometdServlet();
+        ServletHolder comet = new ServletHolder(cometdServlet);
+        context.addServlet(comet, "/cometd/*");
         comet.setInitParameter("timeout","20000");
         comet.setInitParameter("interval","100");
         comet.setInitParameter("maxInterval","10000");
@@ -128,6 +122,7 @@ public class CometdDemo
 
         server.start();
 
+        BayeuxServer bayeux = cometdServlet.getBayeux();
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy());
 
         // Demo lazy messages

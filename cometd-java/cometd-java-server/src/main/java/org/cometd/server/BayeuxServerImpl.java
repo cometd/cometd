@@ -54,7 +54,13 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 {
-    private final Logger _logger;
+    public static final String LOG_LEVEL = "logLevel";
+    public static final int OFF_LOG_LEVEL = 0;
+    public static final int CONFIG_LOG_LEVEL = 1;
+    public static final int INFO_LOG_LEVEL = 2;
+    public static final int DEBUG_LOG_LEVEL = 3;
+
+    private final Logger _logger = Log.getLogger("bayeux@"+hashCode());
     private final SecureRandom _random = new SecureRandom();
     private final List<BayeuxServerListener> _listeners = new CopyOnWriteArrayList<BayeuxServerListener>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
@@ -71,10 +77,103 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
 
     /* ------------------------------------------------------------ */
-    public BayeuxServerImpl()
+    public Logger getLogger()
     {
-        _logger=Log.getLogger("bayeux@"+hashCode());
+        return _logger;
+    }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
+     */
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+
+        int logLevel = OFF_LOG_LEVEL;
+        Object logLevelValue = getOption(LOG_LEVEL);
+        if (logLevelValue != null)
+        {
+            logLevel = Integer.parseInt(String.valueOf(logLevelValue));
+            getLogger().setDebugEnabled(logLevel > INFO_LOG_LEVEL);
+        }
+
+        if (logLevel >= CONFIG_LOG_LEVEL)
+        {
+            for (Map.Entry<String, Object> entry : getOptions().entrySet())
+                getLogger().info(entry.getKey() + "=" + entry.getValue());
+        }
+
+        initializeMetaChannels();
+
+        if (_transports.isEmpty())
+            initializeDefaultTransports();
+
+        List<String> allowedTransportNames = getAllowedTransports();
+        if (allowedTransportNames.isEmpty())
+            throw new IllegalStateException("No allowed transport names are configured, there must be at least one");
+
+        for (String allowedTransportName : allowedTransportNames)
+        {
+            ServerTransport allowedTransport = getTransport(allowedTransportName);
+            if (allowedTransport instanceof AbstractServerTransport)
+                ((AbstractServerTransport)allowedTransport).init();
+        }
+
+        _timer = new Timer("BayeuxServer@" + hashCode(), true);
+        long tick_interval = getOption("tickIntervalMs", 97);
+        if (tick_interval > 0)
+        {
+            _timer.schedule(new TimerTask()
+            {
+                @Override
+                public void run()
+                {
+                    _timeout.tick(System.currentTimeMillis());
+                }
+            }, tick_interval, tick_interval);
+        }
+
+        long sweep_interval = getOption("sweepIntervalMs", 997);
+        if (sweep_interval > 0)
+        {
+            _timer.schedule(new TimerTask()
+            {
+                @Override
+                public void run()
+                {
+                    doSweep();
+
+                    final long now = System.currentTimeMillis();
+                    for (ServerSessionImpl session : _sessions.values())
+                        session.sweep(now);
+                }
+            }, sweep_interval, sweep_interval);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
+     */
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+
+        _listeners.clear();
+        _extensions.clear();
+        _sessions.clear();
+        _channels.clear();
+        _transports.clear();
+        _allowedTransports.clear();
+        _options.clear();
+        _timer.cancel();
+    }
+
+    protected void initializeMetaChannels()
+    {
         createIfAbsent(Channel.META_HANDSHAKE);
         createIfAbsent(Channel.META_CONNECT);
         createIfAbsent(Channel.META_SUBSCRIBE);
@@ -85,18 +184,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         getChannel(Channel.META_SUBSCRIBE).addListener(new SubscribeHandler());
         getChannel(Channel.META_UNSUBSCRIBE).addListener(new UnsubscribeHandler());
         getChannel(Channel.META_DISCONNECT).addListener(new DisconnectHandler());
-
-
-        setOption("tickIntervalMs","97");
-        setOption("sweepIntervalMs","997");
-    }
-
-    /* ------------------------------------------------------------ */
-    public BayeuxServerImpl(boolean initializeDefaultTransports)
-    {
-        this();
-        if (initializeDefaultTransports)
-            initializeDefaultTransports();
     }
 
     /* ------------------------------------------------------------ */
@@ -104,7 +191,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      * This method creates a {@link WebSocketTransport}, a {@link JSONTransport}
      * and a {@link JSONPTransport} and calls {@link BayeuxServerImpl#setAllowedTransports(String...)}.
      */
-    public void initializeDefaultTransports()
+    protected void initializeDefaultTransports()
     {
         List<String> allowedTransports = new ArrayList<String>();
         // Special handling for the WebSocket transport: we add it only if it is available
@@ -132,61 +219,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             return false;
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    public Logger getLogger()
-    {
-        return _logger;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-     */
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-        _timer=new Timer("BayeuxServer@" +hashCode(),true);
-        long tick_interval = getLongOptions("tickIntervalMs",-1);
-        if (tick_interval>0)
-            _timer.schedule(new TimerTask()
-            {
-                @Override
-                public void run()
-                {
-                    _timeout.tick(System.currentTimeMillis());
-                }
-            },tick_interval,tick_interval);
-
-        long sweep_interval = getLongOptions("sweepIntervalMs",-1);
-        if (sweep_interval>0)
-            _timer.schedule(new TimerTask()
-            {
-                @Override
-                public void run()
-                {
-                    doSweep();
-
-                    final long now=System.currentTimeMillis();
-                    for (ServerSessionImpl session : _sessions.values())
-                        session.sweep(now);
-                }
-            },sweep_interval,sweep_interval);
-    }
-
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-        _timer.cancel();
-        _timer=null;
     }
 
     /* ------------------------------------------------------------ */
@@ -231,14 +263,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      * @param dft The default value
      * @return long value
      */
-    protected long getLongOptions(String name,long dft)
+    protected long getOption(String name, long dft)
     {
         Object val=getOption(name);
-        if (val instanceof Long)
-            return (Long)val;
-        if (val!=null)
-            return Long.valueOf(val.toString());
-        return dft;
+        if (val==null)
+            return dft;
+        if (val instanceof Number)
+            return ((Number)val).longValue();
+        return Long.parseLong(val.toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -256,7 +288,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      */
     public void setOption(String qualifiedName, Object value)
     {
-        _options.put(qualifiedName,value);
+        _options.put(qualifiedName, value);
+    }
+
+    public void setOptions(Map<String, Object> options)
+    {
+        _options.putAll(options);
     }
 
     /* ------------------------------------------------------------ */
@@ -723,27 +760,51 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public List<String> getAllowedTransports()
-    {
-        return Collections.unmodifiableList(_allowedTransports);
-    }
-
-    /* ------------------------------------------------------------ */
     public Set<String> getKnownTransportNames()
     {
         return _transports.keySet();
     }
 
     /* ------------------------------------------------------------ */
-    public Transport getTransport(String transport)
+    public ServerTransport getTransport(String transport)
     {
         return _transports.get(transport);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @deprecated Use {@link #addTransport(ServerTransport)} instead
+     */
+    @Deprecated
     public void addTransport(Transport transport)
     {
-        _transports.put(transport.getName(),(ServerTransport)transport);
+        addTransport((ServerTransport)transport);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void addTransport(ServerTransport transport)
+    {
+        _transports.put(transport.getName(), transport);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setTransports(ServerTransport... transports)
+    {
+        setTransports(Arrays.asList(transports));
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setTransports(List<ServerTransport> transports)
+    {
+        _transports.clear();
+        for (ServerTransport transport : transports)
+            addTransport(transport);
+    }
+
+    /* ------------------------------------------------------------ */
+    public List<String> getAllowedTransports()
+    {
+        return Collections.unmodifiableList(_allowedTransports);
     }
 
     /* ------------------------------------------------------------ */

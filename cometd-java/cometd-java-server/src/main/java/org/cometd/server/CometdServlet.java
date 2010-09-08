@@ -15,8 +15,10 @@
 package org.cometd.server;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -24,8 +26,8 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.server.transport.HttpTransport;
 
 /**
@@ -44,113 +46,78 @@ import org.cometd.server.transport.HttpTransport;
 public class CometdServlet extends GenericServlet
 {
     private static final long serialVersionUID = 3637310585741732936L;
-    public static final int CONFIG_LEVEL=1;
-    public static final int INFO_LEVEL=2;
-    public static final int DEBUG_LEVEL=3;
-
-    private BayeuxServerImpl _bayeux;
-    private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<HttpServletRequest>();
-    private int _logLevel;
-    private HttpTransport[] _transports;
-
-
-    public BayeuxServerImpl getBayeux()
-    {
-        if (_bayeux==null)
-        {
-            _bayeux= new BayeuxServerImpl();
-            initializeBayeux(_bayeux);
-        }
-        return _bayeux;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Initialise the BayeuxServer.
-     * Called by {@link #init()} if a bayeux server is constructed by
-     * this servlet. The default implementation
-     * calls {@link BayeuxServerImpl#initializeDefaultTransports()}.
-     *
-     * @param bayeux
+    /**
+     * @deprecated Use {@link BayeuxServerImpl#CONFIG_LOG_LEVEL} instead.
      */
-    protected void initializeBayeux(BayeuxServerImpl bayeux)
-    {
-        bayeux.initializeDefaultTransports();
-    }
+    @Deprecated
+    public static final int CONFIG_LEVEL=BayeuxServerImpl.CONFIG_LOG_LEVEL;
+    /**
+     * @deprecated Use {@link BayeuxServerImpl#INFO_LOG_LEVEL} instead.
+     */
+    @Deprecated
+    public static final int INFO_LEVEL=BayeuxServerImpl.INFO_LOG_LEVEL;
+    /**
+     * @deprecated Use {@link BayeuxServerImpl#DEBUG_LOG_LEVEL} instead.
+     */
+    @Deprecated
+    public static final int DEBUG_LEVEL=BayeuxServerImpl.DEBUG_LOG_LEVEL;
+
+    private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<HttpServletRequest>();
+    private final List<HttpTransport> _transports = new ArrayList<HttpTransport>();
+    private volatile BayeuxServerImpl _bayeux;
 
     /* ------------------------------------------------------------ */
     @Override
     public void init() throws ServletException
     {
-
-        _bayeux=(BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-        if (_bayeux==null)
-            getServletContext().setAttribute(BayeuxServer.ATTRIBUTE,getBayeux());
-
-        if (getInitParameter("logLevel")!=null)
-        {
-            _logLevel=Integer.parseInt(getInitParameter("logLevel"));
-            if (_logLevel>=DEBUG_LEVEL)
-                _bayeux.getLogger().setDebugEnabled(true);
-        }
-
-        // Get any specific options as init parameter
-        HashSet<String> qualified_names = new HashSet<String>();
-        for (String name :_bayeux.getKnownTransportNames())
-        {
-            Transport transport = _bayeux.getTransport(name);
-            {
-                for (String option : transport.getOptionNames())
-                {
-                    qualified_names.add(option);
-                    String prefix=transport.getOptionPrefix();
-                    while (prefix!=null)
-                    {
-                        qualified_names.add(prefix+"."+option);
-                        int dot=prefix.lastIndexOf('.');
-                        prefix=dot<0?null:prefix.substring(0,dot);
-                    }
-                }
-            }
-        }
-
-        for (String option : qualified_names)
-        {
-            Object value = getInitParameter(option);
-            if (value!=null)
-                _bayeux.setOption(option,value);
-        }
-
-        for (String name :_bayeux.getKnownTransportNames())
-        {
-            Transport transport = _bayeux.getTransport(name);
-            if (transport instanceof AbstractServerTransport)
-                ((AbstractServerTransport)transport).init();
-        }
-
-        if (_logLevel>=CONFIG_LEVEL)
-        {
-            for (Map.Entry<String, Object> entry : _bayeux.getOptions().entrySet())
-            {
-                _bayeux.getLogger().info(entry.getKey()+"="+entry.getValue());
-            }
-        }
-
-        _transports=new HttpTransport[_bayeux.getAllowedTransports().size()];
-        int i=0;
-        for (String t : _bayeux.getAllowedTransports())
-        {
-            Transport transport = _bayeux.getTransport(t);
-            _transports[i++]=transport instanceof HttpTransport?(HttpTransport)transport:null;
-        }
-
         try
         {
+            boolean export = false;
+            _bayeux = (BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+            if (_bayeux == null)
+            {
+                export = true;
+                _bayeux = newBayeuxServer();
+
+                // Transfer all servlet init parameters to the BayeuxServer implementation
+                for (Enumeration initParameterNames = getInitParameterNames(); initParameterNames.hasMoreElements();)
+                {
+                    String initParameterName = (String)initParameterNames.nextElement();
+                    _bayeux.setOption(initParameterName, getInitParameter(initParameterName));
+                }
+            }
+
             _bayeux.start();
+
+            if (export)
+                getServletContext().setAttribute(BayeuxServer.ATTRIBUTE, _bayeux);
+
+            for (String transportName : _bayeux.getAllowedTransports())
+            {
+                ServerTransport transport = _bayeux.getTransport(transportName);
+                if (transport instanceof HttpTransport)
+                    _transports.add((HttpTransport)transport);
+            }
         }
-        catch(Exception e)
+        catch (Exception x)
         {
-            throw new ServletException(e);
+            throw new ServletException(x);
         }
+    }
+
+    public BayeuxServerImpl getBayeux()
+    {
+        return _bayeux;
+    }
+
+    protected BayeuxServerImpl newBayeuxServer()
+    {
+        return new BayeuxServerImpl();
+    }
+
+    public List<HttpTransport> getTransports()
+    {
+        return Collections.unmodifiableList(_transports);
     }
 
     @Override
@@ -231,5 +198,20 @@ public class CometdServlet extends GenericServlet
         {
             session.cancelSchedule();
         }
+
+        try
+        {
+            _bayeux.stop();
+        }
+        catch (Exception x)
+        {
+            _bayeux.getLogger().debug(x);
+        }
+        finally
+        {
+            _bayeux = null;
+        }
+
+        _transports.clear();
     }
 }

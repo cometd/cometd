@@ -55,10 +55,6 @@ public abstract class LongPollingTransport extends HttpTransport
     {
         super(bayeux,name);
         setOptionPrefix(PREFIX);
-        setOption(BROWSER_ID_OPTION,_browserId);
-        setOption(MAX_SESSIONS_PER_BROWSER_OPTION,_maxSessionsPerBrowser);
-        setOption(MULTI_SESSION_INTERVAL_OPTION,_multiSessionInterval);
-        setOption(AUTOBATCH_OPTION,_autoBatch);
     }
 
     @Override
@@ -273,7 +269,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
                                         if (browserId != null)
                                             advice.put("multiple-clients", true);
-                                        
+
                                         if (_multiSessionInterval > 0)
                                         {
                                             advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
