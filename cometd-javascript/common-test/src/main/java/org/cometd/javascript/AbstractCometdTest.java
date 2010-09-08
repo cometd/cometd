@@ -78,7 +78,7 @@ public abstract class AbstractCometdTest extends TestCase
         CometdServlet cometServlet = new CometdServlet();
         ServletHolder cometServletHolder = new ServletHolder(cometServlet);
         cometServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
-        cometServletHolder.setInitParameter("logLevel", "2");
+        cometServletHolder.setInitParameter("logLevel", "3");
         context.addServlet(cometServletHolder, cometServletPath + "/*");
 
         // Setup bayeux listener

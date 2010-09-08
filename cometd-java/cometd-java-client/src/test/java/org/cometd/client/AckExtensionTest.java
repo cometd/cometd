@@ -89,7 +89,7 @@ public class AckExtensionTest extends TestCase
         comet.setInitParameter("interval", "100");
         comet.setInitParameter("maxInterval", "10000");
         comet.setInitParameter("multiFrameInterval", "5000");
-        comet.setInitParameter("logLevel", "2");
+        comet.setInitParameter("logLevel", "3");
         comet.setInitOrder(2);
 
         server.start();
