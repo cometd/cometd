@@ -94,7 +94,7 @@
         <snapshotRepository>
             <id>oss.sonatype.org</id>
             <name>CometD Maven2 Snapshot Repository</name>
-            <url>https://oss.sonatype.org/content/repositories/cometd-snapshots</url>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
 
