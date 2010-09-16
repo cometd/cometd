@@ -120,12 +120,14 @@ public class MultipleClientSessionsTest
                 }
             });
             client2.handshake();
-            assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
 
             assertTrue(latch2.await(1000, TimeUnit.MILLISECONDS));
             assertEquals(1, connects2.size());
-            assertEquals(Message.RECONNECT_NONE_VALUE, connects2.peek().getAdvice().get(Message.RECONNECT_FIELD));
-            assertSame(Boolean.TRUE, connects2.peek().getAdvice().get("multiple-clients"));
+            Message connect2 = connects2.peek();
+            Map<String, Object> advice2 = connect2.getAdvice();
+            assertEquals(Message.RECONNECT_NONE_VALUE, advice2.get(Message.RECONNECT_FIELD));
+            assertSame(Boolean.TRUE, advice2.get("multiple-clients"));
+            assertFalse(connect2.isSuccessful());
 
             // Give some time to the second client to process the disconnect
             Thread.sleep(500);
