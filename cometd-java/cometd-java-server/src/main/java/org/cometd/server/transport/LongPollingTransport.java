@@ -278,6 +278,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                         else
                                         {
                                             advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+                                            reply.asMutable().setSuccessful(false);
                                         }
                                         session.reAdvise();
                                     }
