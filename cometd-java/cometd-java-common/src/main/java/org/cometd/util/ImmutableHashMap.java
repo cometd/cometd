@@ -486,6 +486,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
 
         public V setValue(V value)
         {
+            // Walk up the parent map chain and call onChange at each level
             ImmutableHashMap map = _immutable._map;
             while(map!=null)
             {
@@ -493,18 +494,25 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
                 map=map._parent;
             }
 
+            // Was the old value a mutable hash map?
             V old = _immutable._value;
             if (old instanceof ImmutableHashMap.Mutable)
             {
-                if (((ImmutableHashMap.Mutable)old).asImmutable()._parent!=null)
-                    throw new IllegalStateException("Mutable DAG!");
+                // yes - clear it's parent value
                 ((ImmutableHashMap.Mutable)old).asImmutable()._parent=null;
             }
 
             _immutable._value = value;
-
+            
+            // is the new value a mutable hash map
             if (value instanceof ImmutableHashMap.Mutable)
+            {
+                // error if it already has a parent?
+                if (((ImmutableHashMap.Mutable)value).asImmutable()._parent!=null)
+                    throw new IllegalStateException("Mutable DAG!");
+                // otherwise set this map as the parent.
                 ((ImmutableHashMap.Mutable)value).asImmutable()._parent=_immutable._map;
+            }
 
             if (old!=null && _immutable._value==null)
                 _immutable._map._size--;
