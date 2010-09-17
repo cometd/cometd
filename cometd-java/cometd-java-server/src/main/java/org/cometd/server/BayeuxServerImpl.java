@@ -575,7 +575,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 {
                     ServerMessage.Mutable out = newMessage();
                     out.setChannel(message.getChannel());
-                    out.setData(message.getData());
+                    Object data=message.getData();
+                    message.setData(null);
+                    out.setData(data);
                     out.setId(message.getId());
                     channel.publish(session,out);
                 }
