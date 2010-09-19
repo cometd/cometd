@@ -333,6 +333,8 @@ public abstract class AbstractService
                     messageArgument = msg;
                 }
 
+                method.setAccessible(true);
+
                 Object reply = null;
                 switch (method.getParameterTypes().length)
                 {
