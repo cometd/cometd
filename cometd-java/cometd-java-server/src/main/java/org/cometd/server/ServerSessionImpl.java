@@ -773,41 +773,21 @@ public class ServerSessionImpl implements ServerSession
 
     /**
      * Updates the transient timeout with the given value.
-     * If the transient timeout was already set, then it will be reset,
-     * to avoid that badly behaving clients always send timeout = 0
-     * which will result in a busy polling loop.
-     * @param timeout the value to update the timeout to if not already set
+     * @param timeout the value to update the timeout to
      * @see #updateTransientInterval(long)
      */
     public void updateTransientTimeout(long timeout)
     {
-        if (_transientTimeout >= 0)
-        {
-            // Ignore the update and reset
-            // This is to avoid that badly behaving client always
-            // send a timeout=0 which will result in a busy loop
-            _transientTimeout = -1;
-        }
-        else
-        {
-            _transientTimeout = timeout;
-        }
+        _transientTimeout = timeout;
     }
 
     /**
      * Updates the transient timeout with the given value.
-     * @param interval the value to update the interval to if not already set
+     * @param interval the value to update the interval to
      * @see #updateTransientTimeout(long)
      */
     public void updateTransientInterval(long interval)
     {
-        if (_transientInterval >= 0)
-        {
-            _transientInterval = -1;
-        }
-        else
-        {
-            _transientInterval = interval;
-        }
+        _transientInterval = interval;
     }
 }
