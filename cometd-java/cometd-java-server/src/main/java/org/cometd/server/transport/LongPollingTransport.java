@@ -357,24 +357,24 @@ public abstract class LongPollingTransport extends HttpTransport
     protected void doSweep()
     {
         long now = System.currentTimeMillis();
-        if (_lastSweep!=0)
+        if (0 < _lastSweep && _lastSweep < now)
         {
             // Calculate the maximum sweeps that a browser ID can be 0 as the
             // maximum interval time divided by the sweep period, doubled for safety
-            int maxSweeps = (int)(2*getMaxInterval()/(now-_lastSweep));
+            int maxSweeps = (int)(2 * getMaxInterval() / (now - _lastSweep));
 
             for (Map.Entry<String, AtomicInteger> entry: _browserSweep.entrySet())
             {
                 AtomicInteger count = entry.getValue();
                 // if the ID has been in the sweep map for 3 sweeps
-                if (count.incrementAndGet()>maxSweeps)
+                if (count.incrementAndGet() > maxSweeps)
                 {
-                    String key=entry.getKey();
+                    String key = entry.getKey();
                     // remove it from both browser Maps
-                    if (_browserSweep.remove(key)==count && _browserMap.get(key).get()==0)
+                    if (_browserSweep.remove(key) == count && _browserMap.get(key).get() == 0)
                     {
                         _browserMap.remove(key);
-                        getBayeux().getLogger().debug("Swept browser  ID {}",key);
+                        getBayeux().getLogger().debug("Swept browserId {}", key);
                     }
                 }
             }
