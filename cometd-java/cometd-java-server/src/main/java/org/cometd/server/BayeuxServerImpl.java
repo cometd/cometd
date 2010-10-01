@@ -562,25 +562,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
             else if (_policy.canPublish(this,session,channel,message))
             {
-                // This is a normal publish,
-
-                // if this is not a local client, lets create a new message as we
-                // don't trust what else was in their message.
-                if (session!=null && session.isLocalSession() || channel.isService())
-                {
-                    message.setClientId(null);
-                    channel.publish(session,message);
-                }
-                else
-                {
-                    ServerMessage.Mutable out = newMessage();
-                    out.setChannel(message.getChannel());
-                    Object data=message.getData();
-                    message.setData(null);
-                    out.setData(data);
-                    out.setId(message.getId());
-                    channel.publish(session,out);
-                }
+                // Do not leak the clientId to other subscribers
+                message.setClientId(null);
+                channel.publish(session,message);
 
                 reply = createReply(message);
                 reply.setSuccessful(true);
