@@ -160,6 +160,8 @@ public class CometdExtensionsTest extends AbstractCometdJQueryTest
         assertTrue((Boolean)get("ok"));
 
         evaluateScript("$.cometd.disconnect(true);");
+        // Wait for the connect to return
+        Thread.sleep(500);
 
         evaluateScript("$.cometd.unregisterExtension('ext1');");
         evaluateScript("$.cometd.unregisterExtension('ext2');");

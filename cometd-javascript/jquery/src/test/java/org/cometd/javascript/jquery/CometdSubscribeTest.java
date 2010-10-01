@@ -57,6 +57,8 @@ public class CometdSubscribeTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.init({ url: '" + cometdURL + "', logLevel: 'debug' });");
         Thread.sleep(1000); // Wait for long poll
         evaluateScript("$.cometd.disconnect(true);");
+        // Wait for the connect to return
+        Thread.sleep(500);
 
         // Reconnect again
         evaluateScript("$.cometd.handshake();");
@@ -76,6 +78,8 @@ public class CometdSubscribeTest extends AbstractCometdJQueryTest
         assertTrue(subscriber.await(1000));
 
         evaluateScript("$.cometd.disconnect(true);");
+        // Wait for the connect to return
+        Thread.sleep(500);
 
         // Reconnect again
         evaluateScript("$.cometd.handshake();");
