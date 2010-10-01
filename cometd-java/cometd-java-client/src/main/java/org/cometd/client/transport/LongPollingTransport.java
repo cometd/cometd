@@ -13,12 +13,10 @@ import java.util.regex.Pattern;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
-import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -27,9 +25,8 @@ import org.eclipse.jetty.util.ajax.JSON;
 /**
  * @version $Revision$ $Date$
  */
-public class LongPollingTransport extends ClientTransport
+public class LongPollingTransport extends HttpClientTransport
 {
-
     public static LongPollingTransport create(Map<String, Object> options)
     {
         HttpClient httpClient = new HttpClient();
@@ -59,8 +56,6 @@ public class LongPollingTransport extends ClientTransport
     private final HttpClient _httpClient;
     private final List<HttpExchange> _exchanges = new ArrayList<HttpExchange>();
     private volatile boolean _aborted;
-    private volatile BayeuxClient _bayeuxClient;
-    private volatile HttpURI _uri;
     private volatile boolean _appendMessageType;
 
     public LongPollingTransport(Map<String,Object> options, HttpClient httpClient)
@@ -75,19 +70,17 @@ public class LongPollingTransport extends ClientTransport
     }
 
     @Override
-    public void init(BayeuxClient bayeux, HttpURI uri)
+    public void init()
     {
+        super.init();
         _aborted = false;
-        _bayeuxClient = bayeux;
-        _uri = uri;
         Pattern uriRegexp = Pattern.compile("(^https?://(([^:/\\?#]+)(:(\\d+))?))?([^\\?#]*)(.*)?");
-        Matcher uriMatcher = uriRegexp.matcher(uri.toString());
+        Matcher uriMatcher = uriRegexp.matcher(getURL());
         if (uriMatcher.matches())
         {
             String afterPath = uriMatcher.group(7);
             _appendMessageType = afterPath == null || afterPath.trim().length() == 0;
         }
-        super.init(bayeux, uri);
     }
 
     @Override
@@ -109,14 +102,14 @@ public class LongPollingTransport extends ClientTransport
     @Override
     public void send(final TransportListener listener, Message.Mutable... messages)
     {
-        HttpExchange httpExchange = new TransportExchange(listener, messages);
+        TransportExchange httpExchange = new TransportExchange(listener, messages);
         httpExchange.setMethod("POST");
 
-        httpExchange.setURL(_uri.toString());
+        String url = getURL();
+        httpExchange.setURL(url);
         if (_appendMessageType && messages.length == 1 && messages[0].isMeta())
         {
             String type = messages[0].getChannel().substring(Channel.META.length());
-            String url = _uri.toString();
             if (url.endsWith("/"))
                 url = url.substring(0, url.length() - 1);
             url += type;
@@ -128,8 +121,7 @@ public class LongPollingTransport extends ClientTransport
         try
         {
             httpExchange.setRequestContent(new ByteArrayBuffer(content, "UTF-8"));
-            if (_bayeuxClient != null)
-                _bayeuxClient.customize(httpExchange);
+            customize(httpExchange);
 
             synchronized (this)
             {
@@ -142,7 +134,20 @@ public class LongPollingTransport extends ClientTransport
         }
         catch (Exception x)
         {
-            listener.onException(x);
+            listener.onException(x, messages);
+        }
+    }
+
+    protected void customize(ContentExchange exchange)
+    {
+        CookieProvider cookieProvider = getCookieProvider();
+        if (cookieProvider != null)
+        {
+            StringBuilder builder = new StringBuilder();
+            for (Cookie cookie : cookieProvider.getCookies())
+                builder.append(cookie.asString());
+            if (builder.length() > 0)
+                exchange.setRequestHeader(HttpHeaders.COOKIE, builder.toString());
         }
     }
 
@@ -154,7 +159,7 @@ public class LongPollingTransport extends ClientTransport
         private TransportExchange(TransportListener listener, Message... messages)
         {
             super(true);
-            _listener=listener;
+            _listener = listener;
             _messages = messages;
         }
 
@@ -182,14 +187,27 @@ public class LongPollingTransport extends ClientTransport
                 if (tokenizer.hasMoreTokens())
                     cookieValue = tokenizer.nextToken();
 
-                int maxAge = -1;
-
                 if (cookieName != null && cookieValue != null)
                 {
+                    int version = 0;
+                    String comment = null;
+                    String path = null;
+                    String domain = null;
+                    int maxAge = -1;
+                    boolean secure = false;
+
                     while (tokenizer.hasMoreTokens())
                     {
                         String token = tokenizer.nextToken();
-                        if ("Expires".equalsIgnoreCase(token))
+                        if ("Version".equalsIgnoreCase(token))
+                            version = Integer.parseInt(tokenizer.nextToken());
+                        else if ("Comment".equalsIgnoreCase(token))
+                            comment = tokenizer.nextToken();
+                        else if ("Path".equalsIgnoreCase(token))
+                            path = tokenizer.nextToken();
+                        else if ("Domain".equalsIgnoreCase(token))
+                            domain = tokenizer.nextToken();
+                        else if ("Expires".equalsIgnoreCase(token))
                         {
                             try
                             {
@@ -211,9 +229,12 @@ public class LongPollingTransport extends ClientTransport
                             {
                             }
                         }
+                        else if ("Secure".equalsIgnoreCase(token))
+                            secure = true;
                     }
 
-                    _bayeuxClient.setCookie(cookieName, cookieValue, maxAge);
+                    Cookie cookie = new Cookie(cookieName, cookieValue, domain, path, maxAge, secure, version, comment);
+                    setCookie(cookie);
                 }
             }
         }
@@ -231,11 +252,11 @@ public class LongPollingTransport extends ClientTransport
                     _listener.onMessages(messages);
                 }
                 else
-                    _listener.onProtocolError("Empty response: "+this);
+                    _listener.onProtocolError("Empty response: "+this, _messages);
             }
             else
             {
-                _listener.onProtocolError("Unexpected response "+getResponseStatus()+": "+this);
+                _listener.onProtocolError("Unexpected response "+getResponseStatus()+": "+this, _messages);
             }
         }
 
@@ -243,21 +264,21 @@ public class LongPollingTransport extends ClientTransport
         protected void onConnectionFailed(Throwable x)
         {
             complete();
-            _listener.onConnectException(x);
+            _listener.onConnectException(x, _messages);
         }
 
         @Override
         protected void onException(Throwable x)
         {
             complete();
-            _listener.onException(x);
+            _listener.onException(x, _messages);
         }
 
         @Override
         protected void onExpire()
         {
             complete();
-            _listener.onExpire();
+            _listener.onExpire(_messages);
         }
 
         private void complete()

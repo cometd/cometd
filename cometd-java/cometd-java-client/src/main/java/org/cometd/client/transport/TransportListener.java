@@ -13,11 +13,11 @@ public interface TransportListener
 
     void onMessages(List<Message.Mutable> messages);
 
-    void onConnectException(Throwable x);
+    void onConnectException(Throwable x, Message[] messages);
 
-    void onException(Throwable x);
+    void onException(Throwable x, Message[] messages);
 
-    void onExpire();
+    void onExpire(Message[] messages);
 
-    void onProtocolError(String info);
+    void onProtocolError(String info, Message[] messages);
 }
