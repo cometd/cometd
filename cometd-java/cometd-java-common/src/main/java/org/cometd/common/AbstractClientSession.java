@@ -184,11 +184,11 @@ public abstract class AbstractClientSession implements ClientSession
         if (id == null)
             throw new IllegalArgumentException("Bayeux messages must have a channel, " + message);
 
-        AbstractSessionChannel channel = (AbstractSessionChannel)getChannel(id);
-        ChannelId channelId = channel.getChannelId();
-
         if (!extendRcv(mutable))
             return;
+
+        AbstractSessionChannel channel = (AbstractSessionChannel)getChannel(id);
+        ChannelId channelId = channel.getChannelId();
 
         channel.notifyMessageListeners(message);
 
