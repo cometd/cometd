@@ -750,7 +750,7 @@ org.cometd.Cometd = function(name)
             }
 
             _setStatus('connecting');
-            _debug('Connect sent', message);
+            _debug('Connect sent', message, org.cometd.JSON.toJSON(message));
             _send(false, [message], true, 'connect');
             _setStatus('connected');
         }
@@ -863,6 +863,26 @@ org.cometd.Cometd = function(name)
         });
     }
 
+    function _failHandshake(message)
+    {
+        _notifyListeners('/meta/handshake', message);
+        _notifyListeners('/meta/unsuccessful', message);
+
+        // Only try again if we haven't been disconnected and
+        // the advice permits us to retry the handshake
+        var retry = !_isDisconnected() && _advice.reconnect != 'none';
+        if (retry)
+        {
+            _increaseBackoff();
+            _delayedHandshake();
+        }
+        else
+        {
+            _resetBackoff();
+            _setStatus('disconnected');
+        }
+    }
+
     function _handshakeResponse(message)
     {
         if (message.successful)
@@ -912,29 +932,13 @@ org.cometd.Cometd = function(name)
         }
         else
         {
-            _notifyListeners('/meta/handshake', message);
-            _notifyListeners('/meta/unsuccessful', message);
-
-            // Only try again if we haven't been disconnected and
-            // the advice permits us to retry the handshake
-            var retry = !_isDisconnected() && _advice.reconnect != 'none';
-            if (retry)
-            {
-                _increaseBackoff();
-                _delayedHandshake();
-            }
-            else
-            {
-                _resetBackoff();
-                _setStatus('disconnected');
-            }
+            _failHandshake(message);
         }
     }
 
     function _handshakeFailure(xhr, message)
     {
-        // Notify listeners
-        var failureMessage = {
+        _failHandshake({
             successful: false,
             failure: true,
             channel: '/meta/handshake',
@@ -944,23 +948,35 @@ org.cometd.Cometd = function(name)
                 reconnect: 'retry',
                 interval: _backoff
             }
-        };
+        });
+    }
 
-        _notifyListeners('/meta/handshake', failureMessage);
-        _notifyListeners('/meta/unsuccessful', failureMessage);
+    function _failConnect(message)
+    {
+        // Notify the listeners after the status change but before the next action
+        _notifyListeners('/meta/connect', message);
+        _notifyListeners('/meta/unsuccessful', message);
 
-        // Only try again if we haven't been disconnected and
-        // the advice permits us to retry the handshake
-        var retry = !_isDisconnected() && _advice.reconnect != 'none';
-        if (retry)
+        // This may happen when the server crashed, the current clientId
+        // will be invalid, and the server will ask to handshake again
+        // Listeners can call disconnect(), so check the state after they run
+        var action = _isDisconnected() ? 'none' : _advice.reconnect;
+        switch (action)
         {
-            _increaseBackoff();
-            _delayedHandshake();
-        }
-        else
-        {
-            _resetBackoff();
-            _setStatus('disconnected');
+            case 'retry':
+                _increaseBackoff();
+                _delayedConnect();
+                break;
+            case 'handshake':
+                _resetBackoff();
+                _delayedHandshake();
+                break;
+            case 'none':
+                _resetBackoff();
+                _setStatus('disconnected');
+                break;
+            default:
+                throw 'Unrecognized advice action' + action;
         }
     }
 
@@ -993,41 +1009,14 @@ org.cometd.Cometd = function(name)
         }
         else
         {
-            // Notify the listeners after the status change but before the next action
-            _info('Connect failed:', message.error);
-            _notifyListeners('/meta/connect', message);
-            _notifyListeners('/meta/unsuccessful', message);
-
-            // This may happen when the server crashed, the current clientId
-            // will be invalid, and the server will ask to handshake again
-            // Listeners can call disconnect(), so check the state after they run
-            var action2 = _isDisconnected() ? 'none' : _advice.reconnect;
-            switch (action2)
-            {
-                case 'retry':
-                    _increaseBackoff();
-                    _delayedConnect();
-                    break;
-                case 'handshake':
-                    _resetBackoff();
-                    _delayedHandshake();
-                    break;
-                case 'none':
-                    _resetBackoff();
-                    _setStatus('disconnected');
-                    break;
-                default:
-                    throw 'Unrecognized advice action' + action2;
-            }
+            _failConnect(message);
         }
     }
 
     function _connectFailure(xhr, message)
     {
         _connected = false;
-
-        // Notify listeners
-        var failureMessage = {
+        _failConnect({
             successful: false,
             failure: true,
             channel: '/meta/connect',
@@ -1037,28 +1026,7 @@ org.cometd.Cometd = function(name)
                 reconnect: 'retry',
                 interval: _backoff
             }
-        };
-        _notifyListeners('/meta/connect', failureMessage);
-        _notifyListeners('/meta/unsuccessful', failureMessage);
-
-        var action = _isDisconnected() ? 'none' : _advice.reconnect;
-        switch (action)
-        {
-            case 'retry':
-                _increaseBackoff();
-                _delayedConnect();
-                break;
-            case 'handshake':
-                _resetBackoff();
-                _delayedHandshake();
-                break;
-            case 'none':
-                _resetBackoff();
-                _setStatus('disconnected');
-                break;
-            default:
-                throw 'Unrecognized advice action' + action;
-        }
+        });
     }
 
     function _disconnect(abort)
@@ -1075,6 +1043,13 @@ org.cometd.Cometd = function(name)
         _resetBackoff();
     }
 
+    function _failDisconnect(message)
+    {
+        _disconnect(true);
+        _notifyListeners('/meta/disconnect', message);
+        _notifyListeners('/meta/unsuccessful', message);
+    }
+
     function _disconnectResponse(message)
     {
         if (message.successful)
@@ -1084,17 +1059,13 @@ org.cometd.Cometd = function(name)
         }
         else
         {
-            _disconnect(true);
-            _notifyListeners('/meta/disconnect', message);
-            _notifyListeners('/meta/unsuccessful', message);
+            _failDisconnect(message);
         }
     }
 
     function _disconnectFailure(xhr, message)
     {
-        _disconnect(true);
-
-        var failureMessage = {
+        _failDisconnect({
             successful: false,
             failure: true,
             channel: '/meta/disconnect',
@@ -1104,9 +1075,13 @@ org.cometd.Cometd = function(name)
                 reconnect: 'none',
                 interval: 0
             }
-        };
-        _notifyListeners('/meta/disconnect', failureMessage);
-        _notifyListeners('/meta/unsuccessful', failureMessage);
+        });
+    }
+
+    function _failSubscribe(message)
+    {
+        _notifyListeners('/meta/subscribe', message);
+        _notifyListeners('/meta/unsuccessful', message);
     }
 
     function _subscribeResponse(message)
@@ -1117,15 +1092,13 @@ org.cometd.Cometd = function(name)
         }
         else
         {
-            _info('Subscription to', message.subscription, 'failed:', message.error);
-            _notifyListeners('/meta/subscribe', message);
-            _notifyListeners('/meta/unsuccessful', message);
+            _failSubscribe(message);
         }
     }
 
     function _subscribeFailure(xhr, message)
     {
-        var failureMessage = {
+        _failSubscribe({
             successful: false,
             failure: true,
             channel: '/meta/subscribe',
@@ -1135,9 +1108,13 @@ org.cometd.Cometd = function(name)
                 reconnect: 'none',
                 interval: 0
             }
-        };
-        _notifyListeners('/meta/subscribe', failureMessage);
-        _notifyListeners('/meta/unsuccessful', failureMessage);
+        });
+    }
+
+    function _failUnsubscribe(message)
+    {
+        _notifyListeners('/meta/unsubscribe', message);
+        _notifyListeners('/meta/unsuccessful', message);
     }
 
     function _unsubscribeResponse(message)
@@ -1148,15 +1125,13 @@ org.cometd.Cometd = function(name)
         }
         else
         {
-            _info('Unsubscription to', message.subscription, 'failed:', message.error);
-            _notifyListeners('/meta/unsubscribe', message);
-            _notifyListeners('/meta/unsuccessful', message);
+            _failUnsubscribe(message);
         }
     }
 
     function _unsubscribeFailure(xhr, message)
     {
-        var failureMessage = {
+        _failUnsubscribe({
             successful: false,
             failure: true,
             channel: '/meta/unsubscribe',
@@ -1166,9 +1141,13 @@ org.cometd.Cometd = function(name)
                 reconnect: 'none',
                 interval: 0
             }
-        };
-        _notifyListeners('/meta/unsubscribe', failureMessage);
-        _notifyListeners('/meta/unsuccessful', failureMessage);
+        });
+    }
+
+    function _failMessage(message)
+    {
+        _notifyListeners('/meta/publish', message);
+        _notifyListeners('/meta/unsuccessful', message);
     }
 
     function _messageResponse(message)
@@ -1193,16 +1172,14 @@ org.cometd.Cometd = function(name)
             }
             else
             {
-                _info('Publish failed:', message.error);
-                _notifyListeners('/meta/publish', message);
-                _notifyListeners('/meta/unsuccessful', message);
+                _failMessage(message);
             }
         }
     }
 
     function _messageFailure(xhr, message)
     {
-        var failureMessage = {
+        _failMessage({
             successful: false,
             failure: true,
             channel: message.channel,
@@ -1212,9 +1189,7 @@ org.cometd.Cometd = function(name)
                 reconnect: 'none',
                 interval: 0
             }
-        };
-        _notifyListeners('/meta/publish', failureMessage);
-        _notifyListeners('/meta/unsuccessful', failureMessage);
+        });
     }
 
     function _receive(message)
@@ -2524,7 +2499,7 @@ org.cometd.Cometd = function(name)
 
         if (window.WebSocket)
         {
-            _WebSocket=window.WebSocket;
+            _WebSocket = window.WebSocket;
             _state = _WebSocket.CLOSED;
         }
 
@@ -2566,7 +2541,7 @@ org.cometd.Cometd = function(name)
 
         that.accept = function(version, crossDomain)
         {
-            return _supportsWebSocket && _WebSocket!==null && typeof _WebSocket === 'function';
+            return _supportsWebSocket && typeof _WebSocket === 'function';
         };
 
         that.send = function(envelope, metaConnect)
