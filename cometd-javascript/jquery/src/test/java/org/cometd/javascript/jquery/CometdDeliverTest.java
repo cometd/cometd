@@ -1,5 +1,6 @@
 package org.cometd.javascript.jquery;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.cometd.bayeux.server.ServerSession;
@@ -43,7 +44,7 @@ public class CometdDeliverTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.removeListener(listener);");
         evaluateScript("window.assert(_data === undefined);");
 
-        evaluateScript("latch = new Latch(1);");
+        latch.reset(1);
         evaluateScript("listener = $.cometd.addListener('/meta/publish', function(message) { latch.countDown(); });");
         evaluateScript("$.cometd.publish('/service/deliver', { deliver: true });");
         assertTrue(latch.await(1000));
@@ -65,11 +66,13 @@ public class CometdDeliverTest extends AbstractCometdJQueryTest
 
         public void deliver(ServerSession remote, String channel, Object messageData, String messageId)
         {
-            Map<String, ?> data = (Map<String, ?>)messageData;
+            Map<String, Object> data = (Map<String, Object>)messageData;
+            // TODO: remove the line below, it's a workaround for the mutable DAG problem
+            data = new HashMap<String, Object>(data);
             Boolean deliver = (Boolean) data.get("deliver");
             if (deliver)
             {
-                remote.deliver(getServerSession(), channel, messageData, messageId);
+                remote.deliver(getServerSession(), channel, data, messageId);
             }
         }
     }
