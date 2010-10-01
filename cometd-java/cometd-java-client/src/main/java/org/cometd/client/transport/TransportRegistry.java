@@ -19,7 +19,7 @@ public class TransportRegistry
     {
         if (transport != null)
         {
-            _transports.put(transport.getName(),transport);
+            _transports.put(transport.getName(), transport);
             _allowed.add(transport.getName());
         }
     }
@@ -33,39 +33,26 @@ public class TransportRegistry
     {
         return Collections.unmodifiableList(_allowed);
     }
-    
+
     public List<ClientTransport> negotiate(Object[] requestedTransports, String bayeuxVersion)
     {
         List<ClientTransport> list = new ArrayList<ClientTransport>();
-        
-        for (String transport : _allowed)
+
+        for (String transportName : _allowed)
         {
-            for (Object requestedTransport : requestedTransports)
+            for (Object requestedTransportName : requestedTransports)
             {
-                if (requestedTransport.equals(transport))
+                if (requestedTransportName.equals(transportName))
                 {
-                    if (_transports.get(transport).accept(bayeuxVersion))
+                    ClientTransport transport = getTransport(transportName);
+                    if (transport.accept(bayeuxVersion))
                     {
-                        list.add(_transports.get(transport));
+                        list.add(transport);
                     }
                 }
             }
         }
         return list;
-    }
-
-    public String[] findTransportTypes(String bayeuxVersion)
-    {
-        List<String> result = new ArrayList<String>();
-        for (String name : _allowed)
-        {
-            ClientTransport transport=_transports.get(name);
-            if (transport.accept(bayeuxVersion))
-            {
-                result.add(transport.getName());
-            }
-        }
-        return result.toArray(new String[result.size()]);
     }
 
     public ClientTransport getTransport(String transport)
