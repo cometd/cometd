@@ -13,35 +13,24 @@
 //========================================================================
 package org.cometd.server;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.nio.channels.IllegalSelectorException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.annotation.CometdServer;
-import org.cometd.server.annotation.CometdService;
-import org.cometd.server.annotation.CometdSession;
-import org.cometd.server.annotation.Configure;
-import org.cometd.server.annotation.Subscription;
+import org.cometd.common.ChannelId;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.springframework.beans.MethodInvocationException;
 
 /* ------------------------------------------------------------ */
 /**
@@ -64,7 +53,6 @@ import org.springframework.beans.MethodInvocationException;
  */
 public abstract class AbstractService
 {
-    private final Object _service;
     private final String _name;
     private final BayeuxServerImpl _bayeux;
     private final LocalSession _session;
@@ -105,7 +93,6 @@ public abstract class AbstractService
      */
     public AbstractService(BayeuxServer bayeux, String name, int maxThreads)
     {
-        _service=this;
         if (maxThreads > 0)
             setThreadPool(new QueuedThreadPool(maxThreads));
         _name=name;
@@ -114,131 +101,7 @@ public abstract class AbstractService
         _session.handshake();
         _logger=((BayeuxServerImpl)bayeux).getLogger();
     }
-    
-    private AbstractService(Object service,BayeuxServer bayeux, String name, int maxThreads)
-    {
-        _service=service;
-        if (maxThreads > 0)
-            setThreadPool(new QueuedThreadPool(maxThreads));
-        _name=name;
-        _bayeux=(BayeuxServerImpl)bayeux;
-        _session=_bayeux.newLocalSession(name);
-        _session.handshake();
-        _logger=((BayeuxServerImpl)bayeux).getLogger();
-    }
-    
-    public static void register(BayeuxServer bayeux,Object service)
-    {
-        CometdService s = service.getClass().getAnnotation(CometdService.class);
-        if (s==null)
-            throw new IllegalArgumentException("!@CometdService: "+service.getClass());
-        
-        String name=s.name();
-        int threads=s.threads();
-        boolean see_own = s.seeOwn();
-        
-        AbstractService as = new AbstractService(service,bayeux,name,threads)
-        {    
-        };
-        
-        as.setSeeOwnPublishes(see_own);
-        as.init();
-    }
-    
-    protected void init()
-    {
-        try
-        {
-            Class<?> clazz = _service.getClass();
 
-            // Look for fields to inject with Bayeux and/or Session
-            Class<?> c=clazz;
-            while (c!=null)
-            {
-                for (final Field field : c.getDeclaredFields())
-                {
-                    System.err.println("field "+field);
-                    CometdServer cs = field.getAnnotation(CometdServer.class);
-                    if (cs!=null)
-                    {
-                        System.err.println("field "+cs);
-                        boolean access = field.isAccessible();
-                        field.setAccessible(true);
-                        field.set(_service,_bayeux);
-                        field.setAccessible(access);
-                    }
-
-                    CometdSession session = field.getAnnotation(CometdSession.class);
-                    if (session!=null)
-                    {
-                        System.err.println("field "+session);
-                        boolean access = field.isAccessible();
-                        field.setAccessible(true);
-                        field.set(_service,_session.getServerSession());
-                        field.setAccessible(access);
-                    }
-                }
-                c=c.getSuperclass();
-            }
-            
-            // Look for methods to configure channels with
-            for (final Method method : clazz.getMethods())
-            {
-                Configure configure = method.getAnnotation(Configure.class);
-                if (configure!=null)
-                {
-                    for (final String channel : Arrays.asList(configure.channels()))
-                    {
-                        // if configure if absent, then use createIfAbsent and error if already created
-                        if (configure.ifAbsent())
-                        {
-                            if (!_bayeux.createIfAbsent(channel,new ServerChannel.Initializer()
-                            {
-                                public void configureChannel(ConfigurableServerChannel channel)
-                                {
-                                    try
-                                    {
-                                        method.invoke(_service,channel);
-                                    }
-                                    catch(Exception e)
-                                    {
-                                        _logger.warn(e);
-                                        throw new RuntimeException(e);
-                                    }
-                                }
-                            }))
-                                throw new IllegalStateException("Channel already created: "+channel);
-                        }
-                        else // otherwise just configure
-                        {
-                            method.invoke(_service,_bayeux.getChannel(channel));
-
-                        }
-
-                    }
-                }
-            }
-
-            // Look for methods that are subscriptions
-            for (Method method : clazz.getDeclaredMethods())
-            {
-                Subscription s= method.getAnnotation(Subscription.class);
-                if (s!=null)
-                {
-                    for (String channel : Arrays.asList(s.channels()))
-                    {
-                        addService(channel,method);
-                    }
-                }
-            }
-        }
-        catch(Exception e)
-        {
-            _logger.warn(e);
-            throw new RuntimeException(e);
-        }
-    }
-    
     /* ------------------------------------------------------------ */
     public BayeuxServer getBayeux()
     {
@@ -341,7 +204,7 @@ public abstract class AbstractService
 
         Method method=null;
 
-        Class<?> c=_service.getClass();
+        Class<?> c=this.getClass();
         while(c != null && c != Object.class)
         {
             Method[] methods=c.getDeclaredMethods();
@@ -356,60 +219,14 @@ public abstract class AbstractService
             }
             c=c.getSuperclass();
         }
-        
+
         if (method == null)
             throw new NoSuchMethodError(methodName);
-        
-        addService(channelId,method);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Add a service.
-     * <p>Listen to a channel and map a method to handle
-     * received messages. The method must have a unique name and one of the
-     * following signatures:
-     * <ul>
-     * <li><code>myMethod(ServerSession from,Object data)</code></li>
-     * <li><code>myMethod(ServerSession from,Object data,String|Object id)</code></li>
-     * <li><code>myMethod(ServerSession from,String channel,Object data,String|Object id)</code>
-     * </li>
-     * </li>
-     *
-     * The data parameter can be typed if the type of the data object published
-     * by the client is known (typically Map<String,Object>). If the type of the
-     * data parameter is {@link Message} then the message object itself is
-     * passed rather than just the data.
-     * <p>
-     * Typically a service will be used to a channel in the "/service/**"
-     * space which is not a broadcast channel. Messages published to these
-     * channels are only delivered to server side clients like this service.
-     * <p>
-     * Any object returned by a mapped subscription method is delivered to the
-     * calling client and not broadcast. If the method returns void or null,
-     * then no response is sent. A mapped subscription method may also call
-     * {@link #send(Client, String, Object, String)} to deliver a response
-     * message(s) to different clients and/or channels. It may also publish
-     * methods via the normal {@link Bayeux} API.
-     * <p>
-     *
-     *
-     * @param channelId
-     *            The channel to subscribe to
-     * @param methodName
-     *            The name of the method on this object to call when messages
-     *            are recieved.
-     */
-    protected void addService(String channelId, Method method)
-    {
-        if (_logger.isDebugEnabled())
-            _logger.debug("subscribe "+_name+"#"+method.getName()+" to "+channelId);
-
         int params=method.getParameterTypes().length;
         if (params < 2 || params > 4)
-            throw new IllegalArgumentException("Method '" + method + "' does not have 2or3 parameters");
+            throw new IllegalArgumentException("Method '" + methodName + "' does not have 2or3 parameters");
         if (!ServerSession.class.isAssignableFrom(method.getParameterTypes()[0]))
-            throw new IllegalArgumentException("Method '" + method + "' does not have Session as first parameter");
+            throw new IllegalArgumentException("Method '" + methodName + "' does not have Session as first parameter");
 
         _bayeux.createIfAbsent(channelId);
         ServerChannel channel=_bayeux.getChannel(channelId);
@@ -522,13 +339,13 @@ public abstract class AbstractService
                 switch (method.getParameterTypes().length)
                 {
                     case 2:
-                        reply = method.invoke(_service, fromClient, messageArgument);
+                        reply = method.invoke(this, fromClient, messageArgument);
                         break;
                     case 3:
-                        reply = method.invoke(_service, fromClient, messageArgument, id);
+                        reply = method.invoke(this, fromClient, messageArgument, id);
                         break;
                     case 4:
-                        reply = method.invoke(_service, fromClient, channel, messageArgument, id);
+                        reply = method.invoke(this, fromClient, channel, messageArgument, id);
                         break;
                 }
 
