@@ -14,7 +14,6 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpURI;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -87,7 +86,7 @@ public class LongPollingTransportTest
             }
         };
         serverThread.start();
-        final HttpURI serverURI=new HttpURI("http://localhost:" + serverSocket.getLocalPort());
+        final String serverURL="http://localhost:" + serverSocket.getLocalPort();
 
         try
         {
@@ -97,18 +96,19 @@ public class LongPollingTransportTest
             try
             {
                 final CountDownLatch latch = new CountDownLatch(1);
-                ClientTransport transport = new LongPollingTransport(_options,httpClient);
-                transport.init(null,serverURI);
+                HttpClientTransport transport = new LongPollingTransport(_options,httpClient);
+                transport.setURL(serverURL);
+                transport.init();
 
                 long start = System.nanoTime();
-                transport.send(new AbstractTransportListener()
+                transport.send(new EmptyTransportListener()
                 {
                     @Override
                     public void onMessages(List<Message.Mutable> messages)
                     {
                         latch.countDown();
                     }
-                },new HashMapMessage());
+                }, new HashMapMessage());
                 long end = System.nanoTime();
 
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
@@ -164,7 +164,7 @@ public class LongPollingTransportTest
             }
         };
         serverThread.start();
-        HttpURI serverURI = new HttpURI("http://localhost:" + serverSocket.getLocalPort());
+        String serverURL = "http://localhost:" + serverSocket.getLocalPort();
 
         try
         {
@@ -173,15 +173,16 @@ public class LongPollingTransportTest
 
             try
             {
-                ClientTransport transport = new LongPollingTransport(_options,httpClient);
+                HttpClientTransport transport = new LongPollingTransport(_options,httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                transport.init(null,serverURI);
+                transport.setURL(serverURL);
+                transport.init();
 
                 long start = System.nanoTime();
-                transport.send(new AbstractTransportListener()
+                transport.send(new EmptyTransportListener()
                 {
                     @Override
-                    public void onProtocolError(String info)
+                    public void onProtocolError(String info, Message[] messages)
                     {
                         latch.countDown();
                     }
@@ -209,21 +210,22 @@ public class LongPollingTransportTest
     {
         ServerSocket serverSocket = new ServerSocket(0);
         serverSocket.close();
-        final HttpURI serverURI=new HttpURI("http://localhost:" + serverSocket.getLocalPort());
+        final String serverURL="http://localhost:" + serverSocket.getLocalPort();
 
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
         try
         {
-            ClientTransport transport = new LongPollingTransport(_options,httpClient);
+            HttpClientTransport transport = new LongPollingTransport(_options,httpClient);
             final CountDownLatch latch = new CountDownLatch(1);
-            transport.init(null,serverURI);
+            transport.setURL(serverURL);
+            transport.init();
 
-            transport.send(new AbstractTransportListener()
+            transport.send(new EmptyTransportListener()
             {
                 @Override
-                public void onConnectException(Throwable x)
+                public void onConnectException(Throwable x, Message[] messages)
                 {
                     latch.countDown();
                 }
@@ -263,7 +265,7 @@ public class LongPollingTransportTest
             }
         };
         serverThread.start();
-        final HttpURI serverURI=new HttpURI("http://localhost:" + serverSocket.getLocalPort());
+        final String serverURL="http://localhost:" + serverSocket.getLocalPort();
 
         try
         {
@@ -272,15 +274,16 @@ public class LongPollingTransportTest
 
             try
             {
-                ClientTransport transport = new LongPollingTransport(_options,httpClient);
+                HttpClientTransport transport = new LongPollingTransport(_options,httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                transport.init(null,serverURI);
+                transport.setURL(serverURL);
+                transport.init();
 
                 long start = System.nanoTime();
-                transport.send(new AbstractTransportListener()
+                transport.send(new EmptyTransportListener()
                 {
                     @Override
-                    public void onException(Throwable x)
+                    public void onException(Throwable x, Message[] messages)
                     {
                         latch.countDown();
                     }
@@ -339,7 +342,7 @@ public class LongPollingTransportTest
             }
         };
         serverThread.start();
-        final HttpURI serverURI=new HttpURI("http://localhost:" + serverSocket.getLocalPort());
+        final String serverURL="http://localhost:" + serverSocket.getLocalPort();
 
         try
         {
@@ -349,14 +352,15 @@ public class LongPollingTransportTest
 
             try
             {
-                ClientTransport transport = new LongPollingTransport(_options,httpClient);
+                HttpClientTransport transport = new LongPollingTransport(_options,httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
-                transport.init(null,serverURI);
+                transport.setURL(serverURL);
+                transport.init();
 
-                transport.send(new AbstractTransportListener()
+                transport.send(new EmptyTransportListener()
                 {
                     @Override
-                    public void onExpire()
+                    public void onExpire(Message[] messages)
                     {
                         latch.countDown();
                     }
@@ -377,26 +381,8 @@ public class LongPollingTransportTest
         }
     }
 
-    protected class AbstractTransportListener implements TransportListener
+    private class EmptyTransportListener implements TransportListener
     {
-        boolean _suppress;
-
-        public void onConnectException(Throwable x)
-        {
-            if (!_suppress)
-                x.printStackTrace();
-        }
-
-        public void onException(Throwable x)
-        {
-            if (!_suppress)
-                x.printStackTrace();
-        }
-
-        public void onExpire()
-        {
-        }
-
         public void onSending(Message[] messages)
         {
         }
@@ -405,7 +391,19 @@ public class LongPollingTransportTest
         {
         }
 
-        public void onProtocolError(String info)
+        public void onConnectException(Throwable x, Message[] messages)
+        {
+        }
+
+        public void onException(Throwable x, Message[] messages)
+        {
+        }
+
+        public void onExpire(Message[] messages)
+        {
+        }
+
+        public void onProtocolError(String info, Message[] messages)
         {
         }
     }

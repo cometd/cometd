@@ -7,10 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
-import org.cometd.client.BayeuxClient;
 import org.cometd.common.AbstractTransport;
 import org.cometd.common.HashMapMessage;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.ajax.JSON;
 
 /**
@@ -36,8 +34,7 @@ public abstract class ClientTransport extends AbstractTransport
         setOption(MAX_NETWORK_DELAY_OPTION,_maxNetworkDelay);
     }
 
-    /* ------------------------------------------------------------ */
-    public void init(BayeuxClient bayeux, HttpURI uri)
+    public void init()
     {
         _timeout=getOption(TIMEOUT_OPTION,_timeout);
         _interval=getOption(INTERVAL_OPTION,_interval);
@@ -54,12 +51,6 @@ public abstract class ClientTransport extends AbstractTransport
 
     /* ------------------------------------------------------------ */
     public abstract void send(TransportListener listener, Message.Mutable... messages);
-
-    /* ------------------------------------------------------------ */
-    public Message.Mutable newMessage()
-    {
-        return new HashMapMessage();
-    }
 
     /* ------------------------------------------------------------ */
     protected List<Message.Mutable> toMessages(String content)
