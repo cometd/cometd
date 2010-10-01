@@ -2,7 +2,6 @@ package org.cometd.oort;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -131,57 +130,5 @@ public class OortComet extends BayeuxClient
                 channel_here.publish(message.getData(),message.getId());
             }
         });
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.client.BayeuxClient#onException(java.lang.Throwable)
-     */
-    @Override
-    public void onException(Throwable x)
-    {
-        Log.info(x.toString());
-        Log.debug(x);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.client.BayeuxClient#onExpire()
-     */
-    @Override
-    public void onExpire()
-    {
-        super.onExpire();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.client.BayeuxClient#onMessages(java.util.List)
-     */
-    @Override
-    public void onMessages(List<Mutable> messages)
-    {
-        super.onMessages(messages);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.client.BayeuxClient#onProtocolError(java.lang.String)
-     */
-    @Override
-    public void onProtocolError(String info)
-    {
-        Log.warn("ProtocolError: "+info);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.client.BayeuxClient#onConnectException(java.lang.Throwable)
-     */
-    @Override
-    public void onConnectException(Throwable x)
-    {
-        Log.warn("ConnectException: "+x.toString());
-        Log.debug(x);
     }
 }
