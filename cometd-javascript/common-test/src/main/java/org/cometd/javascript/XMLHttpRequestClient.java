@@ -13,12 +13,23 @@ import org.mozilla.javascript.ScriptableObject;
 public class XMLHttpRequestClient extends ScriptableObject
 {
     private HttpClient httpClient;
+    private int maxConnections;
 
     public XMLHttpRequestClient()
     {
     }
 
     public void jsConstructor(int maxConnections) throws Exception
+    {
+        this.maxConnections = maxConnections;
+    }
+
+    public String getClassName()
+    {
+        return "XMLHttpRequestClient";
+    }
+
+    public void start() throws Exception
     {
         httpClient = new HttpClient();
         httpClient.setMaxConnectionsPerAddress(maxConnections);
@@ -28,9 +39,9 @@ public class XMLHttpRequestClient extends ScriptableObject
         httpClient.start();
     }
 
-    public String getClassName()
+    public void stop() throws Exception
     {
-        return "XMLHttpRequestClient";
+        httpClient.stop();
     }
 
     public void jsFunction_send(XMLHttpRequestExchange exchange) throws Exception

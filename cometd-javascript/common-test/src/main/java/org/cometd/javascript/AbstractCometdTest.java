@@ -51,6 +51,7 @@ public abstract class AbstractCometdTest extends TestCase
     protected int longPollingPeriod = 5000;
     protected int expirationPeriod = 2500;
     private HttpCookieStore cookies;
+    private XMLHttpRequestClient xhrClient;
 
     @Override
     protected void setUp() throws Exception
@@ -111,15 +112,17 @@ public abstract class AbstractCometdTest extends TestCase
             jsContext.evaluateString(rootScope, "var threadModel = new JavaScriptThreadModel(this);", "threadModel", 1, null);
             threadModel = (ThreadModel)rootScope.get("threadModel", rootScope);
             threadModel.init();
+
+            ScriptableObject.defineClass(rootScope, XMLHttpRequestClient.class);
+            ScriptableObject.defineClass(rootScope, XMLHttpRequestExchange.class);
+            jsContext.evaluateString(rootScope, "var xhrClient = new XMLHttpRequestClient(" + getMaxConnections() + ");", "xhrClient", 1, null);
+            xhrClient = (XMLHttpRequestClient)rootScope.get("xhrClient", rootScope);
+            xhrClient.start();
         }
         finally
         {
             org.mozilla.javascript.Context.exit();
         }
-
-        threadModel.evaluate(null, "var maxConnections = " + getMaxConnections() + ";");
-        threadModel.define(XMLHttpRequestClient.class);
-        threadModel.define(XMLHttpRequestExchange.class);
     }
 
     /**
@@ -141,6 +144,7 @@ public abstract class AbstractCometdTest extends TestCase
     public void destroyJavaScript() throws Exception
     {
         threadModel.destroy();
+        xhrClient.stop();
     }
 
     public void destroyCometServer() throws Exception

@@ -796,7 +796,6 @@ var window = this;
     // When using java.net.URL it happens that a long poll can be closed at any time,
     // just to be reissued using another socket.
     // Therefore we use helper classes that are based on Jetty's HttpClient, which offers full control.
-    var _xhrClient = new XMLHttpRequestClient(maxConnections || 2);
     window.XMLHttpRequest = function() {};
     XMLHttpRequest.UNSENT = 0;
     XMLHttpRequest.OPENED = 1;
@@ -850,7 +849,7 @@ var window = this;
                 this._exchange.setOnReadyStateChange(this, this.onreadystatechange);
                 if (this._exchange.method == 'GET') data = null;
                 if (data) this._exchange.setRequestContent(data);
-                _xhrClient.send(this._exchange);
+                xhrClient.send(this._exchange);
             },
             abort: function()
             {
