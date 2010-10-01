@@ -1,5 +1,6 @@
 package org.cometd.javascript;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
@@ -281,6 +282,13 @@ public class XMLHttpRequestExchange extends ScriptableObject
                 if (async)
                     notifyReadyStateChange();
             }
+        }
+
+        @Override
+        protected void onException(Throwable x)
+        {
+            if (!(x instanceof EOFException))
+                super.onException(x);
         }
     }
 }
