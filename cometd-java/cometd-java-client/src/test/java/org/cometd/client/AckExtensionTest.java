@@ -14,8 +14,6 @@
 
 package org.cometd.client;
 
-import java.io.File;
-import java.util.EventListener;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -36,25 +34,20 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.resource.FileResource;
 
 public class AckExtensionTest extends TestCase
 {
-    public static int RECEIVE_LOCK_DURATION = Integer.getInteger(
-            "receive.lock_duration", 2000).intValue();
+    private Server _server;
+    private Connector _connector;
+    private BayeuxServer _bayeux;
+    private String _cometdURL;
 
-    Server _server;
-    Connector _connector;
-    EventListener _listener;
-    BayeuxServer _bayeux;
-
-    static Connector newConnector()
+    private static Connector newConnector()
     {
         return new SelectChannelConnector();
     }
 
-    static Server newServer(Connector connector) throws Exception
+    private static Server newServer(Connector connector) throws Exception
     {
         Server server = new Server();
         server.setGracefulShutdown(500);
@@ -63,39 +56,36 @@ public class AckExtensionTest extends TestCase
         return server;
     }
 
-    static void stopServer(Server server) throws Exception
-    {
-        server.stop();
-    }
-
-    void startServer(Server server)
-            throws Exception
+    private void startServer(Server server) throws Exception
     {
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
 
-        ServletContextHandler context = new ServletContextHandler(contexts, "/", ServletContextHandler.NO_SECURITY
-                | ServletContextHandler.SESSIONS);
+        String contextPath = "";
+        ServletContextHandler context = new ServletContextHandler(contexts, contextPath, ServletContextHandler.SESSIONS);
 
-        File file = new File("target/cometd-demo");
-        if (!file.exists())
-            file.mkdir();
-
-        context.setBaseResource(FileResource.newResource(file.toURI().toURL()));
-
-        ServletHolder comet = context.addServlet(CometdServlet.class, "/cometd/*");
+        String servletPath = "/cometd";
+        ServletHolder comet = context.addServlet(CometdServlet.class, servletPath + "/*");
 
         comet.setInitParameter("timeout", "20000");
         comet.setInitParameter("interval", "100");
         comet.setInitParameter("maxInterval", "10000");
         comet.setInitParameter("multiFrameInterval", "5000");
         comet.setInitParameter("logLevel", "3");
-        comet.setInitOrder(2);
+        comet.setInitOrder(1);
 
         server.start();
 
         _bayeux=(BayeuxServer)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
         _bayeux.addExtension(new AcknowledgedMessagesExtension());
+
+        _cometdURL = "http://localhost:" + _connector.getLocalPort() + contextPath + servletPath;
+    }
+
+    private static void stopServer(Server server) throws Exception
+    {
+        server.stop();
+        server.join();
     }
 
     @Override
@@ -103,18 +93,15 @@ public class AckExtensionTest extends TestCase
     {
         startServer(_server = newServer(_connector = newConnector()));
         _connector.setPort(_connector.getLocalPort());
-        super.setUp();
     }
 
     @Override
     public void tearDown() throws Exception
     {
         stopServer(_server);
-        _listener = null;
         _bayeux = null;
         _connector = null;
         _server = null;
-        super.tearDown();
     }
 
     public void testAck() throws Exception
@@ -124,28 +111,7 @@ public class AckExtensionTest extends TestCase
 
         final Queue<Message> messages = new ConcurrentLinkedQueue<Message>();
 
-        final BayeuxClient client = new BayeuxClient("http://localhost:"+port+"/cometd", LongPollingTransport.create(null))
-        {
-
-            @Override
-            public void onConnectException(Throwable x)
-            {
-                if (x instanceof RuntimeException || x instanceof Error)
-                    Log.warn("onConnectException: ",x);
-                else
-                    Log.info("onConnectException: "+x.toString());
-            }
-
-            @Override
-            public void onException(Throwable x)
-            {
-                if (x instanceof RuntimeException || x instanceof Error)
-                    Log.warn("onException: ",x);
-                else
-                    Log.info("onException: "+x.toString());
-            }
-
-        };
+        final BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null));
 
         client.addExtension(new AckExtension());
 
@@ -220,7 +186,7 @@ public class AckExtensionTest extends TestCase
         for(int i=0; i<15;i++)
         {
             Message message = messages.poll();
-            assertTrue(message.getId().toString().indexOf("id"+i)>=0);
+            assertTrue(message.getId().indexOf("id"+i)>=0);
         }
 
         client.disconnect();
