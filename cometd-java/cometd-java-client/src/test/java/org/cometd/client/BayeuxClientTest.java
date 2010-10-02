@@ -3,6 +3,8 @@ package org.cometd.client;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.ProtocolException;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -241,7 +243,16 @@ public class BayeuxClientTest extends TestCase
             }
         };
         final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
-        BayeuxClient client = new BayeuxClient(_cometdURL, transport);
+        BayeuxClient client = new BayeuxClient(_cometdURL, transport)
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                // Suppress logging of expected exception
+                if (!(x instanceof UnknownHostException))
+                    super.onFailure(x, messages);
+            }
+        };
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -277,7 +288,16 @@ public class BayeuxClientTest extends TestCase
             }
         };
         final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
-        BayeuxClient client = new BayeuxClient(_cometdURL, transport);
+        BayeuxClient client = new BayeuxClient(_cometdURL, transport)
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                // Suppress logging of expected exception
+                if (!(x instanceof ProtocolException))
+                    super.onFailure(x, messages);
+            }
+        };
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -468,7 +488,6 @@ public class BayeuxClientTest extends TestCase
             protected boolean scheduleConnect(long interval, long backoff)
             {
                 int count = connects.get();
-                System.err.println("ScheduleConnect " + count + " - " + attempts.getCount());
                 if (count > 0)
                 {
                     assertEquals((count - 1) * getBackoffIncrement(), backoff);
@@ -480,7 +499,6 @@ public class BayeuxClientTest extends TestCase
             @Override
             protected boolean sendConnect()
             {
-                System.err.println("SendConnect " + connects.get() + " - " + attempts.getCount());
                 if (connects.incrementAndGet() < 2)
                     return super.sendConnect();
 
@@ -666,6 +684,7 @@ public class BayeuxClientTest extends TestCase
         assertEquals(data, results.poll(1, TimeUnit.SECONDS));
 
         client.disconnect();
+        assertTrue(client.waitFor(1000, State.DISCONNECTED));
     }
 
     public void testWaitFor() throws Exception
@@ -705,19 +724,47 @@ public class BayeuxClientTest extends TestCase
 
     public void testURLWithImplicitPort() throws Exception
     {
+        final AtomicBoolean listening = new AtomicBoolean();
+        try
+        {
+            Socket socket = new Socket("localhost", 80);
+            socket.close();
+            listening.set(true);
+        }
+        catch (ConnectException x)
+        {
+            listening.set(false);
+        }
+
         final CountDownLatch latch = new CountDownLatch(1);
-        BayeuxClient client = new BayeuxClient("http://localhost/cometd", LongPollingTransport.create(null, _httpClient));
+        BayeuxClient client = new BayeuxClient("http://localhost/cometd", LongPollingTransport.create(null, _httpClient))
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                // Do not call super to suppress error logging
+            }
+        };
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                assertTrue(message.get("exception") instanceof ConnectException);
+                assertFalse(message.isSuccessful());
+
+                // If port 80 is listening, it's probably some other HTTP server
+                // and a bayeux request will result in a 404, which is converted
+                // to a ProtocolException; if not listening, it will be a ConnectException
+                if (listening.get())
+                    assertTrue(message.get("exception") instanceof ProtocolException);
+                else
+                    assertTrue(message.get("exception") instanceof ConnectException);
                 latch.countDown();
             }
         });
         client.handshake();
         assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
         client.disconnect();
+        assertTrue(client.waitFor(1000, State.DISCONNECTED));
     }
 
     public void testAbortThenRestart() throws Exception
@@ -759,6 +806,7 @@ public class BayeuxClientTest extends TestCase
         assertTrue(client.isConnected());
 
         client.disconnect();
+        assertTrue(client.waitFor(1000, State.DISCONNECTED));
     }
 
     public void testAbortBeforePublishThenRestart() throws Exception
@@ -827,6 +875,7 @@ public class BayeuxClientTest extends TestCase
         assertFalse(publishLatch.await(1000, TimeUnit.MILLISECONDS));
 
         client.disconnect();
+        assertTrue(client.waitFor(1000, State.DISCONNECTED));
     }
 
     public void testAbortAfterPublishThenRestart() throws Exception
@@ -881,6 +930,7 @@ public class BayeuxClientTest extends TestCase
         assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
 
         client.disconnect();
+        assertTrue(client.waitFor(1000, State.DISCONNECTED));
     }
 
     private class DumpThread extends Thread
