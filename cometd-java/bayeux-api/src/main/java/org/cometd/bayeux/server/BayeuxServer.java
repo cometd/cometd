@@ -120,9 +120,28 @@ public interface BayeuxServer extends Bayeux
     public void setSecurityPolicy(SecurityPolicy securityPolicy);
 
     /**
+     * Add an {@link Authorizer}.  
+     * <p>Operations must be permitted (see {@link Authorizer.Permission#granted()) 
+     * by at least one added Authorizer and must not be denied (see {@link Authorizer.Permission#denied()) by any.
+     * @param policy
+     */
+    public void addAuthorizer(Authorizer policy);
+    
+    /**
+     * Remove an {@link Authorizer}.  
+     * @param policy
+     */
+    public void removeAuthorizer(Authorizer policy);
+
+    /**
      * @return the current transport instance of the current thread
      */
     public Transport getCurrentTransport();
+
+    /**
+     * @return the current Context, is equivalent to ((ServerTransport){@link #getCurrentTransport()}).{@link ServerTransport#getContext()}
+     */
+    public BayeuxContext getContext();
 
     /**
      * Common base interface for all server-side Bayeux listeners

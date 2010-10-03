@@ -8,9 +8,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.common.ChannelId;
 import org.cometd.util.ImmutableHashMap;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringMap;

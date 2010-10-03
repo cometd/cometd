@@ -5,6 +5,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -12,7 +13,6 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.AbstractClientSession;
-import org.cometd.common.ChannelId;
 import org.eclipse.jetty.util.ajax.JSON;
 
 
@@ -50,7 +50,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.cometd.common.AbstractClientSession#newChannel(org.cometd.common.ChannelId)
+     * @see org.cometd.common.AbstractClientSession#newChannel(org.cometd.bayeux.ChannelId)
      */
     @Override
     protected AbstractSessionChannel newChannel(ChannelId channelId)

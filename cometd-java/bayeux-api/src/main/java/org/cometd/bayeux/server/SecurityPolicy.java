@@ -15,13 +15,16 @@
 package org.cometd.bayeux.server;
 
 /**
- * <p>A Bayeux {@link SecurityPolicy} defines the authorization constraints that must be enforced by
- * a {@link BayeuxServer}.</p>
+ * <p>A Bayeux {@link SecurityPolicy} defines the broad authorization constraints that must be enforced by
+ * a {@link BayeuxServer}.
+ * </p>
+ * The usage of SecurityPolicy has been mostly replaced by the more flexible {@link Authorizer}.
+ * ,p>
  * <p>A {@link BayeuxServer} may deny the handshake from clients that do not have proper
  * authentication credentials, or may deny clients to publish on reserved channels and so on;
  * all these activities are controlled by the {@link SecurityPolicy} implementation installed
  * on the {@link BayeuxServer}.
- *
+ * @see BayeuxServer#addAuthorizer(Authorizer)
  * @version $Revision: 1453 $ $Date: 2009-02-25 12:57:20 +0100 (Wed, 25 Feb 2009) $
  */
 public interface SecurityPolicy

@@ -2,6 +2,7 @@ package org.cometd.common;
 
 import junit.framework.Assert;
 
+import org.cometd.bayeux.ChannelId;
 import org.junit.Test;
 
 
