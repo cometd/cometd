@@ -47,7 +47,10 @@ public class CometdDemoServlet extends GenericServlet
         final BayeuxServerImpl bayeux=(BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
         new EchoRPC(bayeux);
         new Monitor(bayeux);
-        new ChatService(bayeux);
+        
+        ChatService chat = new ChatService();
+        AbstractService.register(bayeux,chat);
+        
         bayeux.addExtension(new TimesyncExtension());
         bayeux.addExtension(new AcknowledgedMessagesExtension());
 
