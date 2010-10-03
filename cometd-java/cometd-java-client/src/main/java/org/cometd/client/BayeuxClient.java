@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.ClientSession;
@@ -29,7 +30,6 @@ import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
-import org.cometd.common.ChannelId;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;

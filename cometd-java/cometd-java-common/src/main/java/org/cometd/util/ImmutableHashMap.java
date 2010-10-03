@@ -3,10 +3,13 @@ package org.cometd.util;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+
+import org.eclipse.jetty.util.log.Log;
 
 
 /* ------------------------------------------------------------ */
@@ -29,6 +32,15 @@ import java.util.Set;
  * </p>
  * <p>This map is not thread safe and multiple threads should not access
  * the map without some synchronization</p>. 
+ * <p>
+ * The mutable version of the map supports deep change detection, so that if 
+ * a mutable map of mutable map of mutable maps is modified, then the {@link #onChange(Object)}
+ * method is called for the map, the maps parent and the parents parent etc.
+ * Because the parent hierarchy needs to tracked, map or maps are implemented with 
+ * a copy on write semantic.  If map A is a value field of map B, is then added to map C
+ * then  A in B is replaced with a copy of A in B.
+ * </p>  
+ * 
  * 
  * @param <K> The key type
  * @param <V> The key value
@@ -40,7 +52,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
     private final ImmutableEntrySet _immutableSet;
     private final MutableEntrySet _mutableSet;
     private int _size;
-    private ImmutableHashMap<?,Object> _parent;
+    private MutableEntry<?,?> _parentEntry;
 
 
     /* ------------------------------------------------------------ */
@@ -491,7 +503,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             while(map!=null)
             {
                 map.onChange(_immutable._key);
-                map=map._parent;
+                map=map._parentEntry==null?null:map._parentEntry._immutable._map;
             }
 
             // Was the old value a mutable hash map?
@@ -499,7 +511,7 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             if (old instanceof ImmutableHashMap.Mutable)
             {
                 // yes - clear it's parent value
-                ((ImmutableHashMap.Mutable)old).asImmutable()._parent=null;
+                ((ImmutableHashMap.Mutable)old).asImmutable()._parentEntry=null;
             }
 
             _immutable._value = value;
@@ -507,11 +519,22 @@ public class ImmutableHashMap<K,V> extends AbstractMap<K, V> implements Map<K,V>
             // is the new value a mutable hash map
             if (value instanceof ImmutableHashMap.Mutable)
             {
-                // error if it already has a parent?
-                if (((ImmutableHashMap.Mutable)value).asImmutable()._parent!=null)
-                    throw new IllegalStateException("Mutable DAG!");
+                ImmutableHashMap.Mutable mutable = (ImmutableHashMap.Mutable)value;
+                
+                // Does it already have a parent?
+                if (mutable.asImmutable()._parentEntry!=null)
+                {
+                    // Copy on write clone 
+                    if (Log.isDebugEnabled())
+                        Log.debug("COW {} in {}",
+                                mutable.asImmutable()._parentEntry.getKey(),
+                                mutable.asImmutable()._parentEntry._immutable);
+                    Map<?, ?> copy = new HashMap(mutable); // TODO should this be a mutable map?
+                    mutable.asImmutable()._parentEntry.setValue(copy);
+                }
+                
                 // otherwise set this map as the parent.
-                ((ImmutableHashMap.Mutable)value).asImmutable()._parent=_immutable._map;
+                mutable.asImmutable()._parentEntry=this;
             }
 
             if (old!=null && _immutable._value==null)

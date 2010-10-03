@@ -3,13 +3,24 @@ package org.cometd.server.transport;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
+import java.security.Principal;
 import java.text.ParseException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
@@ -30,7 +41,7 @@ public class WebSocketTransport extends HttpTransport
     public final static String BUFFER_SIZE_OPTION="bufferSize";
 
     private final WebSocketFactory _factory = new WebSocketFactory();
-    private ThreadLocal<Addresses> _addresses = new ThreadLocal<Addresses>();
+    private ThreadLocal<Handshake> _handshake = new ThreadLocal<Handshake>();
 
     private String _protocol="";
 
@@ -81,11 +92,9 @@ public class WebSocketTransport extends HttpTransport
             return;
         }
 
-        Addresses addresses=new Addresses();
-        addresses._local=new InetSocketAddress(request.getLocalAddr(),request.getLocalPort());
-        addresses._remote=new InetSocketAddress(request.getRemoteAddr(),request.getRemotePort());
+        Handshake handshake=new Handshake(request);
 
-        WebSocket websocket = new WebSocketScheduler(addresses,request.getHeader("User-Agent"));
+        WebSocket websocket = new WebSocketScheduler(handshake,request.getHeader("User-Agent"));
         _factory.upgrade(request,response,websocket,origin,protocol);
     }
 
@@ -98,7 +107,7 @@ public class WebSocketTransport extends HttpTransport
 
     protected class WebSocketScheduler implements WebSocket, AbstractServerTransport.Scheduler
     {
-        protected final Addresses _addresses;
+        protected final Handshake _addresses;
         protected final String _userAgent;
         protected ServerSessionImpl _session;
         protected Outbound _outbound;
@@ -116,7 +125,7 @@ public class WebSocketTransport extends HttpTransport
             }
         };
 
-        public WebSocketScheduler(Addresses addresses,String userAgent)
+        public WebSocketScheduler(Handshake addresses,String userAgent)
         {
             _addresses=addresses;
             _userAgent=userAgent;
@@ -142,7 +151,7 @@ public class WebSocketTransport extends HttpTransport
             boolean batch=false;
             try
             {
-                WebSocketTransport.this._addresses.set(_addresses);
+                WebSocketTransport.this._handshake.set(_addresses);
                 getBayeux().setCurrentTransport(WebSocketTransport.this);
 
                 ServerMessage.Mutable[] messages = ServerMessageImpl.parseMessages(data);
@@ -223,7 +232,7 @@ public class WebSocketTransport extends HttpTransport
             }
             finally
             {
-                WebSocketTransport.this._addresses.set(null);
+                WebSocketTransport.this._handshake.set(null);
                 getBayeux().setCurrentTransport(null);
                 // if we started a batch - end it now
                 if (batch)
@@ -296,37 +305,144 @@ public class WebSocketTransport extends HttpTransport
     };
 
 
-
     /* ------------------------------------------------------------ */
     /**
-     * @see org.cometd.server.transport.HttpTransport#getCurrentLocalAddress()
+     * @see org.cometd.server.transport.HttpTransport#getContext()
      */
     @Override
-    public InetSocketAddress getCurrentLocalAddress()
+    public BayeuxContext getContext()
     {
-        Addresses addresses = _addresses.get();
-        if (addresses!=null)
-            return addresses._local;
-        return super.getCurrentLocalAddress();
+        return _handshake.get();
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.server.transport.HttpTransport#getCurrentRemoteAddress()
-     */
-    @Override
-    public InetSocketAddress getCurrentRemoteAddress()
-    {
-        Addresses addresses = _addresses.get();
-        if (addresses!=null)
-            return addresses._remote;
-        return super.getCurrentRemoteAddress();
-    }
 
-    private static class Addresses
+    
+    private class Handshake implements BayeuxContext
     {
-        InetSocketAddress _local;
-        InetSocketAddress _remote;
+        final Principal _principal;
+        final InetSocketAddress _local;
+        final InetSocketAddress _remote;
+        final Map<String,List<String>> _headers=new HashMap<String,List<String>>();
+        final Map<String,List<String>> _parameters=new HashMap<String,List<String>>();
+        final Map<String,String> _cookies=new HashMap<String,String>();
+        final HttpSession _session;
+        
+        Handshake(HttpServletRequest request)
+        {
+            _local=new InetSocketAddress(request.getLocalAddr(),request.getLocalPort());
+            _remote=new InetSocketAddress(request.getRemoteAddr(),request.getRemotePort());
+            for (String name : Collections.list((Enumeration<String>)request.getHeaderNames()))
+                _headers.put(name,Collections.unmodifiableList(Collections.list(request.getHeaders(name))));
+            for (String name : Collections.list((Enumeration<String>)request.getParameterNames()))
+                _parameters.put(name,Collections.unmodifiableList(Arrays.asList(request.getParameterValues(name))));
+            for (Cookie c : request.getCookies())
+                _cookies.put(c.getName(),c.getValue());
+            _session=request.getSession(false);
+            _principal=request.getUserPrincipal();
+        }
+
+        @Override
+        public Principal getUserPrincipal()
+        {
+            return _principal;
+        }
+
+        @Override
+        public boolean isUserInRole(String role)
+        {
+            HttpServletRequest request = WebSocketTransport.this.getCurrentRequest();
+            return request==null?false:request.isUserInRole(role);
+        }
+
+        @Override
+        public InetSocketAddress getRemoteAddress()
+        {
+            return _remote;
+        }
+
+        @Override
+        public InetSocketAddress getLocalAddress()
+        {
+            return _local;
+        }
+
+        @Override
+        public Collection<String> getHeaderNames()
+        {
+            return _headers.keySet();
+        }
+
+        @Override
+        public Collection<String> getParameterNames()
+        {
+            return _parameters.keySet();
+        }
+
+        @Override
+        public String getHeader(String name)
+        {
+            List<String> headers = _headers.get(name);
+            return headers!=null && headers.size()>0 ? headers.get(0) : null;
+        }
+
+        @Override
+        public List<String> getHeaderValues(String name)
+        {
+            return _headers.get(name);
+        }
+
+        @Override
+        public String getParameter(String name)
+        {
+            List<String> params = _parameters.get(name);
+            return params!=null && params.size()>0 ? params.get(0) : null;
+        }
+
+        @Override
+        public List<String> getParameterValues(String name)
+        {
+            return _parameters.get(name);
+        }
+
+        @Override
+        public String getCookie(String name)
+        {
+            return _cookies.get(name);
+        }
+
+        @Override
+        public String getHttpSessionId()
+        {
+            return _session==null?null:_session.getId();
+        }
+
+        @Override
+        public Collection<String> getHttpSesionAttributeNames()
+        {
+            return Collections.list(_session==null?null:_session.getAttributeNames());
+        }
+
+        @Override
+        public Object getHttpSessionAttribute(String name)
+        {
+            return _session==null?null:_session.getAttribute(name);
+        }
+
+        @Override
+        public void setHttpSessionAttribute(String name, Object value)
+        {
+            if (_session!=null)
+                _session.setAttribute(name,value);
+            else
+                throw new IllegalStateException("!session");
+        }
+
+        @Override
+        public void invalidateHttpSession()
+        {
+            if (_session!=null)
+                _session.invalidate();
+        }
     }
 
 }

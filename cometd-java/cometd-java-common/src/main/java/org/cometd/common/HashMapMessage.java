@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.ajax.JSON;
 

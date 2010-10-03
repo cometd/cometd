@@ -44,9 +44,14 @@ public interface Channel
     public final static String META_DISCONNECT = META + "/disconnect";
 
     /**
-     * @return The channel id
+     * @return The channel id as a String
      */
     String getId();
+    
+    /**
+     * @return The channel ID as a {@link ChannelId}
+     */
+    public ChannelId getChannelId();
 
     /**
      * @return true if the channel is a meta channel
