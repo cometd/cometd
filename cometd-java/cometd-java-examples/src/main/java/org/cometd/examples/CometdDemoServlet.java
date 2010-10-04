@@ -17,6 +17,8 @@ package org.cometd.examples;
 
 
 import java.io.IOException;
+import java.util.EnumSet;
+
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -24,12 +26,19 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.Authorizer;
+import org.cometd.bayeux.server.Authorizer.Operation;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.annotation.CometdService;
+import org.cometd.server.annotation.Inject;
+import org.cometd.server.annotation.Subscription;
+import org.cometd.server.authority.ChannelAuthorizer;
+import org.cometd.server.authority.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.ext.TimesyncExtension;
 import org.eclipse.jetty.util.log.Log;
@@ -45,14 +54,19 @@ public class CometdDemoServlet extends GenericServlet
     {
         super.init();
         final BayeuxServerImpl bayeux=(BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-        new EchoRPC(bayeux);
-        new Monitor(bayeux);
-        
-        ChatService chat = new ChatService();
-        AbstractService.register(bayeux,chat);
-        
+
+        // Create extensions
         bayeux.addExtension(new TimesyncExtension());
         bayeux.addExtension(new AcknowledgedMessagesExtension());
+        
+        // Allow anybody to handshake
+        bayeux.addAuthorizer(new GrantAuthorizer(EnumSet.of(Authorizer.Operation.Handshake)));
+        
+        // Create and register services
+        AbstractService.register(bayeux,new EchoRPC());
+        AbstractService.register(bayeux,new Monitor());
+        AbstractService.register(bayeux,new ChatService());
+        
 
         bayeux.createIfAbsent("/foo/bar/baz",new ConfigurableServerChannel.Initializer()
         {
@@ -66,14 +80,16 @@ public class CometdDemoServlet extends GenericServlet
             System.err.println(bayeux.dump());
     }
 
-    public static class EchoRPC extends AbstractService
+    @CometdService(name="echo")
+    public static class EchoRPC 
     {
-        public EchoRPC(BayeuxServer bayeux)
+        @Inject
+        protected void init(BayeuxServer bayeux)
         {
-            super(bayeux,"echo");
-            addService("/service/echo","doEcho");
+            bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.Publish),"/service/echo"));
         }
 
+        @Subscription(channels="/service/echo")
         public Object doEcho(ServerSession session, Object data)
         {
             Log.info("ECHO from "+session+" "+data);
@@ -81,46 +97,27 @@ public class CometdDemoServlet extends GenericServlet
         }
     }
 
-    public static class Monitor extends AbstractService
+    @CometdService(name="monitor")
+    public static class Monitor
     {
-        public Monitor(BayeuxServer bayeux)
-        {
-            super(bayeux,"monitor");
-            addService("/meta/subscribe","monitorSubscribe");
-            addService("/meta/unsubscribe","monitorUnsubscribe");
-            addService("/meta/*","monitorMeta");
-        }
-
+        @Subscription(channels="/meta/subscribe")
         public void monitorSubscribe(ServerSession session, ServerMessage message)
         {
-            Log.info("Subscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
+            Log.info("Monitored Subscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
         }
 
+        @Subscription(channels="/meta/unsubscribe")
         public void monitorUnsubscribe(ServerSession session, ServerMessage message)
         {
-            Log.info("Unsubscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
+            Log.info("Monitored Unsubscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
         }
 
+        @Subscription(channels="/meta/*")
         public void monitorMeta(ServerSession session, ServerMessage message)
         {
             if (Log.isDebugEnabled())
                 Log.debug(message.toString());
         }
-
-        /*
-        public void monitorVerbose(Client client, Message message)
-        {
-            System.err.println(message);
-            try
-            {
-                Thread.sleep(5000);
-            }
-            catch(Exception e)
-            {
-                Log.warn(e);
-            }
-        }
-         */
     }
 
     public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
