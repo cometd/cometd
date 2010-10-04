@@ -4,6 +4,7 @@
 package org.cometd.examples;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -11,15 +12,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.annotation.CometdServer;
+import org.cometd.bayeux.server.Authorizer.Operation;
 import org.cometd.server.annotation.CometdService;
-import org.cometd.server.annotation.CometdSession;
 import org.cometd.server.annotation.Configure;
+import org.cometd.server.annotation.Inject;
 import org.cometd.server.annotation.Subscription;
+import org.cometd.server.authority.ChannelAuthorizer;
 import org.cometd.server.filter.DataFilter;
 import org.cometd.server.filter.DataFilterMessageListener;
 import org.cometd.server.filter.JSONDataFilter;
@@ -30,16 +33,25 @@ public class ChatService
 {
     private final ConcurrentMap<String, Map<String, String>> _members = new ConcurrentHashMap<String, Map<String, String>>();
     
-    @CometdServer
     private BayeuxServer _bayeux;
 
-    @CometdSession
+    @Inject
     private ServerSession _session;
+    
     
     public ChatService()
     {
     }
 
+    @Inject
+    public void setBayeux(BayeuxServer bayeux)
+    {
+        _bayeux=bayeux;
+        _bayeux.addAuthorizer(new ChannelAuthorizer(Authorizer.CreatePublishSubscribe,"/chat/**"));
+        _bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.Publish),"/service/privatechat"));
+        _bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.Publish),"/service/members"));
+    }
+    
     @Configure (channels={"/service/privatechat","/chat/**"}, ifAbsent=true )
     public void configureChannel(ConfigurableServerChannel channel)
     {

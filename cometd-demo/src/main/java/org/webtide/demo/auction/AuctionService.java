@@ -3,6 +3,7 @@
  */
 package org.webtide.demo.auction;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,6 +11,7 @@ import javax.servlet.ServletContext;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.Authorizer.Operation;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
@@ -17,6 +19,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
 import org.cometd.server.AbstractService;
+import org.cometd.server.authority.ChannelAuthorizer;
 import org.webtide.demo.auction.dao.AuctionDao;
 import org.webtide.demo.auction.dao.BidderDao;
 import org.webtide.demo.auction.dao.CategoryDao;
@@ -50,6 +53,10 @@ public class AuctionService extends AbstractService implements ClientSessionChan
 
         getBayeux().addListener(this);
         setSeeOwnPublishes(false);
+        
+        getBayeux().addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.Create,Operation.Subscribe,Operation.Publish),
+                "/service"+AUCTION_ROOT+"*",AUCTION_ROOT+"*"));
+        
         addService(AUCTION_ROOT+"*", "bids");
         addService("/service"+AUCTION_ROOT+"bid", "bid");
         addService("/service"+AUCTION_ROOT+"bidder", "bidder");

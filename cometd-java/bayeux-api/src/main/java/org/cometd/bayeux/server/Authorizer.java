@@ -14,6 +14,8 @@
 
 package org.cometd.bayeux.server;
 
+import java.util.EnumSet;
+
 import org.cometd.bayeux.ChannelId;
 
 /**
@@ -38,6 +40,16 @@ import org.cometd.bayeux.ChannelId;
  */
 public interface Authorizer
 {
+    /**
+     * Operation enumeration.
+     * <p>This enumeration is not used by this interface, but is provided
+     * as a convenience for implementations.
+     */
+    enum Operation {Handshake, Create, Subscribe, Publish };
+    
+    public final static EnumSet<Operation> CreatePublishSubscribe=EnumSet.of(Operation.Create,Operation.Subscribe,Operation.Publish);
+    public final static EnumSet<Operation> PublishSubscribe=EnumSet.of(Operation.Subscribe,Operation.Publish);
+    
     /** Can a channel be created.
      * @param permission The permission to grant, deny or ignore.
      * @param server The Bayeux Server
