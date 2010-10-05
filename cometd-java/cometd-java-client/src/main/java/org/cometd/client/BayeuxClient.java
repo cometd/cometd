@@ -39,7 +39,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class BayeuxClient extends AbstractClientSession implements Bayeux
 {
-    test
     public static final String BACKOFF_INCREMENT_OPTION = "backoffIncrement";
     public static final String MAX_BACKOFF_OPTION = "maxBackoff";
     public static final String BAYEUX_VERSION = "1.0";
