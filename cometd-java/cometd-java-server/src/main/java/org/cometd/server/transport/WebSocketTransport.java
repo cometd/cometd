@@ -316,7 +316,7 @@ public class WebSocketTransport extends HttpTransport
     }
 
 
-    
+
     private class Handshake implements BayeuxContext
     {
         final Principal _principal;
@@ -326,7 +326,7 @@ public class WebSocketTransport extends HttpTransport
         final Map<String,List<String>> _parameters=new HashMap<String,List<String>>();
         final Map<String,String> _cookies=new HashMap<String,String>();
         final HttpSession _session;
-        
+
         Handshake(HttpServletRequest request)
         {
             _local=new InetSocketAddress(request.getLocalAddr(),request.getLocalPort());
@@ -341,94 +341,79 @@ public class WebSocketTransport extends HttpTransport
             _principal=request.getUserPrincipal();
         }
 
-        @Override
         public Principal getUserPrincipal()
         {
             return _principal;
         }
 
-        @Override
         public boolean isUserInRole(String role)
         {
             HttpServletRequest request = WebSocketTransport.this.getCurrentRequest();
             return request==null?false:request.isUserInRole(role);
         }
 
-        @Override
         public InetSocketAddress getRemoteAddress()
         {
             return _remote;
         }
 
-        @Override
         public InetSocketAddress getLocalAddress()
         {
             return _local;
         }
 
-        @Override
         public Collection<String> getHeaderNames()
         {
             return _headers.keySet();
         }
 
-        @Override
         public Collection<String> getParameterNames()
         {
             return _parameters.keySet();
         }
 
-        @Override
         public String getHeader(String name)
         {
             List<String> headers = _headers.get(name);
             return headers!=null && headers.size()>0 ? headers.get(0) : null;
         }
 
-        @Override
         public List<String> getHeaderValues(String name)
         {
             return _headers.get(name);
         }
 
-        @Override
         public String getParameter(String name)
         {
             List<String> params = _parameters.get(name);
             return params!=null && params.size()>0 ? params.get(0) : null;
         }
 
-        @Override
         public List<String> getParameterValues(String name)
         {
             return _parameters.get(name);
         }
 
-        @Override
         public String getCookie(String name)
         {
             return _cookies.get(name);
         }
 
-        @Override
         public String getHttpSessionId()
         {
             return _session==null?null:_session.getId();
         }
 
-        @Override
         public Collection<String> getHttpSesionAttributeNames()
         {
             return Collections.list(_session==null?null:_session.getAttributeNames());
         }
 
-        @Override
         public Object getHttpSessionAttribute(String name)
         {
             return _session==null?null:_session.getAttribute(name);
         }
 
-        @Override
         public void setHttpSessionAttribute(String name, Object value)
         {
             if (_session!=null)
@@ -437,12 +422,10 @@ public class WebSocketTransport extends HttpTransport
                 throw new IllegalStateException("!session");
         }
 
-        @Override
         public void invalidateHttpSession()
         {
             if (_session!=null)
                 _session.invalidate();
         }
     }
-
 }

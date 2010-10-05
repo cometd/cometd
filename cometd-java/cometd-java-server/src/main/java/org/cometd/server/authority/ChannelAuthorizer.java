@@ -12,16 +12,14 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.bayeux.server.Authorizer.Operation;
-import org.cometd.bayeux.server.Authorizer.Permission;
 
 /**
  * Channel Authorizer implementation.
  * <p>
- * This convenience implementation of {@link Authorizer}, will grant 
+ * This convenience implementation of {@link Authorizer}, will grant
  * permission to Create, Subscribe and/or publish to a set of channels (which may be wildcards).
  * This authorizer will never deny permission, nor will it grant or deny a Handshake operation.
- * 
+ *
  */
 public class ChannelAuthorizer implements Authorizer
 {
@@ -31,7 +29,7 @@ public class ChannelAuthorizer implements Authorizer
     private final boolean _canPublish;
     private final boolean _canCreate;
     private final EnumSet<Authorizer.Operation> _operations;
-    
+
     /**
      * Channel Authorizer.
      * @param operations Set of authorized operations (cannot be {@link Operation#Handshake}).
@@ -54,7 +52,7 @@ public class ChannelAuthorizer implements Authorizer
                 _channels.add(channel);
         }
     }
-    
+
     public Set<String> getChannels()
     {
         Set<String> channels=new HashSet<String>(_channels);
@@ -62,13 +60,12 @@ public class ChannelAuthorizer implements Authorizer
             channels.add(chan.toString());
         return channels;
     }
-    
+
     public EnumSet<Authorizer.Operation> getOperations()
     {
         return EnumSet.copyOf(_operations);
     }
-    
-    @Override
+
     public void canCreate(Permission permission, BayeuxServer server, ServerSession session, ChannelId channelId, ServerMessage message)
     {
         if (_canCreate)
@@ -86,12 +83,10 @@ public class ChannelAuthorizer implements Authorizer
         }
     }
 
-    @Override
     public void canHandshake(Permission permission, BayeuxServer server, ServerSession session, ServerMessage message)
     {
     }
 
-    @Override
     public void canPublish(Permission permission, BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
     {
         if (_canPublish)
@@ -109,7 +104,6 @@ public class ChannelAuthorizer implements Authorizer
         }
     }
 
-    @Override
     public void canSubscribe(Permission permission, BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
     {
         if (_canSubscribe)
@@ -126,7 +120,7 @@ public class ChannelAuthorizer implements Authorizer
             }
         }
     }
-    
+
     public String toString()
     {
         return"{"+_operations+"@"+_channels+"}";
