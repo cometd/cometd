@@ -346,8 +346,9 @@ public class BayeuxServerTest extends Assert
                     new Throwable().printStackTrace();
                 if ("four".equals(message.getData()))
                 {
-                    message=_bayeux.newMessage(message);
-                    message.asMutable().setData("five");
+                    ServerMessage.Mutable cloned=_bayeux.newMessage(message);
+                    cloned.setData("five");
+                    return cloned;
                 }
                 return message;
             }

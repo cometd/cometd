@@ -198,33 +198,29 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     }
 
     /* ------------------------------------------------------------ */
-    public void publish(Session from, ServerMessage msg)
+    public void publish(Session from, ServerMessage.Mutable mutable)
     {
         if (isWild())
             throw new IllegalStateException("Wild publish");
-        ServerMessage.Mutable mutable = msg.asMutable();
-        if(_bayeux.extendSend((ServerSessionImpl)from,null,mutable))
-            _bayeux.doPublish((ServerSessionImpl)from,this,mutable);
+        
+        ServerSessionImpl session=(from instanceof ServerSessionImpl)
+          ?(ServerSessionImpl)from
+          :((from instanceof LocalSession)?(ServerSessionImpl)((LocalSession)from).getServerSession():null);
+          
+        if(_bayeux.extendSend(session,null,mutable))
+            _bayeux.doPublish(session,this,mutable);
     }
 
     /* ------------------------------------------------------------ */
     public void publish(Session from, Object data, String id)
     {
-        if (isWild())
-            throw new IllegalStateException("Wild publish");
-
         ServerMessage.Mutable mutable = _bayeux.newMessage();
         mutable.setChannel(getId());
         if(from!=null)
             mutable.setClientId(from.getId());
         mutable.setData(data);
         mutable.setId(id);
-
-        if(_bayeux.extendSend((ServerSessionImpl)from,null,mutable))
-        {
-            ServerSessionImpl session=(ServerSessionImpl)((from instanceof LocalSession)?(((LocalSession)from).getServerSession()):((ServerSession)from));
-            _bayeux.doPublish(session,this,mutable);
-        }
+        publish(from,mutable);
     }
 
     /* ------------------------------------------------------------ */

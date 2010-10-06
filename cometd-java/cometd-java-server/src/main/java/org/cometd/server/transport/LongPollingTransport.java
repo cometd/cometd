@@ -201,7 +201,7 @@ public abstract class LongPollingTransport extends HttpTransport
                     // handle the message
                     // the actual reply is return from the call, but other messages may
                     // also be queued on the session.
-                    ServerMessage reply = getBayeux().handle(session,message);
+                    ServerMessage.Mutable reply = getBayeux().handle(session,message);
 
                     // Do we have a reply
                     if (reply!=null)
@@ -265,7 +265,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                     else
                                     {
                                         // Advise multiple clients from same browser
-                                        Map<String, Object> advice = reply.asMutable().getAdvice(true);
+                                        Map<String, Object> advice = reply.getAdvice(true);
 
                                         if (browserId != null)
                                             advice.put("multiple-clients", true);
@@ -278,7 +278,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                         else
                                         {
                                             advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                                            reply.asMutable().setSuccessful(false);
+                                            reply.setSuccessful(false);
                                         }
                                         session.reAdvise();
                                     }
@@ -336,7 +336,7 @@ public abstract class LongPollingTransport extends HttpTransport
             PrintWriter writer=sendQueue(request,response,session,null);
 
             // send the connect reply
-            ServerMessage reply=scheduler.getReply();
+            ServerMessage.Mutable reply=scheduler.getReply();
             reply=getBayeux().extendReply(session,session,reply);
             writer=send(request,response,writer, reply);
 
@@ -406,10 +406,10 @@ public abstract class LongPollingTransport extends HttpTransport
     {
         private final ServerSessionImpl _session;
         private final Continuation _continuation;
-        private final ServerMessage _reply;
+        private final ServerMessage.Mutable _reply;
         private String _browserId;
 
-        public LongPollScheduler(ServerSessionImpl session, Continuation continuation, ServerMessage reply,String browserId)
+        public LongPollScheduler(ServerSessionImpl session, Continuation continuation, ServerMessage.Mutable reply,String browserId)
         {
             _session = session;
             _continuation = continuation;
@@ -454,7 +454,7 @@ public abstract class LongPollingTransport extends HttpTransport
             return _session;
         }
 
-        public ServerMessage getReply()
+        public ServerMessage.Mutable getReply()
         {
             return _reply;
         }

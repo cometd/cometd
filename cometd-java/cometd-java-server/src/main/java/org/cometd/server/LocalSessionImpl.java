@@ -41,9 +41,9 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     }
 
     @Override
-    public void receive(Message message, Message.Mutable mutable)
+    public void receive(Message.Mutable message)
     {
-        super.receive(message, mutable);
+        super.receive(message);
         if (Channel.META_DISCONNECT.equals(message.getChannel()) && message.isSuccessful())
             _session = null;
     }
@@ -203,13 +203,13 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         if (_session!=null)
             message.setClientId(_session.getId());
 
-        ServerMessage reply = _bayeux.handle(from,message);
+        ServerMessage.Mutable reply = _bayeux.handle(from,message);
 
         if (reply != null)
         {
             reply = _bayeux.extendReply(from,(_session!=null&&_session.isHandshook())?_session:null,reply);
             if (reply != null)
-                receive(reply,reply.asMutable());
+                receive(reply);
         }
     }
 

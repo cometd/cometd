@@ -554,7 +554,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      * @param message The message.
      * @return An unextended reply message
      */
-    public ServerMessage handle(ServerSessionImpl session, ServerMessage.Mutable message)
+    public ServerMessage.Mutable handle(ServerSessionImpl session, ServerMessage.Mutable message)
     {
         ServerMessage.Mutable reply;
 
@@ -595,7 +595,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             else if (channel.isMeta())
             {
                 doPublish(session,(ServerChannelImpl)channel,message);
-                reply = message.getAssociated().asMutable();
+                reply = message.getAssociated();
             }
             else if (p_auth.canPublish(this,session,channel,message))
             {
@@ -696,12 +696,26 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
 
     /* ------------------------------------------------------------ */
-    public ServerMessage extendReply(ServerSessionImpl from, ServerSessionImpl to, ServerMessage reply)
+    public ServerMessage.Mutable extendReply(ServerSessionImpl from, ServerSessionImpl to, ServerMessage.Mutable reply)
     {
         if (to!=null)
-            reply = to.extendSend(reply);
-        if (reply!=null && !extendSend(from,to,reply.asMutable()))
-            reply=null;
+        {
+            if (reply.isMeta())
+            { 
+                if(!to.extendSendMeta(reply))
+                return null;
+            }
+            else
+            {
+                ServerMessage m = to.extendSendMessage(reply);
+                if (m==null)
+                    return null;
+                else if (m!=reply)
+                    reply=newMessage(m); // TODO is this necessary?
+            }
+        }
+        if (!extendSend(from,to,reply))
+            return null;
 
         return reply;
     }

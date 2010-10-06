@@ -179,13 +179,13 @@ public abstract class AbstractClientSession implements ClientSession
      * @param message the message received.
      * @param mutable the mutable version of the message received
      */
-    public void receive(final Message message, final Message.Mutable mutable)
+    public void receive(final Message.Mutable message)
     {
         String id = message.getChannel();
         if (id == null)
             throw new IllegalArgumentException("Bayeux messages must have a channel, " + message);
 
-        if (!extendRcv(mutable))
+        if (!extendRcv(message))
             return;
 
         AbstractSessionChannel channel = (AbstractSessionChannel)getChannel(id);

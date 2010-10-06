@@ -359,7 +359,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         else if (Channel.META_DISCONNECT.equals(channelName))
             processDisconnect(message);
 
-        receive(message, message);
+        receive(message);
     }
 
     protected void processHandshake(final Message.Mutable handshake)
@@ -626,7 +626,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             failed.put("message", messages);
             if (x != null)
                 failed.put("exception", x);
-            receive(failed, failed);
+            receive(failed);
         }
     }
 

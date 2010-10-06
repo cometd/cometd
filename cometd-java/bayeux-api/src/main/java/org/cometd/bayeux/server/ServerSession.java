@@ -5,6 +5,7 @@ import java.util.Queue;
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
+import org.cometd.bayeux.server.ServerMessage.Mutable;
 
 
 /**
@@ -12,7 +13,7 @@ import org.cometd.bayeux.Session;
  * <p>{@link ServerSession} contains the queue of messages to be delivered to the client; messages are
  * normally queued on a {@link ServerSession} by publishing them to a channel to which the session is
  * subscribed (via {@link ServerChannel#publish(Session, ServerMessage)}).</p>
- * <p>The {@link #deliver(Session, ServerMessage)} and {@link #deliver(Session, String, Object, String)}
+ * <p>The {@link #deliver(Session, Mutable)} and {@link #deliver(Session, String, Object, String)}
  * methods may be used to directly queue messages to a session without publishing them to all subscribers
  * of a channel.</p>
  *
@@ -70,7 +71,7 @@ public interface ServerSession extends Session
      * @param message the message to deliver
      * @see #deliver(Session, String, Object, String)
      */
-    void deliver(Session from, ServerMessage message);
+    void deliver(Session from, ServerMessage.Mutable message);
 
     /**
      * <p>Delivers the given information to this session.</p>
@@ -78,7 +79,7 @@ public interface ServerSession extends Session
      * @param channel the channel of the message
      * @param data the data of the message
      * @param id the id of the message, or null to let the implementation choose an id
-     * @see #deliver(Session, ServerMessage)
+     * @see #deliver(Session, Mutable)
      */
     void deliver(Session from, String channel, Object data, String id);
 
