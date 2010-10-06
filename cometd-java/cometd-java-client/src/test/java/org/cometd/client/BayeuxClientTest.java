@@ -1,7 +1,9 @@
 package org.cometd.client;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.ProtocolException;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Random;
@@ -728,7 +730,6 @@ public class BayeuxClientTest extends TestCase
         assertTrue(client.waitFor(1000, State.DISCONNECTED));
     }
 
-    /* TODO Test fails if there is a server on port 80
     public void testURLWithImplicitPort() throws Exception
     {
         final AtomicBoolean listening = new AtomicBoolean();
@@ -773,7 +774,6 @@ public class BayeuxClientTest extends TestCase
         client.disconnect();
         assertTrue(client.waitFor(1000, State.DISCONNECTED));
     }
-    */
 
     public void testAbortThenRestart() throws Exception
     {
