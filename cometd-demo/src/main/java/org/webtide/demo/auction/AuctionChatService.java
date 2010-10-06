@@ -20,7 +20,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
 import org.cometd.server.AbstractService;
-import org.cometd.server.authority.ChannelAuthorizer;
+import org.cometd.server.authorizer.ChannelAuthorizer;
 import org.eclipse.jetty.util.log.Log;
 
 public class AuctionChatService extends AbstractService
@@ -43,7 +43,7 @@ public class AuctionChatService extends AbstractService
         if (_seti==null)
             throw new RuntimeException("!"+Seti.SETI_ATTRIBUTE);
 
-        getBayeux().addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.Create,Operation.Subscribe,Operation.Publish),
+        getBayeux().addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.CREATE,Operation.SUBSCRIBE,Operation.PUBLISH),
                 "/auction/chat/**","/service/auction/chat"));
         addService("/auction/chat/**", "trackMembers");
         addService("/service/auction/chat", "privateChat");

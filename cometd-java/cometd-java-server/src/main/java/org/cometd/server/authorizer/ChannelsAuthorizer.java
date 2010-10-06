@@ -1,4 +1,4 @@
-package org.cometd.server.authority;
+package org.cometd.server.authorizer;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -89,12 +89,12 @@ public class ChannelsAuthorizer implements Authorizer
         }
 
         // compare with the live versions and update accordingly
-        sync(_createChannels.keySet(),channels.get(Operation.Create));
-        sync(_createWilds,wilds.get(Operation.Create));
-        sync(_subscribeChannels.keySet(),channels.get(Operation.Subscribe));
-        sync(_subscribeWilds,wilds.get(Operation.Subscribe));
-        sync(_publishChannels.keySet(),channels.get(Operation.Publish));
-        sync(_publishWilds,wilds.get(Operation.Publish));
+        sync(_createChannels,channels.get(Operation.CREATE));
+        sync(_createWilds,wilds.get(Operation.CREATE));
+        sync(_subscribeChannels,channels.get(Operation.SUBSCRIBE));
+        sync(_subscribeWilds,wilds.get(Operation.SUBSCRIBE));
+        sync(_publishChannels,channels.get(Operation.PUBLISH));
+        sync(_publishWilds,wilds.get(Operation.PUBLISH));
     }
 
     private <T> void sync(Collection<T> master,Collection<T>update)
@@ -111,6 +111,23 @@ public class ChannelsAuthorizer implements Authorizer
             }
             for (T o:update)
                 master.add(o);
+        }
+    }
+    
+    private <T> void sync(Map<T,Boolean> master,Collection<T>update)
+    {
+        if (update==null)
+            master.clear();
+        else
+        {
+            Iterator<?> iter = master.keySet().iterator();
+            while(iter.hasNext())
+            {
+                if (!update.remove(iter.next()))
+                    iter.remove();
+            }
+            for (T o:update)
+                master.put(o,Boolean.TRUE);
         }
     }
 

@@ -37,8 +37,8 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.annotation.CometdService;
 import org.cometd.server.annotation.Inject;
 import org.cometd.server.annotation.Subscription;
-import org.cometd.server.authority.ChannelAuthorizer;
-import org.cometd.server.authority.GrantAuthorizer;
+import org.cometd.server.authorizer.ChannelAuthorizer;
+import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.ext.TimesyncExtension;
 import org.eclipse.jetty.util.log.Log;
@@ -60,7 +60,7 @@ public class CometdDemoServlet extends GenericServlet
         bayeux.addExtension(new AcknowledgedMessagesExtension());
         
         // Allow anybody to handshake
-        bayeux.addAuthorizer(new GrantAuthorizer(EnumSet.of(Authorizer.Operation.Handshake)));
+        bayeux.addAuthorizer(new GrantAuthorizer(EnumSet.of(Authorizer.Operation.HANDSHAKE)));
         
         // Create and register services
         AbstractService.register(bayeux,new EchoRPC());
@@ -86,7 +86,7 @@ public class CometdDemoServlet extends GenericServlet
         @Inject
         protected void init(BayeuxServer bayeux)
         {
-            bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.Publish),"/service/echo"));
+            bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.PUBLISH),"/service/echo"));
         }
 
         @Subscription(channels="/service/echo")
