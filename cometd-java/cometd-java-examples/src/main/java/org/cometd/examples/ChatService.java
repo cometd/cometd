@@ -22,7 +22,7 @@ import org.cometd.server.annotation.CometdService;
 import org.cometd.server.annotation.Configure;
 import org.cometd.server.annotation.Inject;
 import org.cometd.server.annotation.Subscription;
-import org.cometd.server.authority.ChannelAuthorizer;
+import org.cometd.server.authorizer.ChannelAuthorizer;
 import org.cometd.server.filter.DataFilter;
 import org.cometd.server.filter.DataFilterMessageListener;
 import org.cometd.server.filter.JSONDataFilter;
@@ -48,8 +48,8 @@ public class ChatService
     {
         _bayeux=bayeux;
         _bayeux.addAuthorizer(new ChannelAuthorizer(Authorizer.CreatePublishSubscribe,"/chat/**"));
-        _bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.Publish),"/service/privatechat"));
-        _bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.Publish),"/service/members"));
+        _bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.PUBLISH),"/service/privatechat"));
+        _bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.PUBLISH),"/service/members"));
     }
     
     @Configure (channels={"/service/privatechat","/chat/**"}, ifAbsent=true )

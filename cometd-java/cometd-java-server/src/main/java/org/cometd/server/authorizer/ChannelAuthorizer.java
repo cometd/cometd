@@ -1,4 +1,4 @@
-package org.cometd.server.authority;
+package org.cometd.server.authorizer;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -32,17 +32,17 @@ public class ChannelAuthorizer implements Authorizer
 
     /**
      * Channel Authorizer.
-     * @param operations Set of authorized operations (cannot be {@link Operation#Handshake}).
+     * @param operations Set of authorized operations (cannot be {@link Operation#HANDSHAKE}).
      * @param channels The authorized channels (or wildcard channel name ( see {@link ChannelId})).
      */
     public ChannelAuthorizer(final EnumSet<Authorizer.Operation> operations, String... channels)
     {
         _operations=operations;
-       if (operations.contains(Operation.Handshake))
+       if (operations.contains(Operation.HANDSHAKE))
            throw new IllegalArgumentException("!Handshake");
-       _canCreate=operations.contains(Operation.Create);
-       _canSubscribe=operations.contains(Operation.Subscribe);
-       _canPublish=operations.contains(Operation.Publish);
+       _canCreate=operations.contains(Operation.CREATE);
+       _canSubscribe=operations.contains(Operation.SUBSCRIBE);
+       _canPublish=operations.contains(Operation.PUBLISH);
         for (String channel : channels)
         {
             ChannelId id = new ChannelId(channel);

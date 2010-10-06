@@ -37,8 +37,8 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
-import org.cometd.server.authority.ChannelAuthorizer;
-import org.cometd.server.authority.ChannelsAuthorizer;
+import org.cometd.server.authorizer.ChannelAuthorizer;
+import org.cometd.server.authorizer.ChannelsAuthorizer;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
 import org.cometd.server.transport.WebSocketTransport;
@@ -572,7 +572,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (_logger.isDebugEnabled())
                 _logger.debug(">> "+message);
             String channelId=message.getChannel();
-            final Permit auth=new Permit(Authorizer.Operation.Create);
+            final Permit auth=new Permit(Authorizer.Operation.CREATE);
 
             ServerChannel channel=null;
             if (channelId!=null)
@@ -586,7 +586,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 }
             }
 
-            final Permit p_auth=new Permit(Authorizer.Operation.Publish);
+            final Permit p_auth=new Permit(Authorizer.Operation.PUBLISH);
             if (channel==null)
             {
                 reply = createReply(message);
@@ -960,7 +960,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             ServerMessage.Mutable reply=createReply(message);
 
-            Permit auth = new Permit(Authorizer.Operation.Handshake);
+            Permit auth = new Permit(Authorizer.Operation.HANDSHAKE);
             if (!auth.canHandshake(BayeuxServerImpl.this,session,message))
             {
                 error(reply,"403:"+auth.getReasonDenied()+":Handshake denied");
@@ -1045,7 +1045,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             {
                 reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);
                 ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscribe_id);
-                Permit auth = new Permit(Authorizer.Operation.Subscribe);
+                Permit auth = new Permit(Authorizer.Operation.SUBSCRIBE);
 
                 if (channel==null && auth.canCreate(BayeuxServerImpl.this,from,subscribe_id,message))
                 {

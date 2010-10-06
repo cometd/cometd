@@ -1,4 +1,4 @@
-package org.cometd.server.authority;
+package org.cometd.server.authorizer;
 
 import java.util.EnumSet;
 
@@ -32,10 +32,10 @@ public class GrantAuthorizer implements Authorizer
     public GrantAuthorizer(final EnumSet<Authorizer.Operation> operations)
     {
         _operations=operations;
-        _canHandshake=operations.contains(Operation.Handshake);
-       _canCreate=operations.contains(Operation.Create);
-       _canSubscribe=operations.contains(Operation.Subscribe);
-       _canPublish=operations.contains(Operation.Publish);
+        _canHandshake=operations.contains(Operation.HANDSHAKE);
+       _canCreate=operations.contains(Operation.CREATE);
+       _canSubscribe=operations.contains(Operation.SUBSCRIBE);
+       _canPublish=operations.contains(Operation.PUBLISH);
     }
 
     public void canCreate(Permission permission, BayeuxServer server, ServerSession session, ChannelId channelId, ServerMessage message)
