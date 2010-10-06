@@ -1,9 +1,7 @@
 package org.cometd.client;
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.ProtocolException;
-import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Random;
@@ -185,7 +183,7 @@ public class BayeuxClientTest extends TestCase
 
     public void testAsync() throws Exception
     {
-        BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
+        final BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
 
         final AtomicBoolean connected = new AtomicBoolean();
 
@@ -209,17 +207,25 @@ public class BayeuxClientTest extends TestCase
 
         client.handshake();
 
-        String channelName = "/foo/bar";
-        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
+        final String channelName = "/foo/bar";
+        client.batch(new Runnable()
         {
-            public void onMessage(ClientSessionChannel channel, Message message)
+            public void run()
             {
-                System.err.println("message " + message);
-                messages.add(channel.getId());
-                messages.add(message.getData().toString());
+                // Subscribe and publish must be batched so that they are sent in order,
+                // otherwise it's possible that the subscribe arrives to the server after the publish
+                client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
+                {
+                    public void onMessage(ClientSessionChannel channel, Message message)
+                    {
+                        System.err.println("message " + message);
+                        messages.add(channel.getId());
+                        messages.add(message.getData().toString());
+                    }
+                });
+                client.getChannel(channelName).publish("Hello");
             }
         });
-        client.getChannel(channelName).publish("Hello");
 
         assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
 
@@ -768,7 +774,7 @@ public class BayeuxClientTest extends TestCase
         assertTrue(client.waitFor(1000, State.DISCONNECTED));
     }
     */
-    
+
     public void testAbortThenRestart() throws Exception
     {
         final AtomicReference<CountDownLatch> handshakeLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
