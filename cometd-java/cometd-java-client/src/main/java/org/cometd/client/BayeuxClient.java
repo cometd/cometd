@@ -296,6 +296,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected void sendBatch()
     {
+        BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
+        if (isHandshaking(bayeuxClientState))
+            return;
+
         Message.Mutable[] messages = takeMessages();
         if (messages.length > 0)
             sendMessages(messages);
