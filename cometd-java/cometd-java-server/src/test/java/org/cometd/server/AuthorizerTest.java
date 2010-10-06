@@ -170,19 +170,16 @@ public class AuthorizerTest
         final AtomicBoolean is_denied = new AtomicBoolean();
         Authorizer.Permission permission = new  Authorizer.Permission()
         {
-            @Override
             public void granted()
             {
                 is_granted.set(true);
             }
 
-            @Override
             public void denied()
             {
                 is_denied.set(true);
             }
 
-            @Override
             public void denied(String reason)
             {
                 denied();
