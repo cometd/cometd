@@ -14,7 +14,7 @@ public interface ServerMessage extends Message
      * this is a meta message that the current message is being sent in response
      * to.
      */
-    ServerMessage getAssociated();
+    ServerMessage.Mutable getAssociated();
 
     /**
      * @return true if the message is lazy and should not force the session's queue to be flushed
@@ -24,7 +24,7 @@ public interface ServerMessage extends Message
     /**
      * @return a {@link Mutable} version of this message
      */
-    ServerMessage.Mutable asMutable();
+    //ServerMessage.Mutable asMutable();
 
     /**
      * The mutable version of a {@link ServerMessage}
@@ -34,7 +34,7 @@ public interface ServerMessage extends Message
         /**
          * @param message the message associated with this message
          */
-        void setAssociated(ServerMessage message);
+        void setAssociated(ServerMessage.Mutable message);
 
         /**
          * A lazy message does not provoke immediately delivery to the client

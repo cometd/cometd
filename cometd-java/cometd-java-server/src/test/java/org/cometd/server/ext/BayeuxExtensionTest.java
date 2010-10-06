@@ -11,6 +11,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.ServerMessageImpl;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -162,10 +163,6 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
 
             public void test(ServerSession remote, ServerMessage message)
             {
-                ServerMessage.Mutable mutable = message.asMutable();
-                mutable.put(SERVER_MESSAGE_FIELD, SERVICE_INFO);
-                mutable.getDataAsMap(true).put(SERVER_DATA_FIELD, SERVICE_INFO);
-                mutable.getExt(true).put(SERVER_EXT_FIELD, SERVICE_INFO);
                 publishRef.set(message);
             }
         };
@@ -218,9 +215,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
         assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_EXT_DATA_FIELD));
         assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_EXT_FIELD));
-        assertEquals(SERVICE_INFO, message.get(SERVER_MESSAGE_FIELD));
-        assertEquals(SERVICE_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_DATA_FIELD));
-        assertEquals(SERVICE_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_FIELD));
+        
     }
 
     private class MetaExtension implements BayeuxServer.Extension

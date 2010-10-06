@@ -14,6 +14,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.server.AbstractServerTransport.OneTimeScheduler;
@@ -168,17 +169,16 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    public void deliver(Session from, ServerMessage message)
+    public void deliver(Session from, Mutable immutable)
     {
-        ServerMessage.Mutable mutable = message.asMutable();
 
-        if (!_bayeux.extendSend((ServerSessionImpl)from,this,mutable))
+        if (!_bayeux.extendSend((ServerSessionImpl)from,this,immutable))
             return;
 
         if (from instanceof LocalSession)
-            doDeliver(((LocalSession)from).getServerSession(),message);
+            doDeliver(((LocalSession)from).getServerSession(),immutable);
         else
-            doDeliver((ServerSession)from,message);
+            doDeliver((ServerSession)from,immutable);
     }
 
     /* ------------------------------------------------------------ */
@@ -194,7 +194,11 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     protected void doDeliver(ServerSession from, ServerMessage message)
     {
-        message=extendSend(message);
+        if (message.isMeta())
+            extendSendMeta((message instanceof ServerMessage.Mutable)?(ServerMessage.Mutable)message:((ServerMessageImpl)message).asMutable());
+        else
+            message=extendSendMessage(message);
+        
         if (message==null)
             return;
 
@@ -467,7 +471,7 @@ public class ServerSessionImpl implements ServerSession
             for (ServerMessage msg : takeQueue())
             {
                 if (msg!=null)
-                    _localSession.receive(msg,msg.asMutable());
+                    _localSession.receive(_bayeux.newMessage(msg));
             }
         }
     }
@@ -582,24 +586,29 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    protected ServerMessage extendSend(ServerMessage message)
+    protected boolean extendSendMeta(ServerMessage.Mutable message)
+    {
+        if (!message.isMeta())
+            throw new IllegalStateException();
+        
+        for (Extension ext : _extensions)
+            if (!ext.sendMeta(this,message))
+                return false;
+        return true;
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected ServerMessage extendSendMessage(ServerMessage message)
     {
         if (message.isMeta())
+            throw new IllegalStateException();
+        
+        for (Extension ext : _extensions)
         {
-            for (Extension ext : _extensions)
-                if (!ext.sendMeta(this,message.asMutable()))
-                    return null;
+            message=ext.send(this,message);
+            if (message==null)
+                return null;
         }
-        else
-        {
-            for (Extension ext : _extensions)
-            {
-                message=ext.send(this,message);
-                if (message==null)
-                    return null;
-            }
-        }
-
         return message;
     }
 

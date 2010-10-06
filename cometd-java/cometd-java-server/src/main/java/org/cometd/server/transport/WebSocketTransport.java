@@ -111,7 +111,7 @@ public class WebSocketTransport extends HttpTransport
         protected final String _userAgent;
         protected ServerSessionImpl _session;
         protected Outbound _outbound;
-        protected ServerMessage _connectReply;
+        protected ServerMessage.Mutable _connectReply;
         protected final Timeout.Task _timeoutTask = new Timeout.Task()
         {
             @Override
@@ -183,7 +183,7 @@ public class WebSocketTransport extends HttpTransport
                     // handle the message
                     // the actual reply is return from the call, but other messages may
                     // also be queued on the session.
-                    ServerMessage reply = getBayeux().handle(_session,message);
+                    ServerMessage.Mutable reply = getBayeux().handle(_session,message);
 
                     if (connect && reply.isSuccessful())
                     {

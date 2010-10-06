@@ -40,7 +40,7 @@ public interface ServerChannel extends ConfigurableServerChannel
      * @param message the message to publish
      * @see #publish(Session, Object, String)
      */
-    void publish(Session from, ServerMessage message);
+    void publish(Session from, ServerMessage.Mutable message);
 
     /**
      * <p>Publishes the given information to this channel.</p>
