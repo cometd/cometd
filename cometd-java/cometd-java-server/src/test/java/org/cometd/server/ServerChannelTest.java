@@ -7,6 +7,7 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -14,24 +15,29 @@ import org.junit.Test;
 
 public class ServerChannelTest extends Assert
 {
-    ChanL _chanl = new ChanL();
-    SSubL _subl = new SSubL();
-    BayeuxServerImpl _bayeux = new BayeuxServerImpl();
-
-    private ServerSessionImpl newServerSession()
-    {
-        ServerSessionImpl session = _bayeux.newServerSession();
-        _bayeux.addServerSession(session);
-        session.handshake();
-        session.connect();
-        return session;
-    }
+    private ChanL _chanl;
+    private SSubL _subl;
+    private BayeuxServerImpl _bayeux;
 
     @Before
-    public void setup()
+    public void init() throws Exception
     {
+        _chanl = new ChanL();
+        _subl = new SSubL();
+        _bayeux = new BayeuxServerImpl();
+        _bayeux.start();
+
         _bayeux.addListener(_chanl);
         _bayeux.addListener(_subl);
+    }
+
+    @After
+    public void destroy() throws Exception
+    {
+        _bayeux.removeListener(_subl);
+        _bayeux.removeListener(_chanl);
+
+        _bayeux.stop();
     }
 
     @Test
@@ -348,6 +354,34 @@ public class ServerChannelTest extends Assert
         assertNull(_bayeux.getChannel("/foo"));
     }
 
+    @Test
+    public void testChannelWithListenersIsNotSwept() throws Exception
+    {
+        String channelName = "/test";
+        _bayeux.createIfAbsent(channelName);
+        ServerChannel channel = _bayeux.getChannel(channelName);
+        channel.addListener(new ServerChannel.MessageListener()
+        {
+            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
+            {
+                return true;
+            }
+        });
+
+        for (int i = 0; i < 4; ++i)
+            _bayeux.doSweep();
+
+        assertNotNull(_bayeux.getChannel(channelName));
+    }
+
+    private ServerSessionImpl newServerSession()
+    {
+        ServerSessionImpl session = _bayeux.newServerSession();
+        _bayeux.addServerSession(session);
+        session.handshake();
+        session.connect();
+        return session;
+    }
 
     static class SSubL implements BayeuxServer.SubscriptionListener
     {
@@ -375,7 +409,6 @@ public class ServerChannelTest extends Assert
             _session=session;
             _channel=channel;
         }
-
     }
 
     static class SubListener implements ServerChannel.SubscriptionListener
@@ -404,7 +437,6 @@ public class ServerChannelTest extends Assert
             _session=session;
             _channel=channel;
         }
-
     }
 
     static class ChanL implements BayeuxServer.ChannelListener
@@ -439,7 +471,5 @@ public class ServerChannelTest extends Assert
             _method="removed";
             _channel=channelId;
         }
-
     }
-
 }

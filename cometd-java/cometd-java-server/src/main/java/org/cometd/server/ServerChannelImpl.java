@@ -202,11 +202,11 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     {
         if (isWild())
             throw new IllegalStateException("Wild publish");
-        
+
         ServerSessionImpl session=(from instanceof ServerSessionImpl)
           ?(ServerSessionImpl)from
           :((from instanceof LocalSession)?(ServerSessionImpl)((LocalSession)from).getServerSession():null);
-          
+
         if(_bayeux.extendSend(session,null,mutable))
             _bayeux.doPublish(session,this,mutable);
     }
@@ -232,7 +232,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
                 unsubscribe(session);
         }
 
-        if (!isPersistent() && _subscribers.size()==0 && children==0 && ++_used>2)
+        if (!isPersistent() && _subscribers.size()==0 && _listeners.size()==0 && children==0 && ++_used>2)
             remove();
     }
 
