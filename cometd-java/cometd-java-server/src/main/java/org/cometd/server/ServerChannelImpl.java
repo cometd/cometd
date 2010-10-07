@@ -248,6 +248,8 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
                 subscriber.unsubscribedTo(this);
             _subscribers.clear();
         }
+
+        _listeners.clear();
     }
 
     /* ------------------------------------------------------------ */
