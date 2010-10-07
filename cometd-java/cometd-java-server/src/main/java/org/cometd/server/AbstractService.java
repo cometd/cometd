@@ -13,10 +13,8 @@
 //========================================================================
 package org.cometd.server;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.nio.channels.IllegalSelectorException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,8 +31,8 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.annotation.CometdService;
-import org.cometd.server.annotation.Inject;
 import org.cometd.server.annotation.Configure;
+import org.cometd.server.annotation.Inject;
 import org.cometd.server.annotation.Subscription;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
@@ -112,7 +110,7 @@ public abstract class AbstractService
         _session.handshake();
         _logger=((BayeuxServerImpl)bayeux).getLogger();
     }
-    
+
     private AbstractService(Object service,BayeuxServer bayeux, String name, int maxThreads)
     {
         _service=service;
@@ -124,27 +122,27 @@ public abstract class AbstractService
         _session.handshake();
         _logger=((BayeuxServerImpl)bayeux).getLogger();
     }
-    
+
     public static void register(BayeuxServer bayeux,Object service)
     {
         CometdService s = service.getClass().getAnnotation(CometdService.class);
         if (s==null)
             throw new IllegalArgumentException("!@CometdService: "+service.getClass());
-        
+
         String name=s.name();
         int threads=s.threads();
         boolean see_own = s.seeOwn();
-        
+
         AbstractService as = new AbstractService(service,bayeux,name,threads)
-        {    
+        {
         };
-        
+
         as.setSeeOwnPublishes(see_own);
         as.init();
     }
-    
+
     /**
-     * 
+     *
      */
     protected void init()
     {
@@ -183,8 +181,8 @@ public abstract class AbstractService
                 }
                 c=c.getSuperclass();
             }
-            
-            
+
+
             // Look for methods to inject with Bayeux and/or Session
             for (Class<?> c=clazz;c!=null;c=c.getSuperclass())
             {
@@ -198,13 +196,13 @@ public abstract class AbstractService
                             _logger.warn("!@Inject "+method);
                             continue;
                         }
-                        
+
                         boolean access = method.isAccessible();
                         try
                         {
                             if (!access)
                                 method.setAccessible(true);
-                            
+
                             Class<?> param = method.getParameterTypes()[0];
                             if (param.isAssignableFrom(_bayeux.getClass()))
                                 method.invoke(_service,_bayeux);
@@ -227,7 +225,7 @@ public abstract class AbstractService
 
                 c=c.getSuperclass();
             }
-            
+
 
             // Look for methods to configure channels with
             for (Class<?> c=clazz;c!=null;c=c.getSuperclass())
@@ -304,7 +302,7 @@ public abstract class AbstractService
             throw new RuntimeException(e);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public BayeuxServer getBayeux()
     {
@@ -422,10 +420,10 @@ public abstract class AbstractService
             }
             c=c.getSuperclass();
         }
-        
+
         if (method == null)
             throw new NoSuchMethodError(methodName);
-        
+
         addService(channelId,method);
     }
 
