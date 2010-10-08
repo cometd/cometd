@@ -134,7 +134,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         Object value = getField(bean, field);
                         if (value != null)
                         {
-                            logger.info("Avoid injection of field {} on bean {}, it's already injected with {}", field, bean, value);
+                            logger.debug("Avoid injection of field {} on bean {}, it's already injected with {}", field, bean, value);
                             continue;
                         }
 
@@ -161,7 +161,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                                 Object value = invokeMethod(bean, getter);
                                 if (value != null)
                                 {
-                                    logger.info("Avoid injection of method {} on bean {}, it's already injected with {}", method, bean, value);
+                                    logger.debug("Avoid injection of method {} on bean {}, it's already injected with {}", method, bean, value);
                                     continue;
                                 }
                             }
@@ -349,7 +349,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         {
             Class<?>[] parameters = method.getParameterTypes();
             if (!Arrays.equals(parameters, signature))
-                throw new IllegalArgumentException("Wrong method signature");
+                throw new IllegalArgumentException("Wrong method signature for method " + method);
             this.localSession = localSession;
             this.target = target;
             this.method = method;
@@ -396,7 +396,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         {
             Class<?>[] parameters = method.getParameterTypes();
             if (!Arrays.equals(parameters, signature))
-                throw new IllegalArgumentException("Wrong method signature");
+                throw new IllegalArgumentException("Wrong method signature for method " + method);
             this.localSession = localSession;
             this.target = target;
             this.method = method;
