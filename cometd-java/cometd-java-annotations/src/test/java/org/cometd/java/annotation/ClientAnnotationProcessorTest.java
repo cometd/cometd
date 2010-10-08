@@ -154,6 +154,7 @@ public class ClientAnnotationProcessorTest
     public void testListenUnlisten() throws Exception
     {
         final AtomicReference<Message> handshakeRef = new AtomicReference<Message>();
+        final CountDownLatch handshakeLatch = new CountDownLatch(1);
         final AtomicReference<Message> connectRef = new AtomicReference<Message>();
         final CountDownLatch connectLatch = new CountDownLatch(1);
         final AtomicReference<Message> disconnectRef = new AtomicReference<Message>();
@@ -166,6 +167,7 @@ public class ClientAnnotationProcessorTest
             private void metaHandshake(Message handshake)
             {
                 handshakeRef.set(handshake);
+                handshakeLatch.countDown();
             }
 
             @Listener(Channel.META_CONNECT)
@@ -188,12 +190,12 @@ public class ClientAnnotationProcessorTest
         assertTrue(processed);
 
         bayeuxClient.handshake();
-        assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
-
+        assertTrue(handshakeLatch.await(1000, TimeUnit.MILLISECONDS));
         Message handshake = handshakeRef.get();
         assertNotNull(handshake);
         assertTrue(handshake.isSuccessful());
 
+        assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
         Message connect = connectRef.get();
         assertNotNull(connect);
         assertTrue(connect.isSuccessful());
@@ -253,12 +255,6 @@ public class ClientAnnotationProcessorTest
 
             @Session
             private ClientSession session;
-
-            @Listener(Channel.META_HANDSHAKE)
-            public void metaHandshake(Message handshake)
-            {
-                connected = false;
-            }
 
             @Listener(Channel.META_CONNECT)
             public void metaConnect(Message connect)
