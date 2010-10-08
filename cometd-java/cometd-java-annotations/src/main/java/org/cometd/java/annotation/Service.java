@@ -11,5 +11,5 @@ import java.lang.annotation.Target;
 @Documented
 public @interface Service
 {
-    String name() default "";
+    String value() default "";
 }
