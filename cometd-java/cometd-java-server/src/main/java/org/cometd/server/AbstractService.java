@@ -13,27 +13,17 @@
 //========================================================================
 package org.cometd.server;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.annotation.CometdService;
-import org.cometd.server.annotation.Configure;
-import org.cometd.server.annotation.Inject;
-import org.cometd.server.annotation.Subscription;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -60,12 +50,9 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public abstract class AbstractService
 {
-    private final Object _service;
     private final String _name;
     private final BayeuxServerImpl _bayeux;
     private final LocalSession _session;
-    private final Map<String,Method> _methods=new ConcurrentHashMap<String,Method>();
-    private final Map<ChannelId,Method> _wild=new ConcurrentHashMap<ChannelId,Method>();
 
     private ThreadPool _threadPool;
     private boolean _seeOwn=false;
@@ -101,7 +88,6 @@ public abstract class AbstractService
      */
     public AbstractService(BayeuxServer bayeux, String name, int maxThreads)
     {
-        _service=this;
         if (maxThreads > 0)
             setThreadPool(new QueuedThreadPool(maxThreads));
         _name=name;
@@ -109,198 +95,6 @@ public abstract class AbstractService
         _session=_bayeux.newLocalSession(name);
         _session.handshake();
         _logger=((BayeuxServerImpl)bayeux).getLogger();
-    }
-
-    private AbstractService(Object service,BayeuxServer bayeux, String name, int maxThreads)
-    {
-        _service=service;
-        if (maxThreads > 0)
-            setThreadPool(new QueuedThreadPool(maxThreads));
-        _name=name;
-        _bayeux=(BayeuxServerImpl)bayeux;
-        _session=_bayeux.newLocalSession(name);
-        _session.handshake();
-        _logger=((BayeuxServerImpl)bayeux).getLogger();
-    }
-
-    public static void register(BayeuxServer bayeux,Object service)
-    {
-        CometdService s = service.getClass().getAnnotation(CometdService.class);
-        if (s==null)
-            throw new IllegalArgumentException("!@CometdService: "+service.getClass());
-
-        String name=s.name();
-        int threads=s.threads();
-        boolean see_own = s.seeOwn();
-
-        AbstractService as = new AbstractService(service,bayeux,name,threads)
-        {
-        };
-
-        as.setSeeOwnPublishes(see_own);
-        as.init();
-    }
-
-    /**
-     *
-     */
-    protected void init()
-    {
-        try
-        {
-            Class<?> clazz = _service.getClass();
-
-            // Look for fields to inject with Bayeux and/or Session
-            for (Class<?> c=clazz;c!=null;c=c.getSuperclass())
-            {
-                for (final Field field : c.getDeclaredFields())
-                {
-                    if (field.getAnnotation(Inject.class)!=null)
-                    {
-                        _logger.debug("@Inject {} on {}",field,_service);
-                        boolean access = field.isAccessible();
-                        try
-                        {
-                            field.setAccessible(true);
-                            if (field.getType().isAssignableFrom(_bayeux.getClass()))
-                                field.set(_service,_bayeux);
-                            else if (field.getType().isAssignableFrom(_session.getClass()))
-                                field.set(_service,_session);
-                            else if (field.getType().isAssignableFrom(_session.getServerSession().getClass()))
-                                field.set(_service,_session.getServerSession());
-                            else if (_threadPool!=null && field.getType().isAssignableFrom(_threadPool.getClass()))
-                                field.set(_service,_threadPool);
-                            else
-                                _logger.warn("!@Inject "+field);
-                        }
-                        finally
-                        {
-                            field.setAccessible(access);
-                        }
-                    }
-                }
-                c=c.getSuperclass();
-            }
-
-
-            // Look for methods to inject with Bayeux and/or Session
-            for (Class<?> c=clazz;c!=null;c=c.getSuperclass())
-            {
-                for (final Method method : c.getDeclaredMethods())
-                {
-                    if (method.getAnnotation(Inject.class)!=null)
-                    {
-                        _logger.debug("@Inject {} on {}",method,_service);
-                        if (method.getParameterTypes().length!=1)
-                        {
-                            _logger.warn("!@Inject "+method);
-                            continue;
-                        }
-
-                        boolean access = method.isAccessible();
-                        try
-                        {
-                            if (!access)
-                                method.setAccessible(true);
-
-                            Class<?> param = method.getParameterTypes()[0];
-                            if (param.isAssignableFrom(_bayeux.getClass()))
-                                method.invoke(_service,_bayeux);
-                            else if (param.isAssignableFrom(_session.getClass()))
-                                method.invoke(_service,_session);
-                            else if (param.isAssignableFrom(_session.getServerSession().getClass()))
-                                method.invoke(_service,_session.getServerSession());
-                            else if (_threadPool!=null && param.isAssignableFrom(_threadPool.getClass()))
-                                method.invoke(_service,_threadPool);
-                            else
-                                _logger.warn("!@Inject "+method);
-                        }
-                        finally
-                        {
-                            if (!access)
-                                method.setAccessible(false);
-                        }
-                    }
-                }
-
-                c=c.getSuperclass();
-            }
-
-
-            // Look for methods to configure channels with
-            for (Class<?> c=clazz;c!=null;c=c.getSuperclass())
-            {
-                for (final Method method : c.getDeclaredMethods())
-                {
-                    Configure configure = method.getAnnotation(Configure.class);
-                    if (configure!=null)
-                    {
-                        _logger.debug("@Configure {} on {}",method,_service);
-                        boolean access = method.isAccessible();
-                        try
-                        {
-                            if (!access)
-                                method.setAccessible(true);
-                            for (final String channel : Arrays.asList(configure.channels()))
-                            {
-                                // if configure if absent, then use createIfAbsent and error if already created
-                                if (configure.ifAbsent())
-                                {
-                                    if (!_bayeux.createIfAbsent(channel,new ServerChannel.Initializer()
-                                    {
-                                        public void configureChannel(ConfigurableServerChannel channel)
-                                        {
-                                            try
-                                            {
-                                                method.invoke(_service,channel);
-                                            }
-                                            catch(Exception e)
-                                            {
-                                                _logger.warn(e);
-                                                throw new RuntimeException(e);
-                                            }
-                                        }
-                                    }))
-                                        throw new IllegalStateException("Channel already created: "+channel);
-                                }
-                                else // otherwise just configure
-                                {
-                                    method.invoke(_service,_bayeux.getChannel(channel));
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            if (!access)
-                                method.setAccessible(false);
-                        }
-                    }
-                }
-                c=c.getSuperclass();
-            }
-
-            // Look for methods that are subscriptions
-            for (Class<?> c=clazz;c!=null;c=c.getSuperclass())
-            {
-                for (final Method method : c.getDeclaredMethods())
-                {
-                    Subscription s= method.getAnnotation(Subscription.class);
-                    if (s!=null)
-                    {
-                        _logger.debug("@Subscribe {} on {}",method,_service);
-                        for (String channel : Arrays.asList(s.channels()))
-                        {
-                            addService(channel,method);
-                        }
-                    }
-                }
-            }
-        }
-        catch(Exception e)
-        {
-            _logger.warn(e);
-            throw new RuntimeException(e);
-        }
     }
 
     /* ------------------------------------------------------------ */
@@ -386,7 +180,7 @@ public abstract class AbstractService
      * Any object returned by a mapped subscription method is delivered to the
      * calling client and not broadcast. If the method returns void or null,
      * then no response is sent. A mapped subscription method may also call
-     * {@link #send(Client, String, Object, String)} to deliver a response
+     * {@link #send(ServerSession, String, Object, String)} to deliver a response
      * message(s) to different clients and/or channels. It may also publish
      * methods via the normal {@link Bayeux} API.
      * <p>
@@ -396,7 +190,7 @@ public abstract class AbstractService
      *            The channel to subscribe to
      * @param methodName
      *            The name of the method on this object to call when messages
-     *            are recieved.
+     *            are received.
      */
     protected void addService(String channelId, String methodName)
     {
@@ -405,7 +199,7 @@ public abstract class AbstractService
 
         Method method=null;
 
-        Class<?> c=_service.getClass();
+        Class<?> c=this.getClass();
         while(c != null && c != Object.class)
         {
             Method[] methods=c.getDeclaredMethods();
@@ -423,65 +217,14 @@ public abstract class AbstractService
 
         if (method == null)
             throw new NoSuchMethodError(methodName);
-
-        addService(channelId,method);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Add a service.
-     * <p>Listen to a channel and map a method to handle
-     * received messages. The method must have a unique name and one of the
-     * following signatures:
-     * <ul>
-     * <li><code>myMethod(ServerSession from,Object data)</code></li>
-     * <li><code>myMethod(ServerSession from,Object data,String|Object id)</code></li>
-     * <li><code>myMethod(ServerSession from,String channel,Object data,String|Object id)</code>
-     * </li>
-     * </li>
-     *
-     * The data parameter can be typed if the type of the data object published
-     * by the client is known (typically Map<String,Object>). If the type of the
-     * data parameter is {@link Message} then the message object itself is
-     * passed rather than just the data.
-     * <p>
-     * Typically a service will be used to a channel in the "/service/**"
-     * space which is not a broadcast channel. Messages published to these
-     * channels are only delivered to server side clients like this service.
-     * <p>
-     * Any object returned by a mapped subscription method is delivered to the
-     * calling client and not broadcast. If the method returns void or null,
-     * then no response is sent. A mapped subscription method may also call
-     * {@link #send(Client, String, Object, String)} to deliver a response
-     * message(s) to different clients and/or channels. It may also publish
-     * methods via the normal {@link Bayeux} API.
-     * <p>
-     *
-     *
-     * @param channelId
-     *            The channel to subscribe to
-     * @param methodName
-     *            The name of the method on this object to call when messages
-     *            are recieved.
-     */
-    protected void addService(String channelId, Method method)
-    {
-        if (_logger.isDebugEnabled())
-            _logger.debug("subscribe "+_name+"#"+method.getName()+" to "+channelId);
-
         int params=method.getParameterTypes().length;
         if (params < 2 || params > 4)
-            throw new IllegalArgumentException("Method '" + method + "' does not have 2or3 parameters");
+            throw new IllegalArgumentException("Method '" + methodName + "' does not have 2or3 parameters");
         if (!ServerSession.class.isAssignableFrom(method.getParameterTypes()[0]))
-            throw new IllegalArgumentException("Method '" + method + "' does not have Session as first parameter");
+            throw new IllegalArgumentException("Method '" + methodName + "' does not have Session as first parameter");
 
         _bayeux.createIfAbsent(channelId);
         ServerChannel channel=_bayeux.getChannel(channelId);
-
-        if (channel.isWild())
-            _wild.put(new ChannelId(channel.getId()),method);
-        else
-            _methods.put(channelId,method);
 
         final Method invoke=method;
         channel.addListener(new ServerChannel.MessageListener()
@@ -489,20 +232,7 @@ public abstract class AbstractService
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
             {
                 if (_seeOwn || from != getServerSession())
-                {
-                    boolean access=invoke.isAccessible();
-                    try
-                    {
-                        if (!access)
-                            invoke.setAccessible(true);
-                        invoke(invoke,from,message);
-                    }
-                    finally
-                    {
-                        if (!access)
-                            invoke.setAccessible(false);
-                    }
-                }
+                    invoke(invoke,from,message);
 
                 return true;
             }
@@ -518,7 +248,7 @@ public abstract class AbstractService
      * channel subscribers. However to the target client, the message appears as
      * if it was broadcast.
      * <p>
-     * Typcially this method is only required if a service method sends
+     * Typically this method is only required if a service method sends
      * response(s) to channels other than the subscribed channel. If the
      * response is to be sent to the subscribed channel, then the data can
      * simply be returned from the subscription method.
@@ -593,30 +323,27 @@ public abstract class AbstractService
                     messageArgument = msg;
                 }
 
-                boolean access = method.isAccessible();
+                boolean accessible = method.isAccessible();
                 Object reply = null;
                 try
                 {
-                    if (!access)
-                        method.setAccessible(true);
-
+                    method.setAccessible(true);
                     switch (method.getParameterTypes().length)
                     {
                         case 2:
-                            reply = method.invoke(_service, fromClient, messageArgument);
+                            reply = method.invoke(this, fromClient, messageArgument);
                             break;
                         case 3:
-                            reply = method.invoke(_service, fromClient, messageArgument, id);
+                            reply = method.invoke(this, fromClient, messageArgument, id);
                             break;
                         case 4:
-                            reply = method.invoke(_service, fromClient, channel, messageArgument, id);
+                            reply = method.invoke(this, fromClient, channel, messageArgument, id);
                             break;
                     }
                 }
                 finally
                 {
-                    if (!access)
-                        method.setAccessible(false);
+                    method.setAccessible(accessible);
                 }
 
                 if (reply != null)

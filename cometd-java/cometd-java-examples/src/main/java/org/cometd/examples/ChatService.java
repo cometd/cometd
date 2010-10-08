@@ -10,38 +10,32 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import javax.inject.Inject;
 
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.Authorizer;
+import org.cometd.bayeux.server.Authorizer.Operation;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
+import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.bayeux.server.Authorizer.Operation;
-import org.cometd.server.annotation.CometdService;
-import org.cometd.server.annotation.Configure;
-import org.cometd.server.annotation.Inject;
-import org.cometd.server.annotation.Subscription;
+import org.cometd.java.annotation.Listener;
+import org.cometd.java.annotation.Service;
+import org.cometd.java.annotation.Session;
 import org.cometd.server.authorizer.ChannelAuthorizer;
 import org.cometd.server.filter.DataFilter;
 import org.cometd.server.filter.DataFilterMessageListener;
 import org.cometd.server.filter.JSONDataFilter;
 import org.cometd.server.filter.NoMarkupFilter;
 
-@CometdService(name="chat", seeOwn=false, threads=-1)
-public class ChatService 
+@Service("chat")
+public class ChatService
 {
     private final ConcurrentMap<String, Map<String, String>> _members = new ConcurrentHashMap<String, Map<String, String>>();
-    
     private BayeuxServer _bayeux;
-
-    @Inject
+    @Session
     private ServerSession _session;
-    
-    
-    public ChatService()
-    {
-    }
 
     @Inject
     public void setBayeux(BayeuxServer bayeux)
@@ -50,18 +44,25 @@ public class ChatService
         _bayeux.addAuthorizer(new ChannelAuthorizer(Authorizer.CreatePublishSubscribe,"/chat/**"));
         _bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.PUBLISH),"/service/privatechat"));
         _bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.PUBLISH),"/service/members"));
+
+        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(bayeux,new NoMarkupFilter(),new BadWordFilter());
+        ServerChannel.Initializer initNoMarkup = new ServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+                channel.addListener(noMarkup);
+            }
+        };
+        if (!bayeux.createIfAbsent("/chat/**",initNoMarkup) ||
+                !bayeux.createIfAbsent("/service/privatechat",initNoMarkup))
+            throw new IllegalStateException();
     }
-    
-    @Configure (channels={"/service/privatechat","/chat/**"}, ifAbsent=true )
-    public void configureChannel(ConfigurableServerChannel channel)
+
+    @Listener("/service/members")
+    public void handleMembership(ServerSession client, ServerMessage message)
     {
-        channel.setPersistent(true);
-        channel.addListener(new DataFilterMessageListener(_bayeux,new NoMarkupFilter(),new BadWordFilter()));
-    }
-    
-    @Subscription (channels="/service/members")
-    public void handleMembership(ServerSession client, Map<String, Object> data)
-    {
+        Map<String, Object> data = message.getDataAsMap();
         String room = (String)data.get("room");
         Map<String, String> roomMembers = _members.get(room);
         if (roomMembers == null)
@@ -92,7 +93,7 @@ public class ChatService
         channel.publish(members);
     }
 
-    @Subscription (channels="/service/privatechat")
+    @Listener("/service/privatechat")
     public void privateChat(ServerSession client, ServerMessage message)
     {
         Map<String,Object> data = message.getDataAsMap();
