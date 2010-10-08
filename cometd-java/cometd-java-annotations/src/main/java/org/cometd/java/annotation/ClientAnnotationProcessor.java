@@ -302,9 +302,14 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         public void onMessage(ClientSessionChannel channel, Message message)
         {
             if (Channel.META_HANDSHAKE.equals(channel.getId()))
-                subscribe();
+            {
+                if (message.isSuccessful())
+                    subscribe();
+            }
             else
+            {
                 forward(message);
+            }
         }
 
         private void subscribe()
