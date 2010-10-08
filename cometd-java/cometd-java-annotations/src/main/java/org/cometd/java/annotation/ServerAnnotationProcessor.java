@@ -68,7 +68,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
             return false;
 
         boolean result = configureBayeux(bean);
-        LocalSession session = findOrCreateLocalSession(bean, serviceAnnotation.name());
+        LocalSession session = findOrCreateLocalSession(bean, serviceAnnotation.value());
         result |= configureSession(bean, session);
         return result;
     }
@@ -83,7 +83,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         if (serviceAnnotation == null)
             return false;
 
-        LocalSession session = findOrCreateLocalSession(bean, serviceAnnotation.name());
+        LocalSession session = findOrCreateLocalSession(bean, serviceAnnotation.value());
         boolean result = configureListener(bean, session);
         result |= configureSubscription(bean, session);
         return result;
