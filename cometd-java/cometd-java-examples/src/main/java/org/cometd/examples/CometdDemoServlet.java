@@ -14,11 +14,10 @@
 
 package org.cometd.examples;
 
-
-
 import java.io.IOException;
 import java.util.EnumSet;
-
+import java.util.Map;
+import javax.inject.Inject;
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -32,11 +31,11 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.AbstractService;
+import org.cometd.java.annotation.Listener;
+import org.cometd.java.annotation.ServerAnnotationProcessor;
+import org.cometd.java.annotation.Service;
+import org.cometd.java.annotation.Session;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.annotation.CometdService;
-import org.cometd.server.annotation.Inject;
-import org.cometd.server.annotation.Subscription;
 import org.cometd.server.authorizer.ChannelAuthorizer;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
@@ -45,9 +44,7 @@ import org.eclipse.jetty.util.log.Log;
 
 public class CometdDemoServlet extends GenericServlet
 {
-    public CometdDemoServlet()
-    {
-    }
+    private ServerAnnotationProcessor processor;
 
     @Override
     public void init() throws ServletException
@@ -58,15 +55,15 @@ public class CometdDemoServlet extends GenericServlet
         // Create extensions
         bayeux.addExtension(new TimesyncExtension());
         bayeux.addExtension(new AcknowledgedMessagesExtension());
-        
+
         // Allow anybody to handshake
         bayeux.addAuthorizer(new GrantAuthorizer(EnumSet.of(Authorizer.Operation.HANDSHAKE)));
-        
-        // Create and register services
-        AbstractService.register(bayeux,new EchoRPC());
-        AbstractService.register(bayeux,new Monitor());
-        AbstractService.register(bayeux,new ChatService());
-        
+
+        processor = ServerAnnotationProcessor.get(bayeux);
+
+        processor.configure(new EchoRPC());
+        processor.configure(new Monitor());
+        processor.configure(new ChatService());
 
         bayeux.createIfAbsent("/foo/bar/baz",new ConfigurableServerChannel.Initializer()
         {
@@ -80,39 +77,50 @@ public class CometdDemoServlet extends GenericServlet
             System.err.println(bayeux.dump());
     }
 
-    @CometdService(name="echo")
-    public static class EchoRPC 
+    @Override
+    public void destroy()
     {
+        super.destroy();
+        processor.close();
+    }
+
+    @Service("echo")
+    public static class EchoRPC
+    {
+        @Session
+        private ServerSession _session;
+
         @Inject
         protected void init(BayeuxServer bayeux)
         {
             bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.PUBLISH),"/service/echo"));
         }
 
-        @Subscription(channels="/service/echo")
-        public Object doEcho(ServerSession session, Object data)
+        @Listener("/service/echo")
+        public void doEcho(ServerSession session, ServerMessage message)
         {
+            Map<String,Object> data = message.getDataAsMap();
             Log.info("ECHO from "+session+" "+data);
-            return data;
+            session.deliver(_session, message.getChannel(), data, null);
         }
     }
 
-    @CometdService(name="monitor")
+    @Service("monitor")
     public static class Monitor
     {
-        @Subscription(channels="/meta/subscribe")
+        @Listener("/meta/subscribe")
         public void monitorSubscribe(ServerSession session, ServerMessage message)
         {
             Log.info("Monitored Subscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
         }
 
-        @Subscription(channels="/meta/unsubscribe")
+        @Listener("/meta/unsubscribe")
         public void monitorUnsubscribe(ServerSession session, ServerMessage message)
         {
             Log.info("Monitored Unsubscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
         }
 
-        @Subscription(channels="/meta/*")
+        @Listener("/meta/*")
         public void monitorMeta(ServerSession session, ServerMessage message)
         {
             if (Log.isDebugEnabled())
