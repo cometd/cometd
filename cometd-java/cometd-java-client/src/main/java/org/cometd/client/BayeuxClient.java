@@ -408,7 +408,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                         }
                         String action = getAdviceAction(handshake.getAdvice(), Message.RECONNECT_RETRY_VALUE);
                         if (Message.RECONNECT_RETRY_VALUE.equals(action))
-                            return new ConnectingState(oldState.handshakeFields, handshake.getAdvice(), newTransport, handshake.getClientId(), 0);
+                            return new ConnectingState(oldState.handshakeFields, handshake.getAdvice(), newTransport, handshake.getClientId());
                         else if (Message.RECONNECT_NONE_VALUE.equals(action))
                             return new DisconnectedState(oldState.transport);
                         return null;
@@ -976,9 +976,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private class ConnectingState extends BayeuxClientState
     {
-        private ConnectingState(Map<String, Object> handshakeFields, Map<String, Object> advice, ClientTransport transport, String clientId, long backoff)
+        private ConnectingState(Map<String, Object> handshakeFields, Map<String, Object> advice, ClientTransport transport, String clientId)
         {
-            super(State.CONNECTING, handshakeFields, advice, transport, clientId, backoff);
+            super(State.CONNECTING, handshakeFields, advice, transport, clientId, 0);
         }
 
         @Override
