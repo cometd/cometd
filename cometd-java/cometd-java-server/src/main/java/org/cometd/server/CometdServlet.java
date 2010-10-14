@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.server.transport.HttpTransport;
 
@@ -194,8 +195,10 @@ public class CometdServlet extends GenericServlet
     @Override
     public void destroy()
     {
-        for (ServerSessionImpl session : _bayeux.getSessions())
+        List<ServerSession> sessions = _bayeux.getSessions();
+        for (int i = 0; i < sessions.size(); i++)
         {
+            ServerSessionImpl session = (ServerSessionImpl)sessions.get(i);
             session.cancelSchedule();
         }
 

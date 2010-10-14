@@ -3,7 +3,6 @@ package org.cometd.server;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -382,9 +381,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public Collection<ServerSessionImpl> getSessions()
+    public List<ServerSession> getSessions()
     {
-        return Collections.unmodifiableCollection(_sessions.values());
+        return Collections.unmodifiableList(new ArrayList<ServerSession>(_sessions.values()));
     }
 
     /* ------------------------------------------------------------ */
@@ -532,7 +531,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public List<ServerChannel> getChannels()
     {
-        return new ArrayList<ServerChannel>(_channels.values());
+        return Collections.unmodifiableList(new ArrayList<ServerChannel>(_channels.values()));
     }
 
     /* ------------------------------------------------------------ */
