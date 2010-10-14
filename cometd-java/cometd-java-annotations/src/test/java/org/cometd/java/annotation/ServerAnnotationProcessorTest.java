@@ -206,7 +206,7 @@ public class ServerAnnotationProcessorTest
         class S
         {
             @Listener("/foo")
-            private void foo(ServerSession remote, ServerMessage message)
+            private void foo(ServerSession remote, ServerMessage.Mutable message)
             {
                 assertNotNull(remote);
                 assertNotNull(message);
@@ -264,7 +264,7 @@ public class ServerAnnotationProcessorTest
             private ServerSession serverSession;
 
             @Listener("/foo/*")
-            private void foo(ServerSession remote, ServerMessage message)
+            private void foo(ServerSession remote, ServerMessage.Mutable message)
             {
                 int count = counter.incrementAndGet();
 
@@ -307,7 +307,7 @@ public class ServerAnnotationProcessorTest
             private ServerSession serverSession;
 
             @Listener(value = "/foo/*", receiveOwnPublishes = true)
-            private void foo(ServerSession remote, ServerMessage message)
+            private void foo(ServerSession remote, ServerMessage.Mutable message)
             {
                 counter.incrementAndGet();
                 String channelName = "/foo/own";
