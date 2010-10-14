@@ -15,10 +15,39 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 
+/**
+ * <p>Processes annotations in client-side service objects.</p>
+ * <p>Service objects must be annotated with {@link Service} at class level to be processed by this processor,
+ * for example:</p>
+ * <pre>
+ * &#64;Service
+ * public class MyService
+ * {
+ *     &#64;Listener(Channel.META_CONNECT)
+ *     public void metaConnect(Message message)
+ *     {
+ *         // Do something
+ *     }
+ * }
+ * </pre>
+ * <p>The processor is used in this way:</p>
+ * <pre>
+ * ClientSession bayeux = ...;
+ * MyService s = new MyService();
+ * ClientAnnotationProcessor processor = ClientAnnotationProcessor.get(bayeux);
+ * processor.process(s);
+ * </pre>
+ * @see ServerAnnotationProcessor
+ */
 public class ClientAnnotationProcessor extends AnnotationProcessor
 {
     private static final ConcurrentMap<ClientSession, ClientAnnotationProcessor> instances = new ConcurrentHashMap<ClientSession, ClientAnnotationProcessor>();
 
+    /**
+     * @param clientSession the {@link ClientSession} this processor is scoped to.
+     * @return an instance of this processor scoped to the given {@code clientSession}.
+     * @see #close()
+     */
     public static ClientAnnotationProcessor get(ClientSession clientSession)
     {
         ClientAnnotationProcessor result = instances.get(clientSession);
@@ -41,11 +70,21 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         this.clientSession = clientSession;
     }
 
+    /**
+     * Removes the association between a client session and this processor.
+     * @see #get(ClientSession)
+     */
     public void close()
     {
         instances.remove(clientSession);
     }
 
+    /**
+     * Configures dependencies annotated with {@link Session}, and callbacks
+     * annotated with {@link Listener} and {@link Subscription}.
+     * @param bean the annotated service instance
+     * @return true if at least one dependency or callback has been processed, false otherwise
+     */
     public boolean configure(Object bean)
     {
         boolean result = configureDependencies(bean);
@@ -68,6 +107,11 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
+    /**
+     * Deconfigures callbacks annotated with {@link Listener} and {@link Subscription}.
+     * @param bean the annotated service instance
+     * @return true if the at least one callback has been deconfigured
+     */
     public boolean deconfigureCallbacks(Object bean)
     {
         boolean result = deconfigureListener(bean);

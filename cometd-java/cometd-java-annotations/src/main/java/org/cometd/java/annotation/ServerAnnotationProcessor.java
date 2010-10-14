@@ -18,10 +18,42 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 
+/**
+ * <p>Processes annotations in server-side service objects.</p>
+ * <p>Service objects must be annotated with {@link Service} at class level to be processed by this processor,
+ * for example:</p>
+ * <pre>
+ * &#64;Service
+ * public class MyService
+ * {
+ *     &#64;Session
+ *     private ServerSession session;
+ *
+ *     &#64;Listener("/foo")
+ *     public void handleFooMessages(ServerSession remote, ServerMessage.Mutable message)
+ *     {
+ *         // Do something
+ *     }
+ * }
+ * </pre>
+ * <p>The processor is used in this way:</p>
+ * <pre>
+ * BayeuxServer bayeux = ...;
+ * MyService s = new MyService();
+ * ServerAnnotationProcessor processor = ServerAnnotationProcessor.get(bayeux);
+ * processor.process(s);
+ * </pre>
+ * @see ClientAnnotationProcessor
+ */
 public class ServerAnnotationProcessor extends AnnotationProcessor
 {
     private static final ConcurrentMap<BayeuxServer, ServerAnnotationProcessor> instances = new ConcurrentHashMap<BayeuxServer, ServerAnnotationProcessor>();
 
+    /**
+     * @param bayeuxServer the {@link BayeuxServer} this processor is scoped to
+     * @return an instance of this processor scoped to the given {@code bayeuxServer}.
+     * @see #close()
+     */
     public static ServerAnnotationProcessor get(BayeuxServer bayeuxServer)
     {
         ServerAnnotationProcessor result = instances.get(bayeuxServer);
@@ -45,11 +77,21 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         this.bayeuxServer = bayeuxServer;
     }
 
+    /**
+     * Removes the association between a {@link BayeuxServer} object and this processor.
+     * @see #get(BayeuxServer)
+     */
     public void close()
     {
         instances.remove(bayeuxServer);
     }
 
+    /**
+     * Configures dependencies annotated with {@link Inject} and {@link Session}, and callbacks
+     * annotated with {@link Listener} and {@link Subscription}.
+     * @param bean the annotated service instance
+     * @return true if the bean contains at least one annotation that has been processed, false otherwise
+     */
     public boolean configure(Object bean)
     {
         boolean result = configureDependencies(bean);
@@ -57,6 +99,11 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
+    /**
+     * Configures the dependencies annotated with {@link Inject} and {@link Session}.
+     * @param bean the annotated service instance
+     * @return true if at least one annotated dependency has been processed, false otherwise
+     */
     public boolean configureDependencies(Object bean)
     {
         if (bean == null)
@@ -73,6 +120,11 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
+    /**
+     * Configures the callbacks annotated with {@link Listener} and {@link Subscription}.
+     * @param bean the annotated service instance
+     * @return true if at least one annotated callback has been processed, false otherwise
+     */
     public boolean configureCallbacks(Object bean)
     {
         if (bean == null)
@@ -89,6 +141,11 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
+    /**
+     * Deconfigures callbacks annotated with {@link Listener} and {@link Subscription}.
+     * @param bean the annotated service instance
+     * @return true if the at least one callback has been deconfigured
+     */
     public boolean deconfigureCallbacks(Object bean)
     {
         if (bean == null)
@@ -338,7 +395,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
     private static class ListenerCallback implements ServerChannel.MessageListener
     {
-        private static final Class<?>[] signature = new Class[]{ServerSession.class, ServerMessage.class};
+        private static final Class<?>[] signature = new Class[]{ServerSession.class, ServerMessage.Mutable.class};
         private final LocalSession localSession;
         private final Object target;
         private final Method method;

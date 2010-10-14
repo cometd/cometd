@@ -7,6 +7,9 @@ import java.lang.reflect.Method;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * Base class for common functionality in annotation processors
+ */
 class AnnotationProcessor
 {
     protected final Logger logger = Log.getLogger(getClass().getName());
