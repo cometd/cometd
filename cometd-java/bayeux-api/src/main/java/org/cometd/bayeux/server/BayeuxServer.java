@@ -98,6 +98,11 @@ public interface BayeuxServer extends Bayeux
     ServerSession getSession(String clientId);
 
     /**
+     * @return the list of {@link ServerSession}s known to this BayeuxServer object
+     */
+    List<ServerSession> getSessions();
+
+    /**
      * <p>Creates a new {@link LocalSession}.</p>
      * <p>A {@link LocalSession} is a server-side ClientSession that allows
      * server-side code to have special clients (resident within the same JVM)
