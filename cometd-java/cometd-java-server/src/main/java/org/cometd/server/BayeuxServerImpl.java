@@ -475,29 +475,29 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public void addAuthorizer(Authorizer auth)
+    public void addAuthorizer(Authorizer authorizer)
     {
         synchronized (this)
         {
             if (_authorizers.size()==0)
                 _authorizers.add(_channelsAuthorizer);
 
-            if (auth instanceof ChannelAuthorizer)
-                _channelsAuthorizer.addChannelAuthorizer((ChannelAuthorizer)auth);
+            if (authorizer instanceof ChannelAuthorizer)
+                _channelsAuthorizer.addChannelAuthorizer((ChannelAuthorizer)authorizer);
             else
-                _authorizers.add(auth);
+                _authorizers.add(authorizer);
         }
     }
 
     /* ------------------------------------------------------------ */
-    public void removeAuthorizer(Authorizer auth)
+    public void removeAuthorizer(Authorizer authorizer)
     {
         synchronized (this)
         {
-            if (auth instanceof ChannelAuthorizer)
-                _channelsAuthorizer.removeChannelAuthorizer((ChannelAuthorizer)auth);
+            if (authorizer instanceof ChannelAuthorizer)
+                _channelsAuthorizer.removeChannelAuthorizer((ChannelAuthorizer)authorizer);
             else
-                _authorizers.remove(auth);
+                _authorizers.remove(authorizer);
 
             if (_channelsAuthorizer.size()==0 && _authorizers.size()==1)
                 _authorizers.remove(_channelsAuthorizer);
@@ -528,6 +528,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public ServerChannel getChannel(String channelId)
     {
         return _channels.get(channelId);
+    }
+
+    public List<ServerChannel> getChannels()
+    {
+        return new ArrayList<ServerChannel>(_channels.values());
     }
 
     /* ------------------------------------------------------------ */
@@ -701,7 +706,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         if (to!=null)
         {
             if (reply.isMeta())
-            { 
+            {
                 if(!to.extendSendMeta(reply))
                 return null;
             }

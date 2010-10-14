@@ -1,5 +1,7 @@
 package org.cometd.bayeux.server;
 
+import java.util.List;
+
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.ClientSession;
@@ -68,6 +70,11 @@ public interface BayeuxServer extends Bayeux
     ServerChannel getChannel(String channelId);
 
     /**
+     * @return the list of channels known to this BayeuxServer object
+     */
+    List<ServerChannel> getChannels();
+
+    /**
      * <p>Creates a {@link ServerChannel} and initializes it atomically.</p>
      * <p>This method can be used instead of adding a {@link ChannelListener}
      * to atomically initialize a channel. The initializer will be called before
@@ -120,18 +127,20 @@ public interface BayeuxServer extends Bayeux
     public void setSecurityPolicy(SecurityPolicy securityPolicy);
 
     /**
-     * Add an {@link Authorizer}.  
-     * <p>Operations must be permitted (see {@link Authorizer.Permission#granted()) 
-     * by at least one added Authorizer and must not be denied (see {@link Authorizer.Permission#denied()) by any.
-     * @param policy
+     * <p>Adds an {@link Authorizer}.</p>
+     * <p>Operations must be permitted (see {@link Authorizer.Permission#granted())
+     * by at least one added Authorizer and must not be denied (see {@link Authorizer.Permission#denied()) by any.</p>
+     * @param authorizer the Authorizer to add
+     * @see #removeAuthorizer(Authorizer)
      */
-    public void addAuthorizer(Authorizer policy);
-    
+    public void addAuthorizer(Authorizer authorizer);
+
     /**
-     * Remove an {@link Authorizer}.  
-     * @param policy
+     * <p>Removes an {@link Authorizer}.</p>
+     * @param authorizer the Authorizer to remove
+     * @see #addAuthorizer(Authorizer)
      */
-    public void removeAuthorizer(Authorizer policy);
+    public void removeAuthorizer(Authorizer authorizer);
 
     /**
      * @return the current transport instance of the current thread
@@ -263,7 +272,6 @@ public interface BayeuxServer extends Bayeux
 
         /**
          * Callback method invoked every time a meta message is outgoing.
-         * @param from the session that sent the message or null
          * @param to the session the message is sent to, or null for a publish.
          * @param message the outgoing meta message
          * @return true if message processing should continue, false if it should stop
