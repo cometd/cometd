@@ -32,17 +32,10 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.server.transport.HttpTransport;
 
 /**
- * The cometd Servlet.
- * </p>
- * <p>
- * The cometd Servlet maps HTTP requests to the {@link HttpTransport} of a {@link BayeuxServerImpl} instance.
- * If a {@link BayeuxServerImpl} instance is discovered in the {@link BayeuxServer#ATTRIBUTE} servlet context
- * attribute, then it is used, otherwise a new instance is created and the {@link #initializeBayeux(BayeuxServerImpl)}
- * method called.
- * </p>
- * <p>
- *
- * </p>
+ * <p>The CometD Servlet maps HTTP requests to the {@link HttpTransport} of a {@link BayeuxServer} instance.</p>
+ * <p>The {@link BayeuxServer} instance is searched in the servlet context under the {@link BayeuxServer#ATTRIBUTE}
+ * attribute; if it is found then it is used without further configuration, otherwise a new {@link BayeuxServer}
+ * instance is created and configured using the init parameters of this servlet.</p>
  */
 public class CometdServlet extends GenericServlet
 {
@@ -51,19 +44,18 @@ public class CometdServlet extends GenericServlet
      * @deprecated Use {@link BayeuxServerImpl#CONFIG_LOG_LEVEL} instead.
      */
     @Deprecated
-    public static final int CONFIG_LEVEL=BayeuxServerImpl.CONFIG_LOG_LEVEL;
+    public static final int CONFIG_LEVEL = BayeuxServerImpl.CONFIG_LOG_LEVEL;
     /**
      * @deprecated Use {@link BayeuxServerImpl#INFO_LOG_LEVEL} instead.
      */
     @Deprecated
-    public static final int INFO_LEVEL=BayeuxServerImpl.INFO_LOG_LEVEL;
+    public static final int INFO_LEVEL = BayeuxServerImpl.INFO_LOG_LEVEL;
     /**
      * @deprecated Use {@link BayeuxServerImpl#DEBUG_LOG_LEVEL} instead.
      */
     @Deprecated
-    public static final int DEBUG_LEVEL=BayeuxServerImpl.DEBUG_LOG_LEVEL;
+    public static final int DEBUG_LEVEL = BayeuxServerImpl.DEBUG_LOG_LEVEL;
 
-    private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<HttpServletRequest>();
     private final List<HttpTransport> _transports = new ArrayList<HttpTransport>();
     private volatile BayeuxServerImpl _bayeux;
 
@@ -124,18 +116,9 @@ public class CometdServlet extends GenericServlet
     @Override
     public void service(ServletRequest req, ServletResponse resp) throws ServletException, IOException
     {
-        HttpServletRequest request=(HttpServletRequest)req;
-        HttpServletResponse response=(HttpServletResponse)resp;
-
-        _currentRequest.set(request);
-        try
-        {
-            service(request,response);
-        }
-        finally
-        {
-            _currentRequest.set(null);
-        }
+        HttpServletRequest request = (HttpServletRequest)req;
+        HttpServletResponse response = (HttpServletResponse)resp;
+        service(request, response);
     }
 
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -146,17 +129,17 @@ public class CometdServlet extends GenericServlet
             return;
         }
 
-        HttpTransport transport=null;
+        HttpTransport transport = null;
         for (HttpTransport t : _transports)
         {
-            if (t!=null && t.accept(request))
+            if (t != null && t.accept(request))
             {
-                transport=t;
+                transport = t;
                 break;
             }
         }
 
-        if (transport==null)
+        if (transport == null)
         {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unknown Bayeux Transport");
         }
@@ -166,12 +149,12 @@ public class CometdServlet extends GenericServlet
             {
                 _bayeux.setCurrentTransport(transport);
                 transport.setCurrentRequest(request);
-                transport.handle(request,response);
+                transport.handle(request, response);
             }
             finally
             {
-                _bayeux.setCurrentTransport(null);
                 transport.setCurrentRequest(null);
+                _bayeux.setCurrentTransport(null);
             }
         }
     }
@@ -189,18 +172,15 @@ public class CometdServlet extends GenericServlet
     }
 
     /* ------------------------------------------------------------ */
+
     /**
      * @see javax.servlet.GenericServlet#destroy()
      */
     @Override
     public void destroy()
     {
-        List<ServerSession> sessions = _bayeux.getSessions();
-        for (int i = 0; i < sessions.size(); i++)
-        {
-            ServerSessionImpl session = (ServerSessionImpl)sessions.get(i);
-            session.cancelSchedule();
-        }
+        for (ServerSession session : _bayeux.getSessions())
+            ((ServerSessionImpl)session).cancelSchedule();
 
         try
         {
