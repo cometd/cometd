@@ -94,4 +94,19 @@ class AnnotationProcessor
             field.setAccessible(accessible);
         }
     }
+
+    protected static boolean signaturesMatch(Class<?>[] candidate, Class<?>[] expected)
+    {
+        if (candidate.length != expected.length)
+            return false;
+
+        for (int i = 0; i < candidate.length; i++)
+        {
+            Class<?> parameter = candidate[i];
+            if (!parameter.isAssignableFrom(expected[i]))
+                return false;
+        }
+
+        return true;
+    }
 }

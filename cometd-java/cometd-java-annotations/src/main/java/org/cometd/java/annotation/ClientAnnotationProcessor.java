@@ -3,7 +3,6 @@ package org.cometd.java.annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -290,7 +289,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         private ListenerCallback(Object target, Method method, String channel)
         {
             Class<?>[] parameters = method.getParameterTypes();
-            if (!Arrays.equals(parameters, signature))
+            if (!signaturesMatch(parameters, signature))
                 throw new IllegalArgumentException("Wrong method signature for method " + method);
             if (!ChannelId.isMeta(channel))
                 throw new IllegalArgumentException("Annotation @Listener on method " + method + " must specify a meta channel");
@@ -333,7 +332,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         public SubscriptionCallback(ClientSession clientSession, Object target, Method method, String channel)
         {
             Class<?>[] parameters = method.getParameterTypes();
-            if (!Arrays.equals(parameters, signature))
+            if (!signaturesMatch(parameters, signature))
                 throw new IllegalArgumentException("Wrong method signature for method " + method);
             if (ChannelId.isMeta(channel))
                 throw new IllegalArgumentException("Annotation @Subscription on method " + method + " must specify a non meta channel");

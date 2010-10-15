@@ -3,7 +3,6 @@ package org.cometd.java.annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -405,7 +404,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         private ListenerCallback(LocalSession localSession, Object target, Method method, String channel, boolean receiveOwnPublishes)
         {
             Class<?>[] parameters = method.getParameterTypes();
-            if (!Arrays.equals(parameters, signature))
+            if (!signaturesMatch(parameters, signature))
                 throw new IllegalArgumentException("Wrong method signature for method " + method);
             this.localSession = localSession;
             this.target = target;
@@ -452,7 +451,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         public SubscriptionCallback(LocalSession localSession, Object target, Method method, String channel)
         {
             Class<?>[] parameters = method.getParameterTypes();
-            if (!Arrays.equals(parameters, signature))
+            if (!signaturesMatch(parameters, signature))
                 throw new IllegalArgumentException("Wrong method signature for method " + method);
             this.localSession = localSession;
             this.target = target;
