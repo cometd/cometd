@@ -1,6 +1,8 @@
 package org.cometd.java.annotation;
 
 import java.util.HashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Inject;
@@ -371,5 +373,75 @@ public class ServerAnnotationProcessorTest
         bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
 
         assertNull(messageRef.get());
+    }
+
+    @Test
+    public void testListenerOnOverriddenMethod() throws Exception
+    {
+        final CountDownLatch messageLatch = new CountDownLatch(2);
+
+        @Service
+        class S
+        {
+            @Listener("/foo")
+            protected void foo(ServerSession remote, ServerMessage.Mutable message)
+            {
+                messageLatch.countDown();
+            }
+        }
+
+        class SS extends S
+        {
+            @Override
+            protected void foo(ServerSession remote, ServerMessage.Mutable message)
+            {
+                super.foo(remote, message);
+                messageLatch.countDown();
+            }
+        }
+
+        SS ss = new SS();
+        boolean processed = processor.configure(ss);
+        assertTrue(processed);
+
+        // Fake a publish
+        LocalSession remote = bayeuxServer.newLocalSession("remote");
+        remote.handshake();
+        ServerMessage.Mutable message = bayeuxServer.newMessage();
+        message.setChannel("/foo");
+        message.setData(new HashMap());
+        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+
+        assertTrue(messageLatch.await(1000, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testListenerMethodWithCovariantParameters() throws Exception
+    {
+        final CountDownLatch messageLatch = new CountDownLatch(1);
+
+        @Service
+        class S
+        {
+            @Listener("/foo")
+            protected void foo(org.cometd.bayeux.Session remote, Message message)
+            {
+                messageLatch.countDown();
+            }
+        }
+
+        S s = new S();
+        boolean processed = processor.configure(s);
+        assertTrue(processed);
+
+        // Fake a publish
+        LocalSession remote = bayeuxServer.newLocalSession("remote");
+        remote.handshake();
+        ServerMessage.Mutable message = bayeuxServer.newMessage();
+        message.setChannel("/foo");
+        message.setData(new HashMap());
+        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+
+        assertTrue(messageLatch.await(1000, TimeUnit.MILLISECONDS));
     }
 }
