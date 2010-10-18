@@ -16,11 +16,13 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.eclipse.jetty.util.AttributesMap;
 
 public class ServerChannelImpl implements ServerChannel, ConfigurableServerChannel
 {
     private final BayeuxServerImpl _bayeux;
     private final ChannelId _id;
+    private final AttributesMap _attributes = new AttributesMap();
     private final Set<ServerSessionImpl> _subscribers = new CopyOnWriteArraySet<ServerSessionImpl>();
     private final List<ServerChannelListener> _listeners = new CopyOnWriteArrayList<ServerChannelListener>();
     private final boolean _meta;
@@ -250,6 +252,28 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         }
 
         _listeners.clear();
+    }
+
+    public void setAttribute(String name, Object value)
+    {
+        _attributes.setAttribute(name, value);
+    }
+
+    public Object getAttribute(String name)
+    {
+        return _attributes.getAttribute(name);
+    }
+
+    public Set<String> getAttributeNames()
+    {
+        return _attributes.keySet();
+    }
+
+    public Object removeAttribute(String name)
+    {
+        Object old = getAttribute(name);
+        _attributes.removeAttribute(name);
+        return old;
     }
 
     /* ------------------------------------------------------------ */

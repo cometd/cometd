@@ -1,5 +1,7 @@
 package org.cometd.bayeux;
 
+import java.util.Set;
+
 /**
  * <p>A Bayeux channel is the primary message routing mechanism within Bayeux:
  * both Bayeux clients and Bayeux server use channels to group listeners that
@@ -47,7 +49,7 @@ public interface Channel
      * @return The channel id as a String
      */
     String getId();
-    
+
     /**
      * @return The channel ID as a {@link ChannelId}
      */
@@ -72,4 +74,32 @@ public interface Channel
      * @return true if the channel is deeply wild.
      */
     boolean isDeepWild();
+
+    /**
+     * <p>Sets a named channel attribute value.</p>
+     * <p>Channel attributes are convenience data that allows arbitrary
+     * application data to be associated with a channel.</p>
+     * @param name the attribute name
+     * @param value the attribute value
+     */
+    void setAttribute(String name, Object value);
+
+    /**
+     * <p>Retrieves the value of named channel attribute.</p>
+     * @param name the name of the attribute
+     * @return the attribute value or null if the attribute is not present
+     */
+    Object getAttribute(String name);
+
+    /**
+     * @return the list of channel attribute names.
+     */
+    Set<String> getAttributeNames();
+
+    /**
+     * <p>Removes a named channel attribute.</p>
+     * @param name the name of the attribute
+     * @return the value of the attribute
+     */
+    Object removeAttribute(String name);
 }
