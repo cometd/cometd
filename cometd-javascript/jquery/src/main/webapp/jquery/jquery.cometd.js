@@ -5,8 +5,8 @@
 (function($)
 {
     // Remap cometd JSON functions to jquery JSON functions
-    org.cometd.JSON.toJSON = $.toJSON;
-    org.cometd.JSON.fromJSON = $.secureEvalJSON;
+    org.cometd.JSON.toJSON = JSON.stringify;
+    org.cometd.JSON.fromJSON = JSON.parse;
 
     function _setHeaders(xhr, headers)
     {
