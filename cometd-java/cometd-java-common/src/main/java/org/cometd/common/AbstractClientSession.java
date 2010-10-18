@@ -226,6 +226,7 @@ public abstract class AbstractClientSession implements ClientSession
     {
         protected final Logger logger = Log.getLogger(getClass().getName());
         private final ChannelId _id;
+        private final AttributesMap _attributes = new AttributesMap();
         private final CopyOnWriteArrayList<MessageListener> _subscriptions = new CopyOnWriteArrayList<MessageListener>();
         private final AtomicInteger _subscriptionCount = new AtomicInteger();
         private final CopyOnWriteArrayList<ClientSessionChannelListener> _listeners = new CopyOnWriteArrayList<ClientSessionChannelListener>();
@@ -354,6 +355,28 @@ public abstract class AbstractClientSession implements ClientSession
                     }
                 }
             }
+        }
+
+        public void setAttribute(String name, Object value)
+        {
+            _attributes.setAttribute(name, value);
+        }
+
+        public Object getAttribute(String name)
+        {
+            return _attributes.getAttribute(name);
+        }
+
+        public Set<String> getAttributeNames()
+        {
+            return _attributes.keySet();
+        }
+
+        public Object removeAttribute(String name)
+        {
+            Object old = getAttribute(name);
+            _attributes.removeAttribute(name);
+            return old;
         }
 
         protected void dump(StringBuilder b,String indent)
