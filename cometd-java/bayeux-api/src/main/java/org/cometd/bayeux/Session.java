@@ -38,7 +38,7 @@ public interface Session
      * @see #disconnect()
      */
     boolean isConnected();
-    
+
     /**
      * <p>A handshook session is a session where the handshake has successfully completed>
      * @return whether the session is handshook
@@ -88,15 +88,20 @@ public interface Session
     void batch(Runnable batch);
 
     /**
-     * @deprecated use {@link #batch(Runnable)}
-     * @return True if the batch ended and there were messages to send.
+     * <p>Starts a batch, to be ended with {@link #endBatch()}.</p>
+     * <p>The {@link #batch(Runnable)} method should be preferred since it automatically
+     * starts and ends a batch without relying on a try/finally block.</p>
+     * <p>This method is to be used in the cases where the use of {@link #batch(Runnable)}
+     * is not possible or would make the code more complex.</p>
+     * @see #endBatch()
+     * @see #batch(Runnable)
      */
-    @Deprecated
-    boolean endBatch();
+    void startBatch();
 
     /**
-     * @deprecated use {@link #batch(Runnable)}
+     * <p>Ends a batch started with {@link #startBatch()}.</p>
+     * @return true if the batch ended and there were messages to send.
+     * @see #startBatch()
      */
-    @Deprecated
-    void startBatch();
+    boolean endBatch();
 }
