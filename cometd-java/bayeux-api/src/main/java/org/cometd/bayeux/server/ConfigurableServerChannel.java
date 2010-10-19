@@ -14,6 +14,8 @@
 
 package org.cometd.bayeux.server;
 
+import java.util.List;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
 
@@ -45,33 +47,45 @@ public interface ConfigurableServerChannel extends Channel
 
     /**
      * @param listener the listener to add
+     * @see #removeListener(ServerChannelListener)
      */
     void addListener(ServerChannelListener listener);
 
     /**
      * @param listener the listener to remove
+     * @see #addListener(ServerChannelListener)
      */
     void removeListener(ServerChannelListener listener);
 
     /**
+     * @return an immutable list of listeners
+     * @see #addListener(ServerChannelListener)
+     */
+    List<ServerChannelListener> getListeners();
+
+    /**
      * @return whether the channel is lazy
+     * @see #setLazy(boolean)
      */
     boolean isLazy();
 
     /**
      * A lazy channel marks all messages published to it as lazy.
      * @param lazy whether the channel is lazy
+     * @see #isLazy()
      */
     void setLazy(boolean lazy);
 
     /**
      * @return whether the channel is persistent
+     * @see #setPersistent(boolean)
      */
     boolean isPersistent();
 
     /**
      * A persistent channel is not removed when the last subscription is removed
      * @param persistent whether the channel is persistent
+     * @see #isPersistent()
      */
     void setPersistent(boolean persistent);
 }

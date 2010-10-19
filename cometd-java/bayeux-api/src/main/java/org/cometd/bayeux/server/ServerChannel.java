@@ -22,7 +22,7 @@ public interface ServerChannel extends ConfigurableServerChannel
     /**
      * @return a snapshot of the set of subscribers of this channel
      */
-    Set<? extends ServerSession> getSubscribers();
+    Set<ServerSession> getSubscribers();
 
     /**
      * A broadcasting channel is a channel that is neither a meta channel
