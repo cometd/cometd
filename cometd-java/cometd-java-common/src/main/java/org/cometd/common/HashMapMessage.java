@@ -1,6 +1,7 @@
 package org.cometd.common;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -11,8 +12,10 @@ import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public class HashMapMessage extends HashMap<String, Object> implements Message.Mutable, JSON.Generator
+public class HashMapMessage extends HashMap<String, Object> implements Message.Mutable, JSON.Generator, Serializable
 {
+    private static final long serialVersionUID = 4318697940670212190L;
+
     public HashMapMessage()
     {
     }

@@ -13,9 +13,11 @@ import org.eclipse.jetty.util.ajax.JSON;
 
 public class ServerMessageImpl extends HashMapMessage implements ServerMessage.Mutable, JSON.Generator
 {
-    private volatile ServerMessage.Mutable _associated;
+    private static final long serialVersionUID = -4257013994431672319L;
+
+    private volatile transient ServerMessage.Mutable _associated;
     private volatile boolean _lazy = false;
-    private volatile String json;
+    private volatile transient String _json;
 
     public ServerMessage.Mutable getAssociated()
     {
@@ -47,22 +49,22 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
 
     public void freeze()
     {
-        json = getJSON();
+        _json = getJSON();
     }
 
     @Override
     public String getJSON()
     {
-        if (json == null)
+        if (_json == null)
             return super.getJSON();
-        return json;
+        return _json;
     }
 
     @Override
     public Object getData()
     {
         Object data = super.getData();
-        if (json != null && data instanceof Map)
+        if (_json != null && data instanceof Map)
             return Collections.unmodifiableMap((Map<String, Object>)data);
         return data;
     }
@@ -70,7 +72,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     @Override
     public Object put(String key, Object value)
     {
-        if (json != null)
+        if (_json != null)
             throw new UnsupportedOperationException();
         return super.put(key, value);
     }
@@ -79,7 +81,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     public Map<String, Object> getDataAsMap()
     {
         Map<String, Object> data = super.getDataAsMap();
-        if (json != null && data != null)
+        if (_json != null && data != null)
             return Collections.unmodifiableMap(data);
         return data;
     }
@@ -88,7 +90,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     public Map<String, Object> getExt()
     {
         Map<String, Object> ext = super.getExt();
-        if (json != null && ext != null)
+        if (_json != null && ext != null)
             return Collections.unmodifiableMap(ext);
         return ext;
     }
@@ -97,7 +99,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     public Map<String, Object> getAdvice()
     {
         Map<String, Object> advice = super.getAdvice();
-        if (json != null && advice != null)
+        if (_json != null && advice != null)
             return Collections.unmodifiableMap(advice);
         return advice;
     }

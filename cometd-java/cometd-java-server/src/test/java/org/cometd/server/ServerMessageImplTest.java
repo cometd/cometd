@@ -1,5 +1,9 @@
 package org.cometd.server;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Map;
 
 import junit.framework.Assert;
@@ -12,6 +16,7 @@ import org.junit.rules.TestWatchman;
 import org.junit.runners.model.FrameworkMethod;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -122,5 +127,33 @@ public class ServerMessageImplTest
 
         String json2 = message.getJSON();
         assertEquals(json, json2);
+    }
+
+    @Test
+    public void testSerialization() throws Exception
+    {
+        ServerMessageImpl message = new ServerMessageImpl();
+        message.setChannel("/channel");
+        message.setClientId("clientId");
+        message.setId("id");
+        message.setSuccessful(true);
+        message.getDataAsMap(true).put("data1", "dataValue1");
+        message.getExt(true).put("ext1", "extValue1");
+        message.setLazy(true);
+        ServerMessageImpl associated = new ServerMessageImpl();
+        associated.put("associated", true);
+        message.setAssociated(associated);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        oos.writeObject(message);
+        oos.close();
+
+        ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
+        ServerMessageImpl deserialized = (ServerMessageImpl)ois.readObject();
+
+        assertEquals(message, deserialized);
+        assertTrue(deserialized.isLazy());
+        assertNull(deserialized.getAssociated());
     }
 }
