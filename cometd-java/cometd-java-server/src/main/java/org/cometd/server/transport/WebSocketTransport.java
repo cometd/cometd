@@ -12,7 +12,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -154,7 +153,7 @@ public class WebSocketTransport extends HttpTransport
                 WebSocketTransport.this._handshake.set(_addresses);
                 getBayeux().setCurrentTransport(WebSocketTransport.this);
 
-                ServerMessage.Mutable[] messages = ServerMessageImpl.parseMessages(data);
+                ServerMessage.Mutable[] messages = ServerMessageImpl.parseServerMessages(data);
 
                 for (ServerMessage.Mutable message : messages)
                 {

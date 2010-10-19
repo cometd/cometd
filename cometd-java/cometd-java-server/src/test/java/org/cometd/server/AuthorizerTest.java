@@ -9,8 +9,9 @@ import org.cometd.bayeux.server.Authorizer.Operation;
 import org.cometd.server.authorizer.ChannelAuthorizer;
 import org.cometd.server.authorizer.ChannelsAuthorizer;
 import org.junit.Test;
-import static org.junit.Assert.assertTrue;
+
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 public class AuthorizerTest
@@ -21,25 +22,25 @@ public class AuthorizerTest
     public void testChannelAuthorizer()
     {
         ChannelAuthorizer auth = new ChannelAuthorizer(EnumSet.noneOf(Operation.class));
-        
+
         assertGranted(false,auth,Operation.HANDSHAKE,"/foo/bar");
         assertGranted(false,auth,Operation.CREATE,"/foo/bar");
         assertGranted(false,auth,Operation.SUBSCRIBE,"/foo/bar");
         assertGranted(false,auth,Operation.PUBLISH,"/foo/bar");
-        
+
         auth = new ChannelAuthorizer(EnumSet.noneOf(Operation.class),"/foo/bar");
         assertGranted(false,auth,Operation.HANDSHAKE,"/foo/bar");
         assertGranted(false,auth,Operation.CREATE,"/foo/bar");
         assertGranted(false,auth,Operation.SUBSCRIBE,"/foo/bar");
         assertGranted(false,auth,Operation.PUBLISH,"/foo/bar");
-        
+
         auth = new ChannelAuthorizer(EnumSet.noneOf(Operation.class),"/foo/*");
         assertGranted(false,auth,Operation.HANDSHAKE,"/foo/bar");
         assertGranted(false,auth,Operation.CREATE,"/foo/bar");
         assertGranted(false,auth,Operation.SUBSCRIBE,"/foo/bar");
         assertGranted(false,auth,Operation.PUBLISH,"/foo/bar");
 
-        
+
         auth = new ChannelAuthorizer(EnumSet.of(Operation.CREATE),"/foo/bar");
         assertGranted(false,auth,Operation.HANDSHAKE,"/foo/bar");
         assertGranted(true,auth,Operation.CREATE,"/foo/bar");
@@ -49,7 +50,7 @@ public class AuthorizerTest
         assertGranted(false,auth,Operation.CREATE,"/other/bar");
         assertGranted(false,auth,Operation.SUBSCRIBE,"/other/bar");
         assertGranted(false,auth,Operation.PUBLISH,"/other/bar");
-        
+
         auth = new ChannelAuthorizer(EnumSet.of(Operation.CREATE,Operation.PUBLISH),"/foo/bar");
         assertGranted(false,auth,Operation.HANDSHAKE,"/foo/bar");
         assertGranted(true,auth,Operation.CREATE,"/foo/bar");
@@ -69,7 +70,7 @@ public class AuthorizerTest
         assertGranted(false,auth,Operation.CREATE,"/other/bar");
         assertGranted(false,auth,Operation.SUBSCRIBE,"/other/bar");
         assertGranted(false,auth,Operation.PUBLISH,"/other/bar");
-        
+
 
         auth = new ChannelAuthorizer(EnumSet.of(Operation.CREATE,Operation.PUBLISH),"/**");
         assertGranted(false,auth,Operation.HANDSHAKE,"/foo/bar");
@@ -80,21 +81,21 @@ public class AuthorizerTest
         assertGranted(true,auth,Operation.CREATE,"/other/bar");
         assertGranted(false,auth,Operation.SUBSCRIBE,"/other/bar");
         assertGranted(true,auth,Operation.PUBLISH,"/other/bar");
-        
+
     }
-    
+
     @Test
     public void testChannelsAuthorizer()
     {
         ChannelsAuthorizer auth = new ChannelsAuthorizer();
-        
+
         assertGranted(false,auth,Operation.CREATE,"/foo/bar");
         assertGranted(false,auth,Operation.CREATE,"/*");
         assertGranted(false,auth,Operation.CREATE,"/**");
-        
+
         ChannelAuthorizer auth0 = new ChannelAuthorizer(EnumSet.of(Operation.CREATE,Operation.PUBLISH),"/foo/bar");
         auth.addChannelAuthorizer(auth0);
-        
+
         assertGranted(false,auth,Operation.HANDSHAKE,"/foo/bar");
         assertGranted(true,auth,Operation.CREATE,"/foo/bar");
         assertGranted(false,auth,Operation.SUBSCRIBE,"/foo/bar");
@@ -103,7 +104,7 @@ public class AuthorizerTest
         assertGranted(false,auth,Operation.CREATE,"/other/bar");
         assertGranted(false,auth,Operation.SUBSCRIBE,"/other/bar");
         assertGranted(false,auth,Operation.PUBLISH,"/other/bar");
-        
+
 
         ChannelAuthorizer auth1 = new ChannelAuthorizer(EnumSet.of(Operation.SUBSCRIBE),"/other/bar");
         auth.addChannelAuthorizer(auth1);
@@ -115,7 +116,7 @@ public class AuthorizerTest
         assertGranted(false,auth,Operation.CREATE,"/other/bar");
         assertGranted(true,auth,Operation.SUBSCRIBE,"/other/bar");
         assertGranted(false,auth,Operation.PUBLISH,"/other/bar");
-        
+
 
         auth.removeChannelAuthorizer(auth0);
         assertGranted(false,auth,Operation.HANDSHAKE,"/foo/bar");
@@ -138,7 +139,7 @@ public class AuthorizerTest
         assertGranted(false,auth,Operation.CREATE,"/other/bar");
         assertGranted(true,auth,Operation.SUBSCRIBE,"/other/bar");
         assertGranted(false,auth,Operation.PUBLISH,"/other/bar");
-        
+
         ChannelAuthorizer auth3 = new ChannelAuthorizer(EnumSet.of(Operation.SUBSCRIBE),"/foo/*");
         auth.addChannelAuthorizer(auth3);
         auth.removeChannelAuthorizer(auth3);
@@ -150,7 +151,7 @@ public class AuthorizerTest
         assertGranted(false,auth,Operation.CREATE,"/other/bar");
         assertGranted(true,auth,Operation.SUBSCRIBE,"/other/bar");
         assertGranted(false,auth,Operation.PUBLISH,"/other/bar");
-       
+
 
         auth.removeChannelAuthorizer(auth0);
         auth.removeChannelAuthorizer(auth1);
@@ -160,10 +161,10 @@ public class AuthorizerTest
         assertGranted(false,auth,Operation.CREATE,"/foo/bar");
         assertGranted(false,auth,Operation.SUBSCRIBE,"/foo/bar");
         assertGranted(false,auth,Operation.PUBLISH,"/foo/bar");
-        
+
     }
-    
-    
+
+
     protected void assertGranted(boolean granted, Authorizer authorizer, Authorizer.Operation op, String channel)
     {
         final AtomicBoolean is_granted = new AtomicBoolean();
@@ -185,12 +186,12 @@ public class AuthorizerTest
                 denied();
             }
         };
-        
+
         ServerMessageImpl message = new ServerMessageImpl();
         ChannelId id = new ChannelId(channel);
-        message.asMutable().setChannel(channel);
+        message.setChannel(channel);
         ServerChannelImpl channelImpl = new ServerChannelImpl(_bayeux,id);
-        
+
         switch(op)
         {
             case CREATE:
@@ -209,12 +210,12 @@ public class AuthorizerTest
 
         if (granted)
             assertTrue(is_granted.get());
-        else 
+        else
             assertFalse(is_granted.get());
-        
+
         assertFalse(is_denied.get());
-        
+
     }
-    
+
 
 }

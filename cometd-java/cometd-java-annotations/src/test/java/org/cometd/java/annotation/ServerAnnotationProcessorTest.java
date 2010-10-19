@@ -241,6 +241,8 @@ public class ServerAnnotationProcessorTest
         // Fake another publish
         sessionRef.set(null);
         messageRef.set(null);
+        message = bayeuxServer.newMessage();
+        message.setChannel(channel.getId());
         bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
 
         assertNull(sessionRef.get());
@@ -370,6 +372,9 @@ public class ServerAnnotationProcessorTest
 
         // Fake another publish
         messageRef.set(null);
+        message = bayeuxServer.newMessage();
+        message.setChannel("/foo/bar/baz");
+        message.setData(new HashMap());
         bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
 
         assertNull(messageRef.get());

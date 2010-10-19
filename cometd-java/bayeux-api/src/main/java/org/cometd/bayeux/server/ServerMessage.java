@@ -22,11 +22,6 @@ public interface ServerMessage extends Message
     boolean isLazy();
 
     /**
-     * @return a {@link Mutable} version of this message
-     */
-    //ServerMessage.Mutable asMutable();
-
-    /**
      * The mutable version of a {@link ServerMessage}
      */
     public interface Mutable extends ServerMessage, Message.Mutable
@@ -42,10 +37,5 @@ public interface ServerMessage extends Message
          * @param lazy whether the message is lazy
          */
         void setLazy(boolean lazy);
-
-        /**
-         * @return an {@link ServerMessage immutable} version of this message
-         */
-        ServerMessage asImmutable();
     }
 }

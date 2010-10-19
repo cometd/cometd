@@ -455,13 +455,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public ServerMessage.Mutable newMessage()
     {
-        return new ServerMessageImpl().asMutable();
+        return new ServerMessageImpl();
     }
 
     /* ------------------------------------------------------------ */
     public ServerMessage.Mutable newMessage(ServerMessage tocopy)
     {
-        ServerMessage.Mutable mutable = new ServerMessageImpl().asMutable();
+        ServerMessage.Mutable mutable = newMessage();
         for (String key : tocopy.keySet())
             mutable.put(key,tocopy.get(key));
         return mutable;
@@ -664,6 +664,17 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 if (!((MessageListener)listener).onMessage(from, to, mutable))
                     return;
 
+        // Exactly at this point, we convert the message to JSON and therefore
+        // any further modification will be lost.
+        // This is an optimization so that if the message is sent to a million
+        // subscribers, we generate the JSON only once.
+        // From now on, user code is passed a ServerMessage reference (and not
+        // ServerMessage.Mutable), and we attempt to return immutable data
+        // structures, even if it is not possible to guard against all cases.
+        // For example, it is impossible to prevent things like
+        // ((CustomObject)serverMessage.getData()).change() or
+        // ((Map)serverMessage.getExt().get("map")).put().
+        ((ServerMessageImpl)mutable).freeze();
 
         // Call the wild subscribers
         HashSet<String> wild_subscribers=null;
@@ -678,7 +689,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     wild_subscribers=new HashSet<String>();
 
                 if (wild_subscribers.add(session.getId()))
-                    ((ServerSessionImpl)session).doDeliver(from, mutable.asImmutable());
+                    ((ServerSessionImpl)session).doDeliver(from, mutable);
             }
         }
 
@@ -686,7 +697,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         for (ServerSession session : to.getSubscribers())
         {
             if (wild_subscribers==null || !wild_subscribers.contains(session.getId()))
-                ((ServerSessionImpl)session).doDeliver(from, mutable.asImmutable());
+                ((ServerSessionImpl)session).doDeliver(from, mutable);
         }
 
         // Meta handlers

@@ -54,7 +54,7 @@ public abstract class HttpTransport extends AbstractServerTransport
 
         // Get message batches either as JSON body or as message parameters
         if (content_type!=null && !content_type.startsWith("application/x-www-form-urlencoded"))
-            return ServerMessageImpl.parseMessages(request.getReader(), _jsonDebug);
+            return ServerMessageImpl.parseServerMessages(request.getReader(), _jsonDebug);
 
         String[] batches=request.getParameterValues(MESSAGE_PARAM);
 
@@ -62,14 +62,14 @@ public abstract class HttpTransport extends AbstractServerTransport
             return null;
 
         if (batches.length == 1)
-            return ServerMessageImpl.parseMessages(batches[0]);
+            return ServerMessageImpl.parseServerMessages(batches[0]);
 
         List<ServerMessage.Mutable> messages=new ArrayList<ServerMessage.Mutable>();
         for (String batch : batches)
         {
             if (batch == null)
                 continue;
-            messages.addAll(Arrays.asList(ServerMessageImpl.parseMessages(batch)));
+            messages.addAll(Arrays.asList(ServerMessageImpl.parseServerMessages(batch)));
         }
         return messages.toArray(new ServerMessage.Mutable[messages.size()]);
     }

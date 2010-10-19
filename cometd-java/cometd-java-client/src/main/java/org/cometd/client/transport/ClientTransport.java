@@ -1,15 +1,11 @@
 package org.cometd.client.transport;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
 import org.cometd.common.AbstractTransport;
 import org.cometd.common.HashMapMessage;
-import org.eclipse.jetty.util.ajax.JSON;
 
 /**
  * @version $Revision: 902 $ $Date$
@@ -53,69 +49,8 @@ public abstract class ClientTransport extends AbstractTransport
     public abstract void send(TransportListener listener, Message.Mutable... messages);
 
     /* ------------------------------------------------------------ */
-    protected List<Message.Mutable> toMessages(String content)
+    protected List<Message.Mutable> parseMessages(String content)
     {
-        Object object = _batchJSON.parse(new JSON.StringSource(content));
-        if (object instanceof Message.Mutable)
-            return Collections.singletonList((Message.Mutable)object);
-        return Arrays.asList((Message.Mutable[])object);
+        return HashMapMessage.parseMessages(content);
     }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private JSON _json=new JSON()
-    {
-        @Override
-        protected Map newMap()
-        {
-            return new HashMap<String, Object>();
-        }
-
-    };
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private JSON _msgJSON=new JSON()
-    {
-        @Override
-        protected Map newMap()
-        {
-            return new HashMapMessage();
-        }
-
-        @Override
-        protected JSON contextFor(String field)
-        {
-            return _json;
-        }
-    };
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private JSON _batchJSON=new JSON()
-    {
-        @Override
-        protected Map newMap()
-        {
-            return new HashMapMessage();
-        }
-
-        @Override
-        protected Object[] newArray(int size)
-        {
-            return new Message.Mutable[size];
-        }
-
-        @Override
-        protected JSON contextFor(String field)
-        {
-            return _json;
-        }
-
-        @Override
-        protected JSON contextForArray()
-        {
-            return _msgJSON;
-        }
-    };
 }
