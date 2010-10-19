@@ -266,7 +266,7 @@ public class MultipleClientSessionsTest
         assertTrue(client4.waitFor(1000, BayeuxClient.State.DISCONNECTED));
 
         // Be sure the last client had the time to switch to long poll mode
-        Thread.sleep(timeout + multiSessionInterval);
+        Thread.sleep(timeout + 2 * multiSessionInterval);
         Message lastConnect;
         if (client5 == client2)
             lastConnect = new LinkedList<Message>(connects2).getLast();
