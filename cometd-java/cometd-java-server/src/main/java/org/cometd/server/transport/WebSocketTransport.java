@@ -256,6 +256,10 @@ public class WebSocketTransport extends HttpTransport
             }
         }
 
+        public void onFragment(boolean more,byte opcode,byte[] data, int offset, int length)
+        {
+        }
+
         public void cancel()
         {
         }
