@@ -192,12 +192,18 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    protected void doDeliver(ServerSession from, ServerMessage message)
+    protected void doDeliver(ServerSession from, ServerMessage.Mutable mutable)
     {
-        if (message.isMeta())
-            extendSendMeta((message instanceof ServerMessage.Mutable)?(ServerMessage.Mutable)message:((ServerMessageImpl)message).asMutable());
+        ServerMessage message = null;
+        if (mutable.isMeta())
+        {
+            if (!extendSendMeta(mutable))
+                return;
+        }
         else
-            message=extendSendMessage(message);
+        {
+            message = extendSendMessage(mutable);
+        }
         
         if (message==null)
             return;

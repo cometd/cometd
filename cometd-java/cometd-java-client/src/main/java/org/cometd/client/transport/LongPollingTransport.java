@@ -248,7 +248,7 @@ public class LongPollingTransport extends HttpClientTransport
                 String content=getResponseContent();
                 if (content!=null && content.length()>0)
                 {
-                    List<Message.Mutable> messages = toMessages(getResponseContent());
+                    List<Message.Mutable> messages = parseMessages(getResponseContent());
                     _listener.onMessages(messages);
                 }
                 else
