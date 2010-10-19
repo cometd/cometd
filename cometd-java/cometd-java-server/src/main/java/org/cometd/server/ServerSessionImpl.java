@@ -11,12 +11,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
+import org.cometd.common.HashMapMessage;
 import org.cometd.server.AbstractServerTransport.OneTimeScheduler;
 import org.cometd.server.AbstractServerTransport.Scheduler;
 import org.cometd.server.transport.HttpTransport;
@@ -204,7 +206,7 @@ public class ServerSessionImpl implements ServerSession
         {
             message = extendSendMessage(mutable);
         }
-        
+
         if (message==null)
             return;
 
@@ -476,8 +478,10 @@ public class ServerSessionImpl implements ServerSession
         {
             for (ServerMessage msg : takeQueue())
             {
-                if (msg!=null)
-                    _localSession.receive(_bayeux.newMessage(msg));
+                if (msg instanceof Message.Mutable)
+                    _localSession.receive((Message.Mutable)msg);
+                else
+                    _localSession.receive(new HashMapMessage(msg));
             }
         }
     }
@@ -596,19 +600,19 @@ public class ServerSessionImpl implements ServerSession
     {
         if (!message.isMeta())
             throw new IllegalStateException();
-        
+
         for (Extension ext : _extensions)
             if (!ext.sendMeta(this,message))
                 return false;
         return true;
     }
-    
+
     /* ------------------------------------------------------------ */
     protected ServerMessage extendSendMessage(ServerMessage message)
     {
         if (message.isMeta())
             throw new IllegalStateException();
-        
+
         for (Extension ext : _extensions)
         {
             message=ext.send(this,message);

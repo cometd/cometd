@@ -317,11 +317,8 @@ public abstract class AbstractService
                 Class<?>[] parameterTypes = method.getParameterTypes();
                 int messageParameterIndex = parameterTypes.length == 4 ? 2 : 1;
                 Object messageArgument = data;
-                if (ServerMessage.class.isAssignableFrom(parameterTypes[messageParameterIndex]) ||
-                        Message.class.isAssignableFrom(parameterTypes[messageParameterIndex]))
-                {
+                if (Message.class.isAssignableFrom(parameterTypes[messageParameterIndex]))
                     messageArgument = msg;
-                }
 
                 boolean accessible = method.isAccessible();
                 Object reply = null;

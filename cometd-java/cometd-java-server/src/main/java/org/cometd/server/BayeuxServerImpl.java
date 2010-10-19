@@ -713,24 +713,32 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public ServerMessage.Mutable extendReply(ServerSessionImpl from, ServerSessionImpl to, ServerMessage.Mutable reply)
     {
-        if (to!=null)
+        if (!extendSend(from, to, reply))
+            return null;
+
+        if (to != null)
         {
             if (reply.isMeta())
             {
                 if(!to.extendSendMeta(reply))
-                return null;
+                    return null;
             }
             else
             {
-                ServerMessage m = to.extendSendMessage(reply);
-                if (m==null)
-                    return null;
-                else if (m!=reply)
-                    reply=newMessage(m); // TODO is this necessary?
+                ServerMessage newReply = to.extendSendMessage(reply);
+                if (newReply == null)
+                {
+                    reply = null;
+                }
+                else if (newReply != reply)
+                {
+                    if (newReply instanceof ServerMessage.Mutable)
+                        reply = (ServerMessage.Mutable)newReply;
+                    else
+                        reply = newMessage(newReply);
+                }
             }
         }
-        if (!extendSend(from,to,reply))
-            return null;
 
         return reply;
     }

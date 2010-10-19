@@ -13,6 +13,15 @@ import org.eclipse.jetty.util.ajax.JSON;
 
 public class HashMapMessage extends HashMap<String, Object> implements Message.Mutable, JSON.Generator
 {
+    public HashMapMessage()
+    {
+    }
+
+    public HashMapMessage(Message message)
+    {
+        putAll(message);
+    }
+
     public void addJSON(Appendable buffer)
     {
         try
