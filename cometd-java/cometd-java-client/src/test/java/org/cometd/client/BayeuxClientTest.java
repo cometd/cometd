@@ -683,6 +683,8 @@ public class BayeuxClientTest extends TestCase
 
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
         client.handshake();
+        assertTrue(client.waitFor(1000, State.CONNECTED));
+
         String data = "Hello World";
         client.getChannel(channelName).publish(data);
 
