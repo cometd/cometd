@@ -23,7 +23,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     private final BayeuxServerImpl _bayeux;
     private final ChannelId _id;
     private final AttributesMap _attributes = new AttributesMap();
-    private final Set<ServerSessionImpl> _subscribers = new CopyOnWriteArraySet<ServerSessionImpl>();
+    private final Set<ServerSession> _subscribers = new CopyOnWriteArraySet<ServerSession>();
     private final List<ServerChannelListener> _listeners = new CopyOnWriteArrayList<ServerChannelListener>();
     private final boolean _meta;
     private final boolean _broadcast;
@@ -110,13 +110,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     }
 
     /* ------------------------------------------------------------ */
-    public List<ServerChannelListener> getListeners()
-    {
-        return _listeners;
-    }
-
-    /* ------------------------------------------------------------ */
-    public Set<? extends ServerSession> getSubscribers()
+    public Set<ServerSession> getSubscribers()
     {
         return Collections.unmodifiableSet(_subscribers);
     }
@@ -170,6 +164,18 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     }
 
     /* ------------------------------------------------------------ */
+    public void removeListener(ServerChannelListener listener)
+    {
+        _listeners.remove(listener);
+    }
+
+    /* ------------------------------------------------------------ */
+    public List<ServerChannelListener> getListeners()
+    {
+        return Collections.unmodifiableList(_listeners);
+    }
+
+    /* ------------------------------------------------------------ */
     public ChannelId getChannelId()
     {
         return _id;
@@ -191,12 +197,6 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     public boolean isService()
     {
         return _service;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void removeListener(ServerChannelListener listener)
-    {
-        _listeners.remove(listener);
     }
 
     /* ------------------------------------------------------------ */
@@ -228,10 +228,10 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     /* ------------------------------------------------------------ */
     protected void doSweep(int children)
     {
-        for (ServerSessionImpl session : _subscribers)
+        for (ServerSession session : _subscribers)
         {
             if (!session.isHandshook())
-                unsubscribe(session);
+                unsubscribe((ServerSessionImpl)session);
         }
 
         if (!isPersistent() && _subscribers.size()==0 && _listeners.size()==0 && children==0 && ++_used>2)
@@ -246,8 +246,8 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
 
         if (_bayeux.removeServerChannel(this))
         {
-            for (ServerSessionImpl subscriber: _subscribers)
-                subscriber.unsubscribedTo(this);
+            for (ServerSession subscriber: _subscribers)
+                ((ServerSessionImpl)subscriber).unsubscribedTo(this);
             _subscribers.clear();
         }
 
@@ -292,11 +292,11 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
             b.append(" +-");
             child.dump(b,indent+((++i==leaves)?"   ":" | "));
         }
-        for (ServerSessionImpl child : _subscribers)
+        for (ServerSession child : _subscribers)
         {
             b.append(indent);
             b.append(" +-");
-            child.dump(b,indent+((++i==leaves)?"   ":" | "));
+            ((ServerSessionImpl)child).dump(b,indent+((++i==leaves)?"   ":" | "));
         }
         for (ServerChannelListener child : _listeners)
         {
