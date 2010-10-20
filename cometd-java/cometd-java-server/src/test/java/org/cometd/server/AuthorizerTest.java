@@ -190,23 +190,9 @@ public class AuthorizerTest
         ServerMessageImpl message = new ServerMessageImpl();
         ChannelId id = new ChannelId(channel);
         message.setChannel(channel);
-        ServerChannelImpl channelImpl = new ServerChannelImpl(_bayeux,id);
 
-        switch(op)
-        {
-            case CREATE:
-                authorizer.canCreate(permission,_bayeux,null,id,message);
-                break;
-            case SUBSCRIBE:
-                authorizer.canSubscribe(permission,_bayeux,null,channelImpl,message);
-                break;
-            case PUBLISH:
-                authorizer.canPublish(permission,_bayeux,null,channelImpl,message);
-                break;
-            case HANDSHAKE:
-                authorizer.canHandshake(permission,_bayeux,null,message);
-                break;
-        }
+        if (authorizer.appliesTo(op))
+            authorizer.authorize(permission,_bayeux,null,op,id,message);
 
         if (granted)
             assertTrue(is_granted.get());

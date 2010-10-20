@@ -67,9 +67,10 @@ public class ChannelsAuthorizer implements Authorizer
 
         for(ChannelAuthorizer a : _authorizers)
         {
-            for (Authorizer.Operation op : a.getOperations())
+            for (Authorizer.Operation op : Authorizer.Operation.values())
             {
-
+                if (!a.appliesTo(op))
+                    continue;
                 Set<String> c = channels.get(op);
                 if (c==null)
                     channels.put(op,c=new HashSet<String>());
@@ -131,51 +132,6 @@ public class ChannelsAuthorizer implements Authorizer
         }
     }
 
-    public void canCreate(Permission permission, BayeuxServer server, ServerSession session, ChannelId channelId, ServerMessage message)
-    {
-        if (_createChannels.containsKey(channelId.toString()))
-            permission.granted();
-        else for (ChannelId id : _createWilds)
-        {
-            if (id.matches(channelId))
-            {
-                permission.granted();
-                break;
-            }
-        }
-    }
-
-    public void canHandshake(Permission permission, BayeuxServer server, ServerSession session, ServerMessage message)
-    {
-    }
-
-    public void canPublish(Permission permission, BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
-    {
-        if (_publishChannels.containsKey(channel.getId()))
-            permission.granted();
-        else for (ChannelId id : _publishWilds)
-        {
-            if (id.matches(channel.getChannelId()))
-            {
-                permission.granted();
-                break;
-            }
-        }
-    }
-
-    public void canSubscribe(Permission permission, BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
-    {
-        if (_subscribeChannels.containsKey(channel.getId()))
-            permission.granted();
-        else for (ChannelId id : _subscribeWilds)
-        {
-            if (id.matches(channel.getChannelId()))
-            {
-                permission.granted();
-                break;
-            }
-        }
-    }
 
     public String toString()
     {
@@ -197,6 +153,56 @@ public class ChannelsAuthorizer implements Authorizer
         synchronized(_authorizers)
         {
             return _authorizers.size();
+        }
+    }
+
+    public boolean appliesTo(Operation operation)
+    {
+        switch(operation)
+        {
+            case CREATE:
+                return !_createChannels.isEmpty() || !_createWilds.isEmpty();
+            case PUBLISH:
+                return !_publishChannels.isEmpty() || !_publishWilds.isEmpty();
+            case SUBSCRIBE:
+                return !_subscribeChannels.isEmpty() || !_subscribeWilds.isEmpty();
+            default:
+                return false;
+        }
+    }
+
+    public void authorize(Permission permission, BayeuxServer server, ServerSession session, Operation operation, ChannelId channelId, ServerMessage message)
+    {
+        final Map<String, Boolean> channels;
+        final Queue<ChannelId> wilds;
+        
+        switch(operation)
+        {
+            case CREATE:
+                channels=_createChannels;
+                wilds=_createWilds;
+                break;
+            case PUBLISH:
+                channels=_publishChannels;
+                wilds=_publishWilds;
+                break;
+            case SUBSCRIBE:
+                channels=_subscribeChannels;
+                wilds=_subscribeWilds;
+                break;
+            default:
+                return;
+        }
+        
+        if (channels.containsKey(channelId.toString()))
+            permission.granted();
+        else for (ChannelId id : wilds)
+        {
+            if (id.matches(channelId))
+            {
+                permission.granted();
+                break;
+            }
         }
     }
 

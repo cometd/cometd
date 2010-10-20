@@ -24,6 +24,7 @@ import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.server.Authorizer;
+import org.cometd.bayeux.server.Authorizer.Operation;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel.Initializer;
@@ -583,7 +584,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             {
                 channel = getChannel(channelId);
 
-                if (channel==null && auth.canCreate(this,session,channelId,message))
+                if (channel==null && auth.canCreate(session,channelId,message))
                 {
                     createIfAbsent(channelId);
                     channel = getChannel(channelId);
@@ -601,7 +602,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 doPublish(session,(ServerChannelImpl)channel,message);
                 reply = message.getAssociated();
             }
-            else if (p_auth.canPublish(this,session,channel,message))
+            else if (p_auth.canPublish(session,channel,message))
             {
                 // Do not leak the clientId to other subscribers
                 message.setClientId(null);
@@ -998,7 +999,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             ServerMessage.Mutable reply=createReply(message);
 
             Permit auth = new Permit(Authorizer.Operation.HANDSHAKE);
-            if (!auth.canHandshake(BayeuxServerImpl.this,session,message))
+            if (!auth.canHandshake(session,message))
             {
                 error(reply,"403:"+auth.getReasonDenied()+":Handshake denied");
                 reply.getAdvice(true).put(Message.RECONNECT_FIELD,Message.RECONNECT_NONE_VALUE);
@@ -1084,7 +1085,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscribe_id);
                 Permit auth = new Permit(Authorizer.Operation.SUBSCRIBE);
 
-                if (channel==null && auth.canCreate(BayeuxServerImpl.this,from,subscribe_id,message))
+                if (channel==null && auth.canCreate(from,subscribe_id,message))
                 {
                     createIfAbsent(subscribe_id);
                     channel = (ServerChannelImpl)getChannel(subscribe_id);
@@ -1092,7 +1093,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
                 if (channel==null)
                     error(reply,"403::cannot create");
-                else if (!auth.canSubscribe(BayeuxServerImpl.this,from,channel,message))
+                else if (!auth.canSubscribe(from,channel,message))
                     error(reply,"403:"+auth.getReasonDenied()+":subscribe denied");
                 else
                 {
@@ -1180,32 +1181,17 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private class Permit implements Authorizer.Permission
+    private class Permit
     {
         final Authorizer.Operation _operation;
         boolean _granted;
+        boolean _denied;
         String _reasonDenied;
-        Authorizer _authp;
+
 
         Permit(Authorizer.Operation operation)
         {
             _operation=operation;
-        }
-
-        public void granted()
-        {
-            _logger.debug("{} granted by {}",_operation,_authp);
-            _granted=true;
-        }
-
-        public void denied()
-        {
-            denied(null);
-        }
-
-        public void denied(String reason)
-        {
-            _reasonDenied=reason==null?"denied":reason;
         }
 
         public String getReasonDenied()
@@ -1213,130 +1199,106 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             return _reasonDenied;
         }
 
-        public boolean canCreate(BayeuxServer server, ServerSession session, String channelId, ServerMessage message)
+        public boolean canCreate(ServerSession session, String channelId, ServerMessage message)
         {
-            _granted=false;
-            _reasonDenied=null;
-            _authp=null;
-            if (_policy==null || _policy.canCreate(server,session,channelId,message))
+            if (_policy!=null && !_policy.canCreate(BayeuxServerImpl.this,session,channelId,message))
             {
-                ChannelId id = new ChannelId(channelId);
-                for (Authorizer policy : _authorizers)
-                {
-                    _authp=policy;
-                    policy.canCreate(this,server,session,id,message);
-                    if (_reasonDenied!=null)
-                    {
-                        _logger.warn("{} denied Create@{} by {} for {}",session,channelId,_authp,_reasonDenied);
-                        return false;
-                    }
-                }
-                _granted|=_authp==null;
-                _authp=null;
-                if (!_granted)
-                {
-                    _logger.warn("{} !granted Create@{} by {}",session,channelId,_authorizers);
-                    _reasonDenied="Not permitted";
-                }
-                return _granted;
+                _logger.warn("{} denied Create@{} by {}",session,channelId,_policy);
+                _reasonDenied="SecurityPolicy";
+                return false;
             }
-            _logger.warn("{} denied Create@{} by {}",session,channelId,_policy);
-            _reasonDenied="SecurityPolicy";
-            return false;
+            ChannelId id = new ChannelId(channelId);
+            return authorize(session,id,message);       
+        }
+        
+        public boolean canHandshake(ServerSession session, ServerMessage message)
+        {
+            if (_policy!=null && !_policy.canHandshake(BayeuxServerImpl.this,session,message))
+            {
+                _logger.warn("{} denied Handshake by {}",message,_policy);
+                _reasonDenied="SecurityPolicy";
+                return false;
+            }
+            return authorize(session,null,message);   
         }
 
-        public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
+        public boolean canPublish(ServerSession session, ServerChannel channel, ServerMessage message)
         {
-            _granted=false;
-            _reasonDenied=null;
-            _authp=null;
-            if (_policy==null || _policy.canHandshake(server,session,message))
+            if (_policy!=null && !_policy.canPublish(BayeuxServerImpl.this,session,channel,message))
             {
-                for (Authorizer auth : _authorizers)
-                {
-                    _authp=auth;
-                    auth.canHandshake(this,server,session,message);
-                    if (_reasonDenied!=null)
-                    {
-                        _logger.warn("{} denied Handshake by {} for {}",message,_authp,_reasonDenied);
-                        return false;
-                    }
-                }
-                _granted|=_authp==null;
-                _authp=null;
-                if (!_granted)
-                {
-                    _logger.warn("{} !granted Handshake by {}",message,_authorizers);
-                    _reasonDenied="Not permitted";
-                }
-                return _granted;
+                _logger.warn("{} denied Publish@{} by {}",session,channel,_policy);
+                _reasonDenied="SecurityPolicy";
+                return false;
             }
-            _logger.warn("{} denied Handshake by {}",message,_policy);
-            _reasonDenied="SecurityPolicy";
-            return false;
+            return authorize(session,channel.getChannelId(),message); 
         }
 
-        public boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
+        public boolean canSubscribe(ServerSession session, ServerChannel channel, ServerMessage message)
         {
-            _granted=false;
-            _reasonDenied=null;
-            _authp=null;
-            if (_policy==null || _policy.canPublish(server,session,channel,message))
+            if (_policy!=null && !_policy.canSubscribe(BayeuxServerImpl.this,session,channel,message))
             {
-                for (Authorizer policy : _authorizers)
-                {
-                    _authp=policy;
-                    policy.canPublish(this,server,session,channel,message);
-                    if (_reasonDenied!=null)
-                    {
-                        _logger.warn("{} denied Publish@{} by {} for {}",session,channel,_authp,_reasonDenied);
-                        return false;
-                    }
-                }
-                _granted|=_authp==null;
-                _authp=null;
-                if (!_granted)
-                {
-                    _logger.warn("{} !granted Publish@{} by {}",session,channel,_authorizers);
-                    _reasonDenied="Not permitted";
-                }
-                return _granted;
+                _logger.warn("{} denied Subscribe@{} by {}",session,channel,_policy);
+                _reasonDenied="SecurityPolicy";
+                return false;
             }
-            _logger.warn("{} denied Publish@{} by {}",session,channel,_policy);
-            _reasonDenied="SecurityPolicy";
-            return false;
+            return authorize(session,channel.getChannelId(),message); 
         }
 
-        public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
+        private boolean authorize(final ServerSession session, final ChannelId id, final ServerMessage message)
         {
+            // Always authorized if there are no authorizers
+            if (_authorizers.isEmpty())
+                return true;
+            
+            // Assume not granted and not denied
             _granted=false;
+            _denied=false;
             _reasonDenied=null;
-            _authp=null;
-            if (_policy==null || _policy.canSubscribe(server,session,channel,message))
+
+            final Authorizer.Permission _permission = new Authorizer.Permission()
             {
-                for (Authorizer policy : _authorizers)
+                public void granted()
                 {
-                    _authp=policy;
-                    policy.canSubscribe(this,server,session,channel,message);
-                    if (_reasonDenied!=null)
-                    {
-                        _logger.warn("{} denied Subscribe@{} by {} for {}",session,channel,_authp,_reasonDenied);
+                    if (_logger.isDebugEnabled())
+                        _logger.debug("{} granted {}@{}",session,_operation,id);
+                    _granted=true;
+                }
+
+                public void denied()
+                {
+                    denied(null);
+                }
+
+                public void denied(String reason)
+                {
+                    _denied=true;
+                    _reasonDenied=reason==null?"denied":reason;
+                    if (_logger.isDebugEnabled())
+                        _logger.debug("{} granted {}@{} for {}",session,_operation,id,_reasonDenied);
+                }
+            };
+            
+            // authorize with all applicable authorizers
+            for (Authorizer policy : _authorizers)
+            {
+                if (policy.appliesTo(_operation))
+                {
+                    policy.authorize(_permission,BayeuxServerImpl.this,session,_operation,id,message);
+
+                    if (_denied)
                         return false;
-                    }
                 }
-                _granted|=_authp==null;
-                _authp=null;
-                if (!_granted)
-                {
-                    _logger.warn("{} !granted Subscribe@{} by {}",session,channel,_authorizers);
-                    _reasonDenied="Not permitted";
-                }
-                return _granted;
             }
-            _logger.warn("{} denied Subscribe@{} by {}",session,channel,_policy);
-            _reasonDenied="SecurityPolicy";
-            return false;
+                
+            if (!_granted)
+            {
+                _logger.warn("{} !granted Create@{} by {}",session,id,_authorizers);
+                _reasonDenied="Not granted";
+            }
+            
+            return _granted;
         }
+
     }
 
 }

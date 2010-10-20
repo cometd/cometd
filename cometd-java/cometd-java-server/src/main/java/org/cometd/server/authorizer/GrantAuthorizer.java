@@ -18,12 +18,7 @@ import org.cometd.bayeux.server.ServerSession;
  */
 public class GrantAuthorizer implements Authorizer
 {
-    private final boolean _canHandshake;
-    private final boolean _canSubscribe;
-    private final boolean _canPublish;
-    private final boolean _canCreate;
     private final EnumSet<Authorizer.Operation> _operations;
-
 
     /**
      * Channel Authorizer.
@@ -32,39 +27,21 @@ public class GrantAuthorizer implements Authorizer
     public GrantAuthorizer(final EnumSet<Authorizer.Operation> operations)
     {
         _operations=operations;
-        _canHandshake=operations.contains(Operation.HANDSHAKE);
-       _canCreate=operations.contains(Operation.CREATE);
-       _canSubscribe=operations.contains(Operation.SUBSCRIBE);
-       _canPublish=operations.contains(Operation.PUBLISH);
-    }
-
-    public void canCreate(Permission permission, BayeuxServer server, ServerSession session, ChannelId channelId, ServerMessage message)
-    {
-        if (_canCreate)
-            permission.granted();
-    }
-
-    public void canHandshake(Permission permission, BayeuxServer server, ServerSession session, ServerMessage message)
-    {
-        if (_canHandshake)
-            permission.granted();
-    }
-
-    public void canPublish(Permission permission, BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
-    {
-        if (_canPublish)
-            permission.granted();
-    }
-
-    public void canSubscribe(Permission permission, BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
-    {
-        if (_canSubscribe)
-            permission.granted();
     }
 
     public String toString()
     {
         return"{"+_operations+"@/**}";
+    }
+
+    public boolean appliesTo(Operation operation)
+    {
+        return _operations.contains(operation);
+    }
+
+    public void authorize(Permission permission, BayeuxServer server, ServerSession session, Operation operation, ChannelId channelId, ServerMessage message)
+    {
+        permission.granted();
     }
 
 }
