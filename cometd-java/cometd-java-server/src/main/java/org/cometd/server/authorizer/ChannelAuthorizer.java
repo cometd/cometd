@@ -8,6 +8,8 @@ import java.util.Set;
 
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.server.Authorizer;
+import org.cometd.bayeux.server.Authorizer.Operation;
+import org.cometd.bayeux.server.Authorizer.Permission;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -25,9 +27,6 @@ public class ChannelAuthorizer implements Authorizer
 {
     private final Set<String> _channels = new HashSet<String>();
     private final List<ChannelId> _wilds = new ArrayList<ChannelId>();
-    private final boolean _canSubscribe;
-    private final boolean _canPublish;
-    private final boolean _canCreate;
     private final EnumSet<Authorizer.Operation> _operations;
 
     /**
@@ -40,9 +39,6 @@ public class ChannelAuthorizer implements Authorizer
         _operations=operations;
        if (operations.contains(Operation.HANDSHAKE))
            throw new IllegalArgumentException("!Handshake");
-       _canCreate=operations.contains(Operation.CREATE);
-       _canSubscribe=operations.contains(Operation.SUBSCRIBE);
-       _canPublish=operations.contains(Operation.PUBLISH);
         for (String channel : channels)
         {
             ChannelId id = new ChannelId(channel);
@@ -50,6 +46,25 @@ public class ChannelAuthorizer implements Authorizer
                 _wilds.add(id);
             else
                 _channels.add(channel);
+        }
+    }
+    
+    public boolean appliesTo(Operation operation)
+    {
+        return _operations.contains(operation);
+    }
+
+    public void authorize(Permission permission, BayeuxServer server, ServerSession session, Operation operation, ChannelId channelId, ServerMessage message)
+    {
+        if (_channels.contains(channelId.toString()))
+            permission.granted();
+        else for (ChannelId id : _wilds)
+        {
+            if (id.matches(channelId))
+            {
+                permission.granted();
+                break;
+            }
         }
     }
 
@@ -60,67 +75,7 @@ public class ChannelAuthorizer implements Authorizer
             channels.add(chan.toString());
         return channels;
     }
-
-    public EnumSet<Authorizer.Operation> getOperations()
-    {
-        return EnumSet.copyOf(_operations);
-    }
-
-    public void canCreate(Permission permission, BayeuxServer server, ServerSession session, ChannelId channelId, ServerMessage message)
-    {
-        if (_canCreate)
-        {
-            if (_channels.contains(channelId.toString()))
-                permission.granted();
-            else for (ChannelId id : _wilds)
-            {
-                if (id.matches(channelId))
-                {
-                    permission.granted();
-                    break;
-                }
-            }
-        }
-    }
-
-    public void canHandshake(Permission permission, BayeuxServer server, ServerSession session, ServerMessage message)
-    {
-    }
-
-    public void canPublish(Permission permission, BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
-    {
-        if (_canPublish)
-        {
-            if (_channels.contains(channel.getId()))
-                permission.granted();
-            else for (ChannelId id : _wilds)
-            {
-                if (id.matches(channel.getChannelId()))
-                {
-                    permission.granted();
-                    break;
-                }
-            }
-        }
-    }
-
-    public void canSubscribe(Permission permission, BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
-    {
-        if (_canSubscribe)
-        {
-            if (_channels.contains(channel.getId()))
-                permission.granted();
-            else for (ChannelId id : _wilds)
-            {
-                if (id.matches(channel.getChannelId()))
-                {
-                    permission.granted();
-                    break;
-                }
-            }
-        }
-    }
-
+    
     public String toString()
     {
         return"{"+_operations+"@"+_channels+"}";

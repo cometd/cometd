@@ -22,7 +22,7 @@ import org.cometd.bayeux.ChannelId;
  * Cometd Authorizer.
  * <p>
  * A cometd {@link BayeuxServer} may have zero or more Authorizers that work 
- * together with the {@link SecurityPolicy} to determine if a handshake, channel create,
+ * together with the {@link SecurityPolicy} to determine if a  channel create,
  * channel subscribe or publish operation may succeed.  
  * <p>
  * Each registered Authorizer may either permit, deny or ignore an operation.
@@ -41,49 +41,32 @@ import org.cometd.bayeux.ChannelId;
 public interface Authorizer
 {
     /**
-     * Operation enumeration.
-     * <p>This enumeration is not used by this interface, but is provided
-     * as a convenience for implementations.
+     * Operations.
      */
     enum Operation {HANDSHAKE, CREATE, SUBSCRIBE, PUBLISH };
     
     public final static EnumSet<Operation> CreatePublishSubscribe=EnumSet.of(Operation.CREATE,Operation.SUBSCRIBE,Operation.PUBLISH);
     public final static EnumSet<Operation> PublishSubscribe=EnumSet.of(Operation.SUBSCRIBE,Operation.PUBLISH);
     
-    /** Can a channel be created.
+    /**
+     * Check if this authorizer applies to an operation type.
+     * @param operation
+     * @return True if applicable
+     */
+    boolean appliesTo(Operation operation);
+    
+    /** Authorize the operation.
+     * <p>
+     * Call {@link Permission#granted()} or {@link Permission#denied()} or neither for an operation.  
+     * The implementation need not check {@link #appliesTo(Operation)}, as that must always return true before this
+     * method is invoked.
      * @param permission The permission to grant, deny or ignore.
      * @param server The Bayeux Server
      * @param session The session
      * @param channelId The channel to create
      * @param message The handshake message (immutable)
      */
-    void canCreate(Permission permission, BayeuxServer server, ServerSession session, ChannelId channelId, ServerMessage message);
-
-    /**
-     * @param permission The permission to grant, deny or ignore.
-     * @param server The Bayeux Server
-     * @param session The session that will be created.
-     * @param message The handshake message (immutable)
-     */
-    void canHandshake(Permission permission, BayeuxServer server, ServerSession session, ServerMessage message);
-
-    /**
-     * @param permission The permission to grant, deny or ignore.
-     * @param server The Bayeux Server
-     * @param session The session
-     * @param channel The channel to publish to
-     * @param message The publish message (immutable)
-     */
-    void canPublish(Permission permission, BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message);
-
-    /**
-     * @param permission The permission to grant, deny or ignore.
-     * @param server The Bayeux Server
-     * @param session The session
-     * @param channel The channel to subscribe to
-     * @param message The subscribe message (immutable)
-     */
-    void canSubscribe(Permission permission, BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message);
+    void authorize(Permission permission, BayeuxServer server, ServerSession session, Operation operation, ChannelId channelId, ServerMessage message);
 
     /**
      * Permission interface
