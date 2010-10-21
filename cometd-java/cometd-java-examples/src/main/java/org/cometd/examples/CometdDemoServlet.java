@@ -15,6 +15,7 @@
 package org.cometd.examples;
 
 import java.io.IOException;
+import java.nio.channels.Channel;
 import java.util.EnumSet;
 import java.util.Map;
 import javax.inject.Inject;
@@ -25,10 +26,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.server.Authorizer;
-import org.cometd.bayeux.server.Authorizer.Operation;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
+import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.java.annotation.Listener;
@@ -36,7 +36,6 @@ import org.cometd.java.annotation.ServerAnnotationProcessor;
 import org.cometd.java.annotation.Service;
 import org.cometd.java.annotation.Session;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.authorizer.ChannelAuthorizer;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.ext.TimesyncExtension;
@@ -56,8 +55,18 @@ public class CometdDemoServlet extends GenericServlet
         bayeux.addExtension(new TimesyncExtension());
         bayeux.addExtension(new AcknowledgedMessagesExtension());
 
+        // Deny unless granted
+        
+        bayeux.createIfAbsent("/**",new ServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.addAuthorizer(GrantAuthorizer.GRANT_NONE);
+            }   
+        });
+        
         // Allow anybody to handshake
-        bayeux.addAuthorizer(new GrantAuthorizer(EnumSet.of(Authorizer.Operation.HANDSHAKE)));
+        bayeux.getChannel(ServerChannel.META_HANDSHAKE).addAuthorizer(GrantAuthorizer.GRANT_PUB);
 
         processor = ServerAnnotationProcessor.get(bayeux);
 
@@ -93,7 +102,13 @@ public class CometdDemoServlet extends GenericServlet
         @Inject
         protected void init(BayeuxServer bayeux)
         {
-            bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.PUBLISH),"/service/echo"));
+            bayeux.createIfAbsent("/service/echo",new ServerChannel.Initializer()
+            {
+                public void configureChannel(ConfigurableServerChannel channel)
+                {
+                    channel.addAuthorizer(GrantAuthorizer.GRANT_PUB);
+                }
+            });
         }
 
         @Listener("/service/echo")

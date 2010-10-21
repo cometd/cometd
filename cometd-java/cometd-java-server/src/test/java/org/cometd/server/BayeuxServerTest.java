@@ -14,6 +14,7 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.authorizer.GrantAuthorizer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

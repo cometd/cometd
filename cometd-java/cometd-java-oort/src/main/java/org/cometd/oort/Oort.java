@@ -12,14 +12,13 @@ import java.util.concurrent.ConcurrentMap;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.authorizer.ChannelAuthorizer;
+import org.cometd.server.authorizer.GrantAuthorizer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
@@ -68,7 +67,7 @@ public class Oort
         bayeux.addExtension(new OortExtension());
 
         // TODO proper authorization
-        bayeux.addAuthorizer(new ChannelAuthorizer(Authorizer.CreatePublishSubscribe,"/oort/cloud"));
+        bayeux.getChannel("/oort/cloud/**").addAuthorizer(GrantAuthorizer.GRANT_ALL);
         
         try
         {

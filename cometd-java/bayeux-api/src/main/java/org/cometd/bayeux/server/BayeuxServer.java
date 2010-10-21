@@ -66,6 +66,7 @@ public interface BayeuxServer extends Bayeux
      * @param channelId the channel identifier
      * @return a {@link ServerChannel} with the given {@code channelId},
      * or null if no such channel exists
+     * @see #createIfAbsent(String, org.cometd.bayeux.server.ConfigurableServerChannel.Initializer...)
      */
     ServerChannel getChannel(String channelId);
 
@@ -130,22 +131,6 @@ public interface BayeuxServer extends Bayeux
      * @see #getSecurityPolicy()
      */
     public void setSecurityPolicy(SecurityPolicy securityPolicy);
-
-    /**
-     * <p>Adds an {@link Authorizer}.</p>
-     * <p>Operations must be permitted (see {@link Authorizer.Permission#granted())
-     * by at least one added Authorizer and must not be denied (see {@link Authorizer.Permission#denied()) by any.</p>
-     * @param authorizer the Authorizer to add
-     * @see #removeAuthorizer(Authorizer)
-     */
-    public void addAuthorizer(Authorizer authorizer);
-
-    /**
-     * <p>Removes an {@link Authorizer}.</p>
-     * @param authorizer the Authorizer to remove
-     * @see #addAuthorizer(Authorizer)
-     */
-    public void removeAuthorizer(Authorizer authorizer);
 
     /**
      * @return the current transport instance of the current thread

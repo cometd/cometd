@@ -48,6 +48,13 @@ public interface Message extends Map<String, Object>
      * @return the channel of the message
      */
     String getChannel();
+    
+    /**
+     * Convenience method to retrieve the {@link #CHANNEL_FIELD}.
+     * Bayeux message always have a non null channel.
+     * @return the channel of the message
+     */
+    ChannelId getChannelId();
 
     /**
      * Convenience method to retrieve the {@link #CLIENT_ID_FIELD}

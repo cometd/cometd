@@ -2,7 +2,9 @@ package org.cometd.server;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
@@ -10,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Session;
+import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
@@ -25,6 +28,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     private final AttributesMap _attributes = new AttributesMap();
     private final Set<ServerSession> _subscribers = new CopyOnWriteArraySet<ServerSession>();
     private final List<ServerChannelListener> _listeners = new CopyOnWriteArrayList<ServerChannelListener>();
+    private final Queue<Authorizer> _authorizers = new ConcurrentLinkedQueue<Authorizer>();
     private final boolean _meta;
     private final boolean _broadcast;
     private final boolean _service;
@@ -283,6 +287,11 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         b.append(isLazy()?" lazy":"");
         b.append('\n');
 
+        /* TODO
+        if (_authorizers!=null)
+            children.addAll(_authorizers);
+        */
+        
         List<ServerChannelImpl> children =_bayeux.getChannelChildren(_id);
         int leaves=children.size()+_subscribers.size()+_listeners.size();
         int i=0;
@@ -307,6 +316,24 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         }
     }
 
+    /* ------------------------------------------------------------ */
+    public void addAuthorizer(Authorizer authorizer)
+    {
+        _authorizers.add(authorizer);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void removeAuthorizer(Authorizer authorizer)
+    {
+        _authorizers.remove(authorizer);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public Queue<Authorizer> getAuthorizers()
+    {
+        return _authorizers;
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public String toString()

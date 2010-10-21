@@ -88,4 +88,22 @@ public interface ConfigurableServerChannel extends Channel
      * @see #isPersistent()
      */
     void setPersistent(boolean persistent);
+    
+
+    /**
+     * <p>Adds an {@link Authorizer}.</p>
+     * <p>Operations must be permitted (see {@link Authorizer.Permission#granted())
+     * by at least one added Authorizer and must not be denied (see {@link Authorizer.Permission#denied()) by any.</p>
+     * @param authorizer the Authorizer to add
+     * @see #removeAuthorizer(Authorizer)
+     */
+    public void addAuthorizer(Authorizer authorizer);
+
+    /**
+     * <p>Removes an {@link Authorizer}.</p>
+     * @param authorizer the Authorizer to remove
+     * @see #addAuthorizer(Authorizer)
+     */
+    public void removeAuthorizer(Authorizer authorizer);
+
 }

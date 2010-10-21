@@ -9,13 +9,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -24,7 +22,6 @@ import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.server.Authorizer;
-import org.cometd.bayeux.server.Authorizer.Operation;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel.Initializer;
@@ -37,8 +34,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
-import org.cometd.server.authorizer.ChannelAuthorizer;
-import org.cometd.server.authorizer.ChannelsAuthorizer;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
 import org.cometd.server.transport.WebSocketTransport;
@@ -81,8 +76,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private Timer _timer = new Timer();
     private Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
     private SecurityPolicy _policy=new DefaultSecurityPolicy();
-    private final ChannelsAuthorizer _channelsAuthorizer=new ChannelsAuthorizer();
-    private final Queue<Authorizer> _authorizers = new ConcurrentLinkedQueue<Authorizer>();
 
     /* ------------------------------------------------------------ */
     public Logger getLogger()
@@ -475,36 +468,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public void addAuthorizer(Authorizer authorizer)
-    {
-        synchronized (this)
-        {
-            if (_authorizers.size()==0)
-                _authorizers.add(_channelsAuthorizer);
-
-            if (authorizer instanceof ChannelAuthorizer)
-                _channelsAuthorizer.addChannelAuthorizer((ChannelAuthorizer)authorizer);
-            else
-                _authorizers.add(authorizer);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public void removeAuthorizer(Authorizer authorizer)
-    {
-        synchronized (this)
-        {
-            if (authorizer instanceof ChannelAuthorizer)
-                _channelsAuthorizer.removeChannelAuthorizer((ChannelAuthorizer)authorizer);
-            else
-                _authorizers.remove(authorizer);
-
-            if (_channelsAuthorizer.size()==0 && _authorizers.size()==1)
-                _authorizers.remove(_channelsAuthorizer);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
     public void addExtension(Extension extension)
     {
         _extensions.add(extension);
@@ -530,6 +493,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _channels.get(channelId);
     }
 
+    /* ------------------------------------------------------------ */
     public List<ServerChannel> getChannels()
     {
         return Collections.unmodifiableList(new ArrayList<ServerChannel>(_channels.values()));
@@ -577,7 +541,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (_logger.isDebugEnabled())
                 _logger.debug(">> "+message);
             String channelId=message.getChannel();
-            final Permit auth=new Permit(Authorizer.Operation.CREATE);
+            final Permit auth=new Permit();
 
             ServerChannel channel=null;
             if (channelId!=null)
@@ -591,7 +555,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 }
             }
 
-            final Permit p_auth=new Permit(Authorizer.Operation.PUBLISH);
             if (channel==null)
             {
                 reply = createReply(message);
@@ -602,7 +565,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 doPublish(session,(ServerChannelImpl)channel,message);
                 reply = message.getAssociated();
             }
-            else if (p_auth.canPublish(session,channel,message))
+            else if (auth.canPublish(session,channel,message))
             {
                 // Do not leak the clientId to other subscribers
                 message.setClientId(null);
@@ -613,7 +576,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             else
             {
                 reply = createReply(message);
-                error(reply,session==null?"402::unknown client":"403:"+p_auth.getReasonDenied()+":Cannot publish");
+                error(reply,session==null?"402::unknown client":"403:"+auth.getReasonDenied()+":Cannot publish");
             }
         }
 
@@ -944,8 +907,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         ArrayList<Object> children = new ArrayList<Object>();
         if (_policy!=null)
             children.add(_policy);
-        if (_authorizers!=null)
-            children.addAll(_authorizers);
 
         for (ServerChannelImpl channel :_channels.values())
         {
@@ -998,7 +959,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             ServerMessage.Mutable reply=createReply(message);
 
-            Permit auth = new Permit(Authorizer.Operation.HANDSHAKE);
+            Permit auth = new Permit();
             if (!auth.canHandshake(session,message))
             {
                 error(reply,"403:"+auth.getReasonDenied()+":Handshake denied");
@@ -1083,7 +1044,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             {
                 reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);
                 ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscribe_id);
-                Permit auth = new Permit(Authorizer.Operation.SUBSCRIBE);
+                Permit auth = new Permit();
 
                 if (channel==null && auth.canCreate(from,subscribe_id,message))
                 {
@@ -1183,15 +1144,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     private class Permit
     {
-        final Authorizer.Operation _operation;
+        Authorizer.Operation _operation;
         boolean _granted;
         boolean _denied;
         String _reasonDenied;
 
 
-        Permit(Authorizer.Operation operation)
+        Permit()
         {
-            _operation=operation;
         }
 
         public String getReasonDenied()
@@ -1207,6 +1167,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 _reasonDenied="SecurityPolicy";
                 return false;
             }
+            _operation=Authorizer.Operation.CREATE;
             ChannelId id = new ChannelId(channelId);
             return authorize(session,id,message);       
         }
@@ -1219,7 +1180,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 _reasonDenied="SecurityPolicy";
                 return false;
             }
-            return authorize(session,null,message);   
+            _operation=Authorizer.Operation.PUBLISH;
+            return authorize(session,ChannelId.META_HANDSHAKE_ID,message);   
         }
 
         public boolean canPublish(ServerSession session, ServerChannel channel, ServerMessage message)
@@ -1230,6 +1192,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 _reasonDenied="SecurityPolicy";
                 return false;
             }
+            _operation=Authorizer.Operation.PUBLISH;
             return authorize(session,channel.getChannelId(),message); 
         }
 
@@ -1241,15 +1204,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 _reasonDenied="SecurityPolicy";
                 return false;
             }
+            _operation=Authorizer.Operation.PUBLISH;
             return authorize(session,channel.getChannelId(),message); 
         }
 
         private boolean authorize(final ServerSession session, final ChannelId id, final ServerMessage message)
         {
-            // Always authorized if there are no authorizers
-            if (_authorizers.isEmpty())
-                return true;
-            
             // Assume not granted and not denied
             _granted=false;
             _denied=false;
@@ -1277,26 +1237,43 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                         _logger.debug("{} granted {}@{} for {}",session,_operation,id,_reasonDenied);
                 }
             };
-            
-            // authorize with all applicable authorizers
-            for (Authorizer policy : _authorizers)
-            {
-                if (policy.appliesTo(_operation))
-                {
-                    policy.authorize(_permission,BayeuxServerImpl.this,session,_operation,id,message);
 
+            boolean auth_called=false;
+            final List<String> wildIds=id.getWilds();
+            for (int i=wildIds.size();i-->0;)
+            {
+                ServerChannelImpl channel = _channels.get(wildIds.get(i));
+                if (channel!=null)
+                {
+                    for (Authorizer auth : channel.getAuthorizers())
+                    {   
+                        auth_called=true;
+                        auth.authorize(_permission,session,_operation,id,message);
+                        if (_denied)
+                            return false;
+                    }
+                }
+            }
+
+            ServerChannelImpl channel = _channels.get(id);
+            if (channel!=null)
+            {
+                for (Authorizer auth : channel.getAuthorizers())
+                {
+                    auth_called=true;
+                    auth.authorize(_permission,session,_operation,id,message);
                     if (_denied)
                         return false;
                 }
             }
                 
-            if (!_granted)
+            if (!_granted && auth_called)
             {
-                _logger.warn("{} !granted Create@{} by {}",session,id,_authorizers);
+                _logger.warn("{} !granted {}@{}",session,_operation,id);
                 _reasonDenied="Not granted";
             }
             
-            return _granted;
+            return true;
         }
 
     }

@@ -9,12 +9,11 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.authorizer.ChannelAuthorizer;
+import org.cometd.server.authorizer.GrantAuthorizer;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -70,7 +69,7 @@ public class Seti
         _shardId=shardId;
 
         // TODO proper authorization
-        bayeux.addAuthorizer(new ChannelAuthorizer(Authorizer.CreatePublishSubscribe,"/seti/**"));
+        bayeux.getChannel("/set/**").addAuthorizer(GrantAuthorizer.GRANT_ALL);
         
         String channel = "/seti/"+_setiId;
         bayeux.createIfAbsent(channel);

@@ -53,6 +53,11 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         return (String)get(CHANNEL_FIELD);
     }
 
+    public ChannelId getChannelId()
+    {
+        return new ChannelId((String)get(CHANNEL_FIELD));
+    }
+
     public String getClientId()
     {
         return (String)get(CLIENT_ID_FIELD);
@@ -188,7 +193,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         if (object instanceof Message.Mutable)
             return Collections.singletonList((Message.Mutable)object);
         return Arrays.asList((Message.Mutable[])object);
-}
+    }
 
     protected static JSON jsonParser = new JSON();
     private static JSON _messageParser = new JSON()

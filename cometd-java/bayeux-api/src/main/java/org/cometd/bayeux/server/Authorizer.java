@@ -21,7 +21,7 @@ import org.cometd.bayeux.ChannelId;
 /**
  * Cometd Authorizer.
  * <p>
- * A cometd {@link BayeuxServer} may have zero or more Authorizers that work 
+ * A cometd {@link ServerChannel} may have zero or more Authorizers that work 
  * together with the {@link SecurityPolicy} to determine if a  channel create,
  * channel subscribe or publish operation may succeed.  
  * <p>
@@ -43,30 +43,17 @@ public interface Authorizer
     /**
      * Operations.
      */
-    enum Operation {HANDSHAKE, CREATE, SUBSCRIBE, PUBLISH };
-    
-    public final static EnumSet<Operation> CreatePublishSubscribe=EnumSet.of(Operation.CREATE,Operation.SUBSCRIBE,Operation.PUBLISH);
-    public final static EnumSet<Operation> PublishSubscribe=EnumSet.of(Operation.SUBSCRIBE,Operation.PUBLISH);
-    
-    /**
-     * Check if this authorizer applies to an operation type.
-     * @param operation
-     * @return True if applicable
-     */
-    boolean appliesTo(Operation operation);
+    enum Operation {CREATE, SUBSCRIBE, PUBLISH };
     
     /** Authorize the operation.
      * <p>
      * Call {@link Permission#granted()} or {@link Permission#denied()} or neither for an operation.  
-     * The implementation need not check {@link #appliesTo(Operation)}, as that must always return true before this
-     * method is invoked.
      * @param permission The permission to grant, deny or ignore.
-     * @param server The Bayeux Server
      * @param session The session
      * @param channelId The channel to create
      * @param message The handshake message (immutable)
      */
-    void authorize(Permission permission, BayeuxServer server, ServerSession session, Operation operation, ChannelId channelId, ServerMessage message);
+    void authorize(Permission permission, ServerSession session, Operation operation, ChannelId channelId, ServerMessage message);
 
     /**
      * Permission interface
