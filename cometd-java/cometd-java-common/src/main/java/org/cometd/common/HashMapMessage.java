@@ -65,12 +65,24 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     public Map<String, Object> getDataAsMap()
     {
-        return (Map<String, Object>)get(DATA_FIELD);
+        Object data = get(DATA_FIELD);
+        if (data instanceof JSON.Literal)
+        {
+            data = jsonParser.parse(data.toString());
+            put(DATA_FIELD, data);
+        }
+        return (Map<String, Object>)data;
     }
 
     public Map<String, Object> getExt()
     {
-        return (Map<String, Object>)get(EXT_FIELD);
+        Object ext = get(EXT_FIELD);
+        if (ext instanceof JSON.Literal)
+        {
+            ext = jsonParser.parse(ext.toString());
+            put(EXT_FIELD, ext);
+        }
+        return (Map<String, Object>)ext;
     }
 
     public String getId()
