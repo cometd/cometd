@@ -143,6 +143,7 @@ public class ServerMessageImplTest
         ServerMessageImpl associated = new ServerMessageImpl();
         associated.put("associated", true);
         message.setAssociated(associated);
+        message.freeze();
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -155,5 +156,49 @@ public class ServerMessageImplTest
         assertEquals(message, deserialized);
         assertTrue(deserialized.isLazy());
         assertNull(deserialized.getAssociated());
+
+        // Make sure the message is still frozen
+        try
+        {
+            deserialized.put("a", "b");
+            fail();
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+    }
+
+    @Test
+    public void testModificationViaEntrySet() throws Exception
+    {
+        ServerMessageImpl message = new ServerMessageImpl();
+        message.setChannel("/channel");
+
+        for (Map.Entry<String, Object> field : message.entrySet())
+        {
+            if (Message.CHANNEL_FIELD.equals(field.getKey()))
+            {
+                field.setValue("/foo");
+                break;
+            }
+        }
+
+        message.freeze();
+
+        for (Map.Entry<String, Object> field : message.entrySet())
+        {
+            if (Message.CHANNEL_FIELD.equals(field.getKey()))
+            {
+                try
+                {
+                    field.setValue("/foo");
+                    fail();
+                }
+                catch (UnsupportedOperationException expected)
+                {
+                    break;
+                }
+            }
+        }
     }
 }
