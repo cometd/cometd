@@ -24,6 +24,8 @@ import java.util.List;
  */
 public class ChannelId
 {
+    public final static ChannelId META_HANDSHAKE_ID = new ChannelId(Channel.META_HANDSHAKE);
+    
     public final static String WILD="*";
     public final static String DEEPWILD="**";
 

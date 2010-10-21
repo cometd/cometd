@@ -4,9 +4,6 @@
 package org.webtide.demo.auction;
 
 import java.util.HashMap;
-import org.cometd.bayeux.server.Authorizer.Operation;
-
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -20,7 +17,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Oort;
 import org.cometd.oort.Seti;
 import org.cometd.server.AbstractService;
-import org.cometd.server.authorizer.ChannelAuthorizer;
+import org.cometd.server.authorizer.GrantAuthorizer;
 import org.eclipse.jetty.util.log.Log;
 
 public class AuctionChatService extends AbstractService
@@ -43,8 +40,8 @@ public class AuctionChatService extends AbstractService
         if (_seti==null)
             throw new RuntimeException("!"+Seti.SETI_ATTRIBUTE);
 
-        getBayeux().addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.CREATE,Operation.SUBSCRIBE,Operation.PUBLISH),
-                "/auction/chat/**","/service/auction/chat"));
+        getBayeux().getChannel("/auction/chat/**").addAuthorizer(GrantAuthorizer.GRANT_ALL);
+        getBayeux().getChannel("/service/auction/chat").addAuthorizer(GrantAuthorizer.GRANT_ALL);
         addService("/auction/chat/**", "trackMembers");
         addService("/service/auction/chat", "privateChat");
     }

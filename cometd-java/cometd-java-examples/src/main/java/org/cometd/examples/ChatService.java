@@ -4,7 +4,6 @@
 package org.cometd.examples;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -13,8 +12,6 @@ import java.util.concurrent.ConcurrentMap;
 import javax.inject.Inject;
 
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.Authorizer;
-import org.cometd.bayeux.server.Authorizer.Operation;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
@@ -23,7 +20,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.java.annotation.Listener;
 import org.cometd.java.annotation.Service;
 import org.cometd.java.annotation.Session;
-import org.cometd.server.authorizer.ChannelAuthorizer;
+import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.filter.DataFilter;
 import org.cometd.server.filter.DataFilterMessageListener;
 import org.cometd.server.filter.JSONDataFilter;
@@ -41,21 +38,37 @@ public class ChatService
     public void setBayeux(BayeuxServer bayeux)
     {
         _bayeux=bayeux;
-        _bayeux.addAuthorizer(new ChannelAuthorizer(Authorizer.CreatePublishSubscribe,"/chat/**"));
-        _bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.PUBLISH),"/service/privatechat"));
-        _bayeux.addAuthorizer(new ChannelAuthorizer(EnumSet.of(Operation.PUBLISH),"/service/members"));
 
         final DataFilterMessageListener noMarkup = new DataFilterMessageListener(bayeux,new NoMarkupFilter(),new BadWordFilter());
-        ServerChannel.Initializer initNoMarkup = new ServerChannel.Initializer()
+        
+        if (!bayeux.createIfAbsent("/chat/**",new ServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.addListener(noMarkup);
+                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
+            }
+        }))
+            throw new IllegalStateException();
+            
+        if( !bayeux.createIfAbsent("/service/privatechat",new ServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
                 channel.setPersistent(true);
                 channel.addListener(noMarkup);
+                channel.addAuthorizer(GrantAuthorizer.GRANT_PUB);
             }
-        };
-        if (!bayeux.createIfAbsent("/chat/**",initNoMarkup) ||
-                !bayeux.createIfAbsent("/service/privatechat",initNoMarkup))
+        }))
+            throw new IllegalStateException();
+        
+        if( !bayeux.createIfAbsent("/service/members",new ServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.addAuthorizer(GrantAuthorizer.GRANT_PUB);
+            }
+        }))
             throw new IllegalStateException();
     }
 
