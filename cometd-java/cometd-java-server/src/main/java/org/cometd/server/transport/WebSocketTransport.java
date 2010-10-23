@@ -407,7 +407,7 @@ public class WebSocketTransport extends HttpTransport
             return _session==null?null:_session.getId();
         }
 
-        public Collection<String> getHttpSesionAttributeNames()
+        public Collection<String> getHttpSessionAttributeNames()
         {
             return Collections.list(_session==null?null:_session.getAttributeNames());
         }
