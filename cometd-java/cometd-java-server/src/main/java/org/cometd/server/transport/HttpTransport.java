@@ -205,7 +205,7 @@ public abstract class HttpTransport extends AbstractServerTransport
             return null;
         }
 
-        public Collection<String> getHttpSesionAttributeNames()
+        public Collection<String> getHttpSessionAttributeNames()
         {
             HttpSession session = _request.getSession(false);
             if (session!=null)
