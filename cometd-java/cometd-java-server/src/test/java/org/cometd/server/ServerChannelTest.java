@@ -1,19 +1,23 @@
 package org.cometd.server;
 
-import junit.framework.Assert;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.authorizer.GrantAuthorizer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
-
-public class ServerChannelTest extends Assert
+public class ServerChannelTest
 {
     private BayeuxChannelListener _bayeuxChannelListener;
     private BayeuxSubscriptionListener _bayeuxSubscriptionListener;
@@ -116,9 +120,7 @@ public class ServerChannelTest extends Assert
 
         // Remove also the listener, then sweep: /foo/bar should be gone
         fooBar.removeListener(csubl);
-        _bayeux.doSweep();
-        _bayeux.doSweep();
-        _bayeux.doSweep();
+        sweep();
 
         // remove for /foo/bar
         assertEquals(9, _bayeuxChannelListener._calls);
@@ -162,7 +164,6 @@ public class ServerChannelTest extends Assert
 
         assertEquals(0,channel.getSubscribers().size());
         assertTrue(!channel.getSubscribers().contains(session0));
-
     }
 
     @Test
@@ -278,10 +279,8 @@ public class ServerChannelTest extends Assert
         _bayeux.createIfAbsent("/foo/bar");
         ServerChannel fooBar = _bayeux.getChannel("/foo/bar");
 
-        // Need to sweep 3 times before the channel is removed
-        _bayeux.doSweep();
-        _bayeux.doSweep();
-        _bayeux.doSweep();
+        sweep();
+
         assertNull(_bayeux.getChannel(fooBar.getId()));
 
         ServerSessionImpl session0 = newServerSession();
@@ -293,25 +292,42 @@ public class ServerChannelTest extends Assert
     }
 
     @Test
-    public void testPersistent() throws Exception
+    public void testPersistentChannelIsNotSwept() throws Exception
+    {
+        String channelName = "/foo/bar";
+        _bayeux.createIfAbsent(channelName);
+        ServerChannel foobar = _bayeux.getChannel(channelName);
+        foobar.setPersistent(true);
+
+        sweep();
+        assertNotNull(_bayeux.getChannel(channelName));
+    }
+
+    @Test
+    public void testChannelWithSubscriberIsNotSwept() throws Exception
     {
         _bayeux.createIfAbsent("/foo/bar");
         ServerChannelImpl foobar = (ServerChannelImpl)_bayeux.getChannel("/foo/bar");
         assertEquals(foobar,_bayeux.getChannel("/foo/bar"));
+
+        // First sweep does not remove the channel yet
         _bayeux.doSweep();
         assertEquals(foobar,_bayeux.getChannel("/foo/bar"));
+        // Nor a second sweep
+        _bayeux.doSweep();
+        assertEquals(foobar,_bayeux.getChannel("/foo/bar"));
+        // Third sweep removes it
+        _bayeux.doSweep();
+        assertNull(_bayeux.getChannel("/foo/bar"));
 
         _bayeux.createIfAbsent("/foo/bar/baz");
         _bayeux.getChannel("/foo/bar/baz").remove();
-        assertEquals(foobar,_bayeux.getChannel("/foo/bar"));
-        _bayeux.doSweep();
+        assertNull(_bayeux.getChannel("/foo/bar/baz"));
         assertNotNull(_bayeux.getChannel("/foo/bar"));
         assertNotNull(_bayeux.getChannel("/foo"));
-        _bayeux.doSweep();
-        _bayeux.doSweep();
+
+        sweep();
         assertNull(_bayeux.getChannel("/foo/bar"));
-        _bayeux.doSweep();
-        _bayeux.doSweep();
         assertNull(_bayeux.getChannel("/foo"));
 
         _bayeux.createIfAbsent("/foo/bar");
@@ -321,50 +337,24 @@ public class ServerChannelTest extends Assert
         _bayeux.createIfAbsent("/foo/bar/baz");
         ServerChannelImpl foobarbaz = (ServerChannelImpl)_bayeux.getChannel("/foo/bar/baz");
         ServerSessionImpl session0 = newServerSession();
-
         foobarbaz.subscribe(session0);
         ((ServerChannelImpl)_bayeux.getChannel("/foo")).subscribe(session0);
-        _bayeux.doSweep();
-        _bayeux.doSweep();
-        _bayeux.doSweep();
+
+        sweep();
         assertNotNull(_bayeux.getChannel("/foo/bar/baz"));
         assertNotNull(_bayeux.getChannel("/foo/bar"));
         assertNotNull(_bayeux.getChannel("/foo"));
 
         foobarbaz.unsubscribe(session0);
-        _bayeux.doSweep();
 
-        assertNotNull(_bayeux.getChannel("/foo/bar/baz"));
-        assertNotNull(_bayeux.getChannel("/foo/bar"));
-        assertNotNull(_bayeux.getChannel("/foo"));
-
-        _bayeux.doSweep();
-        _bayeux.doSweep();
-
-        assertNull(_bayeux.getChannel("/foo/bar/baz"));
-        assertNotNull(_bayeux.getChannel("/foo/bar"));
-        assertNotNull(_bayeux.getChannel("/foo"));
-
-        _bayeux.doSweep();
-        _bayeux.doSweep();
-        _bayeux.doSweep();
-
-        assertNull(_bayeux.getChannel("/foo/bar/baz"));
-        assertNull(_bayeux.getChannel("/foo/bar"));
-        assertNotNull(_bayeux.getChannel("/foo"));
-
-        _bayeux.doSweep();
-        _bayeux.doSweep();
-        _bayeux.doSweep();
-
+        sweep();
         assertNull(_bayeux.getChannel("/foo/bar/baz"));
         assertNull(_bayeux.getChannel("/foo/bar"));
         assertNotNull(_bayeux.getChannel("/foo"));
 
         ((ServerChannelImpl)_bayeux.getChannel("/foo")).unsubscribe(session0);
-        _bayeux.doSweep();
-        _bayeux.doSweep();
-        _bayeux.doSweep();
+
+        sweep();
         assertNull(_bayeux.getChannel("/foo"));
     }
 
@@ -382,10 +372,72 @@ public class ServerChannelTest extends Assert
             }
         });
 
-        for (int i = 0; i < 4; ++i)
-            _bayeux.doSweep();
+        sweep();
 
         assertNotNull(_bayeux.getChannel(channelName));
+    }
+
+    @Test
+    public void testChannelsWithAutorizersSweeping() throws Exception
+    {
+        ServerChannel.MessageListener listener = new ServerChannel.MessageListener()
+        {
+            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
+            {
+                return true;
+            }
+        };
+        ConfigurableServerChannel.Initializer initializer = new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
+            }
+        };
+
+        String channelName1 = "/a/b/c";
+        _bayeux.createIfAbsent(channelName1);
+        ServerChannel channel1 = _bayeux.getChannel(channelName1);
+        channel1.addListener(listener);
+
+        String wildName1 = "/a/b/*";
+        _bayeux.createIfAbsent(wildName1, initializer);
+
+        String wildName2 = "/a/**";
+        _bayeux.createIfAbsent(wildName2, initializer);
+
+        sweep();
+
+        // Channel with authorizers but no listeners or subscriber must not be swept
+        assertNotNull(_bayeux.getChannel(channelName1));
+        assertNotNull(_bayeux.getChannel(wildName1));
+        assertNotNull(_bayeux.getChannel(wildName2));
+
+        // Remove the authorizer from a wild parent must sweep the wild parent
+        _bayeux.getChannel(wildName2).removeAuthorizer(GrantAuthorizer.GRANT_ALL);
+
+        sweep();
+
+        assertNotNull(_bayeux.getChannel(channelName1));
+        assertNotNull(_bayeux.getChannel(wildName1));
+        assertNull(_bayeux.getChannel(wildName2));
+
+        // Remove the listener from a channel must not sweep the wild parent with authorizer
+        // since other channels may be added later that will match the wild channel
+        _bayeux.getChannel(channelName1).removeListener(listener);
+
+        sweep();
+
+        assertNull(_bayeux.getChannel(channelName1));
+        assertNotNull(_bayeux.getChannel(wildName1));
+        assertNull(_bayeux.getChannel(wildName2));
+    }
+
+    private void sweep()
+    {
+        // 12 is a big enough number that will make sure channel will be swept
+        for (int i = 0; i < 12; ++i)
+            _bayeux.doSweep();
     }
 
     private ServerSessionImpl newServerSession()

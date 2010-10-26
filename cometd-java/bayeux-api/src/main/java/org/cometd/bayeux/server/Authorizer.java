@@ -14,67 +14,182 @@
 
 package org.cometd.bayeux.server;
 
-import java.util.EnumSet;
-
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 
 /**
- * Cometd Authorizer.
- * <p>
- * A cometd {@link ServerChannel} may have zero or more Authorizers that work 
- * together with the {@link SecurityPolicy} to determine if a  channel create,
- * channel subscribe or publish operation may succeed.  
- * <p>
- * Each registered Authorizer may either permit, deny or ignore an operation.
- * An operation will only be permitted if all of the following are true:<ul>
- * <li>There is no SecurityPolicy or the corresponding method returned true</li>
- * <li>There are no Authorizers registered, or at least one registered Authorizer 
- * calls {@link Authorizer.Permission#granted()}.
- * <li>There are no Authorizers registered, or none of the registered Authorizers calls
- * {@link Authorizer.Permission#denied()}.
+ * <p>{@link Authorizer}s authorize {@link Operation operations} on {@link ServerChannel channels}.</p>
+ *
+ * <p>Authorizers can be {@link ConfigurableServerChannel#addAuthorizer(Authorizer) added to} and
+ * {@link ConfigurableServerChannel#removeAuthorizer(Authorizer)}  removed from} channels, even wildcard
+ * channels.</p>
+ *
+ * <p>{@link Authorizer}s work together with the {@link SecurityPolicy} to determine if a
+ * {@link Operation#CREATE channel creation}, a {@link Operation#SUBSCRIBE channel subscribe} or a
+ * {@link Operation#PUBLISH publish operation} may succeed.
+ * </p>
+ *
+ * <p>For an operation on a channel, the authorizers on the wildcard channels that match the channel and the
+ * authorizers on the channel itself (together known at the <em>authorizers set</em> for that channel) will be
+ * consulted to check if the the operation is granted, denied or ignored.
+ * <br />
+ * The list of wildcard channels that match the channel is obtained from {@link ChannelId#getWilds()}.</p>
+ *
+ * <p>The following is the authorization algorithm:</p>
+ * <ul>
+ * <li>If there is a security policy, and the security policy denies the request, then the request is denied.</li>
+ * <li>Otherwise, if the authorizers set is empty, the request is granted.</li>
+ * <li>Otherwise, if no authorizer explicitly grant the operation, the request is denied.</li>
+ * <li>Otherwise, if at least one authorizer explicitly grants the operation, and no authorizer explicitly denies the
+ * operation, the request is granted.</li>
+ * <li>Otherwise, if one authorizer explicitly denies the operation, remaining authorizers are not consulted, and the
+ * request is denied.</li>
  * </ul>
- * <p>
- * Typically an Authorizer will be implemented using the information 
- * from {@link BayeuxServer#getContext()} to determine the users authentication.  
- *  
+ * <p>The order in which the authorizers are checked is not important.</p>
+ *
+ * <p>Typically, authorizers are setup during the configuration of a channel:</p>
+ * <pre>
+ * BayeuxServer bayeuxServer = ...;
+ * bayeuxServer.createIfAbsent("/television/cnn", new ConfigurableServerChannel.Initializer()
+ * {
+ *     public void configureChannel(ConfigurableServerChannel channel)
+ *     {
+ *         // Grant subscribe to all
+ *         channel.addAuthorizer(GrantAuthorizer.GRANT_SUBSCRIBE);
+ *
+ *         // Grant publishes only to CNN employees
+ *         channel.addAuthorizer(new Authorizer()
+ *         {
+ *             public Result authorize(Operation operation, ChannelId channel,
+ *                                     ServerSession session, ServerMessage message)
+ *             {
+ *                 if (operation == Operation.PUBLISH &&
+ *                         session.getAttribute("isCNNEmployee") == Boolean.TRUE)
+ *                     return Result.grant();
+ *                 else
+ *                     return Result.ignore();
+ *             }
+ *         });
+ *     }
+ * });
+ * </pre>
+ * @see SecurityPolicy
  */
 public interface Authorizer
 {
     /**
-     * Operations.
+     * Operations that are to be authorized on a channel
      */
-    enum Operation {CREATE, SUBSCRIBE, PUBLISH };
-    
-    /** Authorize the operation.
-     * <p>
-     * Call {@link Permission#granted()} or {@link Permission#denied()} or neither for an operation.  
-     * @param permission The permission to grant, deny or ignore.
-     * @param session The session
-     * @param channelId The channel to create
-     * @param message The handshake message (immutable)
-     */
-    void authorize(Permission permission, ServerSession session, Operation operation, ChannelId channelId, ServerMessage message);
-
-    /**
-     * Permission interface
-     *
-     */
-    interface Permission
+    enum Operation
     {
         /**
-         * Grant permission. 
+         * The operation to create a channel that does not exist
          */
-        void granted();
-        
+        CREATE,
         /**
-         * Deny permission.
+         * The operation to subscribe to a channel to receive messages published to it
          */
-        void denied();
-        
+        SUBSCRIBE,
         /**
-         * Deny permission for a given reason.
-         * @param reason The reason for denial.
+         * The operation to publish messages to a channel
          */
-        void denied(String reason);
+        PUBLISH
+    }
+
+    /**
+     * <p>Callback invoked to authorize the given {@code operation} on the given {@code channel}.</p>
+     * <p>Additional parameters are passed to this method as context parameters, so that it is possible
+     * to implement complex logic based on the {@link ServerSession} and {@link ServerMessage} that
+     * are requesting the authorization.</p>
+     * <p>Note that the message channel is not the same as the {@code channelId} parameter. For example,
+     * for subscription requests, the message channel is {@link Channel#META_SUBSCRIBE}, while the
+     * {@code channelId} parameter is the channel for which the subscription is requested.</p>
+     * <p>Note that for {@link Operation#CREATE create operation}, the channel instance does not yet
+     * exist: it will be created only after the authorization is granted.</p>
+     *
+     * @param operation the operation to authorize
+     * @param channel the channel for which the authorization has been requested
+     * @param session the session that is requesting the authorization
+     * @param message the message that triggered the authorization request
+     * @return the result of the authorization
+     */
+    Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message);
+
+    /**
+     * <p>The result of an authentication request.</p>
+     */
+    public static abstract class Result
+    {
+        /**
+         * @param reason the reason for which the authorization is denied
+         * @return a result that denies the authorization
+         */
+        public static Result deny(String reason)
+        {
+            return new Denied(reason);
+        }
+
+        /**
+         * @return a result that grants the authorization
+         */
+        public static Result grant()
+        {
+            return Granted.GRANTED;
+        }
+
+        /**
+         * @return a result that ignores the authorization, leaving the decision to other {@link Authorizer}s.
+         */
+        public static Result ignore()
+        {
+            return Ignored.IGNORED;
+        }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName().toLowerCase();
+        }
+
+        public static final class Denied extends Result
+        {
+            private final String reason;
+
+            private Denied(String reason)
+            {
+                if (reason == null)
+                    reason = "";
+                this.reason = reason;
+            }
+
+            public String getReason()
+            {
+                return reason;
+            }
+
+            @Override
+            public String toString()
+            {
+                return super.toString() + " (reason='" + reason + "')";
+            }
+        }
+
+        public static final class Granted extends Result
+        {
+            private static final Granted GRANTED = new Granted();
+
+            private Granted()
+            {
+            }
+        }
+
+        public static final class Ignored extends Result
+        {
+            private static final Ignored IGNORED = new Ignored();
+
+            private Ignored()
+            {
+            }
+        }
     }
 }

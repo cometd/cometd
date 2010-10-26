@@ -2,9 +2,7 @@ package org.cometd.server;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
@@ -28,14 +26,14 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     private final AttributesMap _attributes = new AttributesMap();
     private final Set<ServerSession> _subscribers = new CopyOnWriteArraySet<ServerSession>();
     private final List<ServerChannelListener> _listeners = new CopyOnWriteArrayList<ServerChannelListener>();
-    private final Queue<Authorizer> _authorizers = new ConcurrentLinkedQueue<Authorizer>();
+    private final List<Authorizer> _authorizers = new CopyOnWriteArrayList<Authorizer>();
     private final boolean _meta;
     private final boolean _broadcast;
     private final boolean _service;
     private final CountDownLatch _initialized;
     private boolean _lazy;
     private boolean _persistent;
-    private volatile int _used=0;
+    private volatile int _sweeperPasses = 0;
 
     /* ------------------------------------------------------------ */
     protected ServerChannelImpl(BayeuxServerImpl bayeux, ChannelId id)
@@ -94,7 +92,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
                 if (listener instanceof BayeuxServer.SubscriptionListener)
                     ((BayeuxServer.SubscriptionListener)listener).subscribed(session,this);
         }
-        _used=0;
+        _sweeperPasses = 0;
         return true;
     }
 
@@ -165,6 +163,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     public void addListener(ServerChannelListener listener)
     {
         _listeners.add(listener);
+        _sweeperPasses = 0;
     }
 
     /* ------------------------------------------------------------ */
@@ -230,7 +229,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     }
 
     /* ------------------------------------------------------------ */
-    protected void doSweep(int children)
+    protected void doSweep()
     {
         for (ServerSession session : _subscribers)
         {
@@ -238,8 +237,30 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
                 unsubscribe((ServerSessionImpl)session);
         }
 
-        if (!isPersistent() && _subscribers.size()==0 && _listeners.size()==0 && children==0 && ++_used>2)
-            remove();
+        if (isPersistent())
+            return;
+
+        if (_subscribers.size() > 0 || _listeners.size() > 0)
+            return;
+
+        if (isWild() || isDeepWild())
+        {
+            // Wild, check if has authorizers that can match other channels
+            if (_authorizers.size() > 0)
+                return;
+        }
+        else
+        {
+            // Not wild, then check if it has children
+            for (ServerChannel channel : _bayeux.getChannels())
+                if (_id.isParentOf(channel.getChannelId()))
+                    return;
+        }
+
+        if (++_sweeperPasses < 3)
+            return;
+
+        remove();
     }
 
     /* ------------------------------------------------------------ */
@@ -287,11 +308,6 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         b.append(isLazy()?" lazy":"");
         b.append('\n');
 
-        /* TODO
-        if (_authorizers!=null)
-            children.addAll(_authorizers);
-        */
-        
         List<ServerChannelImpl> children =_bayeux.getChannelChildren(_id);
         int leaves=children.size()+_subscribers.size()+_listeners.size();
         int i=0;
@@ -327,13 +343,13 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     {
         _authorizers.remove(authorizer);
     }
-    
+
     /* ------------------------------------------------------------ */
-    public Queue<Authorizer> getAuthorizers()
+    public List<Authorizer> getAuthorizers()
     {
-        return _authorizers;
+        return Collections.unmodifiableList(_authorizers);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()

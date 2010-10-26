@@ -15,8 +15,6 @@
 package org.cometd.examples;
 
 import java.io.IOException;
-import java.nio.channels.Channel;
-import java.util.EnumSet;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.servlet.GenericServlet;
@@ -56,17 +54,17 @@ public class CometdDemoServlet extends GenericServlet
         bayeux.addExtension(new AcknowledgedMessagesExtension());
 
         // Deny unless granted
-        
+
         bayeux.createIfAbsent("/**",new ServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_NONE);
-            }   
+            }
         });
-        
+
         // Allow anybody to handshake
-        bayeux.getChannel(ServerChannel.META_HANDSHAKE).addAuthorizer(GrantAuthorizer.GRANT_PUB);
+        bayeux.getChannel(ServerChannel.META_HANDSHAKE).addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
 
         processor = ServerAnnotationProcessor.get(bayeux);
 
@@ -106,7 +104,7 @@ public class CometdDemoServlet extends GenericServlet
             {
                 public void configureChannel(ConfigurableServerChannel channel)
                 {
-                    channel.addAuthorizer(GrantAuthorizer.GRANT_PUB);
+                    channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
                 }
             });
         }

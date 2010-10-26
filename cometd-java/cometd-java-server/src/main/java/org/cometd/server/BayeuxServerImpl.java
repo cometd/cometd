@@ -4,7 +4,6 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
@@ -525,64 +524,176 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      */
     public ServerMessage.Mutable handle(ServerSessionImpl session, ServerMessage.Mutable message)
     {
-        ServerMessage.Mutable reply;
-
         if (_logger.isDebugEnabled())
-            _logger.debug(">  "+message+" "+session);
+            _logger.debug(">  " + message + " " + session);
 
-        if (!extendRecv(session,message) || session!=null && !session.extendRecv(message))
+        ServerMessage.Mutable reply = null;
+        if (!extendRecv(session, message) || session != null && !session.extendRecv(message))
         {
-            reply=createReply(message);
-            reply.setSuccessful(false);
-            reply.put(Message.ERROR_FIELD,"404::Message deleted");
+            reply = createReply(message);
+            error(reply, "404::message deleted");
         }
         else
         {
             if (_logger.isDebugEnabled())
-                _logger.debug(">> "+message);
-            String channelId=message.getChannel();
-            final Permit auth=new Permit();
+                _logger.debug(">> " + message);
 
-            ServerChannel channel=null;
-            if (channelId!=null)
-            {
-                channel = getChannel(channelId);
+            String channelName = message.getChannel();
 
-                if (channel==null && auth.canCreate(session,channelId,message))
-                {
-                    createIfAbsent(channelId);
-                    channel = getChannel(channelId);
-                }
-            }
-
-            if (channel==null)
+            ServerChannel channel;
+            if (channelName == null)
             {
                 reply = createReply(message);
-                error(reply,channelId==null?"402::no channel":"403:"+auth.getReasonDenied()+":Cannot create");
-            }
-            else if (channel.isMeta())
-            {
-                doPublish(session,(ServerChannelImpl)channel,message);
-                reply = message.getAssociated();
-            }
-            else if (auth.canPublish(session,channel,message))
-            {
-                // Do not leak the clientId to other subscribers
-                message.setClientId(null);
-                channel.publish(session,message);
-                reply = createReply(message);
-                reply.setSuccessful(true);
+                error(reply, "400::channel missing");
             }
             else
             {
-                reply = createReply(message);
-                error(reply,session==null?"402::unknown client":"403:"+auth.getReasonDenied()+":Cannot publish");
+                channel = getChannel(channelName);
+                if (channel == null)
+                {
+                    Authorizer.Result creationResult = isCreationAuthorized(session, message, channelName);
+                    if (creationResult instanceof Authorizer.Result.Denied)
+                    {
+                        reply = createReply(message);
+                        String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
+                        error(reply, "403:" + denyReason + ":create denied");
+                    }
+                    else
+                    {
+                        createIfAbsent(channelName);
+                        channel = getChannel(channelName);
+                    }
+                }
+
+                if (channel != null)
+                {
+                    if (channel.isMeta())
+                    {
+                        doPublish(session, (ServerChannelImpl)channel, message);
+                        reply = message.getAssociated();
+                    }
+                    else
+                    {
+                        if (session == null)
+                        {
+                            reply = createReply(message);
+                            error(reply, "402::unknown client");
+                        }
+                        else
+                        {
+                            Authorizer.Result publishResult = isPublishAuthorized(channel, session, message);
+                            if (publishResult instanceof Authorizer.Result.Denied)
+                            {
+                                reply = createReply(message);
+                                String denyReason = ((Authorizer.Result.Denied)publishResult).getReason();
+                                error(reply, "403:" + denyReason + ":publish denied");
+                            }
+                            else
+                            {
+                                // Do not leak the clientId to other subscribers
+                                message.setClientId(null);
+                                channel.publish(session, message);
+                                reply = createReply(message);
+                                reply.setSuccessful(true);
+                            }
+                        }
+                    }
+                }
             }
         }
 
+        assert reply != null;
         if (_logger.isDebugEnabled())
-            _logger.debug("<< "+reply);
+            _logger.debug("<< " + reply);
         return reply;
+    }
+
+    private Authorizer.Result isPublishAuthorized(ServerChannel channel, ServerSession session, ServerMessage message)
+    {
+        if (_policy != null && !_policy.canPublish(this, session, channel, message))
+        {
+            _logger.warn("{} denied Publish@{} by {}", session, channel.getId(), _policy);
+            return Authorizer.Result.deny("denied_by_security_policy");
+        }
+        return isOperationAuthorized(Authorizer.Operation.PUBLISH, session, message, channel.getChannelId());
+    }
+
+    private Authorizer.Result isSubscribeAuthorized(ServerChannel channel, ServerSession session, ServerMessage message)
+    {
+        if (_policy != null && !_policy.canSubscribe(this, session, channel, message))
+        {
+            _logger.warn("{} denied Publish@{} by {}", session, channel, _policy);
+            return Authorizer.Result.deny("denied_by_security_policy");
+        }
+        return isOperationAuthorized(Authorizer.Operation.SUBSCRIBE, session, message, channel.getChannelId());
+    }
+
+    private Authorizer.Result isCreationAuthorized(ServerSession session, ServerMessage message, String channel)
+    {
+        if (_policy != null && !_policy.canCreate(BayeuxServerImpl.this, session, channel, message))
+        {
+            _logger.warn("{} denied Create@{} by {}", session, message.getChannel(), _policy);
+            return Authorizer.Result.deny("denied_by_security_policy");
+        }
+        return isOperationAuthorized(Authorizer.Operation.CREATE, session, message, new ChannelId(channel));
+    }
+
+    private Authorizer.Result isOperationAuthorized(Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId)
+    {
+        List<ServerChannel> channels = new ArrayList<ServerChannel>();
+        for (String wildName : channelId.getWilds())
+        {
+            ServerChannelImpl channel = _channels.get(wildName);
+            if (channel != null)
+                channels.add(channel);
+        }
+        ServerChannelImpl candidate = _channels.get(channelId.toString());
+        if (candidate != null)
+            channels.add(candidate);
+
+        boolean called = false;
+        Authorizer.Result result = Authorizer.Result.ignore();
+        for (ServerChannel channel : channels)
+        {
+            for (Authorizer authorizer : channel.getAuthorizers())
+            {
+                called = true;
+                Authorizer.Result authorization = authorizer.authorize(operation, channelId, session, message);
+                _logger.debug("Authorizer {} on channel {} {} {} for channel {}", authorizer, channel, authorization, operation, channelId);
+                if (authorization instanceof Authorizer.Result.Denied)
+                {
+                    result = authorization;
+                    break;
+                }
+                else if (authorization instanceof Authorizer.Result.Granted)
+                {
+                    result = authorization;
+                }
+            }
+        }
+
+        if (!called)
+        {
+            result = Authorizer.Result.grant();
+            _logger.debug("No authorizers, {} for channel {} {}", operation, channelId, result);
+        }
+        else
+        {
+            if (result instanceof Authorizer.Result.Ignored)
+            {
+                result = Authorizer.Result.deny("denied_by_not_granting");
+                _logger.debug("No authorizer granted {} for channel {}, authorization {}", operation, channelId, result);
+            }
+            else if (result instanceof Authorizer.Result.Granted)
+            {
+                _logger.debug("No authorizer denied {} for channel {}, authorization {}", operation, channelId, result);
+            }
+        }
+
+        // We need to make sure that this method returns a boolean result (granted or denied)
+        // but if it's denied, we need to return the object in order to access the deny reason
+        assert !(result instanceof Authorizer.Result.Ignored);
+        return result;
     }
 
     /* ------------------------------------------------------------ */
@@ -871,28 +982,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public void doSweep()
     {
-        final Map<String,Integer> dust = new HashMap<String, Integer>();
+        for (ServerChannelImpl channel : _channels.values())
+            channel.doSweep();
 
-        for (ServerChannelImpl channel :_channels.values())
-        {
-            if (!dust.containsKey(channel.getId()))
-                dust.put(channel.getId(),0);
-            String parent=channel.getChannelId().getParent();
-            if (parent!=null)
-            {
-                Integer children=dust.get(parent);
-                dust.put(parent,children==null?1:(children+1));
-            }
-        }
-
-        for (String channel : dust.keySet())
-        {
-            ServerChannelImpl sci=_channels.get(channel);
-            if (sci!=null)
-                sci.doSweep(dust.get(channel));
-        }
-
-        for(ServerTransport transport : _transports.values())
+        for (ServerTransport transport : _transports.values())
         {
             if (transport instanceof AbstractServerTransport)
                 ((AbstractServerTransport)transport).doSweep();
@@ -947,9 +1040,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         public abstract void onMessage(final ServerSessionImpl from, final ServerMessage.Mutable message);
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    class HandshakeHandler extends HandlerListener
+    private class HandshakeHandler extends HandlerListener
     {
         @Override
         public void onMessage(ServerSessionImpl session, final Mutable message)
@@ -959,10 +1050,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             ServerMessage.Mutable reply=createReply(message);
 
-            Permit auth = new Permit();
-            if (!auth.canHandshake(session,message))
+            if (_policy != null && !_policy.canHandshake(BayeuxServerImpl.this,session,message))
             {
-                error(reply,"403:"+auth.getReasonDenied()+":Handshake denied");
+                error(reply,"403::Handshake denied");
                 reply.getAdvice(true).put(Message.RECONNECT_FIELD,Message.RECONNECT_NONE_VALUE);
                 return;
             }
@@ -978,9 +1068,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    class ConnectHandler extends HandlerListener
+    private class ConnectHandler extends HandlerListener
     {
         @Override
         public void onMessage(final ServerSessionImpl session, final Mutable message)
@@ -1022,72 +1110,81 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    class SubscribeHandler extends HandlerListener
+    private class SubscribeHandler extends HandlerListener
     {
         public void onMessage(final ServerSessionImpl from, final Mutable message)
         {
-            ServerMessage.Mutable reply=createReply(message);
+            ServerMessage.Mutable reply = createReply(message);
             if (isSessionUnknown(from))
             {
                 unknownSession(reply);
                 return;
             }
 
-            String subscribe_id=(String)message.get(Message.SUBSCRIPTION_FIELD);
-            reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);
+            String subscription = (String)message.get(Message.SUBSCRIPTION_FIELD);
+            reply.put(Message.SUBSCRIPTION_FIELD, subscription);
 
-            if (subscribe_id==null)
-                error(reply,"403::create denied");
+            if (subscription == null)
+            {
+                error(reply, "403::subscription missing");
+            }
             else
             {
-                reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);
-                ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscribe_id);
-                Permit auth = new Permit();
-
-                if (channel==null && auth.canCreate(from,subscribe_id,message))
+                ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscription);
+                if (channel == null)
                 {
-                    createIfAbsent(subscribe_id);
-                    channel = (ServerChannelImpl)getChannel(subscribe_id);
-                }
-
-                if (channel==null)
-                    error(reply,"403::cannot create");
-                else if (!auth.canSubscribe(from,channel,message))
-                    error(reply,"403:"+auth.getReasonDenied()+":subscribe denied");
-                else
-                {
-                    // Reduces the window of time where a server-side expiration
-                    // or a concurrent disconnect causes the invalid client to be
-                    // registered as subscriber and hence being kept alive by the
-                    // fact that the channel references it.
-                    if (!isSessionUnknown(from))
+                    Authorizer.Result creationResult = isCreationAuthorized(from, message, subscription);
+                    if (creationResult instanceof Authorizer.Result.Denied)
                     {
-                        if (from.isLocalSession() || !channel.isMeta() && !channel.isService())
-                        {
-                            if (channel.subscribe(from))
-                                reply.setSuccessful(true);
-                            else
-                                error(reply,"403::subscribe failed");
-                        }
-                        else
-                        {
-                            reply.setSuccessful(true);
-                        }
+                        String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
+                        error(reply, "403:" + denyReason + ":create denied");
                     }
                     else
                     {
-                        unknownSession(reply);
+                        createIfAbsent(subscription);
+                        channel = (ServerChannelImpl)getChannel(subscription);
+                    }
+                }
+
+                if (channel != null)
+                {
+                    Authorizer.Result subscribeResult = isSubscribeAuthorized(channel, from, message);
+                    if (subscribeResult instanceof Authorizer.Result.Denied)
+                    {
+                        String denyReason = ((Authorizer.Result.Denied)subscribeResult).getReason();
+                        error(reply, "403:" + denyReason + ":subscribe denied");
+                    }
+                    else
+                    {
+                        // Reduces the window of time where a server-side expiration
+                        // or a concurrent disconnect causes the invalid client to be
+                        // registered as subscriber and hence being kept alive by the
+                        // fact that the channel references it.
+                        if (!isSessionUnknown(from))
+                        {
+                            if (from.isLocalSession() || !channel.isMeta() && !channel.isService())
+                            {
+                                if (channel.subscribe(from))
+                                    reply.setSuccessful(true);
+                                else
+                                    error(reply, "403::subscribe failed");
+                            }
+                            else
+                            {
+                                reply.setSuccessful(true);
+                            }
+                        }
+                        else
+                        {
+                            unknownSession(reply);
+                        }
                     }
                 }
             }
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    class UnsubscribeHandler extends HandlerListener
+    private class UnsubscribeHandler extends HandlerListener
     {
         public void onMessage(final ServerSessionImpl from, final Mutable message)
         {
@@ -1101,14 +1198,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             String subscribe_id=(String)message.get(Message.SUBSCRIPTION_FIELD);
             reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);
             if (subscribe_id==null)
-                error(reply,"400::no channel");
+                error(reply,"400::channel missing");
             else
             {
                 reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);
 
                 ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscribe_id);
                 if (channel==null)
-                    error(reply,"400::no channel");
+                    error(reply,"400::channel missing");
                 else
                 {
                     if (from.isLocalSession() || !channel.isMeta() && !channel.isService())
@@ -1119,9 +1216,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    class DisconnectHandler extends HandlerListener
+    private class DisconnectHandler extends HandlerListener
     {
         public void onMessage(final ServerSessionImpl session, final Mutable message)
         {
@@ -1138,144 +1233,4 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             reply.setSuccessful(true);
         }
     }
-
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private class Permit
-    {
-        Authorizer.Operation _operation;
-        boolean _granted;
-        boolean _denied;
-        String _reasonDenied;
-
-
-        Permit()
-        {
-        }
-
-        public String getReasonDenied()
-        {
-            return _reasonDenied;
-        }
-
-        public boolean canCreate(ServerSession session, String channelId, ServerMessage message)
-        {
-            if (_policy!=null && !_policy.canCreate(BayeuxServerImpl.this,session,channelId,message))
-            {
-                _logger.warn("{} denied Create@{} by {}",session,channelId,_policy);
-                _reasonDenied="SecurityPolicy";
-                return false;
-            }
-            _operation=Authorizer.Operation.CREATE;
-            ChannelId id = new ChannelId(channelId);
-            return authorize(session,id,message);       
-        }
-        
-        public boolean canHandshake(ServerSession session, ServerMessage message)
-        {
-            if (_policy!=null && !_policy.canHandshake(BayeuxServerImpl.this,session,message))
-            {
-                _logger.warn("{} denied Handshake by {}",message,_policy);
-                _reasonDenied="SecurityPolicy";
-                return false;
-            }
-            _operation=Authorizer.Operation.PUBLISH;
-            return authorize(session,ChannelId.META_HANDSHAKE_ID,message);   
-        }
-
-        public boolean canPublish(ServerSession session, ServerChannel channel, ServerMessage message)
-        {
-            if (_policy!=null && !_policy.canPublish(BayeuxServerImpl.this,session,channel,message))
-            {
-                _logger.warn("{} denied Publish@{} by {}",session,channel,_policy);
-                _reasonDenied="SecurityPolicy";
-                return false;
-            }
-            _operation=Authorizer.Operation.PUBLISH;
-            return authorize(session,channel.getChannelId(),message); 
-        }
-
-        public boolean canSubscribe(ServerSession session, ServerChannel channel, ServerMessage message)
-        {
-            if (_policy!=null && !_policy.canSubscribe(BayeuxServerImpl.this,session,channel,message))
-            {
-                _logger.warn("{} denied Subscribe@{} by {}",session,channel,_policy);
-                _reasonDenied="SecurityPolicy";
-                return false;
-            }
-            _operation=Authorizer.Operation.PUBLISH;
-            return authorize(session,channel.getChannelId(),message); 
-        }
-
-        private boolean authorize(final ServerSession session, final ChannelId id, final ServerMessage message)
-        {
-            // Assume not granted and not denied
-            _granted=false;
-            _denied=false;
-            _reasonDenied=null;
-
-            final Authorizer.Permission _permission = new Authorizer.Permission()
-            {
-                public void granted()
-                {
-                    if (_logger.isDebugEnabled())
-                        _logger.debug("{} granted {}@{}",session,_operation,id);
-                    _granted=true;
-                }
-
-                public void denied()
-                {
-                    denied(null);
-                }
-
-                public void denied(String reason)
-                {
-                    _denied=true;
-                    _reasonDenied=reason==null?"denied":reason;
-                    if (_logger.isDebugEnabled())
-                        _logger.debug("{} granted {}@{} for {}",session,_operation,id,_reasonDenied);
-                }
-            };
-
-            boolean auth_called=false;
-            final List<String> wildIds=id.getWilds();
-            for (int i=wildIds.size();i-->0;)
-            {
-                ServerChannelImpl channel = _channels.get(wildIds.get(i));
-                if (channel!=null)
-                {
-                    for (Authorizer auth : channel.getAuthorizers())
-                    {   
-                        auth_called=true;
-                        auth.authorize(_permission,session,_operation,id,message);
-                        if (_denied)
-                            return false;
-                    }
-                }
-            }
-
-            ServerChannelImpl channel = _channels.get(id);
-            if (channel!=null)
-            {
-                for (Authorizer auth : channel.getAuthorizers())
-                {
-                    auth_called=true;
-                    auth.authorize(_permission,session,_operation,id,message);
-                    if (_denied)
-                        return false;
-                }
-            }
-                
-            if (!_granted && auth_called)
-            {
-                _logger.warn("{} !granted {}@{}",session,_operation,id);
-                _reasonDenied="Not granted";
-            }
-            
-            return true;
-        }
-
-    }
-
 }
