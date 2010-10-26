@@ -10,6 +10,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -23,6 +25,12 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerMessageImpl;
 
 
+/**
+ * HTTP Transport base class.
+ * 
+ * Used for transports that use HTTP for a transport or to initiate a transport connection.
+ * 
+ */
 public abstract class HttpTransport extends AbstractServerTransport
 {
     public static final String JSON_DEBUG_OPTION="jsonDebug";
@@ -156,15 +164,6 @@ public abstract class HttpTransport extends AbstractServerTransport
             return new InetSocketAddress(_request.getLocalName(),_request.getLocalPort());
         }
 
-        public Collection<String> getHeaderNames()
-        {
-            return Collections.list((Enumeration<String>)_request.getHeaderNames());
-        }
-
-        public Collection<String> getParameterNames()
-        {
-            return Collections.list((Enumeration<String>)_request.getParameterNames());
-        }
 
         public String getHeader(String name)
         {
@@ -205,14 +204,6 @@ public abstract class HttpTransport extends AbstractServerTransport
             return null;
         }
 
-        public Collection<String> getHttpSessionAttributeNames()
-        {
-            HttpSession session = _request.getSession(false);
-            if (session!=null)
-                return Collections.list(session.getAttributeNames());
-            return null;
-        }
-
         public Object getHttpSessionAttribute(String name)
         {
             HttpSession session = _request.getSession(false);
@@ -235,6 +226,36 @@ public abstract class HttpTransport extends AbstractServerTransport
             HttpSession session = _request.getSession(false);
             if (session!=null)
                 session.invalidate();
+        }
+
+        public Object getRequestAttribute(String name)
+        {
+            return _request.getAttribute(name);
+        }
+        
+        private ServletContext getServletContext()
+        {
+            ServletContext c = null;
+            HttpSession s = _request.getSession(false);
+            if (s!=null)
+                c=s.getServletContext();
+            else
+            {
+                s=_request.getSession(true);
+                c=s.getServletContext();
+                s.invalidate();
+            }
+            return c;
+        }
+
+        public Object getContextAttribute(String name)
+        {
+            return getServletContext().getAttribute(name);
+        }
+
+        public String getContextInitParameter(String name)
+        {
+            return getServletContext().getInitParameter(name);
         }
     }
 }

@@ -5,6 +5,12 @@ import java.security.Principal;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * The Bayeux Context provides information about the current context of a Bayeux message.
+ * This information may be from an associated HTTP request, or a HTTP request used to 
+ * originally establish the connection (eg websocket upgrade).
+ *
+ */
 public interface BayeuxContext
 {
 
@@ -27,16 +33,6 @@ public interface BayeuxContext
      * @return the local socket address
      */
     InetSocketAddress getLocalAddress();
-
-    /**
-     * @return The names of known headers in the current transport or null if no current
-     */
-    Collection<String> getHeaderNames();
-
-    /**
-     * @return The names of known paramters in the current transport or null if no current
-     */
-    Collection<String> getParameterNames();
 
     /**
      * Get a transport header.<p>
@@ -91,31 +87,41 @@ public interface BayeuxContext
     String getHttpSessionId();
 
     /**
-     * Access the HTTP Session (if any) attribute names.
-     * The {@link ServerSession#getAttributeNames()} should be used in preference to the HTTP Session.
-     * @return HTTP session ID or null
-     */
-    Collection<String> getHttpSessionAttributeNames();
-
-    /**
      * Access the HTTP Session (if any) attributes.
      * The {@link ServerSession#getAttribute(String)} should be used in preference to the HTTP Session.
-     * @return HTTP session ID or null
+     * @return The attribute value
      */
     Object getHttpSessionAttribute(String name);
 
     /**
      * Access the HTTP Session (if any) attributes.
      * The {@link ServerSession#setAttribute(String, Object)} should be used in preference to the HTTP Session.
-     * @return HTTP session ID or null
      */
     void setHttpSessionAttribute(String name, Object value);
 
     /**
      * Invalidate the HTTP Session.
      * The {@link ServerSession#getId()} should be used in preference to the HTTP Session.
-     * @return HTTP session ID
      */
     void invalidateHttpSession();
+    
+    /**
+     * Access the Request (if any) attributes.
+     * @return The attribute value
+     */
+    Object getRequestAttribute(String name);
+
+    /**
+     * Access the ServletContext (if any) attributes.
+     * @return The attribute value
+     */
+    Object getContextAttribute(String name);
+    
+    /**
+     * Access the ServletContext (if any) init parameter.
+     * @return The attribute value
+     */
+    String getContextInitParameter(String name);
+
 
 }
