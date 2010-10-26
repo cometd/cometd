@@ -55,7 +55,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     public ChannelId getChannelId()
     {
-        return new ChannelId((String)get(CHANNEL_FIELD));
+        return new ChannelId(getChannel());
     }
 
     public String getClientId()
@@ -116,7 +116,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
     public Map<String, Object> getDataAsMap(boolean create)
     {
         @SuppressWarnings("unchecked")
-        Map<String, Object> data = (Map<String, Object>)getData();
+        Map<String, Object> data = getDataAsMap();
         if (create && data == null)
         {
             data = new HashMap<String, Object>();
@@ -127,23 +127,13 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     public Map<String, Object> getExt(boolean create)
     {
-        Object ext = getExt();
-        if (ext == null && !create)
-            return null;
-
-        if (ext instanceof Map)
-            return (Map<String, Object>)ext;
-
-        if (ext instanceof JSON.Literal)
+        Map<String, Object> ext = getExt();
+        if (create && ext == null)
         {
-            ext = jsonParser.fromJSON(ext.toString());
+            ext = new HashMap<String, Object>();
             put(EXT_FIELD, ext);
-            return (Map<String, Object>)ext;
         }
-
-        ext = new HashMap<String, Object>();
-        put(EXT_FIELD, ext);
-        return (Map<String, Object>)ext;
+        return ext;
     }
 
     public boolean isMeta()

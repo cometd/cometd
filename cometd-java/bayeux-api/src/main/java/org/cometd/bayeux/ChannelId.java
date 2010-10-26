@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,30 +18,26 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-
-/* ------------------------------------------------------------ */
-/** Holder of a channel ID broken into path segments
+/**
+ * Holder of a channel ID broken into path segments
  */
 public class ChannelId
 {
-    public final static ChannelId META_HANDSHAKE_ID = new ChannelId(Channel.META_HANDSHAKE);
-    
     public final static String WILD="*";
     public final static String DEEPWILD="**";
 
-    private static final String[] ROOT={};
     private final String  _name;
     private final String[] _segments;
     private final int _wild;
     private final List<String> _wilds;
     private final String _parent;
-    
+
     public ChannelId(String name)
     {
         _name=name;
         if (name == null || name.length() == 0 || name.charAt(0) != '/' || "/".equals(name))
             throw new IllegalArgumentException(name);
-        
+
         String[] wilds;
 
         if (name.charAt(name.length() - 1) == '/')
@@ -72,7 +68,7 @@ public class ChannelId
             _wild=2;
         else
             _wild=0;
-        
+
         if (_wild==0)
             _wilds=Collections.unmodifiableList(Arrays.asList(wilds));
         else
@@ -88,12 +84,12 @@ public class ChannelId
     {
         return _wild > 1;
     }
-    
+
     public boolean isMeta()
     {
         return _segments.length>0 && "meta".equals(_segments[0]);
     }
-    
+
     public boolean isService()
     {
         return _segments.length>0 && "service".equals(_segments[0]);
@@ -123,7 +119,7 @@ public class ChannelId
     /* ------------------------------------------------------------ */
     /** Match channel IDs with wildcard support
      * @param name
-     * @return true if this channelID matches the passed channel ID. If this channel is wild, then matching is wild. 
+     * @return true if this channelID matches the passed channel ID. If this channel is wild, then matching is wild.
      * If the passed channel is wild, then it is the same as an equals call.
      */
     public boolean matches(ChannelId name)
@@ -170,7 +166,7 @@ public class ChannelId
     {
         return _segments.length;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isAncestorOf(ChannelId id)
     {
@@ -178,13 +174,13 @@ public class ChannelId
             return false;
 
         for (int i=_segments.length; i--> 0;)
-        {    
+        {
             if (!_segments[i].equals(id._segments[i]))
                 return false;
         }
         return true;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isParentOf(ChannelId id)
     {
@@ -192,19 +188,19 @@ public class ChannelId
             return false;
 
         for (int i=_segments.length; i--> 0;)
-        {    
+        {
             if (!_segments[i].equals(id._segments[i]))
                 return false;
         }
         return true;
     }
-    
+
     /* ------------------------------------------------------------ */
     public String getParent()
     {
         return _parent;
     }
-    
+
     /* ------------------------------------------------------------ */
     public String getSegment(int i)
     {
@@ -215,19 +211,19 @@ public class ChannelId
 
     /* ------------------------------------------------------------ */
     /**
-     * @return The list of wilds channels that match this channel, or 
+     * @return The list of wilds channels that match this channel, or
      * the empty list if this channel is already wild.
      */
     public List<String> getWilds()
     {
         return _wilds;
     }
-    
+
     public static boolean isMeta(String channelId)
     {
         return channelId!=null && channelId.startsWith("/meta/");
     }
-    
+
     public static boolean isService(String channelId)
     {
         return channelId!=null && channelId.startsWith("/service/");
