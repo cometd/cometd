@@ -10,6 +10,8 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
@@ -118,6 +120,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
             UNSENT, OPENED, HEADERS_RECEIVED, LOADING, DONE
         }
 
+        private final Logger logger = Log.getLogger(getClass().getName());
         private final HttpCookieStore cookieStore;
         private final ThreadModel threads;
         private final Scriptable scope;
@@ -146,6 +149,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
             getRequestFields().clear();
             if (async)
                 notifyReadyStateChange();
+            logger.setDebugEnabled(true);
         }
 
         public boolean isAsynchronous()
@@ -170,6 +174,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
             if (cookies.length() > 0)
                 setRequestHeader(HttpHeaders.COOKIE, cookies);
             httpClient.send(this);
+            logger.debug("Exchange {} submitted", this);
         }
 
         @Override
@@ -289,6 +294,20 @@ public class XMLHttpRequestExchange extends ScriptableObject
         {
             if (!(x instanceof EOFException))
                 super.onException(x);
+        }
+
+        @Override
+        protected void onRequestCommitted() throws IOException
+        {
+            super.onRequestCommitted();
+            logger.debug("Exchange {} committed", this);
+        }
+
+        @Override
+        protected void onRequestComplete() throws IOException
+        {
+            super.onRequestComplete();
+            logger.debug("Exchange {} sent", this);
         }
     }
 }
