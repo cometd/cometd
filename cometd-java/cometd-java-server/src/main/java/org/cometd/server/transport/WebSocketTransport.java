@@ -6,13 +6,11 @@ import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.text.ParseException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -320,15 +318,16 @@ public class WebSocketTransport extends HttpTransport
 
     private class Handshake implements BayeuxContext
     {
-        final Principal _principal;
-        final InetSocketAddress _local;
-        final InetSocketAddress _remote;
-        final Map<String, List<String>> _headers = new HashMap<String, List<String>>();
-        final Map<String, List<String>> _parameters = new HashMap<String, List<String>>();
-        final Map<String, Object> _attributes = new HashMap<String, Object>();
-        final Map<String, String> _cookies = new HashMap<String, String>();
-        final HttpSession _session;
-        final ServletContext _context;
+        private final Principal _principal;
+        private final InetSocketAddress _local;
+        private final InetSocketAddress _remote;
+        private final Map<String, List<String>> _headers = new HashMap<String, List<String>>();
+        private final Map<String, List<String>> _parameters = new HashMap<String, List<String>>();
+        private final Map<String, Object> _attributes = new HashMap<String, Object>();
+        private final Map<String, String> _cookies = new HashMap<String, String>();
+        private final HttpSession _session;
+        private final ServletContext _context;
+        private final String _url;
 
         Handshake(HttpServletRequest request)
         {
@@ -344,7 +343,7 @@ public class WebSocketTransport extends HttpTransport
                 _cookies.put(c.getName(),c.getValue());
             _session = request.getSession(false);
             _principal = request.getUserPrincipal();
-            
+
             if (_session!=null)
                 _context=_session.getServletContext();
             else
@@ -353,7 +352,12 @@ public class WebSocketTransport extends HttpTransport
                 _context=s.getServletContext();
                 s.invalidate();
             }
-            
+
+            StringBuffer url = request.getRequestURL();
+            String query = request.getQueryString();
+            if (query != null)
+                url.append("?").append(query);
+            this._url = url.toString();
         }
 
         public Principal getUserPrincipal()
@@ -441,6 +445,11 @@ public class WebSocketTransport extends HttpTransport
         public String getContextInitParameter(String name)
         {
             return _context.getInitParameter(name);
+        }
+
+        public String getURL()
+        {
+            return _url;
         }
     }
 }

@@ -2,25 +2,23 @@ package org.cometd.bayeux.server;
 
 import java.net.InetSocketAddress;
 import java.security.Principal;
-import java.util.Collection;
 import java.util.List;
 
 /**
- * The Bayeux Context provides information about the current context of a Bayeux message.
- * This information may be from an associated HTTP request, or a HTTP request used to 
- * originally establish the connection (eg websocket upgrade).
- *
+ * <p>The Bayeux Context provides information about the current context of a Bayeux message.</p>
+ * <p>This information may be from an associated HTTP request, or a HTTP request used to
+ * originally establish the connection (for example in a websocket handshake).</p>
  */
 public interface BayeuxContext
 {
-
     /**
      * @return The user Principal (if any)
      */
     Principal getUserPrincipal();
 
     /**
-     * @return True if there is a known user and they are in the passed role.
+     * @param role the role to check whether the user belongs to
+     * @return true if there is a known user and they are in the given role.
      */
     boolean isUserInRole(String role);
 
@@ -89,6 +87,7 @@ public interface BayeuxContext
     /**
      * Access the HTTP Session (if any) attributes.
      * The {@link ServerSession#getAttribute(String)} should be used in preference to the HTTP Session.
+     * @param name the attribute name
      * @return The attribute value
      */
     Object getHttpSessionAttribute(String name);
@@ -96,6 +95,8 @@ public interface BayeuxContext
     /**
      * Access the HTTP Session (if any) attributes.
      * The {@link ServerSession#setAttribute(String, Object)} should be used in preference to the HTTP Session.
+     * @param name the attribute name
+     * @param value the attribute value
      */
     void setHttpSessionAttribute(String name, Object value);
 
@@ -104,24 +105,30 @@ public interface BayeuxContext
      * The {@link ServerSession#getId()} should be used in preference to the HTTP Session.
      */
     void invalidateHttpSession();
-    
+
     /**
      * Access the Request (if any) attributes.
+     * @param name the attribute name
      * @return The attribute value
      */
     Object getRequestAttribute(String name);
 
     /**
      * Access the ServletContext (if any) attributes.
+     * @param name the attribute name
      * @return The attribute value
      */
     Object getContextAttribute(String name);
-    
+
     /**
      * Access the ServletContext (if any) init parameter.
+     * @param name the init parameter name
      * @return The attribute value
      */
     String getContextInitParameter(String name);
 
-
+    /**
+     * @return the full request URI complete with query string if present.
+     */
+    String getURL();
 }

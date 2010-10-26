@@ -6,11 +6,9 @@ import java.security.Principal;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -27,9 +25,9 @@ import org.cometd.server.ServerMessageImpl;
 
 /**
  * HTTP Transport base class.
- * 
+ *
  * Used for transports that use HTTP for a transport or to initiate a transport connection.
- * 
+ *
  */
 public abstract class HttpTransport extends AbstractServerTransport
 {
@@ -232,7 +230,7 @@ public abstract class HttpTransport extends AbstractServerTransport
         {
             return _request.getAttribute(name);
         }
-        
+
         private ServletContext getServletContext()
         {
             ServletContext c = null;
@@ -256,6 +254,15 @@ public abstract class HttpTransport extends AbstractServerTransport
         public String getContextInitParameter(String name)
         {
             return getServletContext().getInitParameter(name);
+        }
+
+        public String getURL()
+        {
+            StringBuffer url = _request.getRequestURL();
+            String query = _request.getQueryString();
+            if (query != null)
+                url.append("?").append(query);
+            return url.toString();
         }
     }
 }
