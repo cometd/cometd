@@ -8,44 +8,63 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 
 /**
- * Grant Authorizer implementation.
- * <p>
- * This convenience implementation of {@link Authorizer}, will grant
- * permission to a set of operations.
- *
+ * <p>This {@link Authorizer} implementation grants permission
+ * for a set of operations defined at construction time.</p>
+ * <p>If the operation does not match, it ignores the authorization request.</p>
  */
 public class GrantAuthorizer implements Authorizer
 {
+    /**
+     * Grants {@link Operation#CREATE} authorization
+     */
+    public static final GrantAuthorizer GRANT_CREATE = new GrantAuthorizer(EnumSet.of(Operation.CREATE));
+
+    /**
+     * Grants {@link Operation#SUBSCRIBE} authorization
+     */
+    public static final GrantAuthorizer GRANT_SUBSCRIBE = new GrantAuthorizer(EnumSet.of(Operation.SUBSCRIBE));
+
+    /**
+     * Grants {@link Operation#PUBLISH} authorization
+     */
+    public static final GrantAuthorizer GRANT_PUBLISH = new GrantAuthorizer(EnumSet.of(Operation.PUBLISH));
+
+    /**
+     * Grants {@link Operation#CREATE} and {@link Operation#SUBSCRIBE} authorization
+     */
+    public static final GrantAuthorizer GRANT_CREATE_SUBSCRIBE = new GrantAuthorizer(EnumSet.of(Operation.CREATE, Operation.SUBSCRIBE));
+
+    /**
+     * Grants {@link Operation#SUBSCRIBE} and {@link Operation#PUBLISH} authorization
+     */
+    public static final GrantAuthorizer GRANT_SUBSCRIBE_PUBLISH = new GrantAuthorizer(EnumSet.of(Operation.SUBSCRIBE, Operation.PUBLISH));
+
+    /**
+     * Grants {@link Operation#CREATE}, {@link Operation#SUBSCRIBE} and {@link Operation#PUBLISH} authorization
+     */
+    public static final GrantAuthorizer GRANT_ALL = new GrantAuthorizer(EnumSet.allOf(Operation.class));
+
+    /**
+     * Grants no authorization, the authorization request is ignored
+     */
+    public static final GrantAuthorizer GRANT_NONE = new GrantAuthorizer(EnumSet.noneOf(Operation.class));
+
     private final EnumSet<Authorizer.Operation> _operations;
 
-    public static final GrantAuthorizer GRANT_ALL =new GrantAuthorizer(EnumSet.allOf(Operation.class));
-    public static final GrantAuthorizer GRANT_PUBSUB =new GrantAuthorizer(EnumSet.of(Operation.PUBLISH,Operation.SUBSCRIBE));
-    public static final GrantAuthorizer GRANT_PUB=new GrantAuthorizer(EnumSet.of(Operation.PUBLISH));
-    public static final GrantAuthorizer GRANT_SUB=new GrantAuthorizer(EnumSet.of(Operation.SUBSCRIBE));
-    public static final GrantAuthorizer GRANT_NONE =new GrantAuthorizer(EnumSet.noneOf(Operation.class));
-    
-    /**
-     * Channel Authorizer.
-     * @param operations Set of authorized operations.
-     */
-    public GrantAuthorizer(final EnumSet<Authorizer.Operation> operations)
+    private GrantAuthorizer(final EnumSet<Authorizer.Operation> operations)
     {
-        _operations=operations;
+        _operations = operations;
+    }
+
+    public Result authorize(Operation operation, ChannelId channel, ServerSession session, ServerMessage message)
+    {
+        if (_operations.contains(operation))
+            return Result.grant();
+        return Result.ignore();
     }
 
     public String toString()
     {
-        return"{"+_operations+"@/**}";
+        return getClass().getSimpleName() + _operations;
     }
-
-    public boolean appliesTo(Operation operation)
-    {
-        return _operations.contains(operation);
-    }
-
-    public void authorize(Permission permission, ServerSession session, Operation operation, ChannelId channelId, ServerMessage message)
-    {
-        permission.granted();
-    }
-
 }

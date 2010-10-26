@@ -40,7 +40,7 @@ public class ChatService
         _bayeux=bayeux;
 
         final DataFilterMessageListener noMarkup = new DataFilterMessageListener(bayeux,new NoMarkupFilter(),new BadWordFilter());
-        
+
         if (!bayeux.createIfAbsent("/chat/**",new ServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
@@ -50,23 +50,23 @@ public class ChatService
             }
         }))
             throw new IllegalStateException();
-            
+
         if( !bayeux.createIfAbsent("/service/privatechat",new ServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
                 channel.setPersistent(true);
                 channel.addListener(noMarkup);
-                channel.addAuthorizer(GrantAuthorizer.GRANT_PUB);
+                channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
             }
         }))
             throw new IllegalStateException();
-        
+
         if( !bayeux.createIfAbsent("/service/members",new ServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
-                channel.addAuthorizer(GrantAuthorizer.GRANT_PUB);
+                channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
             }
         }))
             throw new IllegalStateException();
