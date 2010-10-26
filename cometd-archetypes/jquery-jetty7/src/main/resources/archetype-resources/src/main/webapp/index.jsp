@@ -5,7 +5,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-    <script type="text/javascript" src="${symbol_dollar}{pageContext.request.contextPath}/jquery/jquery-1.4.2.js"></script>
+    <script type="text/javascript" src="${symbol_dollar}{pageContext.request.contextPath}/jquery/jquery-1.4.3.js"></script>
     <script type="text/javascript" src="${symbol_dollar}{pageContext.request.contextPath}/jquery/json2.js"></script>
     <script type="text/javascript" src="${symbol_dollar}{pageContext.request.contextPath}/org/cometd.js"></script>
     <script type="text/javascript" src="${symbol_dollar}{pageContext.request.contextPath}/jquery/jquery.cometd.js"></script>
