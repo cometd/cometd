@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
@@ -68,10 +69,15 @@ public class Seti
         _setiId=_oort.getURL().replace("://","_").replace("/","_").replace(":","_");
         _shardId=shardId;
 
-        // TODO proper authorization
-        bayeux.getChannel("/set/**").addAuthorizer(GrantAuthorizer.GRANT_ALL);
-        
-        String channel = "/seti/"+_setiId;
+        bayeux.createIfAbsent("/seti/**", new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
+            }
+        });
+
+        String channel = "/seti/" + _setiId;
         bayeux.createIfAbsent(channel);
         _setiIdChannel= bayeux.getChannel(channel);
         _setiIdChannel.setPersistent(true);
