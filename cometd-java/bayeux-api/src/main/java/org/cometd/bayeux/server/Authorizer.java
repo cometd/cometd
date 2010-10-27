@@ -16,7 +16,6 @@ package org.cometd.bayeux.server;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
-import org.cometd.bayeux.server.Authorizer.Result.Granted;
 
 /**
  * <p>{@link Authorizer}s authorize {@link Operation operations} on {@link ServerChannel channels}.</p>
@@ -40,7 +39,7 @@ import org.cometd.bayeux.server.Authorizer.Result.Granted;
  * <ul>
  * <li>If there is a security policy, and the security policy denies the request, then the request is denied.</li>
  * <li>Otherwise, if the authorizers set is empty, the request is granted.</li>
- * <li>Otherwise, if no authorizer explicitly grant the operation, the request is denied.</li>
+ * <li>Otherwise, if no authorizer explicitly grants the operation, the request is denied.</li>
  * <li>Otherwise, if at least one authorizer explicitly grants the operation, and no authorizer explicitly denies the
  * operation, the request is granted.</li>
  * <li>Otherwise, if one authorizer explicitly denies the operation, remaining authorizers are not consulted, and the
@@ -74,25 +73,32 @@ import org.cometd.bayeux.server.Authorizer.Result.Granted;
  *     }
  * });
  * </pre>
- * <p>
- * A typical usage of Authorizers is as follows:<ul>
- * <li>Create a wildcard authorizer that matches all channels and neither grants or 
- * denies (e.g. use {@link GrantAuthorizer#GRANT_NONE}).  This ensures that authorizers set is not 
- * empty and that another authorizer must explicitly grant access.
- * <li>For public channels, that all users can access, Authorizers can be added that will simply grant 
- * publish and/or subscribe permissions to the specific or wildcard channels.
- * <li>For access controlled channels (eg only nominated players can publish to a game channel), then 
- * specific implementation of Authorizers need to be created that will check identities and other status
- * before granting permission.   Typically there is no need for such authorizers to explicitly deny 
- * access, unless that attempted access represents a specific error condition that needs to be passed
- * to the client in the message associated with a deny.
- * <li>For cross cutting concerns, such as checking a users credit or implementing user bans, Authorizers 
- * can be created to explicitly ban access, without the need to modify all authorizers that may grant.
+ *
+ * <p>A typical usage of authorizers is as follows:</p>
+ * <ul>
+ * <li>Create a wildcard authorizer that matches all channels and neither grants or
+ * denies (e.g. use {@link org.cometd.server.authorizer.GrantAuthorizer#GRANT_NONE}).
+ * <br />
+ * This authorizer can be added to channel /** or to a more specific channel for your application such as
+ * /game/**.
+ * <br />
+ * This ensures that authorizers set is not empty and that another authorizer must explicitly grant access.</li>
+ * <li>For public channels, that all users can access, add authorizers that will simply grant
+ * publish and/or subscribe permissions to the specific or wildcard channels.</li>
+ * <li>For access controlled channels (e.g. only nominated players can publish to a game channel), then
+ * specific implementation of authorizers need to be created that will check identities and possibly other
+ * state before granting permission.
+ * <br />
+ * Typically there is no need for such authorizers to explicitly deny access, unless that attempted access
+ * represents a specific error condition that needs to be passed to the client in the message associated
+ * with a deny.</li>
+ * <li>For cross cutting concerns, such as checking a users credit or implementing user bans, authorizers
+ * can be created to explicitly deny access, without the need to modify all authorizers already in place
+ * that may grant.</li>
  * </ul>
- * 
- * 
+ *
  * @see SecurityPolicy
- * @see GrantAuthorizer
+ * @see org.cometd.server.authorizer.GrantAuthorizer
  */
 public interface Authorizer
 {
