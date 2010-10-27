@@ -14,6 +14,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
@@ -66,8 +67,13 @@ public class Oort
         _oortSession=_bayeux.newLocalSession("oort");
         bayeux.addExtension(new OortExtension());
 
-        // TODO proper authorization
-        bayeux.getChannel("/oort/cloud/**").addAuthorizer(GrantAuthorizer.GRANT_ALL);
+        bayeux.createIfAbsent("/oort/cloud/**", new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
+            }
+        });
         
         try
         {
