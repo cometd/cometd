@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentMap;
 import javax.servlet.ServletContext;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Oort;
@@ -40,8 +41,20 @@ public class AuctionChatService extends AbstractService
         if (_seti==null)
             throw new RuntimeException("!"+Seti.SETI_ATTRIBUTE);
 
-        getBayeux().getChannel("/auction/chat/**").addAuthorizer(GrantAuthorizer.GRANT_ALL);
-        getBayeux().getChannel("/service/auction/chat").addAuthorizer(GrantAuthorizer.GRANT_ALL);
+        getBayeux().createIfAbsent("/auction/chat/**", new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
+            }
+        });
+        getBayeux().createIfAbsent("/service/auction/chat", new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
+            }
+        });
         addService("/auction/chat/**", "trackMembers");
         addService("/service/auction/chat", "privateChat");
     }

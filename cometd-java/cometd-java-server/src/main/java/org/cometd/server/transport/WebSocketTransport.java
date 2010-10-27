@@ -329,23 +329,35 @@ public class WebSocketTransport extends HttpTransport
         private final ServletContext _context;
         private final String _url;
 
+        @SuppressWarnings("unchecked")
         Handshake(HttpServletRequest request)
         {
             _local = new InetSocketAddress(request.getLocalAddr(),request.getLocalPort());
             _remote = new InetSocketAddress(request.getRemoteAddr(),request.getRemotePort());
+
             for (String name : Collections.list((Enumeration<String>)request.getHeaderNames()))
                 _headers.put(name,Collections.unmodifiableList(Collections.list(request.getHeaders(name))));
+
             for (String name : Collections.list((Enumeration<String>)request.getParameterNames()))
                 _parameters.put(name,Collections.unmodifiableList(Arrays.asList(request.getParameterValues(name))));
+
             for (String name : Collections.list((Enumeration<String>)request.getAttributeNames()))
                 _attributes.put(name,request.getAttribute(name));
-            for (Cookie c : request.getCookies())
-                _cookies.put(c.getName(),c.getValue());
-            _session = request.getSession(false);
+
+            Cookie[] cookies = request.getCookies();
+            if (cookies != null)
+            {
+                for (Cookie c : cookies)
+                    _cookies.put(c.getName(),c.getValue());
+            }
+
             _principal = request.getUserPrincipal();
 
+            _session = request.getSession(false);
             if (_session!=null)
+            {
                 _context=_session.getServletContext();
+            }
             else
             {
                 HttpSession s = request.getSession(true);
@@ -368,7 +380,7 @@ public class WebSocketTransport extends HttpTransport
         public boolean isUserInRole(String role)
         {
             HttpServletRequest request = WebSocketTransport.this.getCurrentRequest();
-            return request == null?false:request.isUserInRole(role);
+            return request != null && request.isUserInRole(role);
         }
 
         public InetSocketAddress getRemoteAddress()
