@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class BayeuxClient extends AbstractClientSession implements Bayeux
 {
+    public static final String LOG_LEVEL = "logLevel";
     public static final String BACKOFF_INCREMENT_OPTION = "backoffIncrement";
     public static final String MAX_BACKOFF_OPTION = "maxBackoff";
     public static final String BAYEUX_VERSION = "1.0";
@@ -544,6 +545,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected void initialize()
     {
+        String logLevel = (String)getOption(LOG_LEVEL);
+        if (logLevel != null)
+            logger.setDebugEnabled("debug".equals(logLevel));
+
         Long backoffIncrement = (Long)getOption(BACKOFF_INCREMENT_OPTION);
         if (backoffIncrement == null)
             backoffIncrement = 1000L;
