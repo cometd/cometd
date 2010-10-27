@@ -33,7 +33,7 @@ dojox.cometd.LongPollingTransport = function()
             load: packet.onSuccess,
             error: function(error)
             {
-                packet.onError(error.message, deferred.ioArgs.error);
+                packet.onError(error.message, deferred ? deferred.ioArgs.error : error);
             }
         });
         return deferred.ioArgs.xhr;
@@ -60,7 +60,7 @@ dojox.cometd.CallbackPollingTransport = function()
             load: packet.onSuccess,
             error: function(error)
             {
-                packet.onError(error.message, deferred.ioArgs.error);
+                packet.onError(error.message, deferred ? deferred.ioArgs.error : error);
             }
         });
         return undefined;
