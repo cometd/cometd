@@ -6,6 +6,7 @@ import java.net.ProtocolException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +34,7 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient.State;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.common.HashMapMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
 import org.cometd.server.DefaultSecurityPolicy;
@@ -146,6 +148,7 @@ public class BayeuxClientTest extends TestCase
         client.handshake();
 
         Message message = (Message)results.poll(1, TimeUnit.SECONDS);
+        assertNotNull(message);
         assertEquals(Channel.META_HANDSHAKE, message.getChannel());
         assertTrue(message.isSuccessful());
         String id = client.getId();
@@ -380,11 +383,11 @@ public class BayeuxClientTest extends TestCase
         final BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient))
         {
             @Override
-            protected void processMessage(Message.Mutable message)
+            protected void processHandshake(Message.Mutable message)
             {
                 // Force no transports
                 message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, new Object[0]);
-                super.processMessage(message);
+                super.processHandshake(message);
             }
 
             @Override
@@ -520,7 +523,7 @@ public class BayeuxClientTest extends TestCase
                 Message.Mutable connect = newMessage();
                 connect.setChannel(Channel.META_CONNECT);
                 connect.setSuccessful(false);
-                processMessage(connect);
+                processConnect(connect);
                 return false;
             }
         };
@@ -957,6 +960,70 @@ public class BayeuxClientTest extends TestCase
 
         client.disconnect();
         assertTrue(client.waitFor(1000, State.DISCONNECTED));
+    }
+
+    public void testAuthentication() throws Exception
+    {
+        final AtomicReference<String> sessionId = new AtomicReference<String>();
+        class A extends DefaultSecurityPolicy implements ServerSession.RemoveListener
+        {
+            @Override
+            public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
+            {
+                Map<String, Object> ext = message.getExt();
+                if (ext == null)
+                    return false;
+
+                Object authn = ext.get("authentication");
+                if (!(authn instanceof Map))
+                    return false;
+
+                @SuppressWarnings("unchecked")
+                Map<String, Object> authentication = (Map<String, Object>)authn;
+
+                String token = (String)authentication.get("token");
+                if (token == null)
+                    return false;
+
+                sessionId.set(session.getId());
+                session.addListener(this);
+
+                return true;
+            }
+
+            public void removed(ServerSession session, boolean timeout)
+            {
+                sessionId.set(null);
+            }
+        }
+        A authenticator = new A();
+
+        SecurityPolicy oldPolicy = _bayeux.getSecurityPolicy();
+        _bayeux.setSecurityPolicy(authenticator);
+        try
+        {
+            BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
+            client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+
+            Map<String, Object> authentication = new HashMap<String, Object>();
+            authentication.put("token", "1234567890");
+            Message.Mutable fields = new HashMapMessage();
+            fields.getExt(true).put("authentication", authentication);
+            client.handshake(fields);
+
+            assertTrue(client.waitFor(1000, State.CONNECTED));
+
+            assertEquals(client.getId(), sessionId.get());
+
+            client.disconnect();
+            assertTrue(client.waitFor(1000, State.DISCONNECTED));
+
+            assertNull(sessionId.get());
+        }
+        finally
+        {
+            _bayeux.setSecurityPolicy(oldPolicy);
+        }
     }
 
     private class DumpThread extends Thread

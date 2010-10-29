@@ -3,6 +3,7 @@ package org.cometd.client;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
@@ -90,6 +91,7 @@ public class BayeuxClientConcurrentTest
                 return result;
             }
         };
+        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
         client.handshake();
         assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
 
@@ -112,6 +114,7 @@ public class BayeuxClientConcurrentTest
                 return result;
             }
         };
+        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
         client.handshake();
         assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
 
@@ -130,6 +133,7 @@ public class BayeuxClientConcurrentTest
                 super.enqueueSend(message);
             }
         };
+        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -167,6 +171,7 @@ public class BayeuxClientConcurrentTest
                 super.enqueueSend(message);
             }
         };
+        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -225,10 +230,11 @@ public class BayeuxClientConcurrentTest
                 Message.Mutable connect = newMessage();
                 connect.setChannel(Channel.META_CONNECT);
                 connect.setSuccessful(false);
-                processMessage(connect);
+                processConnect(connect);
                 return false;
             }
         };
+        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
         final CountDownLatch publishLatch = new CountDownLatch(1);
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.addListener(new ClientSessionChannel.MessageListener()
@@ -248,5 +254,41 @@ public class BayeuxClientConcurrentTest
 
         client.disconnect();
         assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+    }
+
+    @Test
+    public void testHandshakeListenersAreNotifiedBeforeConnectListeners() throws Exception
+    {
+        final BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient));
+        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        final int sleep = 1000;
+        final AtomicBoolean handshaken = new AtomicBoolean();
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                try
+                {
+                    Thread.sleep(sleep);
+                    handshaken.set(true);
+                }
+                catch (InterruptedException x)
+                {
+                    // Ignored
+                }
+            }
+        });
+        final CountDownLatch connectLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (handshaken.get())
+                    connectLatch.countDown();
+            }
+        });
+        client.handshake();
+
+        assertTrue(connectLatch.await(2 * sleep, TimeUnit.MILLISECONDS));
     }
 }
