@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <parent>
         <groupId>org.cometd.javascript</groupId>
@@ -10,5 +11,57 @@
     <artifactId>cometd-javascript-common</artifactId>
     <packaging>war</packaging>
     <name>CometD :: JavaScript :: Common</name>
+
+    <properties>
+        <jsSourceDir>${basedir}/src/main/js</jsSourceDir>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>yuicompressor-maven-plugin</artifactId>
+                <version>1.1</version>
+                <executions>
+                    <execution>
+                        <id>aggregate-js</id>
+                        <goals>
+                            <goal>compress</goal>
+                        </goals>
+                        <configuration>
+                            <aggregations>
+                                <aggregation>
+                                    <output>${project.build.directory}/${project.build.finalName}/org/cometd.js</output>
+                                    <insertNewLine>true</insertNewLine>
+                                    <includes>
+                                        <include>${jsSourceDir}/org/cometd/cometd-header.js</include>
+                                        <include>${jsSourceDir}/org/cometd/cometd-namespace.js</include>
+                                        <include>${jsSourceDir}/org/cometd/cometd-json.js</include>
+                                        <include>${jsSourceDir}/org/cometd/Utils.js</include>
+                                        <include>${jsSourceDir}/org/cometd/TransportRegistry.js</include>
+                                        <include>${jsSourceDir}/org/cometd/Transport.js</include>
+                                        <include>${jsSourceDir}/org/cometd/RequestTransport.js</include>
+                                        <include>${jsSourceDir}/org/cometd/LongPollingTransport.js</include>
+                                        <include>${jsSourceDir}/org/cometd/CallbackPollingTransport.js</include>
+                                        <include>${jsSourceDir}/org/cometd/WebSocketTransport.js</include>
+                                        <include>${jsSourceDir}/org/cometd/Cometd.js</include>
+                                    </includes>
+                                </aggregation>
+                            </aggregations>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <disableOptimizations>true</disableOptimizations>
+                    <nosuffix>true</nosuffix>
+                    <nomunge>true</nomunge>
+                    <jswarn>false</jswarn>
+                    <excludes>
+                        <exclude>${basedir}/src/main/webapp/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
