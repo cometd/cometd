@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.CometdServlet;
@@ -229,13 +230,34 @@ public class ClientAnnotationProcessorTest
         boolean processed = processor.configure(s);
         assertTrue(processed);
 
+        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                subscribeLatch.countDown();
+            }
+        });
+
         bayeuxClient.handshake();
         assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
+        assertTrue(subscribeLatch.await(1000, TimeUnit.MILLISECONDS));
 
         bayeuxClient.getChannel("/foo").publish(new HashMap());
         assertTrue(messageLatch.get().await(1000, TimeUnit.MILLISECONDS));
 
+        final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
+        bayeuxClient.getChannel(Channel.META_UNSUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                unsubscribeLatch.countDown();
+            }
+        });
+
         processor.deconfigureCallbacks(s);
+        assertTrue(unsubscribeLatch.await(1000, TimeUnit.MILLISECONDS));
+
         messageLatch.set(new CountDownLatch(1));
 
         bayeuxClient.getChannel("/foo").publish(new HashMap());
@@ -274,9 +296,19 @@ public class ClientAnnotationProcessorTest
         processor.configure(s);
         assertFalse(s.connected);
 
+        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        bayeuxClient.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                subscribeLatch.countDown();
+            }
+        });
+
         bayeuxClient.handshake();
         assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
         assertTrue(s.connected);
+        assertTrue(subscribeLatch.await(1000, TimeUnit.MILLISECONDS));
 
         bayeuxClient.getChannel("/foo").publish(new HashMap());
         assertTrue(messageLatch.await(1000, TimeUnit.MILLISECONDS));
