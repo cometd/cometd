@@ -191,7 +191,7 @@ org.cometd.Cometd = function(name)
         // Check if appending extra path is supported
         if (_config.appendMessageTypeToURL)
         {
-            if (urlParts[8] !== undefined)
+            if (urlParts[8] !== undefined && urlParts[8].length > 0)
             {
                 _info('Appending message type to URI ' + urlParts[7] + urlParts[8] + ' is not supported, disabling \'appendMessageTypeToURL\' configuration');
                 _config.appendMessageTypeToURL = false;
@@ -662,7 +662,7 @@ org.cometd.Cometd = function(name)
         // Pick up the first available transport as initial transport
         // since we don't know if the server supports it
         _transport = _transports.negotiateTransport(transportTypes, version, _crossDomain);
-        _debug('Initial transport is', _transport);
+        _debug('Initial transport is', _transport.getType(), _transport);
 
         // We started a batch to hold the application messages,
         // so here we must bypass it and send immediately.

@@ -76,7 +76,7 @@ org.cometd.RequestTransport = function()
         // Consider the metaConnect requests which should always be present
         if (_requests.length < this.getConfiguration().maxConnections - 1)
         {
-            this._debug('Transport sending request', requestId, envelope);
+            this._debug('Transport', this.getType(), 'sending request', requestId, envelope);
             _transportSend.call(this, envelope, request);
             _requests.push(request);
         }
