@@ -56,12 +56,12 @@ org.cometd.WebSocketTransport = function()
 
     that.accept = function(version, crossDomain)
     {
-        return _supportsWebSocket && typeof _WebSocket === 'function';
+        return _supportsWebSocket && !!_WebSocket;
     };
 
     that.send = function(envelope, metaConnect)
     {
-        this._debug('Transport', this, 'sending', envelope, 'metaConnect', metaConnect);
+        this._debug('Transport', this.getType(), this, 'sending', envelope, 'metaConnect', metaConnect);
 
         // Remember the envelope
         if (metaConnect)
