@@ -29,7 +29,7 @@ org.cometd.LongPollingTransport = function()
                 body: org.cometd.JSON.toJSON(envelope.messages),
                 onSuccess: function(response)
                 {
-                    self._debug('Transport', self, 'received response', response);
+                    self._debug('Transport', self.getType(), self, 'received response', response);
                     var success = false;
                     try
                     {
