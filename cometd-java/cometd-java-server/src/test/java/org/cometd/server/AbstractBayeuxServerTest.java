@@ -13,8 +13,10 @@ import org.eclipse.jetty.servlet.ServletHolder;
 public abstract class AbstractBayeuxServerTest extends TestCase
 {
     protected Server server;
+    protected int port;
     protected ServletContextHandler context;
     protected String cometdURL;
+    protected long timeout = 5000;
 
     protected void setUp() throws Exception
     {
@@ -31,20 +33,20 @@ public abstract class AbstractBayeuxServerTest extends TestCase
         // Setup comet servlet
         CometdServlet cometdServlet = new CometdServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
-        cometdServletHolder.setInitParameter("timeout", String.valueOf(5000));
+        cometdServletHolder.setInitParameter("timeout", String.valueOf(timeout));
         cometdServletHolder.setInitParameter("logLevel", "3");
         cometdServletHolder.setInitParameter("jsonDebug", "true");
         String cometdServletPath = "/cometd";
         context.addServlet(cometdServletHolder, cometdServletPath + "/*");
 
         server.start();
+        port = connector.getLocalPort();
+
+        String contextURL = "http://localhost:" + port + contextPath;
+        cometdURL = contextURL + cometdServletPath;
 
         BayeuxServerImpl bayeux = cometdServlet.getBayeux();
         customizeBayeux(bayeux);
-
-        int port = connector.getLocalPort();
-        String contextURL = "http://localhost:" + port + contextPath;
-        cometdURL = contextURL + cometdServletPath;
     }
 
     protected void tearDown() throws Exception
