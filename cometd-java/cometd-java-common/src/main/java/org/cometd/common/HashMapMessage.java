@@ -92,7 +92,9 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     public String getId()
     {
-        return (String)get(ID_FIELD);
+        // Support also old-style ids of type long
+        Object id = get(ID_FIELD);
+        return id == null ? null : String.valueOf(id);
     }
 
     public String getJSON()
