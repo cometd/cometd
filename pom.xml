@@ -6,7 +6,7 @@
     <artifactId>cometd-project</artifactId>
     <packaging>pom</packaging>
     <name>CometD</name>
-    <version>2.1.0-SNAPSHOT</version>
+    <version>2.1.0.beta2</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -99,9 +99,9 @@
     </distributionManagement>
 
     <scm>
-        <connection>scm:svn:http://svn.cometd.org/trunk</connection>
-        <developerConnection>scm:svn:https://svn.cometd.org/trunk</developerConnection>
-        <url>http://svn.cometd.org</url>
+        <connection>scm:svn:http://svn.cometd.org/tags/2.1.0.beta2</connection>
+        <developerConnection>scm:svn:https://svn.cometd.org/tags/2.1.0.beta2</developerConnection>
+        <url>scm:svn:https://svn.cometd.org/tags/2.1.0.beta2</url>
     </scm>
 
     <organization>
