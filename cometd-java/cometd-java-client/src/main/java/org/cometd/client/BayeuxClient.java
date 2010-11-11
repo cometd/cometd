@@ -297,13 +297,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected void sendBatch()
     {
-        BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
-        if (isHandshaking(bayeuxClientState))
-            return;
-
-        Message.Mutable[] messages = takeMessages();
-        if (messages.length > 0)
-            sendMessages(messages);
+        if (canSend())
+        {
+            Message.Mutable[] messages = takeMessages();
+            if (messages.length > 0)
+                sendMessages(messages);
+        }
     }
 
     protected boolean sendMessages(Message.Mutable... messages)
@@ -626,19 +625,21 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected void enqueueSend(Message.Mutable message)
     {
-        boolean batching = isBatching();
-        BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
-        boolean handshaking = isHandshaking(bayeuxClientState);
-        if (batching || handshaking)
-        {
-            messageQueue.offer(message);
-            logger.debug("Enqueued message {} (batching: {})", message, batching);
-        }
-        else
+        if (canSend())
         {
             boolean sent = sendMessages(message);
             logger.debug("{} message {}", sent ? "Sent" : "Failed", message);
         }
+        else
+        {
+            messageQueue.offer(message);
+            logger.debug("Enqueued message {} (batching: {})", message, isBatching());
+        }
+    }
+
+    private boolean canSend()
+    {
+        return !isBatching() && !isHandshaking(bayeuxClientState.get());
     }
 
     protected void failMessages(Throwable x, Message... messages)

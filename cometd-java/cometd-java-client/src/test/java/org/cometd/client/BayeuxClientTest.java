@@ -187,7 +187,7 @@ public class BayeuxClientTest extends TestCase
         assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
     }
 
-    public void testAsync() throws Exception
+    public void testBatchingAfterHandshake() throws Exception
     {
         final BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
         client.setOption(BayeuxClient.LOG_LEVEL, "debug");
