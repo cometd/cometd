@@ -290,5 +290,79 @@ public class BayeuxClientConcurrentTest
         client.handshake();
 
         assertTrue(connectLatch.await(2 * sleep, TimeUnit.MILLISECONDS));
+
+        client.disconnect();
+        assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+    }
+
+    @Test
+    public void testConcurrentHandshakeAndBatch() throws Exception
+    {
+        final CountDownLatch sendLatch = new CountDownLatch(1);
+        final BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        {
+            @Override
+            protected boolean sendMessages(Message.Mutable... messages)
+            {
+                sendLatch.countDown();
+                return super.sendMessages(messages);
+            }
+        };
+        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+
+        final CountDownLatch handshakeLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                try
+                {
+                    handshakeLatch.await();
+                }
+                catch (InterruptedException x)
+                {
+                    // Ignored
+                }
+            }
+        });
+
+        client.handshake();
+
+        final CountDownLatch messageLatch = new CountDownLatch(1);
+        client.batch(new Runnable()
+        {
+            public void run()
+            {
+                ClientSessionChannel channel = client.getChannel("/foobar");
+                channel.subscribe(new ClientSessionChannel.MessageListener()
+                {
+                    public void onMessage(ClientSessionChannel channel, Message message)
+                    {
+                        messageLatch.countDown();
+                    }
+                });
+
+                // Allow handshake to complete so that sendBatch() is triggered
+                handshakeLatch.countDown();
+
+                try
+                {
+                    // Be sure messages are not sent (we're still batching)
+                    assertFalse(sendLatch.await(1000, TimeUnit.MILLISECONDS));
+                }
+                catch (InterruptedException x)
+                {
+                    // Ignored
+                }
+
+                channel.publish("DATA");
+            }
+        });
+
+        assertTrue(sendLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(messageLatch.await(1000, TimeUnit.MILLISECONDS));
+
+        client.disconnect();
+        assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
     }
 }
