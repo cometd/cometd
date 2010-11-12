@@ -104,7 +104,7 @@ public class CometdDemoServlet extends GenericServlet
             {
                 public void configureChannel(ConfigurableServerChannel channel)
                 {
-                    channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
+                    channel.addAuthorizer(GrantAuthorizer.GRANT_SUBSCRIBE_PUBLISH);
                 }
             });
         }
