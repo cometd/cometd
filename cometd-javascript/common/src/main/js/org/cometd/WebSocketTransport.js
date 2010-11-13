@@ -1,177 +1,224 @@
 org.cometd.WebSocketTransport = function()
 {
+    var OPENED = 1;
+    var CLOSED = 2;
+
     var _super = new org.cometd.Transport();
-    var that = org.cometd.Transport.derive(_super);
-    var _webSocket;
+    var _self = org.cometd.Transport.derive(_super);
     // By default, support WebSocket
     var _supportsWebSocket = true;
-    var _envelope;
-    var _state;
-    var _metaConnectEnvelope;
+    var _webSocketSupported = false;
+    var _state = CLOSED;
     var _timeouts = {};
-    var _WebSocket;
+    var _envelopes = {};
+    var _webSocket;
+    var _successCallback;
 
-    if (window.WebSocket)
+    _self.accept = function(version, crossDomain, url)
     {
-        _WebSocket = window.WebSocket;
-        _state = _WebSocket.CLOSED;
-    }
+        // Using !! to return a boolean (and not the WebSocket object)
+        return _supportsWebSocket && !!window.WebSocket;
+    };
 
-    function _doSend(envelope, metaConnect)
+    function _websocketSend(envelope, metaConnect)
     {
-        if (_webSocket.send(org.cometd.JSON.toJSON(envelope.messages)))
+        try
         {
-            var delay = this.getConfiguration().maxNetworkDelay;
+            var json = org.cometd.JSON.toJSON(envelope.messages);
+            _webSocket.send(json);
+            this._debug('Transport', this, 'sent', envelope, 'metaConnect =', metaConnect);
+
+            // Manage the timeout waiting for the response
+            var maxDelay = this.getConfiguration().maxNetworkDelay;
+            var delay = maxDelay;
             if (metaConnect)
             {
                 delay += this.getAdvice().timeout;
             }
 
+            var messageIds = [];
             for (var i = 0; i < envelope.messages.length; ++i)
             {
                 var message = envelope.messages[i];
                 if (message.id)
                 {
+                    messageIds.push(message.id);
                     var self = this;
                     _timeouts[message.id] = this.setTimeout(function()
                     {
-                        delete _timeouts[message.id];
-                        var errorMessage = 'TIMEOUT message ' + message.id + ' exceeded ' + delay + 'ms';
+                        var errorMessage = 'Message ' + message.id + ' of transport ' + self.getType() + ' exceeded ' + delay + ' ms max network delay';
                         self._debug(errorMessage);
+
+                        delete _timeouts[message.id];
+
+                        for (var ids in _envelopes)
+                        {
+                            if (_envelopes[ids] === envelope)
+                            {
+                                delete _envelopes[ids];
+                                break;
+                            }
+                        }
                         envelope.onFailure(_webSocket, 'timeout', errorMessage);
                     }, delay);
-                    this._debug('waiting', delay, ' for  ', message.id, org.cometd.JSON.toJSON(_timeouts));
                 }
             }
+
+            this._debug('Transport', this, 'waiting at most', delay, ' ms for messages', messageIds, 'maxNetworkDelay =', maxDelay, ', timeouts:', org.cometd.JSON.toJSON(_timeouts));
         }
-        else
+        catch (x)
         {
             // Keep the semantic of calling response callbacks asynchronously after the request
             this.setTimeout(function()
             {
-                envelope.onFailure(_webSocket, 'failed', null);
+                envelope.onFailure(_webSocket, 'error', x);
             }, 0);
         }
     }
 
-    that.accept = function(version, crossDomain)
+    _self.onMessage = function(wsMessage)
     {
-        return _supportsWebSocket && !!_WebSocket;
+        this._debug('Transport', this, 'received websocket message', wsMessage);
+
+        if (_state === OPENED)
+        {
+            var messages = this.convertToMessages(wsMessage.data);
+            var messageIds = [];
+            for (var i = 0; i < messages.length; ++i)
+            {
+                var message = messages[i];
+
+                // Detect if the message is a response to a request we made.
+                // If it's a meta message, for sure it's a response;
+                // otherwise it's a publish message and publish responses lack the data field
+                if (/^\/meta\//.test(message.channel) || message.data === undefined)
+                {
+                    if (message.id)
+                    {
+                        messageIds.push(message.id);
+
+                        var timeout = _timeouts[message.id];
+                        if (timeout)
+                        {
+                            clearTimeout(timeout);
+                            delete _timeouts[message.id];
+                            this._debug('Transport', this, 'removed timeout for message', message.id, ', timeouts:', org.cometd.JSON.toJSON(_timeouts));
+                        }
+                    }
+                }
+
+                if ('/meta/disconnect' === message.channel && message.successful)
+                {
+                    _webSocket.close();
+                }
+            }
+
+            // Remove the envelope corresponding to the messages
+            var removed = false;
+            for (var j = 0; j < messageIds.length; ++j)
+            {
+                var id = messageIds[j];
+                for (var key in _envelopes)
+                {
+                    var ids = key.split(',');
+                    var index = org.cometd.Utils.inArray(id, ids);
+                    if (index >= 0)
+                    {
+                        removed = true;
+                        ids.splice(index, 1);
+                        var envelope = _envelopes[key];
+                        delete _envelopes[key];
+                        if (ids.length > 0)
+                        {
+                            _envelopes[ids.join(',')] = envelope;
+                        }
+                        break;
+                    }
+                }
+            }
+            if (removed)
+            {
+                this._debug('Transport', this, 'removed envelope, envelopes:', org.cometd.JSON.toJSON(_envelopes));
+            }
+
+            _successCallback.call(this, messages);
+        }
     };
 
-    that.send = function(envelope, metaConnect)
+    _self.onClose = function()
     {
-        this._debug('Transport', this.getType(), this, 'sending', envelope, 'metaConnect', metaConnect);
+        this._debug('Transport', this, 'closed', _webSocket);
 
-        // Remember the envelope
-        if (metaConnect)
+        // Remember if we were able to connect
+        // This close event could be due to server shutdown, and if it restarts we want to try websocket again
+        _supportsWebSocket = _webSocketSupported;
+
+        for (var id in _timeouts)
         {
-            _metaConnectEnvelope = envelope;
+            clearTimeout(_timeouts[id]);
+            delete _timeouts[id];
+        }
+
+        for (var ids in _envelopes)
+        {
+            _envelopes[ids].onFailure(_webSocket, 'closed');
+            delete _envelopes[ids];
+        }
+
+        _state = CLOSED;
+    };
+
+    _self.send = function(envelope, metaConnect)
+    {
+        this._debug('Transport', this, 'sending', envelope, 'metaConnect =', metaConnect);
+
+        // Store the envelope in any case; if the websocket cannot be opened, we fail it in close()
+        var messageIds = [];
+        for (var i = 0; i < envelope.messages.length; ++i)
+        {
+            var message = envelope.messages[i];
+            if (message.id)
+            {
+                messageIds.push(message.id);
+            }
+        }
+        _envelopes[messageIds.join(',')] = envelope;
+        this._debug('Transport', this, 'stored envelope, envelopes:', org.cometd.JSON.toJSON(_envelopes));
+
+        if (_state === OPENED)
+        {
+            _websocketSend.call(this, envelope, metaConnect);
         }
         else
         {
-            _envelope = envelope;
-        }
-
-        // Do we have an open websocket?
-        if (_state === _WebSocket.OPEN)
-        {
-            _doSend.call(this, envelope, metaConnect);
-        }
-        else
-        {
-            // No, so create new websocket
-
             // Mangle the URL, changing the scheme from 'http' to 'ws'
             var url = envelope.url.replace(/^http/, 'ws');
-            this._debug('Transport', this, 'URL', url);
+            this._debug('Transport', this, 'connecting to URL', url);
 
+            _webSocket = new window.WebSocket(url);
             var self = this;
-            var webSocket = new _WebSocket(url);
-
-            webSocket.onopen = function()
+            _webSocket.onopen = function()
             {
-                self._debug('Opened', webSocket);
-                // once the websocket is open, send the envelope.
-                _state = _WebSocket.OPEN;
-                _webSocket = webSocket;
-                _doSend.call(self, envelope, metaConnect);
+                self._debug('WebSocket opened', _webSocket);
+                _webSocketSupported = true;
+                _state = OPENED;
+                // Store the success callback, which is independent from the envelope,
+                // so that it can be used to notify arrival of messages.
+                _successCallback = envelope.onSuccess;
+                _websocketSend.call(self, envelope, metaConnect);
             };
-
-            webSocket.onclose = function()
+            _webSocket.onclose = function()
             {
-                self._debug('Closed', webSocket);
-                if (_state !== _WebSocket.OPEN)
-                {
-                    _supportsWebSocket = false;
-                    envelope.onFailure(webSocket, 'cannot open', null);
-                }
-                else
-                {
-                    _state = _WebSocket.CLOSED;
-                    // clear all timeouts
-                    for (var i in _timeouts)
-                    {
-                        clearTimeout(_timeouts[i]);
-                        delete _timeouts[i];
-                    }
-                }
+                self.onClose();
             };
-
-            webSocket.onmessage = function(message)
+            _webSocket.onmessage = function(message)
             {
-                self._debug('Message', message);
-                if (_state === _WebSocket.OPEN)
-                {
-                    var rcvdMessages = self.convertToMessages(message.data);
-                    var mc = false;
-
-                    // scan messages
-                    for (var i = 0; i < rcvdMessages.length; ++i)
-                    {
-                        var msg = rcvdMessages[i];
-
-                        // is this coming with a meta connect response?
-                        if ('/meta/connect' == msg.channel)
-                        {
-                            mc = true;
-                        }
-
-                        // cancel and delete any pending timeouts for meta messages and publish responses
-                        self._debug('timeouts', _timeouts, org.cometd.JSON.toJSON(_timeouts));
-
-                        if (!msg.data && msg.id && _timeouts[msg.id])
-                        {
-                            self._debug('timeout', _timeouts[msg.id]);
-                            clearTimeout(_timeouts[msg.id]);
-                            delete _timeouts[msg.id];
-                        }
-
-                        // check for disconnect
-                        if ('/meta/disconnect' == msg.channel && msg.successful)
-                        {
-                            webSocket.close();
-                        }
-                    }
-
-                    if (mc)
-                    {
-                        _metaConnectEnvelope.onSuccess(rcvdMessages);
-                    }
-                    else
-                    {
-                        _envelope.onSuccess(rcvdMessages);
-                    }
-                }
-                else
-                {
-                    envelope.onFailure(webSocket, 'closed', null);
-                }
+                self.onMessage(message);
             };
         }
     };
 
-    that.reset = function()
+    _self.reset = function()
     {
         _super.reset();
         if (_webSocket)
@@ -179,10 +226,13 @@ org.cometd.WebSocketTransport = function()
             _webSocket.close();
         }
         _supportsWebSocket = true;
-        _state = _WebSocket.CLOSED;
-        _envelope = null;
-        _metaConnectEnvelope = null;
+        _webSocketSupported = false;
+        _state = CLOSED;
+        _timeouts = {};
+        _envelopes = {};
+        _webSocket = null;
+        _successCallback = null;
     };
 
-    return that;
+    return _self;
 };

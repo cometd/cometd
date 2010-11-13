@@ -11,13 +11,13 @@ org.cometd.TransportRegistry = function()
         return _types.slice(0);
     };
 
-    this.findTransportTypes = function(version, crossDomain)
+    this.findTransportTypes = function(version, crossDomain, url)
     {
         var result = [];
         for (var i = 0; i < _types.length; ++i)
         {
             var type = _types[i];
-            if (_transports[type].accept(version, crossDomain))
+            if (_transports[type].accept(version, crossDomain, url) === true)
             {
                 result.push(type);
             }
@@ -25,7 +25,7 @@ org.cometd.TransportRegistry = function()
         return result;
     };
 
-    this.negotiateTransport = function(types, version, crossDomain)
+    this.negotiateTransport = function(types, version, crossDomain, url)
     {
         for (var i = 0; i < _types.length; ++i)
         {
@@ -35,7 +35,7 @@ org.cometd.TransportRegistry = function()
                 if (type == types[j])
                 {
                     var transport = _transports[type];
-                    if (transport.accept(version, crossDomain) === true)
+                    if (transport.accept(version, crossDomain, url) === true)
                     {
                         return transport;
                     }

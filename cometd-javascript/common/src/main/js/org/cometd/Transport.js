@@ -89,7 +89,7 @@ org.cometd.Transport = function()
      * @return true if this transport can work for the given version and cross domain communication case,
      * false otherwise
      */
-    this.accept = function(version, crossDomain)
+    this.accept = function(version, crossDomain, url)
     {
         throw 'Abstract';
     };
@@ -111,6 +111,11 @@ org.cometd.Transport = function()
     this.reset = function()
     {
         this._debug('Transport', _type, 'reset');
+    };
+
+    this.toString = function()
+    {
+        return this.getType();
     };
 };
 

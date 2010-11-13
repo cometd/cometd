@@ -643,7 +643,7 @@ org.cometd.Cometd = function(name)
         var version = '1.0';
 
         // Figure out the transports to send to the server
-        var transportTypes = _transports.findTransportTypes(version, _crossDomain);
+        var transportTypes = _transports.findTransportTypes(version, _crossDomain, _config.url);
 
         var bayeuxMessage = {
             version: version,
@@ -661,7 +661,7 @@ org.cometd.Cometd = function(name)
 
         // Pick up the first available transport as initial transport
         // since we don't know if the server supports it
-        _transport = _transports.negotiateTransport(transportTypes, version, _crossDomain);
+        _transport = _transports.negotiateTransport(transportTypes, version, _crossDomain, _config.url);
         _debug('Initial transport is', _transport.getType(), _transport);
 
         // We started a batch to hold the application messages,
@@ -713,11 +713,11 @@ org.cometd.Cometd = function(name)
             // Save clientId, figure out transport, then follow the advice to connect
             _clientId = message.clientId;
 
-            var newTransport = _transports.negotiateTransport(message.supportedConnectionTypes, message.version, _crossDomain);
+            var newTransport = _transports.negotiateTransport(message.supportedConnectionTypes, message.version, _crossDomain, _config.url);
             if (newTransport === null)
             {
                 throw 'Could not negotiate transport with server; client ' +
-                      _transports.findTransportTypes(message.version, _crossDomain) +
+                      _transports.findTransportTypes(message.version, _crossDomain, _config.url) +
                       ', server ' + message.supportedConnectionTypes;
             }
             else if (_transport != newTransport)

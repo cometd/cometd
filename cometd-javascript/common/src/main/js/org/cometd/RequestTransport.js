@@ -8,7 +8,7 @@
 org.cometd.RequestTransport = function()
 {
     var _super = new org.cometd.Transport();
-    var that = org.cometd.Transport.derive(_super);
+    var _self = org.cometd.Transport.derive(_super);
     var _requestIds = 0;
     var _metaConnectRequest = null;
     var _requests = [];
@@ -47,7 +47,7 @@ org.cometd.RequestTransport = function()
                 delay += this.getAdvice().timeout;
             }
 
-            this._debug('Will wait at most', delay, 'ms for the response, maxNetworkDelay =', maxDelay);
+            this._debug('Transport', this, 'waiting at most', delay, 'ms for the response, maxNetworkDelay =', maxDelay);
 
             var self = this;
             request.timeout = this.setTimeout(function()
@@ -76,7 +76,7 @@ org.cometd.RequestTransport = function()
         // Consider the metaConnect requests which should always be present
         if (_requests.length < this.getConfiguration().maxConnections - 1)
         {
-            this._debug('Transport', this.getType(), 'sending request', requestId, envelope);
+            this._debug('Transport', this, 'sending request', requestId, envelope);
             _transportSend.call(this, envelope, request);
             _requests.push(request);
         }
@@ -90,7 +90,7 @@ org.cometd.RequestTransport = function()
     function _metaConnectComplete(request)
     {
         var requestId = request.id;
-        this._debug('metaConnect complete', this.getType(), requestId);
+        this._debug('Transport', this, 'metaConnect complete', requestId);
         if (_metaConnectRequest !== null && _metaConnectRequest.id !== requestId)
         {
             throw 'Longpoll request mismatch, completing request ' + requestId;
@@ -137,7 +137,7 @@ org.cometd.RequestTransport = function()
         }
     }
 
-    that.complete = function(request, success, metaConnect)
+    _self.complete = function(request, success, metaConnect)
     {
         if (metaConnect)
         {
@@ -154,12 +154,12 @@ org.cometd.RequestTransport = function()
      * @param envelope the envelope to send
      * @param request the request information
      */
-    that.transportSend = function(envelope, request)
+    _self.transportSend = function(envelope, request)
     {
         throw 'Abstract';
     };
 
-    that.transportSuccess = function(envelope, request, responses)
+    _self.transportSuccess = function(envelope, request, responses)
     {
         if (!request.expired)
         {
@@ -176,7 +176,7 @@ org.cometd.RequestTransport = function()
         }
     };
 
-    that.transportFailure = function(envelope, request, reason, exception)
+    _self.transportFailure = function(envelope, request, reason, exception)
     {
         if (!request.expired)
         {
@@ -194,7 +194,7 @@ org.cometd.RequestTransport = function()
         }
 
         var requestId = ++_requestIds;
-        this._debug('metaConnect send ', this.getType() , requestId, envelope);
+        this._debug('Transport', this, 'metaConnect send', requestId, envelope);
         var request = {
             id: requestId,
             metaConnect: true
@@ -203,7 +203,7 @@ org.cometd.RequestTransport = function()
         _metaConnectRequest = request;
     }
 
-    that.send = function(envelope, metaConnect)
+    _self.send = function(envelope, metaConnect)
     {
         if (metaConnect)
         {
@@ -215,7 +215,7 @@ org.cometd.RequestTransport = function()
         }
     };
 
-    that.abort = function()
+    _self.abort = function()
     {
         for (var i = 0; i < _requests.length; ++i)
         {
@@ -237,17 +237,13 @@ org.cometd.RequestTransport = function()
         this.reset();
     };
 
-    that.reset = function()
+    _self.reset = function()
     {
+        _super.reset();
         _metaConnectRequest = null;
         _requests = [];
         _envelopes = [];
     };
 
-    that.toString = function()
-    {
-        return this.getType();
-    };
-
-    return that;
+    return _self;
 };
