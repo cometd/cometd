@@ -1,21 +1,21 @@
 org.cometd.LongPollingTransport = function()
 {
     var _super = new org.cometd.RequestTransport();
-    var that = org.cometd.Transport.derive(_super);
+    var _self = org.cometd.Transport.derive(_super);
     // By default, support cross domain
     var _supportsCrossDomain = true;
 
-    that.accept = function(version, crossDomain)
+    _self.accept = function(version, crossDomain, url)
     {
         return _supportsCrossDomain || !crossDomain;
     };
 
-    that.xhrSend = function(packet)
+    _self.xhrSend = function(packet)
     {
         throw 'Abstract';
     };
 
-    that.transportSend = function(envelope, request)
+    _self.transportSend = function(envelope, request)
     {
         var self = this;
         try
@@ -29,7 +29,7 @@ org.cometd.LongPollingTransport = function()
                 body: org.cometd.JSON.toJSON(envelope.messages),
                 onSuccess: function(response)
                 {
-                    self._debug('Transport', self.getType(), self, 'received response', response);
+                    self._debug('Transport', self, 'received response', response);
                     var success = false;
                     try
                     {
@@ -61,7 +61,7 @@ org.cometd.LongPollingTransport = function()
                     if (sameStack)
                     {
                         // Keep the semantic of calling response callbacks asynchronously after the request
-                        this.setTimeout(function()
+                        self.setTimeout(function()
                         {
                             self.transportFailure(envelope, request, reason, exception);
                         }, 0);
@@ -85,11 +85,11 @@ org.cometd.LongPollingTransport = function()
         }
     };
 
-    that.reset = function()
+    _self.reset = function()
     {
         _super.reset();
         _supportsCrossDomain = true;
     };
 
-    return that;
+    return _self;
 };

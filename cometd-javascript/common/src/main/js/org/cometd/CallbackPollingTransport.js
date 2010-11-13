@@ -1,29 +1,29 @@
 org.cometd.CallbackPollingTransport = function()
 {
     var _super = new org.cometd.RequestTransport();
-    var that = org.cometd.Transport.derive(_super);
+    var _self = org.cometd.Transport.derive(_super);
     var _maxLength = 2000;
 
-    that.accept = function(version, crossDomain)
+    _self.accept = function(version, crossDomain, url)
     {
         return true;
     };
 
-    that.jsonpSend = function(packet)
+    _self.jsonpSend = function(packet)
     {
         throw 'Abstract';
     };
 
-    that.transportSend = function(envelope, request)
+    _self.transportSend = function(envelope, request)
     {
-        var self = this;
-
         // Microsoft Internet Explorer has a 2083 URL max length
         // We must ensure that we stay within that length
         var messages = org.cometd.JSON.toJSON(envelope.messages);
         // Encode the messages because all brackets, quotes, commas, colons, etc
         // present in the JSON will be URL encoded, taking many more characters
         var urlLength = envelope.url.length + encodeURI(messages).length;
+
+        var self = this;
 
         // Let's stay on the safe side and use 2000 instead of 2083
         // also because we did not count few characters among which
@@ -107,5 +107,5 @@ org.cometd.CallbackPollingTransport = function()
         }
     };
 
-    return that;
+    return _self;
 };
