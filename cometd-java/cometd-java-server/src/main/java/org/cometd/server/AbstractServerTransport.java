@@ -29,7 +29,7 @@ public abstract class AbstractServerTransport implements ServerTransport
     private final BayeuxServerImpl _bayeux;
     private long _interval=0;
     private long _maxInterval=10000;
-    private long _timeout=10000;
+    private long _timeout=30000;
     private long _maxLazyTimeout=5000;
     private boolean _metaConnectDeliveryOnly=false;
     private Object _advice;
