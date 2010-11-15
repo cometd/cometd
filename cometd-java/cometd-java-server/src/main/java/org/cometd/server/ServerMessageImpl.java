@@ -44,6 +44,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
 
     public void freeze()
     {
+        assert _json == null;
         _json = getJSON();
     }
 
