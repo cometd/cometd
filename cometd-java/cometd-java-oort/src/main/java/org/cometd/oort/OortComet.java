@@ -1,5 +1,6 @@
 package org.cometd.oort;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -73,7 +74,7 @@ public class OortComet extends BayeuxClient
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                System.err.println("handshake "+message);
+                Log.debug("handshake {}",message);
 
                 if (message.isSuccessful())
                 {
@@ -91,8 +92,6 @@ public class OortComet extends BayeuxClient
                     {
                         public void run()
                         {
-                            System.err.println("Oort subscriptions for "+this);
-
                             // subscribe to cloud notifications
                             getChannel("/oort/cloud").subscribe(new ClientSessionChannel.MessageListener()
                             {
@@ -131,4 +130,16 @@ public class OortComet extends BayeuxClient
             }
         });
     }
+
+    @Override
+    public void onFailure(Throwable x, Message[] messages)
+    {
+        if (Log.isDebugEnabled())
+        {
+            Log.warn("onFailure: {}",Arrays.asList(messages));
+            Log.warn(x);
+        }
+    }
+    
+    
 }

@@ -21,6 +21,8 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -37,7 +39,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  */
 public class OortDemo
 {
-    private static int _testHandshakeFailure;
     private Oort _oort;
     
     /* ------------------------------------------------------------ */
@@ -46,6 +47,8 @@ public class OortDemo
      */
     public static void main(String[] args) throws Exception
     {
+        System.setProperty("org.eclipse.jetty.util.log.stderr.SOURCE","true");
+        
         OortDemo d8080=new OortDemo(8080);
         OortDemo d8081=new OortDemo(8081);
         // OortDemo d8082=new OortDemo(8082);
@@ -85,14 +88,15 @@ public class OortDemo
         cometd_holder.setInitParameter("interval","100");
         cometd_holder.setInitParameter("maxInterval","100000");
         cometd_holder.setInitParameter("multiFrameInterval","1500");
-        cometd_holder.setInitParameter("logLevel","3");
+        cometd_holder.setInitParameter("logLevel","1");
         cometd_holder.setInitOrder(1);
         context.addServlet(cometd_holder, "/cometd/*");
         
         ServletHolder oort_holder = new ServletHolder(OortServlet.class);
         oort_holder.setInitParameter(Oort.OORT_URL,"http://localhost:"+port+"/cometd");
         oort_holder.setInitParameter(Oort.OORT_CHANNELS,"/chat/**");
-        oort_holder.setInitParameter(Oort.OORT_CLOUD,(port==8080)?"http://localhost:"+8081+"/cometd":"http://localhost:"+8080+"/cometd");
+        oort_holder.setInitParameter(Oort.OORT_CLOUD,((port==8080)?"http://localhost:"+8081+"/cometd":"http://localhost:"+8080+"/cometd")+
+                " http://localhost:12345/notthere http://example.com:/ http://notthere.com/");
         oort_holder.setInitOrder(2);
         context.addServlet(oort_holder, "/oort/*");
 
