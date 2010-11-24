@@ -36,7 +36,7 @@ public class OortChatService
     /**
      * A map(channel, map(userName, clientId))
      */
-    private final ConcurrentMap<String, Set<String>> _members = new ConcurrentHashMap<String, Set<String>>();
+    private final ConcurrentMap<String, Map<String,Boolean>> _members = new ConcurrentHashMap<String, Map<String,Boolean>>();
 
     @Session
     private ServerSession _session;
@@ -101,16 +101,16 @@ public class OortChatService
     {
         Map<String, Object> data = message.getDataAsMap();
         String room = (String)data.get("room");
-        Set<String> roomMembers = _members.get(room);
+        Map<String,Boolean> roomMembers = _members.get(room);
         if (roomMembers == null)
         {
-            Set<String> newRoomMembers = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+            Map<String,Boolean> newRoomMembers = new ConcurrentHashMap<String, Boolean>();
             roomMembers = _members.putIfAbsent(room, newRoomMembers);
             if (roomMembers == null) roomMembers = newRoomMembers;
         }
-        final Set<String> members = roomMembers;
+        final Map<String,Boolean> members = roomMembers;
         final String userName = (String)data.get("user");
-        members.add(userName);
+        members.put(userName,Boolean.TRUE);
         client.addListener(new ServerSession.RemoveListener()
         {
             public void removed(ServerSession session, boolean timeout)
@@ -118,14 +118,14 @@ public class OortChatService
                 if (!_oort.isOort(client))
                     _seti.disassociate(userName);
                 members.remove(userName);
-                broadcastMembers(members);
+                broadcastMembers(members.keySet());
             }
         });
         
         if (!_oort.isOort(client))
             _seti.associate(userName,client);
 
-        broadcastMembers(members);
+        broadcastMembers(members.keySet());
     }
 
     @Listener("/chat/members")
@@ -133,20 +133,20 @@ public class OortChatService
     {
         Object[] members = (Object[])message.getData();
 
-        Set<String> roomMembers = _members.get("/chat/demo");
+        Map<String,Boolean> roomMembers = _members.get("/chat/demo");
         if (roomMembers == null)
         {
-            Set<String> newRoomMembers = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+            Map<String,Boolean> newRoomMembers = new ConcurrentHashMap<String, Boolean>();
             roomMembers = _members.putIfAbsent("/chat/demo", newRoomMembers);
             if (roomMembers == null) roomMembers = newRoomMembers;
         }
         
         boolean added=false;
         for (Object o : members)
-            added|=roomMembers.add(o.toString());
+            added|=roomMembers.put(o.toString(),Boolean.TRUE)==null;
         
         if (added)
-            broadcastMembers(roomMembers);
+            broadcastMembers(roomMembers.keySet());
     }
     
     private void broadcastMembers(Set<String> members)
