@@ -31,7 +31,6 @@ import org.cometd.client.transport.TransportListener;
 import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
 import org.cometd.common.HashMapMessage;
-import org.cometd.server.ServerChannelImpl;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
