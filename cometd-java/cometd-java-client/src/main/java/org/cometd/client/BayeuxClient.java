@@ -31,6 +31,7 @@ import org.cometd.client.transport.TransportListener;
 import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
 import org.cometd.common.HashMapMessage;
+import org.cometd.server.ServerChannelImpl;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -705,6 +706,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         }
     }
 
+    public String dump()
+    {
+        StringBuilder b = new StringBuilder();
+        dump(b,"");
+        return b.toString();
+    }
+    
     public enum State
     {
         UNCONNECTED, HANDSHAKING, REHANDSHAKING, CONNECTING, CONNECTED, DISCONNECTING, DISCONNECTED

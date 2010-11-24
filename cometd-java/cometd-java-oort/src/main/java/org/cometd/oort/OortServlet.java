@@ -67,7 +67,6 @@ public class OortServlet implements Servlet
 
     public void init(ServletConfig config) throws ServletException
     {
-        System.err.println("INIT "+config);
         _config=config;
 
         BayeuxServer bayeux = (BayeuxServer)config.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
