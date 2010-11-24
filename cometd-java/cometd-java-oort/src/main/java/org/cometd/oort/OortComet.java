@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -13,7 +15,6 @@ import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
-import org.eclipse.jetty.util.log.Log;
 
 /**
  * Oort Comet client.
@@ -27,13 +28,17 @@ public class OortComet extends BayeuxClient
     protected Oort _oort;
     protected String _cometUrl;
     protected String _cometSecret;
+    private volatile boolean _connected;
+    private final ConcurrentMap<String, ClientSessionChannel.MessageListener> _subscriptions = new ConcurrentHashMap<String, ClientSessionChannel.MessageListener>();
 
     OortComet(Oort oort,String cometUrl)
     {
-        super(cometUrl, LongPollingTransport.create(null, oort._httpClient));
+        super(cometUrl, LongPollingTransport.create(null, oort.getHttpClient()));
         _cometUrl=cometUrl;
         _oort=oort;
-
+        
+        _oort.getLog().info("observing {}",_cometUrl);
+        
         // add extension to modify outgoing handshake with oort details
         addExtension(new Extension()
         {
@@ -46,8 +51,6 @@ public class OortComet extends BayeuxClient
                     oort.put("oortSecret",_oort.getSecret());
                     oort.put("comet",_cometUrl);
                     message.getExt(true).put("oort",oort);
-                    if (Log.isDebugEnabled())
-                        Log.debug(_oort.getURL()+" ==> "+message);
                 }
 
                 return true;
@@ -74,10 +77,10 @@ public class OortComet extends BayeuxClient
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                Log.debug("handshake {}",message);
-
                 if (message.isSuccessful())
                 {
+                    _oort.getLog().info("connected {} as {}",_cometUrl,message.getClientId());
+                    _connected=true;
                     Map<String,Object> ext = message.getExt();
                     if (ext==null)
                         return;
@@ -104,42 +107,62 @@ public class OortComet extends BayeuxClient
                                     _oort.observedComets(comets);
                                 }
                             });
-
-                            for (String id : _oort._channels.keySet())
+                            
+                            for (String id : _oort.getObservedChannels())
                                 subscribe(id);
 
                             getChannel("/oort/cloud").publish(_oort.getKnownComets(),_cometSecret);
                         }
                     });
 
-                    if (Log.isDebugEnabled())
-                        Log.debug(_oort.getURL()+" <== "+ext);
+                    _oort.getLog().debug("<== {}",ext);
                 }
+                else if (_connected)
+                {
+                    _connected=false;
+
+                    _oort.getLog().warn("failed handshake {}",_cometUrl);
+                }
+                    
             }
         });
     }
 
     public void subscribe(String id)
     {
-        final ClientSessionChannel channel_here = _oort._oortSession.getChannel(id);
-        getChannel(id).subscribe(new ClientSessionChannel.MessageListener()
+        _oort.getLog().debug("subscribe {} on {}",id,_cometUrl);
+        
+        ClientSessionChannel channel = getChannel(id);
+        
+        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                channel_here.publish(message.getData(),message.getId());
+                _oort.getLog().debug("republish {} by {}",message,_oort.getOortSession());
+                _oort.getOortSession().getChannel(message.getChannel()).publish(message.getData(),message.getId());
             }
-        });
+        };
+        
+        if (_subscriptions.putIfAbsent(id,listener)==null)
+            channel.subscribe(listener);
     }
 
     @Override
     public void onFailure(Throwable x, Message[] messages)
     {
-        if (Log.isDebugEnabled())
-        {
-            Log.warn("onFailure: {}",Arrays.asList(messages));
-            Log.warn(x);
-        }
+        _oort.getLog().debug("onFailure {}",Arrays.asList(messages),x);
     }
-    
+
+    @Override
+    protected void processHandshake(Mutable handshake)
+    {
+        super.processHandshake(handshake);
+    }
+
+    @Override
+    public String toString()
+    {
+        return getId()+"@"+_cometUrl;
+    }
     
 }

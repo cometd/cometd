@@ -591,6 +591,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                             else
                             {
                                 // Do not leak the clientId to other subscribers
+                                // as we are now "sending" this message
                                 message.setClientId(null);
                                 channel.publish(session, message);
                                 reply = createReply(message);

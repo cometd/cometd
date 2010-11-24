@@ -82,6 +82,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     {
         if (!session.isHandshook())
             return false;
+        
         if (_subscribers.add(session))
         {
             session.subscribedTo(this);

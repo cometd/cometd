@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 public class OortDemo
 {
     private Oort _oort;
+    Server _server;
     
     /* ------------------------------------------------------------ */
     /**
@@ -47,11 +48,9 @@ public class OortDemo
      */
     public static void main(String[] args) throws Exception
     {
-        System.setProperty("org.eclipse.jetty.util.log.stderr.SOURCE","true");
-        
-        OortDemo d8080=new OortDemo(8080);
-        OortDemo d8081=new OortDemo(8081);
-        // OortDemo d8082=new OortDemo(8082);
+        int port=args.length==0?8080:Integer.valueOf(args[0]);
+        OortDemo demo=new OortDemo(port);
+        demo._server.join();
     }
 
     /* ------------------------------------------------------------ */
@@ -60,26 +59,27 @@ public class OortDemo
         String base=".";
         
         // Manually contruct context to avoid hassles with webapp classloaders for now.
-        Server server = new Server();
+        _server = new Server();
         QueuedThreadPool qtp = new QueuedThreadPool();
         qtp.setMinThreads(5);
         qtp.setMaxThreads(200);
-        server.setThreadPool(qtp);
+        _server.setThreadPool(qtp);
         
         SelectChannelConnector connector=new SelectChannelConnector();
         // SocketConnector connector=new SocketConnector();
         connector.setPort(port);
-        server.addConnector(connector);
+        _server.addConnector(connector);
         
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        server.setHandler(contexts);
+        _server.setHandler(contexts);
         
         ServletContextHandler context = new ServletContextHandler(contexts,"/",ServletContextHandler.SESSIONS);
+        context.addServlet("org.eclipse.jetty.servlet.DefaultServlet", "/");
         
         context.setBaseResource(new ResourceCollection(new Resource[]
         {
             Resource.newResource(base+"/../../cometd-demo/src/main/webapp/"),
-            //Resource.newResource(base+"/../../cometd-demo/target/cometd-demo-2.0-SNAPSHOT/"),
+            Resource.newResource(base+"/../../cometd-demo/target/cometd-demo-2.1.0-SNAPSHOT/"),
         }));
         
         // Cometd servlet
@@ -95,8 +95,7 @@ public class OortDemo
         ServletHolder oort_holder = new ServletHolder(OortServlet.class);
         oort_holder.setInitParameter(Oort.OORT_URL,"http://localhost:"+port+"/cometd");
         oort_holder.setInitParameter(Oort.OORT_CHANNELS,"/chat/**");
-        oort_holder.setInitParameter(Oort.OORT_CLOUD,((port==8080)?"http://localhost:"+8081+"/cometd":"http://localhost:"+8080+"/cometd")+
-                " http://localhost:12345/notthere http://example.com:/ http://notthere.com/");
+        oort_holder.setInitParameter(Oort.OORT_CLOUD,((port==8080)?"http://localhost:"+8081+"/cometd":"http://localhost:"+8080+"/cometd"));
         oort_holder.setInitOrder(2);
         context.addServlet(oort_holder, "/oort/*");
 
@@ -109,12 +108,13 @@ public class OortDemo
         demo_holder.setInitOrder(3);
         context.getServletHandler().addServlet(demo_holder);
         
-        context.addServlet("org.eclipse.jetty.servlet.DefaultServlet", "/");
         
-        server.start();
+        _server.start();
         
         _oort = (Oort)context.getServletContext().getAttribute(Oort.OORT_ATTRIBUTE);
         assert(_oort!=null);
         
     }
+    
+    
 }

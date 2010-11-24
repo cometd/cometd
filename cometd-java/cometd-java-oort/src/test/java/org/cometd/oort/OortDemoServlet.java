@@ -26,12 +26,12 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.java.annotation.ServerAnnotationProcessor;
 import org.cometd.server.ext.TimesyncExtension;
 
 public class OortDemoServlet implements Servlet
 {
     ServletConfig _config;
-    ServletContext _context;
 
 
     public String getServletInfo()
@@ -47,11 +47,14 @@ public class OortDemoServlet implements Servlet
     public void init(ServletConfig config) throws ServletException
     {
         _config=config;
-        _context=config.getServletContext();
 
-        new OortChatService(_context);
+        ServletContext context=config.getServletContext();
 
-        BayeuxServer bayeux = (BayeuxServer)_context.getAttribute(BayeuxServer.ATTRIBUTE);
+        BayeuxServer bayeux = (BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE);
+        
+        ServerAnnotationProcessor processor = ServerAnnotationProcessor.get(bayeux);
+        processor.configure(new OortChatService(context));
+
         bayeux.addExtension(new TimesyncExtension());
     }
 

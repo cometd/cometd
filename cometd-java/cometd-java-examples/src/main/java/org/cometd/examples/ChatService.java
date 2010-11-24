@@ -67,6 +67,7 @@ public class ChatService
             public void configureChannel(ConfigurableServerChannel channel)
             {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
+                channel.setPersistent(true);
             }
         }))
             throw new IllegalStateException();

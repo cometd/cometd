@@ -156,22 +156,34 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     public void setChannel(String channel)
     {
-        put(CHANNEL_FIELD, channel);
+        if (channel==null)
+            remove(CHANNEL_FIELD);
+        else
+            put(CHANNEL_FIELD, channel);
     }
 
     public void setClientId(String clientId)
     {
-        put(CLIENT_ID_FIELD, clientId);
+        if (clientId==null)
+            remove(CLIENT_ID_FIELD);
+        else
+            put(CLIENT_ID_FIELD, clientId);
     }
 
     public void setData(Object data)
     {
-        put(DATA_FIELD, data);
+        if (data==null)
+            remove(DATA_FIELD);
+        else
+            put(DATA_FIELD, data);
     }
 
     public void setId(String id)
     {
-        put(ID_FIELD, id);
+        if (id==null)
+            remove(ID_FIELD);
+        else
+            put(ID_FIELD, id);
     }
 
     public void setSuccessful(boolean successful)

@@ -3,33 +3,49 @@
  */
 package org.cometd.oort;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import javax.inject.Inject;
 import javax.servlet.ServletContext;
 
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.AbstractService;
-import org.eclipse.jetty.util.log.Log;
+import org.cometd.java.annotation.Listener;
+import org.cometd.java.annotation.Service;
+import org.cometd.java.annotation.Session;
+import org.cometd.server.authorizer.GrantAuthorizer;
+import org.cometd.server.filter.DataFilter;
+import org.cometd.server.filter.DataFilterMessageListener;
+import org.cometd.server.filter.JSONDataFilter;
+import org.cometd.server.filter.NoMarkupFilter;
 
-public class OortChatService extends AbstractService
+@Service("chat")
+public class OortChatService 
 {
+    
     /**
      * A map(channel, map(userName, clientId))
      */
     private final ConcurrentMap<String, Set<String>> _members = new ConcurrentHashMap<String, Set<String>>();
+
+    @Session
+    private ServerSession _session;
+    private BayeuxServer _bayeux;
     private Oort _oort;
     private Seti _seti;
-
-    public OortChatService(ServletContext context)
+    
+    OortChatService(ServletContext context)
     {
-        super((BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE), "chat");
-
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
         if (_oort==null)
             throw new RuntimeException("!"+Oort.OORT_ATTRIBUTE);
@@ -38,106 +54,129 @@ public class OortChatService extends AbstractService
             throw new RuntimeException("!"+Seti.SETI_ATTRIBUTE);
 
         _oort.observeChannel("/chat/**");
-        addService("/chat/**", "trackMembers");
-        addService("/service/privatechat", "privateChat");
     }
-
-    public void trackMembers(final ServerSession joiner, final String channelName, Object data, final String messageId)
+    
+    @Inject
+    public void setBayeux(BayeuxServer bayeux)
     {
-        if (data instanceof Object[])
+        _bayeux=bayeux;
+
+        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(bayeux,new NoMarkupFilter(),new BadWordFilter());
+
+        if (!bayeux.createIfAbsent("/chat/**",new ServerChannel.Initializer()
         {
-            Set<String> members = _members.get(channelName);
-            if (members == null)
+            public void configureChannel(ConfigurableServerChannel channel)
             {
-                Set<String> newMembers = new HashSet<String>();
-                members = _members.putIfAbsent(channelName, newMembers);
-                if (members == null) members = newMembers;
+                channel.addListener(noMarkup);
+                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
             }
-            boolean added=false;
-            for (Object user : (Object[])data)
-                added|=members.add(user.toString());
-            if (added)
+        }))
+            throw new IllegalStateException();
+
+        if (!bayeux.createIfAbsent("/service/privatechat",new ServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
             {
-                Log.info("Members: " + members);
-                // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
+                channel.setPersistent(true);
+                channel.addListener(noMarkup);
+                channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
             }
+        }))
+            throw new IllegalStateException();
+
+        if (!bayeux.createIfAbsent("/service/members",new ServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
+                channel.setPersistent(true);
+            }
+        }))
+            throw new IllegalStateException();
+    }
+    
+
+    @Listener("/service/members")
+    public void handleMembership(final ServerSession client, ServerMessage message)
+    {
+        Map<String, Object> data = message.getDataAsMap();
+        String room = (String)data.get("room");
+        Set<String> roomMembers = _members.get(room);
+        if (roomMembers == null)
+        {
+            Set<String> newRoomMembers = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+            roomMembers = _members.putIfAbsent(room, newRoomMembers);
+            if (roomMembers == null) roomMembers = newRoomMembers;
         }
-        else if (data instanceof Map)
+        final Set<String> members = roomMembers;
+        final String userName = (String)data.get("user");
+        members.add(userName);
+        client.addListener(new ServerSession.RemoveListener()
         {
-            Map<String, Object> map = (Map<String, Object>) data;
-
-            if (Boolean.TRUE.equals(map.get("join")))
+            public void removed(ServerSession session, boolean timeout)
             {
-
-                Set<String> members = _members.get(channelName);
-                if (members == null)
-                {
-                    Set<String> newMembers = new HashSet<String>();
-                    members = _members.putIfAbsent(channelName, newMembers);
-                    if (members == null) members = newMembers;
-                }
-
-                final String userName = (String)map.get("user");
-
-                members.add(userName);
-
-                if (!_oort.isOort(joiner))
-                    _seti.associate(userName,joiner);
-
-                joiner.addListener(new ServerSession.RemoveListener()
-                {
-                    public void removed(ServerSession session, boolean timeout)
-                    {
-                        if (!_oort.isOort(joiner))
-                            _seti.disassociate(userName);
-                        if (timeout)
-                        {
-                            ServerChannel channel=getBayeux().getChannel(channelName);
-                            if (channel!=null)
-                            {
-                                Map<String,Object> leave = new HashMap<String,Object>();
-                                leave.put("leave",Boolean.TRUE);
-                                leave.put("user",userName);
-                                channel.publish(null,leave,null);
-                            }
-                        }
-                    }
-
-                });
-
-                Log.info("Members: " + members);
-                // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
-
-            }
-
-            if (Boolean.TRUE.equals(map.get("leave")))
-            {
-                Set<String> members = _members.get(channelName);
-                if (members == null)
-                {
-                    Set<String> newMembers = new HashSet<String>();
-                    members = _members.putIfAbsent(channelName, newMembers);
-                    if (members == null) members = newMembers;
-                }
-
-                String userName = (String)map.get("user");
+                if (!_oort.isOort(client))
+                    _seti.disassociate(userName);
                 members.remove(userName);
-
-                Log.info("Members: " + members);
-                // Broadcast the members to all existing members
-                getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
+                broadcastMembers(members);
             }
-        }
+        });
+        
+        if (!_oort.isOort(client))
+            _seti.associate(userName,client);
+
+        broadcastMembers(members);
     }
 
-    public void privateChat(ServerSession source, String channel, Map<String, Object> data, String messageId)
+    @Listener("/chat/members")
+    public void handleMembershipBroadcast(final ServerSession client, ServerMessage message)
     {
+        Object[] members = (Object[])message.getData();
+
+        Set<String> roomMembers = _members.get("/chat/demo");
+        if (roomMembers == null)
+        {
+            Set<String> newRoomMembers = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+            roomMembers = _members.putIfAbsent("/chat/demo", newRoomMembers);
+            if (roomMembers == null) roomMembers = newRoomMembers;
+        }
+        
+        boolean added=false;
+        for (Object o : members)
+            added|=roomMembers.add(o.toString());
+        
+        if (added)
+            broadcastMembers(roomMembers);
+    }
+    
+    private void broadcastMembers(Set<String> members)
+    {
+        // Broadcast the new members list
+        ClientSessionChannel channel = _session.getLocalSession().getChannel("/chat/members");
+        channel.publish(members);
+    }
+
+    @Listener("/service/privatechat")
+    public void privateChat(ServerSession client, ServerMessage message)
+    {
+        Map<String,Object> data = message.getDataAsMap();
         String toUid=(String)data.get("peer");
         String toChannel=(String)data.get("room");
-        source.deliver(source,toChannel,data,messageId);
+        data.put("scope","private");
+        data.put("user",data.get("user")+"->"+toUid);
+        client.deliver(client,toChannel,data,message.getId());
         _seti.sendMessage(toUid,toChannel,data);
+    }
+    
+    class BadWordFilter extends JSONDataFilter
+    {
+        @Override
+        protected Object filterString(String string)
+        {
+            if (string.indexOf("dang")>=0)
+                throw new DataFilter.Abort();
+            return string;
+        }
     }
 }
 

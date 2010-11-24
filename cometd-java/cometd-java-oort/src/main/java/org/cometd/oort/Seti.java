@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
 /** The Search for Extra Terrestial Intelligence.
- *
+ * <p>
  * Well in this case, just the search for a user logged onto an
  * Cometd node in an Oort cluster.
  * <p>
@@ -266,13 +266,11 @@ public class Seti
 
         public void sendMessage(String toUser, String toChannel, Object data)
         {
-            System.err.println("SETI LocalLocation.send "+toUser+","+toChannel+","+data);
             _session.deliver(_session,toChannel,data,null);
         }
 
         public void receive(String toUser, String toChannel, Object data)
         {
-            System.err.println("SETI LocalLocation.recieve "+toUser+","+toChannel+","+data);
             _session.deliver(_session,toChannel,data,null);
         }
     }
