@@ -1,5 +1,6 @@
 package org.cometd.oort;
 
+import java.net.URI;
 import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -124,6 +125,23 @@ public class Oort
      */
     public OortComet observeComet(String cometUrl)
     {
+        try
+        {
+            URI uri = new URI(cometUrl);
+            
+            if (uri.getScheme()==null || uri.getHost()==null)
+            {
+                _log.warn("No protocol|host in comet URL: "+cometUrl);
+                return null;
+            }
+        }
+        catch(Exception e)
+        {
+            _log.debug(e);
+            _log.warn("Bad comet URL: "+cometUrl);
+            return null;
+        }
+        
         synchronized (this)
         {
             if (_url.equals(cometUrl))
