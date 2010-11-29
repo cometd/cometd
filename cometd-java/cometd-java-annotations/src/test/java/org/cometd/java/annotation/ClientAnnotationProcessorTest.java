@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -95,7 +97,7 @@ public class ClientAnnotationProcessorTest
     @Test
     public void testNull() throws Exception
     {
-        boolean processed = processor.configure(null);
+        boolean processed = processor.process(null);
         assertFalse(processed);
     }
 
@@ -109,7 +111,7 @@ public class ClientAnnotationProcessorTest
         }
 
         S s = new S();
-        boolean processed = processor.configure(s);
+        boolean processed = processor.process(s);
         assertFalse(processed);
         assertNull(s.session);
     }
@@ -125,7 +127,7 @@ public class ClientAnnotationProcessorTest
         }
 
         S s = new S();
-        boolean processed = processor.configure(s);
+        boolean processed = processor.process(s);
         assertTrue(processed);
         assertNotNull(s.session);
     }
@@ -146,7 +148,7 @@ public class ClientAnnotationProcessorTest
         }
 
         S s = new S();
-        boolean processed = processor.configure(s);
+        boolean processed = processor.process(s);
         assertTrue(processed);
         assertNotNull(s.session);
     }
@@ -187,7 +189,7 @@ public class ClientAnnotationProcessorTest
         }
 
         S s = new S();
-        boolean processed = processor.configure(s);
+        boolean processed = processor.process(s);
         assertTrue(processed);
 
         bayeuxClient.handshake();
@@ -201,7 +203,7 @@ public class ClientAnnotationProcessorTest
         assertNotNull(connect);
         assertTrue(connect.isSuccessful());
 
-        processed = processor.deconfigureCallbacks(s);
+        processed = processor.deprocessCallbacks(s);
         assertTrue(processed);
 
         // Listener method must not be notified, since we have deconfigured
@@ -227,7 +229,7 @@ public class ClientAnnotationProcessorTest
         }
 
         S s = new S();
-        boolean processed = processor.configure(s);
+        boolean processed = processor.process(s);
         assertTrue(processed);
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
@@ -255,7 +257,7 @@ public class ClientAnnotationProcessorTest
             }
         });
 
-        processor.deconfigureCallbacks(s);
+        processor.deprocessCallbacks(s);
         assertTrue(unsubscribeLatch.await(1000, TimeUnit.MILLISECONDS));
 
         messageLatch.set(new CountDownLatch(1));
@@ -268,15 +270,28 @@ public class ClientAnnotationProcessorTest
     public void testUsage() throws Exception
     {
         final CountDownLatch connectLatch = new CountDownLatch(1);
-        final CountDownLatch messageLatch = new CountDownLatch(1);
+        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>();
 
         @Service
         class S
         {
+            private boolean initialized;
             private boolean connected;
 
             @Session
             private ClientSession session;
+
+            @PostConstruct
+            private void init()
+            {
+                initialized = true;
+            }
+
+            @PreDestroy
+            private void destroy()
+            {
+                initialized = false;
+            }
 
             @Listener(Channel.META_CONNECT)
             public void metaConnect(Message connect)
@@ -288,12 +303,13 @@ public class ClientAnnotationProcessorTest
             @Subscription("/foo")
             public void foo(Message message)
             {
-                messageLatch.countDown();
+                messageLatch.get().countDown();
             }
         }
 
         S s = new S();
-        processor.configure(s);
+        processor.process(s);
+        assertTrue(s.initialized);
         assertFalse(s.connected);
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
@@ -310,7 +326,15 @@ public class ClientAnnotationProcessorTest
         assertTrue(s.connected);
         assertTrue(subscribeLatch.await(1000, TimeUnit.MILLISECONDS));
 
+        messageLatch.set(new CountDownLatch(1));
         bayeuxClient.getChannel("/foo").publish(new HashMap());
-        assertTrue(messageLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(messageLatch.get().await(1000, TimeUnit.MILLISECONDS));
+
+        processor.deprocess(s);
+        assertFalse(s.initialized);
+
+        messageLatch.set(new CountDownLatch(1));
+        bayeuxClient.getChannel("/foo").publish(new HashMap());
+        assertFalse(messageLatch.get().await(1000, TimeUnit.MILLISECONDS));
     }
 }

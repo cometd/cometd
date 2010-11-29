@@ -68,9 +68,9 @@ public class CometdDemoServlet extends GenericServlet
 
         processor = ServerAnnotationProcessor.get(bayeux);
 
-        processor.configure(new EchoRPC());
-        processor.configure(new Monitor());
-        processor.configure(new ChatService());
+        processor.process(new EchoRPC());
+        processor.process(new Monitor());
+        processor.process(new ChatService());
 
         bayeux.createIfAbsent("/foo/bar/baz",new ConfigurableServerChannel.Initializer()
         {

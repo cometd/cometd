@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
  * via CGLIB to invoke bean factory methods only once.
  *
  * Implementing {@link DestructionAwareBeanPostProcessor} allows to plug-in
- * CometD's annotation processor to configure the CometD services.
+ * CometD's annotation processor to process the CometD services.
  */
 @Component
 public class Configurator implements DestructionAwareBeanPostProcessor
@@ -50,19 +50,19 @@ public class Configurator implements DestructionAwareBeanPostProcessor
 
     public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException
     {
-        processor.configureDependencies(bean);
+        processor.processDependencies(bean);
         return bean;
     }
 
     public Object postProcessAfterInitialization(Object bean, String name) throws BeansException
     {
-        processor.configureCallbacks(bean);
+        processor.processCallbacks(bean);
         return bean;
     }
 
     public void postProcessBeforeDestruction(Object bean, String name) throws BeansException
     {
-        processor.deconfigureCallbacks(bean);
+        processor.deprocessCallbacks(bean);
     }
 
     @Bean(initMethod = "start", destroyMethod = "stop")
