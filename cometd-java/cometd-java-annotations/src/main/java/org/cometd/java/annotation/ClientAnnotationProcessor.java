@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -32,8 +34,8 @@ import org.cometd.bayeux.client.ClientSessionChannel;
  * <p>The processor is used in this way:</p>
  * <pre>
  * ClientSession bayeux = ...;
- * MyService s = new MyService();
  * ClientAnnotationProcessor processor = ClientAnnotationProcessor.get(bayeux);
+ * MyService s = new MyService();
  * processor.process(s);
  * </pre>
  * @see ServerAnnotationProcessor
@@ -79,19 +81,31 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
     }
 
     /**
-     * Configures dependencies annotated with {@link Session}, and callbacks
+     * Processes dependencies annotated with {@link Session}, and callbacks
      * annotated with {@link Listener} and {@link Subscription}.
      * @param bean the annotated service instance
      * @return true if at least one dependency or callback has been processed, false otherwise
      */
-    public boolean configure(Object bean)
+    public boolean process(Object bean)
     {
-        boolean result = configureDependencies(bean);
-        result |= configureCallbacks(bean);
+        boolean result = processDependencies(bean);
+        result |= processPostConstruct(bean);
+        result |= processCallbacks(bean);
         return result;
     }
 
-    private boolean configureCallbacks(Object bean)
+    /**
+     * Processes lifecycle methods annotated with {@link PostConstruct}.
+     * @param bean the annotated service instance
+     * @return true if at least one lifecycle method has been invoked, false otherwise
+     */
+    @Override
+    public boolean processPostConstruct(Object bean)
+    {
+        return super.processPostConstruct(bean);
+    }
+
+    private boolean processCallbacks(Object bean)
     {
         if (bean == null)
             return false;
@@ -101,8 +115,23 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         if (serviceAnnotation == null)
             return false;
 
-        boolean result = configureListener(bean);
-        result |= configureSubscription(bean);
+        boolean result = processListener(bean);
+        result |= processSubscription(bean);
+        return result;
+    }
+
+    /**
+     * Performs the opposite processing done by {@link #process(Object)} on callbacks methods
+     * annotated with {@link Listener} and {@link Subscription}, and on lifecycle methods annotated
+     * with {@link PreDestroy}.
+     * @param bean the annotated service instance
+     * @return true if at least one deprocessing has been performed, false otherwise
+     * @see #process(Object)
+     */
+    public boolean deprocess(Object bean)
+    {
+        boolean result = deprocessCallbacks(bean);
+        result |= processPreDestroy(bean);
         return result;
     }
 
@@ -111,14 +140,25 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
      * @param bean the annotated service instance
      * @return true if the at least one callback has been deconfigured
      */
-    public boolean deconfigureCallbacks(Object bean)
+    public boolean deprocessCallbacks(Object bean)
     {
-        boolean result = deconfigureListener(bean);
-        result |= deconfigureSubscription(bean);
+        boolean result = deprocessListener(bean);
+        result |= deprocessSubscription(bean);
         return result;
     }
 
-    private boolean configureDependencies(Object bean)
+    /**
+     * Processes lifecycle methods annotated with {@link PreDestroy}.
+     * @param bean the annotated service instance
+     * @return true if at least one lifecycle method has been invoked, false otherwise
+     */
+    @Override
+    public boolean processPreDestroy(Object bean)
+    {
+        return super.processPreDestroy(bean);
+    }
+
+    private boolean processDependencies(Object bean)
     {
         if (bean == null)
             return false;
@@ -128,10 +168,10 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         if (serviceAnnotation == null)
             return false;
 
-        return configureSession(bean, clientSession);
+        return processSession(bean, clientSession);
     }
 
-    private boolean configureSession(Object bean, ClientSession clientSession)
+    private boolean processSession(Object bean, ClientSession clientSession)
     {
         boolean result = false;
         for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
@@ -171,7 +211,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
-    private boolean configureListener(Object bean)
+    private boolean processListener(Object bean)
     {
         boolean result = false;
         for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
@@ -206,7 +246,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
-    private boolean deconfigureListener(Object bean)
+    private boolean deprocessListener(Object bean)
     {
         boolean result = false;
         List<ListenerCallback> callbacks = listeners.get(bean);
@@ -225,7 +265,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
-    private boolean configureSubscription(Object bean)
+    private boolean processSubscription(Object bean)
     {
         boolean result = false;
         for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
@@ -264,7 +304,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
-    private boolean deconfigureSubscription(Object bean)
+    private boolean deprocessSubscription(Object bean)
     {
         boolean result = false;
         List<SubscriptionCallback> callbacks = subscribers.get(bean);
