@@ -16,6 +16,7 @@ package org.cometd.examples;
 
 import java.io.IOException;
 import java.util.Map;
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
@@ -94,13 +95,15 @@ public class CometdDemoServlet extends GenericServlet
     @Service("echo")
     public static class EchoRPC
     {
+        @Inject
+        private BayeuxServer _bayeux;
         @Session
         private ServerSession _session;
 
-        @Inject
-        protected void init(BayeuxServer bayeux)
+        @PostConstruct
+        protected void init()
         {
-            bayeux.createIfAbsent("/service/echo",new ServerChannel.Initializer()
+            _bayeux.createIfAbsent("/service/echo",new ServerChannel.Initializer()
             {
                 public void configureChannel(ConfigurableServerChannel channel)
                 {

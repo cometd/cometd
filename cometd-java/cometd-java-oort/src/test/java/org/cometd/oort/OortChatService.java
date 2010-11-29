@@ -3,14 +3,11 @@
  */
 package org.cometd.oort;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.servlet.ServletContext;
 
@@ -30,20 +27,16 @@ import org.cometd.server.filter.JSONDataFilter;
 import org.cometd.server.filter.NoMarkupFilter;
 
 @Service("chat")
-public class OortChatService 
+public class OortChatService
 {
-    
-    /**
-     * A map(channel, map(userName, clientId))
-     */
     private final ConcurrentMap<String, Map<String,Boolean>> _members = new ConcurrentHashMap<String, Map<String,Boolean>>();
-
+    @Inject
+    private BayeuxServer _bayeux;
     @Session
     private ServerSession _session;
-    private BayeuxServer _bayeux;
     private Oort _oort;
     private Seti _seti;
-    
+
     OortChatService(ServletContext context)
     {
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
@@ -55,15 +48,13 @@ public class OortChatService
 
         _oort.observeChannel("/chat/**");
     }
-    
-    @Inject
-    public void setBayeux(BayeuxServer bayeux)
+
+    @PostConstruct
+    public void init()
     {
-        _bayeux=bayeux;
+        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux,new NoMarkupFilter(),new BadWordFilter());
 
-        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(bayeux,new NoMarkupFilter(),new BadWordFilter());
-
-        if (!bayeux.createIfAbsent("/chat/**",new ServerChannel.Initializer()
+        if (!_bayeux.createIfAbsent("/chat/**",new ServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -73,7 +64,7 @@ public class OortChatService
         }))
             throw new IllegalStateException();
 
-        if (!bayeux.createIfAbsent("/service/privatechat",new ServerChannel.Initializer()
+        if (!_bayeux.createIfAbsent("/service/privatechat",new ServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -84,7 +75,7 @@ public class OortChatService
         }))
             throw new IllegalStateException();
 
-        if (!bayeux.createIfAbsent("/service/members",new ServerChannel.Initializer()
+        if (!_bayeux.createIfAbsent("/service/members",new ServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -94,7 +85,6 @@ public class OortChatService
         }))
             throw new IllegalStateException();
     }
-    
 
     @Listener("/service/members")
     public void handleMembership(final ServerSession client, ServerMessage message)
@@ -121,7 +111,7 @@ public class OortChatService
                 broadcastMembers(members.keySet());
             }
         });
-        
+
         if (!_oort.isOort(client))
             _seti.associate(userName,client);
 
@@ -140,15 +130,15 @@ public class OortChatService
             roomMembers = _members.putIfAbsent("/chat/demo", newRoomMembers);
             if (roomMembers == null) roomMembers = newRoomMembers;
         }
-        
+
         boolean added=false;
         for (Object o : members)
             added|=roomMembers.put(o.toString(),Boolean.TRUE)==null;
-        
+
         if (added)
             broadcastMembers(roomMembers.keySet());
     }
-    
+
     private void broadcastMembers(Set<String> members)
     {
         // Broadcast the new members list
@@ -167,7 +157,7 @@ public class OortChatService
         client.deliver(client,toChannel,data,message.getId());
         _seti.sendMessage(toUid,toChannel,data);
     }
-    
+
     class BadWordFilter extends JSONDataFilter
     {
         @Override
