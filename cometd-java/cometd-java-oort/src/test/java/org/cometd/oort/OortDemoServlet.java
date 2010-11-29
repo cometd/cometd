@@ -14,10 +14,7 @@
 
 package org.cometd.oort;
 
-
-
 import java.io.IOException;
-
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -51,9 +48,9 @@ public class OortDemoServlet implements Servlet
         ServletContext context=config.getServletContext();
 
         BayeuxServer bayeux = (BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE);
-        
+
         ServerAnnotationProcessor processor = ServerAnnotationProcessor.get(bayeux);
-        processor.configure(new OortChatService(context));
+        processor.process(new OortChatService(context));
 
         bayeux.addExtension(new TimesyncExtension());
     }

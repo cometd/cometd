@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -30,18 +31,17 @@ import org.cometd.server.filter.NoMarkupFilter;
 public class ChatService
 {
     private final ConcurrentMap<String, Map<String, String>> _members = new ConcurrentHashMap<String, Map<String, String>>();
+    @Inject
     private BayeuxServer _bayeux;
     @Session
     private ServerSession _session;
 
-    @Inject
-    public void setBayeux(BayeuxServer bayeux)
+    @PostConstruct
+    public void init()
     {
-        _bayeux=bayeux;
+        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux,new NoMarkupFilter(),new BadWordFilter());
 
-        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(bayeux,new NoMarkupFilter(),new BadWordFilter());
-
-        if (!bayeux.createIfAbsent("/chat/**",new ServerChannel.Initializer()
+        if (!_bayeux.createIfAbsent("/chat/**",new ServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -51,7 +51,7 @@ public class ChatService
         }))
             throw new IllegalStateException();
 
-        if( !bayeux.createIfAbsent("/service/privatechat",new ServerChannel.Initializer()
+        if( !_bayeux.createIfAbsent("/service/privatechat",new ServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -62,7 +62,7 @@ public class ChatService
         }))
             throw new IllegalStateException();
 
-        if( !bayeux.createIfAbsent("/service/members",new ServerChannel.Initializer()
+        if( !_bayeux.createIfAbsent("/service/members",new ServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
