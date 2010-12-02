@@ -384,7 +384,7 @@ public abstract class LongPollingTransport extends HttpTransport
             {
                 AtomicInteger count = entry.getValue();
                 // if the ID has been in the sweep map for 3 sweeps
-                if (count.incrementAndGet() > maxSweeps)
+                if (count!=null && count.incrementAndGet() > maxSweeps)
                 {
                     String key = entry.getKey();
                     // remove it from both browser Maps
