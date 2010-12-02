@@ -604,7 +604,8 @@ public class BayeuxLoadGenerator
                     String messageId = message.getId();
                     Long sendTime = sendTimes.get(messageId);
                     Long arrivalTime = arrivalTimes.get(messageId);
-                    updateLatencies(startTime, sendTime, arrivalTime, endTime);
+                    if (startTime!=null && sendTime!=null && arrivalTime!=null )
+                        updateLatencies(startTime, sendTime, arrivalTime, endTime);
                 }
             }
         }
