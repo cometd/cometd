@@ -89,8 +89,8 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
     public boolean process(Object bean)
     {
         boolean result = processDependencies(bean);
-        result |= processPostConstruct(bean);
         result |= processCallbacks(bean);
+        result |= processPostConstruct(bean);
         return result;
     }
 
