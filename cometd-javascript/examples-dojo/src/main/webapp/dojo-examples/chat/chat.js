@@ -106,7 +106,7 @@ var room = {
     _subscribe: function()
     {
         room._chatSubscription = dojox.cometd.subscribe('/chat/demo', room.receive);
-        room._membersSubscription = dojox.cometd.subscribe('/chat/members', room.members);
+        room._membersSubscription = dojox.cometd.subscribe('/members/demo', room.members);
     },
 
     leave: function()

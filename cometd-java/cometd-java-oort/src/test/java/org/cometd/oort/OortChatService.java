@@ -3,9 +3,14 @@
  */
 package org.cometd.oort;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -17,6 +22,7 @@ import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.java.annotation.Configure;
 import org.cometd.java.annotation.Listener;
 import org.cometd.java.annotation.Service;
 import org.cometd.java.annotation.Session;
@@ -29,7 +35,7 @@ import org.cometd.server.filter.NoMarkupFilter;
 @Service("chat")
 public class OortChatService
 {
-    private final ConcurrentMap<String, Map<String,Boolean>> _members = new ConcurrentHashMap<String, Map<String,Boolean>>();
+    private final ConcurrentMap<String, Set<String>> _members = new ConcurrentHashMap<String, Set<String>>();
     @Inject
     private BayeuxServer _bayeux;
     @Session
@@ -47,102 +53,99 @@ public class OortChatService
             throw new RuntimeException("!"+Seti.SETI_ATTRIBUTE);
 
         _oort.observeChannel("/chat/**");
+        _oort.observeChannel("/members/**");
     }
 
-    @PostConstruct
-    public void init()
+    @SuppressWarnings("unused")
+    @Configure ({"/chat/**","/members/**"})
+    private void configureChatStarStar(ConfigurableServerChannel channel)
     {
         final DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux,new NoMarkupFilter(),new BadWordFilter());
-
-        if (!_bayeux.createIfAbsent("/chat/**",new ServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.addListener(noMarkup);
-                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
-            }
-        }))
-            throw new IllegalStateException();
-
-        if (!_bayeux.createIfAbsent("/service/privatechat",new ServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.setPersistent(true);
-                channel.addListener(noMarkup);
-                channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
-            }
-        }))
-            throw new IllegalStateException();
-
-        if (!_bayeux.createIfAbsent("/service/members",new ServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
-                channel.setPersistent(true);
-            }
-        }))
-            throw new IllegalStateException();
+        channel.addListener(noMarkup);
+        channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
     }
-
+    
+    @SuppressWarnings("unused")
+    @Configure ("/service/privatechat")
+    private void configurePrivateChat(ConfigurableServerChannel channel)
+    {
+        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux,new NoMarkupFilter(),new BadWordFilter());
+        channel.setPersistent(true);
+        channel.addListener(noMarkup);
+        channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
+    }
+    
+    @SuppressWarnings("unused")
+    @Configure ("/service/members")
+    private void configureMembers(ConfigurableServerChannel channel)
+    {
+        channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
+        channel.setPersistent(true);
+    }
+    
+    private Set<String> getMemberList(String room)
+    {
+        Set<String> members = _members.get(room);
+        if (members == null)
+        {
+            Set<String> newMembers = new HashSet<String>();
+            members = _members.putIfAbsent(room, newMembers);
+            if (members == null) members = newMembers;
+        }
+        return members;
+    }
+    
     @Listener("/service/members")
     public void handleMembership(final ServerSession client, ServerMessage message)
     {
         Map<String, Object> data = message.getDataAsMap();
-        String room = (String)data.get("room");
-        Map<String,Boolean> roomMembers = _members.get(room);
-        if (roomMembers == null)
-        {
-            Map<String,Boolean> newRoomMembers = new ConcurrentHashMap<String, Boolean>();
-            roomMembers = _members.putIfAbsent(room, newRoomMembers);
-            if (roomMembers == null) roomMembers = newRoomMembers;
-        }
-        final Map<String,Boolean> members = roomMembers;
+        final String room = ((String)data.get("room")).substring("/chat/".length());
         final String userName = (String)data.get("user");
-        members.put(userName,Boolean.TRUE);
-        client.addListener(new ServerSession.RemoveListener()
+        
+        final Set<String> members = getMemberList(room);
+        synchronized (members)
         {
-            public void removed(ServerSession session, boolean timeout)
+            members.add(userName);
+            client.addListener(new ServerSession.RemoveListener()
             {
-                if (!_oort.isOort(client))
-                    _seti.disassociate(userName);
-                members.remove(userName);
-                broadcastMembers(members.keySet());
-            }
-        });
+                public void removed(ServerSession session, boolean timeout)
+                {
+                    if (!_oort.isOort(client))
+                        _seti.disassociate(userName);
+                    members.remove(userName);
+                    broadcastMembers(room,members);
+                }
+            });
 
-        if (!_oort.isOort(client))
-            _seti.associate(userName,client);
+            if (!_oort.isOort(client))
+                _seti.associate(userName,client);
 
-        broadcastMembers(members.keySet());
+            broadcastMembers(room,members); 
+        }
     }
 
-    @Listener("/chat/members")
+    @Listener("/members/**")
     public void handleMembershipBroadcast(final ServerSession client, ServerMessage message)
     {
-        Object[] members = (Object[])message.getData();
+        String room=message.getChannel().substring("/members/".length());
+        Object[] newMembers = (Object[])message.getData();
 
-        Map<String,Boolean> roomMembers = _members.get("/chat/demo");
-        if (roomMembers == null)
+        final Collection<String> members = getMemberList(room);
+        synchronized (members)
         {
-            Map<String,Boolean> newRoomMembers = new ConcurrentHashMap<String, Boolean>();
-            roomMembers = _members.putIfAbsent("/chat/demo", newRoomMembers);
-            if (roomMembers == null) roomMembers = newRoomMembers;
+            boolean added=false;
+            for (Object o : newMembers)
+                added|=members.add(o.toString());
+
+            if (added)
+                broadcastMembers(room,members);
         }
-
-        boolean added=false;
-        for (Object o : members)
-            added|=roomMembers.put(o.toString(),Boolean.TRUE)==null;
-
-        if (added)
-            broadcastMembers(roomMembers.keySet());
     }
 
-    private void broadcastMembers(Set<String> members)
+    private void broadcastMembers(String room,Collection<String> members)
     {
         // Broadcast the new members list
-        ClientSessionChannel channel = _session.getLocalSession().getChannel("/chat/members");
+        ClientSessionChannel channel = _session.getLocalSession().getChannel("/members/"+room);
         channel.publish(members);
     }
 

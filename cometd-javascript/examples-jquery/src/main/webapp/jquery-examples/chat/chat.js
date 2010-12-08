@@ -200,7 +200,7 @@
         function _subscribe()
         {
             _chatSubscription = $.cometd.subscribe('/chat/demo', _self.receive);
-            _membersSubscription = $.cometd.subscribe('/chat/members', _self.members);
+            _membersSubscription = $.cometd.subscribe('/members/demo', _self.members);
         }
 
         function _connectionInitialized()

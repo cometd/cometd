@@ -18,6 +18,7 @@ import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.java.annotation.Configure;
 import org.cometd.java.annotation.Listener;
 import org.cometd.java.annotation.Service;
 import org.cometd.java.annotation.Session;
@@ -36,48 +37,28 @@ public class ChatService
     @Session
     private ServerSession _session;
 
-    @PostConstruct
-    public void init()
+    @SuppressWarnings("unused")
+    @Configure ({"/chat/**","/members/**"})
+    private void configureChatStarStar(ConfigurableServerChannel channel)
     {
-        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux,new NoMarkupFilter(),new BadWordFilter());
+        DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux,new NoMarkupFilter(),new BadWordFilter());
+        channel.addListener(noMarkup);
+        channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
+    }
 
-        if (!_bayeux.createIfAbsent("/chat/**",new ServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.addListener(noMarkup);
-                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
-            }
-        }))
-            throw new IllegalStateException();
-
-        if( !_bayeux.createIfAbsent("/service/privatechat",new ServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.setPersistent(true);
-                channel.addListener(noMarkup);
-                channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
-            }
-        }))
-            throw new IllegalStateException();
-
-        if( !_bayeux.createIfAbsent("/service/members",new ServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
-                channel.setPersistent(true);
-            }
-        }))
-            throw new IllegalStateException();
+    @SuppressWarnings("unused")
+    @Configure ("/service/members")
+    private void configureMembers(ConfigurableServerChannel channel)
+    {
+        channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
+        channel.setPersistent(true);
     }
 
     @Listener("/service/members")
     public void handleMembership(ServerSession client, ServerMessage message)
     {
         Map<String, Object> data = message.getDataAsMap();
-        String room = (String)data.get("room");
+        final String room = ((String)data.get("room")).substring("/chat/".length());
         Map<String, String> roomMembers = _members.get(room);
         if (roomMembers == null)
         {
@@ -93,18 +74,28 @@ public class ChatService
             public void removed(ServerSession session, boolean timeout)
             {
                 members.values().remove(session.getId());
-                broadcastMembers(members.keySet());
+                broadcastMembers(room,members.keySet());
             }
         });
 
-        broadcastMembers(members.keySet());
+        broadcastMembers(room,members.keySet());
     }
 
-    private void broadcastMembers(Set<String> members)
+    private void broadcastMembers(String room, Set<String> members)
     {
         // Broadcast the new members list
-        ClientSessionChannel channel = _session.getLocalSession().getChannel("/chat/members");
+        ClientSessionChannel channel = _session.getLocalSession().getChannel("/members/"+room);
         channel.publish(members);
+    }
+    
+    @SuppressWarnings("unused")
+    @Configure ("/service/privatechat")
+    private void configurePrivateChat(ConfigurableServerChannel channel)
+    {
+        DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux,new NoMarkupFilter(),new BadWordFilter());
+        channel.setPersistent(true);
+        channel.addListener(noMarkup);
+        channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
     }
 
     @Listener("/service/privatechat")

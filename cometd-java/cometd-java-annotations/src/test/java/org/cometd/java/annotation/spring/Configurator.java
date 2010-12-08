@@ -51,12 +51,13 @@ public class Configurator implements DestructionAwareBeanPostProcessor
     public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException
     {
         processor.processDependencies(bean);
+        processor.processConfigurations(bean);
+        processor.processCallbacks(bean);
         return bean;
     }
 
     public Object postProcessAfterInitialization(Object bean, String name) throws BeansException
     {
-        processor.processCallbacks(bean);
         return bean;
     }
 

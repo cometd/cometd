@@ -31,6 +31,7 @@ public class SpringAnnotationTest
         assertNotNull(service.bayeuxServer);
         assertNotNull(service.serverSession);
         assertTrue(service.active);
+        assertTrue(service.active);
         assertEquals(1, service.bayeuxServer.getChannel(SpringBayeuxService.CHANNEL).getSubscribers().size());
 
         applicationContext.close();
