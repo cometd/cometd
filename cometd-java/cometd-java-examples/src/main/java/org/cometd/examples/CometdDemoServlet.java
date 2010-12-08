@@ -30,6 +30,7 @@ import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.java.annotation.Configure;
 import org.cometd.java.annotation.Listener;
 import org.cometd.java.annotation.ServerAnnotationProcessor;
 import org.cometd.java.annotation.Service;
@@ -95,21 +96,14 @@ public class CometdDemoServlet extends GenericServlet
     @Service("echo")
     public static class EchoRPC
     {
-        @Inject
-        private BayeuxServer _bayeux;
         @Session
         private ServerSession _session;
 
-        @PostConstruct
-        protected void init()
+        @SuppressWarnings("unused")
+        @Configure("/service/echo")
+        private void configureEcho(ConfigurableServerChannel channel)
         {
-            _bayeux.createIfAbsent("/service/echo",new ServerChannel.Initializer()
-            {
-                public void configureChannel(ConfigurableServerChannel channel)
-                {
-                    channel.addAuthorizer(GrantAuthorizer.GRANT_SUBSCRIBE_PUBLISH);
-                }
-            });
+            channel.addAuthorizer(GrantAuthorizer.GRANT_SUBSCRIBE_PUBLISH);
         }
 
         @Listener("/service/echo")

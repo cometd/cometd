@@ -8,7 +8,9 @@ import javax.inject.Singleton;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.java.annotation.Configure;
 import org.cometd.java.annotation.Service;
 import org.cometd.java.annotation.Session;
 import org.cometd.java.annotation.Subscription;
@@ -23,6 +25,7 @@ public class SpringBayeuxService
     public final Dependency dependency; // Injected by Spring via constructor
     @Inject
     public BayeuxServer bayeuxServer; // Injected by Spring
+    public boolean configured;
     public boolean active;
     @Session
     public ServerSession serverSession; // Injected by CometD's annotation processor
@@ -36,6 +39,8 @@ public class SpringBayeuxService
     @PostConstruct
     public void start() // Initialization method invoked by Spring
     {
+        if (!configured)
+            throw new IllegalStateException();
         active = true;
     }
 
@@ -45,6 +50,12 @@ public class SpringBayeuxService
         active = false;
     }
 
+    @Configure(CHANNEL)
+    private void configureFoo(ConfigurableServerChannel channel)
+    {
+        configured=true;
+    }
+    
     @Subscription(CHANNEL)
     public void foo(Message message) // Subscription method detected by CometD's annotation processor
     {

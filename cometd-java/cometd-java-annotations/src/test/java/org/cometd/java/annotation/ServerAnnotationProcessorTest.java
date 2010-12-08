@@ -1,6 +1,10 @@
 package org.cometd.java.annotation;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -11,6 +15,7 @@ import javax.inject.Inject;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -18,7 +23,9 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerChannelImpl;
 import org.cometd.server.ServerSessionImpl;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,11 +39,11 @@ import static org.junit.Assert.fail;
 
 public class ServerAnnotationProcessorTest
 {
-    private static BayeuxServerImpl bayeuxServer;
-    private static ServerAnnotationProcessor processor;
+    private BayeuxServerImpl bayeuxServer;
+    private ServerAnnotationProcessor processor;
 
-    @BeforeClass
-    public static void init() throws Exception
+    @Before
+    public void init() throws Exception
     {
         bayeuxServer = new BayeuxServerImpl();
         bayeuxServer.setOption(BayeuxServerImpl.LOG_LEVEL, "3");
@@ -44,8 +51,8 @@ public class ServerAnnotationProcessorTest
         processor = ServerAnnotationProcessor.get(bayeuxServer);
     }
 
-    @AfterClass
-    public static void destroy() throws Exception
+    @After
+    public void destroy() throws Exception
     {
         processor.close();
         bayeuxServer.stop();
@@ -761,6 +768,108 @@ public class ServerAnnotationProcessorTest
         assertTrue(destroyLatch.await(1000, TimeUnit.MILLISECONDS));
     }
 
+
+    @Test
+    public void testConfigureDefault() throws Exception
+    {
+        final Set<String> configured = new HashSet<String>();
+
+        @Service
+        class S
+        {
+            @Configure(value = "/foo/bar")
+            private void configureFooBar(ConfigurableServerChannel channel)
+            {
+                configured.add(channel.getId());
+            }
+
+            @Configure(value = {"/blah","/halb"})
+            private void configureBlah(ConfigurableServerChannel channel)
+            {
+                configured.add(channel.getId());
+            }
+        }
+
+        S s = new S();
+        boolean processed = processor.process(s);
+        assertTrue(processed);
+        
+        assertTrue(configured.contains("/foo/bar"));
+        assertTrue(configured.contains("/blah"));
+        assertTrue(configured.contains("/halb"));
+        
+        S s2 = new S();
+        try
+        {
+            processed = processor.process(s);
+            assertFalse(true);
+        }
+        catch(IllegalStateException e)
+        {
+            assertTrue(true);
+        }
+        
+    }
+    
+
+    @Test
+    public void testConfigureNoErrorIfExists() throws Exception
+    {
+        final List<String> configured = new ArrayList<String>();
+
+        @Service
+        class S
+        {
+            @Configure(value = "/foo", errorIfExists=false)
+            private void configureFooBar(ConfigurableServerChannel channel)
+            {
+                configured.add(channel.getId());
+            }
+        }
+
+        S s1 = new S();
+        boolean processed = processor.process(s1);
+        assertTrue(processed);
+        S s2 = new S();
+        processed = processor.process(s2);
+        assertTrue(processed);
+        
+        assertEquals(1,configured.size());
+        assertEquals("/foo",configured.get(0));
+       
+    }
+
+    @Test
+    public void testConfigureConfigureIfExists() throws Exception
+    {
+        final List<String> configured = new ArrayList<String>();
+
+        @Service
+        class S
+        {
+            @Configure(value = "/foo", configureIfExists=true)
+            private void configureFooBar(ConfigurableServerChannel channel)
+            {
+                configured.add(channel.getId());
+            }
+        }
+
+        S s1 = new S();
+        boolean processed = processor.process(s1);
+        assertTrue(processed);
+        S s2 = new S();
+        processed = processor.process(s2);
+        assertTrue(processed);
+        
+        assertEquals(2,configured.size());
+        assertEquals("/foo",configured.get(0));
+        assertEquals("/foo",configured.get(1));
+       
+    }
+    
+    
+
+    
     @Service
     private static class S
     {

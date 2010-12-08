@@ -14,10 +14,13 @@ import javax.inject.Inject;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel.Initializer;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.authorizer.GrantAuthorizer;
 
 /**
  * <p>Processes annotations in server-side service objects.</p>
@@ -30,6 +33,14 @@ import org.cometd.bayeux.server.ServerSession;
  *     &#64;Session
  *     private ServerSession session;
  *
+ *     &#64;Configure("/foo")
+ *     public void configureFoo(ConfigurableServerChannel channel)
+ *     {
+ *         channel.setPersistent(...);
+ *         channel.addListener(...);
+ *         channel.addAuthorizer(...);
+ *     }
+ *     
  *     &#64;Listener("/foo")
  *     public void handleFooMessages(ServerSession remote, ServerMessage.Mutable message)
  *     {
@@ -96,12 +107,94 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
      */
     public boolean process(Object bean)
     {
-        boolean result = processDependencies(bean);
+        boolean result = false;
+        result |= processDependencies(bean);
+        result |= processConfigurations(bean);
         result |= processCallbacks(bean);
         result |= processPostConstruct(bean);
         return result;
     }
 
+    /**
+     * Processes the methods annotated with {@link Configure}
+     * @param bean the annotated service instance
+     * @return true if at least one annotated configure has been processed, false otherwise
+     */
+    public boolean processConfigurations(final Object bean)
+    {
+        if (bean == null)
+            return false;
+
+        Class<?> klass = bean.getClass();
+        Service serviceAnnotation = klass.getAnnotation(Service.class);
+        if (serviceAnnotation == null)
+            return false;
+
+        boolean result = false;
+        for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
+        {
+            Method[] methods = c.getDeclaredMethods();
+            for (final Method method : methods)
+            {
+                final Configure configure = method.getAnnotation(Configure.class);
+                if (configure != null)
+                {
+                    result = true;
+                    String[] channels = configure.value();
+                    for (String channel : channels)
+                    {
+                        final Initializer init = new Initializer()
+                        {
+                            public void configureChannel(ConfigurableServerChannel channel)
+                            {
+                                boolean flip=false;
+                                try
+                                {
+                                    logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
+                                    if (!method.isAccessible())
+                                    {
+                                        flip=true;
+                                        method.setAccessible(true);
+                                    }
+                                    method.invoke(bean,channel);
+                                }
+                                catch(Exception e)
+                                {
+                                    logger.warn(e);
+                                    throw new RuntimeException(e);
+                                }
+                                finally
+                                {
+                                    if (flip)
+                                        method.setAccessible(false);
+                                }
+                            }
+                        };
+                        
+                        boolean initialized = bayeuxServer.createIfAbsent(channel,init);
+                        
+                        if (initialized)
+                        {
+                            logger.debug("Channel {} already initialzed. Not called method {} on bean {}", channel, method, bean);
+                        }
+                        else
+                        {
+                            if (configure.configureIfExists())
+                            {
+                                logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
+                                init.configureChannel(bayeuxServer.getChannel(channel));
+                            }
+                            else if (configure.errorIfExists())
+                                throw new IllegalStateException("Channel already configured: "+channel);
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    
     /**
      * Processes the dependencies annotated with {@link Inject} and {@link Session}.
      * @param bean the annotated service instance
