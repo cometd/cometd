@@ -20,7 +20,6 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.authorizer.GrantAuthorizer;
 
 /**
  * <p>Processes annotations in server-side service objects.</p>
