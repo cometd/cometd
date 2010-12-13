@@ -88,6 +88,7 @@ public class BayeuxLoadServer
         server.addConnector(connector);
 
         QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setMaxThreads(256);
         server.setThreadPool(threadPool);
 
         HandlerWrapper handler = server;
