@@ -28,8 +28,8 @@ public class OortComet extends BayeuxClient
     protected Oort _oort;
     protected String _cometUrl;
     protected String _cometSecret;
-    private volatile boolean _connected;
-    private final ConcurrentMap<String, ClientSessionChannel.MessageListener> _subscriptions = new ConcurrentHashMap<String, ClientSessionChannel.MessageListener>();
+    private boolean _connected;
+    private final Map<String, ClientSessionChannel.MessageListener> _subscriptions = new HashMap<String, ClientSessionChannel.MessageListener>();
 
     OortComet(Oort oort,String cometUrl)
     {
@@ -79,8 +79,10 @@ public class OortComet extends BayeuxClient
             {
                 if (message.isSuccessful())
                 {
+                    System.err.println("\n"+message);
                     _oort.getLog().info("connected {} as {}",_cometUrl,message.getClientId());
-                    _connected=true;
+                    
+                    
                     Map<String,Object> ext = message.getExt();
                     if (ext==null)
                         return;
@@ -107,9 +109,13 @@ public class OortComet extends BayeuxClient
                                     _oort.observedComets(comets);
                                 }
                             });
-                            
-                            for (String id : _oort.getObservedChannels())
-                                subscribe(id);
+
+                            synchronized (OortComet.this)
+                            {
+                                _subscriptions.clear();
+                                _connected=true;
+                                subscribe();
+                            }
 
                             getChannel("/oort/cloud").publish(_oort.getKnownComets(),_cometSecret);
                         }
@@ -119,8 +125,10 @@ public class OortComet extends BayeuxClient
                 }
                 else if (_connected)
                 {
-                    _connected=false;
-
+                    synchronized (OortComet.this)
+                    {
+                        _connected=false;
+                    }
                     _oort.getLog().warn("failed handshake {}",_cometUrl);
                 }
                     
@@ -128,23 +136,32 @@ public class OortComet extends BayeuxClient
         });
     }
 
-    public void subscribe(String id)
+    public void subscribe()
     {
-        _oort.getLog().debug("subscribe {} on {}",id,_cometUrl);
-        
-        ClientSessionChannel channel = getChannel(id);
-        
-        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener()
+        synchronized (OortComet.this)
         {
-            public void onMessage(ClientSessionChannel channel, Message message)
+            if (!_connected)
+                return;
+            
+            for (String id : _oort.getObservedChannels())
             {
-                _oort.getLog().debug("republish {} by {}",message,_oort.getOortSession());
-                _oort.getOortSession().getChannel(message.getChannel()).publish(message.getData(),message.getId());
+                if (_subscriptions.containsKey(id))
+                    continue;
+
+                ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener()
+                {
+                    public void onMessage(ClientSessionChannel channel, Message message)
+                    {
+                        _oort.getLog().debug("republish {} by {}",message,_oort.getOortSession());
+                        _oort.getOortSession().getChannel(message.getChannel()).publish(message.getData(),message.getId());
+                    }
+                };
+
+                _subscriptions.put(id,listener);
+                _oort.getLog().debug("subscribe {} on {}",id,_cometUrl);
+                getChannel(id).subscribe(listener);
             }
-        };
-        
-        if (_subscriptions.putIfAbsent(id,listener)==null)
-            channel.subscribe(listener);
+        }
     }
 
     @Override
