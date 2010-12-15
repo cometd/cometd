@@ -33,6 +33,7 @@ import org.cometd.common.AbstractClientSession;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.OldQueuedThreadPool;
 
 /**
  *
@@ -673,11 +674,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private void updateBayeuxClientState(BayeuxClientStateUpdater updater)
     {
         BayeuxClientState newState = null;
+        BayeuxClientState oldState = bayeuxClientState.get();
         boolean updated = false;
         while (!updated)
         {
-            BayeuxClientState oldState = bayeuxClientState.get();
-
             newState = updater.create(oldState);
             if (newState == null)
                 throw new IllegalStateException();
@@ -687,7 +687,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 logger.debug("State not updateable : {} -> {}", oldState, newState);
                 break;
             }
-
+            
             updated = bayeuxClientState.compareAndSet(oldState, newState);
             logger.debug("State update" + (updated ? "" : " failed (concurrent update)") + ": {} -> {}", oldState, newState);
         }
@@ -696,6 +696,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         if (updated)
         {
+            if (!oldState.getType().equals(newState.getType()))
+                newState.enter(oldState.getType());
+                
             newState.execute();
             // Notify threads waiting in waitFor()
             synchronized (this)
@@ -951,8 +954,23 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         protected abstract boolean isUpdateableTo(BayeuxClientState newState);
 
+        
+        /**
+         * Enter a new state.
+         * Called only if a new accepted state has a different type to the old state.
+         * @param oldState
+         */
+        protected void enter(State oldState) 
+        {   
+        }
+        
         protected abstract void execute();
 
+        public State getType()
+        {
+            return type;
+        }
+        
         @Override
         public String toString()
         {
@@ -1010,6 +1028,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     newState.type == State.CONNECTING ||
                     newState.type == State.DISCONNECTED;
         }
+        
+        @Override
+        protected void enter(State oldState)
+        {
+            // Always reset the subscriptions when a handshake has been requested.
+            resetSubscriptions();
+        }
 
         @Override
         protected void execute()
@@ -1036,6 +1061,21 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     newState.type == State.DISCONNECTED;
         }
 
+        @Override
+        protected void enter(State oldState)
+        {
+            // Reset the subscriptions if this is not a failure from a requested handshake.
+            // Subscriptions may be queued after requested handshakes.
+            switch(oldState)
+            {
+                case HANDSHAKING:
+                    break;
+                default:
+                    // Reset subscriptions if not queued after initial handshake
+                    resetSubscriptions();
+            }
+        }
+        
         @Override
         protected void execute()
         {
