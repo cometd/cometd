@@ -27,30 +27,25 @@ public abstract class AbstractClientSession implements ClientSession
     private final AtomicInteger _batch = new AtomicInteger();
     private final AtomicInteger _idGen = new AtomicInteger(0);
 
-    /* ------------------------------------------------------------ */
     protected AbstractClientSession()
     {
     }
 
-    /* ------------------------------------------------------------ */
     protected String newMessageId()
     {
         return String.valueOf(_idGen.incrementAndGet());
     }
 
-    /* ------------------------------------------------------------ */
     public void addExtension(Extension extension)
     {
         _extensions.add(extension);
     }
 
-    /* ------------------------------------------------------------ */
     public void removeExtension(Extension extension)
     {
         _extensions.remove(extension);
     }
 
-    /* ------------------------------------------------------------ */
     protected boolean extendSend(Message.Mutable message)
     {
         if (message.isMeta())
@@ -68,7 +63,6 @@ public abstract class AbstractClientSession implements ClientSession
         return true;
     }
 
-    /* ------------------------------------------------------------ */
     protected boolean extendRcv(Message.Mutable message)
     {
         if (message.isMeta())
@@ -106,8 +100,7 @@ public abstract class AbstractClientSession implements ClientSession
         }
         return channel;
     }
-    
-    /* ------------------------------------------------------------ */
+
     protected ConcurrentMap<String, AbstractSessionChannel> getChannels()
     {
         return _channels;
@@ -147,7 +140,6 @@ public abstract class AbstractClientSession implements ClientSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected boolean isBatching()
     {
         return _batch.get() > 0;
@@ -178,14 +170,7 @@ public abstract class AbstractClientSession implements ClientSession
     {
         _attributes.setAttribute(name,value);
     }
-    
-    /* ------------------------------------------------------------ */
-    protected void resetSubscriptions()
-    {
-        for (AbstractSessionChannel ch : _channels.values())
-            ch.resetSubscriptions();
-    }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * <p>Receives a message (from the server) and process it.</p>
@@ -219,7 +204,6 @@ public abstract class AbstractClientSession implements ClientSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void dump(StringBuilder b,String indent)
     {
         b.append(toString());
@@ -235,7 +219,6 @@ public abstract class AbstractClientSession implements ClientSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * <p>A channel scoped to a {@link ClientSession}.</p>
      */
@@ -307,16 +290,6 @@ public abstract class AbstractClientSession implements ClientSession
         {
             for (MessageListener listener : _subscriptions)
                 unsubscribe(listener);
-        }
-
-        /* ------------------------------------------------------------ */
-        protected void resetSubscriptions()
-        {
-            for (MessageListener l : _subscriptions)
-            {
-                if (_subscriptions.remove(l))
-                    _subscriptionCount.decrementAndGet();
-            }
         }
 
         /* ------------------------------------------------------------ */

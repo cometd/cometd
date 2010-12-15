@@ -218,7 +218,7 @@ public class Oort
         if (_channels.putIfAbsent(channelId, Boolean.TRUE) == null)
         {
             for (OortComet comet : _knownComets.values())
-                comet.subscribe();
+                comet.subscribe(channelId);
         }
     }
 

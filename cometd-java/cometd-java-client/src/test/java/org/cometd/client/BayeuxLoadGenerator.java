@@ -54,7 +54,7 @@ public class BayeuxLoadGenerator
             HttpClient httpClient = new HttpClient();
             httpClient.setMaxConnectionsPerAddress(40000);
             QueuedThreadPool threadPool = new QueuedThreadPool();
-            threadPool.setMaxThreads(256);
+            threadPool.setMaxThreads(500);
             threadPool.setDaemon(true);
             httpClient.setThreadPool(threadPool);
             httpClient.setIdleTimeout(5000);
