@@ -58,7 +58,7 @@
              "rtype_successful":"SZ",
 
              /* failure only, response only */
-             "error":[000,"optional error arguments","Some Error String"],
+             "error":[0,"optional error arguments","Some Error String"],
              "vtype_error":"MVV",
              "rtype_error":"SE",
 
@@ -91,8 +91,8 @@
                        "rtype_multipleClients":"SO",
           
                        "hosts":["SomeHostname","192.168.1.1","localhost","127.0.0.1"],
-                       "vtype_hosts":"MVV"
-                       "rtype_hosts":"SO"
+                       "vtype_hosts":"MVV",
+                       "rtype_hosts":"SO",
 
                        "authenticate":{"authtype":["htpasswd","OpenId"],
                                        "vtype_authtype":"MVF",
@@ -103,7 +103,7 @@
                        "vtype_guaranteedDelivery":"MVF",
                        "rtype_guaranteedDelivery":"SO"
 
-                       }
+                       },
 
              /* optional, client (initiator) only */
              "ext":{"authenticate":{"authtype":["htpasswd","OpenId"],
@@ -140,7 +140,7 @@
            "rtype_successful":"SZ",
 
            /* failure only, response only */
-           "error":[000,"optional error arguments","Some Error String"],
+           "error":[0,"optional error arguments","Some Error String"],
            "vtype_error":"MVV",
            "rtype_error":"SE",
 
@@ -169,7 +169,7 @@
         
                   "hosts":["SomeHostname","192.168.1.1","localhost","127.0.0.1"],
                   "vtype_hosts":"MVV",
-                  "rtype_hosts":"SO"
+                  "rtype_hosts":"SO",
 
                   "authenticate":{"authtype":["htpasswd","OpenId"],
                                   "vtype_authtype":"MVF",
@@ -180,7 +180,7 @@
                   "vtype_guaranteedDelivery":"MVF",
                   "rtype_guaranteedDelivery":"SO"
 
-                  }
+                  },
 
            /* optional, client (initiator) only */
            "ext":{"authenticate":{"authtype":["htpasswd","OpenId"],
@@ -213,7 +213,7 @@
               "rtype_successful":"SZ",
    
               /* failure only, response only */
-              "error":[000,"optional error arguments","Some Error String"],
+              "error":[0,"optional error arguments","Some Error String"],
               "vtype_error":"MVV",
               "rtype_error":"SE",
    
@@ -244,7 +244,7 @@
              "rtype_successful":"SZ",
    
              /* failure only, response only */
-             "error":[000,"optional error arguments","Some Error String"],
+             "error":[0,"optional error arguments","Some Error String"],
              "vtype_error":"MVV",
              "rtype_error":"SE",
   
@@ -272,14 +272,14 @@
 
 
                        "authenticate":{"authtype":["htpasswd","OpenId"],
-                                       "vtype_authtype":"MVF"
+                                       "vtype_authtype":"MVF",
                                        "rtype_authtype":"SO"
                                       },
 
                        "guaranteedDelivery":["true","false"],
                        "vtype_guaranteedDelivery":"MVF",
                        "rtype_guaranteedDelivery":"SO"
-                       }
+                       },
 
              /* optional, client (initiator) only */
              "ext":{"authenticate":{"authtype":["htpasswd","OpenId"],
@@ -307,7 +307,7 @@
                "vtype_clientId":"SVV",
   
                "subscription":["/foo/**","/channel_b","/channel_c/x"],
-               "vtype_subscription":"MVV"
+               "vtype_subscription":"MVV",
 
                /* response only */
                "successful":["true","false"],
@@ -315,7 +315,7 @@
                "rtype_successful":"SZ",
    
                /* failure only, response only */
-               "error":[000,"optional error arguments","Some Error String"],
+               "error":[0,"optional error arguments","Some Error String"],
                "vtype_error":"MVV",
                "rtype_error":"SE",
    
@@ -350,7 +350,7 @@
                          "vtype_guaranteedDelivery":"MVF",
                          "rtype_guaranteedDelivery":"SO"
 
-                         }
+                         },
 
                /* optional, client (initiator) only */
                "ext":{"authenticate":{"authtype":["htpasswd","OpenId"],
@@ -364,7 +364,7 @@
                                       "password":"youch if clear text!",
                                       "vtype_password":"SVV",
                                       "rtype_password":"CO"
-                                     }
+                                     },
                       "guaranteedDelivery":["true","false"],
                       "vtype_guaranteedDelivery":"SVF",
                       "rtype_guaranteedDelivery":"CO"
@@ -399,12 +399,12 @@
                                   "password":"youch if clear text!",
                                   "vtype_password":"SVV",
                                   "rtype_password":"BO"
-                                 }
+                                 },
 
                   "guaranteedDelivery":["true","false"],
                   "vtype_guaranteedDelivery":"SVF",
                   "rtype_guaranteedDelivery":"BO"
-                 }
+                 },
 
            /* response only */
            "successful":["true","false"],
@@ -412,7 +412,7 @@
            "rtype_successful":"SZ",
 
            /* failure only, response only */
-           "error":[000,"optional error arguments","Some Error String"],
+           "error":[0,"optional error arguments","Some Error String"],
            "vtype_error":"MVV",
            "rtype_error":"SE"
           },
@@ -459,7 +459,7 @@
                      "guaranteedDelivery":["true","false"],
                      "vtype_guaranteedDelivery":"MVF",
                      "rtype_guaranteedDelivery":"BO"
-                     }
+                     },
 
            /* optional, client (initiator) only */
            "ext":{"authenticate":{"authtype":["htpasswd","OpenId"],
@@ -473,7 +473,7 @@
                                   "password":"youch if clear text!",
                                   "vtype_password":"SVV",
                                   "rtype_password":"CO"
-                                 }
+                                 },
 
                   "guaranteedDelivery":["true","false"],
                   "vtype_guaranteedDelivery":"SVF",
@@ -486,7 +486,7 @@
            "rtype_successful":"SZ",
 
            /* failure only, response only */
-           "error":[000,"optional error arguments","Some Error String"],
+           "error":[0,"optional error arguments","Some Error String"],
            "vtype_error":"MVV",
            "rtype_error":"SE"
           },
@@ -508,7 +508,7 @@
              "rtype_successful":"SZ",
 
              /* failure only, response only */
-             "error":[000,"optional error arguments","Some Error String"],
+             "error":[0,"optional error arguments","Some Error String"],
              "vtype_error":"MVV",
              "rtype_error":"SE"
 
@@ -531,7 +531,7 @@
               "rtype_successful":"SZ",
 
               /* failure only, response only */
-              "error":[000,"optional error arguments","Some Error String"],
+              "error":[0,"optional error arguments","Some Error String"],
               "vtype_error":"MVV",
               "rtype_error":"SE"
 

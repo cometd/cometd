@@ -43,7 +43,7 @@
  "1202":"Cannot remove topic if you are not the owner.",
  "1203":"Nonexistent channel %s, Publish failed.",
  "1204":"Publish error: %s on channel %s.",
- "1205":"Nonexistent subscription channel %s, entire subscription rejected."
+ "1205":"Nonexistent subscription channel %s, entire subscription rejected.",
  "1206":"Subscription failed for topic %s, not sure why.",
 
  /* 1300 range = globbing errors */
