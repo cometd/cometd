@@ -44,7 +44,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
                 "   if (message.successful) readyLatch.countDown(); " +
                 "});");
         evaluateScript("$.cometd.handshake();");
-        assertTrue(readyLatch.await(1000));
+        assertTrue(readyLatch.await(10000));
 
         // Get the clientId
         String clientId = evaluateScript("$.cometd.getClientId();");
@@ -75,7 +75,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
                 "       expireLatch.countDown();" +
                 "});");
         evaluateScript("$.cometd.handshake();");
-        assertTrue(readyLatch.await(1000));
+        assertTrue(readyLatch.await(10000));
 
         String newClientId = evaluateScript("$.cometd.getClientId();");
         assertEquals(clientId, newClientId);
@@ -96,7 +96,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
                 "   if (message.successful) readyLatch.countDown(); " +
                 "});");
         evaluateScript("$.cometd.handshake();");
-        assertTrue(readyLatch.await(1000));
+        assertTrue(readyLatch.await(10000));
 
         // Get the clientId
         String clientId = evaluateScript("$.cometd.getClientId();");
@@ -119,7 +119,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
                 "   if (message.successful) readyLatch.countDown(); " +
                 "});");
         evaluateScript("$.cometd.handshake();");
-        assertTrue(readyLatch.await(1000));
+        assertTrue(readyLatch.await(10000));
 
         String newClientId = evaluateScript("$.cometd.getClientId();");
         assertEquals(clientId, newClientId);
@@ -154,7 +154,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
                 "   if (message.successful) readyLatch.countDown(); " +
                 "});");
         evaluateScript("$.cometd.handshake();");
-        assertTrue(readyLatch.await(1000));
+        assertTrue(readyLatch.await(10000));
 
         // Get the clientId
         String clientId = evaluateScript("$.cometd.getClientId();");
@@ -179,7 +179,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
                 "   if (message.successful) readyLatch.countDown(); " +
                 "});");
         evaluateScript("$.cometd.handshake();");
-        assertTrue(readyLatch.await(1000));
+        assertTrue(readyLatch.await(10000));
 
         String newClientId = evaluateScript("$.cometd.getClientId();");
         assertEquals(clientId, newClientId);
@@ -200,7 +200,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         defineClass(Latch.class);
         evaluateApplication();
         Latch latch = (Latch)get("latch");
-        assertTrue(latch.await(1000));
+        assertTrue(latch.await(10000));
 
         // Calling reload() results in the cookie being written
         evaluateScript("$.cometd.reload();");
@@ -213,7 +213,7 @@ public class CometdReloadExtensionTest extends AbstractCometdJQueryTest
         defineClass(Latch.class);
         evaluateApplication();
         latch = (Latch)get("latch");
-        assertTrue(latch.await(1000));
+        assertTrue(latch.await(10000));
 
         // Check that handshake was faked
         evaluateScript("window.assert(extHandshake === null, 'extHandshake');");
