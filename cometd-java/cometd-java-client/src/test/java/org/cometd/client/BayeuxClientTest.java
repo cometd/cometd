@@ -1089,13 +1089,17 @@ public class BayeuxClientTest extends TestCase
         String id = client.getId();
         assertNotNull(id);
         
-        message = (Message)results.poll(1, TimeUnit.SECONDS);
-        assertNotNull(message);
-        assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
-        
-        message = (Message)results.poll(1, TimeUnit.SECONDS);
-        assertNotNull(message);
-        assertEquals(Channel.META_CONNECT, message.getChannel());
+        boolean subscribe=false;
+        boolean connect=false;
+        for (int i=0;i<2;i++)
+        {
+            message = (Message)results.poll(1, TimeUnit.SECONDS);
+            assertNotNull(message);
+            subscribe|=Channel.META_SUBSCRIBE.equals(message.getChannel());
+            connect|=Channel.META_CONNECT.equals(message.getChannel());
+        }
+        assertTrue(subscribe);
+        assertTrue(connect);
         
         // subscribe again
         client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener()
