@@ -37,13 +37,13 @@ public class CometdUnsubscribeFailureTest extends AbstractCometdJQueryTest
         Latch readyLatch = get("readyLatch");
         evaluateScript("$.cometd.addListener('/meta/connect', readyLatch, 'countDown');");
         evaluateScript("$.cometd.init({url: '" + cometdURL + "', logLevel: 'debug'})");
-        assertTrue(readyLatch.await(1000));
+        assertTrue(readyLatch.await(10000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = get("subscribeLatch");
         evaluateScript("$.cometd.addListener('/meta/subscribe', subscribeLatch, subscribeLatch.countDown);");
         evaluateScript("var subscription = $.cometd.subscribe('/echo', subscribeLatch, subscribeLatch.countDown);");
-        assertTrue(subscribeLatch.await(1000));
+        assertTrue(subscribeLatch.await(10000));
 
         evaluateScript("var unsubscribeLatch = new Latch(1);");
         Latch unsubscribeLatch = get("unsubscribeLatch");
@@ -52,8 +52,8 @@ public class CometdUnsubscribeFailureTest extends AbstractCometdJQueryTest
         evaluateScript("$.cometd.addListener('/meta/unsubscribe', unsubscribeLatch, unsubscribeLatch.countDown);");
         evaluateScript("$.cometd.addListener('/meta/unsuccessful', failureLatch, failureLatch.countDown);");
         evaluateScript("$.cometd.unsubscribe(subscription);");
-        assertTrue(unsubscribeLatch.await(1000));
-        assertTrue(failureLatch.await(1000));
+        assertTrue(unsubscribeLatch.await(10000));
+        assertTrue(failureLatch.await(10000));
 
         // Be sure there is no backoff
         evaluateScript("var backoff = $.cometd.getBackoffPeriod();");
