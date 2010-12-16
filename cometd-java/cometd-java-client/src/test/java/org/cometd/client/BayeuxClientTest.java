@@ -402,19 +402,19 @@ public class BayeuxClientTest extends TestCase
         Object exception = message.get("exception");
         assertTrue(exception instanceof ProtocolException);
 
-        message = queue.poll(2 * backoffIncrement, TimeUnit.MILLISECONDS);
+        message = queue.poll(2000+ 2 * backoffIncrement, TimeUnit.MILLISECONDS);
         assertFalse(message.isSuccessful());
         exception = message.get("exception");
         assertTrue(exception instanceof ProtocolException);
 
-        message = queue.poll(3 * backoffIncrement, TimeUnit.MILLISECONDS);
+        message = queue.poll(2000+ 3 * backoffIncrement, TimeUnit.MILLISECONDS);
         assertFalse(message.isSuccessful());
         exception = message.get("exception");
         assertTrue(exception instanceof ProtocolException);
 
         _filter._code = 0;
 
-        message = queue.poll(4 * backoffIncrement, TimeUnit.MILLISECONDS);
+        message = queue.poll(2000+ 4 * backoffIncrement, TimeUnit.MILLISECONDS);
         assertTrue(message.isSuccessful());
         assertEquals(Channel.META_HANDSHAKE, message.getChannel());
 

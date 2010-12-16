@@ -190,7 +190,7 @@ public class LongPollingTransportTest
                 long end = System.nanoTime();
 
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
-                assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
+                assertTrue(latch.await(2000+ 2 * processingTime, TimeUnit.MILLISECONDS));
             }
             finally
             {
