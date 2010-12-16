@@ -54,7 +54,7 @@ public class CometdRedeployTest extends AbstractCometdJQueryTest
         context.start();
 
         long backoffPeriod = ((Number)evaluateScript("$.cometd.getBackoffPeriod();")).longValue();
-        assertTrue(handshakeLatch.await(backoffPeriod + backoffIncrement));
+        assertTrue(handshakeLatch.await(backoffPeriod + 2*backoffIncrement));
         assertTrue(connectLatch.await(1000));
 
         evaluateScript("$.cometd.disconnect(true);");
