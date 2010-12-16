@@ -467,8 +467,8 @@ public class BayeuxClientTest extends TestCase
         assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
 
         // It should backoff and retry
-        // Wait for 2 attempts, which will happen at +1s and +3s
-        assertTrue(attempts.await(client.getBackoffIncrement() * 4, TimeUnit.MILLISECONDS));
+        // Wait for 2 attempts, which will happen at +1s and +3s (doubled for safety)
+        assertTrue(attempts.await(client.getBackoffIncrement() * 8, TimeUnit.MILLISECONDS));
 
         client.disconnect();
         assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
@@ -714,9 +714,9 @@ public class BayeuxClientTest extends TestCase
             }
         });
         client.handshake();
-        assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
         client.disconnect();
-        assertTrue(client.waitFor(1000, State.DISCONNECTED));
+        assertTrue(client.waitFor(5000, State.DISCONNECTED));
     }
 
     public void testAbortThenRestart() throws Exception
