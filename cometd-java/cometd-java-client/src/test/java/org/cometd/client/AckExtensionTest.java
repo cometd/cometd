@@ -159,7 +159,8 @@ public class AckExtensionTest extends TestCase
             
             public void channelAdded(ServerChannel channel)
             {
-                subscribed.countDown();
+                if ("/chat/demo".equals(channel.getId()))
+                    subscribed.countDown();
             }
         });
 
@@ -169,7 +170,7 @@ public class AckExtensionTest extends TestCase
         assertEquals(0,messages.size());
 
         ServerChannel publicChat = _bayeux.getChannel("/chat/demo");
-        assertTrue(publicChat != null);
+        assertNotNull(publicChat);
 
         for(int i=0; i<5;i++)
         {
