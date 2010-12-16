@@ -15,13 +15,17 @@
 package org.cometd.client;
 
 import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import junit.framework.TestCase;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.client.BayeuxClient.State;
 import org.cometd.client.ext.AckExtension;
@@ -34,6 +38,8 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.log.Log;
 
 public class AckExtensionTest extends TestCase
 {
@@ -109,9 +115,17 @@ public class AckExtensionTest extends TestCase
         int port = _connector.getLocalPort();
         assertTrue(port==_connector.getPort());
 
-        final Queue<Message> messages = new ConcurrentLinkedQueue<Message>();
+        final BlockingQueue<Message> messages = new BlockingArrayQueue<Message>();
 
-        final BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null));
+        final BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null))
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                Log.info(x.toString());
+            }
+            
+        };
 
         client.addExtension(new AckExtension());
 
@@ -132,10 +146,26 @@ public class AckExtensionTest extends TestCase
             }
         });
 
+        final CountDownLatch subscribed=new CountDownLatch(1);
+        _bayeux.addListener(new BayeuxServer.ChannelListener()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+            }
+            
+            public void channelRemoved(String channelId)
+            {
+            }
+            
+            public void channelAdded(ServerChannel channel)
+            {
+                subscribed.countDown();
+            }
+        });
+
         client.handshake();
 
-        Thread.sleep(500);
-
+        assertTrue(subscribed.await(10,TimeUnit.SECONDS));
         assertEquals(0,messages.size());
 
         ServerChannel publicChat = _bayeux.getChannel("/chat/demo");
@@ -147,8 +177,8 @@ public class AckExtensionTest extends TestCase
             Thread.sleep(20);
         }
 
-        Thread.sleep(500);
-        assertEquals(5,messages.size());
+        for(int i=0; i<5;i++)
+            assertEquals("id"+i,messages.poll(5,TimeUnit.SECONDS).getId());
 
         _connector.stop();
         Thread.sleep(100);
@@ -162,16 +192,15 @@ public class AckExtensionTest extends TestCase
         }
 
         Thread.sleep(500);
-        assertEquals(5,messages.size());
+        assertEquals(0,messages.size());
 
 
         _connector.start();
-        // allow a few secs for the client to reconnect
-        Thread.sleep(500);
         assertTrue(_connector.isStarted());
-
+        
         // check that the offline messages are received
-        assertEquals(10,messages.size());
+        for(int i=5; i<10;i++)
+            assertEquals("id"+i,messages.poll(5,TimeUnit.SECONDS).getId());
 
         // send messages while client is online
         for(int i=10; i<15;i++)
@@ -180,14 +209,10 @@ public class AckExtensionTest extends TestCase
             Thread.sleep(500);
         }
 
-        Thread.sleep(1000);
 
         // check if messages after reconnect are received
-        for(int i=0; i<15;i++)
-        {
-            Message message = messages.poll();
-            assertTrue(message.getId().indexOf("id"+i)>=0);
-        }
+        for(int i=10; i<15;i++)
+            assertEquals("id"+i,messages.poll(5,TimeUnit.SECONDS).getId());
 
         client.disconnect();
         assertTrue(client.waitFor(1000L,State.DISCONNECTED));
