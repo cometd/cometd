@@ -192,6 +192,6 @@ org.cometd.TimeSyncExtension = function(configuration)
         {
             interval = 1;
         }
-        return setTimeout(callback, interval);
+        return org.cometd.Utils.setTimeout(_cometd, callback, interval);
     };
 };
