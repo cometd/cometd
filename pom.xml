@@ -278,7 +278,7 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.6</version>
                     <configuration>
-                        <argLine>-verbose:gc -XX:+PrintCommandLineFlags</argLine>
+                        <argLine>-Xmx1g -Xms1g -verbose:gc -XX:+PrintCommandLineFlags</argLine>
                     </configuration>
                 </plugin>
                 <plugin>
