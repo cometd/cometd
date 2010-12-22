@@ -83,7 +83,7 @@ org.cometd.CallbackPollingTransport = function()
                         if (sameStack)
                         {
                             // Keep the semantic of calling response callbacks asynchronously after the request
-                            this.setTimeout(function()
+                            self.setTimeout(function()
                             {
                                 self.transportFailure(envelope, request, reason, exception);
                             }, 0);
