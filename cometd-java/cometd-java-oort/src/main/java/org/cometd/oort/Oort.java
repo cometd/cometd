@@ -20,6 +20,7 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.client.BayeuxClient;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -35,6 +36,7 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * The key configuration parameter that must be set is the Oort URL, which is
  * full public URL to the cometd servlet, eg. http://myserver:8080/context/cometd
+ * <p>
  * See {@link OortServlet} for more configuration detail.<p>
  * @author gregw
  *
@@ -56,6 +58,7 @@ public class Oort
     private final Map<String,OortComet> _knownComets = new ConcurrentHashMap<String,OortComet>();
     private final Map<String,ServerSession> _incomingComets = new ConcurrentHashMap<String,ServerSession>();
     private final ConcurrentMap<String, Boolean> _channels = new ConcurrentHashMap<String, Boolean>();
+    private String _clientLogLevel;
 
     /* ------------------------------------------------------------ */
     Oort(String url,BayeuxServer bayeux)
@@ -114,6 +117,18 @@ public class Oort
     }
 
     /* ------------------------------------------------------------ */
+    public String getClientLogLevel()
+    {
+        return _clientLogLevel;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setClientLogLevel(String clientLogLevel)
+    {
+        _clientLogLevel = clientLogLevel;
+    }
+
+    /* ------------------------------------------------------------ */
     /**
      * Observe an Oort Comet server.
      * <p>
@@ -152,6 +167,8 @@ public class Oort
                 try
                 {
                     comet = new OortComet(this,cometUrl);
+                    if (_clientLogLevel!=null)
+                        comet.setOption(BayeuxClient.LOG_LEVEL,_clientLogLevel);
                     _knownComets.put(cometUrl,comet);
                     comet.handshake();
                 }
