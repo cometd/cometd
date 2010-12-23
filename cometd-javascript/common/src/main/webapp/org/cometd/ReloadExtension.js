@@ -117,11 +117,11 @@ org.cometd.ReloadExtension = function(configuration)
                             _cometd.receive(response);
                             _debug('Reload extension replayed handshake response', response);
                         }, 0);
-                        
+
                         // delay any sends until first connect is complete.
                         if (!_batch)
                         {
-                            _batch=true;
+                            _batch = true;
                             _cometd.startBatch();
                         }
                         // This handshake is aborted, as we will replay the prior handshake response
@@ -170,8 +170,10 @@ org.cometd.ReloadExtension = function(configuration)
                     break;
                 case '/meta/connect':
                     if (_batch)
+                    {
                         _cometd.endBatch();
-                    _batch=false;
+                        _batch = false;
+                    }
                     break;
                 default:
                     break;

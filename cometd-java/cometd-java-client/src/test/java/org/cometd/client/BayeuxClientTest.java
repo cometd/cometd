@@ -40,7 +40,6 @@ import org.cometd.server.CometdServlet;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -63,7 +62,7 @@ public class BayeuxClientTest extends TestCase
     private ServletContextHandler _context;
     String _servletPath = "/cometd";
     String _contextPath = "";
-    
+
     @Override
     protected void setUp() throws Exception
     {
@@ -955,12 +954,12 @@ public class BayeuxClientTest extends TestCase
     public void testClient() throws Exception
     {
         final BlockingArrayQueue<Object> results = new BlockingArrayQueue<Object>();
-    
+
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
         client.setOption(BayeuxClient.LOG_LEVEL, "debug");
-    
+
         final AtomicBoolean connected = new AtomicBoolean();
-    
+
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -968,7 +967,7 @@ public class BayeuxClientTest extends TestCase
                 connected.set(message.isSuccessful());
             }
         });
-    
+
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -976,7 +975,7 @@ public class BayeuxClientTest extends TestCase
                 connected.set(false);
             }
         });
-    
+
         client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -985,20 +984,20 @@ public class BayeuxClientTest extends TestCase
                 results.offer(message);
             }
         });
-    
+
         client.handshake();
-    
+
         Message message = (Message)results.poll(1, TimeUnit.SECONDS);
         assertNotNull(message);
         assertEquals(Channel.META_HANDSHAKE, message.getChannel());
         assertTrue(message.isSuccessful());
         String id = client.getId();
         assertNotNull(id);
-    
+
         message = (Message)results.poll(1, TimeUnit.SECONDS);
         assertEquals(Channel.META_CONNECT, message.getChannel());
         assertTrue(message.isSuccessful());
-    
+
         ClientSessionChannel.MessageListener subscriber = new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -1009,21 +1008,21 @@ public class BayeuxClientTest extends TestCase
         };
         ClientSessionChannel aChannel = client.getChannel("/a/channel");
         aChannel.subscribe(subscriber);
-    
+
         message = (Message)results.poll(1, TimeUnit.SECONDS);
         assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
         assertTrue(message.isSuccessful());
-    
+
         String data = "data";
         aChannel.publish(data);
         message = (Message)results.poll(1, TimeUnit.SECONDS);
         assertEquals(data, message.getData());
-    
+
         aChannel.unsubscribe(subscriber);
         message = (Message)results.poll(1, TimeUnit.SECONDS);
         assertEquals(Channel.META_UNSUBSCRIBE, message.getChannel());
         assertTrue(message.isSuccessful());
-    
+
         client.disconnect();
         assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
     }
@@ -1040,12 +1039,12 @@ public class BayeuxClientTest extends TestCase
             protected void customize(ContentExchange exchange)
             {
                 super.customize(exchange);
-                
+
                 if (failHandShake.compareAndSet(true,false))
                     exchange.setAddress(null);
             }
         };
-        
+
         BayeuxClient client = new BayeuxClient(_cometdURL, transport)
         {
             @Override
@@ -1053,7 +1052,7 @@ public class BayeuxClientTest extends TestCase
             {
             }
         };
-        
+
         client.setOption(BayeuxClient.LOG_LEVEL, "debug");
 
         client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
@@ -1064,9 +1063,9 @@ public class BayeuxClientTest extends TestCase
             }
         });
 
-        
+
         client.handshake();
-        
+
         // subscribe without waiting
         client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener()
         {
@@ -1080,7 +1079,7 @@ public class BayeuxClientTest extends TestCase
         assertNotNull(message);
         assertEquals(Channel.META_HANDSHAKE, message.getChannel());
         assertFalse(message.isSuccessful());
-        
+
         // second handshake works
         message = (Message)results.poll(10, TimeUnit.SECONDS);
         assertNotNull(message);
@@ -1088,7 +1087,7 @@ public class BayeuxClientTest extends TestCase
         assertTrue(message.isSuccessful());
         String id = client.getId();
         assertNotNull(id);
-        
+
         boolean subscribe=false;
         boolean connect=false;
         for (int i=0;i<2;i++)
@@ -1100,7 +1099,7 @@ public class BayeuxClientTest extends TestCase
         }
         assertTrue(subscribe);
         assertTrue(connect);
-        
+
         // subscribe again
         client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener()
         {
@@ -1112,14 +1111,14 @@ public class BayeuxClientTest extends TestCase
         // No second subscribe sent
         message = (Message)results.poll(10, TimeUnit.SECONDS);
         assertNull(message);
-        
+
         client.disconnect();
         assertTrue(client.waitFor(10000, BayeuxClient.State.DISCONNECTED));
-        
+
         // Rehandshake
         client.handshake();
         assertTrue(client.waitFor(10000, BayeuxClient.State.CONNECTED));
-        
+
         results.clear();
         // subscribe again
         client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener()
@@ -1128,13 +1127,13 @@ public class BayeuxClientTest extends TestCase
             {
             }
         });
-        
+
         // subscribe is sent
         message = (Message)results.poll(10, TimeUnit.SECONDS);
         assertNotNull(message);
         if (Channel.META_CONNECT.equals(message.getChannel()))
             message = (Message)results.poll(10, TimeUnit.SECONDS);
-            
+
         assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
 
         // restart server
@@ -1146,7 +1145,7 @@ public class BayeuxClientTest extends TestCase
 
         _cometdURL = "http://localhost:" + _connector.getLocalPort() + _contextPath + _servletPath;
         _bayeux = (BayeuxServerImpl)_context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-       
+
         assertTrue(client.waitFor(10000, BayeuxClient.State.REHANDSHAKING));
         assertTrue(client.waitFor(10000, BayeuxClient.State.CONNECTED));
         results.clear();
@@ -1158,18 +1157,18 @@ public class BayeuxClientTest extends TestCase
             {
             }
         });
-        
+
         // subscribe is sent
         message = (Message)results.poll(10, TimeUnit.SECONDS);
         assertNotNull(message);
         assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
-        
+
         client.disconnect();
         assertTrue(client.waitFor(10000, BayeuxClient.State.DISCONNECTED));
-        
+
     }
 
-    
+
     private class DumpThread extends Thread
     {
         public void run()
