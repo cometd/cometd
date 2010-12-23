@@ -113,6 +113,11 @@ org.cometd.Transport = function()
         this._debug('Transport', _type, 'reset');
     };
 
+    this.abort = function()
+    {
+        this._debug('Transport', _type, 'aborted');
+    };
+
     this.toString = function()
     {
         return this.getType();
