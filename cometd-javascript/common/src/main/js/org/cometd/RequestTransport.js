@@ -217,6 +217,7 @@ org.cometd.RequestTransport = function()
 
     _self.abort = function()
     {
+        _super.abort();
         for (var i = 0; i < _requests.length; ++i)
         {
             var request = _requests[i];
