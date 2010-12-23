@@ -43,6 +43,8 @@ import org.cometd.bayeux.server.BayeuxServer;
  * on startup.</dd>
  * <dt>oort.channels</dt><dd>A comma separated list of channels that will be
  * passed to {@link Oort#observeChannel(String)}</dd>
+ * <dt>clientLogLevel</dt><dd>used to set the log level of BayeuxClients used.</dd>
+ * </p>
  * </dl>
  * @author gregw
  *
@@ -86,6 +88,8 @@ public class OortServlet implements Servlet
         Oort oort= new Oort(url,bayeux);
         _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE,oort);
         
+        oort.setClientLogLevel(_config.getInitParameter("clientLogLevel"));
+        
         String channels=_config.getInitParameter(Oort.OORT_CHANNELS);
         if (channels!=null)
         {
@@ -104,6 +108,8 @@ public class OortServlet implements Servlet
                     oort.observeComet(comet);
 
         }
+        
+        
     }
 
     public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException

@@ -96,6 +96,7 @@ public class OortDemo
         oort_holder.setInitParameter(Oort.OORT_URL,"http://localhost:"+port+"/cometd");
         oort_holder.setInitParameter(Oort.OORT_CHANNELS,"/chat/**");
         oort_holder.setInitParameter(Oort.OORT_CLOUD,((port==8080)?"http://localhost:"+8081+"/cometd":"http://localhost:"+8080+"/cometd"));
+        oort_holder.setInitParameter("clientLogLevel","debug");
         oort_holder.setInitOrder(2);
         context.addServlet(oort_holder, "/oort/*");
 

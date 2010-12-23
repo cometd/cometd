@@ -77,9 +77,7 @@ public class OortComet extends BayeuxClient
             {
                 if (message.isSuccessful())
                 {
-                    System.err.println("\n"+message);
                     _oort.getLog().info("connected {} as {}",_cometUrl,message.getClientId());
-                    
                     
                     Map<String,Object> ext = message.getExt();
                     if (ext==null)
