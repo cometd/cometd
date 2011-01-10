@@ -201,4 +201,24 @@ public class ServerMessageImplTest
             }
         }
     }
+
+    @Test
+    public void testNullValue() throws Exception
+    {
+        String originalJSON = "{" +
+                "\"id\":\"12345\"," +
+                "\"clientId\":\"jva73siaj92jdafa\"," +
+                "\"data\":{" +
+                "   \"bar\":5," +
+                "   \"nullData\":null" +
+                "  }" +
+                "}";
+
+        ServerMessage.Mutable[] messages = ServerMessageImpl.parseServerMessages(originalJSON);
+        ServerMessageImpl message = (ServerMessageImpl)messages[0];
+        Map<String, Object> data = message.getDataAsMap();
+        assertNull(data.get("nullData"));
+        assertTrue(data.containsKey("nullData"));
+        assertEquals(2, data.size());
+    }
 }
