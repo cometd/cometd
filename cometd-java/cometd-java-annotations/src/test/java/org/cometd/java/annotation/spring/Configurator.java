@@ -39,14 +39,9 @@ public class Configurator implements DestructionAwareBeanPostProcessor
     @PostConstruct
     private void init()
     {
-        this.processor = ServerAnnotationProcessor.get(bayeuxServer);
+        this.processor = new ServerAnnotationProcessor(bayeuxServer);
     }
 
-    @PreDestroy
-    private void destroy()
-    {
-        this.processor.close();
-    }
 
     public Object postProcessBeforeInitialization(Object bean, String name) throws BeansException
     {

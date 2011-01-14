@@ -48,13 +48,12 @@ public class ServerAnnotationProcessorTest
         bayeuxServer = new BayeuxServerImpl();
         bayeuxServer.setOption(BayeuxServerImpl.LOG_LEVEL, "3");
         bayeuxServer.start();
-        processor = ServerAnnotationProcessor.get(bayeuxServer);
+        processor = new ServerAnnotationProcessor(bayeuxServer);
     }
 
     @After
     public void destroy() throws Exception
     {
-        processor.close();
         bayeuxServer.stop();
     }
 

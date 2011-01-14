@@ -18,6 +18,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.java.annotation.AnnotatedCometdServlet;
 import org.cometd.server.CometdServlet;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.eclipse.jetty.server.Server;
@@ -107,7 +108,7 @@ public class CometdDemo
         dftServlet.setInitOrder(1);
 
         // Cometd servlet
-        CometdServlet cometdServlet = new CometdServlet();
+        CometdServlet cometdServlet = new AnnotatedCometdServlet();
         ServletHolder comet = new ServletHolder(cometdServlet);
         context.addServlet(comet, "/cometd/*");
         comet.setInitParameter("timeout","20000");
@@ -115,6 +116,7 @@ public class CometdDemo
         comet.setInitParameter("maxInterval","10000");
         comet.setInitParameter("multiFrameInterval","5000");
         comet.setInitParameter("logLevel","3");
+        comet.setInitParameter("services","org.cometd.examples.ChatService");
         comet.setInitOrder(2);
 
         ServletHolder demo=context.addServlet(CometdDemoServlet.class, "/demo");

@@ -43,8 +43,6 @@ import org.eclipse.jetty.util.log.Log;
 
 public class CometdDemoServlet extends GenericServlet
 {
-    private ServerAnnotationProcessor processor;
-
     @Override
     public void init() throws ServletException
     {
@@ -68,11 +66,10 @@ public class CometdDemoServlet extends GenericServlet
         // Allow anybody to handshake
         bayeux.getChannel(ServerChannel.META_HANDSHAKE).addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
 
-        processor = ServerAnnotationProcessor.get(bayeux);
-
+        ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
         processor.process(new EchoRPC());
         processor.process(new Monitor());
-        processor.process(new ChatService());
+        // processor.process(new ChatService());
 
         bayeux.createIfAbsent("/foo/bar/baz",new ConfigurableServerChannel.Initializer()
         {
@@ -90,7 +87,6 @@ public class CometdDemoServlet extends GenericServlet
     public void destroy()
     {
         super.destroy();
-        processor.close();
     }
 
     @Service("echo")

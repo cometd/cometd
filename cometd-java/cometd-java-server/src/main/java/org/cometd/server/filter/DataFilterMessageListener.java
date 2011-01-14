@@ -9,6 +9,11 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 
+/**
+ * 
+ * a MessageListener that applies DataFilters to the received messages.
+ *
+ */
 public class DataFilterMessageListener implements ServerChannel.MessageListener
 {
     final BayeuxServerImpl _bayeux;

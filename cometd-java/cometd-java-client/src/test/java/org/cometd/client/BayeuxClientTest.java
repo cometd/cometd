@@ -115,7 +115,8 @@ public class BayeuxClientTest extends TestCase
     public void testBatchingAfterHandshake() throws Exception
     {
         final BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
 
         final AtomicBoolean connected = new AtomicBoolean();
 
@@ -191,7 +192,8 @@ public class BayeuxClientTest extends TestCase
                     super.onFailure(x, messages);
             }
         };
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -237,7 +239,8 @@ public class BayeuxClientTest extends TestCase
                     super.onFailure(x, messages);
             }
         };
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -263,7 +266,8 @@ public class BayeuxClientTest extends TestCase
     public void testHandshakeDenied() throws Exception
     {
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
         SecurityPolicy oldPolicy = _bayeux.getSecurityPolicy();
         _bayeux.setSecurityPolicy(new DefaultSecurityPolicy()
         {
@@ -323,7 +327,8 @@ public class BayeuxClientTest extends TestCase
                 return result;
             }
         };
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -358,7 +363,8 @@ public class BayeuxClientTest extends TestCase
                 queue.offer(problem);
             }
         };
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
 
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -452,7 +458,8 @@ public class BayeuxClientTest extends TestCase
                 return false;
             }
         };
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
         final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -476,7 +483,8 @@ public class BayeuxClientTest extends TestCase
     public void testCookies() throws Exception
     {
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
         client.handshake();
 
         client.setCookie("foo", "bar", 1);
@@ -515,7 +523,8 @@ public class BayeuxClientTest extends TestCase
         {
             final AtomicBoolean connected = new AtomicBoolean();
             final BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-            client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+            
+        client.setDebugEnabled(false);
             final String room = "/channel/" + (i % rooms);
             clients[i] = client;
 
@@ -620,7 +629,8 @@ public class BayeuxClientTest extends TestCase
         });
 
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
         client.handshake();
         assertTrue(client.waitFor(10000, State.CONNECTED));
 
@@ -654,7 +664,8 @@ public class BayeuxClientTest extends TestCase
         });
 
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
         long wait = 1000L;
         long start = System.nanoTime();
         client.handshake(wait);
@@ -695,7 +706,8 @@ public class BayeuxClientTest extends TestCase
                 // Do not call super to suppress error logging
             }
         };
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -723,7 +735,8 @@ public class BayeuxClientTest extends TestCase
         final AtomicReference<CountDownLatch> handshakeLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
         final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -792,7 +805,8 @@ public class BayeuxClientTest extends TestCase
                 return result;
             }
         };
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -847,7 +861,8 @@ public class BayeuxClientTest extends TestCase
                 return super.sendMessages(messages);
             }
         };
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -928,7 +943,8 @@ public class BayeuxClientTest extends TestCase
         try
         {
             BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-            client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+            
+        client.setDebugEnabled(false);
 
             Map<String, Object> authentication = new HashMap<String, Object>();
             authentication.put("token", "1234567890");
@@ -956,7 +972,8 @@ public class BayeuxClientTest extends TestCase
         final BlockingArrayQueue<Object> results = new BlockingArrayQueue<Object>();
 
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
 
         final AtomicBoolean connected = new AtomicBoolean();
 
@@ -1053,7 +1070,8 @@ public class BayeuxClientTest extends TestCase
             }
         };
 
-        client.setOption(BayeuxClient.LOG_LEVEL, "debug");
+        
+        client.setDebugEnabled(false);
 
         client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
         {

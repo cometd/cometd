@@ -34,6 +34,12 @@
       <version>${jetty-version}</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
+      <version>${jetty-version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 </project>
