@@ -35,7 +35,7 @@
 
     <servlet>
         <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometdServlet</servlet-class>
+        <servlet-class>org.cometd.java.annotation.AnnotatedCometdServlet</servlet-class>
         <init-param>
             <param-name>timeout</param-name>
             <param-value>30000</param-value>
@@ -59,6 +59,10 @@
         <init-param>
             <param-name>logLevel</param-name>
             <param-value>1</param-value>
+        </init-param>
+        <init-param>
+            <param-name>services</param-name>
+            <param-value>org.cometd.examples.ChatService</param-value>
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>
