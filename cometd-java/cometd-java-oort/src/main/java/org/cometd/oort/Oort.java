@@ -58,7 +58,7 @@ public class Oort
     private final Map<String,OortComet> _knownComets = new ConcurrentHashMap<String,OortComet>();
     private final Map<String,ServerSession> _incomingComets = new ConcurrentHashMap<String,ServerSession>();
     private final ConcurrentMap<String, Boolean> _channels = new ConcurrentHashMap<String, Boolean>();
-    private String _clientLogLevel;
+    private boolean _clientDebugEnabled;
 
     /* ------------------------------------------------------------ */
     Oort(String url,BayeuxServer bayeux)
@@ -117,15 +117,17 @@ public class Oort
     }
 
     /* ------------------------------------------------------------ */
-    public String getClientLogLevel()
+    public boolean isClientDebugEnabled()
     {
-        return _clientLogLevel;
+        return _clientDebugEnabled;
     }
 
     /* ------------------------------------------------------------ */
-    public void setClientLogLevel(String clientLogLevel)
+    public void setClientDebugEnabled(boolean clientDebugEnabled)
     {
-        _clientLogLevel = clientLogLevel;
+        _clientDebugEnabled = clientDebugEnabled;
+        for (OortComet comet : _knownComets.values())
+            comet.setDebugEnabled(clientDebugEnabled);
     }
 
     /* ------------------------------------------------------------ */
@@ -167,8 +169,7 @@ public class Oort
                 try
                 {
                     comet = new OortComet(this,cometUrl);
-                    if (_clientLogLevel!=null)
-                        comet.setOption(BayeuxClient.LOG_LEVEL,_clientLogLevel);
+                    comet.setDebugEnabled(_clientDebugEnabled);
                     _knownComets.put(cometUrl,comet);
                     comet.handshake();
                 }

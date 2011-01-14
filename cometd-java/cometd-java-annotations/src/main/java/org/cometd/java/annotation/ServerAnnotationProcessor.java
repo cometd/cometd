@@ -58,43 +58,14 @@ import org.cometd.bayeux.server.ServerSession;
  */
 public class ServerAnnotationProcessor extends AnnotationProcessor
 {
-    private static final ConcurrentMap<BayeuxServer, ServerAnnotationProcessor> instances = new ConcurrentHashMap<BayeuxServer, ServerAnnotationProcessor>();
-
-    /**
-     * @param bayeuxServer the {@link BayeuxServer} this processor is scoped to
-     * @return an instance of this processor scoped to the given {@code bayeuxServer}.
-     * @see #close()
-     */
-    public static ServerAnnotationProcessor get(BayeuxServer bayeuxServer)
-    {
-        ServerAnnotationProcessor result = instances.get(bayeuxServer);
-        if (result == null)
-        {
-            result = new ServerAnnotationProcessor(bayeuxServer);
-            ServerAnnotationProcessor existing = instances.putIfAbsent(bayeuxServer, result);
-            if (existing != null)
-                result = existing;
-        }
-        return result;
-    }
-
     private final ConcurrentMap<Object, LocalSession> sessions = new ConcurrentHashMap<Object, LocalSession>();
     private final ConcurrentMap<Object, List<ListenerCallback>> listeners = new ConcurrentHashMap<Object, List<ListenerCallback>>();
     private final ConcurrentMap<Object, List<SubscriptionCallback>> subscribers = new ConcurrentHashMap<Object, List<SubscriptionCallback>>();
     private final BayeuxServer bayeuxServer;
 
-    private ServerAnnotationProcessor(BayeuxServer bayeuxServer)
+    public ServerAnnotationProcessor(BayeuxServer bayeuxServer)
     {
         this.bayeuxServer = bayeuxServer;
-    }
-
-    /**
-     * Removes the association between a {@link BayeuxServer} object and this processor.
-     * @see #get(BayeuxServer)
-     */
-    public void close()
-    {
-        instances.remove(bayeuxServer);
     }
 
     /**

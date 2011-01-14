@@ -49,7 +49,7 @@ public class OortDemoServlet implements Servlet
 
         BayeuxServer bayeux = (BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE);
 
-        ServerAnnotationProcessor processor = ServerAnnotationProcessor.get(bayeux);
+        ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
         processor.process(new OortChatService(context));
 
         bayeux.addExtension(new TimesyncExtension());

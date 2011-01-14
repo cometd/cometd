@@ -62,9 +62,9 @@ public class ChatService
         Map<String, String> roomMembers = _members.get(room);
         if (roomMembers == null)
         {
-            Map<String, String> newRoomMembers = new ConcurrentHashMap<String, String>();
-            roomMembers = _members.putIfAbsent(room, newRoomMembers);
-            if (roomMembers == null) roomMembers = newRoomMembers;
+            Map<String, String> new_room = new ConcurrentHashMap<String, String>();
+            roomMembers = _members.putIfAbsent(room, new_room);
+            if (roomMembers == null) roomMembers = new_room;
         }
         final Map<String, String> members = roomMembers;
         String userName = (String)data.get("user");
@@ -102,8 +102,15 @@ public class ChatService
     public void privateChat(ServerSession client, ServerMessage message)
     {
         Map<String,Object> data = message.getDataAsMap();
-        String room = (String)data.get("room");
+        String room = ((String)data.get("room")).substring("/chat/".length());
         Map<String, String> membersMap = _members.get(room);
+        if (membersMap==null)
+        {
+            Map<String,String>new_room=new ConcurrentHashMap<String, String>();
+            membersMap=_members.putIfAbsent(room,new_room);
+            if (membersMap==null)
+                membersMap=new_room;
+        }
         String[] peerNames = ((String)data.get("peer")).split(",");
         ArrayList<ServerSession> peers = new ArrayList<ServerSession>(peerNames.length);
 
@@ -126,7 +133,7 @@ public class ChatService
             chat.put("user", data.get("user"));
             chat.put("scope", "private");
             ServerMessage.Mutable forward = _bayeux.newMessage();
-            forward.setChannel(room);
+            forward.setChannel("/chat/"+room);
             forward.setId(message.getId());
             forward.setData(chat);
 

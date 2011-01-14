@@ -15,7 +15,10 @@
 package org.cometd.oort;
 
 
+import java.lang.management.ManagementFactory;
+
 import org.cometd.server.CometdServlet;
+import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -60,6 +63,13 @@ public class OortDemo
         
         // Manually contruct context to avoid hassles with webapp classloaders for now.
         _server = new Server();
+        
+        // Setup JMX
+        MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        _server.getContainer().addEventListener(mbContainer);
+        _server.addBean(mbContainer);
+        mbContainer.addBean(Log.getLog());
+        
         QueuedThreadPool qtp = new QueuedThreadPool();
         qtp.setMinThreads(5);
         qtp.setMaxThreads(200);
@@ -109,6 +119,7 @@ public class OortDemo
         demo_holder.setInitOrder(3);
         context.getServletHandler().addServlet(demo_holder);
         
+        context.setInitParameter("org.eclipse.jetty.server.context.ManagedAttributes","org.cometd.bayeux,org.cometd.oort.Oort,org.cometd.oort.Seti");
         
         _server.start();
         
