@@ -14,8 +14,8 @@ import javax.inject.Inject;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ConfigurableServerChannel.Initializer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
+import org.cometd.bayeux.server.ConfigurableServerChannel.Initializer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -39,7 +39,7 @@ import org.cometd.bayeux.server.ServerSession;
  *         channel.addListener(...);
  *         channel.addAuthorizer(...);
  *     }
- *     
+ *
  *     &#64;Listener("/foo")
  *     public void handleFooMessages(ServerSession remote, ServerMessage.Mutable message)
  *     {
@@ -77,8 +77,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
      */
     public boolean process(Object bean)
     {
-        boolean result = false;
-        result |= processDependencies(bean);
+        boolean result = processDependencies(bean);
         result |= processConfigurations(bean);
         result |= processCallbacks(bean);
         result |= processPostConstruct(bean);
@@ -140,9 +139,9 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                                 }
                             }
                         };
-                        
+
                         boolean initialized = bayeuxServer.createIfAbsent(channel,init);
-                        
+
                         if (initialized)
                         {
                             logger.debug("Channel {} already initialzed. Not called method {} on bean {}", channel, method, bean);
@@ -164,7 +163,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
-    
+
     /**
      * Processes the dependencies annotated with {@link Inject} and {@link Session}.
      * @param bean the annotated service instance
