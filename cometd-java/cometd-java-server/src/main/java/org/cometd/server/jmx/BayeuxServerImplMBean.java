@@ -1,8 +1,8 @@
 package org.cometd.server.jmx;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.server.BayeuxServerImpl;
@@ -10,30 +10,36 @@ import org.eclipse.jetty.jmx.ObjectMBean;
 
 public class BayeuxServerImplMBean extends ObjectMBean
 {
-    private BayeuxServerImpl _bayeux;
-    
+    private final BayeuxServerImpl bayeux;
+
     public BayeuxServerImplMBean(Object managedObject)
     {
         super(managedObject);
-        _bayeux=(BayeuxServerImpl)managedObject;
+        bayeux = (BayeuxServerImpl)managedObject;
     }
 
     public int getSessions()
     {
-        return _bayeux.getSessions().size();
+        return bayeux.getSessions().size();
     }
-    
+
     public Set<String> getChannels()
     {
-        Set<String> channels = new HashSet<String>();
-        for (ServerChannel channel:_bayeux.getChannels())
+        Set<String> channels = new TreeSet<String>();
+        for (ServerChannel channel : bayeux.getChannels())
             channels.add(channel.getId());
         return channels;
     }
-    
+
+    // Replicated here to avoid a mismatch between getter and setter
     public List<String> getAllowedTransports()
     {
-        return _bayeux.getAllowedTransports();
+        return bayeux.getAllowedTransports();
     }
 
+    // Replicated here because ConcurrentMap.KeySet is not serializable
+    public Set<String> getKnownTransportNames()
+    {
+        return new TreeSet<String>(bayeux.getKnownTransportNames());
+    }
 }
