@@ -9,7 +9,7 @@
     <!--  Request that Jetty create an MBean to manage the Bayeux instance -->
     <context-param>
         <param-name>org.eclipse.jetty.server.context.ManagedAttributes</param-name>
-        <param-value>org.cometd.bayeux,org.cometd.oort.Oort,org.cometd.oort.Seti</param-value>
+        <param-value>org.cometd.bayeux,org.cometd.oort.Oort</param-value>
     </context-param>
 
     <!-- Portability Filter, needed only to run on non Jetty or non Servlet-3.0 containers -->

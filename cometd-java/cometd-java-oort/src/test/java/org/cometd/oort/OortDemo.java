@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,7 +25,6 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -34,9 +33,9 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /* ------------------------------------------------------------ */
 /** Main class for cometd demo.
- * 
+ *
  * This is of use when running demo in a terracotta cluster
- * 
+ *
  * @author gregw
  *
  */
@@ -44,7 +43,7 @@ public class OortDemo
 {
     private Oort _oort;
     Server _server;
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param args
@@ -60,38 +59,38 @@ public class OortDemo
     public OortDemo(int port) throws Exception
     {
         String base=".";
-        
+
         // Manually contruct context to avoid hassles with webapp classloaders for now.
         _server = new Server();
-        
+
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         _server.getContainer().addEventListener(mbContainer);
         _server.addBean(mbContainer);
         mbContainer.addBean(Log.getLog());
-        
+
         QueuedThreadPool qtp = new QueuedThreadPool();
         qtp.setMinThreads(5);
         qtp.setMaxThreads(200);
         _server.setThreadPool(qtp);
-        
+
         SelectChannelConnector connector=new SelectChannelConnector();
         // SocketConnector connector=new SocketConnector();
         connector.setPort(port);
         _server.addConnector(connector);
-        
+
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
-        
+
         ServletContextHandler context = new ServletContextHandler(contexts,"/",ServletContextHandler.SESSIONS);
         context.addServlet("org.eclipse.jetty.servlet.DefaultServlet", "/");
-        
+
         context.setBaseResource(new ResourceCollection(new Resource[]
         {
             Resource.newResource(base+"/../../cometd-demo/src/main/webapp/"),
             Resource.newResource(base+"/../../cometd-demo/target/cometd-demo-2.1.0-SNAPSHOT/"),
         }));
-        
+
         // Cometd servlet
         ServletHolder cometd_holder = new ServletHolder(CometdServlet.class);
         cometd_holder.setInitParameter("timeout","200000");
@@ -101,7 +100,7 @@ public class OortDemo
         cometd_holder.setInitParameter("logLevel","1");
         cometd_holder.setInitOrder(1);
         context.addServlet(cometd_holder, "/cometd/*");
-        
+
         ServletHolder oort_holder = new ServletHolder(OortServlet.class);
         oort_holder.setInitParameter(Oort.OORT_URL,"http://localhost:"+port+"/cometd");
         oort_holder.setInitParameter(Oort.OORT_CHANNELS,"/chat/**");
@@ -118,15 +117,15 @@ public class OortDemo
         ServletHolder demo_holder = new ServletHolder(OortDemoServlet.class);
         demo_holder.setInitOrder(3);
         context.getServletHandler().addServlet(demo_holder);
-        
-        context.setInitParameter("org.eclipse.jetty.server.context.ManagedAttributes","org.cometd.bayeux,org.cometd.oort.Oort,org.cometd.oort.Seti");
-        
+
+        context.setInitParameter("org.eclipse.jetty.server.context.ManagedAttributes","org.cometd.bayeux,org.cometd.oort.Oort");
+
         _server.start();
-        
+
         _oort = (Oort)context.getServletContext().getAttribute(Oort.OORT_ATTRIBUTE);
         assert(_oort!=null);
-        
+
     }
-    
-    
+
+
 }
