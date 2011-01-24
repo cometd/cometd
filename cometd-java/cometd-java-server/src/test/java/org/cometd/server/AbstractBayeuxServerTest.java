@@ -1,5 +1,8 @@
 package org.cometd.server;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import junit.framework.TestCase;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -33,9 +36,13 @@ public abstract class AbstractBayeuxServerTest extends TestCase
         // Setup comet servlet
         CometdServlet cometdServlet = new CometdServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
-        cometdServletHolder.setInitParameter("timeout", String.valueOf(timeout));
-        cometdServletHolder.setInitParameter("logLevel", "3");
-        cometdServletHolder.setInitParameter("jsonDebug", "true");
+        Map<String, String> options = new HashMap<String, String>();
+        options.put("timeout", String.valueOf(timeout));
+        options.put("logLevel", "3");
+        options.put("jsonDebug", "true");
+        customizeOptions(options);
+        for (Map.Entry<String, String> entry : options.entrySet())
+            cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
         String cometdServletPath = "/cometd";
         context.addServlet(cometdServletHolder, cometdServletPath + "/*");
 
@@ -53,6 +60,10 @@ public abstract class AbstractBayeuxServerTest extends TestCase
     {
         server.stop();
         server.join();
+    }
+
+    protected void customizeOptions(Map<String, String> options)
+    {
     }
 
     protected void customizeBayeux(BayeuxServerImpl bayeux)

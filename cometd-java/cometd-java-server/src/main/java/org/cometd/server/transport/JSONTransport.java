@@ -10,70 +10,54 @@ import org.cometd.server.BayeuxServerImpl;
 
 public class JSONTransport extends LongPollingTransport
 {
-    public final static String PREFIX="long-polling.json";
-    public final static String NAME="long-polling";
-    public final static String MIME_TYPE_OPTION="mimeType";
+    public final static String PREFIX = "long-polling.json";
+    public final static String NAME = "long-polling";
+    public final static String MIME_TYPE_OPTION = "mimeType";
 
-    private String _mimeType="application/json;charset=UTF-8";
+    private String _mimeType = "application/json;charset=UTF-8";
 
-
-    /* ------------------------------------------------------------ */
     public JSONTransport(BayeuxServerImpl bayeux)
     {
-        super(bayeux,NAME);
+        super(bayeux, NAME);
         setOptionPrefix(PREFIX);
     }
 
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.server.transport.LongPollingTransport#isAlwaysFlushingAfterHandle()
-     */
     @Override
     protected boolean isAlwaysFlushingAfterHandle()
     {
         return false;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected void init()
     {
         super.init();
-        _mimeType=getOption(MIME_TYPE_OPTION,_mimeType);
+        _mimeType = getOption(MIME_TYPE_OPTION, _mimeType);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public boolean accept(HttpServletRequest request)
     {
         return "POST".equals(request.getMethod());
     }
 
-    /* ------------------------------------------------------------ */
     @Override
-    public boolean isMetaConnectDeliveryOnly()
+    protected PrintWriter send(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerMessage message) throws IOException
     {
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected PrintWriter send(HttpServletRequest request,HttpServletResponse response,PrintWriter writer, ServerMessage message) throws IOException
-    {
-        if (writer==null)
+        if (writer == null)
         {
             response.setContentType(_mimeType);
             writer = response.getWriter();
             writer.append('[');
         }
         else
+        {
             writer.append(',');
+        }
         writer.append(message.getJSON());
         return writer;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected void complete(PrintWriter writer) throws IOException
     {
