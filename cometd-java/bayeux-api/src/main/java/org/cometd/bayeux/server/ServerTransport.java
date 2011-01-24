@@ -58,14 +58,16 @@ public interface ServerTransport extends Transport
      * @return the remote socket address
      * @deprecated use {@link #getContext()} and {@link BayeuxContext#getRemoteAddress()}
      */
+    @Deprecated
     public InetSocketAddress getCurrentRemoteAddress();
 
     /**
      * @return the local socket address
      * @deprecated use {@link #getContext()} and {@link BayeuxContext#getLocalAddress()}
      */
+    @Deprecated
     public InetSocketAddress getCurrentLocalAddress();
-    
+
     /**
      * @return The current transport context or null if no current context
      */
