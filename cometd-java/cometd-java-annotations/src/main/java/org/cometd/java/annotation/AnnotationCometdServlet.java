@@ -17,7 +17,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  *  &lt;servlet&gt;
  *    &lt;servlet-name&gt;cometd&lt;/servlet-name&gt;
- *    &lt;servlet-class&gt;org.cometd.java.annotation.AnnotatedCometdServlet&lt;/servlet-class&gt;
+ *    &lt;servlet-class&gt;org.cometd.java.annotation.AnnotationCometdServlet&lt;/servlet-class&gt;
  *    &lt;init-param&gt;
  *      &lt;param-name&gt;services&lt;/param-name&gt;
  *      &lt;param-value&gt;org.cometd.examples.FooService, org.cometd.examples.BarService&lt;/param-value&gt;
@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.log.Logger;
  *  &lt;/servlet&gt;
  * </pre>
  */
-public class AnnotatedCometdServlet extends CometdServlet
+public class AnnotationCometdServlet extends CometdServlet
 {
     private static final long serialVersionUID = 2821068017364051087L;
 
