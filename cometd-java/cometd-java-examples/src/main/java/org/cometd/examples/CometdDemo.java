@@ -18,7 +18,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.java.annotation.AnnotatedCometdServlet;
+import org.cometd.java.annotation.AnnotationCometdServlet;
 import org.cometd.server.CometdServlet;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.eclipse.jetty.server.Server;
@@ -108,7 +108,7 @@ public class CometdDemo
         dftServlet.setInitOrder(1);
 
         // Cometd servlet
-        CometdServlet cometdServlet = new AnnotatedCometdServlet();
+        CometdServlet cometdServlet = new AnnotationCometdServlet();
         ServletHolder comet = new ServletHolder(cometdServlet);
         context.addServlet(comet, "/cometd/*");
         comet.setInitParameter("timeout","20000");
