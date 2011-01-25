@@ -219,7 +219,7 @@ public abstract class AbstractService
             throw new NoSuchMethodError(methodName);
         int params=method.getParameterTypes().length;
         if (params < 2 || params > 4)
-            throw new IllegalArgumentException("Method '" + methodName + "' does not have 2or3 parameters");
+            throw new IllegalArgumentException("Method '" + methodName + "' does not have 2, 3 or 4 parameters");
         if (!ServerSession.class.isAssignableFrom(method.getParameterTypes()[0]))
             throw new IllegalArgumentException("Method '" + methodName + "' does not have Session as first parameter");
 
