@@ -83,13 +83,12 @@ public class ClientAnnotationProcessorTest
     public void init()
     {
         bayeuxClient = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient));
-        processor = ClientAnnotationProcessor.get(bayeuxClient);
+        processor = new ClientAnnotationProcessor(bayeuxClient);
     }
 
     @After
     public void destroy()
     {
-        processor.close();
         bayeuxClient.disconnect();
         bayeuxClient.waitFor(1000, BayeuxClient.State.DISCONNECTED);
     }

@@ -42,42 +42,13 @@ import org.cometd.bayeux.client.ClientSessionChannel;
  */
 public class ClientAnnotationProcessor extends AnnotationProcessor
 {
-    private static final ConcurrentMap<ClientSession, ClientAnnotationProcessor> instances = new ConcurrentHashMap<ClientSession, ClientAnnotationProcessor>();
-
-    /**
-     * @param clientSession the {@link ClientSession} this processor is scoped to.
-     * @return an instance of this processor scoped to the given {@code clientSession}.
-     * @see #close()
-     */
-    public static ClientAnnotationProcessor get(ClientSession clientSession)
-    {
-        ClientAnnotationProcessor result = instances.get(clientSession);
-        if (result == null)
-        {
-            result = new ClientAnnotationProcessor(clientSession);
-            ClientAnnotationProcessor existing = instances.putIfAbsent(clientSession, result);
-            if (existing != null)
-                result = existing;
-        }
-        return result;
-    }
-
     private final ConcurrentMap<Object, List<ListenerCallback>> listeners = new ConcurrentHashMap<Object, List<ListenerCallback>>();
     private final ConcurrentMap<Object, List<SubscriptionCallback>> subscribers = new ConcurrentHashMap<Object, List<SubscriptionCallback>>();
     private final ClientSession clientSession;
 
-    private ClientAnnotationProcessor(ClientSession clientSession)
+    public ClientAnnotationProcessor(ClientSession clientSession)
     {
         this.clientSession = clientSession;
-    }
-
-    /**
-     * Removes the association between a client session and this processor.
-     * @see #get(ClientSession)
-     */
-    public void close()
-    {
-        instances.remove(clientSession);
     }
 
     /**
