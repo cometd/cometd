@@ -21,11 +21,15 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
-                                <argument>-XX:+UseParallelOldGC</argument>
+                                <argument>-showversion</argument>
                                 <argument>-XX:+PrintCommandLineFlags</argument>
                                 <argument>-Xmx512m</argument>
                                 <argument>-Xms512m</argument>
                                 <argument>-Xmn256m</argument>
+                                <argument>-XX:+UseParallelOldGC</argument>
+                                <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->
+                                <!--<argument>-XX:+UnlockExperimentalVMOptions</argument>-->
+                                <!--<argument>-XX:+UseG1GC</argument>-->
                                 <argument>-cp</argument>
                                 <classpath />
                                 <argument>org.cometd.client.BayeuxLoadServer</argument>
@@ -44,6 +48,22 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-showversion</argument>
+                                <argument>-XX:+PrintCommandLineFlags</argument>
+                                <argument>-Xmx512m</argument>
+                                <argument>-Xms512m</argument>
+                                <argument>-Xmn256m</argument>
+                                <argument>-XX:+UseParallelOldGC</argument>
+                                <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->
+                                <!--<argument>-XX:+UnlockExperimentalVMOptions</argument>-->
+                                <!--<argument>-XX:+UseG1GC</argument>-->
+                                <argument>-cp</argument>
+                                <classpath />
+                                <argument>org.cometd.client.BayeuxLoadGenerator</argument>
+                            </arguments>
+                            <classpathScope>test</classpathScope>
 <!--
                             <systemProperties>
                                 <systemProperty>
@@ -52,8 +72,6 @@
                                 </systemProperty>
                             </systemProperties>
 -->
-                            <mainClass>org.cometd.client.BayeuxLoadGenerator</mainClass>
-                            <classpathScope>test</classpathScope>
                         </configuration>
                     </plugin>
                 </plugins>
