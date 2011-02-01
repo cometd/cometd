@@ -73,6 +73,18 @@ org.cometd.TransportRegistry = function()
         return !existing;
     };
 
+    this.find = function(name)
+    {
+        for (var i = 0; i < _types.length; ++i)
+        {
+            if (_types[i] == type)
+            {
+                return _transports[type];
+            }
+        }
+        return null;
+    };
+
     this.remove = function(type)
     {
         for (var i = 0; i < _types.length; ++i)

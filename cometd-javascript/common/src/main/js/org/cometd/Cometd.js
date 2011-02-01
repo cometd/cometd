@@ -1255,6 +1255,11 @@ org.cometd.Cometd = function(name)
         return transport;
     };
 
+    this.findTransport = function(name)
+    {
+        return _transports.find(name);
+    };
+
     /**
      * Configures the initial Bayeux communication with the Bayeux server.
      * Configuration is passed via an object that must contain a mandatory field <code>url</code>
