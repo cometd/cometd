@@ -57,11 +57,17 @@ public class StatisticsHelper implements Runnable
         List<MemoryPoolMXBean> memoryPools = ManagementFactory.getMemoryPoolMXBeans();
         for (MemoryPoolMXBean memoryPool : memoryPools)
         {
-            if ("PS Eden Space".equals(memoryPool.getName()))
+            if ("PS Eden Space".equals(memoryPool.getName()) ||
+                    "Par Eden Space".equals(memoryPool.getName()) ||
+                    "G1 Eden".equals(memoryPool.getName()))
                 youngMemoryPool = memoryPool;
-            else if ("PS Survivor Space".equals(memoryPool.getName()))
+            else if ("PS Survivor Space".equals(memoryPool.getName()) ||
+                    "Par Survivor Space".equals(memoryPool.getName()) ||
+                    "G1 Survivor".equals(memoryPool.getName()))
                 survivorMemoryPool = memoryPool;
-            else if ("PS Old Gen".equals(memoryPool.getName()))
+            else if ("PS Old Gen".equals(memoryPool.getName()) ||
+                    "CMS Old Gen".equals(memoryPool.getName()) ||
+                    "G1 Old Gen".equals(memoryPool.getName()))
                 oldMemoryPool = memoryPool;
         }
         hasMemoryPools = youngMemoryPool != null && survivorMemoryPool != null && oldMemoryPool != null;
@@ -69,9 +75,13 @@ public class StatisticsHelper implements Runnable
         List<GarbageCollectorMXBean> garbageCollectors = ManagementFactory.getGarbageCollectorMXBeans();
         for (GarbageCollectorMXBean garbageCollector : garbageCollectors)
         {
-            if ("PS Scavenge".equals(garbageCollector.getName()))
+            if ("PS Scavenge".equals(garbageCollector.getName()) ||
+                    "ParNew".equals(garbageCollector.getName()) ||
+                    "G1 Young Generation".equals(garbageCollector.getName()))
                 youngCollector = garbageCollector;
-            else if ("PS MarkSweep".equals(garbageCollector.getName()))
+            else if ("PS MarkSweep".equals(garbageCollector.getName()) ||
+                    "ConcurrentMarkSweep".equals(garbageCollector.getName()) ||
+                    "G1 Old Generation".equals(garbageCollector.getName()))
                 oldCollector = garbageCollector;
         }
         hasCollectors = youngCollector != null && oldCollector != null;
@@ -160,7 +170,7 @@ public class StatisticsHelper implements Runnable
 
             scheduler = Executors.newSingleThreadScheduledExecutor();
             polling = false;
-            memoryPoller = scheduler.scheduleWithFixedDelay(this, 0, 500, TimeUnit.MILLISECONDS);
+            memoryPoller = scheduler.scheduleWithFixedDelay(this, 0, 250, TimeUnit.MILLISECONDS);
 
             lastYoungUsed = 0;
             if (hasCollectors)
