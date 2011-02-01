@@ -5,6 +5,7 @@ org.cometd.WebSocketTransport = function()
 
     var _super = new org.cometd.Transport();
     var _self = org.cometd.Transport.derive(_super);
+    var _cometd;
     // By default, support WebSocket
     var _supportsWebSocket = true;
     var _webSocketSupported = false;
@@ -14,10 +15,16 @@ org.cometd.WebSocketTransport = function()
     var _webSocket;
     var _successCallback;
 
+    _self.registered = function(type, cometd)
+    {
+        _super.registered(type, cometd);
+        _cometd = cometd;
+    };
+
     _self.accept = function(version, crossDomain, url)
     {
         // Using !! to return a boolean (and not the WebSocket object)
-        return _supportsWebSocket && !!window.WebSocket;
+        return _supportsWebSocket && !!window.WebSocket && _cometd.websocketEnabled === true;
     };
 
     function _websocketSend(envelope, metaConnect)
