@@ -74,6 +74,7 @@
                 cometdURL = altServer;
             }
 
+            $.cometd.websocketEnabled = true;
             $.cometd.configure({
                 url: cometdURL,
                 logLevel: 'debug'
