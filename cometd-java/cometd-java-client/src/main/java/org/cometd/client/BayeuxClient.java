@@ -25,18 +25,58 @@ import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.HttpClientTransport;
+import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.OldQueuedThreadPool;
 
 /**
- *
+ * <p>{@link BayeuxClient} is the implementation of a client for the Bayeux protocol.</p>
+ * <p> A {@link BayeuxClient} can receive/publish messages from/to a Bayeux server, and
+ * it is the counterpart in Java of the JavaScript library used in browsers (and as such
+ * it is ideal for Swing applications, load testing tools, etc.).</p>
+ * <p>A {@link BayeuxClient} handshakes with a Bayeux server
+ * and then subscribes {@link ClientSessionChannel.MessageListener} to channels in order
+ * to receive messages, and may also publish messages to the Bayeux server.</p>
+ * <p>{@link BayeuxClient} relies on pluggable transports for communication with the Bayeux
+ * server, and the most common transport is {@link LongPollingTransport}, which uses
+ * HTTP to transport Bayeux messages and it is based on
+ * <a href="http://wiki.eclipse.org/Jetty/Feature/HttpClient">Jetty's HTTP client</a>.</p>
+ * <p>When the communication with the server is finished, the {@link BayeuxClient} can be
+ * disconnected from the Bayeux server.</p>
+ * <p>Typical usage:</p>
+ * <pre>
+ * // Handshake
+ * String url = "http://localhost:8080/cometd";
+ * BayeuxClient client = new BayeuxClient(url, LongPollingTransport.create(null));
+ * client.handshake();
+ * client.waitFor(1000, BayeuxClient.State.CONNECTED);
+ * <p/>
+ * // Subscription to channels
+ * ClientSessionChannel channel = client.getChannel("/foo");
+ * channel.subscribe(new ClientSessionChannel.MessageListener()
+ * {
+ *     public void onMessage(ClientSessionChannel channel, Message message)
+ *     {
+ *         // Handle the message
+ *     }
+ * });
+ * <p/>
+ * // Publishing to channels
+ * Map&lt;String, Object&gt; data = new HashMap&lt;String, Object&gt;();
+ * data.put("bar", "baz");
+ * channel.publish(data);
+ * <p/>
+ * // Disconnecting
+ * client.disconnect();
+ * client.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+ * </pre>
  */
 public class BayeuxClient extends AbstractClientSession implements Bayeux
 {
@@ -46,7 +86,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private final Logger logger = Log.getLogger(getClass().getName() + "@" + System.identityHashCode(this));
     private final TransportRegistry transportRegistry = new TransportRegistry();
-    private final Map<String,Object> options = new ConcurrentHashMap<String, Object>();
+    private final Map<String, Object> options = new ConcurrentHashMap<String, Object>();
     private final AtomicReference<BayeuxClientState> bayeuxClientState = new AtomicReference<BayeuxClientState>();
     private final Queue<Message.Mutable> messageQueue = new ConcurrentLinkedQueue<Message.Mutable>();
     private final HttpClientTransport.CookieProvider cookieProvider = new HttpClientTransport.StandardCookieProvider();
@@ -59,11 +99,31 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private volatile long backoffIncrement;
     private volatile long maxBackoff;
 
+    /**
+     * <p>Creates a {@link BayeuxClient} that will connect to the Bayeux server at the given URL
+     * and with the given transport(s).</p>
+     * <p>This constructor allocates a new {@link ScheduledExecutorService scheduler}; it is recommended that
+     * when creating a large number of {@link BayeuxClient}s a shared scheduler is used.</p>
+     *
+     * @param url        the Bayeux server URL to connect to
+     * @param transport  the default (mandatory) transport to use
+     * @param transports additional optional transports to use in case the default transport cannot be used
+     * @see #BayeuxClient(String, ScheduledExecutorService, ClientTransport, ClientTransport...)
+     */
     public BayeuxClient(String url, ClientTransport transport, ClientTransport... transports)
     {
         this(url, null, transport, transports);
     }
 
+    /**
+     * <p>Creates a {@link BayeuxClient} that will connect to the Bayeux server at the given URL,
+     * with the given scheduler and with the given transport(s).</p>
+     *
+     * @param url        the Bayeux server URL to connect to
+     * @param scheduler  the scheduler to use for scheduling timed operations
+     * @param transport  the default (mandatory) transport to use
+     * @param transports additional optional transports to use in case the default transport cannot be used
+     */
     public BayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport transport, ClientTransport... transports)
     {
         if (transport == null)
@@ -89,16 +149,34 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         bayeuxClientState.set(new DisconnectedState(null));
     }
 
+    /**
+     * @return the period of time that increments the pause to wait before trying to reconnect
+     *         after each failed attempt to connect to the Bayeux server
+     * @see #getMaxBackoff()
+     */
     public long getBackoffIncrement()
     {
         return backoffIncrement;
     }
 
+    /**
+     * @return the maximum pause to wait before trying to reconnect after each failed attempt
+     *         to connect to the Bayeux server
+     * @see #getBackoffIncrement()
+     */
     public long getMaxBackoff()
     {
         return maxBackoff;
     }
 
+    /**
+     * <p>Retrieves the cookie with the given name, if available.</p>
+     * <p>Note that currently only HTTP transports support cookies.</p>
+     *
+     * @param name the cookie name
+     * @return the cookie value
+     * @see #setCookie(String, String)
+     */
     public String getCookie(String name)
     {
         HttpClientTransport.Cookie cookie = cookieProvider.getCookie(name);
@@ -107,11 +185,25 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return null;
     }
 
+    /**
+     * <p>Sets a cookie that never expires.</p>
+     *
+     * @param name  the cookie name
+     * @param value the cookie value
+     * @see #setCookie(String, String, int)
+     */
     public void setCookie(String name, String value)
     {
         setCookie(name, value, -1);
     }
 
+    /**
+     * <p>Sets a cookie with the given max age in seconds.</p>
+     *
+     * @param name   the cookie name
+     * @param value  the cookie value
+     * @param maxAge the max age of the cookie, in seconds, before expiration
+     */
     public void setCookie(String name, String value, int maxAge)
     {
         HttpClientTransport.Cookie cookie = new HttpClientTransport.Cookie(name, value, null, null, maxAge, false, 0, null);
@@ -151,6 +243,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 bayeuxClientState.type == State.REHANDSHAKING;
     }
 
+    /**
+     * @return whether this {@link BayeuxClient} is disconnecting or disconnected
+     */
     public boolean isDisconnected()
     {
         return isDisconnected(bayeuxClientState.get());
@@ -162,6 +257,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 bayeuxClientState.type == State.DISCONNECTED;
     }
 
+    /**
+     * @return the current state of this {@link BayeuxClient}
+     */
     protected State getState()
     {
         return bayeuxClientState.get().type;
@@ -191,12 +289,33 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         });
     }
 
+    /**
+     * <p>Performs the handshake and waits at most the given time for the handshake to complete.</p>
+     * <p>When this method returns, the handshake may have failed (for example because the Bayeux
+     * server denied it), so it is important to check the return value to know whether the handshake
+     * completed or not.</p>
+     *
+     * @param waitMs the time to wait for the handshake to complete
+     * @return the state of this {@link BayeuxClient}
+     * @see #handshake(Map, long)
+     */
     public State handshake(long waitMs)
     {
         return handshake(null, waitMs);
     }
 
-    public State handshake(Map<String,Object> template, long waitMs)
+    /**
+     * <p>Performs the handshake with the given template and waits at most the given time for the handshake to complete.</p>
+     * <p>When this method returns, the handshake may have failed (for example because the Bayeux
+     * server denied it), so it is important to check the return value to know whether the handshake
+     * completed or not.</p>
+     *
+     * @param template the template object to be merged with the handshake message
+     * @param waitMs   the time to wait for the handshake to complete
+     * @return the state of this {@link BayeuxClient}
+     * @see #handshake(long)
+     */
+    public State handshake(Map<String, Object> template, long waitMs)
     {
         handshake(template);
         waitFor(waitMs, State.CONNECTING, State.DISCONNECTED);
@@ -224,6 +343,14 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return false;
     }
 
+    /**
+     * <p>Waits for this {@link BayeuxClient} to reach the given state(s) within the given time.</p>
+     *
+     * @param waitMs the time to wait to reach the given state(s)
+     * @param state  the state to reach
+     * @param states additional states to reach in alternative
+     * @return true if one of the state(s) has been reached within the given time, false otherwise
+     */
     public boolean waitFor(long waitMs, State state, State... states)
     {
         long start = System.currentTimeMillis();
@@ -342,6 +469,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         });
     }
 
+    /**
+     * <p>Interrupts abruptly the communication with the Bayeux server.</p>
+     * <p>This method may be useful to simulate network failures.</p>
+     *
+     * @see #disconnect()
+     */
     public void abort()
     {
         updateBayeuxClientState(new BayeuxClientStateUpdater()
@@ -558,12 +691,20 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     {
         return transportRegistry.getTransport(transport);
     }
-    
+
+    /**
+     * @param debug whether the debug level for logging should be enabled
+     * @see #isDebugEnabled()
+     */
     public void setDebugEnabled(boolean debug)
     {
-        logger.setDebugEnabled("debug".equals(debug));
+        logger.setDebugEnabled(debug);
     }
-    
+
+    /**
+     * @return whether the debug level for logging is enabled
+     * @see #setDebugEnabled(boolean)
+     */
     public boolean isDebugEnabled()
     {
         return logger.isDebugEnabled();
@@ -571,14 +712,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected void initialize()
     {
-
         Long backoffIncrement = (Long)getOption(BACKOFF_INCREMENT_OPTION);
-        if (backoffIncrement == null)
+        if (backoffIncrement == null || backoffIncrement <= 0)
             backoffIncrement = 1000L;
         this.backoffIncrement = backoffIncrement;
 
         Long maxBackoff = (Long)getOption(MAX_BACKOFF_OPTION);
-        if (maxBackoff == null)
+        if (maxBackoff == null || maxBackoff <= 0)
             maxBackoff = 30000L;
         this.maxBackoff = maxBackoff;
 
@@ -620,7 +760,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return options.keySet();
     }
 
-    public Map<String,Object> getOptions()
+    /**
+     * @return the options that configure with {@link BayeuxClient}
+     */
+    public Map<String, Object> getOptions()
     {
         return Collections.unmodifiableMap(options);
     }
@@ -664,14 +807,35 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         }
     }
 
+    /**
+     * <p>Callback method invoked when the given messages have hit the network towards the Bayeux server.</p>
+     * <p>The messages may not be modified, and any modification will be useless because the message have
+     * already been sent.</p>
+     *
+     * @param messages the messages sent
+     */
     public void onSending(Message[] messages)
     {
     }
 
+    /**
+     * <p>Callback method invoke when the given messages have just arrived from the Bayeux server.</p>
+     * <p>The messages may be modified, but it's suggested to use {@link Extension}s instead.</p>
+     * <p>Extensions will be processed after the invocation of this method.</p>
+     *
+     * @param messages the messages arrived
+     */
     public void onMessages(List<Message.Mutable> messages)
     {
     }
 
+    /**
+     * <p>Callback method invoked when the given messages have failed to be sent.</p>
+     * <p>The default implementation logs the failure at INFO level.</p>
+     *
+     * @param x        the exception that caused the failure
+     * @param messages the messages being sent
+     */
     public void onFailure(Throwable x, Message[] messages)
     {
         logger.info(x);
@@ -693,7 +857,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 logger.debug("State not updateable : {} -> {}", oldState, newState);
                 break;
             }
-            
+
             updated = bayeuxClientState.compareAndSet(oldState, newState);
             logger.debug("State update" + (updated ? "" : " failed (concurrent update)") + ": {} -> {}", oldState, newState);
         }
@@ -704,7 +868,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         {
             if (!oldState.getType().equals(newState.getType()))
                 newState.enter(oldState.getType());
-                
+
             newState.execute();
             // Notify threads waiting in waitFor()
             synchronized (this)
@@ -717,13 +881,44 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     public String dump()
     {
         StringBuilder b = new StringBuilder();
-        dump(b,"");
+        dump(b, "");
         return b.toString();
     }
-    
+
+    /**
+     * The states that a {@link BayeuxClient} may assume
+     */
     public enum State
     {
-        UNCONNECTED, HANDSHAKING, REHANDSHAKING, CONNECTING, CONNECTED, DISCONNECTING, DISCONNECTED
+        /**
+         * State assumed before any handshake, or after the handshake when the connection is broken
+         */
+        UNCONNECTED,
+        /**
+         * State assumed when the handshake is being sent
+         */
+        HANDSHAKING,
+        /**
+         * State assumed when a first handshake failed and the handshake is retried,
+         * or when the Bayeux server requests a re-handshake
+         */
+        REHANDSHAKING,
+        /**
+         * State assumed when the connect is being sent for the first time
+         */
+        CONNECTING,
+        /**
+         * State assumed when this {@link BayeuxClient} is connected to the Bayeux server
+         */
+        CONNECTED,
+        /**
+         * State assumed when the disconnect is being sent
+         */
+        DISCONNECTING,
+        /**
+         * State assumed when the disconnect is completed
+         */
+        DISCONNECTED
     }
 
     private class PublishTransportListener implements TransportListener
@@ -909,11 +1104,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         protected final long backoff;
 
         private BayeuxClientState(State type,
-                            Map<String, Object> handshakeFields,
-                            Map<String, Object> advice,
-                            ClientTransport transport,
-                            String clientId,
-                            long backoff)
+                                  Map<String, Object> handshakeFields,
+                                  Map<String, Object> advice,
+                                  ClientTransport transport,
+                                  String clientId,
+                                  long backoff)
         {
             this.type = type;
             this.handshakeFields = handshakeFields;
@@ -960,23 +1155,23 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         protected abstract boolean isUpdateableTo(BayeuxClientState newState);
 
-        
         /**
          * Enter a new state.
          * Called only if a new accepted state has a different type to the old state.
+         *
          * @param oldState
          */
-        protected void enter(State oldState) 
-        {   
+        protected void enter(State oldState)
+        {
         }
-        
+
         protected abstract void execute();
 
         public State getType()
         {
             return type;
         }
-        
+
         @Override
         public String toString()
         {
@@ -1034,7 +1229,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     newState.type == State.CONNECTING ||
                     newState.type == State.DISCONNECTED;
         }
-        
+
         @Override
         protected void enter(State oldState)
         {
@@ -1072,7 +1267,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         {
             // Reset the subscriptions if this is not a failure from a requested handshake.
             // Subscriptions may be queued after requested handshakes.
-            switch(oldState)
+            switch (oldState)
             {
                 case HANDSHAKING:
                     break;
@@ -1081,7 +1276,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     resetSubscriptions();
             }
         }
-        
+
         @Override
         protected void execute()
         {
