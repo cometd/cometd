@@ -73,7 +73,7 @@ public abstract class HttpClientTransport extends ClientTransport
             this.secure = secure;
             this.version = version;
             this.comment = comment;
-            this.expirationTime = maxAge < 0 ? -1 : System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(maxAge);
+            this.expirationTime = maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(maxAge);
         }
 
         public String getName()
@@ -116,9 +116,9 @@ public abstract class HttpClientTransport extends ClientTransport
             return comment;
         }
 
-        public boolean isExpired(long time)
+        public boolean isExpired(long timeNanos)
         {
-            return expirationTime >= 0 && time >= expirationTime;
+            return expirationTime >= 0 && timeNanos >= expirationTime;
         }
 
         public String asString()
@@ -151,7 +151,7 @@ public abstract class HttpClientTransport extends ClientTransport
         public Cookie getCookie(String name)
         {
             Cookie cookie = cookies.get(name);
-            if (!cookie.isExpired(System.currentTimeMillis()))
+            if (!cookie.isExpired(System.nanoTime()))
                 return cookie;
             return null;
         }
