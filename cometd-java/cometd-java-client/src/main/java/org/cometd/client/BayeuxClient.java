@@ -57,7 +57,7 @@ import org.eclipse.jetty.util.log.Logger;
  * BayeuxClient client = new BayeuxClient(url, LongPollingTransport.create(null));
  * client.handshake();
  * client.waitFor(1000, BayeuxClient.State.CONNECTED);
- * <p/>
+ *
  * // Subscription to channels
  * ClientSessionChannel channel = client.getChannel("/foo");
  * channel.subscribe(new ClientSessionChannel.MessageListener()
@@ -67,12 +67,12 @@ import org.eclipse.jetty.util.log.Logger;
  *         // Handle the message
  *     }
  * });
- * <p/>
+ *
  * // Publishing to channels
  * Map&lt;String, Object&gt; data = new HashMap&lt;String, Object&gt;();
  * data.put("bar", "baz");
  * channel.publish(data);
- * <p/>
+ *
  * // Disconnecting
  * client.disconnect();
  * client.waitFor(1000, BayeuxClient.State.DISCONNECTED);
@@ -891,7 +891,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     public enum State
     {
         /**
-         * State assumed before any handshake, or after the handshake when the connection is broken
+         * State assumed after the handshake when the connection is broken
          */
         UNCONNECTED,
         /**
@@ -916,7 +916,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
          */
         DISCONNECTING,
         /**
-         * State assumed when the disconnect is completed
+         * State assumed before the handshake and when the disconnect is completed
          */
         DISCONNECTED
     }
