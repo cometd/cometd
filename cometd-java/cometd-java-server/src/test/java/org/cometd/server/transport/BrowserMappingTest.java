@@ -72,8 +72,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         httpClient.send(connect2);
         assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
         assertEquals(200, connect2.getResponseStatus());
-        long end = System.nanoTime();
-        assertTrue(TimeUnit.NANOSECONDS.toMillis(end - begin) >= timeout);
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
+        assertTrue("" + elapsed, elapsed >= timeout);
     }
 
     public void testSameDomainWithoutCookieDoesNotHoldConnect() throws Exception
@@ -110,8 +110,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         httpClient.send(connect2);
         assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
         assertEquals(200, connect2.getResponseStatus());
-        long end = System.nanoTime();
-        assertTrue(TimeUnit.NANOSECONDS.toMillis(end - begin) < timeout / 2);
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
+        assertTrue("" + elapsed, elapsed < timeout / 2);
     }
 
     public void testSameDomainWithoutCookieWithOptionHoldsConnect() throws Exception
@@ -154,8 +154,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         httpClient.send(connect2);
         assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
         assertEquals(200, connect2.getResponseStatus());
-        long end = System.nanoTime();
-        assertTrue(TimeUnit.NANOSECONDS.toMillis(end - begin) >= timeout);
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
+        assertTrue("" + elapsed, elapsed >= timeout);
     }
 
     public void testDifferentDomainWithoutCookieHoldsConnect() throws Exception
@@ -196,7 +196,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         httpClient.send(connect2);
         assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
         assertEquals(200, connect2.getResponseStatus());
-        long end = System.nanoTime();
-        assertTrue(TimeUnit.NANOSECONDS.toMillis(end - begin) >= timeout);
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
+        assertTrue("" + elapsed, elapsed >= timeout);
     }
 }
