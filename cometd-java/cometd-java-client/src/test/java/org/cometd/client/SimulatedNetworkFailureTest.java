@@ -112,11 +112,13 @@ public class SimulatedNetworkFailureTest extends TestCase
         client.handshake();
         assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
 
+        // Wait for a second connect to be issued
+        Thread.sleep(1000);
+
         long networkDown = maxInterval / 2;
         client.setNetworkDown(networkDown);
 
-        // Wait for a while then publish, it must succeed
-        Thread.sleep(1000);
+        // Publish, it must succeed
         publishLatch.set(new CountDownLatch(1));
         channel.publish(new HashMap());
         assertTrue(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
@@ -201,12 +203,14 @@ public class SimulatedNetworkFailureTest extends TestCase
         client.handshake();
         assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
 
+        // Wait for a second connect to be issued
+        Thread.sleep(1000);
+
         // Add some margin since the session is swept every 'sweepIntervalMs'
         long networkDown = maxInterval + 3 * sweepInterval;
         client.setNetworkDown(networkDown);
 
-        // Wait for a while then publish, it must succeed
-        Thread.sleep(1000);
+        // Publish, it must succeed
         publishLatch.set(new CountDownLatch(1));
         channel.publish(new HashMap());
         assertTrue(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
