@@ -27,6 +27,8 @@ public class SimulatedNetworkFailureTest extends TestCase
     private String cometdURL;
     private HttpClient httpClient;
     private long timeout = 10000;
+    private long maxInterval = 8000;
+    private long sweepInterval = 1000;
 
     @Override
     protected void setUp() throws Exception
@@ -43,6 +45,8 @@ public class SimulatedNetworkFailureTest extends TestCase
         CometdServlet cometdServlet = new CometdServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
         cometdServletHolder.setInitParameter("timeout", String.valueOf(timeout));
+        cometdServletHolder.setInitParameter("maxInterval", String.valueOf(maxInterval));
+        cometdServletHolder.setInitParameter("sweepIntervalMs", String.valueOf(sweepInterval));
         cometdServletHolder.setInitParameter("logLevel", "3");
 
         String servletPath = "/cometd";
@@ -108,16 +112,17 @@ public class SimulatedNetworkFailureTest extends TestCase
         client.handshake();
         assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
 
-        long networkDown = 5000;
+        long networkDown = maxInterval / 2;
         client.setNetworkDown(networkDown);
 
-        // Wait for a while then publish
+        // Wait for a while then publish, it must succeed
         Thread.sleep(1000);
         publishLatch.set(new CountDownLatch(1));
         channel.publish(new HashMap());
         assertTrue(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
 
         // Wait for the connect to return
+        // We already slept a bit before, so we are sure that the connect returned
         Thread.sleep(timeout);
 
         // Now we are simulating the network is down
@@ -129,9 +134,10 @@ public class SimulatedNetworkFailureTest extends TestCase
         channel.publish(new HashMap());
         assertTrue(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
 
+        // Sleep to allow the next connect to be issued
         Thread.sleep(networkDown);
 
-        // Now another connect has been sent (the delayed one)
+        // Now another connect has been sent (delayed by 'networkDown' ms)
         Thread.sleep(timeout);
         assertTrue(connected.get());
 
@@ -195,16 +201,18 @@ public class SimulatedNetworkFailureTest extends TestCase
         client.handshake();
         assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
 
-        long networkDown = timeout + 1000;
+        // Add some margin since the session is swept every 'sweepIntervalMs'
+        long networkDown = maxInterval + 3 * sweepInterval;
         client.setNetworkDown(networkDown);
 
-        // Wait for a while then publish
+        // Wait for a while then publish, it must succeed
         Thread.sleep(1000);
         publishLatch.set(new CountDownLatch(1));
         channel.publish(new HashMap());
         assertTrue(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
 
         // Wait for the connect to return
+        // We already slept a bit before, so we are sure that the connect returned
         Thread.sleep(timeout);
 
         // Now we are simulating the network is down
@@ -216,9 +224,10 @@ public class SimulatedNetworkFailureTest extends TestCase
         channel.publish(new HashMap());
         assertTrue(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
 
+        // Sleep to allow the next connect to be issued
         Thread.sleep(networkDown);
 
-        // Now another connect has been sent (the delayed one)
+        // Now another connect has been sent (delayed by 'networkDown' ms)
         // but the server expired the client, so we handshake again
         assertTrue(handshakeLatch.await(1000, TimeUnit.MILLISECONDS));
 
