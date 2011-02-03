@@ -115,7 +115,7 @@ public class BayeuxClientTest extends TestCase
     public void testBatchingAfterHandshake() throws Exception
     {
         final BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-        
+
         client.setDebugEnabled(false);
 
         final AtomicBoolean connected = new AtomicBoolean();
@@ -192,7 +192,7 @@ public class BayeuxClientTest extends TestCase
                     super.onFailure(x, messages);
             }
         };
-        
+
         client.setDebugEnabled(false);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -239,7 +239,7 @@ public class BayeuxClientTest extends TestCase
                     super.onFailure(x, messages);
             }
         };
-        
+
         client.setDebugEnabled(false);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -266,7 +266,7 @@ public class BayeuxClientTest extends TestCase
     public void testHandshakeDenied() throws Exception
     {
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-        
+
         client.setDebugEnabled(false);
         SecurityPolicy oldPolicy = _bayeux.getSecurityPolicy();
         _bayeux.setSecurityPolicy(new DefaultSecurityPolicy()
@@ -327,7 +327,7 @@ public class BayeuxClientTest extends TestCase
                 return result;
             }
         };
-        
+
         client.setDebugEnabled(false);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -363,7 +363,7 @@ public class BayeuxClientTest extends TestCase
                 queue.offer(problem);
             }
         };
-        
+
         client.setDebugEnabled(false);
 
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
@@ -458,7 +458,7 @@ public class BayeuxClientTest extends TestCase
                 return false;
             }
         };
-        
+
         client.setDebugEnabled(false);
         final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
@@ -483,7 +483,7 @@ public class BayeuxClientTest extends TestCase
     public void testCookies() throws Exception
     {
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-        
+
         client.setDebugEnabled(false);
         client.handshake();
 
@@ -523,7 +523,7 @@ public class BayeuxClientTest extends TestCase
         {
             final AtomicBoolean connected = new AtomicBoolean();
             final BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-            
+
         client.setDebugEnabled(false);
             final String room = "/channel/" + (i % rooms);
             clients[i] = client;
@@ -629,7 +629,7 @@ public class BayeuxClientTest extends TestCase
         });
 
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-        
+
         client.setDebugEnabled(false);
         client.handshake();
         assertTrue(client.waitFor(10000, State.CONNECTED));
@@ -664,7 +664,7 @@ public class BayeuxClientTest extends TestCase
         });
 
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-        
+
         client.setDebugEnabled(false);
         long wait = 1000L;
         long start = System.nanoTime();
@@ -706,7 +706,7 @@ public class BayeuxClientTest extends TestCase
                 // Do not call super to suppress error logging
             }
         };
-        
+
         client.setDebugEnabled(false);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -735,7 +735,7 @@ public class BayeuxClientTest extends TestCase
         final AtomicReference<CountDownLatch> handshakeLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
         final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-        
+
         client.setDebugEnabled(false);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -805,7 +805,7 @@ public class BayeuxClientTest extends TestCase
                 return result;
             }
         };
-        
+
         client.setDebugEnabled(false);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -861,7 +861,7 @@ public class BayeuxClientTest extends TestCase
                 return super.sendMessages(messages);
             }
         };
-        
+
         client.setDebugEnabled(false);
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -943,7 +943,7 @@ public class BayeuxClientTest extends TestCase
         try
         {
             BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-            
+
         client.setDebugEnabled(false);
 
             Map<String, Object> authentication = new HashMap<String, Object>();
@@ -972,7 +972,7 @@ public class BayeuxClientTest extends TestCase
         final BlockingArrayQueue<Object> results = new BlockingArrayQueue<Object>();
 
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-        
+
         client.setDebugEnabled(false);
 
         final AtomicBoolean connected = new AtomicBoolean();
@@ -1057,7 +1057,7 @@ public class BayeuxClientTest extends TestCase
             {
                 super.customize(exchange);
 
-                if (failHandShake.compareAndSet(true,false))
+                if (failHandShake.compareAndSet(true, false))
                     exchange.setAddress(null);
             }
         };
@@ -1070,8 +1070,7 @@ public class BayeuxClientTest extends TestCase
             }
         };
 
-        
-        client.setDebugEnabled(false);
+        client.setDebugEnabled(true);
 
         client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
         {
@@ -1081,10 +1080,9 @@ public class BayeuxClientTest extends TestCase
             }
         });
 
-
         client.handshake();
 
-        // subscribe without waiting
+        // Subscribe without waiting
         client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -1092,13 +1090,13 @@ public class BayeuxClientTest extends TestCase
             }
         });
 
-        // first handshake fails
+        // First handshake fails
         Message message = (Message)results.poll(10, TimeUnit.SECONDS);
         assertNotNull(message);
         assertEquals(Channel.META_HANDSHAKE, message.getChannel());
         assertFalse(message.isSuccessful());
 
-        // second handshake works
+        // Second handshake works
         message = (Message)results.poll(10, TimeUnit.SECONDS);
         assertNotNull(message);
         assertEquals(Channel.META_HANDSHAKE, message.getChannel());
@@ -1106,19 +1104,19 @@ public class BayeuxClientTest extends TestCase
         String id = client.getId();
         assertNotNull(id);
 
-        boolean subscribe=false;
-        boolean connect=false;
-        for (int i=0;i<2;i++)
+        boolean subscribe = false;
+        boolean connect = false;
+        for (int i = 0; i < 2; ++i)
         {
             message = (Message)results.poll(10, TimeUnit.SECONDS);
             assertNotNull(message);
-            subscribe|=Channel.META_SUBSCRIBE.equals(message.getChannel());
-            connect|=Channel.META_CONNECT.equals(message.getChannel());
+            subscribe |= Channel.META_SUBSCRIBE.equals(message.getChannel());
+            connect |= Channel.META_CONNECT.equals(message.getChannel());
         }
         assertTrue(subscribe);
         assertTrue(connect);
 
-        // subscribe again
+        // Subscribe again
         client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -1126,11 +1124,23 @@ public class BayeuxClientTest extends TestCase
             }
         });
 
-        // No second subscribe sent
-        message = (Message)results.poll(10, TimeUnit.SECONDS);
+        // No second subscribe sent, be sure to wait less than the timeout
+        // otherwise we get a connect message
+        message = (Message)results.poll(5, TimeUnit.SECONDS);
         assertNull(message);
 
         client.disconnect();
+        boolean disconnect = false;
+        connect = false;
+        for (int i = 0; i < 2; ++i)
+        {
+            message = (Message)results.poll(10, TimeUnit.SECONDS);
+            assertNotNull(message);
+            disconnect |= Channel.META_DISCONNECT.equals(message.getChannel());
+            connect |= Channel.META_CONNECT.equals(message.getChannel());
+        }
+        assertTrue(disconnect);
+        assertTrue(connect);
         assertTrue(client.waitFor(10000, BayeuxClient.State.DISCONNECTED));
 
         // Rehandshake
@@ -1138,7 +1148,7 @@ public class BayeuxClientTest extends TestCase
         assertTrue(client.waitFor(10000, BayeuxClient.State.CONNECTED));
 
         results.clear();
-        // subscribe again
+        // Subscribe again
         client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -1146,29 +1156,27 @@ public class BayeuxClientTest extends TestCase
             }
         });
 
-        // subscribe is sent
+        // Subscribe is sent, skip the connect message if present
         message = (Message)results.poll(10, TimeUnit.SECONDS);
         assertNotNull(message);
         if (Channel.META_CONNECT.equals(message.getChannel()))
             message = (Message)results.poll(10, TimeUnit.SECONDS);
-
         assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
 
-        // restart server
+        // Restart server
         int port = _connector.getLocalPort();
         _server.stop();
-        assertTrue(client.waitFor(1000, BayeuxClient.State.UNCONNECTED));
+        _server.join();
+        assertTrue(client.waitFor(10000, BayeuxClient.State.UNCONNECTED));
         _connector.setPort(port);
         _server.start();
 
-        _cometdURL = "http://localhost:" + _connector.getLocalPort() + _contextPath + _servletPath;
         _bayeux = (BayeuxServerImpl)_context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
 
-        assertTrue(client.waitFor(10000, BayeuxClient.State.REHANDSHAKING));
         assertTrue(client.waitFor(10000, BayeuxClient.State.CONNECTED));
         results.clear();
 
-        // subscribe again
+        // Subscribe again
         client.getChannel("/foo/bar").subscribe(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -1176,16 +1184,16 @@ public class BayeuxClientTest extends TestCase
             }
         });
 
-        // subscribe is sent
+        // Subscribe is sent, skip the connect message if present
         message = (Message)results.poll(10, TimeUnit.SECONDS);
         assertNotNull(message);
+        if (Channel.META_CONNECT.equals(message.getChannel()))
+            message = (Message)results.poll(10, TimeUnit.SECONDS);
         assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
 
         client.disconnect();
         assertTrue(client.waitFor(10000, BayeuxClient.State.DISCONNECTED));
-
     }
-
 
     private class DumpThread extends Thread
     {
