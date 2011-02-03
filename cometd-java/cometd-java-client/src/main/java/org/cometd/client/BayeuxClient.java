@@ -98,6 +98,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private volatile boolean shutdownScheduler;
     private volatile long backoffIncrement;
     private volatile long maxBackoff;
+    private int stateUpdateInProgress;
 
     /**
      * <p>Creates a {@link BayeuxClient} that will connect to the Bayeux server at the given URL
@@ -353,21 +354,23 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
      */
     public boolean waitFor(long waitMs, State state, State... states)
     {
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
         List<State> waitForStates = new ArrayList<State>();
         waitForStates.add(state);
         waitForStates.addAll(Arrays.asList(states));
         synchronized (this)
         {
-            while (System.currentTimeMillis() - start < waitMs)
+            while (System.nanoTime() - start <= TimeUnit.MILLISECONDS.toNanos(waitMs))
             {
-                State currentState = getState();
-                for (State s : waitForStates)
+                if (stateUpdateInProgress == 0)
                 {
-                    if (s == currentState)
-                        return true;
+                    State currentState = getState();
+                    for (State s : waitForStates)
+                    {
+                        if (s == currentState)
+                            return true;
+                    }
                 }
-
                 try
                 {
                     wait(waitMs);
@@ -375,17 +378,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 catch (InterruptedException x)
                 {
                     Thread.currentThread().interrupt();
-                    return false;
+                    break;
                 }
             }
-
-            State currentState = getState();
-            for (State s : waitForStates)
-            {
-                if (s == currentState)
-                    return true;
-            }
-
             return false;
         }
     }
@@ -674,6 +669,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 logger.debug(x);
             }
         }
+        logger.debug("Could not schedule action {} to scheduler {}", action, scheduler);
         return false;
     }
 
@@ -843,37 +839,49 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private void updateBayeuxClientState(BayeuxClientStateUpdater updater)
     {
-        BayeuxClientState newState = null;
-        BayeuxClientState oldState = bayeuxClientState.get();
-        boolean updated = false;
-        while (!updated)
+        synchronized (this)
         {
-            newState = updater.create(oldState);
-            if (newState == null)
-                throw new IllegalStateException();
-
-            if (!oldState.isUpdateableTo(newState))
+            ++stateUpdateInProgress;
+        }
+        try
+        {
+            BayeuxClientState newState = null;
+            BayeuxClientState oldState = bayeuxClientState.get();
+            boolean updated = false;
+            while (!updated)
             {
-                logger.debug("State not updateable : {} -> {}", oldState, newState);
-                break;
+                newState = updater.create(oldState);
+                if (newState == null)
+                    throw new IllegalStateException();
+
+                if (!oldState.isUpdateableTo(newState))
+                {
+                    logger.debug("State not updateable : {} -> {}", oldState, newState);
+                    break;
+                }
+
+                updated = bayeuxClientState.compareAndSet(oldState, newState);
+                logger.debug("State update" + (updated ? "" : " failed (concurrent update)") + ": {} -> {}", oldState, newState);
             }
 
-            updated = bayeuxClientState.compareAndSet(oldState, newState);
-            logger.debug("State update" + (updated ? "" : " failed (concurrent update)") + ": {} -> {}", oldState, newState);
+            updater.postCreate();
+
+            if (updated)
+            {
+                if (!oldState.getType().equals(newState.getType()))
+                    newState.enter(oldState.getType());
+
+                newState.execute();
+            }
         }
-
-        updater.postCreate();
-
-        if (updated)
+        finally
         {
-            if (!oldState.getType().equals(newState.getType()))
-                newState.enter(oldState.getType());
-
-            newState.execute();
             // Notify threads waiting in waitFor()
             synchronized (this)
             {
-                notifyAll();
+                --stateUpdateInProgress;
+                if (stateUpdateInProgress == 0)
+                    notifyAll();
             }
         }
     }
