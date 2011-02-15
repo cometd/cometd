@@ -145,7 +145,11 @@ public class LongPollingTransport extends HttpClientTransport
         {
             StringBuilder builder = new StringBuilder();
             for (Cookie cookie : cookieProvider.getCookies())
+            {
+                if (builder.length() > 0)
+                    builder.append("; ");
                 builder.append(cookie.asString());
+            }
             if (builder.length() > 0)
                 exchange.setRequestHeader(HttpHeaders.COOKIE, builder.toString());
         }
