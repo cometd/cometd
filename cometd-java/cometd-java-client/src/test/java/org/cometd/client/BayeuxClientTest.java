@@ -480,32 +480,6 @@ public class BayeuxClientTest extends TestCase
         assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
     }
 
-    public void testCookies() throws Exception
-    {
-        BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
-
-        client.setDebugEnabled(false);
-        client.handshake();
-
-        client.setCookie("foo", "bar", 1);
-        assertNotNull(client.getCookie("foo"));
-
-        // Allow cookie to expire
-        Thread.sleep(1100);
-
-        assertNull(client.getCookie("foo"));
-
-        client.setCookie("foo", "bar");
-        assertNotNull(client.getCookie("foo"));
-
-        Thread.sleep(1100);
-
-        assertNotNull(client.getCookie("foo"));
-
-        client.disconnect();
-        assertTrue(client.waitFor(1000L, State.DISCONNECTED));
-    }
-
     public void testPerf() throws Exception
     {
         Runtime.getRuntime().addShutdownHook(new DumpThread());
