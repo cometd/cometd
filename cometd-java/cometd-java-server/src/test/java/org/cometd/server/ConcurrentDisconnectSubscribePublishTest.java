@@ -30,7 +30,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
     public void testDisconnectSubscribe() throws Exception
     {
         final AtomicBoolean subscribed = new AtomicBoolean(false);
-        new BayeuxServer.SubscriptionListener()
+        bayeux.addListener(new BayeuxServer.SubscriptionListener()
         {
             public void unsubscribed(ServerSession session, ServerChannel channel)
             {
@@ -40,8 +40,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
             {
                 subscribed.set(true);
             }
-        };
-
+        });
 
         final AtomicBoolean serviced = new AtomicBoolean(false);
         new AbstractService(bayeux, "test")
@@ -93,8 +92,8 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
         assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
         assertEquals(200, disconnect.getResponseStatus());
 
-        assertFalse("not subscribed",subscribed.get());
-        assertFalse("not serviced",serviced.get());
+        assertFalse("not subscribed", subscribed.get());
+        assertFalse("not serviced", serviced.get());
         // The response to the subscribe must be that the client is unknown
         assertTrue(disconnect.getResponseContent().contains("402::"));
     }
