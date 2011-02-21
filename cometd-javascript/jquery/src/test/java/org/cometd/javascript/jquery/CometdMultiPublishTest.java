@@ -43,7 +43,7 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
         Latch readyLatch = get("readyLatch");
         evaluateScript("$.cometd.addListener('/meta/connect', readyLatch, 'countDown');");
         evaluateScript("$.cometd.init({url: '" + cometdURL + "', logLevel: 'debug'});");
-        assertTrue(readyLatch.await(1000));
+        assertTrue(readyLatch.await(5000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = get("subscribeLatch");
@@ -56,7 +56,7 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
         defineClass(Handler.class);
         evaluateScript("var handler = new Handler();");
         Handler handler = get("handler");
-        evaluateScript("$.cometd.addListener('/meta/publish', handler, handler.handle);");
+        evaluateScript("$.cometd.addListener('/meta/publish', handler, 'handle');");
         evaluateScript("var disconnect = new Latch(1);");
         Latch disconnect = get("disconnect");
         evaluateScript("$.cometd.addListener('/meta/disconnect', disconnect, disconnect.countDown);");
@@ -74,10 +74,10 @@ public class CometdMultiPublishTest extends AbstractCometdJQueryTest
                 "$.cometd.publish('/echo', {id: 4});" +
                 "$.cometd.disconnect();");
 
-        assertTrue(latch.await(1000));
-        assertTrue(handler.await(1000));
+        assertTrue(latch.await(5000));
+        assertTrue(handler.await(5000));
         assertTrue(failures.get().toString(), failures.get().isEmpty());
-        assertTrue(disconnect.await(1000));
+        assertTrue(disconnect.await(10000));
     }
 
     public static class Handler extends ScriptableObject

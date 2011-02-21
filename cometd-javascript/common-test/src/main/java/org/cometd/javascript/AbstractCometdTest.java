@@ -184,6 +184,22 @@ public abstract class AbstractCometdTest extends TestCase
         return (T) threadModel.get(name);
     }
 
+    /**
+     * Test the given object and returns whether it is the Rhino's representation
+     * of a JavaScript object (objects created with the literal notation {a: 1},
+     * or instantiated on the heap).
+     * If the given object is a Rhino host object or it's a Java object, return
+     * false.
+     * This method is useful in determining if the given object can be converted
+     * into JSON or not.
+     * @param object the object to test
+     * @return true if the given object is a JavaScript object, false otherwise
+     */
+    public static boolean isJavaScriptObject(Object object)
+    {
+        return object instanceof NativeObject;
+    }
+
     public static Object jsToJava(Object jsObject)
     {
         if (jsObject == null) return null;

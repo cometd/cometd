@@ -50,15 +50,97 @@ var window = this;
     // The output console
     window.console = function()
     {
+        // Converts JavaScript objects to JSON.
+        // We cannot use Crockford's JSON because it cannot handle
+        // Rhino's and Java's objects properly, so we redo it here.
+        function _toJSON(object, ids)
+        {
+            switch (typeof object)
+            {
+                case 'string':
+                    return '"' + object + '"';
+                case 'number':
+                    return '' + object;
+                case 'boolean':
+                    return '' + object;
+                case 'undefined':
+                    return undefined;
+                case 'object':
+                    if (!object)
+                    {
+                        return 'null';
+                    }
+                    else if (object instanceof Array)
+                    {
+                        for (var aid = 0; aid < ids.length; ++aid)
+                            if (ids[aid] === object)
+                                return undefined;
+                        ids.push(object);
+
+                        var arrayResult = '[';
+                        for (var i = 0; i < object.length; ++i)
+                        {
+                            var arrayValue = _toJSON(object[i], ids);
+                            if (arrayValue !== undefined)
+                            {
+                                if (i > 0)
+                                    arrayResult += ',';
+                                arrayResult += arrayValue;
+                            }
+                        }
+                        arrayResult += ']';
+                        return arrayResult;
+                    }
+                    else if (Packages.org.cometd.javascript.AbstractCometdTest.isJavaScriptObject(object))
+                    {
+                        for (var oid = 0; oid < ids.length; ++oid)
+                            if (ids[oid] === object)
+                                return undefined;
+                        ids.push(object);
+
+                        var objectResult = '{';
+                        for (var name in object)
+                        {
+                            if (Object.hasOwnProperty.call(object, name))
+                            {
+                                var objectValue = _toJSON(object[name], ids);
+                                if (objectValue !== undefined)
+                                {
+                                    if (objectResult.length > 1)
+                                        objectResult += ',';
+                                    objectResult += '"' + name + '":' + objectValue;
+                                }
+                            }
+                        }
+                        objectResult += '}';
+                        return objectResult;
+                    }
+                    else
+                    {
+                        return undefined;
+                    }
+                case 'function':
+                    return undefined;
+                default:
+                    throw 'Unknown object type ' + (typeof object);
+            }
+        }
+
         function _log(level, args)
         {
             var text = level;
-            for (var i = 0; i < args.length; ++i) text += ' ' + args[i];
-            var formatter = new java.text.SimpleDateFormat('yyyy-MM-dd HH:mm:ss.SSS');
-            var log = formatter.format(new java.util.Date());
-            log += ' ' + java.lang.Thread.currentThread().getId();
+            for (var i = 0; i < args.length; ++i)
+            {
+                var element = args[i];
+                if (typeof element === 'object')
+                    element = _toJSON(element, []);
+                text += ' ' + element;
+            }
+            var formatter = new Packages.java.text.SimpleDateFormat('yyyy-MM-dd HH:mm:ss.SSS');
+            var log = formatter.format(new Packages.java.util.Date());
+            log += ' ' + Packages.java.lang.Thread.currentThread().getId();
             log += ' ' + text;
-            java.lang.System.err.println(log);
+            Packages.java.lang.System.err.println(log);
         }
 
         return {
@@ -87,12 +169,12 @@ var window = this;
 
 
     // Timers
-    var _scheduler = new java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
+    var _scheduler = new Packages.java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
     window.setTimeout = function(fn, delay)
     {
-        return _scheduler.schedule(new java.lang.Runnable({
+        return _scheduler.schedule(new Packages.java.lang.Runnable({
             run: function() { threadModel.execute(window, window, fn); }
-        }), delay, java.util.concurrent.TimeUnit.MILLISECONDS);
+        }), delay, Packages.java.util.concurrent.TimeUnit.MILLISECONDS);
     };
     window.clearTimeout = function(handle)
     {
@@ -101,9 +183,9 @@ var window = this;
     };
     window.setInterval = function(fn, period)
     {
-        return _scheduler.scheduleWithFixedDelay(new java.lang.Runnable({
+        return _scheduler.scheduleWithFixedDelay(new Packages.java.lang.Runnable({
             run: function() { threadModel.execute(window, window, fn); }
-        }), period, period, java.util.concurrent.TimeUnit.MILLISECONDS);
+        }), period, period, Packages.java.util.concurrent.TimeUnit.MILLISECONDS);
     };
     window.clearInterval = function(handle)
     {
@@ -185,7 +267,7 @@ var window = this;
         xhr.send();
     }
 
-    var _domNodes = new java.util.HashMap();
+    var _domNodes = new Packages.java.util.HashMap();
     /**
      * Helper method for generating the right javascript DOM objects based upon the node type.
      * If the java node exists, returns it, otherwise creates a corresponding javascript node.
@@ -587,8 +669,8 @@ var window = this;
             });
 
             var nodes = this.ownerDocument.importNode(
-                    new DOMDocument(new java.io.ByteArrayInputStream(
-                            (new java.lang.String("<wrap>" + html + "</wrap>"))
+                    new DOMDocument(new Packages.java.io.ByteArrayInputStream(
+                            (new Packages.java.lang.String("<wrap>" + html + "</wrap>"))
                                     .getBytes("UTF8"))).documentElement, true).childNodes;
 
             while (this.firstChild)
@@ -754,7 +836,7 @@ var window = this;
             {
                 if (!this._doc)
                     this._doc = new DOMDocument(
-                            new java.io.ByteArrayInputStream((new java.lang.String(
+                            new Packages.java.io.ByteArrayInputStream((new Packages.java.lang.String(
                                     "<html><head><title></title></head><body></body></html>"))
                                     .getBytes("UTF8")));
                 return this._doc;
@@ -766,8 +848,8 @@ var window = this;
 
 
     // Fake document object
-    window.document = new DOMDocument(new java.io.ByteArrayInputStream(
-            (new java.lang.String("<html><head><title></title></head><body></body></html>")).getBytes("UTF8")));
+    window.document = new DOMDocument(new Packages.java.io.ByteArrayInputStream(
+            (new Packages.java.lang.String("<html><head><title></title></head><body></body></html>")).getBytes("UTF8")));
 
 
     // Helper method for extending one object with another

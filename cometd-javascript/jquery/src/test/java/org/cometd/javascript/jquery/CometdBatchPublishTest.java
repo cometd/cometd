@@ -10,27 +10,26 @@ public class CometdBatchPublishTest extends AbstractCometdJQueryTest
     public void testBatchPublish() throws Exception
     {
         defineClass(Latch.class);
-        evaluateScript("$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
-        StringBuilder script = new StringBuilder();
-        script.append("var latch = new Latch(1);");
-        script.append("var _connected;");
-        script.append("function connected(message)");
-        script.append("{ ");
-        script.append("    var wasConnected = _connected;");
-        script.append("    _connected = message.successful;");
-        script.append("    if (!wasConnected && connected)");
-        script.append("    {");
-        script.append("        $.cometd.startBatch();");
-        script.append("        $.cometd.subscribe('/echo', latch, latch.countDown); ");
-        script.append("        $.cometd.publish('/echo', 'test'); ");
-        script.append("        $.cometd.endBatch(); ");
-        script.append("    }");
-        script.append("}");
-        script.append("$.cometd.addListener('/meta/connect', this, connected);");
-        evaluateScript(script.toString());
+
+        evaluateScript("var latch = new Latch(1);");
         Latch latch = get("latch");
 
-        evaluateScript("$.cometd.handshake();");
+        evaluateScript("" +
+                "var _connected = false;" +
+                "$.cometd.addListener('/meta/connect', function(message)" +
+                "{" +
+                "    var wasConnected = _connected;" +
+                "    _connected = message.successful;" +
+                "    if (!wasConnected && _connected)" +
+                "    {" +
+                "        $.cometd.startBatch();" +
+                "        $.cometd.subscribe('/echo', latch, 'countDown');" +
+                "        $.cometd.publish('/echo', 'test');" +
+                "        $.cometd.endBatch();" +
+                "    }" +
+                "});" +
+                "$.cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});" +
+                "$.cometd.handshake();");
         assertTrue(latch.await(1000));
 
         evaluateScript("$.cometd.disconnect(true);");
