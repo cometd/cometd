@@ -462,7 +462,7 @@ org.cometd.Cometd = function(name)
                     _debug('Exception during handling of messages', x);
                 }
             },
-            onFailure: function(conduit, reason, exception)
+            onFailure: function(conduit, messages, reason, exception)
             {
                 try
                 {
@@ -474,7 +474,7 @@ org.cometd.Cometd = function(name)
                 }
             }
         };
-        _debug('Send, sync =', sync, envelope);
+        _debug('Send', envelope);
         _transport.send(envelope, longpoll);
     }
 
@@ -573,7 +573,7 @@ org.cometd.Cometd = function(name)
             }
 
             _setStatus('connecting');
-            _debug('Connect sent', message, org.cometd.JSON.toJSON(message));
+            _debug('Connect sent', message);
             _send(false, [message], true, 'connect');
             _setStatus('connected');
         }
@@ -593,7 +593,7 @@ org.cometd.Cometd = function(name)
         if (newAdvice)
         {
             _advice = _mixin(false, {}, _config.advice, newAdvice);
-            _debug('New advice', _advice, org.cometd.JSON.toJSON(_advice));
+            _debug('New advice', _advice);
         }
     }
 
@@ -662,7 +662,7 @@ org.cometd.Cometd = function(name)
         // Pick up the first available transport as initial transport
         // since we don't know if the server supports it
         _transport = _transports.negotiateTransport(transportTypes, version, _crossDomain, _config.url);
-        _debug('Initial transport is', _transport.getType(), _transport);
+        _debug('Initial transport is', _transport.getType());
 
         // We started a batch to hold the application messages,
         // so here we must bypass it and send immediately.
@@ -1058,7 +1058,7 @@ org.cometd.Cometd = function(name)
 
     _handleMessages = function _handleMessages(rcvdMessages)
     {
-        _debug('Received', rcvdMessages, org.cometd.JSON.toJSON(rcvdMessages));
+        _debug('Received', rcvdMessages);
 
         for (var i = 0; i < rcvdMessages.length; ++i)
         {

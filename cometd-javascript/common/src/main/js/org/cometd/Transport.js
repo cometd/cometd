@@ -33,6 +33,11 @@ org.cometd.Transport = function()
         _cometd._debug.apply(_cometd, arguments);
     };
 
+    this._mixin = function()
+    {
+        return _cometd._mixin.apply(_cometd, arguments);
+    };
+
     this.getConfiguration = function()
     {
         return _cometd.getConfiguration();

@@ -38,17 +38,12 @@ public abstract class AbstractCometdJQueryTest extends AbstractCometdTest
         initJavaScript();
 
         // Order of the script evaluation is important, as they depend one from the other
-        URL envURL = new URL(contextURL + "/env.js");
-        evaluateURL(envURL);
+        evaluateURL(new URL(contextURL + "/env.js"));
         evaluateScript("window.location = '" + contextURL + "'");
-        URL cometdURL = new URL(contextURL + "/org/cometd.js");
-        evaluateURL(cometdURL);
-        URL jqueryURL = new URL(contextURL + "/jquery/jquery-1.4.3.js");
-        evaluateURL(jqueryURL);
-        URL jqueryJSONURL = new URL(contextURL + "/jquery/json2.js");
-        evaluateURL(jqueryJSONURL);
-        URL jqueryCometdURL = new URL(contextURL + "/jquery/jquery.cometd.js");
-        evaluateURL(jqueryCometdURL);
+        evaluateURL(new URL(contextURL + "/org/cometd.js"));
+        evaluateURL(new URL(contextURL + "/jquery/jquery-1.4.3.js"));
+        evaluateURL(new URL(contextURL + "/jquery/json2.js"));
+        evaluateURL(new URL(contextURL + "/jquery/jquery.cometd.js"));
     }
 
     @Override

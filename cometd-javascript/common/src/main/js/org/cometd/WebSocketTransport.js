@@ -33,7 +33,7 @@ org.cometd.WebSocketTransport = function()
         {
             var json = org.cometd.JSON.toJSON(envelope.messages);
             _webSocket.send(json);
-            this._debug('Transport', this, 'sent', envelope, 'metaConnect =', metaConnect);
+            this._debug('Transport', this.getType(), 'sent', envelope, 'metaConnect =', metaConnect);
 
             // Manage the timeout waiting for the response
             var maxDelay = this.getConfiguration().maxNetworkDelay;
@@ -66,26 +66,26 @@ org.cometd.WebSocketTransport = function()
                                 break;
                             }
                         }
-                        envelope.onFailure(_webSocket, 'timeout', errorMessage);
+                        envelope.onFailure(_webSocket, envelope.messages, 'timeout', errorMessage);
                     }, delay);
                 }
             }
 
-            this._debug('Transport', this, 'waiting at most', delay, ' ms for messages', messageIds, 'maxNetworkDelay =', maxDelay, ', timeouts:', org.cometd.JSON.toJSON(_timeouts));
+            this._debug('Transport', this.getType(), 'waiting at most', delay, ' ms for messages', messageIds, 'maxNetworkDelay', maxDelay, ', timeouts:', _timeouts);
         }
         catch (x)
         {
             // Keep the semantic of calling response callbacks asynchronously after the request
             this.setTimeout(function()
             {
-                envelope.onFailure(_webSocket, 'error', x);
+                envelope.onFailure(_webSocket, envelope.messages, 'error', x);
             }, 0);
         }
     }
 
     _self.onMessage = function(wsMessage)
     {
-        this._debug('Transport', this, 'received websocket message', wsMessage);
+        this._debug('Transport', this.getType(), 'received websocket message', wsMessage);
 
         if (_state === OPENED)
         {
@@ -109,7 +109,7 @@ org.cometd.WebSocketTransport = function()
                         {
                             clearTimeout(timeout);
                             delete _timeouts[message.id];
-                            this._debug('Transport', this, 'removed timeout for message', message.id, ', timeouts:', org.cometd.JSON.toJSON(_timeouts));
+                            this._debug('Transport', this.getType(), 'removed timeout for message', message.id, ', timeouts', _timeouts);
                         }
                     }
                 }
@@ -145,7 +145,7 @@ org.cometd.WebSocketTransport = function()
             }
             if (removed)
             {
-                this._debug('Transport', this, 'removed envelope, envelopes:', org.cometd.JSON.toJSON(_envelopes));
+                this._debug('Transport', this.getType(), 'removed envelope, envelopes', _envelopes);
             }
 
             _successCallback.call(this, messages);
@@ -154,7 +154,7 @@ org.cometd.WebSocketTransport = function()
 
     _self.onClose = function()
     {
-        this._debug('Transport', this, 'closed', _webSocket);
+        this._debug('Transport', this.getType(), 'closed', _webSocket);
 
         // Remember if we were able to connect
         // This close event could be due to server shutdown, and if it restarts we want to try websocket again
@@ -168,7 +168,7 @@ org.cometd.WebSocketTransport = function()
 
         for (var ids in _envelopes)
         {
-            _envelopes[ids].onFailure(_webSocket, 'closed');
+            _envelopes[ids].onFailure(_webSocket, _envelopes[ids].messages, 'closed');
             delete _envelopes[ids];
         }
 
@@ -177,7 +177,7 @@ org.cometd.WebSocketTransport = function()
 
     _self.send = function(envelope, metaConnect)
     {
-        this._debug('Transport', this, 'sending', envelope, 'metaConnect =', metaConnect);
+        this._debug('Transport', this.getType(), 'sending', envelope, 'metaConnect =', metaConnect);
 
         // Store the envelope in any case; if the websocket cannot be opened, we fail it in close()
         var messageIds = [];
@@ -190,7 +190,7 @@ org.cometd.WebSocketTransport = function()
             }
         }
         _envelopes[messageIds.join(',')] = envelope;
-        this._debug('Transport', this, 'stored envelope, envelopes:', org.cometd.JSON.toJSON(_envelopes));
+        this._debug('Transport', this.getType(), 'stored envelope, envelopes', _envelopes);
 
         if (_state === OPENED)
         {
@@ -200,7 +200,7 @@ org.cometd.WebSocketTransport = function()
         {
             // Mangle the URL, changing the scheme from 'http' to 'ws'
             var url = envelope.url.replace(/^http/, 'ws');
-            this._debug('Transport', this, 'connecting to URL', url);
+            this._debug('Transport', this.getType(), 'connecting to URL', url);
 
             _webSocket = new window.WebSocket(url);
             var self = this;

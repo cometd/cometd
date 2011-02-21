@@ -37,8 +37,7 @@ public abstract class AbstractCometdDojoTest extends AbstractCometdTest
         initJavaScript();
 
         // Order of the script evaluation is important, as they depend one from the other
-        URL envURL = new URL(contextURL + "/env.js");
-        evaluateURL(envURL);
+        evaluateURL(new URL(contextURL + "/env.js"));
         evaluateScript("window.location = '" + contextURL + "'");
         evaluateURL(new URL(contextURL + "/dojo/dojo.js.uncompressed.js"));
         evaluateURL(new URL(contextURL + "/dojo/io/script.js"));

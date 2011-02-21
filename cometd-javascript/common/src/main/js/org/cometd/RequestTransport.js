@@ -47,7 +47,7 @@ org.cometd.RequestTransport = function()
                 delay += this.getAdvice().timeout;
             }
 
-            this._debug('Transport', this, 'waiting at most', delay, 'ms for the response, maxNetworkDelay =', maxDelay);
+            this._debug('Transport', this.getType(), 'waiting at most', delay, 'ms for the response, maxNetworkDelay', maxDelay);
 
             var self = this;
             request.timeout = this.setTimeout(function()
@@ -60,7 +60,7 @@ org.cometd.RequestTransport = function()
                 var errorMessage = 'Request ' + request.id + ' of transport ' + self.getType() + ' exceeded ' + delay + ' ms max network delay';
                 self._debug(errorMessage);
                 self.complete(request, false, request.metaConnect);
-                envelope.onFailure(request.xhr, 'timeout', errorMessage);
+                envelope.onFailure(request.xhr, envelope.messages, 'timeout', errorMessage);
             }, delay);
         }
     }
@@ -76,13 +76,12 @@ org.cometd.RequestTransport = function()
         // Consider the metaConnect requests which should always be present
         if (_requests.length < this.getConfiguration().maxConnections - 1)
         {
-            this._debug('Transport', this, 'sending request', requestId, envelope);
-            _transportSend.call(this, envelope, request);
             _requests.push(request);
+            _transportSend.call(this, envelope, request);
         }
         else
         {
-            this._debug('Transport queueing request', requestId, envelope);
+            this._debug('Transport', this.getType(), 'queueing request', requestId, 'envelope', envelope);
             _envelopes.push([envelope, request]);
         }
     }
@@ -90,7 +89,7 @@ org.cometd.RequestTransport = function()
     function _metaConnectComplete(request)
     {
         var requestId = request.id;
-        this._debug('Transport', this, 'metaConnect complete', requestId);
+        this._debug('Transport', this.getType(), 'metaConnect complete, request', requestId);
         if (_metaConnectRequest !== null && _metaConnectRequest.id !== requestId)
         {
             throw 'Longpoll request mismatch, completing request ' + requestId;
@@ -103,7 +102,7 @@ org.cometd.RequestTransport = function()
     function _complete(request, success)
     {
         var index = org.cometd.Utils.inArray(request, _requests);
-        // The index can be negative the request has been aborted
+        // The index can be negative if the request has been aborted
         if (index >= 0)
         {
             _requests.splice(index, 1);
@@ -131,7 +130,7 @@ org.cometd.RequestTransport = function()
                 this.setTimeout(function()
                 {
                     self.complete(nextRequest, false, nextRequest.metaConnect);
-                    nextEnvelope.onFailure(nextRequest.xhr, 'error', 'Previous request failed');
+                    nextEnvelope.onFailure(nextRequest.xhr, nextEnvelope.messages, 'error', 'Previous request failed');
                 }, 0);
             }
         }
@@ -171,7 +170,7 @@ org.cometd.RequestTransport = function()
             }
             else
             {
-                envelope.onFailure(request, 'Empty HTTP response');
+                envelope.onFailure(request.xhr, envelope.messages, 'Empty HTTP response');
             }
         }
     };
@@ -182,7 +181,7 @@ org.cometd.RequestTransport = function()
         {
             clearTimeout(request.timeout);
             this.complete(request, false, request.metaConnect);
-            envelope.onFailure(request.xhr, reason, exception);
+            envelope.onFailure(request.xhr, envelope.messages, reason, exception);
         }
     };
 
@@ -194,7 +193,7 @@ org.cometd.RequestTransport = function()
         }
 
         var requestId = ++_requestIds;
-        this._debug('Transport', this, 'metaConnect send', requestId, envelope);
+        this._debug('Transport', this.getType(), 'metaConnect send, request', requestId, 'envelope', envelope);
         var request = {
             id: requestId,
             metaConnect: true
