@@ -597,6 +597,23 @@ org.cometd.Cometd = function(name)
         }
     }
 
+    function _disconnect(abort)
+    {
+        _cancelDelayedSend();
+        if (abort)
+        {
+            _transport.abort();
+        }
+        _clientId = null;
+        _setStatus('disconnected');
+        _batch = 0;
+        _resetBackoff();
+
+        // Fail any existing queued message
+        _handleFailure.call(_cometd, undefined, _messageQueue, 'error', 'Disconnected');
+        _messageQueue = [];
+    }
+
     /**
      * Sends the initial handshake message
      */
@@ -701,8 +718,7 @@ org.cometd.Cometd = function(name)
         }
         else
         {
-            _resetBackoff();
-            _setStatus('disconnected');
+            _disconnect(false);
         }
     }
 
@@ -746,8 +762,7 @@ org.cometd.Cometd = function(name)
                     _delayedConnect();
                     break;
                 case 'none':
-                    _resetBackoff();
-                    _setStatus('disconnected');
+                    _disconnect(false);
                     break;
                 default:
                     throw 'Unrecognized advice action ' + action;
@@ -795,8 +810,7 @@ org.cometd.Cometd = function(name)
                 _delayedHandshake();
                 break;
             case 'none':
-                _resetBackoff();
-                _setStatus('disconnected');
+                _disconnect(false);
                 break;
             default:
                 throw 'Unrecognized advice action' + action;
@@ -815,19 +829,18 @@ org.cometd.Cometd = function(name)
             // and the server will hold the request, so when a response returns
             // we immediately call the server again (long polling)
             // Listeners can call disconnect(), so check the state after they run
-            var action1 = _isDisconnected() ? 'none' : _advice.reconnect;
-            switch (action1)
+            var action = _isDisconnected() ? 'none' : _advice.reconnect;
+            switch (action)
             {
                 case 'retry':
                     _resetBackoff();
                     _delayedConnect();
                     break;
                 case 'none':
-                    _resetBackoff();
-                    _setStatus('disconnected');
+                    _disconnect(false);
                     break;
                 default:
-                    throw 'Unrecognized advice action ' + action1;
+                    throw 'Unrecognized advice action ' + action;
             }
         }
         else
@@ -850,20 +863,6 @@ org.cometd.Cometd = function(name)
                 interval: _backoff
             }
         });
-    }
-
-    function _disconnect(abort)
-    {
-        _cancelDelayedSend();
-        if (abort)
-        {
-            _transport.abort();
-        }
-        _clientId = null;
-        _setStatus('disconnected');
-        _batch = 0;
-        _messageQueue = [];
-        _resetBackoff();
     }
 
     function _failDisconnect(message)

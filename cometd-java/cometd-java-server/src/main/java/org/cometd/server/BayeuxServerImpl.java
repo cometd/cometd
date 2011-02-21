@@ -569,15 +569,23 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 {
                     if (channel.isMeta())
                     {
-                        doPublish(session, (ServerChannelImpl)channel, message);
-                        reply = message.getAssociated();
+                        if (session == null && !Channel.META_HANDSHAKE.equals(channelName))
+                        {
+                            reply = createReply(message);
+                            unknownSession(reply);
+                        }
+                        else
+                        {
+                            doPublish(session, (ServerChannelImpl)channel, message);
+                            reply = message.getAssociated();
+                        }
                     }
                     else
                     {
                         if (session == null)
                         {
                             reply = createReply(message);
-                            error(reply, "402::unknown client");
+                            unknownSession(reply);
                         }
                         else
                         {
@@ -959,6 +967,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
+    protected void unknownSession(Mutable reply)
+    {
+        error(reply,"402::Unknown client");
+        if (Channel.META_HANDSHAKE.equals(reply.getChannel()) || Channel.META_CONNECT.equals(reply.getChannel()))
+            reply.put(Message.ADVICE_FIELD, _handshakeAdvice);
+    }
+
     /* ------------------------------------------------------------ */
     protected void error(ServerMessage.Mutable reply, String error)
     {
@@ -1029,13 +1044,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         protected boolean isSessionUnknown(ServerSession session)
         {
             return session == null || getSession(session.getId()) == null;
-        }
-
-        protected void unknownSession(Mutable reply)
-        {
-            error(reply,"402::Unknown client");
-            if (!Channel.META_DISCONNECT.equals(reply.getChannel()))
-                reply.put(Message.ADVICE_FIELD, _handshakeAdvice);
         }
 
         public abstract void onMessage(final ServerSessionImpl from, final ServerMessage.Mutable message);
