@@ -47,6 +47,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 
 public class BayeuxClientTest extends TestCase
@@ -862,20 +863,69 @@ public class BayeuxClientTest extends TestCase
 
         abort.set(true);
         channel.publish(new HashMap<String, Object>());
-        assertTrue(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(publishLatch.get().await(10, TimeUnit.SECONDS));
         assertFalse(client.isConnected());
 
         // Message must not be received
-        assertFalse(messageLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(messageLatch.get().await(10, TimeUnit.SECONDS));
 
         connectLatch.set(new CountDownLatch(1));
         client.handshake();
-        assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(connectLatch.get().await(10, TimeUnit.SECONDS));
 
         client.disconnect();
-        assertTrue(client.waitFor(1000, State.DISCONNECTED));
+        assertTrue(client.waitFor(10000, State.DISCONNECTED));
     }
 
+    public void testRestart() throws Exception
+    {
+        BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient))
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                Log.ignore(x);
+            }
+            
+        };
+        
+        final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> disconnectedLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.isSuccessful())
+                    connectedLatch.get().countDown();
+                else
+                    disconnectedLatch.get().countDown();
+            }
+        });
+        client.handshake();
+
+        // Wait for connect
+        assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
+        assertTrue(client.isConnected());
+        
+        // Stop server
+        int port = _connector.getLocalPort();
+        disconnectedLatch.set(new CountDownLatch(1));
+        _server.stop();
+        assertTrue(disconnectedLatch.get().await(10, TimeUnit.SECONDS));
+        assertTrue(!client.isConnected());
+        
+        // restart server
+        _connector.setPort(port);
+        connectedLatch.set(new CountDownLatch(1));
+        _server.start();
+        
+        // Wait for connect
+        assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
+        assertTrue(client.isConnected());
+        
+        Thread.sleep(10000);
+    }
+    
     public void testAuthentication() throws Exception
     {
         final AtomicReference<String> sessionId = new AtomicReference<String>();

@@ -9,13 +9,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
-import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.java.annotation.Configure;
@@ -37,18 +35,16 @@ public class ChatService
     @Session
     private ServerSession _session;
 
-    @SuppressWarnings("unused")
     @Configure ({"/chat/**","/members/**"})
-    private void configureChatStarStar(ConfigurableServerChannel channel)
+    protected void configureChatStarStar(ConfigurableServerChannel channel)
     {
         DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux,new NoMarkupFilter(),new BadWordFilter());
         channel.addListener(noMarkup);
         channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
     }
 
-    @SuppressWarnings("unused")
     @Configure ("/service/members")
-    private void configureMembers(ConfigurableServerChannel channel)
+    protected void configureMembers(ConfigurableServerChannel channel)
     {
         channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
         channel.setPersistent(true);
@@ -88,9 +84,8 @@ public class ChatService
         channel.publish(members);
     }
     
-    @SuppressWarnings("unused")
     @Configure ("/service/privatechat")
-    private void configurePrivateChat(ConfigurableServerChannel channel)
+    protected void configurePrivateChat(ConfigurableServerChannel channel)
     {
         DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux,new NoMarkupFilter(),new BadWordFilter());
         channel.setPersistent(true);
@@ -99,7 +94,7 @@ public class ChatService
     }
 
     @Listener("/service/privatechat")
-    public void privateChat(ServerSession client, ServerMessage message)
+    protected void privateChat(ServerSession client, ServerMessage message)
     {
         Map<String,Object> data = message.getDataAsMap();
         String room = ((String)data.get("room")).substring("/chat/".length());
