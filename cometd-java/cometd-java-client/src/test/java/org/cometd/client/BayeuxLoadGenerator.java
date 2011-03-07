@@ -2,6 +2,7 @@ package org.cometd.client;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,7 +23,9 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.transport.LongPollingTransport;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class BayeuxLoadGenerator
@@ -46,6 +49,27 @@ public class BayeuxLoadGenerator
     private final Map<String, Long> sendTimes = new ConcurrentHashMap<String, Long>();
     private final Map<String, Long> arrivalTimes = new ConcurrentHashMap<String, Long>();
     private final HttpClient httpClient;
+    private volatile boolean running;
+
+    public long getMessages()
+    {
+        return messages.get();
+    }
+
+    public long getResponses()
+    {
+        return responses.get();
+    }
+    
+    public boolean isRunning()
+    {
+        return running;
+    }
+
+    public void setRunning(boolean running)
+    {
+        this.running = running;
+    }
 
     public static void main(String[] args) throws Exception
     {
@@ -59,8 +83,16 @@ public class BayeuxLoadGenerator
             httpClient.setThreadPool(threadPool);
             httpClient.setIdleTimeout(5000);
             httpClient.start();
-
+            
             BayeuxLoadGenerator generator = new BayeuxLoadGenerator(httpClient);
+            
+
+            MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+            mbContainer.addBean(httpClient);
+            mbContainer.addBean(threadPool);
+            mbContainer.addBean(generator);
+            mbContainer.addBean(Log.getLog());
+            
             generator.generateLoad();
         }
         catch (Exception x)
@@ -274,8 +306,12 @@ public class BayeuxLoadGenerator
             int clientIndex = -1;
             long expected = 0;
             StringBuilder message = new StringBuilder();
+            running=true;
             for (int i = 0; i < batchCount; ++i)
             {
+                if (!running)
+                    break;
+                
                 if (randomize)
                 {
                     clientIndex = nextRandom(bayeuxClients.size());
@@ -702,4 +738,7 @@ public class BayeuxLoadGenerator
                 responses.incrementAndGet();
         }
     }
+    
+    
+    
 }

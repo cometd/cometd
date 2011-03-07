@@ -3,6 +3,7 @@ package org.cometd.client;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -24,6 +25,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.cometd.server.CometdServlet;
+import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -33,6 +35,7 @@ import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
@@ -63,6 +66,14 @@ public class BayeuxLoadServer
         }
 
         Server server = new Server();
+        
+        // Setup JMX
+        MBeanContainer mbContainer=new
+        MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        server.getContainer().addEventListener(mbContainer);
+        server.addBean(mbContainer);
+        mbContainer.addBean(Log.getLog());
+        
         SelectChannelConnector connector;
         if (ssl)
         {

@@ -19,6 +19,12 @@ public class DataFilterMessageListener implements ServerChannel.MessageListener
     final BayeuxServerImpl _bayeux;
     final List<DataFilter> _filters;
 
+    public DataFilterMessageListener(DataFilter... filters)
+    {
+        _bayeux=null;
+        _filters=Arrays.asList(filters);
+    }
+    
     public DataFilterMessageListener(BayeuxServer bayeux, DataFilter... filters)
     {
         _bayeux=(BayeuxServerImpl)bayeux;
@@ -43,11 +49,13 @@ public class DataFilterMessageListener implements ServerChannel.MessageListener
         }
         catch(DataFilter.Abort a)
         {
-            _bayeux.getLogger().debug(a);
+            if (_bayeux!=null)
+                _bayeux.getLogger().debug(a);
         }
         catch(Exception e)
         {
-            _bayeux.getLogger().warn(e);
+            if (_bayeux!=null)
+                _bayeux.getLogger().warn(e);
         }
         return false;
     }
