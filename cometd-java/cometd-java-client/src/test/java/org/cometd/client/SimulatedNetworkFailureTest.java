@@ -6,10 +6,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import junit.framework.TestCase;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.CometdServlet;
@@ -20,18 +20,25 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-public class SimulatedNetworkFailureTest extends TestCase
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+public class SimulatedNetworkFailureTest
 {
     private Server server;
+    private BayeuxServer bayeux;
     private String cometdURL;
     private HttpClient httpClient;
     private long timeout = 10000;
     private long maxInterval = 8000;
     private long sweepInterval = 1000;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
         server = new Server();
 
@@ -54,14 +61,15 @@ public class SimulatedNetworkFailureTest extends TestCase
 
         server.start();
 
+        bayeux = cometdServlet.getBayeux();
         cometdURL = "http://localhost:" + connector.getLocalPort() + contextPath + servletPath;
 
         httpClient = new HttpClient();
         httpClient.start();
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         httpClient.stop();
 
@@ -69,7 +77,8 @@ public class SimulatedNetworkFailureTest extends TestCase
         server.join();
     }
 
-    public void testShortNetworkFailure() throws Exception
+    @Test
+    public void testClientShortNetworkFailure() throws Exception
     {
         final CountDownLatch connectLatch = new CountDownLatch(2);
         final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<CountDownLatch>();
@@ -152,7 +161,8 @@ public class SimulatedNetworkFailureTest extends TestCase
         assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
     }
 
-    public void testLongNetworkFailure() throws Exception
+    @Test
+    public void testClientLongNetworkFailure() throws Exception
     {
         final CountDownLatch connectLatch = new CountDownLatch(2);
         final CountDownLatch handshakeLatch = new CountDownLatch(2);
