@@ -57,11 +57,13 @@ public class LongPollingTransport extends HttpClientTransport
     private final List<HttpExchange> _exchanges = new ArrayList<HttpExchange>();
     private volatile boolean _aborted;
     private volatile boolean _appendMessageType;
+    private volatile Map<String, Object> _advice;
 
-    public LongPollingTransport(Map<String,Object> options, HttpClient httpClient)
+    public LongPollingTransport(Map<String, Object> options, HttpClient httpClient)
     {
-        super("long-polling",options);
+        super("long-polling", options);
         _httpClient = httpClient;
+        setOptionPrefix("long-polling.json");
     }
 
     public boolean accept(String bayeuxVersion)
@@ -129,6 +131,23 @@ public class LongPollingTransport extends HttpClientTransport
                     throw new IllegalStateException("Aborted");
                 _exchanges.add(httpExchange);
             }
+
+            long maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, _httpClient.getTimeout());
+            if (messages.length == 1 && Channel.META_CONNECT.equals(messages[0].getChannel()))
+            {
+                Map<String, Object> advice = messages[0].getAdvice();
+                if (advice == null)
+                    advice = _advice;
+                if (advice != null)
+                {
+                    Object timeout = advice.get("timeout");
+                    if (timeout instanceof Number)
+                        maxNetworkDelay += ((Number)timeout).longValue();
+                    else if (timeout != null)
+                        maxNetworkDelay += Long.parseLong(timeout.toString());
+                }
+            }
+            httpExchange.setTimeout(maxNetworkDelay);
 
             _httpClient.send(httpExchange);
         }
@@ -249,18 +268,27 @@ public class LongPollingTransport extends HttpClientTransport
             complete();
             if (getResponseStatus() == 200)
             {
-                String content=getResponseContent();
-                if (content!=null && content.length()>0)
+                String content = getResponseContent();
+                if (content != null && content.length() > 0)
                 {
                     List<Message.Mutable> messages = parseMessages(getResponseContent());
+                    for (Message.Mutable message : messages)
+                    {
+                        if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel()))
+                        {
+                            Map<String, Object> advice = message.getAdvice();
+                            if (advice != null && advice.get("timeout") != null)
+                                _advice = advice;
+                        }
+                    }
                     _listener.onMessages(messages);
                 }
                 else
-                    _listener.onProtocolError("Empty response: "+this, _messages);
+                    _listener.onProtocolError("Empty response: " + this, _messages);
             }
             else
             {
-                _listener.onProtocolError("Unexpected response "+getResponseStatus()+": "+this, _messages);
+                _listener.onProtocolError("Unexpected response " + getResponseStatus() + ": " + this, _messages);
             }
         }
 

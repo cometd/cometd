@@ -3,9 +3,7 @@ package org.cometd.client.transport;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -14,7 +12,6 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.client.HttpClient;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -26,14 +23,6 @@ import static org.junit.Assert.assertTrue;
  */
 public class LongPollingTransportTest
 {
-    Map<String,Object> _options;
-
-    @Before
-    public void setup()
-    {
-        _options=new HashMap<String, Object>();
-    }
-
     @Test
     public void testType()
     {
@@ -68,11 +57,11 @@ public class LongPollingTransportTest
                     OutputStream output = socket.getOutputStream();
                     output.write((
                             "HTTP/1.1 200 OK\r\n" +
-                            "Connection: close\r\n" +
-                            "Content-Type: application/json;charset=UTF-8\r\n" +
-                            "Content-Length: 2\r\n" +
-                            "\r\n" +
-                            "[]").getBytes("UTF-8"));
+                                    "Connection: close\r\n" +
+                                    "Content-Type: application/json;charset=UTF-8\r\n" +
+                                    "Content-Length: 2\r\n" +
+                                    "\r\n" +
+                                    "[]").getBytes("UTF-8"));
                     output.flush();
                     socket.close();
                 }
@@ -80,13 +69,10 @@ public class LongPollingTransportTest
                 {
                     serverException.set(x);
                 }
-                finally
-                {
-                }
             }
         };
         serverThread.start();
-        final String serverURL="http://localhost:" + serverSocket.getLocalPort();
+        final String serverURL = "http://localhost:" + serverSocket.getLocalPort();
 
         try
         {
@@ -96,7 +82,7 @@ public class LongPollingTransportTest
             try
             {
                 final CountDownLatch latch = new CountDownLatch(1);
-                HttpClientTransport transport = new LongPollingTransport(_options,httpClient);
+                HttpClientTransport transport = new LongPollingTransport(null, httpClient);
                 transport.setURL(serverURL);
                 transport.init();
 
@@ -114,7 +100,7 @@ public class LongPollingTransportTest
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
                 assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 e.printStackTrace();
             }
@@ -151,8 +137,8 @@ public class LongPollingTransportTest
                     OutputStream output = socket.getOutputStream();
                     output.write((
                             "HTTP/1.1 500 Internal Server Error\r\n" +
-                            "Connection: close\r\n" +
-                            "\r\n").getBytes("UTF-8"));
+                                    "Connection: close\r\n" +
+                                    "\r\n").getBytes("UTF-8"));
                     output.flush();
 
                     socket.close();
@@ -173,7 +159,7 @@ public class LongPollingTransportTest
 
             try
             {
-                HttpClientTransport transport = new LongPollingTransport(_options,httpClient);
+                HttpClientTransport transport = new LongPollingTransport(null, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
                 transport.init();
@@ -190,7 +176,7 @@ public class LongPollingTransportTest
                 long end = System.nanoTime();
 
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
-                assertTrue(latch.await(2000+ 2 * processingTime, TimeUnit.MILLISECONDS));
+                assertTrue(latch.await(2000 + 2 * processingTime, TimeUnit.MILLISECONDS));
             }
             finally
             {
@@ -210,14 +196,14 @@ public class LongPollingTransportTest
     {
         ServerSocket serverSocket = new ServerSocket(0);
         serverSocket.close();
-        final String serverURL="http://localhost:" + serverSocket.getLocalPort();
+        final String serverURL = "http://localhost:" + serverSocket.getLocalPort();
 
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
         try
         {
-            HttpClientTransport transport = new LongPollingTransport(_options,httpClient);
+            HttpClientTransport transport = new LongPollingTransport(null, httpClient);
             final CountDownLatch latch = new CountDownLatch(1);
             transport.setURL(serverURL);
             transport.init();
@@ -265,7 +251,7 @@ public class LongPollingTransportTest
             }
         };
         serverThread.start();
-        final String serverURL="http://localhost:" + serverSocket.getLocalPort();
+        final String serverURL = "http://localhost:" + serverSocket.getLocalPort();
 
         try
         {
@@ -274,7 +260,7 @@ public class LongPollingTransportTest
 
             try
             {
-                HttpClientTransport transport = new LongPollingTransport(_options,httpClient);
+                HttpClientTransport transport = new LongPollingTransport(null, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
                 transport.init();
@@ -321,16 +307,16 @@ public class LongPollingTransportTest
                 {
                     Socket socket = serverSocket.accept();
 
-                    Thread.sleep(2 * 1000);
+                    Thread.sleep(2 * timeout);
 
                     OutputStream output = socket.getOutputStream();
                     output.write((
                             "HTTP/1.1 200 OK\r\n" +
-                            "Connection: close\r\n" +
-                            "Content-Type: application/json;charset=UTF-8\r\n" +
-                            "Content-Length: 2\r\n" +
-                            "\r\n" +
-                            "[]").getBytes("UTF-8"));
+                                    "Connection: close\r\n" +
+                                    "Content-Type: application/json;charset=UTF-8\r\n" +
+                                    "Content-Length: 2\r\n" +
+                                    "\r\n" +
+                                    "[]").getBytes("UTF-8"));
                     output.flush();
 
                     socket.close();
@@ -342,7 +328,7 @@ public class LongPollingTransportTest
             }
         };
         serverThread.start();
-        final String serverURL="http://localhost:" + serverSocket.getLocalPort();
+        final String serverURL = "http://localhost:" + serverSocket.getLocalPort();
 
         try
         {
@@ -352,7 +338,7 @@ public class LongPollingTransportTest
 
             try
             {
-                HttpClientTransport transport = new LongPollingTransport(_options,httpClient);
+                HttpClientTransport transport = new LongPollingTransport(null, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
                 transport.init();
