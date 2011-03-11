@@ -550,7 +550,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 public BayeuxClientState create(BayeuxClientState oldState)
                 {
                     String action = getAdviceAction(handshake.getAdvice(), Message.RECONNECT_HANDSHAKE_VALUE);
-                    if (Message.RECONNECT_HANDSHAKE_VALUE.equals(action))
+                    if (Message.RECONNECT_HANDSHAKE_VALUE.equals(action) || Message.RECONNECT_RETRY_VALUE.equals(action))
                         return new RehandshakingState(oldState.handshakeFields, oldState.transport, oldState.nextBackoff());
                     else if (Message.RECONNECT_NONE_VALUE.equals(action))
                         return new DisconnectedState(oldState.transport);
