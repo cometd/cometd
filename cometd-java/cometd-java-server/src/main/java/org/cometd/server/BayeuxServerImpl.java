@@ -1062,7 +1062,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (_policy != null && !_policy.canHandshake(BayeuxServerImpl.this,session,message))
             {
                 error(reply,"403::Handshake denied");
-                reply.getAdvice(true).put(Message.RECONNECT_FIELD,Message.RECONNECT_NONE_VALUE);
+                // The user's SecurityPolicy may have customized the response's advice
+                Map<String, Object> advice = reply.getAdvice(true);
+                if (!advice.containsKey(Message.RECONNECT_FIELD))
+                    advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                 return;
             }
 
