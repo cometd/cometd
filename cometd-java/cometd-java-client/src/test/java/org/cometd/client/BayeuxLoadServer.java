@@ -66,14 +66,14 @@ public class BayeuxLoadServer
         }
 
         Server server = new Server();
-        
+
         // Setup JMX
         MBeanContainer mbContainer=new
         MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.getContainer().addEventListener(mbContainer);
         server.addBean(mbContainer);
         mbContainer.addBean(Log.getLog());
-        
+
         SelectChannelConnector connector;
         if (ssl)
         {
@@ -84,6 +84,7 @@ public class BayeuxLoadServer
             sslConnector.setKeystore(keyStoreFile.getAbsolutePath());
             sslConnector.setPassword("storepwd");
             sslConnector.setKeyPassword("keypwd");
+//            sslConnector.setUseDirectBuffers(true);
             connector = sslConnector;
         }
         else
