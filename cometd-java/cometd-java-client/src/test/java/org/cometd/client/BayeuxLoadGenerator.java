@@ -60,7 +60,7 @@ public class BayeuxLoadGenerator
     {
         return responses.get();
     }
-    
+
     public boolean isRunning()
     {
         return running;
@@ -82,17 +82,18 @@ public class BayeuxLoadGenerator
             threadPool.setDaemon(true);
             httpClient.setThreadPool(threadPool);
             httpClient.setIdleTimeout(5000);
+//            httpClient.setUseDirectBuffers(false);
             httpClient.start();
-            
+
             BayeuxLoadGenerator generator = new BayeuxLoadGenerator(httpClient);
-            
+
 
             MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
             mbContainer.addBean(httpClient);
             mbContainer.addBean(threadPool);
             mbContainer.addBean(generator);
             mbContainer.addBean(Log.getLog());
-            
+
             generator.generateLoad();
         }
         catch (Exception x)
@@ -311,7 +312,7 @@ public class BayeuxLoadGenerator
             {
                 if (!running)
                     break;
-                
+
                 if (randomize)
                 {
                     clientIndex = nextRandom(bayeuxClients.size());
@@ -640,7 +641,7 @@ public class BayeuxLoadGenerator
                     String messageId = message.getId();
                     Long sendTime = sendTimes.get(messageId);
                     Long arrivalTime = arrivalTimes.get(messageId);
-                    if (startTime!=null && sendTime!=null && arrivalTime!=null )
+                    if (sendTime != null && arrivalTime != null)
                         updateLatencies(startTime, sendTime, arrivalTime, endTime);
                 }
             }
@@ -738,7 +739,7 @@ public class BayeuxLoadGenerator
                 responses.incrementAndGet();
         }
     }
-    
-    
-    
+
+
+
 }
