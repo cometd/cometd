@@ -14,9 +14,7 @@
 
 package org.cometd.oort;
 
-
 import java.io.IOException;
-
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -27,27 +25,21 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.BayeuxServer;
 
-
 /**
- * Oort Servlet.
- * <p>
- * This servlet initializes and configures and instance of the {@link Oort}
- * comet cluster manager.  The servlet must be initialized after an instance
- * of {@link AbstractCometdServlet}, which creates the {@link Bayeux} instance
- * used.
- * <p>
- * The following servlet init parameters are used to configure Oort:<dl>
- * <dt>oort.url</dt><dd>The absolute public URL to the cometd servlet.</dd>
- * <dt>oort.cloud</dt><dd>A comma separated list of the oort.urls of other
- * known oort comet servers that are passed to {@link Oort#observeComet(String)}
- * on startup.</dd>
- * <dt>oort.channels</dt><dd>A comma separated list of channels that will be
- * passed to {@link Oort#observeChannel(String)}</dd>
- * <dt>clientDebug</dt><dd>Boolean to enable  client debugging</dd>
- * </p>
- * </dl>
- * @author gregw
- *
+ * <p>This servlet initializes and configures and instance of the {@link Oort}
+ * CometD cluster manager.</p>
+ * <p>This servlet must be initialized after an instance the CometD servlet
+ * that creates the {@link BayeuxServer} instance used by {@link Oort}.</p>
+ * <p>The following servlet init parameters are used to configure Oort:</p>
+ * <ul>
+ * <li><code>oort.url</code>, the absolute public URL to the CometD servlet</li>
+ * <li><code>oort.cloud</code>, a comma separated list of the <code>oort.url</code>s
+ * of other known oort CometD cluster managers</li>
+ * <li><code>oort.channels</code>, a comma separated list of channels that
+ * will be passed to {@link Oort#observeChannel(String)}</li>
+ * <li><code>clientDebug</code>, a boolean that enables debugging of the
+ * clients connected to other oort cluster managers</li>
+ * </ul>
  */
 public class OortServlet implements Servlet
 {
@@ -69,52 +61,48 @@ public class OortServlet implements Servlet
 
     public void init(ServletConfig config) throws ServletException
     {
-        _config=config;
+        _config = config;
 
         BayeuxServer bayeux = (BayeuxServer)config.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-        if (bayeux==null)
+        if (bayeux == null)
         {
-            _config.getServletContext().log("No "+BayeuxServer.ATTRIBUTE +" initialized");
+            _config.getServletContext().log("No " + BayeuxServer.ATTRIBUTE + " initialized");
             throw new UnavailableException(BayeuxServer.ATTRIBUTE);
         }
 
-        String url=_config.getInitParameter(Oort.OORT_URL);
-        if (url==null)
+        String url = _config.getInitParameter(Oort.OORT_URL);
+        if (url == null)
         {
-            _config.getServletContext().log("No "+Oort.OORT_URL+" init parameter");
+            _config.getServletContext().log("No " + Oort.OORT_URL + " init parameter");
             throw new UnavailableException(Oort.OORT_URL);
         }
 
-        Oort oort= new Oort(url,bayeux);
-        _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE,oort);
-        
+        Oort oort = new Oort(url, bayeux);
+        _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE, oort);
+
         oort.setClientDebugEnabled(Boolean.valueOf(_config.getInitParameter("clientDebug")));
-        
-        String channels=_config.getInitParameter(Oort.OORT_CHANNELS);
-        if (channels!=null)
+
+        String channels = _config.getInitParameter(Oort.OORT_CHANNELS);
+        if (channels != null)
         {
-            String[] patterns=channels.split("[, ]");
+            String[] patterns = channels.split(",");
             for (String channel : patterns)
                 oort.observeChannel(channel);
-
         }
 
         String cloud = _config.getInitParameter(Oort.OORT_CLOUD);
-        if (cloud!=null&&cloud.length()>0)
+        if (cloud != null && cloud.length() > 0)
         {
-            String[] urls=cloud.split("[, ]");
+            String[] urls = cloud.split(",");
             for (String comet : urls)
-                if (comet.length()>0)
+                if (comet.length() > 0)
                     oort.observeComet(comet);
-
         }
-        
-        
     }
 
     public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
     {
         HttpServletResponse response = (HttpServletResponse)res;
-        response.sendError(503);
+        response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
     }
 }
