@@ -610,8 +610,11 @@ org.cometd.Cometd = function(name)
         _resetBackoff();
 
         // Fail any existing queued message
-        _handleFailure.call(_cometd, undefined, _messageQueue, 'error', 'Disconnected');
-        _messageQueue = [];
+        if (_messageQueue.length > 0)
+        {
+            _handleFailure.call(_cometd, undefined, _messageQueue, 'error', 'Disconnected');
+            _messageQueue = [];
+        }
     }
 
     /**
