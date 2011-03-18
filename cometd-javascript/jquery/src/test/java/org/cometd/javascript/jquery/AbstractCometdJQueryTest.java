@@ -41,7 +41,7 @@ public abstract class AbstractCometdJQueryTest extends AbstractCometdTest
         evaluateURL(new URL(contextURL + "/env.js"));
         evaluateScript("window.location = '" + contextURL + "'");
         evaluateURL(new URL(contextURL + "/org/cometd.js"));
-        evaluateURL(new URL(contextURL + "/jquery/jquery-1.4.3.js"));
+        evaluateURL(new URL(contextURL + "/jquery/jquery-1.5.1.js"));
         evaluateURL(new URL(contextURL + "/jquery/json2.js"));
         evaluateURL(new URL(contextURL + "/jquery/jquery.cometd.js"));
     }

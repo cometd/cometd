@@ -27,9 +27,9 @@ public class XMLHttpRequestExchange extends ScriptableObject
     {
     }
 
-    public void jsConstructor(Object cookieStore, Object threadModel, Scriptable scope, Scriptable thiz, Function function, String method, String url, boolean async)
+    public void jsConstructor(Object cookieStore, Object threadModel, Scriptable thiz, String method, String url, boolean async)
     {
-        exchange = new CometdExchange((HttpCookieStore)cookieStore, (ThreadModel)threadModel, scope, thiz, function, method, url, async);
+        exchange = new CometdExchange((HttpCookieStore)cookieStore, (ThreadModel)threadModel, thiz, method, url, async);
     }
 
     public String getClassName()
@@ -56,11 +56,6 @@ public class XMLHttpRequestExchange extends ScriptableObject
     public void jsFunction_addRequestHeader(String name, String value)
     {
         exchange.addRequestHeader(name, value);
-    }
-
-    public void jsFunction_setOnReadyStateChange(Scriptable thiz, Function function)
-    {
-        exchange.setOnReadyStateChange(thiz, function);
     }
 
     public String jsGet_method()
@@ -123,23 +118,19 @@ public class XMLHttpRequestExchange extends ScriptableObject
         private final Logger logger = Log.getLogger(getClass().getName());
         private final HttpCookieStore cookieStore;
         private final ThreadModel threads;
-        private final Scriptable scope;
         private volatile Scriptable thiz;
-        private volatile Function function;
         private final boolean async;
         private volatile boolean aborted;
         private volatile ReadyState readyState = ReadyState.UNSENT;
         private volatile String responseText;
         private volatile String responseStatusText;
 
-        public CometdExchange(HttpCookieStore cookieStore, ThreadModel threads, Scriptable scope, Scriptable thiz, Function function, String method, String url, boolean async)
+        public CometdExchange(HttpCookieStore cookieStore, ThreadModel threads, Scriptable thiz, String method, String url, boolean async)
         {
             super(true);
             this.cookieStore = cookieStore;
             this.threads = threads;
-            this.scope = scope;
             this.thiz = thiz;
-            this.function = function;
             setMethod(method == null ? "GET" : method.toUpperCase());
             setURL(url);
             this.async = async;
@@ -157,15 +148,11 @@ public class XMLHttpRequestExchange extends ScriptableObject
             return async;
         }
 
-        private void setOnReadyStateChange(Scriptable thiz, Function function)
-        {
-            this.thiz = thiz;
-            this.function = function;
-        }
-
         private void notifyReadyStateChange()
         {
-            threads.execute(scope, thiz, function);
+            Object onReadyStateChange = ScriptableObject.getProperty(thiz, "onreadystatechange");
+            if (onReadyStateChange instanceof Function)
+                threads.execute(thiz, thiz, (Function)onReadyStateChange);
         }
 
         public void send(HttpClient httpClient) throws Exception
@@ -282,6 +269,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         {
             if (!aborted)
             {
+                logger.debug("Exchange {} completed", this);
                 responseText = getResponseContent();
                 readyState = ReadyState.DONE;
                 if (async)

@@ -251,17 +251,19 @@ var window = this;
      * simulating the behavior of a browser calling the URL of the src
      * attribute of the script tag.
      *
-     * @param url the URL to make the request to
+     * @param script the script element injected
      */
-    function makeScriptRequest(url)
+    function makeScriptRequest(script)
     {
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", url, true);
+        xhr.open("GET", script.src, true);
         xhr.onreadystatechange = function()
         {
             if (this.readyState === XMLHttpRequest.DONE && this.status === 200)
             {
                 eval(this.responseText);
+                if (script.onreadystatechange)
+                    script.onreadystatechange.call(script);
             }
         };
         xhr.send();
@@ -425,7 +427,8 @@ var window = this;
         if (!_domNodes.containsKey(this._dom))
             _domNodes.put(this._dom, this);
 
-        this._dom.addEventListener('DOMNodeInserted', Packages.org.cometd.javascript.ScriptInjectionEventListener(threadModel, window, window, makeScriptRequest), false);
+        var listener = Packages.org.cometd.javascript.ScriptInjectionEventListener(threadModel, window, makeScriptRequest, _domNodes);
+        this._dom.addEventListener('DOMNodeInserted', listener, false);
     };
     DOMDocument.prototype = extend(new DOMNode(), {
         // START OFFICIAL DOM
@@ -543,6 +546,10 @@ var window = this;
         set cookie(value)
         {
             cookies.set(window.location.protocol, window.location.host, window.location.pathname, value);
+        },
+        get location()
+        {
+            return window.location;
         }
     });
 
@@ -917,7 +924,7 @@ var window = this;
 
                 var absolute = /^https?:\/\//.test(url);
                 var absoluteURL = absolute ? url : window.location.href + url;
-                this._exchange = new XMLHttpRequestExchange(cookies, threadModel, this, this, this.onreadystatechange, method, absoluteURL, async);
+                this._exchange = new XMLHttpRequestExchange(cookies, threadModel, this, method, absoluteURL, async);
             },
             setRequestHeader: function(header, value)
             {
@@ -928,7 +935,6 @@ var window = this;
             send: function(data)
             {
                 if (this.readyState !== XMLHttpRequest.OPENED) throw 'INVALID_STATE_ERR';
-                this._exchange.setOnReadyStateChange(this, this.onreadystatechange);
                 if (this._exchange.method == 'GET') data = null;
                 if (data) this._exchange.setRequestContent(data);
                 xhrClient.send(this._exchange);
@@ -948,6 +954,14 @@ var window = this;
                 if (this.readyState === XMLHttpRequest.UNSENT || this.readyState === XMLHttpRequest.OPENED)
                     throw 'INVALID_STATE_ERR';
                 return this._exchange.getResponseHeader(header);
+            },
+            get withCredentials()
+            {
+                return !!this._withCredentials;
+            },
+            set withCredentials(val)
+            {
+                this._withCredentials = val;
             }
         };
     }();
