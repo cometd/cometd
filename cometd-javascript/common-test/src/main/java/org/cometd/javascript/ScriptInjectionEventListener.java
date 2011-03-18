@@ -1,5 +1,7 @@
 package org.cometd.javascript;
 
+import java.util.Map;
+
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.w3c.dom.Element;
@@ -18,16 +20,16 @@ import org.w3c.dom.events.EventListener;
 public class ScriptInjectionEventListener implements EventListener
 {
     private final ThreadModel threadModel;
-    private final Scriptable scope;
     private final Scriptable thiz;
     private final Function function;
+    private final Map domNodes;
 
-    public ScriptInjectionEventListener(ThreadModel threadModel, Scriptable scope, Scriptable thiz, Function function)
+    public ScriptInjectionEventListener(ThreadModel threadModel, Scriptable thiz, Function function, Map domNodes)
     {
         this.threadModel = threadModel;
-        this.scope = scope;
         this.thiz = thiz;
         this.function = function;
+        this.domNodes = domNodes;
     }
 
     public void handleEvent(Event evt)
@@ -43,7 +45,7 @@ public class ScriptInjectionEventListener implements EventListener
                     String src = element.getAttribute("src");
                     if (src != null && src.length() > 0)
                     {
-                        threadModel.execute(scope, thiz, function, src);
+                        threadModel.execute(thiz, thiz, function, domNodes.get(element));
                     }
                 }
             }
