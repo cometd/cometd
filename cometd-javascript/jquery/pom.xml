@@ -25,46 +25,6 @@
                     </overlays>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>jetty-maven-plugin</artifactId>
-                <configuration>
-                    <scanIntervalSeconds>10</scanIntervalSeconds>
-                    <contextPath>/jquery</contextPath>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>test-unpack</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>unpack</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.cometd.javascript</groupId>
-                                    <artifactId>cometd-javascript-common-test</artifactId>
-                                    <version>${project-version}</version>
-                                    <type>jar</type>
-                                    <outputDirectory>${project.build.directory}/scripts</outputDirectory>
-                                    <includes>*.js</includes>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.cometd.javascript</groupId>
-                                    <artifactId>cometd-javascript-common</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>war</type>
-                                    <outputDirectory>${project.build.directory}/scripts</outputDirectory>
-                                    <includes>**/*.js</includes>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 
@@ -74,42 +34,6 @@
             <artifactId>cometd-javascript-common</artifactId>
             <version>${project.version}</version>
             <type>war</type>
-        </dependency>
-        <dependency>
-            <groupId>org.cometd.javascript</groupId>
-            <artifactId>cometd-javascript-common-test</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.cometd.java</groupId>
-            <artifactId>bayeux-api</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.cometd.java</groupId>
-            <artifactId>cometd-java-server</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-servlet</artifactId>
-            <version>${jetty-version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-servlets</artifactId>
-            <version>${jetty-version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-client</artifactId>
-            <version>${jetty-version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

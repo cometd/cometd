@@ -91,7 +91,7 @@ var window = this;
                         arrayResult += ']';
                         return arrayResult;
                     }
-                    else if (Packages.org.cometd.javascript.AbstractCometdTest.isJavaScriptObject(object))
+                    else if (Packages.org.cometd.javascript.Utils.isJavaScriptObject(object))
                     {
                         for (var oid = 0; oid < ids.length; ++oid)
                             if (ids[oid] === object)

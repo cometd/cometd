@@ -11,10 +11,6 @@
     <packaging>war</packaging>
     <name>CometD :: JavaScript :: Dojo</name>
 
-    <properties>
-        <dojo-version>1.5.0</dojo-version>
-    </properties>
-
     <build>
         <plugins>
             <plugin>
@@ -39,46 +35,6 @@
                     </overlays>
                 </configuration>
             </plugin>
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>test-unpack</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>unpack</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.cometd.javascript</groupId>
-                                    <artifactId>cometd-javascript-common-test</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>jar</type>
-                                    <outputDirectory>${project.build.directory}/scripts</outputDirectory>
-                                    <includes>*.js</includes>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.cometd.javascript</groupId>
-                                    <artifactId>cometd-javascript-common</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>war</type>
-                                    <outputDirectory>${project.build.directory}/scripts</outputDirectory>
-                                    <includes>**/*.js</includes>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.dojotoolkit</groupId>
-                                    <artifactId>dojo-war</artifactId>
-                                    <version>${dojo-version}</version>
-                                    <type>war</type>
-                                    <outputDirectory>${project.build.directory}/scripts</outputDirectory>
-                                    <excludes>META-INF/**,dojox/cometd.js,dojox/cometd/**</excludes>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 
@@ -90,40 +46,10 @@
             <type>war</type>
         </dependency>
         <dependency>
-            <groupId>org.cometd.javascript</groupId>
-            <artifactId>cometd-javascript-common-test</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.dojotoolkit</groupId>
             <artifactId>dojo-war</artifactId>
             <version>${dojo-version}</version>
             <type>war</type>
-        </dependency>
-        <dependency>
-            <groupId>org.cometd.java</groupId>
-            <artifactId>bayeux-api</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.cometd.java</groupId>
-            <artifactId>cometd-java-server</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-servlet</artifactId>
-            <version>${jetty-version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-client</artifactId>
-            <version>${jetty-version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
