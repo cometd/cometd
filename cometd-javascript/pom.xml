@@ -13,7 +13,7 @@
     <name>CometD :: JavaScript</name>
 
     <properties>
-        <dojo-version>1.5.0</dojo-version>
+        <dojo-version>1.6.0</dojo-version>
         <rhino-version>1.6R7</rhino-version>
     </properties>
 
