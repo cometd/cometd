@@ -630,10 +630,6 @@ org.cometd.Cometd = function(name)
         if (_isDisconnected())
         {
             _transports.reset();
-        }
-
-        if (_isDisconnected())
-        {
             _updateAdvice(_config.advice);
         }
         else
