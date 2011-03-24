@@ -805,6 +805,9 @@ org.cometd.Cometd = function(name)
                 _delayedConnect();
                 break;
             case 'handshake':
+                // The current transport may be failed (e.g. network disconnection)
+                // Reset the transports so the new handshake picks up the right one
+                _transports.reset();
                 _resetBackoff();
                 _delayedHandshake();
                 break;
