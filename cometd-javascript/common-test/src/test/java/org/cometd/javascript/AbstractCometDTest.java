@@ -3,6 +3,7 @@ package org.cometd.javascript;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 
+import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.server.Server;
@@ -33,7 +34,7 @@ public abstract class AbstractCometDTest
     @Before
     public void initCometDServer() throws Exception
     {
-        String providerClass = System.getProperty("toolkitTestProvider");
+        String providerClass = System.getProperty("toolkitTestProvider", JQueryTestProvider.class.getName());
         provider = (TestProvider)Thread.currentThread().getContextClassLoader().loadClass(providerClass).newInstance();
 
         cookies = new HttpCookieStore();
