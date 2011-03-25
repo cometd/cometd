@@ -1,6 +1,5 @@
 /**
  * Dual licensed under the Apache License 2.0 and the MIT license.
- * $Revision$ $Date$
  */
 (function($)
 {
@@ -23,11 +22,8 @@
         }
     }
 
-    // The default cometd instance
-    $.cometd = new org.cometd.Cometd();
-
     // Remap toolkit-specific transport calls
-    $.cometd.LongPollingTransport = function()
+    function LongPollingTransport()
     {
         var _super = new org.cometd.LongPollingTransport();
         var that = org.cometd.Transport.derive(_super);
@@ -55,9 +51,9 @@
         };
 
         return that;
-    };
+    }
 
-    $.cometd.CallbackPollingTransport = function()
+    function CallbackPollingTransport()
     {
         var _super = new org.cometd.CallbackPollingTransport();
         var that = org.cometd.Transport.derive(_super);
@@ -89,13 +85,23 @@
         };
 
         return that;
+    }
+
+    $.Cometd = function(name)
+    {
+        var cometd = new org.cometd.Cometd(name);
+
+        if (window.WebSocket)
+        {
+            cometd.registerTransport('websocket', new org.cometd.WebSocketTransport());
+        }
+        cometd.registerTransport('long-polling', new LongPollingTransport());
+        cometd.registerTransport('callback-polling', new CallbackPollingTransport());
+
+        return cometd;
     };
 
-    if (window.WebSocket)
-    {
-        $.cometd.registerTransport('websocket', new org.cometd.WebSocketTransport());
-    }
-    $.cometd.registerTransport('long-polling', new $.cometd.LongPollingTransport());
-    $.cometd.registerTransport('callback-polling', new $.cometd.CallbackPollingTransport());
+    // The default cometd instance
+    $.cometd = new $.Cometd();
 
 })(jQuery);
