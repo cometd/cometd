@@ -5,7 +5,13 @@
  * a new instance can be created via:
  * <pre>
  * var bayeuxUrl2 = ...;
- * var cometd2 = new $.Cometd();
+ *
+ * // Dojo style
+ * var cometd2 = new dojox.Cometd('another_optional_name');
+ *
+ * // jQuery style
+ * var cometd2 = new $.Cometd('another_optional_name');
+ *
  * cometd2.init({url: bayeuxUrl2});
  * </pre>
  * @param name the optional name of this cometd object
