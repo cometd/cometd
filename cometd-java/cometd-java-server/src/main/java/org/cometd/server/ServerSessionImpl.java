@@ -1,6 +1,7 @@
 package org.cometd.server;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -404,15 +405,20 @@ public class ServerSessionImpl implements ServerSession
         final List<ServerMessage> copy;
         synchronized (_queue)
         {
-            for (ServerSessionListener listener : _listeners)
+            if (_queue.isEmpty())
             {
-                if (listener instanceof ServerSession.DeQueueListener)
-                    ((ServerSession.DeQueueListener)listener).deQueue(this,_queue);
+                copy = Collections.emptyList();
             }
-
-            copy=new ArrayList<ServerMessage>(_queue.size()+2);
-            copy.addAll(_queue);
-            _queue.clear();
+            else
+            {
+                for (ServerSessionListener listener : _listeners)
+                {
+                    if (listener instanceof ServerSession.DeQueueListener)
+                        ((ServerSession.DeQueueListener)listener).deQueue(this, _queue);
+                }
+                copy = new ArrayList<ServerMessage>(_queue);
+                _queue.clear();
+            }
         }
         return copy;
     }
