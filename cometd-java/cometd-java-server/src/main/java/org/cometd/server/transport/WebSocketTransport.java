@@ -1,7 +1,6 @@
 package org.cometd.server.transport;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.text.ParseException;
@@ -31,17 +30,16 @@ import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketFactory;
 
-public class WebSocketTransport extends HttpTransport
+public class WebSocketTransport extends HttpTransport implements WebSocketFactory.Acceptor
 {
     public final static String PREFIX = "ws";
     public final static String NAME = "websocket";
     public final static String PROTOCOL_OPTION = "protocol";
     public final static String BUFFER_SIZE_OPTION = "bufferSize";
 
-    private final WebSocketFactory _factory = new WebSocketFactory();
-    private ThreadLocal<Handshake> _handshake = new ThreadLocal<Handshake>();
-
-    private String _protocol = "";
+    private final WebSocketFactory _factory = new WebSocketFactory(this);
+    private final ThreadLocal<Handshake> _handshake = new ThreadLocal<Handshake>();
+    private String _protocol;
 
     public WebSocketTransport(BayeuxServerImpl bayeux)
     {
@@ -71,44 +69,45 @@ public class WebSocketTransport extends HttpTransport
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        String protocol = request.getHeader("WebSocket-Protocol");
-
-        String host = request.getHeader("Host");
-        String origin = request.getHeader("Origin");
-        origin = checkOrigin(request, host, origin);
-
-        if (origin == null || _protocol != null && _protocol.length() > 0 && !_protocol.equals(protocol))
-        {
-            response.sendError(400);
-            return;
-        }
-
         if (isMetaConnectDeliveryOnly())
         {
             Log.warn("MetaConnectDeliveryOnly not implemented for websocket");
-            response.sendError(500);
+            response.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED);
             return;
         }
 
-        Handshake handshake = new Handshake(request);
-
-        WebSocket websocket = new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
-        _factory.upgrade(request, response, websocket, origin, protocol);
+        boolean accepted = _factory.acceptWebSocket(request, response);
+        if (!accepted)
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
     }
 
-    protected String checkOrigin(HttpServletRequest request, String host, String origin)
+    public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+    {
+        boolean sameProtocol = (_protocol == null && protocol == null) ||
+                (_protocol != null && _protocol.equals(protocol));
+
+        if (sameProtocol)
+        {
+            Handshake handshake = new Handshake(request);
+            return new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
+        }
+
+        return null;
+    }
+
+    public String checkOrigin(HttpServletRequest request, String host, String origin)
     {
         if (origin == null)
             origin = host;
         return origin;
     }
 
-    protected class WebSocketScheduler implements WebSocket, AbstractServerTransport.Scheduler
+    protected class WebSocketScheduler implements WebSocket.OnTextMessage, AbstractServerTransport.Scheduler
     {
         protected final Handshake _addresses;
         protected final String _userAgent;
         protected ServerSessionImpl _session;
-        protected Outbound _outbound;
+        protected Connection _connection;
         protected ServerMessage.Mutable _connectReply;
         protected final Timeout.Task _timeoutTask = new Timeout.Task()
         {
@@ -129,12 +128,12 @@ public class WebSocketTransport extends HttpTransport
             _userAgent = userAgent;
         }
 
-        public void onConnect(Outbound outbound)
+        public void onConnect(Connection connection)
         {
-            _outbound = outbound;
+            _connection = connection;
         }
 
-        public void onDisconnect()
+        public void onDisconnect(int closeCode, String message)
         {
             if (_session != null)
             {
@@ -144,7 +143,7 @@ public class WebSocketTransport extends HttpTransport
             }
         }
 
-        public void onMessage(byte frame, String data)
+        public void onMessage(String data)
         {
             boolean batch = false;
             try
@@ -243,22 +242,6 @@ public class WebSocketTransport extends HttpTransport
             getBayeux().getLogger().debug("Error parsing JSON: " + json, exception);
         }
 
-        public void onMessage(byte frame, byte[] data, int offset, int length)
-        {
-            try
-            {
-                onMessage(frame, new String(data, offset, length, "UTF-8"));
-            }
-            catch (UnsupportedEncodingException e)
-            {
-                Log.warn(e);
-            }
-        }
-
-        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
-        {
-        }
-
         public void cancel()
         {
         }
@@ -295,14 +278,14 @@ public class WebSocketTransport extends HttpTransport
         protected void send(List<ServerMessage> messages) throws IOException
         {
             String data = JSON.toString(messages);
-            _outbound.sendMessage(data);
+            _connection.sendMessage(data);
         }
 
         /* ------------------------------------------------------------ */
         protected void send(ServerMessage message) throws IOException
         {
             String data = message.getJSON();
-            _outbound.sendMessage("[" + data + "]");
+            _connection.sendMessage("[" + data + "]");
         }
     }
 
