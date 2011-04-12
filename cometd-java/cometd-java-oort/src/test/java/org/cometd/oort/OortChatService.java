@@ -4,22 +4,17 @@
 package org.cometd.oort;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.servlet.ServletContext;
 
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
-import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.java.annotation.Configure;
@@ -47,7 +42,7 @@ public class OortChatService
     {
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
         if (_oort==null)
-            throw new RuntimeException("!"+Oort.OORT_ATTRIBUTE);
+            throw new RuntimeException("!"+ Oort.OORT_ATTRIBUTE);
         _seti = (Seti)context.getAttribute(Seti.SETI_ATTRIBUTE);
         if (_seti==null)
             throw new RuntimeException("!"+Seti.SETI_ATTRIBUTE);
@@ -64,7 +59,7 @@ public class OortChatService
         channel.addListener(noMarkup);
         channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
     }
-    
+
     @SuppressWarnings("unused")
     @Configure ("/service/privatechat")
     private void configurePrivateChat(ConfigurableServerChannel channel)
@@ -74,7 +69,7 @@ public class OortChatService
         channel.addListener(noMarkup);
         channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
     }
-    
+
     @SuppressWarnings("unused")
     @Configure ("/service/members")
     private void configureMembers(ConfigurableServerChannel channel)
@@ -82,7 +77,7 @@ public class OortChatService
         channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
         channel.setPersistent(true);
     }
-    
+
     private Set<String> getMemberList(String room)
     {
         Set<String> members = _members.get(room);
@@ -94,14 +89,14 @@ public class OortChatService
         }
         return members;
     }
-    
+
     @Listener("/service/members")
     public void handleMembership(final ServerSession client, ServerMessage message)
     {
         Map<String, Object> data = message.getDataAsMap();
         final String room = ((String)data.get("room")).substring("/chat/".length());
         final String userName = (String)data.get("user");
-        
+
         final Set<String> members = getMemberList(room);
         synchronized (members)
         {
@@ -120,7 +115,7 @@ public class OortChatService
             if (!_oort.isOort(client))
                 _seti.associate(userName,client);
 
-            broadcastMembers(room,members); 
+            broadcastMembers(room,members);
         }
     }
 

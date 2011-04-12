@@ -43,11 +43,12 @@ import org.cometd.bayeux.server.BayeuxServer;
  */
 public class OortServlet implements Servlet
 {
-    private ServletConfig _config;
+    public final static String OORT_URL_PARAM = "oort.url";
+    public final static String OORT_CLOUD_PARAM = "oort.cloud";
+    public final static String OORT_CHANNELS_PARAM = "oort.channels";
 
-    public void destroy()
-    {
-    }
+    private ServletConfig _config;
+    private Oort _oort;
 
     public ServletConfig getServletConfig()
     {
@@ -65,38 +66,51 @@ public class OortServlet implements Servlet
 
         BayeuxServer bayeux = (BayeuxServer)config.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
         if (bayeux == null)
-        {
-            _config.getServletContext().log("No " + BayeuxServer.ATTRIBUTE + " initialized");
-            throw new UnavailableException(BayeuxServer.ATTRIBUTE);
-        }
+            throw new UnavailableException("Missing " + BayeuxServer.ATTRIBUTE + " attribute");
 
-        String url = _config.getInitParameter(Oort.OORT_URL);
+        String url = _config.getInitParameter(OORT_URL_PARAM);
         if (url == null)
+            throw new UnavailableException("Missing " + OORT_URL_PARAM + " init parameter");
+
+        try
         {
-            _config.getServletContext().log("No " + Oort.OORT_URL + " init parameter");
-            throw new UnavailableException(Oort.OORT_URL);
+            _oort = new Oort(bayeux, url);
+            _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE, _oort);
+            _oort.setClientDebugEnabled(Boolean.valueOf(_config.getInitParameter("clientDebug")));
+            _oort.start();
+
+            String channels = _config.getInitParameter(OORT_CHANNELS_PARAM);
+            if (channels != null)
+            {
+                String[] patterns = channels.split(",");
+                for (String channel : patterns)
+                    _oort.observeChannel(channel);
+            }
+
+            String cloud = _config.getInitParameter(OORT_CLOUD_PARAM);
+            if (cloud != null && cloud.length() > 0)
+            {
+                String[] urls = cloud.split(",");
+                for (String comet : urls)
+                    if (comet.length() > 0)
+                        _oort.observeComet(comet);
+            }
         }
-
-        Oort oort = new Oort(url, bayeux);
-        _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE, oort);
-
-        oort.setClientDebugEnabled(Boolean.valueOf(_config.getInitParameter("clientDebug")));
-
-        String channels = _config.getInitParameter(Oort.OORT_CHANNELS);
-        if (channels != null)
+        catch (Exception x)
         {
-            String[] patterns = channels.split(",");
-            for (String channel : patterns)
-                oort.observeChannel(channel);
+            throw new ServletException(x);
         }
+    }
 
-        String cloud = _config.getInitParameter(Oort.OORT_CLOUD);
-        if (cloud != null && cloud.length() > 0)
+    public void destroy()
+    {
+        try
         {
-            String[] urls = cloud.split(",");
-            for (String comet : urls)
-                if (comet.length() > 0)
-                    oort.observeComet(comet);
+            _oort.stop();
+        }
+        catch (Exception x)
+        {
+            throw new RuntimeException(x);
         }
     }
 
