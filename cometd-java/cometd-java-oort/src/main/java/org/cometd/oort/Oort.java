@@ -239,6 +239,10 @@ public class Oort extends AbstractLifeCycle
         }
     }
 
+    /**
+     * @param session the server session to test
+     * @return whether the given server session is one of those created by the Oort internal working
+     */
     public boolean isOort(ServerSession session)
     {
         String id = session.getId();
@@ -284,6 +288,7 @@ public class Oort extends AbstractLifeCycle
         }
 
         session.setAttribute(COMET_URL_ATTRIBUTE, cometURL);
+        _incomingComets.put(session.getId(), session);
 
         // Be notified when the remote node stops
         session.addListener(new OortCometDisconnectListener(cometURL));
@@ -363,7 +368,7 @@ public class Oort extends AbstractLifeCycle
      * A and C, a messages is sent from A to C on <code>/oort/cloud</code> containing the nodes connected
      * to A (in this case B). When C receives this message, it knows it has to connect to B also.</p>
      */
-    protected class CloudListener implements ServerChannel.MessageListener, ServerChannel.SubscriptionListener
+    protected class CloudListener implements ServerChannel.MessageListener
     {
         public boolean onMessage(ServerSession from, ServerChannel channel, Mutable msg)
         {
@@ -373,19 +378,6 @@ public class Oort extends AbstractLifeCycle
                 joinComets(cometURL, msg);
             }
             return true;
-        }
-
-        // TODO: not sure these are needed
-        public void subscribed(ServerSession session, ServerChannel channel)
-        {
-            _logger.info("/oort/cloud subscribe {}", session.getId());
-            _incomingComets.put(session.getId(), session);
-        }
-
-        public void unsubscribed(ServerSession session, ServerChannel channel)
-        {
-            _logger.info("/oort/cloud unsubscribe {}", session.getId());
-            _incomingComets.remove(session.getId());
         }
     }
 
@@ -427,6 +419,7 @@ public class Oort extends AbstractLifeCycle
 
         public void removed(ServerSession session, boolean timeout)
         {
+            _incomingComets.remove(session.getId());
             OortComet oortComet = _knownComets.remove(oortURL);
             if (oortComet != null)
                 oortComet.disconnect();

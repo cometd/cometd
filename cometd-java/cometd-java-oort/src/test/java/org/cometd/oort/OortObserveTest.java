@@ -158,7 +158,6 @@ public class OortObserveTest extends OortTest
         Oort oort2 = startOort(server2);
 
         OortComet oortComet12 = oort1.observeComet(oort2.getURL());
-        oortComet12.setDebugEnabled(true);
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
         OortComet oortComet21 = oort2.observeComet(oort1.getURL());
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
