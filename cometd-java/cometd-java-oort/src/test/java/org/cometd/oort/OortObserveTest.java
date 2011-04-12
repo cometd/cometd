@@ -70,14 +70,12 @@ public class OortObserveTest extends OortTest
         OortComet oortCometCD = oortC.observeComet(oortD.getURL());
         Assert.assertTrue(oortCometCD.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        Thread.sleep(2000);
-
         // Now connect A and C, then we must see that A connects to D and B connects to C and D
         OortComet oortCometAC = oortA.observeComet(oortC.getURL());
         Assert.assertTrue(oortCometAC.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait a while for the links to establish
-        Thread.sleep(1000000);
+        Thread.sleep(1000);
 
         Assert.assertEquals(3, oortA.getKnownComets().size());
         Assert.assertEquals(3, oortB.getKnownComets().size());
