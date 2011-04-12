@@ -611,7 +611,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
         }
 
-        assert reply != null;
+        // Here the reply may be null if this instance is stopped concurrently
+
         if (_logger.isDebugEnabled())
             _logger.debug("<< " + reply);
         return reply;

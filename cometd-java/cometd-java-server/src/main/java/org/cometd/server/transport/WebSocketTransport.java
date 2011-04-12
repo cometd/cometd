@@ -182,7 +182,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     // also be queued on the session.
                     ServerMessage.Mutable reply = getBayeux().handle(_session, message);
 
-                    if (connect && reply.isSuccessful())
+                    if (connect && reply != null && reply.isSuccessful())
                     {
                         _session.setUserAgent(_userAgent);
                         _session.setScheduler(this);
