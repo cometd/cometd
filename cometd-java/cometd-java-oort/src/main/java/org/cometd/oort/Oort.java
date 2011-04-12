@@ -1,11 +1,11 @@
 package org.cometd.oort;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -21,108 +21,116 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
+import org.cometd.common.HashMapMessage;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
 /**
- * Oort cluster of cometd servers.
- * <p>
- * This class maintains a collection of {@link OortComet} instances to each
- * comet server identified by calls to {@link #observeComet(String)}. The Oort
- * instance is created and configured by {@link OortServlet}.
- * <p>
- * The key configuration parameter that must be set is the Oort URL, which is
- * full public URL to the cometd servlet, eg. http://myserver:8080/context/cometd
- * <p>
- * See {@link OortServlet} for more configuration detail.<p>
- * @author gregw
+ * <p>Oort is the cluster manager that links one CometD server to a set of other CometD servers.</p>
+ * <p>The Oort instance is created and configured by {@link OortServlet}.</p>
+ * <p>This class maintains a collection of {@link OortComet} instances to each
+ * CometD server, created by calls to {@link #observeComet(String)}.</p>
+ * <p>The key configuration parameter is the Oort URL, which is
+ * full public URL of the CometD servlet to which the Oort instance is bound,
+ * for example: <code>http://myserver:8080/context/cometd</code>.</p>
  *
+ * @see OortServlet
  */
-public class Oort
+public class Oort extends AbstractLifeCycle
 {
-    public final static String OORT_URL = "oort.url";
-    public final static String OORT_CLOUD = "oort.cloud";
-    public final static String OORT_CHANNELS = "oort.channels";
-    public final static String OORT_ATTRIBUTE = "org.cometd.oort.Oort";
+    public final static String OORT_ATTRIBUTE = Oort.class.getName();
+    public static final String EXT_OORT_FIELD = "org.cometd.oort";
+    public static final String EXT_OORT_URL_FIELD = "oortURL";
+    public static final String EXT_OORT_SECRET_FIELD = "oortSecret";
+    public static final String EXT_COMET_URL_FIELD = "cometURL";
+    public static final String OORT_CLOUD_CHANNEL = "/oort/cloud";
+    private static final String COMET_URL_ATTRIBUTE = EXT_OORT_FIELD + "." + EXT_COMET_URL_FIELD;
 
-    private final String _url;
-    private final String _secret;
-    private final BayeuxServer _bayeux;
-    private final HttpClient _httpClient;
-    private final Random _random=new SecureRandom();
-    private final LocalSession _oortSession;
-    private final Logger _log;
-    private final Map<String,OortComet> _knownComets = new ConcurrentHashMap<String,OortComet>();
-    private final Map<String,ServerSession> _incomingComets = new ConcurrentHashMap<String,ServerSession>();
+    private final ConcurrentMap<String, OortComet> _knownComets = new ConcurrentHashMap<String, OortComet>();
+    private final Map<String, ServerSession> _incomingComets = new ConcurrentHashMap<String, ServerSession>();
     private final ConcurrentMap<String, Boolean> _channels = new ConcurrentHashMap<String, Boolean>();
+    private final BayeuxServer _bayeux;
+    private final String _url;
+    private final Logger _logger;
+    private final String _secret;
+    private final HttpClient _httpClient;
+    private final LocalSession _oortSession;
     private boolean _clientDebugEnabled;
 
-    /* ------------------------------------------------------------ */
-    Oort(String url,BayeuxServer bayeux)
+    public Oort(BayeuxServer bayeux, String url)
     {
-        _url=url;
-        _bayeux=bayeux;
-        _secret=Long.toHexString(_random.nextLong());
-        _log=org.eclipse.jetty.util.log.Log.getLogger("Oort-"+_url);
-        if (Boolean.valueOf(String.valueOf(bayeux.getOption("debug"))))
-            _log.setDebugEnabled(true);
+        _bayeux = bayeux;
+        _url = url;
 
-        _httpClient=new HttpClient();
+        _logger = Log.getLogger("Oort-" + _url);
+        // TODO: not sure what below is correct... should be "logLevel" ?
+//        if (Boolean.valueOf(String.valueOf(bayeux.getOption("debug"))))
+            _logger.setDebugEnabled(true);
 
-        _oortSession=_bayeux.newLocalSession("oort");
+        _secret = Long.toHexString(new SecureRandom().nextLong());
+        _httpClient = new HttpClient();
+        _oortSession = bayeux.newLocalSession("oort");
+
         bayeux.addExtension(new OortExtension());
-
         bayeux.createIfAbsent("/oort/cloud", new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
-                channel.addListener(new RootCloudListener());
+                channel.addListener(new CloudListener());
             }
         });
-        
-        try
-        {
-            _httpClient.start();
-            _oortSession.handshake();
-        }
-        catch(Exception e)
-        {
-            throw new RuntimeException(e);
-        }
     }
 
-    /* ------------------------------------------------------------ */
+    @Override
+    protected void doStart() throws Exception
+    {
+        _httpClient.start();
+        _oortSession.handshake();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        _oortSession.disconnect();
+
+        for (OortComet comet : _knownComets.values())
+        {
+            comet.disconnect();
+            comet.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+        }
+        _knownComets.clear();
+        // TODO: clear other data members ?
+
+        _httpClient.stop();
+    }
+
     public BayeuxServer getBayeux()
     {
         return _bayeux;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @return The public absolute URL of the Oort cometd server.
+     * @return the public absolute URL of the Oort CometD server
      */
     public String getURL()
     {
         return _url;
     }
 
-    /* ------------------------------------------------------------ */
     public String getSecret()
     {
         return _secret;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isClientDebugEnabled()
     {
         return _clientDebugEnabled;
     }
 
-    /* ------------------------------------------------------------ */
     public void setClientDebugEnabled(boolean clientDebugEnabled)
     {
         _clientDebugEnabled = clientDebugEnabled;
@@ -130,181 +138,163 @@ public class Oort
             comet.setDebugEnabled(clientDebugEnabled);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Observe an Oort Comet server.
-     * <p>
-     * The the comet server is not already observed, start a {@link OortComet}
-     * instance for it.
+     * <p>Connects (if not already connected) and observes another CometD server
+     * (identified by the given URL) via a {@link OortComet} instance.</p>
      *
-     * @param cometUrl
-     * @return The {@link OortComet} instance for the comet server.
+     * @param cometURL the CometD url to observe
+     * @return The {@link OortComet} instance associated to the CometD server identified by the URL
      */
-    public OortComet observeComet(String cometUrl)
+    public OortComet observeComet(String cometURL)
     {
         try
         {
-            URI uri = new URI(cometUrl);
-            
-            if (uri.getScheme()==null || uri.getHost()==null)
-            {
-                _log.warn("No protocol|host in comet URL: "+cometUrl);
-                return null;
-            }
+            URI uri = new URI(cometURL);
+            if (uri.getScheme() == null)
+                throw new IllegalArgumentException("Missing protocol in CometD URL " + cometURL);
+            if (uri.getHost() == null)
+                throw new IllegalArgumentException("Missing host in CometD URL " + cometURL);
         }
-        catch(Exception e)
+        catch (URISyntaxException x)
         {
-            _log.debug(e);
-            _log.warn("Bad comet URL: "+cometUrl);
+            throw new IllegalArgumentException(x);
+        }
+
+        if (_url.equals(cometURL))
             return null;
-        }
-        
-        synchronized (this)
-        {
-            if (_url.equals(cometUrl))
-                return null;
-            OortComet comet = _knownComets.get(cometUrl);
-            if (comet==null)
-            {
-                try
-                {
-                    comet = new OortComet(this,cometUrl);
-                    comet.setDebugEnabled(_clientDebugEnabled);
-                    _knownComets.put(cometUrl,comet);
-                    comet.handshake();
-                }
-                catch(Exception e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            }
-            return comet;
-        }
+
+        OortComet comet = new OortComet(this, cometURL);
+        OortComet existing = _knownComets.putIfAbsent(cometURL, comet);
+        if (existing != null)
+            return existing;
+
+        _logger.info("Connecting to node {}", cometURL);
+        Message.Mutable fields = HashMapMessage.parseMessages("" +
+                "{" +
+                "    \"" + Message.EXT_FIELD + "\": {" +
+                "        \"" + EXT_OORT_FIELD + "\": {" +
+                "            \"" + EXT_OORT_URL_FIELD + "\": \"" + getURL() + "\"," +
+                "            \"" + EXT_OORT_SECRET_FIELD + "\": \"" + getSecret() + "\"," +
+                "            \"" + EXT_COMET_URL_FIELD + "\": \"" + cometURL + "\"" +
+                "        }" +
+                "    }" +
+                "}").get(0);
+        comet.handshake(fields);
+        return comet;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Pass observed comets.
-     * <p>
-     * Called when another comet server publishes it's list of
-     * known comets to the /oort/cloud channel.  If the list contains
-     * any unknown commets, then {@link #observeComet(String)} is
-     * called for each.
-     * @param comets
+     * <p>Callback method invoked when a node joins this node and communicates
+     * the other comets linked to it, so that this node can connect to those
+     * comets as well.</p>
+     *
+     * @param comets the Oort server URLs to connect to
      */
-    void observedComets(Set<String> comets)
+    protected void cometsJoined(Set<String> comets)
     {
-        synchronized (this)
+        for (String comet : comets)
         {
-            Set<String> known=getKnownComets();
-            for (String comet : comets)
-                if (!_url.equals(comet))
-                    observeComet(comet);
-            known=getKnownComets();
-
-            if (!comets.containsAll(known))
-                _bayeux.getChannel("/oort/cloud").publish(_oortSession,known,null);
+            if (!_url.equals(comet) && !_knownComets.containsKey(comet))
+                observeComet(comet);
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @return The set of known Oort comet servers URLs.
+     * @return the set of known Oort comet servers URLs.
      */
     public Set<String> getKnownComets()
     {
-        synchronized (this)
-        {
-            Set<String> comets = new HashSet<String>(_knownComets.keySet());
-            comets.add(_url);
-            return comets;
-        }
+        Set<String> comets = new HashSet<String>(_knownComets.keySet());
+        // TODO: why adding also self, since then most of the times we need to exclude it
+//        comets.add(_url);
+        return comets;
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * @param oortURL the URL of a Oort node
+     * @return the OortComet instance connected with the Oort node with the given URL
+     */
+    public OortComet getComet(String oortURL)
+    {
+        return _knownComets.get(oortURL);
+    }
+
     /**
      * Observer a channel.
-     * <p>
+     * <p/>
      * Once observed, all {@link OortComet} instances subscribe
      * to the channel and will repeat any messages published to
      * the local channel (with loop prevention), so that the
      * messages are distributed to all Oort comet servers.
+     *
      * @param channelId
      */
     public void observeChannel(String channelId)
     {
         if (_channels.putIfAbsent(channelId, Boolean.TRUE) == null)
         {
+            Set<String> observedChannels = getObservedChannels();
             for (OortComet comet : _knownComets.values())
-                comet.subscribe();
+                comet.subscribe(observedChannels);
         }
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isOort(ServerSession session)
     {
-        String id=session.getId();
+        String id = session.getId();
 
         if (id.equals(_oortSession.getId()))
             return true;
-        
+
         if (_incomingComets.containsKey(id))
             return true;
-        
+
         for (OortComet oc : _knownComets.values())
         {
             if (id.equals(oc.getId()))
                 return true;
         }
-                
+
         return false;
     }
 
-
-    /* ------------------------------------------------------------ */
     public String toString()
     {
         return _url;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Called to register the details of a successful handshake with an
-     * Oort comet.  A {@link RemoteOortClientListener} instance is added to
-     * the local Oort client instance.
-     * @param oortUrl
-     * @param oortSecret
-     * @param clientId
+     * <p>Called to register the details of a successful handshake from another Oort node.</p>
+     *
+     * @param cometURL the remote node Oort URL
+     * @param cometSecret the remote node Oort secret
+     * @param session the server session that represent the connection with the remote Oort node
      */
-    protected void incomingCometHandshake(String oortUrl,String oortSecret,String clientId)
+    protected void incomingCometHandshake(String cometURL, String cometSecret, ServerSession session)
     {
-        _log.info("incoming {}@{}",clientId,oortUrl);
-        if (!_knownComets.containsKey(oortUrl))
-            observeComet(oortUrl);
-
-        ServerSession session =  _bayeux.getSession(clientId);
-        session.addListener(new ServerSession.MessageListener()
+        _logger.info("Incoming comet handshake from node {} with {}", cometURL, session.getId());
+        if (!_knownComets.containsKey(cometURL))
         {
-            public boolean onMessage(ServerSession to, ServerSession from, ServerMessage message)
-            {
-                // Prevent loops by not delivering a message from self or Oort session to the remote comet
-                if (to==from || to.getId().equals(from.getId()) || isOort(from))
-                {
-                    _log.debug("{} ---| {} {}",from,to,message);
-                    return false;
-                }
-                _log.debug("{} ---> {} {}",from,to,message);
-                return true;
-            }
-        });
+            _logger.debug("Node {} is unknown, establishing connection", cometURL);
+            observeComet(cometURL);
+        }
+        else
+        {
+            _logger.debug("Node {} is already known", cometURL);
+        }
+
+        session.setAttribute(COMET_URL_ATTRIBUTE, cometURL);
+
+        // Be notified when the remote node stops
+        session.addListener(new OortCometDisconnectListener(cometURL));
+        // Prevent loops in sending/receiving messages
+        session.addListener(new OortCometLoopListener());
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /**
-     * Extension to detect incoming handshake from other Oort servers
-     * and to call {@link Oort#incomingCometHandshake(String, String, String)}.
+     * <p>Extension that detects incoming handshakes from other Oort servers.</p>
      *
+     * @see Oort#incomingCometHandshake(String, String, ServerSession)
      */
     protected class OortExtension implements Extension
     {
@@ -325,33 +315,29 @@ public class Oort
 
         public boolean sendMeta(ServerSession to, Mutable message)
         {
-            if (message.getChannel().equals(Channel.META_HANDSHAKE) && message.isSuccessful())
+            // Skip local sessions
+            if (to != null && Channel.META_HANDSHAKE.equals(message.getChannel()) && message.isSuccessful())
             {
-                Message rcv = message.getAssociated();
-
-                Map<String,Object> rcvExt = rcv.getExt();
-                if (rcvExt!=null)
+                Map<String, Object> extensionIn = message.getAssociated().getExt();
+                if (extensionIn != null)
                 {
-                    Map<String,Object> oort_ext = (Map<String,Object>)rcvExt.get("oort");
-                    if (oort_ext!=null)
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> oortExtensionIn = (Map<String, Object>)extensionIn.get(EXT_OORT_FIELD);
+                    if (oortExtensionIn != null)
                     {
-                        String cometUrl = (String)oort_ext.get("comet");
-                        String oortUrl = (String)oort_ext.get("oort");
-
-                        if (getURL().equals(cometUrl))
+                        String cometURL = (String)oortExtensionIn.get(EXT_COMET_URL_FIELD);
+                        if (getURL().equals(cometURL))
                         {
-                            String oortSecret = (String)oort_ext.get("oortSecret");
+                            // Read incoming information
+                            String remoteOortURL = (String)oortExtensionIn.get(EXT_OORT_URL_FIELD);
+                            String remoteOortSecret = (String)oortExtensionIn.get(EXT_OORT_SECRET_FIELD);
+                            incomingCometHandshake(remoteOortURL, remoteOortSecret, to);
 
-                            incomingCometHandshake(oortUrl,oortSecret,message.getClientId());
-
-                            Object ext=message.get("ext");
-
-                            Map<String,Object> sndExt = (Map<String,Object>)((ext instanceof JSON.Literal)?JSON.parse(ext.toString()):ext);
-                            if (sndExt==null)
-                                sndExt = new HashMap<String,Object>();
-                            oort_ext.put("cometSecret",getSecret());
-                            sndExt.put("oort",oort_ext);
-                            message.put("ext",sndExt);
+                            // Send information about us
+                            Map<String, Object> oortExtensionOut = new HashMap<String, Object>();
+                            oortExtensionOut.put(EXT_OORT_SECRET_FIELD, getSecret());
+                            Map<String, Object> extensionOut = message.getExt(true);
+                            extensionOut.put(EXT_OORT_FIELD, oortExtensionOut);
                         }
                     }
                 }
@@ -360,39 +346,45 @@ public class Oort
         }
     }
 
+    protected void joinComets(String cometURL, Message message)
+    {
+        Object[] array = (Object[])message.getData();
+        Set<String> comets = new HashSet<String>();
+        for (Object o : array)
+            comets.add(o.toString());
+        _logger.debug("Received comets {} from {}", comets, cometURL);
+        cometsJoined(comets);
+    }
 
-
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /**
-     * MessageListener that handles publishes to /oort/cloud
+     * <p>This listener handles messages sent to <code>/oort/cloud</code> that contains the list of nodes
+     * connected to the node that just joined the cloud.</p>
+     * <p>For example, if nodes A and B are connected, and if nodes C and D are connected, when connecting
+     * A and C, a messages is sent from A to C on <code>/oort/cloud</code> containing the nodes connected
+     * to A (in this case B). When C receives this message, it knows it has to connect to B also.</p>
      */
-    protected class RootCloudListener implements ServerChannel.MessageListener, ServerChannel.SubscriptionListener
+    protected class CloudListener implements ServerChannel.MessageListener, ServerChannel.SubscriptionListener
     {
         public boolean onMessage(ServerSession from, ServerChannel channel, Mutable msg)
         {
-            Object data=msg.getData();
-            if (data instanceof Object[])
+            if (!from.isLocalSession())
             {
-                Object[] array = (Object[])msg.getData();
-                Set<String> comets = new HashSet<String>();
-                for (Object o:array)
-                    comets.add(o.toString());
-                observedComets(comets);
+                String cometURL = (String)from.getAttribute(COMET_URL_ATTRIBUTE);
+                joinComets(cometURL, msg);
             }
             return true;
         }
 
+        // TODO: not sure these are needed
         public void subscribed(ServerSession session, ServerChannel channel)
         {
-            _log.info("/oort/cloud subscribe {}",session.getId());
-            _incomingComets.put(session.getId(),session);
+            _logger.info("/oort/cloud subscribe {}", session.getId());
+            _incomingComets.put(session.getId(), session);
         }
 
         public void unsubscribed(ServerSession session, ServerChannel channel)
         {
-            _log.info("/oort/cloud unsubscribe {}",session.getId());
+            _logger.info("/oort/cloud unsubscribe {}", session.getId());
             _incomingComets.remove(session.getId());
         }
     }
@@ -402,9 +394,9 @@ public class Oort
         return _httpClient;
     }
 
-    public Logger getLog()
+    protected Logger getLogger()
     {
-        return _log;
+        return _logger;
     }
 
     public Set<String> getObservedChannels()
@@ -418,5 +410,41 @@ public class Oort
     public LocalSession getOortSession()
     {
         return _oortSession;
+    }
+
+    /**
+     * <p>Listener that detect when a server session is removed (means that the remote
+     * client disconnected), and disconnect the OortComet associated.</p>
+     */
+    private class OortCometDisconnectListener implements ServerSession.RemoveListener
+    {
+        private final String oortURL;
+
+        public OortCometDisconnectListener(String oortURL)
+        {
+            this.oortURL = oortURL;
+        }
+
+        public void removed(ServerSession session, boolean timeout)
+        {
+            OortComet oortComet = _knownComets.remove(oortURL);
+            if (oortComet != null)
+                oortComet.disconnect();
+        }
+    }
+
+    private class OortCometLoopListener implements ServerSession.MessageListener
+    {
+        public boolean onMessage(ServerSession to, ServerSession from, ServerMessage message)
+        {
+            // Prevent loops by not delivering a message from self or Oort session to the remote comet
+            if (to == from || to.getId().equals(from.getId()) || isOort(from))
+            {
+                _logger.debug("{} --| {} {}", from, to, message);
+                return false;
+            }
+            _logger.debug("{} --> {} {}", from, to, message);
+            return true;
+        }
     }
 }
