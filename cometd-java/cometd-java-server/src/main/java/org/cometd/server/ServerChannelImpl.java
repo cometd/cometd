@@ -82,7 +82,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     {
         if (!session.isHandshook())
             return false;
-        
+
         if (_subscribers.add(session))
         {
             session.subscribedTo(this);
@@ -212,6 +212,10 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         ServerSessionImpl session=(from instanceof ServerSessionImpl)
           ?(ServerSessionImpl)from
           :((from instanceof LocalSession)?(ServerSessionImpl)((LocalSession)from).getServerSession():null);
+
+        // Do not leak the clientId to other subscribers
+        // as we are now "sending" this message
+        mutable.setClientId(null);
 
         if(_bayeux.extendSend(session,null,mutable))
             _bayeux.doPublish(session,this,mutable);
