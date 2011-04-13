@@ -167,7 +167,7 @@ public class Oort extends AbstractLifeCycle
         if (existing != null)
             return existing;
 
-        _logger.info("Connecting to node {}", cometURL);
+        _logger.debug("Connecting to comet {}", cometURL);
         Message.Mutable fields = HashMapMessage.parseMessages("" +
                 "{" +
                 "    \"" + Message.EXT_FIELD + "\": {" +
@@ -183,8 +183,8 @@ public class Oort extends AbstractLifeCycle
     }
 
     /**
-     * <p>Callback method invoked when a node joins this node and communicates
-     * the other comets linked to it, so that this node can connect to those
+     * <p>Callback method invoked when a comet joins this Oort instance and communicates
+     * the other comets linked to it, so that this Oort instance can connect to those
      * comets as well.</p>
      *
      * @param comets the Oort server URLs to connect to
@@ -203,30 +203,27 @@ public class Oort extends AbstractLifeCycle
      */
     public Set<String> getKnownComets()
     {
-        Set<String> comets = new HashSet<String>(_knownComets.keySet());
-        // TODO: why adding also self, since then most of the times we need to exclude it
-//        comets.add(_url);
-        return comets;
+        return new HashSet<String>(_knownComets.keySet());
     }
 
     /**
-     * @param oortURL the URL of a Oort node
-     * @return the OortComet instance connected with the Oort node with the given URL
+     * @param cometURL the URL of a Oort comet
+     * @return the OortComet instance connected with the Oort comet with the given URL
      */
-    public OortComet getComet(String oortURL)
+    public OortComet getComet(String cometURL)
     {
-        return _knownComets.get(oortURL);
+        return _knownComets.get(cometURL);
     }
 
     /**
-     * Observer a channel.
-     * <p/>
-     * Once observed, all {@link OortComet} instances subscribe
+     * <p>Observes the given channel, registering to receive messages from
+     * the Oort comets connected to this Oort instance.</p>
+     * <p>Once observed, all {@link OortComet} instances subscribe
      * to the channel and will repeat any messages published to
      * the local channel (with loop prevention), so that the
-     * messages are distributed to all Oort comet servers.
+     * messages are distributed to all Oort comet servers.</p>
      *
-     * @param channelId
+     * @param channelId the channel to observe
      */
     public void observeChannel(String channelId)
     {
@@ -267,29 +264,29 @@ public class Oort extends AbstractLifeCycle
     }
 
     /**
-     * <p>Called to register the details of a successful handshake from another Oort node.</p>
+     * <p>Called to register the details of a successful handshake from another Oort comet.</p>
      *
-     * @param cometURL the remote node Oort URL
-     * @param cometSecret the remote node Oort secret
-     * @param session the server session that represent the connection with the remote Oort node
+     * @param cometURL the remote Oort URL
+     * @param cometSecret the remote Oort secret
+     * @param session the server session that represent the connection with the remote Oort comet
      */
     protected void incomingCometHandshake(String cometURL, String cometSecret, ServerSession session)
     {
-        _logger.info("Incoming comet handshake from node {} with {}", cometURL, session.getId());
+        _logger.debug("Incoming comet handshake from comet {} with {}", cometURL, session.getId());
         if (!_knownComets.containsKey(cometURL))
         {
-            _logger.debug("Node {} is unknown, establishing connection", cometURL);
+            _logger.debug("Comet {} is unknown, establishing connection", cometURL);
             observeComet(cometURL);
         }
         else
         {
-            _logger.debug("Node {} is already known", cometURL);
+            _logger.debug("Comet {} is already known", cometURL);
         }
 
         session.setAttribute(COMET_URL_ATTRIBUTE, cometURL);
         _incomingComets.put(session.getId(), session);
 
-        // Be notified when the remote node stops
+        // Be notified when the remote comet stops
         session.addListener(new OortCometDisconnectListener(cometURL));
         // Prevent loops in sending/receiving messages
         session.addListener(new OortCometLoopListener());
@@ -361,10 +358,10 @@ public class Oort extends AbstractLifeCycle
     }
 
     /**
-     * <p>This listener handles messages sent to <code>/oort/cloud</code> that contains the list of nodes
-     * connected to the node that just joined the cloud.</p>
-     * <p>For example, if nodes A and B are connected, and if nodes C and D are connected, when connecting
-     * A and C, a messages is sent from A to C on <code>/oort/cloud</code> containing the nodes connected
+     * <p>This listener handles messages sent to <code>/oort/cloud</code> that contains the list of comets
+     * connected to the Oort that just joined the cloud.</p>
+     * <p>For example, if comets A and B are connected, and if comets C and D are connected, when connecting
+     * A and C, a message is sent from A to C on <code>/oort/cloud</code> containing the comets connected
      * to A (in this case B). When C receives this message, it knows it has to connect to B also.</p>
      */
     protected class CloudListener implements ServerChannel.MessageListener
@@ -429,7 +426,7 @@ public class Oort extends AbstractLifeCycle
     {
         public boolean onMessage(ServerSession to, ServerSession from, ServerMessage message)
         {
-            // Prevent loops by not delivering a message from self or Oort session to remote Oort nodes
+            // Prevent loops by not delivering a message from self or Oort session to remote Oort comets
             if (to.getId().equals(from.getId()) || isOort(from))
             {
                 _logger.debug("{} --| {} {}", from, to, message);
