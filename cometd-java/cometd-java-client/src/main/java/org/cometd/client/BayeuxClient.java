@@ -622,6 +622,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         });
     }
 
+    protected void processMessage(Message.Mutable message)
+    {
+        logger.debug("Processing message {}", message);
+        receive(message);
+    }
+
     private String getAdviceAction(Map<String, Object> advice, String defaultResult)
     {
         String action = defaultResult;
@@ -965,7 +971,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         protected void processMessage(Message.Mutable message)
         {
-            receive(message);
+            BayeuxClient.this.processMessage(message);
         }
 
         protected void onFailure(Throwable x, Message[] messages)
