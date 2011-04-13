@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.client.BayeuxClient;
+import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
@@ -11,11 +13,13 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
+import org.junit.Assert;
 
 public abstract class OortTest
 {
     private final List<Server> servers = new ArrayList<Server>();
     private final List<Oort> oorts = new ArrayList<Oort>();
+    private final List<BayeuxClient> clients = new ArrayList<BayeuxClient>();
 
     protected Server startServer(int port) throws Exception
     {
@@ -56,11 +60,33 @@ public abstract class OortTest
         return oort;
     }
 
+    protected BayeuxClient startClient(Oort oort)
+    {
+        BayeuxClient client = new BayeuxClient(oort.getURL(), new LongPollingTransport(null, oort.getHttpClient()));
+        client.handshake();
+        client.waitFor(1000, BayeuxClient.State.CONNECTED);
+        clients.add(client);
+        return client;
+    }
+
     @After
     public void stop() throws Exception
     {
+        stopClients();
         stopOorts();
         stopServers();
+    }
+
+    protected void stopClients()
+    {
+        for (int i = clients.size() - 1; i >= 0; --i)
+            stopClient(clients.get(i));
+    }
+
+    protected void stopClient(BayeuxClient client)
+    {
+        client.disconnect();
+        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
     }
 
     protected void stopOorts() throws Exception

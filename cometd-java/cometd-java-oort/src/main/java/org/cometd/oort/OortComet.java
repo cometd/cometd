@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
 
@@ -49,7 +50,7 @@ public class OortComet extends BayeuxClient
                     // The secret of the remote Oort
                     _cometSecret = (String)oortExtension.get(Oort.EXT_OORT_SECRET_FIELD);
 
-                    _oort.getLogger().info("Connected to node {} with {}", _cometURL, message.getClientId());
+                    _oort.getLogger().info("Connected to comet {} with {}", _cometURL, message.getClientId());
 
                     batch(new Runnable()
                     {
@@ -74,7 +75,7 @@ public class OortComet extends BayeuxClient
                 }
                 else
                 {
-                    _oort.getLogger().warn("Failed to connect to node {}, message {}", _cometURL, message);
+                    _oort.getLogger().warn("Failed to connect to comet {}, message {}", _cometURL, message);
                 }
             }
         });
@@ -91,15 +92,16 @@ public class OortComet extends BayeuxClient
             {
                 public void onMessage(ClientSessionChannel channel, Message message)
                 {
-                    _oort.getLogger().debug("republish {} by {}", message, _oort.getOortSession());
-                    _oort.getOortSession().getChannel(message.getChannel()).publish(message.getData(), message.getId());
+                    _oort.getLogger().debug("Republishing message {} from {}", message, _cometURL);
+                    ServerChannel serverChannel = _oort.getBayeux().getChannel(message.getChannel());
+                    serverChannel.publish(_oort.getOortSession(), message.getData(), message.getId());
                 }
             };
 
             ClientSessionChannel.MessageListener existing = _subscriptions.putIfAbsent(channel, listener);
             if (existing == null)
             {
-                _oort.getLogger().debug("subscribe {} on {}", channel, _cometURL);
+                _oort.getLogger().debug("Subscribing to {} on {}", channel, _cometURL);
                 getChannel(channel).subscribe(listener);
             }
         }

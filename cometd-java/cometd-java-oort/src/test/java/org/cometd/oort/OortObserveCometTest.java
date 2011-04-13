@@ -7,7 +7,7 @@ import org.eclipse.jetty.server.Server;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class OortObserveTest extends OortTest
+public class OortObserveCometTest extends OortTest
 {
     @Test
     public void testObserveStartedOortAndExpectToBeObserved() throws Exception
@@ -28,7 +28,7 @@ public class OortObserveTest extends OortTest
     }
 
     @Test
-    public void testNodeANodeBConnectedWhenNodeAConnectsToNodeCThenAlsoNodeBConnectsToNodeC() throws Exception
+    public void testCometACometBConnectedWhenCometAConnectsToCometCThenAlsoCometBConnectsToCometC() throws Exception
     {
         Server serverA = startServer(0);
         Oort oortA = startOort(serverA);
@@ -52,7 +52,7 @@ public class OortObserveTest extends OortTest
     }
 
     @Test
-    public void testConnectTwoCloudsAndDisconnectOneNode() throws Exception
+    public void testConnectTwoCloudsAndDisconnectOneComet() throws Exception
     {
         // Cloud #1, A and B
         Server serverA = startServer(0);
@@ -82,7 +82,7 @@ public class OortObserveTest extends OortTest
         Assert.assertEquals(3, oortC.getKnownComets().size());
         Assert.assertEquals(3, oortD.getKnownComets().size());
 
-        // Remove node C, then A and B must still be connected to D
+        // Remove comet C, then A and B must still be connected to D
         stopOort(oortC);
         stopServer(serverC);
 
