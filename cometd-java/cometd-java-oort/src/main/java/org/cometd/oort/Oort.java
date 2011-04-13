@@ -22,6 +22,7 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.common.HashMapMessage;
+import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -66,9 +67,7 @@ public class Oort extends AbstractLifeCycle
         _url = url;
 
         _logger = Log.getLogger("Oort-" + _url);
-        // TODO: not sure what below is correct... should be "logLevel" ?
-//        if (Boolean.valueOf(String.valueOf(bayeux.getOption("debug"))))
-            _logger.setDebugEnabled(true);
+        _logger.setDebugEnabled(String.valueOf(BayeuxServerImpl.DEBUG_LOG_LEVEL).equals(bayeux.getOption(BayeuxServerImpl.LOG_LEVEL)));
 
         _secret = Long.toHexString(new SecureRandom().nextLong());
         _httpClient = new HttpClient();
@@ -393,7 +392,7 @@ public class Oort extends AbstractLifeCycle
 
     public Set<String> getObservedChannels()
     {
-        return _channels.keySet();
+        return new HashSet<String>(_channels.keySet());
     }
 
     /**
@@ -430,8 +429,8 @@ public class Oort extends AbstractLifeCycle
     {
         public boolean onMessage(ServerSession to, ServerSession from, ServerMessage message)
         {
-            // Prevent loops by not delivering a message from self or Oort session to the remote comet
-            if (to == from || to.getId().equals(from.getId()) || isOort(from))
+            // Prevent loops by not delivering a message from self or Oort session to remote Oort nodes
+            if (to.getId().equals(from.getId()) || isOort(from))
             {
                 _logger.debug("{} --| {} {}", from, to, message);
                 return false;
