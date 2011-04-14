@@ -17,7 +17,6 @@ package com.webtide.demo.auction;
 
 import org.cometd.oort.Oort;
 import org.cometd.oort.OortServlet;
-import org.cometd.oort.Seti;
 import org.cometd.oort.SetiServlet;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.server.Server;
@@ -102,7 +101,6 @@ public class AuctionDemo
         context.addServlet(oort_holder, "/oort/*");
 
         ServletHolder seti_holder = new ServletHolder(SetiServlet.class);
-        seti_holder.setInitParameter(Seti.SETI_SHARD,"S"+(port%2));
         seti_holder.setInitOrder(2);
         context.addServlet(seti_holder, "/seti/*");
 

@@ -1,9 +1,9 @@
 package org.cometd.oort;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -12,63 +12,72 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
-import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.AbstractService;
 import org.cometd.server.authorizer.GrantAuthorizer;
-import org.eclipse.jetty.util.LazyList;
-import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
-
-/* ------------------------------------------------------------ */
-/** The Search for Extra Terrestial Intelligence.
- * <p>
- * Well in this case, just the search for a user logged onto an
- * Cometd node in an Oort cluster.
- * <p>
- * Seti allows an application to maintain a mapping from userId to
- * comet client ID using the {@link #associate(String, Client)} and
- * {@link #disassociate(String)} methods. Each cometd node keeps its
- * own associate mapping for clients connected to it.
- * <p>
- * The {@link #sendMessage(Collection, String, Object)} and
+/**
+ * <p>The component that Searches for Extra Terrestrial Intelligence or,
+ * in this case, just searches for a user logged onto a comet in an Oort cluster.</p>
+ * <p>Seti allows an application to maintain a mapping from userId (any application
+ * identifier such as user names or database IDs that represent users) to
+ * server sessions using the {@link #associate(String, ServerSession)} and
+ * {@link #disassociate(String)} methods.</p>
+ * <p>A typical example of usage of {@link Seti#associate(String, ServerSession)} is
+ * in a {@link SecurityPolicy} after a successful handshake (where authentication
+ * information can be linked with the server session), or in {@link AbstractService CometD services}
+ * where the association is established upon receiving a message on a particular channel
+ * processed by the service itself.</p>
+ * <p>Each comet in the cluster keeps its own mapping for clients connected to it.</p>
+ * <p>The {@link #sendMessage(Collection, String, Object)} and
  * {@link #sendMessage(String, String, Object)} methods may be
- * used to send a message to user(s) anywhere in the Oort cluster
- * and Seti organizes the search of the distributed associate
- * maps in order to locate the user(s)
- * <p>
- * If users can be directed to shards of cometd servers, then
- * each Seti instance must be told it's shard ID and the {@link #userId2Shard(String)}
- * method must be extended to map users to shards.
+ * used to send messages to user(s) anywhere in the Oort cluster
+ * and Seti organizes the search in order to locate the user(s).</p>
  *
+ * @see SetiServlet
  */
-public class Seti
+public class Seti extends AbstractLifeCycle
 {
-    public final static String SETI_ATTRIBUTE="org.cometd.oort.Seti";
-    public final static String SETI_SHARD="seti.shard";
+    public static final String SETI_ATTRIBUTE = Seti.class.getName();
+    private static final String SETI_ALL_CHANNEL = "/seti/all";
 
-    final String _setiId;
-    final String _shardId;
-    final Oort _oort;
-    final LocalSession _session;
-    final ShardLocation _allShardLocation;
-    final ServerChannel _setiIdChannel;
-    final ServerChannel _setiAllChannel;
-    final ServerChannel _setiShardChannel;
+    private final ConcurrentMap<String, Location> _uid2Location = new ConcurrentHashMap<String, Location>();
+    private final Logger _logger;
+    private final Oort _oort;
+    private final String _setiId;
+    private final LocalSession _session;
 
-    final ConcurrentMap<String, Location> _uid2Location = new ConcurrentHashMap<String, Location>();
-
-    /* ------------------------------------------------------------ */
-    public Seti(Oort oort, String shardId)
+    public Seti(Oort oort)
     {
-        _oort=oort;
-        BayeuxServer bayeux = _oort.getBayeux();
+        _logger = Log.getLogger("Seti-" + oort.getURL());
+        _oort = oort;
+        _setiId = oort.getURL().replace("://", "_").replace(":", "_").replace("/", "_");
+        _session = oort.getBayeuxServer().newLocalSession("seti");
+    }
 
-        _session = bayeux.newLocalSession("seti");
-        _setiId=_oort.getURL().replace("://","_").replace("/","_").replace(":","_");
-        _shardId=shardId;
+    protected Logger getLogger()
+    {
+        return _logger;
+    }
 
+    public Oort getOort()
+    {
+        return _oort;
+    }
+
+    public String getId()
+    {
+        return _setiId;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        BayeuxServer bayeux = _oort.getBayeuxServer();
         bayeux.createIfAbsent("/seti/**", new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
@@ -78,341 +87,248 @@ public class Seti
         });
 
         String channel = "/seti/" + _setiId;
-        bayeux.createIfAbsent(channel);
-        _setiIdChannel= bayeux.getChannel(channel);
-        _setiIdChannel.setPersistent(true);
-
-        channel = "/seti/ALL";
-        bayeux.createIfAbsent(channel);
-        _setiAllChannel= bayeux.getChannel(channel);
-        _setiAllChannel.setPersistent(true);
-
-        channel = "/seti/"+shardId;
-        bayeux.createIfAbsent(channel);
-        _setiShardChannel= bayeux.getChannel(channel);
-        _setiShardChannel.setPersistent(true);
-
-        _allShardLocation = new ShardLocation("ALL");
-
-        try
+        bayeux.createIfAbsent(channel, new ConfigurableServerChannel.Initializer()
         {
-            _session.handshake();
-        }
-        catch(Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+            }
+        });
+        _oort.observeChannel(channel);
 
-        _oort.observeChannel(_setiIdChannel.getId());
-        _session.getChannel(_setiIdChannel.getId()).subscribe(new ClientSessionChannel.MessageListener()
+        _session.handshake();
+
+        _session.getChannel(channel).subscribe(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                receive(message);
+                receiveDirect(message);
             }
         });
 
-        _oort.observeChannel(_setiAllChannel.getId());
-        _session.getChannel(_setiAllChannel.getId()).subscribe(new ClientSessionChannel.MessageListener()
+        bayeux.createIfAbsent(SETI_ALL_CHANNEL, new ConfigurableServerChannel.Initializer()
         {
-            public void onMessage(ClientSessionChannel channel, Message message)
+            public void configureChannel(ConfigurableServerChannel channel)
             {
-                receive(message);
+                channel.setPersistent(true);
             }
         });
-
-
-        _oort.observeChannel(_setiShardChannel.getId());
-        _session.getChannel(_setiShardChannel.getId()).subscribe(new ClientSessionChannel.MessageListener()
+        _oort.observeChannel(SETI_ALL_CHANNEL);
+        _session.getChannel(SETI_ALL_CHANNEL).subscribe(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                receive(message);
+                receiveBroadcast(message);
             }
         });
     }
 
-    /* ------------------------------------------------------------ */
-    public void associate(final String userId,final ServerSession session)
+    @Override
+    protected void doStop() throws Exception
     {
-        _uid2Location.put(userId,new LocalLocation(session));
-        userId2Shard(userId).associate(userId);
+        _session.disconnect();
+
+        BayeuxServer bayeux = _oort.getBayeuxServer();
+        _oort.deobserveChannel(SETI_ALL_CHANNEL);
+        bayeux.getChannel(SETI_ALL_CHANNEL).setPersistent(false);
+
+        String channel = "/seti/" + _setiId;
+        _oort.deobserveChannel(channel);
+        bayeux.getChannel(channel).setPersistent(false);
+
+        bayeux.getChannel("/seti/**").removeAuthorizer(GrantAuthorizer.GRANT_ALL);
     }
 
-    /* ------------------------------------------------------------ */
+    public void associate(final String userId, final ServerSession session)
+    {
+        if (session == null)
+            throw new NullPointerException();
+
+        _uid2Location.put(userId, new LocalLocation(session));
+        _logger.debug("Associated session {} to user {}", session, userId);
+        // Let everyone in the cluster know that this session is here
+        _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, true), null);
+    }
+
     public void disassociate(final String userId)
     {
-        _uid2Location.remove(userId);
-        userId2Shard(userId).disassociate(userId);
+        Location location = _uid2Location.remove(userId);
+        _logger.debug("Disassociated session {} from user {}", location, userId);
+        // Let everyone in the cluster know that this session is not here anymore
+        _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, false), null);
     }
 
-    /* ------------------------------------------------------------ */
-    public void sendMessage(final String toUser,final String toChannel,final Object data)
+    public void sendMessage(final String toUser, final String toChannel, final Object data)
     {
-        Location location = _uid2Location.get(toUser);
-        if (location==null)
-            location = userId2Shard(toUser);
-
-        location.sendMessage(toUser,toChannel,data);
+        sendMessage(Collections.singleton(toUser), toChannel, data);
     }
 
-    /* ------------------------------------------------------------ */
-    public void sendMessage(final Collection<String> toUsers,final String toChannel,final Object message)
+    public void sendMessage(final Collection<String> toUsers, final String toChannel, final Object data)
     {
-        // break toUsers in to shards
-        MultiMap shard2users = new MultiMap();
-        for (String userId:toUsers)
+        for (String toUser : toUsers)
         {
-            ShardLocation shard = userId2Shard(userId);
-            shard2users.add(shard,userId);
-        }
-
-        // for each shard
-        for (Map.Entry<ShardLocation,Object> entry : (Set<Map.Entry<ShardLocation,Object>>)shard2users.entrySet())
-        {
-            // TODO, we could look at all users in shard to see if we
-            // know a setiId for each, and if so, break the user list
-            // up into a message for each seti-id. BUT it is probably
-            // more efficient just to send to the entire shard (unless
-            // the number of nodes in the shard is greater than the
-            // number of users).
-
-            ShardLocation shard = entry.getKey();
-            Object lazyUsers = entry.getValue();
-
-            if (LazyList.size(lazyUsers)==1)
-                shard.sendMessage((String)lazyUsers,toChannel,message);
-            else
-                shard.sendMessage((List<String>)lazyUsers,toChannel,message);
+            Location location = _uid2Location.get(toUser);
+            if (location == null)
+                location = new SetiLocation(SETI_ALL_CHANNEL);
+            location.send(toUser, toChannel, data);
         }
     }
 
-    /* ------------------------------------------------------------ */
-    protected ShardLocation userId2Shard(final String userId)
+    /**
+     * <p>Receives messages directly from other comets in the cloud, containing
+     * messages to be sent to sessions that are connected to this comet.</p>
+     *
+     * @param message the message to forward to a session connected to this comet
+     */
+    protected void receiveDirect(Message message)
     {
-        return _allShardLocation;
+        _logger.debug("Received direct message {}", message);
+        receiveMessage(message);
     }
 
-    /* ------------------------------------------------------------ */
-    protected void receive(final Message msg)
+    protected void receiveBroadcast(Message message)
     {
-        if (Log.isDebugEnabled()) Log.debug("SETI "+_oort+":: "+msg);
+        Map<String, Object> data = message.getDataAsMap();
+        Boolean presence = (Boolean)data.get(SetiPresence.PRESENCE_FIELD);
+        if (presence != null)
+        {
+            receivePresence(message);
+        }
+        else
+        {
+            receiveMessage(message);
+        }
+    }
 
-        if (!(msg.getData() instanceof Map))
+    protected void receivePresence(Message message)
+    {
+        Map<String, Object> data = message.getDataAsMap();
+        String setiId = (String)data.get(SetiPresence.SETI_ID_FIELD);
+        if (_setiId.equals(setiId))
             return;
 
-        // extract the message details
-        Map<String,Object> data = (Map<String,Object>)msg.getData();
-        final String toUid=(String)data.get("to");
-        final String fromUid=(String)data.get("from");
-        final Object message = data.get("message");
-        final String on = (String)data.get("on");
+        _logger.debug("Received presence message {}", message);
 
-        // Handle any client locations contained in the message
-        if (fromUid!=null)
+        String userId = (String)data.get(SetiPresence.USER_ID_FIELD);
+        boolean presence = (Boolean)data.get(SetiPresence.PRESENCE_FIELD);
+        if (presence)
         {
-            if (on!=null)
-            {
-                if (Log.isDebugEnabled()) Log.debug(_oort+":: "+fromUid+" on "+on);
-                _uid2Location.put(fromUid,new SetiLocation("/seti/"+on));
-            }
-            else
-            {
-                final String off = (String)data.get("off");
-                if (off!=null)
-                {
-                    if (Log.isDebugEnabled()) Log.debug(_oort+":: "+fromUid+" off ");
-                    _uid2Location.remove(fromUid,new SetiLocation("/seti/"+off));
-                }
-            }
+            _uid2Location.put(userId, new SetiLocation("/seti/" + setiId));
         }
-
-        // deliver message
-        if (message!=null && toUid!=null)
+        else
         {
-            final String toChannel=(String)data.get("channel");
-            Location location=_uid2Location.get(toUid);
-
-            if (location==null && _setiIdChannel.getId().equals(msg.getChannel()))
-                // was sent to this node, so escalate to the shard.
-                location =userId2Shard(toUid);
-
-            if (location!=null)
-                location.receive(toUid,toChannel,message);
+            _uid2Location.remove(userId);
         }
-
     }
 
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private interface Location
+    protected void receiveMessage(Message message)
     {
-        public void sendMessage(String toUser,String toChannel,Object data);
-        public void receive(String toUser,String toChannel,Object data);
+        Map<String, Object> messageData = message.getDataAsMap();
+        String userId = (String)messageData.get(SetiMessage.USER_ID_FIELD);
+        Location location = _uid2Location.get(userId);
+        _logger.debug("Received message {} for location {}", message, location);
+        if (location != null)
+        {
+            String channel = (String)messageData.get(SetiMessage.CHANNEL_FIELD);
+            Object data = messageData.get(SetiMessage.DATA_FIELD);
+            location.receive(userId, channel, data);
+        }
     }
 
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    class LocalLocation implements Location
+    protected interface Location
     {
-        ServerSession _session;
+        public void send(String toUser, String toChannel, Object data);
 
-        LocalLocation(ServerSession session)
+        public void receive(String toUser, String toChannel, Object data);
+    }
+
+    /**
+     * A location that represent session connected to a local comet
+     */
+    protected class LocalLocation implements Location
+    {
+        private final ServerSession _session;
+
+        protected LocalLocation(ServerSession session)
         {
-            _session=session;
+            _session = session;
         }
 
-        public void sendMessage(String toUser, String toChannel, Object data)
+        public void send(String toUser, String toChannel, Object data)
         {
-            _session.deliver(_session,toChannel,data,null);
+            _session.deliver(Seti.this._session.getServerSession(), toChannel, data, null);
         }
 
         public void receive(String toUser, String toChannel, Object data)
         {
-            _session.deliver(_session,toChannel,data,null);
+            send(toUser, toChannel, data);
+        }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + "[" + _session + "]";
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    class SetiLocation implements Location
+    protected class SetiLocation implements Location
     {
-        ClientSessionChannel _channel;
+        private final String _channel;
 
-        SetiLocation(String channelId)
+        protected SetiLocation(String channelId)
         {
-            _channel=_session.getChannel(channelId);
+            _channel = channelId;
         }
 
-        public void sendMessage(String toUser, String toChannel, Object message)
+        public void send(String toUser, String toChannel, Object data)
         {
-            _channel.publish(new SetiMessage(toUser,toChannel,message));
+            _session.getChannel(_channel).publish(new SetiMessage(toUser, toChannel, data));
         }
 
-        public void receive(String toUser, String toChannel, Object message)
+        public void receive(String toUser, String toChannel, Object data)
         {
-
+            // A message has been sent to this comet because the sender thought
+            // the user was in this node. If it were, we would have found a
+            // LocalLocation, but instead found this SetiLocation.
+            // Therefore, the user must have moved to this seti location, and
+            // we forward the message.
+            send(toUser, toChannel, data);
         }
 
-        public boolean equals(Object o)
+        @Override
+        public String toString()
         {
-            return o instanceof SetiLocation &&
-            ((SetiLocation)o)._channel.equals(_channel);
-        }
-
-        public int hashCode()
-        {
-            return _channel.hashCode();
+            return getClass().getSimpleName() + "[" + _channel + "]";
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    class ShardLocation implements Location
+    private class SetiMessage extends HashMap<String, Object>
     {
-        ClientSessionChannel _channel;
+        private static final String USER_ID_FIELD = "uid";
+        private static final String CHANNEL_FIELD = "channel";
+        private static final String SETI_ID_FIELD = "setiId";
+        private static final String DATA_FIELD = "data";
 
-        ShardLocation(String shardId)
+        private SetiMessage(String toUser, String toChannel, Object data)
         {
-            _channel=_session.getChannel("/seti/"+shardId);
-        }
-
-        public void sendMessage(final Collection<String> toUsers, final String toChannel, final Object message)
-        {
-            _channel.publish(new SetiMessage(toUsers,toChannel,message));
-        }
-
-        public void sendMessage(String toUser, String toChannel, Object message)
-        {
-            _channel.publish(new SetiMessage(toUser,toChannel,message));
-        }
-
-        public void receive(String toUser, String toChannel, Object message)
-        {
-
-        }
-
-        public void associate(final String user)
-        {
-            _channel.publish(new SetiPresence(user,true));
-        }
-
-        public void disassociate(final String user)
-        {
-            _channel.publish(new SetiPresence(user,false));
+            put(USER_ID_FIELD, toUser);
+            put(CHANNEL_FIELD, toChannel);
+            put(SETI_ID_FIELD, _setiId);
+            put(DATA_FIELD, data);
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    class SetiMessage implements JSON.Convertible
+    private class SetiPresence extends HashMap<String, Object>
     {
-        String _toUser;
-        Collection<String> _toUsers;
-        String _toChannel;
-        Object _message;
+        private static final String USER_ID_FIELD = "uid";
+        private static final String SETI_ID_FIELD = "setiId";
+        private static final String PRESENCE_FIELD = "presence";
 
-        SetiMessage(String toUser,String toChannel, Object message)
+        private SetiPresence(String userId, boolean on)
         {
-            _toUser=toUser;
-            _toChannel=toChannel;
-            _message=message;
-        }
-
-        SetiMessage(Collection<String> toUsers,String toChannel, Object message)
-        {
-            _toUsers=toUsers;
-            _toChannel=toChannel;
-            _message=message;
-        }
-
-        public void fromJSON(Map object)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        public void toJSON(JSON.Output out)
-        {
-            if (_toUser!=null)
-                out.add("to",_toUser);
-            else if (_toUsers!=null)
-                out.add("to",_toUsers);
-            out.add("channel",_toChannel);
-            out.add("from",_setiId);
-            out.add("message",_message);
+            put(USER_ID_FIELD, userId);
+            put(SETI_ID_FIELD, _setiId);
+            put(PRESENCE_FIELD, on);
         }
     }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    class SetiPresence implements JSON.Convertible
-    {
-        String _user;
-        boolean _on;
-
-        SetiPresence(String user,boolean on)
-        {
-            _user=user;
-            _on=on;
-        }
-
-        public void fromJSON(Map object)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        public void toJSON(JSON.Output out)
-        {
-            out.add("from",_user);
-            out.add(_on?"on":"off",_setiId);
-        }
-    }
-
-    public void disconnect()
-    {
-        _session.disconnect();
-    }
-
 }

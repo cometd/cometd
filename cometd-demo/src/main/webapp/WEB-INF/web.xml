@@ -102,10 +102,6 @@
     <servlet>
         <servlet-name>seti</servlet-name>
         <servlet-class>org.cometd.oort.SetiServlet</servlet-class>
-        <init-param>
-            <param-name>seti.shard</param-name>
-            <param-value>S0</param-value>
-        </init-param>
         <load-on-startup>4</load-on-startup>
     </servlet>
 

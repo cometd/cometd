@@ -172,4 +172,58 @@ public class OortObserveCometTest extends OortTest
 
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
     }
+
+    @Test
+    public void testDeobserve() throws Exception
+    {
+        Server serverA = startServer(0);
+        Oort oortA = startOort(serverA);
+        Server serverB = startServer(0);
+        Oort oortB = startOort(serverB);
+
+        OortComet oortCometAB = oortA.observeComet(oortB.getURL());
+        Assert.assertTrue(oortCometAB.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        Server serverC = startServer(0);
+        Oort oortC = startOort(serverC);
+        OortComet oortCometAC = oortA.observeComet(oortC.getURL());
+        Assert.assertTrue(oortCometAC.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Wait a while for the link B-C to establish
+        Thread.sleep(1000);
+
+        Assert.assertEquals(2, oortA.getKnownComets().size());
+        Assert.assertTrue(oortA.getKnownComets().contains(oortB.getURL()));
+        Assert.assertTrue(oortA.getKnownComets().contains(oortC.getURL()));
+        Assert.assertEquals(2, oortB.getKnownComets().size());
+        Assert.assertTrue(oortB.getKnownComets().contains(oortA.getURL()));
+        Assert.assertTrue(oortB.getKnownComets().contains(oortC.getURL()));
+        Assert.assertEquals(2, oortC.getKnownComets().size());
+        Assert.assertTrue(oortC.getKnownComets().contains(oortA.getURL()));
+        Assert.assertTrue(oortC.getKnownComets().contains(oortB.getURL()));
+
+        BayeuxClient clientA = startClient(oortA);
+        // Be sure that disconnecting clientA we do not mess with the known comets
+        stopClient(clientA);
+
+        Assert.assertEquals(2, oortA.getKnownComets().size());
+        Assert.assertEquals(2, oortB.getKnownComets().size());
+        Assert.assertEquals(2, oortC.getKnownComets().size());
+
+        // Deobserve A-B
+        OortComet cometAB = oortA.deobserveComet(oortB.getURL());
+        Assert.assertSame(oortCometAB, cometAB);
+        Assert.assertTrue(cometAB.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+
+        // A is now only connected to C
+        Assert.assertEquals(1, oortA.getKnownComets().size());
+        Assert.assertTrue(oortA.getKnownComets().contains(oortC.getURL()));
+        // B is now only connected to C
+        Assert.assertEquals(1, oortB.getKnownComets().size());
+        Assert.assertTrue(oortB.getKnownComets().contains(oortC.getURL()));
+        // C is still connected to A and B
+        Assert.assertEquals(2, oortC.getKnownComets().size());
+        Assert.assertTrue(oortC.getKnownComets().contains(oortA.getURL()));
+        Assert.assertTrue(oortC.getKnownComets().contains(oortB.getURL()));
+    }
 }
