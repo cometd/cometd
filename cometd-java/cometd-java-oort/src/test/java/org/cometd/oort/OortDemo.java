@@ -110,7 +110,6 @@ public class OortDemo
         context.addServlet(oort_holder, "/oort/*");
 
         ServletHolder seti_holder = new ServletHolder(SetiServlet.class);
-        seti_holder.setInitParameter(Seti.SETI_SHARD,"S"+(port%2));
         seti_holder.setInitOrder(2);
         context.addServlet(seti_holder, "/seti/*");
 

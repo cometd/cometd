@@ -53,6 +53,8 @@ public class Oort extends AbstractLifeCycle
     private final ConcurrentMap<String, OortComet> _knownComets = new ConcurrentHashMap<String, OortComet>();
     private final Map<String, ServerSession> _incomingComets = new ConcurrentHashMap<String, ServerSession>();
     private final ConcurrentMap<String, Boolean> _channels = new ConcurrentHashMap<String, Boolean>();
+    private final Extension _oortExtension = new OortExtension();
+    private ServerChannel.MessageListener _cloudListener = new CloudListener();
     private final BayeuxServer _bayeux;
     private final String _url;
     private final Logger _logger;
@@ -72,22 +74,24 @@ public class Oort extends AbstractLifeCycle
         _secret = Long.toHexString(new SecureRandom().nextLong());
         _httpClient = new HttpClient();
         _oortSession = bayeux.newLocalSession("oort");
-
-        bayeux.addExtension(new OortExtension());
-        bayeux.createIfAbsent("/oort/cloud", new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
-                channel.addListener(new CloudListener());
-            }
-        });
     }
 
     @Override
     protected void doStart() throws Exception
     {
         _httpClient.start();
+
+        _bayeux.addExtension(_oortExtension);
+        _bayeux.createIfAbsent(OORT_CLOUD_CHANNEL, new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
+                _cloudListener = new CloudListener();
+                channel.addListener(_cloudListener);
+            }
+        });
+
         _oortSession.handshake();
     }
 
@@ -102,12 +106,21 @@ public class Oort extends AbstractLifeCycle
             comet.waitFor(1000, BayeuxClient.State.DISCONNECTED);
         }
         _knownComets.clear();
-        // TODO: clear other data members ?
+        _incomingComets.clear();
+        _channels.clear();
+
+        ServerChannel oortCloudChannel = _bayeux.getChannel(OORT_CLOUD_CHANNEL);
+        if (oortCloudChannel != null)
+        {
+            oortCloudChannel.removeListener(_cloudListener);
+            oortCloudChannel.removeAuthorizer(GrantAuthorizer.GRANT_ALL);
+        }
+        _bayeux.removeExtension(_oortExtension);
 
         _httpClient.stop();
     }
 
-    public BayeuxServer getBayeux()
+    public BayeuxServer getBayeuxServer()
     {
         return _bayeux;
     }
@@ -150,9 +163,9 @@ public class Oort extends AbstractLifeCycle
         {
             URI uri = new URI(cometURL);
             if (uri.getScheme() == null)
-                throw new IllegalArgumentException("Missing protocol in CometD URL " + cometURL);
+                throw new IllegalArgumentException("Missing protocol in comet URL " + cometURL);
             if (uri.getHost() == null)
-                throw new IllegalArgumentException("Missing host in CometD URL " + cometURL);
+                throw new IllegalArgumentException("Missing host in comet URL " + cometURL);
         }
         catch (URISyntaxException x)
         {
@@ -179,6 +192,20 @@ public class Oort extends AbstractLifeCycle
                 "    }" +
                 "}").get(0);
         comet.handshake(fields);
+        return comet;
+    }
+
+    public OortComet deobserveComet(String cometURL)
+    {
+        if (_url.equals(cometURL))
+            return null;
+
+        OortComet comet = _knownComets.remove(cometURL);
+        if (comet != null)
+        {
+            _logger.debug("Disconnecting from comet {}", cometURL);
+            comet.disconnect();
+        }
         return comet;
     }
 
@@ -232,6 +259,15 @@ public class Oort extends AbstractLifeCycle
             Set<String> observedChannels = getObservedChannels();
             for (OortComet comet : _knownComets.values())
                 comet.subscribe(observedChannels);
+        }
+    }
+
+    public void deobserveChannel(String channelId)
+    {
+        if (_channels.remove(channelId) != null)
+        {
+            for (OortComet comet : _knownComets.values())
+                comet.unsubscribe(channelId);
         }
     }
 
@@ -402,23 +438,27 @@ public class Oort extends AbstractLifeCycle
 
     /**
      * <p>Listener that detect when a server session is removed (means that the remote
-     * client disconnected), and disconnect the OortComet associated.</p>
+     * comet disconnected), and disconnects the OortComet associated.</p>
      */
     private class OortCometDisconnectListener implements ServerSession.RemoveListener
     {
-        private final String oortURL;
+        private final String cometURL;
 
-        public OortCometDisconnectListener(String oortURL)
+        public OortCometDisconnectListener(String cometURL)
         {
-            this.oortURL = oortURL;
+            this.cometURL = cometURL;
         }
 
         public void removed(ServerSession session, boolean timeout)
         {
-            _incomingComets.remove(session.getId());
-            OortComet oortComet = _knownComets.remove(oortURL);
-            if (oortComet != null)
-                oortComet.disconnect();
+            ServerSession removed = _incomingComets.remove(session.getId());
+            if (removed != null)
+            {
+                _logger.info("Disconnected from comet {} with session {}", cometURL, removed);
+                OortComet oortComet = _knownComets.remove(cometURL);
+                if (oortComet != null)
+                    oortComet.disconnect();
+            }
         }
     }
 

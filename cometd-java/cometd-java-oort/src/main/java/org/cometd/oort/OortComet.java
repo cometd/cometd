@@ -9,7 +9,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
 
@@ -93,8 +92,9 @@ public class OortComet extends BayeuxClient
                 public void onMessage(ClientSessionChannel channel, Message message)
                 {
                     _oort.getLogger().debug("Republishing message {} from {}", message, _cometURL);
-                    ServerChannel serverChannel = _oort.getBayeux().getChannel(message.getChannel());
-                    serverChannel.publish(_oort.getOortSession(), message.getData(), message.getId());
+                    // BayeuxServer may sweep channels, so calling bayeux.getChannel(...)
+                    // may return null, and therefore we use the client to send the message
+                    _oort.getOortSession().getChannel(message.getChannel()).publish(message.getData(), message.getId());
                 }
             };
 
@@ -104,6 +104,16 @@ public class OortComet extends BayeuxClient
                 _oort.getLogger().debug("Subscribing to {} on {}", channel, _cometURL);
                 getChannel(channel).subscribe(listener);
             }
+        }
+    }
+
+    protected void unsubscribe(String channel)
+    {
+        ClientSessionChannel.MessageListener listener = _subscriptions.remove(channel);
+        if (listener != null)
+        {
+            _oort.getLogger().debug("Unsubscribing from {} on {}", channel, _cometURL);
+            getChannel(channel).unsubscribe(listener);
         }
     }
 

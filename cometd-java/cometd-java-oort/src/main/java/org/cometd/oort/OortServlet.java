@@ -40,6 +40,10 @@ import org.cometd.bayeux.server.BayeuxServer;
  * <li><code>clientDebug</code>, a boolean that enables debugging of the
  * clients connected to other oort cluster managers</li>
  * </ul>
+ * <p>Override method {@link #newOort(BayeuxServer, String)} to return a customized
+ * instance of {@link Oort}.</p>
+ *
+ * @see SetiServlet
  */
 public class OortServlet implements Servlet
 {
@@ -48,7 +52,6 @@ public class OortServlet implements Servlet
     public final static String OORT_CHANNELS_PARAM = "oort.channels";
 
     private ServletConfig _config;
-    private Oort _oort;
 
     public ServletConfig getServletConfig()
     {
@@ -74,17 +77,17 @@ public class OortServlet implements Servlet
 
         try
         {
-            _oort = new Oort(bayeux, url);
-            _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE, _oort);
-            _oort.setClientDebugEnabled(Boolean.valueOf(_config.getInitParameter("clientDebug")));
-            _oort.start();
+            Oort oort = newOort(bayeux, url);
+            oort.setClientDebugEnabled(Boolean.valueOf(_config.getInitParameter("clientDebug")));
+            oort.start();
+            _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE, oort);
 
             String channels = _config.getInitParameter(OORT_CHANNELS_PARAM);
             if (channels != null)
             {
                 String[] patterns = channels.split(",");
                 for (String channel : patterns)
-                    _oort.observeChannel(channel);
+                    oort.observeChannel(channel);
             }
 
             String cloud = _config.getInitParameter(OORT_CLOUD_PARAM);
@@ -93,7 +96,7 @@ public class OortServlet implements Servlet
                 String[] urls = cloud.split(",");
                 for (String comet : urls)
                     if (comet.length() > 0)
-                        _oort.observeComet(comet);
+                        oort.observeComet(comet);
             }
         }
         catch (Exception x)
@@ -102,11 +105,18 @@ public class OortServlet implements Servlet
         }
     }
 
+    protected Oort newOort(BayeuxServer bayeux, String url)
+    {
+        return new Oort(bayeux, url);
+    }
+
     public void destroy()
     {
         try
         {
-            _oort.stop();
+            Oort oort = (Oort)_config.getServletContext().getAttribute(Oort.OORT_ATTRIBUTE);
+            if (oort != null)
+                oort.stop();
         }
         catch (Exception x)
         {
