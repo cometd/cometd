@@ -1,6 +1,7 @@
-package org.cometd.server.transport;
+package org.cometd.server.websocket;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.text.ParseException;
@@ -24,40 +25,63 @@ import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
+import org.cometd.server.transport.HttpTransport;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketFactory;
+import org.eclipse.jetty.websocket.WebSocketFactory.Acceptor;
 
-public class WebSocketTransport extends HttpTransport implements WebSocketFactory.Acceptor
+public class WebSocketTransport extends HttpTransport
 {
     public final static String PREFIX = "ws";
     public final static String NAME = "websocket";
     public final static String PROTOCOL_OPTION = "protocol";
     public final static String BUFFER_SIZE_OPTION = "bufferSize";
 
-    private final WebSocketFactory _factory = new WebSocketFactory(this);
+    private final Acceptor _acceptor = new Acceptor()
+    {
+        public String checkOrigin(HttpServletRequest request, String host, String origin)
+        {
+            if (origin == null)
+                origin = host;
+            return origin;
+        }
+
+        public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+        {
+            if (_protocol != null && _protocol.length() > 0 && !_protocol.equals(protocol))
+                return null;
+                
+            Handshake handshake = new Handshake(request);
+            WebSocket websocket = new WebSocketScheduler(handshake,request.getHeader("User-Agent")); 
+            return websocket;
+        }
+    }; 
+    
+    private final WebSocketFactory _factory = new WebSocketFactory(_acceptor);
     private final ThreadLocal<Handshake> _handshake = new ThreadLocal<Handshake>();
-    private String _protocol;
+
+    private String _protocol = "";
 
     public WebSocketTransport(BayeuxServerImpl bayeux)
     {
-        super(bayeux, NAME);
+        super(bayeux,NAME);
         setOptionPrefix(PREFIX);
     }
 
     @Override
     public void init()
     {
-        _protocol = getOption(PROTOCOL_OPTION, _protocol);
-        _factory.setBufferSize(getOption(BUFFER_SIZE_OPTION, _factory.getBufferSize()));
+        _protocol = getOption(PROTOCOL_OPTION,_protocol);
+        _factory.setBufferSize(getOption(BUFFER_SIZE_OPTION,_factory.getBufferSize()));
 
         // Change the default values for this transport to better suited ones
         // but only if they were not specifically set for this transport
-        setTimeout(getOption(PREFIX + "." + TIMEOUT_OPTION, 15000L));
-        setInterval(getOption(PREFIX + "." + INTERVAL_OPTION, 2500L));
-        setMaxInterval(getOption(PREFIX + "." + MAX_INTERVAL_OPTION, 15000L));
+        setTimeout(getOption(PREFIX + "." + TIMEOUT_OPTION,15000L));
+        setInterval(getOption(PREFIX + "." + INTERVAL_OPTION,2500L));
+        setMaxInterval(getOption(PREFIX + "." + MAX_INTERVAL_OPTION,15000L));
     }
 
     @Override
@@ -72,37 +96,21 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         if (isMetaConnectDeliveryOnly())
         {
             Log.warn("MetaConnectDeliveryOnly not implemented for websocket");
-            response.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED);
+            response.setHeader("Connection","close");
+            response.sendError(500);
             return;
         }
-
-        boolean accepted = _factory.acceptWebSocket(request, response);
-        if (!accepted)
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
-    }
-
-    public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
-    {
-        boolean sameProtocol = (_protocol == null && protocol == null) ||
-                (_protocol != null && _protocol.equals(protocol));
-
-        if (sameProtocol)
+        
+        if (!_factory.acceptWebSocket(request,response))
         {
-            Handshake handshake = new Handshake(request);
-            return new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
+            Log.warn("Websocket not accepted");
+            response.setHeader("Connection","close");
+            response.sendError(500);
+            return;
         }
-
-        return null;
     }
-
-    public String checkOrigin(HttpServletRequest request, String host, String origin)
-    {
-        if (origin == null)
-            origin = host;
-        return origin;
-    }
-
-    protected class WebSocketScheduler implements WebSocket.OnTextMessage, AbstractServerTransport.Scheduler
+    
+    protected class WebSocketScheduler implements WebSocket, AbstractServerTransport.Scheduler
     {
         protected final Handshake _addresses;
         protected final String _userAgent;
@@ -128,22 +136,22 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             _userAgent = userAgent;
         }
 
-        public void onConnect(Connection connection)
+        public void onOpen(Connection outbound)
         {
-            _connection = connection;
+            _connection = outbound;
         }
 
-        public void onDisconnect(int closeCode, String message)
+        public void onClose(int code, String message)
         {
             if (_session != null)
             {
                 _session.cancelIntervalTimeout();
                 getBayeux().cancelTimeout(_timeoutTask);
-                getBayeux().removeServerSession(_session, false);
+                getBayeux().removeServerSession(_session,false);
             }
         }
 
-        public void onMessage(String data)
+        public void onMessage(byte frame, String data)
         {
             boolean batch = false;
             try
@@ -180,9 +188,9 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     // handle the message
                     // the actual reply is return from the call, but other messages may
                     // also be queued on the session.
-                    ServerMessage.Mutable reply = getBayeux().handle(_session, message);
+                    ServerMessage.Mutable reply = getBayeux().handle(_session,message);
 
-                    if (connect && reply != null && reply.isSuccessful())
+                    if (connect && reply.isSuccessful())
                     {
                         _session.setUserAgent(_userAgent);
                         _session.setScheduler(this);
@@ -192,7 +200,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                         if (timeout > 0 && was_connected)
                         {
                             // delay sending connect reply until dispatch or timeout.
-                            getBayeux().startTimeout(_timeoutTask, timeout);
+                            getBayeux().startTimeout(_timeoutTask,timeout);
                             _connectReply = reply;
                             reply = null;
                         }
@@ -205,7 +213,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     // send the reply (if not delayed)
                     if (reply != null)
                     {
-                        reply = getBayeux().extendReply(_session, _session, reply);
+                        reply = getBayeux().extendReply(_session,_session,reply);
 
                         if (batch)
                         {
@@ -221,11 +229,11 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             }
             catch (IOException e)
             {
-                getBayeux().getLogger().warn("", e);
+                getBayeux().getLogger().warn("",e);
             }
             catch (ParseException e)
             {
-                handleJSONParseException(e.getMessage(), e.getCause());
+                handleJSONParseException(e.getMessage(),e.getCause());
             }
             finally
             {
@@ -239,7 +247,23 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         protected void handleJSONParseException(String json, Throwable exception)
         {
-            getBayeux().getLogger().debug("Error parsing JSON: " + json, exception);
+            getBayeux().getLogger().debug("Error parsing JSON: " + json,exception);
+        }
+
+        public void onMessage(byte frame, byte[] data, int offset, int length)
+        {
+            try
+            {
+                onMessage(frame,new String(data,offset,length,"UTF-8"));
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                Log.warn(e);
+            }
+        }
+
+        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
+        {
         }
 
         public void cancel()
@@ -258,7 +282,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
                 if (_connectReply != null)
                 {
-                    queue.add(getBayeux().extendReply(session, session, _connectReply));
+                    queue.add(getBayeux().extendReply(session,session,_connectReply));
                     _connectReply = null;
                     session.startIntervalTimeout();
                 }
@@ -269,7 +293,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 }
                 catch (IOException e)
                 {
-                    getBayeux().getLogger().warn("io ", e);
+                    getBayeux().getLogger().warn("io ",e);
                 }
             }
         }
@@ -287,10 +311,9 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             String data = message.getJSON();
             _connection.sendMessage("[" + data + "]");
         }
-    }
+    };
 
     /* ------------------------------------------------------------ */
-
     /**
      * @see org.cometd.server.transport.HttpTransport#getContext()
      */
@@ -316,36 +339,36 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         @SuppressWarnings("unchecked")
         Handshake(HttpServletRequest request)
         {
-            _local = new InetSocketAddress(request.getLocalAddr(), request.getLocalPort());
-            _remote = new InetSocketAddress(request.getRemoteAddr(), request.getRemotePort());
+            _local = new InetSocketAddress(request.getLocalAddr(),request.getLocalPort());
+            _remote = new InetSocketAddress(request.getRemoteAddr(),request.getRemotePort());
 
             for (String name : Collections.list((Enumeration<String>)request.getHeaderNames()))
-                _headers.put(name, Collections.unmodifiableList(Collections.list(request.getHeaders(name))));
+                _headers.put(name,Collections.unmodifiableList(Collections.list(request.getHeaders(name))));
 
             for (String name : Collections.list((Enumeration<String>)request.getParameterNames()))
-                _parameters.put(name, Collections.unmodifiableList(Arrays.asList(request.getParameterValues(name))));
+                _parameters.put(name,Collections.unmodifiableList(Arrays.asList(request.getParameterValues(name))));
 
             for (String name : Collections.list((Enumeration<String>)request.getAttributeNames()))
-                _attributes.put(name, request.getAttribute(name));
+                _attributes.put(name,request.getAttribute(name));
 
             Cookie[] cookies = request.getCookies();
             if (cookies != null)
             {
                 for (Cookie c : cookies)
-                    _cookies.put(c.getName(), c.getValue());
+                    _cookies.put(c.getName(),c.getValue());
             }
 
             _principal = request.getUserPrincipal();
 
             _session = request.getSession(false);
-            if (_session != null)
+            if (_session!=null)
             {
-                _context = _session.getServletContext();
+                _context=_session.getServletContext();
             }
             else
             {
                 HttpSession s = request.getSession(true);
-                _context = s.getServletContext();
+                _context=s.getServletContext();
                 s.invalidate();
             }
 
@@ -380,7 +403,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         public String getHeader(String name)
         {
             List<String> headers = _headers.get(name);
-            return headers != null && headers.size() > 0 ? headers.get(0) : null;
+            return headers != null && headers.size() > 0?headers.get(0):null;
         }
 
         public List<String> getHeaderValues(String name)
@@ -391,7 +414,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         public String getParameter(String name)
         {
             List<String> params = _parameters.get(name);
-            return params != null && params.size() > 0 ? params.get(0) : null;
+            return params != null && params.size() > 0?params.get(0):null;
         }
 
         public List<String> getParameterValues(String name)
@@ -406,18 +429,18 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         public String getHttpSessionId()
         {
-            return _session == null ? null : _session.getId();
+            return _session == null?null:_session.getId();
         }
 
         public Object getHttpSessionAttribute(String name)
         {
-            return _session == null ? null : _session.getAttribute(name);
+            return _session == null?null:_session.getAttribute(name);
         }
 
         public void setHttpSessionAttribute(String name, Object value)
         {
             if (_session != null)
-                _session.setAttribute(name, value);
+                _session.setAttribute(name,value);
             else
                 throw new IllegalStateException("!session");
         }
