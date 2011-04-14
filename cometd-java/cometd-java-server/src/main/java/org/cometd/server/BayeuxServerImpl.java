@@ -35,7 +35,6 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
-import org.cometd.server.transport.WebSocketTransport;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -194,31 +193,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     protected void initializeDefaultTransports()
     {
         List<String> allowedTransports = new ArrayList<String>();
-        // Special handling for the WebSocket transport: we add it only if it is available
-        boolean websocketAvailable = isWebSocketAvailable();
-        if (websocketAvailable)
-        {
-            addTransport(new WebSocketTransport(this));
-            allowedTransports.add(WebSocketTransport.NAME);
-        }
         addTransport(new JSONTransport(this));
         allowedTransports.add(JSONTransport.NAME);
         addTransport(new JSONPTransport(this));
         allowedTransports.add(JSONPTransport.NAME);
         setAllowedTransports(allowedTransports);
-    }
-
-    private boolean isWebSocketAvailable()
-    {
-        try
-        {
-            getClass().getClassLoader().loadClass("org.eclipse.jetty.websocket.WebSocket");
-            return true;
-        }
-        catch (ClassNotFoundException x)
-        {
-            return false;
-        }
     }
 
     /* ------------------------------------------------------------ */

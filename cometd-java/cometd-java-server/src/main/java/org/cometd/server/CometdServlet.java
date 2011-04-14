@@ -154,7 +154,9 @@ public class CometdServlet extends GenericServlet
             finally
             {
                 transport.setCurrentRequest(null);
-                _bayeux.setCurrentTransport(null);
+                BayeuxServerImpl bayeux=_bayeux;
+                if (bayeux!=null)
+                    bayeux.setCurrentTransport(null);
             }
         }
     }

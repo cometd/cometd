@@ -7,7 +7,6 @@ import java.util.Set;
 
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
-import org.cometd.server.transport.WebSocketTransport;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -22,8 +21,7 @@ public class BayeuxServerCreationTest
         bayeuxServer.start();
 
         Set<String> knownTransports = bayeuxServer.getKnownTransportNames();
-        assertEquals(3, knownTransports.size());
-        assertTrue(knownTransports.contains(WebSocketTransport.NAME));
+        assertEquals(2, knownTransports.size());
         assertTrue(knownTransports.contains(JSONTransport.NAME));
         assertTrue(knownTransports.contains(JSONPTransport.NAME));
         assertEquals(knownTransports, new HashSet<String>(bayeuxServer.getAllowedTransports()));
@@ -57,7 +55,6 @@ public class BayeuxServerCreationTest
         bayeuxServer.start();
 
         assertEquals(timeoutValue, bayeuxServer.getOption(timeoutKey));
-        assertEquals(websocketTimeoutValue, bayeuxServer.getTransport(WebSocketTransport.NAME).getOption(timeoutKey));
         assertEquals(jsonTimeoutValue, bayeuxServer.getTransport(JSONTransport.NAME).getOption(timeoutKey));
         assertEquals(jsonpTimeoutValue, bayeuxServer.getTransport(JSONPTransport.NAME).getOption(timeoutKey));
     }
