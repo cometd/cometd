@@ -15,6 +15,7 @@
 package org.cometd.server;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -30,12 +31,22 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.server.transport.HttpTransport;
+import org.eclipse.jetty.util.LazyList;
 
 /**
  * <p>The CometD Servlet maps HTTP requests to the {@link HttpTransport} of a {@link BayeuxServer} instance.</p>
  * <p>The {@link BayeuxServer} instance is searched in the servlet context under the {@link BayeuxServer#ATTRIBUTE}
  * attribute; if it is found then it is used without further configuration, otherwise a new {@link BayeuxServer}
  * instance is created and configured using the init parameters of this servlet.</p>
+ * <p>
+ * If the init parameter "transports" is present, it is treated as a comma separated list of classnames, each a 
+ * {@link ServerTransport} to be addded to {@link BayeuxServerImpl#addTransport(ServerTransport) and by default will 
+ * be included in the {@link BayeuxServerImpl#setAllowedTransports(List)}.</p>
+ * <p>
+ * If the init parameter "allowedTransports" is present, it is treated as a comma separated list of transport names
+ * and will be passed to  {@link BayeuxServerImpl#setAllowedTransports(List)}. </p>
+ * <p>
+ * All other init parameters are passed to {@link BayeuxServerImpl#setOption(String, Object)}.
  */
 public class CometdServlet extends GenericServlet
 {
@@ -71,12 +82,45 @@ public class CometdServlet extends GenericServlet
             {
                 export = true;
                 _bayeux = newBayeuxServer();
-
+                List<String> allowed=null;
                 // Transfer all servlet init parameters to the BayeuxServer implementation
                 for (Enumeration initParameterNames = getInitParameterNames(); initParameterNames.hasMoreElements();)
                 {
                     String initParameterName = (String)initParameterNames.nextElement();
-                    _bayeux.setOption(initParameterName, getInitParameter(initParameterName));
+                    String value = getInitParameter(initParameterName);
+                 
+                    if ("transports".equals(initParameterName))
+                    {
+                        ClassLoader loader=Thread.currentThread().getContextClassLoader();
+                        if (loader==null)
+                            loader=this.getClass().getClassLoader();
+                        for (String classname : value.split("\\s*,\\s*"))
+                        {
+                            try
+                            {
+                                Class<? extends ServerTransport> transportClass = (Class<? extends ServerTransport>)loader.loadClass(classname);
+                                Constructor<? extends ServerTransport> constructor = transportClass.getConstructor(BayeuxServerImpl.class);
+                                ServerTransport transport=constructor.newInstance(_bayeux);
+                                _bayeux.addTransport(transport);
+                            }
+                            catch (Error e)
+                            {
+                                _bayeux.getLogger().warn("Failed to add transport "+classname+" : "+e);
+                                _bayeux.getLogger().debug(e);
+                            }
+                            catch (Exception e)
+                            {
+                                _bayeux.getLogger().warn("Failed to add transport "+classname+" : "+e);
+                                _bayeux.getLogger().debug(e);
+                            }
+                        }
+                    }
+                    else if ("allowedTransports".equalsIgnoreCase(initParameterName))
+                    {
+                        _bayeux.setAllowedTransports(value.split("\\s*,\\s*"));
+                    }
+                    else
+                        _bayeux.setOption(initParameterName, value);
                 }
             }
 
