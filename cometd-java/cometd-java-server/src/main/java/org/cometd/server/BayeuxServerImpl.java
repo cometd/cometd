@@ -106,8 +106,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         initializeMetaChannels();
 
-        if (_transports.isEmpty())
-            initializeDefaultTransports();
+        initializeDefaultTransports();
 
         List<String> allowedTransportNames = getAllowedTransports();
         if (allowedTransportNames.isEmpty())
@@ -187,17 +186,20 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     /* ------------------------------------------------------------ */
     /** Initialize the default transports.
-     * This method creates a {@link WebSocketTransport}, a {@link JSONTransport}
-     * and a {@link JSONPTransport} and calls {@link BayeuxServerImpl#setAllowedTransports(String...)}.
+     * <p>This method creates  a {@link JSONTransport} and a {@link JSONPTransport}.
+     * If no allowed transport have been set then adds all known transports as allowed transports.
      */
     protected void initializeDefaultTransports()
     {
-        List<String> allowedTransports = new ArrayList<String>();
         addTransport(new JSONTransport(this));
-        allowedTransports.add(JSONTransport.NAME);
         addTransport(new JSONPTransport(this));
-        allowedTransports.add(JSONPTransport.NAME);
-        setAllowedTransports(allowedTransports);
+        
+        if (_allowedTransports.size()==0)
+        {
+            for (ServerTransport t : _transports.values())
+                _allowedTransports.add(t.getName());
+        }
+        _logger.info("Allowed Transports:"+_allowedTransports);
     }
 
     /* ------------------------------------------------------------ */
@@ -924,7 +926,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public List<String> getAllowedTransports()
     {
-        return Collections.unmodifiableList(_allowedTransports);
+        return _allowedTransports;
     }
 
     /* ------------------------------------------------------------ */
@@ -944,6 +946,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
+    /* ------------------------------------------------------------ */
     protected void unknownSession(Mutable reply)
     {
         error(reply,"402::Unknown client");

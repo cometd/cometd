@@ -22,6 +22,7 @@ import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Message;
@@ -49,6 +50,9 @@ public class CometdDemoServlet extends GenericServlet
         super.init();
         final BayeuxServerImpl bayeux=(BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
 
+        if (bayeux==null)
+            throw new UnavailableException("No BayeuxServer!");
+        
         // Create extensions
         bayeux.addExtension(new TimesyncExtension());
         bayeux.addExtension(new AcknowledgedMessagesExtension());

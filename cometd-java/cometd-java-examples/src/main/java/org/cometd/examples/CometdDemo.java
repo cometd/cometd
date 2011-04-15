@@ -100,7 +100,7 @@ public class CometdDemo
 
                         Resource.newResource("../../cometd-javascript/dojo/src/main/webapp/"),
                         Resource.newResource("../../cometd-javascript/examples-dojo/src/main/webapp/"),
-                        Resource.newResource("../../cometd-javascript/dojo/target/scripts/")
+                        Resource.newResource("../../cometd-javascript/dojo/target/war/work/org.dojotoolkit/dojo-war/")
                 }));
 
 
@@ -115,8 +115,9 @@ public class CometdDemo
         comet.setInitParameter("interval","100");
         comet.setInitParameter("maxInterval","10000");
         comet.setInitParameter("multiFrameInterval","5000");
-        comet.setInitParameter("logLevel","3");
+        comet.setInitParameter("logLevel","1");
         comet.setInitParameter("services","org.cometd.examples.ChatService");
+        comet.setInitParameter("transports","org.cometd.server.websocket.WebSocketTransport");
         comet.setInitOrder(2);
 
         ServletHolder demo=context.addServlet(CometdDemoServlet.class, "/demo");
