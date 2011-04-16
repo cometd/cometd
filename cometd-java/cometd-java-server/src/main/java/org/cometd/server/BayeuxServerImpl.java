@@ -3,6 +3,7 @@ package org.cometd.server;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -75,6 +76,19 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
     private SecurityPolicy _policy=new DefaultSecurityPolicy();
 
+    /* ------------------------------------------------------------ */
+    public BayeuxServerImpl()
+    {
+        addTransport(new JSONTransport(this));
+        addTransport(new JSONPTransport(this));       
+    }
+    
+    /* ------------------------------------------------------------ */
+    public BayeuxServerImpl(List<ServerTransport> transports)
+    {
+        setTransports(transports);
+    }
+    
     /* ------------------------------------------------------------ */
     public Logger getLogger()
     {
@@ -191,9 +205,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      */
     protected void initializeDefaultTransports()
     {
-        addTransport(new JSONTransport(this));
-        addTransport(new JSONPTransport(this));
-        
         if (_allowedTransports.size()==0)
         {
             for (ServerTransport t : _transports.values())
@@ -926,7 +937,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public List<String> getAllowedTransports()
     {
-        return _allowedTransports;
+        return Collections.unmodifiableList(_allowedTransports);
     }
 
     /* ------------------------------------------------------------ */
