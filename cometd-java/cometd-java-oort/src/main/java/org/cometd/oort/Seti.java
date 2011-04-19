@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>The component that Searches for Extra Terrestrial Intelligence or,
- * in this case, just searches for a user logged onto a comet in an Oort cluster.</p>
+ * in this case, just searches for a user logged onto a comet in an Oort cloud.</p>
  * <p>Seti allows an application to maintain a mapping from userId (any application
  * identifier such as user names or database IDs that represent users) to
  * server sessions using the {@link #associate(String, ServerSession)} and
@@ -139,46 +139,98 @@ public class Seti extends AbstractLifeCycle
         bayeux.getChannel("/seti/**").removeAuthorizer(GrantAuthorizer.GRANT_ALL);
     }
 
+    /**
+     * <p>Associates the given userId to the given session, and broadcasts this information
+     * on the Oort cloud, so that other comets will know that the given userId is on this comet.</p>
+     *
+     * @param userId  the user identifier to associate
+     * @param session the session to map the userId to
+     * @see #isAssociated(String)
+     * @see #disassociate(String)
+     */
     public void associate(final String userId, final ServerSession session)
     {
         if (session == null)
             throw new NullPointerException();
 
-        _uid2Location.put(userId, new LocalLocation(session));
+        _uid2Location.put(userId, new LocalLocation(userId, session));
         _logger.debug("Associated session {} to user {}", session, userId);
         // Let everyone in the cluster know that this session is here
         _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, true), null);
     }
 
+    /**
+     * @param userId the user identifier to test for association
+     * @return whether the given userId has been associated via {@link #associate(String, ServerSession)}
+     * @see #associate(String, ServerSession)
+     */
+    public boolean isAssociated(String userId)
+    {
+        return _uid2Location.get(userId) instanceof LocalLocation;
+    }
+
+    /**
+     * <p>Disassociates the given userId, and broadcasts this information on the Oort cloud,
+     * so that other comets will know that the given userId no longer is on this comet.</p>
+     *
+     * @param userId the user identifier to disassociate
+     * @see #associate(String, ServerSession)
+     */
     public void disassociate(final String userId)
     {
         Location location = _uid2Location.remove(userId);
-        _logger.debug("Disassociated session {} from user {}", location, userId);
-        // Let everyone in the cluster know that this session is not here anymore
-        _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, false), null);
-    }
+        if (location == null)
+            return;
 
-    public void sendMessage(final String toUser, final String toChannel, final Object data)
-    {
-        sendMessage(Collections.singleton(toUser), toChannel, data);
-    }
-
-    public void sendMessage(final Collection<String> toUsers, final String toChannel, final Object data)
-    {
-        for (String toUser : toUsers)
+        // Seti is stopped before BayeuxServer, but it may happen that RemoveListeners
+        // (triggered by BayeuxServer) call Seti (for example when BayeuxServer is stopping)
+        // to find that Seti is already stopped.
+        // Do not do any action in this case, because exceptions are thrown if the action is
+        // attempted (as _session is already disconnected).
+        if (_session.isConnected())
         {
-            Location location = _uid2Location.get(toUser);
-            if (location == null)
-                location = new SetiLocation(SETI_ALL_CHANNEL);
-            location.send(toUser, toChannel, data);
+            _logger.debug("Disassociated session {} from user {}", location, userId);
+            // Let everyone in the cluster know that this session is not here anymore
+            _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, false), null);
         }
     }
 
     /**
-     * <p>Receives messages directly from other comets in the cloud, containing
-     * messages to be sent to sessions that are connected to this comet.</p>
+     * <p>Sends a message to the given userId in the Oort cloud.</p>
      *
-     * @param message the message to forward to a session connected to this comet
+     * @param toUserId  the userId to send the message to
+     * @param toChannel the channel to send the message to
+     * @param data      the content of the message
+     * @see #sendMessage(Collection, String, Object)
+     */
+    public void sendMessage(final String toUserId, final String toChannel, final Object data)
+    {
+        sendMessage(Collections.singleton(toUserId), toChannel, data);
+    }
+
+    /**
+     * <p>Sends a message to multiple userIds in the Oort cloud.</p>
+     *
+     * @param toUserIds the userIds to send the message to
+     * @param toChannel the channel to send the message to
+     * @param data      the content of the message
+     */
+    public void sendMessage(final Collection<String> toUserIds, final String toChannel, final Object data)
+    {
+        for (String toUserId : toUserIds)
+        {
+            Location location = _uid2Location.get(toUserId);
+            if (location == null)
+                location = new SetiLocation(SETI_ALL_CHANNEL);
+            location.send(toUserId, toChannel, data);
+        }
+    }
+
+    /**
+     * <p>Receives messages directly from other Setis in the cloud, containing
+     * messages to be delivered to sessions connected to this comet.</p>
+     *
+     * @param message the message to deliver to a session connected to this comet
      */
     protected void receiveDirect(Message message)
     {
@@ -186,6 +238,18 @@ public class Seti extends AbstractLifeCycle
         receiveMessage(message);
     }
 
+    /**
+     * <p>Receives messages broadcasted by other Setis in the cloud.</p>
+     * <p>Broadcasted messages may be presence messages, where another Seti advertises
+     * an association, or fallback messages. <br />
+     * Fallback messages are messages that were sent to a particular Seti because the
+     * sender thought the target userId was there, but the receiving Seti does not know
+     * that userId anymore (for example, it just disconnected); in this case, the receiving
+     * Seti broadcasts the message to the whole cloud, in the hope that the user can be
+     * found in some other comet of the cloud.</p>
+     *
+     * @param message the message to possibly deliver to a session connected to this comet
+     */
     protected void receiveBroadcast(Message message)
     {
         Map<String, Object> data = message.getDataAsMap();
@@ -200,6 +264,11 @@ public class Seti extends AbstractLifeCycle
         }
     }
 
+    /**
+     * <p>Receives a presence message.</p>
+     *
+     * @param message the presence message received
+     */
     protected void receivePresence(Message message)
     {
         Map<String, Object> data = message.getDataAsMap();
@@ -221,6 +290,11 @@ public class Seti extends AbstractLifeCycle
         }
     }
 
+    /**
+     * <p>Receives a seti message.</p>
+     *
+     * @param message the seti message received
+     */
     protected void receiveMessage(Message message)
     {
         Map<String, Object> messageData = message.getDataAsMap();
@@ -243,15 +317,18 @@ public class Seti extends AbstractLifeCycle
     }
 
     /**
-     * A location that represent session connected to a local comet
+     * A Location that represent session connected to a local comet
      */
-    protected class LocalLocation implements Location
+    protected class LocalLocation implements Location, ServerSession.RemoveListener
     {
+        private final String _userId;
         private final ServerSession _session;
 
-        protected LocalLocation(ServerSession session)
+        protected LocalLocation(String userId, ServerSession session)
         {
+            _userId = userId;
             _session = session;
+            _session.addListener(this);
         }
 
         public void send(String toUser, String toChannel, Object data)
@@ -264,6 +341,11 @@ public class Seti extends AbstractLifeCycle
             send(toUser, toChannel, data);
         }
 
+        public void removed(ServerSession session, boolean timeout)
+        {
+            disassociate(_userId);
+        }
+
         @Override
         public String toString()
         {
@@ -271,18 +353,21 @@ public class Seti extends AbstractLifeCycle
         }
     }
 
+    /**
+     * A Location that represent a session on a remote comet
+     */
     protected class SetiLocation implements Location
     {
-        private final String _channel;
+        private final String _setiId;
 
         protected SetiLocation(String channelId)
         {
-            _channel = channelId;
+            _setiId = channelId;
         }
 
         public void send(String toUser, String toChannel, Object data)
         {
-            _session.getChannel(_channel).publish(new SetiMessage(toUser, toChannel, data));
+            _session.getChannel(_setiId).publish(new SetiMessage(toUser, toChannel, data));
         }
 
         public void receive(String toUser, String toChannel, Object data)
@@ -298,7 +383,7 @@ public class Seti extends AbstractLifeCycle
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + "[" + _channel + "]";
+            return getClass().getSimpleName() + "[" + _setiId + "]";
         }
     }
 
