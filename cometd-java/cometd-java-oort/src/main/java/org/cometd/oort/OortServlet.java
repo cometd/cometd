@@ -24,6 +24,7 @@ import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.client.BayeuxClient;
 
 /**
  * <p>This servlet initializes and configures and instance of the {@link Oort}
@@ -82,21 +83,31 @@ public class OortServlet implements Servlet
             oort.start();
             _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE, oort);
 
-            String channels = _config.getInitParameter(OORT_CHANNELS_PARAM);
-            if (channels != null)
-            {
-                String[] patterns = channels.split(",");
-                for (String channel : patterns)
-                    oort.observeChannel(channel);
-            }
-
             String cloud = _config.getInitParameter(OORT_CLOUD_PARAM);
             if (cloud != null && cloud.length() > 0)
             {
                 String[] urls = cloud.split(",");
                 for (String comet : urls)
+                {
+                    comet = comet.trim();
                     if (comet.length() > 0)
-                        oort.observeComet(comet);
+                    {
+                        OortComet oortComet = oort.observeComet(comet);
+                        oortComet.waitFor(1000, BayeuxClient.State.CONNECTED);
+                    }
+                }
+            }
+
+            String channels = _config.getInitParameter(OORT_CHANNELS_PARAM);
+            if (channels != null)
+            {
+                String[] patterns = channels.split(",");
+                for (String channel : patterns)
+                {
+                    channel = channel.trim();
+                    if (channel.length() > 0)
+                        oort.observeChannel(channel);
+                }
             }
         }
         catch (Exception x)
