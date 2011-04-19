@@ -66,12 +66,26 @@ public class SetiTest extends OortTest
         BayeuxClient client1 = startClient(oort1);
         BayeuxClient client2 = startClient(oort2);
 
+        LatchListener publishLatch = new LatchListener();
+        String loginChannelName = "/service/login";
+
         Map<String, Object> login1 = new HashMap<String, Object>();
         login1.put("user", "user1");
-        client1.getChannel("/service/login").publish(login1);
+        ClientSessionChannel loginChannel1 = client1.getChannel(loginChannelName);
+        loginChannel1.addListener(publishLatch);
+        loginChannel1.publish(login1);
+        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+
+        publishLatch.reset(1);
         Map<String, Object> login2 = new HashMap<String, Object>();
         login2.put("user", "user2");
-        client2.getChannel("/service/login").publish(login2);
+        ClientSessionChannel loginChannel2 = client2.getChannel(loginChannelName);
+        loginChannel2.addListener(publishLatch);
+        loginChannel2.publish(login2);
+        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+
+        // Wait for the associations to be broadcasted
+        Thread.sleep(1000);
 
         String channel = "/service/forward";
         final CountDownLatch latch = new CountDownLatch(1);
@@ -116,10 +130,16 @@ public class SetiTest extends OortTest
         login2.put("user", "user2");
         client2.getChannel("/service/login").publish(login2);
 
+        // Wait for the associations to be broadcasted
+        Thread.sleep(1000);
+
         // Disassociate
         Map<String, Object> logout2 = new HashMap<String, Object>();
         logout2.put("user", "user2");
         client2.getChannel("/service/logout").publish(logout2);
+
+        // Wait for the disassociation to be broadcasted
+        Thread.sleep(1000);
 
         String channel = "/service/forward";
         final CountDownLatch latch = new CountDownLatch(1);
