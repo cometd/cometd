@@ -1,12 +1,8 @@
 package org.cometd.oort;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.server.Server;
@@ -157,46 +153,5 @@ public class OortObserveChannelTest extends OortTest
         messageLatch1.reset(1);
         client2.getChannel(channelName).publish(new HashMapMessage());
         Assert.assertFalse(messageLatch1.await(1, TimeUnit.SECONDS));
-    }
-
-    private class LatchListener implements ClientSessionChannel.MessageListener
-    {
-        private final AtomicInteger count = new AtomicInteger();
-        private volatile CountDownLatch latch;
-
-        private LatchListener()
-        {
-            this(1);
-        }
-
-        public LatchListener(int counts)
-        {
-            reset(counts);
-        }
-
-        public void onMessage(ClientSessionChannel channel, Message message)
-        {
-            if (!message.isMeta() || message.isSuccessful())
-            {
-                count.incrementAndGet();
-                latch.countDown();
-            }
-        }
-
-        public boolean await(int timeout, TimeUnit unit) throws InterruptedException
-        {
-            return latch.await(timeout, unit);
-        }
-
-        public void reset(int counts)
-        {
-            count.set(0);
-            latch = new CountDownLatch(counts);
-        }
-
-        public int count()
-        {
-            return count.get();
-        }
     }
 }
