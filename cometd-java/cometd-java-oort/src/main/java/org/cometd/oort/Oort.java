@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
@@ -250,11 +251,15 @@ public class Oort extends AbstractLifeCycle
      * the local channel (with loop prevention), so that the
      * messages are distributed to all Oort comet servers.</p>
      *
-     * @param channelId the channel to observe
+     * @param channelName the channel to observe
      */
-    public void observeChannel(String channelId)
+    public void observeChannel(String channelName)
     {
-        if (_channels.putIfAbsent(channelId, Boolean.TRUE) == null)
+        ChannelId channelId = new ChannelId(channelName);
+        if (channelId.isMeta() || channelId.isService())
+            throw new IllegalArgumentException("Channel " + channelName + " cannot be observed because is not a broadcast channel");
+
+        if (_channels.putIfAbsent(channelName, Boolean.TRUE) == null)
         {
             Set<String> observedChannels = getObservedChannels();
             for (OortComet comet : _knownComets.values())
