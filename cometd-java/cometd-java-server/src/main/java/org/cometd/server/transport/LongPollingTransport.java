@@ -21,7 +21,6 @@ import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
 /**
@@ -444,7 +443,7 @@ public abstract class LongPollingTransport extends HttpTransport
                 }
                 catch (IOException e)
                 {
-                    Log.ignore(e);
+                    getBayeux().getLogger().ignore(e);
                 }
 
                 try
@@ -453,7 +452,7 @@ public abstract class LongPollingTransport extends HttpTransport
                 }
                 catch (Exception e)
                 {
-                    Log.ignore(e);
+                    getBayeux().getLogger().ignore(e);
                 }
             }
         }

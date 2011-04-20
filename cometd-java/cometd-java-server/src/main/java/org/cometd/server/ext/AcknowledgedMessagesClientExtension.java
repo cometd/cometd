@@ -5,21 +5,22 @@ import java.util.Map;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.ServerMessage;
-import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerSession.Extension;
 import org.cometd.server.ServerSessionImpl;
-import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Acknowledged Message Client extension.
- * 
+ *
  * Tracks the batch id of messages sent to a client.
- * 
+ *
  */
 public class AcknowledgedMessagesClientExtension implements Extension
 {
+    private final Logger _logger = Log.getLogger(getClass().getName());
     private final ServerSessionImpl _session;
     private final Object _lock;
     private final ArrayIdQueue<ServerMessage> _unackedQueue;
@@ -29,7 +30,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
     {
         _session=(ServerSessionImpl)session;
         _lock=_session.getLock();
-        
+
         List<ServerMessage> copy = _session.takeQueue();
         _session.replaceQueue(copy);
         _unackedQueue=new ArrayIdQueue<ServerMessage>(16,32,copy);
@@ -56,10 +57,10 @@ public class AcknowledgedMessagesClientExtension implements Extension
                 {
                     Long acked=(Long)ext.get("ack");
                     if (acked != null)
-                    {                        
+                    {
                         if (acked.longValue()<=_lastAck)
                         {
-                            Log.debug(session+" lost ACK "+acked.longValue()+"<="+_lastAck);
+                            _logger.debug(session + " lost ACK " + acked.longValue() + "<=" + _lastAck);
                             _session.replaceQueue(_unackedQueue);
                         }
                         else
@@ -107,7 +108,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
         {
             _unackedQueue.add(message);
         }
-        
+
         return message;
     }
 
@@ -127,5 +128,5 @@ public class AcknowledgedMessagesClientExtension implements Extension
     }
 
 }
-    
-    
+
+

@@ -3,7 +3,6 @@ package org.cometd.server;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -60,7 +59,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public static final int INFO_LOG_LEVEL = 2;
     public static final int DEBUG_LOG_LEVEL = 3;
 
-    private final Logger _logger = Log.getLogger("bayeux@"+hashCode());
+    private final Logger _logger = Log.getLogger(getClass().getName() + "@" + System.identityHashCode(this));
     private final SecureRandom _random = new SecureRandom();
     private final List<BayeuxServerListener> _listeners = new CopyOnWriteArrayList<BayeuxServerListener>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
@@ -80,15 +79,15 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public BayeuxServerImpl()
     {
         addTransport(new JSONTransport(this));
-        addTransport(new JSONPTransport(this));       
+        addTransport(new JSONPTransport(this));
     }
-    
+
     /* ------------------------------------------------------------ */
     public BayeuxServerImpl(List<ServerTransport> transports)
     {
         setTransports(transports);
     }
-    
+
     /* ------------------------------------------------------------ */
     public Logger getLogger()
     {

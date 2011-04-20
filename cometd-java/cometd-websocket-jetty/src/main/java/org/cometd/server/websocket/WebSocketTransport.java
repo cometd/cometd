@@ -26,7 +26,6 @@ import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.transport.HttpTransport;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketFactory;
@@ -72,7 +71,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     {
         if (isMetaConnectDeliveryOnly())
         {
-            Log.warn("MetaConnectDeliveryOnly not implemented for websocket");
+            getBayeux().getLogger().warn("MetaConnectDeliveryOnly not implemented for websocket");
             response.setHeader("Connection", "close");
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             return;
@@ -80,7 +79,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         if (!_factory.acceptWebSocket(request, response))
         {
-            Log.warn("Websocket not accepted");
+            getBayeux().getLogger().warn("Websocket not accepted");
             response.setHeader("Connection", "close");
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }

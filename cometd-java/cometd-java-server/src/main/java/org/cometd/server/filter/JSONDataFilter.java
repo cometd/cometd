@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
+// You may obtain a copy of the License at
 // http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,6 @@ import java.util.Map;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.eclipse.jetty.util.log.Log;
 
 /**
  * JSON DataFilter This {@link DataFilter} walks an Object as if it was a call
@@ -32,16 +31,16 @@ import org.eclipse.jetty.util.log.Log;
  * {@link #filterBoolean(Boolean)}, {@link #filterArray(Object, ClientImpl)} or
  * {@link #filterMap(Map, ClientImpl)} appropriate. Derived filters may override
  * one or more of these methods to provide filtering of specific types.
- * 
+ *
  * @author gregw
- * 
+ *
  */
 public class JSONDataFilter implements DataFilter
 {
     public void init(Object init)
     {
     }
-    
+
     public Object filter(ServerSession from, ServerChannel to, Object data)
     {
         if (data == null)
@@ -126,7 +125,6 @@ public class JSONDataFilter implements DataFilter
 
     protected Object filterObject(ServerSession from, ServerChannel to, Object obj)
     {
-        Log.warn(this + ": Cannot Filter " + obj.getClass());
         return obj;
     }
 

@@ -10,6 +10,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Acknowledged Messages extension.
@@ -24,8 +25,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class AcknowledgedMessagesExtension implements Extension
 {
-    private JSON.Literal _replyExt = new JSON.Literal("{\"ack\":true}");
-
+    private final Logger _logger = Log.getLogger(getClass().getName());
+    private final JSON.Literal _replyExt = new JSON.Literal("{\"ack\":true}");
 
     /* ------------------------------------------------------------ */
     public boolean rcv(ServerSession from, Mutable message)
@@ -61,7 +62,7 @@ public class AcknowledgedMessagesExtension implements Extension
 
             if (clientRequestedAcks && to != null)
             {
-                Log.info("Enabled message acknowledgement for client " + to);
+                _logger.info("Enabled message acknowledgement for client " + to);
                 to.addExtension(new AcknowledgedMessagesClientExtension(to));
                 ((ServerSessionImpl)to).setMetaConnectDeliveryOnly(true);
             }
