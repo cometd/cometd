@@ -69,7 +69,7 @@ public class Oort extends AbstractLifeCycle
         _bayeux = bayeux;
         _url = url;
 
-        _logger = Log.getLogger("Oort-" + _url);
+        _logger = Log.getLogger(getClass().getName() + "-" + _url);
         _logger.setDebugEnabled(String.valueOf(BayeuxServerImpl.DEBUG_LOG_LEVEL).equals(bayeux.getOption(BayeuxServerImpl.LOG_LEVEL)));
 
         _secret = Long.toHexString(new SecureRandom().nextLong());

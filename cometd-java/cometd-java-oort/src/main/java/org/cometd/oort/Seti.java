@@ -53,7 +53,7 @@ public class Seti extends AbstractLifeCycle
 
     public Seti(Oort oort)
     {
-        _logger = Log.getLogger("Seti-" + oort.getURL());
+        _logger = Log.getLogger(getClass().getName() + "-" + oort.getURL());
         _oort = oort;
         _setiId = oort.getURL().replace("://", "_").replace(":", "_").replace("/", "_");
         _session = oort.getBayeuxServer().newLocalSession("seti");

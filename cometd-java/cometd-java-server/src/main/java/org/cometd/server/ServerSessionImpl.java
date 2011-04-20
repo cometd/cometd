@@ -25,7 +25,6 @@ import org.cometd.server.transport.HttpTransport;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.util.thread.Timeout.Task;
@@ -227,7 +226,7 @@ public class ServerSessionImpl implements ServerSession
             }
             catch(Exception e)
             {
-                Log.warn(e);
+                _bayeux.getLogger().warn("Exception while invoking listener " + listener, e);
             }
         }
 
