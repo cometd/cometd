@@ -53,9 +53,9 @@ public class SpringBayeuxService
     @Configure(CHANNEL)
     private void configureFoo(ConfigurableServerChannel channel)
     {
-        configured=true;
+        configured = true;
     }
-    
+
     @Subscription(CHANNEL)
     public void foo(Message message) // Subscription method detected by CometD's annotation processor
     {
