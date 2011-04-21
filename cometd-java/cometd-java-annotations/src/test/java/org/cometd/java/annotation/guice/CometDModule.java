@@ -22,5 +22,9 @@ public class CometDModule extends AbstractModule
         bind(BayeuxServerImpl.class).in(Singleton.class);
         // Binds the interface to the implementation class
         bind(BayeuxServer.class).to(BayeuxServerImpl.class);
+
+        // Services do not need to be configured here, since
+        // they are normally not injected anywhere, but just instantiated
+        // via Injector.getInstance()
     }
 }
