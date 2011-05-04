@@ -1,5 +1,7 @@
 package org.cometd.java.annotation;
 
+import java.util.ArrayList;
+import java.util.List;
 import javax.servlet.ServletException;
 
 import org.cometd.server.CometdServlet;
@@ -27,38 +29,63 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class AnnotationCometdServlet extends CometdServlet
 {
-    private static final long serialVersionUID = 2821068017364051087L;
+    private final List<Object> services = new ArrayList<Object>();
+    private volatile ServerAnnotationProcessor processor;
 
     @Override
     public void init() throws ServletException
     {
         super.init();
 
-        String services = getInitParameter("services");
-        if (services != null && services.length() > 0)
-        {
-            ServerAnnotationProcessor processor = new ServerAnnotationProcessor(getBayeux());
+        processor = new ServerAnnotationProcessor(getBayeux());
 
-            for (String service : services.split(","))
+        String servicesParam = getInitParameter("services");
+        if (servicesParam != null && servicesParam.length() > 0)
+        {
+
+            for (String serviceClass : servicesParam.split(","))
             {
-                processService(processor, service.trim());
+                Object service = processService(processor, serviceClass.trim());
+                services.add(service);
             }
         }
     }
 
-    protected void processService(ServerAnnotationProcessor processor, String serviceClassName) throws ServletException
+    protected Object processService(ServerAnnotationProcessor processor, String serviceClassName) throws ServletException
     {
         Logger logger = getBayeux().getLogger();
         try
         {
             Object service = Loader.loadClass(getClass(), serviceClassName).newInstance();
             processor.process(service);
-            logger.info("Processed annotated service " + serviceClassName);
+            logger.info("Processed annotated service " + service);
+            return service;
         }
         catch (Exception x)
         {
             logger.warn("Failed to create annotated service " + serviceClassName, x);
             throw new ServletException(x);
         }
+    }
+
+    @Override
+    public void destroy()
+    {
+        for (Object service : services)
+            deprocessService(processor, service);
+
+        super.destroy();
+    }
+
+    protected void deprocessService(ServerAnnotationProcessor processor, Object service)
+    {
+        Logger logger = getBayeux().getLogger();
+        processor.deprocess(service);
+        logger.info("Deprocessed annotated service " + service);
+    }
+
+    protected List<Object> getServices()
+    {
+        return services;
     }
 }
