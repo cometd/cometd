@@ -107,7 +107,7 @@ public class AuctionChatService extends AbstractService
                     public void removed(ServerSession session, boolean timeout)
                     {
                         if (!_oort.isOort(joiner))
-                            _seti.disassociate(userName);
+                            _seti.disassociate(userName, session);
                         if (timeout)
                         {
                             ServerChannel channel=getBayeux().getChannel(channelName);

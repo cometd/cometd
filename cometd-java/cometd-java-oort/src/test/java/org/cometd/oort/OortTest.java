@@ -138,8 +138,13 @@ public abstract class OortTest
             if (!message.isMeta() || message.isSuccessful())
             {
                 count.incrementAndGet();
-                latch.countDown();
+                countDown();
             }
+        }
+
+        public void countDown()
+        {
+            latch.countDown();
         }
 
         public boolean await(int timeout, TimeUnit unit) throws InterruptedException
