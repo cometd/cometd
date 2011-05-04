@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
@@ -220,6 +221,141 @@ public class SetiTest extends OortTest
         Assert.assertFalse(seti2.isAssociated("user2"));
     }
 
+    @Test
+    public void testAssociationWithMultipleSessions() throws Exception
+    {
+        Server server1 = startServer(0);
+        Oort oort1 = startOort(server1);
+        oort1.getLogger().setDebugEnabled(true);
+        Server server2 = startServer(0);
+        Oort oort2 = startOort(server2);
+        oort2.getLogger().setDebugEnabled(true);
+        Server server3 = startServer(0);
+        Oort oort3 = startOort(server3);
+        oort3.getLogger().setDebugEnabled(true);
+
+        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        OortComet oortComet23 = oort2.observeComet(oort3.getURL());
+        Assert.assertTrue(oortComet23.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        Seti seti1 = startSeti(oort1);
+        Seti seti2 = startSeti(oort2);
+        Seti seti3 = startSeti(oort3);
+
+        new SetiService(seti1);
+        new SetiService(seti2);
+        new SetiService(seti3);
+
+        BayeuxClient client1A = startClient(oort1);
+        BayeuxClient client1B = startClient(oort1);
+        BayeuxClient client1C = startClient(oort2);
+        BayeuxClient client3 = startClient(oort3);
+
+        LatchListener publishLatch = new LatchListener();
+
+        Map<String, Object> login1A = new HashMap<String, Object>();
+        login1A.put("user", "user1");
+        ClientSessionChannel loginChannel1A = client1A.getChannel("/service/login");
+        loginChannel1A.addListener(publishLatch);
+        loginChannel1A.publish(login1A);
+        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+
+        // Login the same user to the same server with a different client
+        publishLatch.reset(1);
+        Map<String, Object> login1B = new HashMap<String, Object>();
+        login1B.put("user", "user1");
+        ClientSessionChannel loginChannel1B = client1B.getChannel("/service/login");
+        loginChannel1B.addListener(publishLatch);
+        loginChannel1B.publish(login1B);
+        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+
+        // Login the same user to another server with a different client
+        publishLatch.reset(1);
+        Map<String, Object> login1C = new HashMap<String, Object>();
+        login1C.put("user", "user1");
+        ClientSessionChannel loginChannel1C = client1C.getChannel("/service/login");
+        loginChannel1C.addListener(publishLatch);
+        loginChannel1C.publish(login1C);
+        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+
+        publishLatch.reset(1);
+        Map<String, Object> login2 = new HashMap<String, Object>();
+        login2.put("user", "user2");
+        ClientSessionChannel loginChannel2 = client3.getChannel("/service/login");
+        loginChannel2.addListener(publishLatch);
+        loginChannel2.publish(login2);
+        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+
+        // Wait for the associations to be broadcasted
+        Thread.sleep(1000);
+
+        // Send a message from client3: client1A, client1B and client1C must receive it
+        String channel = "/service/forward";
+        final LatchListener latch = new LatchListener(3);
+        final AtomicInteger counter = new AtomicInteger();
+        client1A.getChannel(channel).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                counter.incrementAndGet();
+                latch.countDown();
+            }
+        });
+        client1B.getChannel(channel).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                counter.incrementAndGet();
+                latch.countDown();
+            }
+        });
+        client1C.getChannel(channel).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                counter.incrementAndGet();
+                latch.countDown();
+            }
+        });
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put("peer", "user1");
+        client3.getChannel(channel).publish(data);
+
+        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+
+        // Wait a bit more to collect other messages that may be delivered wrongly
+        Thread.sleep(1000);
+
+        // Be sure exactly 3 have been delivered
+        Assert.assertEquals(3, counter.get());
+
+        // Disassociate client1A
+        publishLatch.reset(1);
+        Map<String, Object> logout = new HashMap<String, Object>();
+        logout.put("user", "user1");
+        ClientSessionChannel logoutChannel1A = client1A.getChannel("/service/logout");
+        logoutChannel1A.addListener(publishLatch);
+        logoutChannel1A.publish(logout);
+        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+
+        // Wait for the presence to broadcast
+        Thread.sleep(1000);
+
+        // Send again the message from client3, now only client1B and client1C must get it
+        counter.set(0);
+        latch.reset(2);
+        client3.getChannel(channel).publish(data);
+
+        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+
+        // Wait a bit more to collect other messages that may be delivered wrongly
+        Thread.sleep(1000);
+
+        // Be sure exactly 2 have been delivered
+        Assert.assertEquals(2, counter.get());
+    }
+
     private class SetiService extends AbstractService
     {
         private final Seti seti;
@@ -244,7 +380,7 @@ public class SetiTest extends OortTest
         {
             Map<String,Object> data = message.getDataAsMap();
             String user = (String)data.get("user");
-            seti.disassociate(user);
+            seti.disassociate(user, session);
         }
 
         public void forward(ServerSession session, ServerMessage message)

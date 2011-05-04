@@ -3,9 +3,9 @@ package org.cometd.oort;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Set;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>Seti allows an application to maintain a mapping from userId (any application
  * identifier such as user names or database IDs that represent users) to
  * server sessions using the {@link #associate(String, ServerSession)} and
- * {@link #disassociate(String)} methods.</p>
+ * {@link #disassociate(String, ServerSession)} methods.</p>
  * <p>A typical example of usage of {@link Seti#associate(String, ServerSession)} is
  * in a {@link SecurityPolicy} after a successful handshake (where authentication
  * information can be linked with the server session), or in {@link AbstractService CometD services}
@@ -45,7 +45,7 @@ public class Seti extends AbstractLifeCycle
     public static final String SETI_ATTRIBUTE = Seti.class.getName();
     private static final String SETI_ALL_CHANNEL = "/seti/all";
 
-    private final ConcurrentMap<String, Location> _uid2Location = new ConcurrentHashMap<String, Location>();
+    private final Map<String, Set<Location>> _uid2Location = new HashMap<String, Set<Location>>();
     private final Logger _logger;
     private final Oort _oort;
     private final String _setiId;
@@ -140,23 +140,54 @@ public class Seti extends AbstractLifeCycle
     }
 
     /**
-     * <p>Associates the given userId to the given session, and broadcasts this information
+     * <p>Associates the given userId to the given session.</p>
+     * <p>If it is the first association for this userId, broadcasts this information
      * on the Oort cloud, so that other comets will know that the given userId is on this comet.</p>
      *
      * @param userId  the user identifier to associate
      * @param session the session to map the userId to
+     * @return true if the session has been associated, false if it was already associated
      * @see #isAssociated(String)
-     * @see #disassociate(String)
+     * @see #disassociate(String, ServerSession)
      */
-    public void associate(final String userId, final ServerSession session)
+    public boolean associate(final String userId, final ServerSession session)
     {
         if (session == null)
             throw new NullPointerException();
 
-        _uid2Location.put(userId, new LocalLocation(userId, session));
-        _logger.debug("Associated session {} to user {}", session, userId);
-        // Let everyone in the cluster know that this session is here
-        _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, true), null);
+        LocalLocation location = new LocalLocation(userId, session);
+        boolean wasAssociated = isAssociated(userId);
+        boolean added = associate(userId, location);
+
+        if (added)
+        {
+            session.addListener(location);
+            _logger.debug("Associated session {} to user {}", session, userId);
+            if (!wasAssociated)
+            {
+                _logger.debug("Broadcasting presence addition for user {}", userId);
+                // Let everyone in the cluster know that this session is here
+                _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, true), null);
+            }
+        }
+
+        return added;
+    }
+
+    protected boolean associate(String userId, Location location)
+    {
+        synchronized (_uid2Location)
+        {
+            Set<Location> locations = _uid2Location.get(userId);
+            if (locations == null)
+            {
+                locations = new HashSet<Location>();
+                _uid2Location.put(userId, locations);
+            }
+            boolean result = locations.add(location);
+            _logger.debug("Associations {}", _uid2Location);
+            return result;
+        }
     }
 
     /**
@@ -166,32 +197,71 @@ public class Seti extends AbstractLifeCycle
      */
     public boolean isAssociated(String userId)
     {
-        return _uid2Location.get(userId) instanceof LocalLocation;
+        synchronized (_uid2Location)
+        {
+            Set<Location> locations = _uid2Location.get(userId);
+            if (locations == null)
+                return false;
+            for (Location location : locations)
+            {
+                if (location instanceof LocalLocation)
+                    return true;
+            }
+            return false;
+        }
     }
 
     /**
-     * <p>Disassociates the given userId, and broadcasts this information on the Oort cloud,
-     * so that other comets will know that the given userId no longer is on this comet.</p>
+     * <p>Disassociates the given userId from the given session.</p>
+     * <p>If this is the last disassociation for this userId, broadcasts this information
+     * on the Oort cloud, so that other comets will know that the given userId no longer is on this comet.</p>
      *
      * @param userId the user identifier to disassociate
+     * @param session the session mapped to the userId
+     * @return true if the session has been disassociated, false if it was not associated
      * @see #associate(String, ServerSession)
      */
-    public void disassociate(final String userId)
+    public boolean disassociate(final String userId, ServerSession session)
     {
-        Location location = _uid2Location.remove(userId);
-        if (location == null)
-            return;
+        LocalLocation location = new LocalLocation(userId, session);
+        boolean removed = disassociate(userId, location);
+        if (removed)
+            _logger.debug("Disassociated session {} from user {}", session, userId);
 
         // Seti is stopped before BayeuxServer, but it may happen that RemoveListeners
-        // (triggered by BayeuxServer) call Seti (for example when BayeuxServer is stopping)
-        // to find that Seti is already stopped.
+        // call Seti when BayeuxServer is stopping, and they will find that Seti is already stopped.
         // Do not do any action in this case, because exceptions are thrown if the action is
         // attempted (as _session is already disconnected).
-        if (_session.isConnected())
+        // Also, we only broadcast the presence message if no associations are left for the user,
+        // because remote comets are not aware of multiple associations.
+        // Consider the case where the same user is associated twice to a comet, and then only
+        // one association is disassociated. The other comets do not know that the comet had multiple
+        // associations, and if a presence message is sent, the remote comets will wrongly think
+        // that the user is gone, while in reality it is still associated with the remaining association.
+        if (_session.isConnected() && !isAssociated(userId))
         {
-            _logger.debug("Disassociated session {} from user {}", location, userId);
+            _logger.debug("Broadcasting presence removal for user {}", userId);
             // Let everyone in the cluster know that this session is not here anymore
             _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, false), null);
+        }
+
+        return removed;
+    }
+
+    protected boolean disassociate(String userId, Location location)
+    {
+        synchronized (_uid2Location)
+        {
+            boolean result = false;
+            Set<Location> locations = _uid2Location.get(userId);
+            if (locations != null)
+            {
+                result = locations.remove(location);
+                if (locations.isEmpty())
+                    _uid2Location.remove(userId);
+            }
+            _logger.debug("Associations {}", _uid2Location);
+            return result;
         }
     }
 
@@ -219,10 +289,19 @@ public class Seti extends AbstractLifeCycle
     {
         for (String toUserId : toUserIds)
         {
-            Location location = _uid2Location.get(toUserId);
-            if (location == null)
-                location = new SetiLocation(SETI_ALL_CHANNEL);
-            location.send(toUserId, toChannel, data);
+            Set<Location> copy = new HashSet<Location>();
+            synchronized (_uid2Location)
+            {
+                Set<Location> locations = _uid2Location.get(toUserId);
+                if (locations == null)
+                    copy.add(new SetiLocation(toUserId, SETI_ALL_CHANNEL));
+                else
+                    copy.addAll(locations);
+            }
+
+            _logger.debug("Sending message to locations {}", copy);
+            for (Location location : copy)
+                location.send(toUserId, toChannel, data);
         }
     }
 
@@ -255,13 +334,9 @@ public class Seti extends AbstractLifeCycle
         Map<String, Object> data = message.getDataAsMap();
         Boolean presence = (Boolean)data.get(SetiPresence.PRESENCE_FIELD);
         if (presence != null)
-        {
             receivePresence(message);
-        }
         else
-        {
             receiveMessage(message);
-        }
     }
 
     /**
@@ -279,15 +354,12 @@ public class Seti extends AbstractLifeCycle
         _logger.debug("Received presence message {}", message);
 
         String userId = (String)data.get(SetiPresence.USER_ID_FIELD);
+        SetiLocation location = new SetiLocation(userId, "/seti/" + setiId);
         boolean presence = (Boolean)data.get(SetiPresence.PRESENCE_FIELD);
         if (presence)
-        {
-            _uid2Location.put(userId, new SetiLocation("/seti/" + setiId));
-        }
+            associate(userId, location);
         else
-        {
-            _uid2Location.remove(userId);
-        }
+            disassociate(userId, location);
     }
 
     /**
@@ -299,25 +371,52 @@ public class Seti extends AbstractLifeCycle
     {
         Map<String, Object> messageData = message.getDataAsMap();
         String userId = (String)messageData.get(SetiMessage.USER_ID_FIELD);
-        Location location = _uid2Location.get(userId);
-        _logger.debug("Received message {} for location {}", message, location);
-        if (location != null)
+        String channel = (String)messageData.get(SetiMessage.CHANNEL_FIELD);
+        Object data = messageData.get(SetiMessage.DATA_FIELD);
+
+        Set<Location> copy = new HashSet<Location>();
+        synchronized (_uid2Location)
         {
-            String channel = (String)messageData.get(SetiMessage.CHANNEL_FIELD);
-            Object data = messageData.get(SetiMessage.DATA_FIELD);
-            location.receive(userId, channel, data);
+            Set<Location> locations = _uid2Location.get(userId);
+            if (locations != null)
+            {
+                // Consider cometA, cometB and cometC and a user that is associated
+                // in both cometA and cometB. When cometC sends a message to the user,
+                // it knows that the user is in both cometA and cometB (thanks to presence
+                // messages) and will send a message to both cometA and cometB.
+                // But cometA also knows from presence messages that the user is also in
+                // cometB and should not forward the message arriving from cometC to cometB
+                // since cometC will take care of sending to cometB.
+                // Hence, we forward the message only locally
+                for (Location location : locations)
+                {
+                    if (location instanceof LocalLocation)
+                        copy.add(location);
+                }
+            }
         }
+
+        _logger.debug("Received message {} for locations {}", message, copy);
+        for (Location location : copy)
+            location.receive(userId, channel, data);
     }
 
+    /**
+     * <p>The representation of where a user is.</p>
+     */
     protected interface Location
     {
         public void send(String toUser, String toChannel, Object data);
 
         public void receive(String toUser, String toChannel, Object data);
+
+        public int hashCode();
+
+        public boolean equals(Object obj);
     }
 
     /**
-     * A Location that represent session connected to a local comet
+     * <p>A Location that represent a user connected to a local comet.</p>
      */
     protected class LocalLocation implements Location, ServerSession.RemoveListener
     {
@@ -328,7 +427,6 @@ public class Seti extends AbstractLifeCycle
         {
             _userId = userId;
             _session = session;
-            _session.addListener(this);
         }
 
         public void send(String toUser, String toChannel, Object data)
@@ -343,7 +441,24 @@ public class Seti extends AbstractLifeCycle
 
         public void removed(ServerSession session, boolean timeout)
         {
-            disassociate(_userId);
+            disassociate(_userId, session);
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+                return true;
+            if (!(obj instanceof LocalLocation))
+                return false;
+            LocalLocation that = (LocalLocation)obj;
+            return _userId.equals(that._userId) && _session.getId().equals(that._session.getId());
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return 31 * _userId.hashCode() + _session.getId().hashCode();
         }
 
         @Override
@@ -354,14 +469,16 @@ public class Seti extends AbstractLifeCycle
     }
 
     /**
-     * A Location that represent a session on a remote comet
+     * <p>A Location that represent a user connected to a remote comet.</p>
      */
     protected class SetiLocation implements Location
     {
+        private final String _userId;
         private final String _setiId;
 
-        protected SetiLocation(String channelId)
+        protected SetiLocation(String userId, String channelId)
         {
+            _userId = userId;
             _setiId = channelId;
         }
 
@@ -373,11 +490,28 @@ public class Seti extends AbstractLifeCycle
         public void receive(String toUser, String toChannel, Object data)
         {
             // A message has been sent to this comet because the sender thought
-            // the user was in this node. If it were, we would have found a
+            // the user was in this comet. If it were, we would have found a
             // LocalLocation, but instead found this SetiLocation.
             // Therefore, the user must have moved to this seti location, and
             // we forward the message.
             send(toUser, toChannel, data);
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+                return true;
+            if (!(obj instanceof SetiLocation))
+                return false;
+            SetiLocation that = (SetiLocation)obj;
+            return _userId.equals(that._userId) && _setiId.equals(that._setiId);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return 31 * _userId.hashCode() + _setiId.hashCode();
         }
 
         @Override
@@ -389,7 +523,7 @@ public class Seti extends AbstractLifeCycle
 
     private class SetiMessage extends HashMap<String, Object>
     {
-        private static final String USER_ID_FIELD = "uid";
+        private static final String USER_ID_FIELD = "userId";
         private static final String CHANNEL_FIELD = "channel";
         private static final String SETI_ID_FIELD = "setiId";
         private static final String DATA_FIELD = "data";
@@ -405,7 +539,7 @@ public class Seti extends AbstractLifeCycle
 
     private class SetiPresence extends HashMap<String, Object>
     {
-        private static final String USER_ID_FIELD = "uid";
+        private static final String USER_ID_FIELD = "userId";
         private static final String SETI_ID_FIELD = "setiId";
         private static final String PRESENCE_FIELD = "presence";
 

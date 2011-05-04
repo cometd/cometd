@@ -22,6 +22,7 @@ public class OortComet extends BayeuxClient
     private final Oort _oort;
     private final String _cometURL;
     private volatile String _cometSecret;
+    private volatile boolean _subscriptionsAllowed;
 
     public OortComet(Oort oort, String cometUrl)
     {
@@ -49,13 +50,11 @@ public class OortComet extends BayeuxClient
                     // The secret of the remote Oort
                     _cometSecret = (String)oortExtension.get(Oort.EXT_OORT_SECRET_FIELD);
 
-                    _oort.getLogger().info("Connected to comet {} with {}", _cometURL, message.getClientId());
-
                     batch(new Runnable()
                     {
                         public void run()
                         {
-                            // subscribe to cloud notifications
+                            // Subscribe to cloud notifications
                             getChannel(Oort.OORT_CLOUD_CHANNEL).subscribe(new ClientSessionChannel.MessageListener()
                             {
                                 public void onMessage(ClientSessionChannel channel, Message message)
@@ -65,12 +64,23 @@ public class OortComet extends BayeuxClient
                                 }
                             });
 
-                            _subscriptions.clear();
+                            // It is possible that a call to Oort.observeChannel() (which triggers
+                            // the call to subscribe()) is performed concurrently with the handshake
+                            // of this OortComet with a remote comet.
+                            // For example, Seti calls Oort.observeChannel() on startup and this may
+                            // be called while the Oort cloud is connecting all the comets together.
+                            // In this case, below we will clear existing subscriptions, but we will
+                            // subscribe them again just afterwards, ensuring only one subscriber
+                            // (and not multiple ones) is subscribed.
+                            clearSubscriptions();
+                            _subscriptionsAllowed = true;
                             subscribe(_oort.getObservedChannels());
 
                             getChannel(Oort.OORT_CLOUD_CHANNEL).publish(_oort.getKnownComets().toArray(), _cometSecret);
                         }
                     });
+
+                    _oort.getLogger().info("Connected to comet {} with {}", _cometURL, message.getClientId());
                 }
                 else
                 {
@@ -82,6 +92,10 @@ public class OortComet extends BayeuxClient
 
     protected void subscribe(Set<String> observedChannels)
     {
+        // Guard against concurrent subscription clearing from the handshake callback
+        if (!_subscriptionsAllowed)
+            return;
+
         for (String channel : observedChannels)
         {
             if (_subscriptions.containsKey(channel))
@@ -101,10 +115,11 @@ public class OortComet extends BayeuxClient
             ClientSessionChannel.MessageListener existing = _subscriptions.putIfAbsent(channel, listener);
             if (existing == null)
             {
-                _oort.getLogger().debug("Subscribing to {} on {}", channel, _cometURL);
+                _oort.getLogger().debug("Subscribing to messages on {} from {}", channel, _cometURL);
                 getChannel(channel).subscribe(listener);
             }
         }
+        _oort.getLogger().debug("Subscriptions to messages on {} from {}", _subscriptions, _cometURL);
     }
 
     protected void unsubscribe(String channel)
@@ -112,9 +127,15 @@ public class OortComet extends BayeuxClient
         ClientSessionChannel.MessageListener listener = _subscriptions.remove(channel);
         if (listener != null)
         {
-            _oort.getLogger().debug("Unsubscribing from {} on {}", channel, _cometURL);
+            _oort.getLogger().debug("Unsubscribing to messages on {} from {}", channel, _cometURL);
             getChannel(channel).unsubscribe(listener);
         }
+    }
+
+    protected void clearSubscriptions()
+    {
+        for (String channel : _oort.getObservedChannels())
+            unsubscribe(channel);
     }
 
     @Override

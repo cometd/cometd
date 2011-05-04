@@ -106,7 +106,7 @@ public class OortChatService
                 public void removed(ServerSession session, boolean timeout)
                 {
                     if (!_oort.isOort(client))
-                        _seti.disassociate(userName);
+                        _seti.disassociate(userName, session);
                     members.remove(userName);
                     broadcastMembers(room,members);
                 }
