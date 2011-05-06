@@ -38,15 +38,26 @@ public class CometDTwoInstancesTest extends AbstractCometDTest
                 "");
         Assert.assertTrue(handshakeLatch2.await(1000));
 
+        String channelName = "/test";
+
+        evaluateScript("var subscribeLatch = new Latch(1);");
+        evaluateScript("var subscribeLatch2 = new Latch(1);");
+        Latch subscribeLatch = get("subscribeLatch");
+        Latch subscribeLatch2 = get("subscribeLatch2");
         evaluateScript("var publishLatch = new Latch(2);");
         evaluateScript("var publishLatch2 = new Latch(2);");
         Latch publishLatch = get("publishLatch");
         Latch publishLatch2 = get("publishLatch2");
-        String channelName = "/test";
         evaluateScript("" +
+                "cometd.addListener('/meta/subscribe', subscribeLatch, 'countDown');" +
+                "cometd2.addListener('/meta/subscribe', subscribeLatch2, 'countDown');" +
                 "cometd.subscribe('" + channelName + "', publishLatch, 'countDown');" +
                 "cometd2.subscribe('" + channelName + "', publishLatch2, 'countDown');" +
-                "" +
+                "");
+        Assert.assertTrue(subscribeLatch.await(1000));
+        Assert.assertTrue(subscribeLatch2.await(1000));
+
+        evaluateScript("" +
                 "cometd.publish('" + channelName + "', {});" +
                 "cometd2.publish('" + channelName + "', {});" +
                 "");
