@@ -40,13 +40,15 @@ org.cometd.ReloadExtension = function(configuration)
     var _cometd;
     var _debug;
     var _state = null;
-    var _cookieMaxAge = configuration && configuration.cookieMaxAge || 5;
+    var _cookieMaxAge = 5;
     var _batch = false;
 
-    function _reload()
+    function _reload(config)
     {
         if (_state && _state.handshakeResponse !== null)
         {
+            _configure(config);
+
             var cookie = org.cometd.JSON.toJSON(_state);
             _debug('Reload extension saving cookie value', cookie);
             org.cometd.COOKIE.set('org.cometd.reload', cookie, {
@@ -66,6 +68,19 @@ org.cometd.ReloadExtension = function(configuration)
         // and other configuration parameters.
         return _state.url == oldState.url;
     }
+
+    function _configure(config)
+    {
+        if (config)
+        {
+            if (typeof config.cookieMaxAge === 'number')
+            {
+                _cookieMaxAge = config.cookieMaxAge;
+            }
+        }
+    }
+
+    this.configure = _configure;
 
     this.registered = function(name, cometd)
     {
@@ -181,4 +196,6 @@ org.cometd.ReloadExtension = function(configuration)
         }
         return message;
     };
+
+    _configure(configuration);
 };

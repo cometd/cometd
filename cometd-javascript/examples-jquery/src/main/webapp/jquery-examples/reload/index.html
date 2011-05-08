@@ -16,6 +16,8 @@
     {
       $(document).ready(function()
       {
+        $.cometd.getExtension('reload').configure({cookieMaxAge:10});
+
         /* handshake listener to report client IDs */
         $.cometd.addListener("/meta/handshake", function(message)
         {
@@ -52,7 +54,7 @@
         /* Setup reload extension */
         $(window).unload(function()
         {
-            $.cometd.reload();
+            $.cometd.reload({cookieMaxAge:8});
         });
 
       });
