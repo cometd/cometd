@@ -47,6 +47,7 @@
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-jmx</artifactId>
             <version>${jetty-version}</version>
+            <optional>true</optional>
             <exclusions>
                 <exclusion>
                     <groupId>org.eclipse.jetty</groupId>
