@@ -30,14 +30,14 @@ import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketFactory;
 
-public class WebSocketTransport extends HttpTransport implements WebSocketFactory.Acceptor
+public class WebSocketTransport extends HttpTransport
 {
     public final static String PREFIX = "ws";
     public final static String NAME = "websocket";
     public final static String PROTOCOL_OPTION = "protocol";
     public final static String BUFFER_SIZE_OPTION = "bufferSize";
 
-    private final WebSocketFactory _factory = new WebSocketFactory(this);
+    private final WebSocketFactory _factory = new WebSocketFactory();
     private final ThreadLocal<Handshake> _handshake = new ThreadLocal<Handshake>();
     private String _protocol;
 
@@ -59,7 +59,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         setInterval(getOption(PREFIX + "." + INTERVAL_OPTION, 2500L));
         setMaxInterval(getOption(PREFIX + "." + MAX_INTERVAL_OPTION, 15000L));
 
-        getBayeux().getLogger().info("Init WebSocketTransport for Jetty 7");
+        getBayeux().getLogger().info("Init WebSocketTransport for Jetty 8");
     }
 
     @Override
@@ -79,15 +79,37 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             return;
         }
 
-        if (!_factory.acceptWebSocket(request, response))
+        // Taken from Jetty 8's WebSocketServlet class
+        if ("WebSocket".equals(request.getHeader("Upgrade")))
         {
-            getBayeux().getLogger().warn("Websocket not accepted");
-            response.setHeader("Connection", "close");
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            boolean hixie = request.getHeader("Sec-WebSocket-Key1")!=null;
+
+            String protocol=request.getHeader(hixie?"Sec-WebSocket-Protocol":"WebSocket-Protocol");
+            if (protocol==null)
+                protocol=request.getHeader("Sec-WebSocket-Protocol");
+            WebSocket websocket=doWebSocketConnect(request,protocol);
+
+            String host=request.getHeader("Host");
+            String origin=request.getHeader("Origin");
+            origin=checkOrigin(request,host,origin);
+
+            if (websocket!=null)
+            {
+                _factory.upgrade(request,response,websocket,origin,protocol);
+                return; // websocket accepted
+            }
+            else
+            {
+                if (hixie)
+                    response.setHeader("Connection","close");
+                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            }
         }
+
+        getBayeux().getLogger().warn("Websocket not accepted");
     }
 
-    public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+    private WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
     {
         boolean sameProtocol = (_protocol == null && protocol == null) ||
                 (_protocol != null && _protocol.equals(protocol));
@@ -101,19 +123,19 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         return null;
     }
 
-    public String checkOrigin(HttpServletRequest request, String host, String origin)
+    private String checkOrigin(HttpServletRequest request, String host, String origin)
     {
         if (origin == null)
             origin = host;
         return origin;
     }
 
-    protected class WebSocketScheduler implements WebSocket.OnTextMessage, AbstractServerTransport.Scheduler
+    protected class WebSocketScheduler implements WebSocket, AbstractServerTransport.Scheduler
     {
         protected final Handshake _addresses;
         protected final String _userAgent;
         protected ServerSessionImpl _session;
-        protected Connection _connection;
+        protected Outbound _connection;
         protected ServerMessage.Mutable _connectReply;
         protected final Timeout.Task _timeoutTask = new Timeout.Task()
         {
@@ -134,12 +156,14 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             _userAgent = userAgent;
         }
 
-        public void onOpen(Connection connection)
+        // WebSocket implementation
+
+        public void onConnect(Outbound outbound)
         {
-            _connection = connection;
+            _connection = outbound;
         }
 
-        public void onClose(int code, String message)
+        public void onDisconnect()
         {
             if (_session != null)
             {
@@ -149,7 +173,17 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             }
         }
 
-        public void onMessage(String data)
+        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
+        {
+            // do nothing - when the message will be complete the onMessage will be called
+        }
+
+        public void onMessage(byte opcode, byte[] data, int offset, int length)
+        {
+            onMessage(opcode, new String(data, offset, length));
+        }
+
+        public void onMessage(byte opcode, String data)
         {
             boolean batch = false;
             try

@@ -7,8 +7,8 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>cometd-websocket-jetty</artifactId>
-    <name>CometD :: Java :: Jetty WebSocket Transport</name>
+    <artifactId>cometd-websocket-jetty8</artifactId>
+    <name>CometD :: Java :: Jetty8 WebSocket Transport</name>
 
     <dependencies>
         <dependency>
@@ -25,7 +25,7 @@
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-websocket</artifactId>
-            <version>${jetty7-version}</version>
+            <version>${jetty8-version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
