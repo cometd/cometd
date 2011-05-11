@@ -154,6 +154,13 @@
     </profiles>
 
     <build>
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-webdav</artifactId>
+                <version>1.0-beta-2</version>
+            </extension>
+        </extensions>
         <defaultGoal>install</defaultGoal>
         <plugins>
             <plugin>
