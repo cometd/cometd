@@ -10,6 +10,17 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
+ * CometD Servlet to use with Guice Servlet extention.
+ * <code><pre>
+final class WebModule extends ServletModule {
+    protected void configureServlets() {
+        bind(CrossOriginFilter.class).in(Singleton.class);
+        filter("/*").through(CrossOriginFilter.class);
+        serve("/cometd/*").with(GuiceCometdServlet.class);
+    }
+}
+ * </pre></code
+ *
  * @author Mathieu Carbou (mathieu.carbou@gmail.com)
  */
 @Singleton
