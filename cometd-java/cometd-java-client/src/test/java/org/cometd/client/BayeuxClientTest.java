@@ -641,11 +641,11 @@ public class BayeuxClientTest extends TestCase
         BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null, _httpClient));
 
         client.setDebugEnabled(false);
-        long wait = 1000L;
+        long wait = 2000L;
         long start = System.nanoTime();
-        client.handshake(wait);
+        State state = client.handshake(wait);
         long stop = System.nanoTime();
-        assertTrue(TimeUnit.NANOSECONDS.toMillis(stop - start) < wait);
+        assertTrue("State=" + state, TimeUnit.NANOSECONDS.toMillis(stop - start) < wait);
         assertNotNull(client.getId());
         String data = "Hello World";
         client.getChannel(channelName).publish(data);
