@@ -26,6 +26,7 @@
         <module>cometd-java-server</module>
         <module>cometd-websocket-jetty</module>
         <module>cometd-websocket-jetty8</module>
+        <module>cometd-java-guice</module>
     </modules>
 
     <dependencyManagement>
