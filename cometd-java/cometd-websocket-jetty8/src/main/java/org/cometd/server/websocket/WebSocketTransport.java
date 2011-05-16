@@ -30,6 +30,12 @@ import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketFactory;
 
+/**
+ * WebSocket support for Jetty 8. API changed from Jetty 7.
+ * 
+ * @author Mathieu Carbou (mathieu.carbou@gmail.com)
+ * @since 2.2.1
+ */
 public class WebSocketTransport extends HttpTransport
 {
     public final static String PREFIX = "ws";

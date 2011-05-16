@@ -11,7 +11,57 @@ import org.cometd.java.annotation.Service;
 import org.cometd.server.BayeuxServerImpl;
 
 /**
+ * Guice module which provides BayeuxServer and BayeuxServerImpl instances and automatically
+ * process CometD services annotated by {@link Service}. This module can be subclassed to
+ * configure Bayeux server
+ * <p>CometD service:</p>
+ * <code><pre>
+ * &#064;Service
+ * &#064;Singleton
+ * final class EchoService {
+ *     &#064;Session
+ *     ServerSession serverSession;
+ *
+ *     &#064;Listener(&quot;/echo&quot;)
+ *     public void echo(ServerSession remote, ServerMessage.Mutable message) {
+ *         String channel = message.getChannel();
+ *         Object data = message.getData();
+ *         remote.deliver(serverSession, channel, data, null);
+ *     }
+ * }
+ * </pre></code>
+ * <p>Guice module for services:</p>
+ * <code><pre>
+ * final class ServiceModule extends AbstractModule {
+ *     protected void configure() {
+ *         bind(EchoService.class);
+ *     }
+ * }
+ * </pre></code>
+ * <p>Guice module to configure CometD:</p>
+ * <code><pre>
+ * final class CometdModule extends GuiceCometdModule {
+ *     &#064;Inject
+ *     SecurityPolicy policy;
+ *
+ *     protected void configure(BayeuxServerImpl server) {
+ *         server.setOption(BayeuxServerImpl.LOG_LEVEL, BayeuxServerImpl.DEBUG_LOG_LEVEL);
+ *         server.addTransport(new WebSocketTransport(server));
+ *         server.setSecurityPolicy(policy);
+ *     }
+ * }
+ * </pre></code>
+ * <p>GuiceConfig (set in web.xml file):</p>
+ * <code><pre>
+ * public final class GuiceConfig extends GuiceServletContextListener {
+ *     protected Injector getInjector() {
+ *         return Guice.createInjector(Stage.PRODUCTION, new ServiceModule(), new WebModule(), new CometdModule());
+ *     }
+ * }
+ * </pre></code>
+ *
  * @author Mathieu Carbou (mathieu.carbou@gmail.com)
+ * @since 2.2.1
  */
 @Singleton
 public class GuiceCometdModule extends AbstractModule implements Provider<BayeuxServerImpl> {

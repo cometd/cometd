@@ -11,17 +11,19 @@ import javax.inject.Singleton;
 
 /**
  * CometD Servlet to use with Guice Servlet extention.
+ *
  * <code><pre>
-final class WebModule extends ServletModule {
-    protected void configureServlets() {
-        bind(CrossOriginFilter.class).in(Singleton.class);
-        filter("/*").through(CrossOriginFilter.class);
-        serve("/cometd/*").with(GuiceCometdServlet.class);
-    }
-}
- * </pre></code
+ * final class WebModule extends ServletModule {
+ *     protected void configureServlets() {
+ *         bind(CrossOriginFilter.class).in(Singleton.class);
+ *         filter(&quot;/*&quot;).through(CrossOriginFilter.class);
+ *         serve(&quot;/cometd/*&quot;).with(GuiceCometdServlet.class);
+ *     }
+ * }
+ * </pre></code>
  *
  * @author Mathieu Carbou (mathieu.carbou@gmail.com)
+ * @since 2.2.1
  */
 @Singleton
 public final class GuiceCometdServlet extends AnnotationCometdServlet {
