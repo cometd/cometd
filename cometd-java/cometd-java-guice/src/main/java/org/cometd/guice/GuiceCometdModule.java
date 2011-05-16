@@ -21,7 +21,7 @@ import org.cometd.server.BayeuxServerImpl;
  * final class EchoService {
  *     &#064;Session
  *     ServerSession serverSession;
- *
+ * <p/>
  *     &#064;Listener(&quot;/echo&quot;)
  *     public void echo(ServerSession remote, ServerMessage.Mutable message) {
  *         String channel = message.getChannel();
@@ -43,7 +43,7 @@ import org.cometd.server.BayeuxServerImpl;
  * final class CometdModule extends GuiceCometdModule {
  *     &#064;Inject
  *     SecurityPolicy policy;
- *
+ * <p/>
  *     protected void configure(BayeuxServerImpl server) {
  *         server.setOption(BayeuxServerImpl.LOG_LEVEL, BayeuxServerImpl.DEBUG_LOG_LEVEL);
  *         server.addTransport(new WebSocketTransport(server));
@@ -67,29 +67,63 @@ import org.cometd.server.BayeuxServerImpl;
 public class GuiceCometdModule extends AbstractModule implements Provider<BayeuxServerImpl> {
     @Override
     protected final void configure() {
-        bind(BayeuxServerImpl.class).toProvider(this);
-        bind(BayeuxServer.class).to(BayeuxServerImpl.class);
-        // automatically add services
-        bindListener(new AbstractMatcher<Object>() {
-            public boolean matches(Object o) {
-                return o.getClass().isAnnotationPresent(Service.class);
-            }
-        }, new TypeListener() {
-            public <I> void hear(TypeLiteral<I> type, TypeEncounter<I> encounter) {
-                final Provider<ServerAnnotationProcessor> processor = encounter.getProvider(ServerAnnotationProcessor.class);
-                encounter.register(new InjectionListener<I>() {
-                    public void afterInjection(I injectee) {
-                        processor.get().process(injectee);
-                    }
-                });
-            }
-        });
+        bind(BayeuxServerImpl.class).toProvider(this).in(Singleton.class);
+        bind(BayeuxServer.class).to(BayeuxServerImpl.class).in(Singleton.class);
+        if (discoverServices()) {
+            // automatically add services
+            bindListener(new AbstractMatcher<TypeLiteral<?>>() {
+                public boolean matches(TypeLiteral<?> o) {
+                    return o.getRawType().isAnnotationPresent(Service.class);
+                }
+            }, new TypeListener() {
+                public <I> void hear(TypeLiteral<I> type, TypeEncounter<I> encounter) {
+                    final Provider<ServerAnnotationProcessor> processor = encounter.getProvider(ServerAnnotationProcessor.class);
+                    encounter.register(new InjectionListener<I>() {
+                        public void afterInjection(I injectee) {
+                            processor.get().process(injectee);
+                        }
+                    });
+                }
+            });
+        }
+        if (discoverExtensions()) {
+            // automatically add extensions
+            bindListener(new AbstractMatcher<TypeLiteral<?>>() {
+                public boolean matches(TypeLiteral<?> o) {
+                    return BayeuxServer.Extension.class.isAssignableFrom(o.getRawType());
+                }
+            }, new TypeListener() {
+                public <I> void hear(TypeLiteral<I> type, TypeEncounter<I> encounter) {
+                    final Provider<BayeuxServer> server = encounter.getProvider(BayeuxServer.class);
+                    encounter.register(new InjectionListener<I>() {
+                        public void afterInjection(I injectee) {
+                            server.get().addExtension(BayeuxServer.Extension.class.cast(injectee));
+                        }
+                    });
+                }
+            });
+        }
     }
 
     public final BayeuxServerImpl get() {
         BayeuxServerImpl server = new BayeuxServerImpl();
         configure(server);
+        try {
+            server.start();
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
         return server;
+    }
+
+    protected boolean discoverExtensions() {
+        return true;
+    }
+
+    protected boolean discoverServices() {
+        return true;
     }
 
     protected void configure(BayeuxServerImpl server) {

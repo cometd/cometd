@@ -1,6 +1,7 @@
 package org.cometd.guice;
 
 import com.google.inject.Injector;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.java.annotation.AnnotationCometdServlet;
 import org.cometd.java.annotation.ServerAnnotationProcessor;
 import org.cometd.server.BayeuxServerImpl;
@@ -8,6 +9,7 @@ import org.eclipse.jetty.util.Loader;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.servlet.ServletException;
 
 /**
  * CometD Servlet to use with Guice Servlet extention.
@@ -33,6 +35,12 @@ public final class GuiceCometdServlet extends AnnotationCometdServlet {
     @Inject
     public GuiceCometdServlet(Injector injector) {
         this.injector = injector;
+    }
+
+    @Override
+    public void init() throws ServletException {
+        getServletContext().setAttribute(BayeuxServer.ATTRIBUTE, newBayeuxServer());
+        super.init();
     }
 
     @Override
