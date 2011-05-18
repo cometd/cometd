@@ -1,15 +1,16 @@
-This is the CometD project home.
+Welcome to the CometD project, a scalable comet (server push) implementation for the web.
+
+
+DIRECTORY LAYOUT
 
 bayeux            - The Bayeux Specification
 cometd-archetypes - The Maven2 archetypes for quick application development
 cometd-demo       - Demo of the Java server and of the Dojo/jQuery clients
 cometd-java       - The Java server and java client libraries
 cometd-javascript - The JavaScript (Dojo/jQuery) client libraries
-cometd-perl       - The Perl server (ALPHA)
-cometd-twisted    - The Python server (ALPHA)
 
 
-RUNNING COMETD DEMO
+RUNNING THE COMETD DEMO
 
 If you have downloaded the release bundle, then the CometD is already built for you.
 To run the demonstration with Maven:
@@ -36,9 +37,7 @@ http://cometd.org/documentation/building, or just to
   $ mvn install
 
 
-
 LOAD TESTING
-
 
 To run load testing, open two windows. In the server window run:
 
@@ -48,12 +47,6 @@ To run load testing, open two windows. In the server window run:
 In the client window (potentially on another machine), run
 
   $ cd cometd-java/cometd-java-client
-  $ mvn -Pclient exec:java
+  $ mvn -Pclient exec:exec
 
-Then answer the questions (defaults gives a reasonable result)
-to generate load. Keep running batches until the reported JIT time
-is zero before considering the actual results obtained.
-
-
-
-
+Then follow instructions on the console to generate load.
