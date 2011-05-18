@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.cometd</groupId>
@@ -53,21 +54,6 @@
             <organization>Webtide</organization>
             <organizationUrl>http://www.webtide.com</organizationUrl>
         </developer>
-        <developer>
-            <id>xantus</id>
-            <name>David Davis</name>
-            <url>http://xantus.vox.com/</url>
-        </developer>
-        <developer>
-            <id>alex</id>
-            <name>Alex Russell</name>
-            <url>http://alex.dojotoolkit.org/</url>
-            <organization>Sitepen</organization>
-        </developer>
-        <developer>
-            <id>mark</id>
-            <name>Mark Smith</name>
-        </developer>
     </developers>
 
     <licenses>
@@ -99,9 +85,9 @@
     </distributionManagement>
 
     <scm>
-        <connection>scm:svn:http://svn.cometd.org/trunk</connection>
-        <developerConnection>scm:svn:https://svn.cometd.org/trunk</developerConnection>
-        <url>http://svn.cometd.org</url>
+        <connection>scm:git:git://github.com/cometd/cometd.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/cometd.git</developerConnection>
+        <url>https://github.com/cometd/cometd</url>
     </scm>
 
     <organization>
