@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.cometd.java</groupId>
         <artifactId>cometd-java</artifactId>
@@ -28,12 +29,16 @@
                                 <argument>-Xms512m</argument>
                                 <argument>-Xmn256m</argument>
                                 <argument>-XX:+UseParallelOldGC</argument>
+                                <argument>-XX:-UseAdaptiveSizePolicy</argument>
                                 <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->
                                 <!--<argument>-XX:+UnlockExperimentalVMOptions</argument>-->
                                 <!--<argument>-XX:+UseG1GC</argument>-->
                                 <argument>-cp</argument>
                                 <classpath />
-                                <argument>org.cometd.client.BayeuxLoadServer</argument>
+                                <argument>org.cometd.client.benchmark.BayeuxLoadServer</argument>
+                                <!--<argument>--ssl</argument>-->
+                                <argument>--stats</argument>
+                                <argument>--reqs</argument>
                             </arguments>
                             <classpathScope>test</classpathScope>
                         </configuration>
@@ -58,22 +63,23 @@
                                 <argument>-Xms512m</argument>
                                 <argument>-Xmn256m</argument>
                                 <argument>-XX:+UseParallelOldGC</argument>
+                                <argument>-XX:-UseAdaptiveSizePolicy</argument>
                                 <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->
                                 <!--<argument>-XX:+UnlockExperimentalVMOptions</argument>-->
                                 <!--<argument>-XX:+UseG1GC</argument>-->
                                 <argument>-cp</argument>
                                 <classpath />
-                                <argument>org.cometd.client.BayeuxLoadGenerator</argument>
+                                <argument>org.cometd.client.benchmark.BayeuxLoadClient</argument>
                             </arguments>
                             <classpathScope>test</classpathScope>
-<!--
-                            <systemProperties>
-                                <systemProperty>
-                                    <key>org.eclipse.jetty.util.log.DEBUG</key>
-                                    <value>true</value>
-                                </systemProperty>
-                            </systemProperties>
--->
+                            <!--
+                                                        <systemProperties>
+                                                            <systemProperty>
+                                                                <key>org.eclipse.jetty.util.log.DEBUG</key>
+                                                                <value>true</value>
+                                                            </systemProperty>
+                                                        </systemProperties>
+                            -->
                         </configuration>
                     </plugin>
                 </plugins>
@@ -145,7 +151,7 @@
             <version>${jetty-version}</version>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

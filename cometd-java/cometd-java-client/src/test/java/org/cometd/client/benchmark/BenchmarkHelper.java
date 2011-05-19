@@ -1,4 +1,4 @@
-package org.cometd.client;
+package org.cometd.client.benchmark;
 
 import java.lang.management.CompilationMXBean;
 import java.lang.management.GarbageCollectorMXBean;
@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @version $Revision$ $Date$
  */
-public class StatisticsHelper implements Runnable
+public class BenchmarkHelper implements Runnable
 {
     private final OperatingSystemMXBean operatingSystem;
     private final CompilationMXBean jitCompiler;
@@ -48,7 +48,7 @@ public class StatisticsHelper implements Runnable
     private volatile long startProcessCPUTime;
     private volatile long startJITCTime;
 
-    public StatisticsHelper()
+    public BenchmarkHelper()
     {
         this.operatingSystem = ManagementFactory.getOperatingSystemMXBean();
         this.jitCompiler = ManagementFactory.getCompilationMXBean();
@@ -97,30 +97,30 @@ public class StatisticsHelper implements Runnable
         long old = oldMemoryPool.getUsage().getUsed();
 
         if (!polling)
+        {
+            polling = true;
+        }
+        else
+        {
+            if (lastYoungUsed <= young)
             {
-                polling = true;
+                totalYoungUsed += young - lastYoungUsed;
+            }
+
+            if (lastSurvivorUsed <= survivor)
+            {
+                totalSurvivorUsed += survivor - lastSurvivorUsed;
+            }
+
+            if (lastOldUsed <= old)
+            {
+                totalOldUsed += old - lastOldUsed;
             }
             else
             {
-                if (lastYoungUsed <= young)
-                {
-                    totalYoungUsed += young - lastYoungUsed;
-                }
-
-                if (lastSurvivorUsed <= survivor)
-                {
-                    totalSurvivorUsed += survivor - lastSurvivorUsed;
-                }
-
-                if (lastOldUsed <= old)
-                {
-                    totalOldUsed += old - lastOldUsed;
-                }
-                else
-                {
-                    // May need something more here, like "how much was collected"
-                }
+                // May need something more here, like "how much was collected"
             }
+        }
         lastYoungUsed = young;
         lastSurvivorUsed = survivor;
         lastOldUsed = old;
@@ -140,7 +140,7 @@ public class StatisticsHelper implements Runnable
             System.err.println("\n========================================");
             System.err.println("Statistics Started at " + new Date());
             System.err.println("Operative System: " + operatingSystem.getName() + " " + operatingSystem.getVersion() + " " + operatingSystem.getArch());
-            System.err.println("JVM : "+System.getProperty("java.vm.vendor")+" "+System.getProperty("java.vm.name")+" runtime "+System.getProperty("java.vm.version")+" "+System.getProperty("java.runtime.version"));
+            System.err.println("JVM : " + System.getProperty("java.vm.vendor") + " " + System.getProperty("java.vm.name") + " runtime " + System.getProperty("java.vm.version") + " " + System.getProperty("java.runtime.version"));
             System.err.println("Processors: " + operatingSystem.getAvailableProcessors());
             if (operatingSystem instanceof com.sun.management.OperatingSystemMXBean)
             {

@@ -1,4 +1,4 @@
-package org.cometd.client;
+package org.cometd.client.benchmark;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -46,6 +46,7 @@ public class BayeuxLoadServer
     private static StatisticsHandler statisticsHandler;
     private static RequestQoSHandler requestQoSHandler;
     private static RequestLatencyHandler requestLatencyHandler;
+    private static MonitoringBlockingArrayQueue taskQueue;
 
     public static void main(String[] args) throws Exception
     {
@@ -68,8 +69,8 @@ public class BayeuxLoadServer
         Server server = new Server();
 
         // Setup JMX
-        MBeanContainer mbContainer=new
-        MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        MBeanContainer mbContainer = new
+                MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.getContainer().addEventListener(mbContainer);
         server.addBean(mbContainer);
         mbContainer.addBean(Log.getLog());
@@ -84,7 +85,7 @@ public class BayeuxLoadServer
             sslConnector.setKeystore(keyStoreFile.getAbsolutePath());
             sslConnector.setPassword("storepwd");
             sslConnector.setKeyPassword("keypwd");
-//            sslConnector.setUseDirectBuffers(true);
+            //            sslConnector.setUseDirectBuffers(true);
             connector = sslConnector;
         }
         else
@@ -99,8 +100,10 @@ public class BayeuxLoadServer
         connector.setPort(port);
         server.addConnector(connector);
 
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setMaxThreads(256);
+        int maxThreads = 256;
+        taskQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
+        QueuedThreadPool threadPool = new QueuedThreadPool(taskQueue);
+        threadPool.setMaxThreads(maxThreads);
         server.setThreadPool(threadPool);
 
         HandlerWrapper handler = server;
@@ -155,7 +158,7 @@ public class BayeuxLoadServer
 
     public static class StatisticsService extends AbstractService
     {
-        private final StatisticsHelper helper = new StatisticsHelper();
+        private final BenchmarkHelper helper = new BenchmarkHelper();
 
         private StatisticsService(BayeuxServer bayeux)
         {
@@ -172,6 +175,8 @@ public class BayeuxLoadServer
                 boolean started = helper.startStatistics();
                 if (started)
                 {
+                    taskQueue.reset();
+
                     if (statisticsHandler != null)
                     {
                         statisticsHandler.statsReset();
@@ -193,6 +198,11 @@ public class BayeuxLoadServer
                 boolean stopped = helper.stopStatistics();
                 if (stopped)
                 {
+                    System.err.printf("Thread Pool Queue (max_queued | avg_latency/max_latency): %d | %d/%d ms%n",
+                            taskQueue.getMaxSize(),
+                            TimeUnit.NANOSECONDS.toMillis(taskQueue.getAverageLatency()),
+                            TimeUnit.NANOSECONDS.toMillis(taskQueue.getMaxLatency()));
+
                     if (statisticsHandler != null)
                     {
                         System.err.println("Requests (total/failed/max): " + statisticsHandler.getDispatched() + "/" +
@@ -235,13 +245,13 @@ public class BayeuxLoadServer
             final AtomicBoolean longRequest = new AtomicBoolean(false);
             final Thread thread = Thread.currentThread();
             ScheduledFuture<?> task = scheduler.scheduleWithFixedDelay(new Runnable()
-            {
-                public void run()
-                {
-                    longRequest.set(true);
-                    onLongRequestDetected(requestId, httpRequest, thread);
-                }
-            }, maxRequestTime, maxRequestTime, TimeUnit.MILLISECONDS);
+                    {
+                        public void run()
+                        {
+                            longRequest.set(true);
+                            onLongRequestDetected(requestId, httpRequest, thread);
+                        }
+                    }, maxRequestTime, maxRequestTime, TimeUnit.MILLISECONDS);
             long start = System.nanoTime();
             try
             {
@@ -281,11 +291,11 @@ public class BayeuxLoadServer
         private void formatRequest(HttpServletRequest request, StringBuilder builder)
         {
             builder.append(request.getRequestURI()).append("\n");
-            for (Enumeration<String> headers = request.getHeaderNames(); headers.hasMoreElements();)
-                {
-                    String name = headers.nextElement();
-                    builder.append(name).append("=").append(Collections.list(request.getHeaders(name))).append("\n");
-                }
+            for (Enumeration<String> headers = request.getHeaderNames(); headers.hasMoreElements(); )
+            {
+                String name = headers.nextElement();
+                builder.append(name).append("=").append(Collections.list(request.getHeaders(name))).append("\n");
+            }
             builder.append(request.getRemoteAddr()).append(":").append(request.getRemotePort()).append(" => ");
             builder.append(request.getLocalAddr()).append(":").append(request.getLocalPort()).append("\n");
         }
@@ -355,33 +365,11 @@ public class BayeuxLoadServer
         private void updateLatencies(long begin, long end)
         {
             long latency = end - begin;
-            updateMin(minLatency, latency);
-            updateMax(maxLatency, latency);
+            Atomics.updateMin(minLatency, latency);
+            Atomics.updateMax(maxLatency, latency);
             totLatency.addAndGet(latency);
             latencies.putIfAbsent(latency, new AtomicLong(0));
             latencies.get(latency).incrementAndGet();
-        }
-
-        private void updateMin(AtomicLong min, long value)
-        {
-            long oldValue = min.get();
-            while (value < oldValue)
-            {
-                if (min.compareAndSet(oldValue, value))
-                    break;
-                oldValue = min.get();
-            }
-        }
-
-        private void updateMax(AtomicLong max, long value)
-        {
-            long oldValue = max.get();
-            while (value > oldValue)
-            {
-                if (max.compareAndSet(oldValue, value))
-                    break;
-                oldValue = max.get();
-            }
         }
 
         private void print()
@@ -392,7 +380,7 @@ public class BayeuxLoadServer
                 long[] latencyBucketFrequencies = new long[20];
                 long minLatency = this.minLatency.get();
                 long latencyRange = maxLatency.get() - minLatency;
-                for (Iterator<Map.Entry<Long, AtomicLong>> entries = latencies.entrySet().iterator(); entries.hasNext();)
+                for (Iterator<Map.Entry<Long, AtomicLong>> entries = latencies.entrySet().iterator(); entries.hasNext(); )
                 {
                     Map.Entry<Long, AtomicLong> entry = entries.next();
                     long latency = entry.getKey();
@@ -400,7 +388,8 @@ public class BayeuxLoadServer
                     int index = bucketIndex.intValue() == latencyBucketFrequencies.length ? latencyBucketFrequencies.length - 1 : bucketIndex.intValue();
                     long value = entry.getValue().get();
                     latencyBucketFrequencies[index] += value;
-                    if (latencyBucketFrequencies[index] > maxLatencyBucketFrequency) maxLatencyBucketFrequency = latencyBucketFrequencies[index];
+                    if (latencyBucketFrequencies[index] > maxLatencyBucketFrequency)
+                        maxLatencyBucketFrequency = latencyBucketFrequencies[index];
                     entries.remove();
                 }
 
@@ -408,11 +397,14 @@ public class BayeuxLoadServer
                 for (int i = 0; i < latencyBucketFrequencies.length; ++i)
                 {
                     long latencyBucketFrequency = latencyBucketFrequencies[i];
-                    int value = maxLatencyBucketFrequency == 0 ? 0 : Math.round(latencyBucketFrequency * (float) latencyBucketFrequencies.length / maxLatencyBucketFrequency);
-                    if (value == latencyBucketFrequencies.length) value = value - 1;
-                    for (int j = 0; j < value; ++j) System.err.print(" ");
+                    int value = maxLatencyBucketFrequency == 0 ? 0 : Math.round(latencyBucketFrequency * (float)latencyBucketFrequencies.length / maxLatencyBucketFrequency);
+                    if (value == latencyBucketFrequencies.length)
+                        value = value - 1;
+                    for (int j = 0; j < value; ++j)
+                        System.err.print(" ");
                     System.err.print("@");
-                    for (int j = value + 1; j < latencyBucketFrequencies.length; ++j) System.err.print(" ");
+                    for (int j = value + 1; j < latencyBucketFrequencies.length; ++j)
+                        System.err.print(" ");
                     System.err.print("  _  ");
                     System.err.print(TimeUnit.NANOSECONDS.toMillis((latencyRange * (i + 1) / latencyBucketFrequencies.length) + minLatency));
                     System.err.println(" ms (" + latencyBucketFrequency + ")");
