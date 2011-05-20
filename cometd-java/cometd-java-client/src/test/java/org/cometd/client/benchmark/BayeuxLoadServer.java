@@ -1,8 +1,10 @@
 package org.cometd.client.benchmark;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -25,6 +27,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.cometd.server.CometdServlet;
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -35,7 +38,6 @@ import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
@@ -43,37 +45,64 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  */
 public class BayeuxLoadServer
 {
-    private static StatisticsHandler statisticsHandler;
-    private static RequestQoSHandler requestQoSHandler;
-    private static RequestLatencyHandler requestLatencyHandler;
-    private static MonitoringBlockingArrayQueue taskQueue;
-
     public static void main(String[] args) throws Exception
     {
-        boolean ssl = false;
-        boolean qos = false;
-        boolean stats = false;
-        boolean reqs = false;
-        int port = 8080;
+        BayeuxLoadServer server = new BayeuxLoadServer();
+        server.run();
+    }
 
-        for (String arg : args)
-        {
-            ssl |= "--ssl".equals(arg);
-            qos |= "--qos".equals(arg);
-            stats |= "--stats".equals(arg);
-            reqs |= "--reqs".equals(arg);
-            if (!arg.startsWith("--"))
-                port = Integer.parseInt(arg);
-        }
+    public void run() throws Exception
+    {
+        BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
+
+        int port = 8080;
+        System.err.printf("listen port [%d]: ", port);
+        String value = console.readLine().trim();
+        if (value.length() == 0)
+            value = String.valueOf(port);
+        port = Integer.parseInt(value);
+
+        boolean ssl = false;
+        System.err.printf("use ssl [%b]: ", ssl);
+        value = console.readLine().trim();
+        if (value.length() == 0)
+            value = String.valueOf(ssl);
+        ssl = Boolean.parseBoolean(value);
+
+        int maxThreads = 256;
+        System.err.printf("max threads [%d]: ", maxThreads);
+        value = console.readLine().trim();
+        if (value.length() == 0)
+            value = String.valueOf(maxThreads);
+        maxThreads = Integer.parseInt(value);
+
+        boolean stats = true;
+        System.err.printf("record statistics [%b]: ", stats);
+        value = console.readLine().trim();
+        if (value.length() == 0)
+            value = String.valueOf(stats);
+        stats = Boolean.parseBoolean(value);
+
+        boolean reqs = true;
+        System.err.printf("record latencies [%b]: ", reqs);
+        value = console.readLine().trim();
+        if (value.length() == 0)
+            value = String.valueOf(reqs);
+        reqs = Boolean.parseBoolean(value);
+
+        boolean qos = false;
+        System.err.printf("detect long requests [%b]: ", qos);
+        value = console.readLine().trim();
+        if (value.length() == 0)
+            value = String.valueOf(qos);
+        qos = Boolean.parseBoolean(value);
 
         Server server = new Server();
 
         // Setup JMX
-        MBeanContainer mbContainer = new
-                MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.getContainer().addEventListener(mbContainer);
         server.addBean(mbContainer);
-        mbContainer.addBean(Log.getLog());
 
         SelectChannelConnector connector;
         if (ssl)
@@ -82,10 +111,11 @@ public class BayeuxLoadServer
             File keyStoreFile = new File("src/test/resources/keystore.jks");
             if (!keyStoreFile.exists())
                 throw new FileNotFoundException(keyStoreFile.getAbsolutePath());
-            sslConnector.setKeystore(keyStoreFile.getAbsolutePath());
-            sslConnector.setPassword("storepwd");
-            sslConnector.setKeyPassword("keypwd");
-            //            sslConnector.setUseDirectBuffers(true);
+            SslContextFactory sslContextFactory = sslConnector.getSslContextFactory();
+            sslContextFactory.setKeyStore(keyStoreFile.getAbsolutePath());
+            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setKeyManagerPassword("keypwd");
+//            sslConnector.setUseDirectBuffers(true);
             connector = sslConnector;
         }
         else
@@ -93,21 +123,21 @@ public class BayeuxLoadServer
             connector = new SelectChannelConnector();
         }
         // Make sure the OS is configured properly for load testing;
-        // see http://docs.codehaus.org/display/JETTY/HighLoadServers
+        // see http://cometd.org/documentation/howtos/loadtesting
         connector.setAcceptQueueSize(2048);
         // Make sure the server timeout on a TCP connection is large
         connector.setMaxIdleTime(240000);
         connector.setPort(port);
         server.addConnector(connector);
 
-        int maxThreads = 256;
-        taskQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
+        MonitoringBlockingArrayQueue taskQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
         QueuedThreadPool threadPool = new QueuedThreadPool(taskQueue);
         threadPool.setMaxThreads(maxThreads);
         server.setThreadPool(threadPool);
 
         HandlerWrapper handler = server;
 
+        RequestLatencyHandler requestLatencyHandler = null;
         if (reqs)
         {
             requestLatencyHandler = new RequestLatencyHandler();
@@ -117,11 +147,12 @@ public class BayeuxLoadServer
 
         if (qos)
         {
-            requestQoSHandler = new RequestQoSHandler();
+            RequestQoSHandler requestQoSHandler = new RequestQoSHandler();
             handler.setHandler(requestQoSHandler);
             handler = requestQoSHandler;
         }
 
+        StatisticsHandler statisticsHandler = null;
         if (stats)
         {
             statisticsHandler = new StatisticsHandler();
@@ -153,16 +184,22 @@ public class BayeuxLoadServer
         server.start();
 
         BayeuxServer bayeux = cometServlet.getBayeux();
-        new StatisticsService(bayeux);
+        new StatisticsService(bayeux, taskQueue, statisticsHandler, requestLatencyHandler);
     }
 
-    public static class StatisticsService extends AbstractService
+    public class StatisticsService extends AbstractService
     {
         private final BenchmarkHelper helper = new BenchmarkHelper();
+        private final MonitoringBlockingArrayQueue taskQueue;
+        private final StatisticsHandler statisticsHandler;
+        private final RequestLatencyHandler requestLatencyHandler;
 
-        private StatisticsService(BayeuxServer bayeux)
+        private StatisticsService(BayeuxServer bayeux, MonitoringBlockingArrayQueue taskQueue, StatisticsHandler statisticsHandler, RequestLatencyHandler requestLatencyHandler)
         {
             super(bayeux, "statistics-service");
+            this.taskQueue = taskQueue;
+            this.statisticsHandler = statisticsHandler;
+            this.requestLatencyHandler = requestLatencyHandler;
             addService("/service/statistics/start", "startStatistics");
             addService("/service/statistics/stop", "stopStatistics");
         }
@@ -319,6 +356,7 @@ public class BayeuxLoadServer
 
     private static class RequestLatencyHandler extends HandlerWrapper
     {
+        private final AtomicLong requests = new AtomicLong();
         private final AtomicLong minLatency = new AtomicLong();
         private final AtomicLong maxLatency = new AtomicLong();
         private final AtomicLong totLatency = new AtomicLong();
@@ -335,6 +373,7 @@ public class BayeuxLoadServer
         @Override
         public void handle(String target, Request request, final HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
         {
+            requests.incrementAndGet();
             long begin = System.nanoTime();
             try
             {
@@ -356,6 +395,7 @@ public class BayeuxLoadServer
 
         private void reset()
         {
+            requests.set(0);
             minLatency.set(Long.MAX_VALUE);
             maxLatency.set(0);
             totLatency.set(0);
@@ -393,7 +433,9 @@ public class BayeuxLoadServer
                     entries.remove();
                 }
 
+                long requestCount = requests.get();
                 System.err.println("Requests - Latency Distribution Curve (X axis: Frequency, Y axis: Latency):");
+                double percentile = 0.0;
                 for (int i = 0; i < latencyBucketFrequencies.length; ++i)
                 {
                     long latencyBucketFrequency = latencyBucketFrequencies[i];
@@ -407,7 +449,20 @@ public class BayeuxLoadServer
                         System.err.print(" ");
                     System.err.print("  _  ");
                     System.err.print(TimeUnit.NANOSECONDS.toMillis((latencyRange * (i + 1) / latencyBucketFrequencies.length) + minLatency));
-                    System.err.println(" ms (" + latencyBucketFrequency + ")");
+                    System.err.printf(" ms (%d, %.2f%%)", latencyBucketFrequency, (100.0 * latencyBucketFrequency / requestCount));
+                    double last = percentile;
+                    percentile += (100.0 * latencyBucketFrequency / requestCount);
+                    if (last < 50.0 && percentile >= 50.0)
+                        System.err.print(" ^50%");
+                    if (last < 85.0 && percentile >= 85.0)
+                        System.err.print(" ^85%");
+                    if (last < 95.0 && percentile >= 95.0)
+                        System.err.print(" ^95%");
+                    if (last < 99.0 && percentile >= 99.0)
+                        System.err.print(" ^99%");
+                    if (last < 99.9 && percentile >= 99.9)
+                        System.err.print(" ^99.9%");
+                    System.err.println();
                 }
             }
         }

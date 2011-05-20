@@ -49,111 +49,89 @@ public class BayeuxLoadClient
     private final ConcurrentMap<Long, AtomicLong> wallLatencies = new ConcurrentHashMap<Long, AtomicLong>();
     private final Map<String, Long> sendTimes = new ConcurrentHashMap<String, Long>();
     private final Map<String, Long> arrivalTimes = new ConcurrentHashMap<String, Long>();
-    private final HttpClient httpClient;
-    private final MonitoringBlockingArrayQueue taskQueue;
 
     public static void main(String[] args) throws Exception
     {
-        try
-        {
-            HttpClient httpClient = new HttpClient();
-            httpClient.setMaxConnectionsPerAddress(40000);
-            int maxThreads = 256;
-            MonitoringBlockingArrayQueue taskQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
-            QueuedThreadPool threadPool = new QueuedThreadPool(taskQueue);
-            threadPool.setMaxThreads(maxThreads);
-            threadPool.setDaemon(true);
-            httpClient.setThreadPool(threadPool);
-            httpClient.setIdleTimeout(5000);
-            //            httpClient.setUseDirectBuffers(false);
-            httpClient.start();
-
-            BayeuxLoadClient client = new BayeuxLoadClient(httpClient, taskQueue);
-
-            MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-            mbContainer.addBean(httpClient);
-            mbContainer.addBean(threadPool);
-            mbContainer.addBean(client);
-            mbContainer.addBean(Log.getLog());
-
-            client.generateLoad();
-        }
-        catch (Exception x)
-        {
-            x.printStackTrace();
-            throw x;
-        }
+        BayeuxLoadClient client = new BayeuxLoadClient();
+        client.run();
     }
 
-    public BayeuxLoadClient(HttpClient httpClient, MonitoringBlockingArrayQueue taskQueue)
-    {
-        this.httpClient = httpClient;
-        this.taskQueue = taskQueue;
-    }
-
-    private int nextRandom(int limit)
-    {
-        synchronized (this)
-        {
-            return random.nextInt(limit);
-        }
-    }
-
-    public void generateLoad() throws Exception
+    public void run() throws Exception
     {
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
 
-        System.err.print("protocol [http]: ");
+        String host = "localhost";
+        System.err.printf("server [%s]: ", host);
         String value = console.readLine().trim();
         if (value.length() == 0)
-            value = "http";
-        String protocol = value;
+            value = host;
+        host = value;
 
-        System.err.print("server [localhost]: ");
+        int port = 8080;
+        System.err.printf("port [%d]: ", port);
         value = console.readLine().trim();
         if (value.length() == 0)
-            value = "localhost";
-        String host = value;
+            value = String.valueOf(port);
+        port = Integer.parseInt(value);
 
-        System.err.print("port [8080]: ");
+        boolean ssl = false;
+        System.err.printf("use ssl [%b]: ", ssl);
         value = console.readLine().trim();
         if (value.length() == 0)
-            value = "8080";
-        int port = Integer.parseInt(value);
+            value = String.valueOf(ssl);
+        ssl = Boolean.parseBoolean(value);
 
-        System.err.print("context [/cometd]: ");
+        String contextPath = "/cometd";
+        System.err.printf("context [%s]: ", contextPath);
         value = console.readLine().trim();
         if (value.length() == 0)
-            value = "/cometd";
+            value = contextPath;
         String uri = value + "/cometd";
 
-        String url = protocol + "://" + host + ":" + port + uri;
+        int maxThreads = 256;
+        System.err.printf("max threads [%d]: ", maxThreads);
+        value = console.readLine().trim();
+        if (value.length() == 0)
+            value = String.valueOf(maxThreads);
+        maxThreads = Integer.parseInt(value);
+
+        HttpClient httpClient = new HttpClient();
+        httpClient.setMaxConnectionsPerAddress(50000);
+        MonitoringBlockingArrayQueue taskQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
+        QueuedThreadPool threadPool = new QueuedThreadPool(taskQueue);
+        threadPool.setMaxThreads(maxThreads);
+        threadPool.setDaemon(true);
+        httpClient.setThreadPool(threadPool);
+        httpClient.setIdleTimeout(5000);
+//        httpClient.setUseDirectBuffers(false);
+        httpClient.start();
+
+        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        mbContainer.addBean(httpClient);
+        mbContainer.addBean(threadPool);
+        mbContainer.addBean(this);
+        mbContainer.addBean(Log.getLog());
+        String url = (ssl ? "https" : "http") + "://" + host + ":" + port + uri;
+
+        String channel = "/chat/demo";
+        System.err.printf("channel [%s]: ", channel);
+        value = console.readLine().trim();
+        if (value.length() == 0)
+            value = channel;
+        channel = value;
 
         int rooms = 100;
-        int roomsPerClient = 1;
-        int clients = 100;
-        int batchCount = 1000;
-        int batchSize = 10;
-        long batchPause = 10000;
-        int messageSize = 50;
-        boolean randomize = true;
-
-        System.err.print("channel [/chat/demo]: ");
+        System.err.printf("rooms [%d]: ", rooms);
         value = console.readLine().trim();
         if (value.length() == 0)
-            value = "/chat/demo";
-        String channel = value;
-
-        System.err.print("rooms [" + rooms + "]: ");
-        value = console.readLine().trim();
-        if (value.length() == 0)
-            value = "" + rooms;
+            value = String.valueOf(rooms);
         rooms = Integer.parseInt(value);
 
-        System.err.print("rooms per client [" + roomsPerClient + "]: ");
+        int roomsPerClient = 1;
+        System.err.printf("rooms per client [%d]: ", roomsPerClient);
         value = console.readLine().trim();
         if (value.length() == 0)
-            value = "" + roomsPerClient;
+            value = String.valueOf(roomsPerClient);
         roomsPerClient = Integer.parseInt(value);
 
         HandshakeListener handshakeListener = new HandshakeListener(channel, rooms, roomsPerClient);
@@ -165,17 +143,24 @@ public class BayeuxLoadClient
         LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, httpClient, null);
         statsClient.handshake();
 
+        int clients = 100;
+        int batchCount = 1000;
+        int batchSize = 10;
+        long batchPause = 10000;
+        int messageSize = 50;
+        boolean randomize = false;
+
         while (true)
         {
             System.err.println("-----");
 
-            System.err.print("clients [" + clients + "]: ");
+            System.err.printf("clients [%d]: ", clients);
             value = console.readLine();
             if (value == null)
                 break;
             value = value.trim();
             if (value.length() == 0)
-                value = "" + clients;
+                value = String.valueOf(clients);
             clients = Integer.parseInt(value);
 
             System.err.println("Waiting for clients to be ready...");
@@ -215,7 +200,7 @@ public class BayeuxLoadClient
             while (currentSize != clients)
             {
                 sleep(250000);
-                System.err.println("Waiting for clients " + currentSize + "/" + clients);
+                System.err.printf("Waiting for clients %d/%d%n", currentSize, clients);
                 if (lastSize == currentSize)
                 {
                     --retries;
@@ -231,7 +216,7 @@ public class BayeuxLoadClient
             }
             if (currentSize != clients)
             {
-                System.err.println("Clients not ready, only " + currentSize + "/" + clients);
+                System.err.printf("Clients not ready, only %d/%d%n", currentSize, clients);
                 break;
             }
             else
@@ -247,44 +232,45 @@ public class BayeuxLoadClient
 
             reset();
 
-            System.err.print("batch count [" + batchCount + "]: ");
+            System.err.printf("batch count [%d]: ", batchCount);
             value = console.readLine().trim();
             if (value.length() == 0)
-                value = "" + batchCount;
+                value = String.valueOf(batchCount);
             batchCount = Integer.parseInt(value);
 
-            System.err.print("batch size [" + batchSize + "]: ");
+            System.err.printf("batch size [%d]: ", batchSize);
             value = console.readLine().trim();
             if (value.length() == 0)
-                value = "" + batchSize;
+                value = String.valueOf(batchSize);
             batchSize = Integer.parseInt(value);
 
-            System.err.print("batch pause (\u00B5s) [" + batchPause + "]: ");
+            System.err.printf("batch pause (\u00B5s) [%d]: ", batchPause);
             value = console.readLine().trim();
             if (value.length() == 0)
-                value = "" + batchPause;
+                value = String.valueOf(batchPause);
             batchPause = Long.parseLong(value);
 
-            System.err.print("message size [" + messageSize + "]: ");
+            System.err.printf("message size [%d]: ", messageSize);
             value = console.readLine().trim();
             if (value.length() == 0)
-                value = "" + messageSize;
+                value = String.valueOf(messageSize);
             messageSize = Integer.parseInt(value);
             String chat = "";
             for (int i = 0; i < messageSize; i++)
                 chat += "x";
 
-            System.err.print("randomize sends [" + randomize + "]: ");
+            System.err.printf("randomize sends [%b]: ", randomize);
             value = console.readLine().trim();
             if (value.length() == 0)
-                value = "" + randomize;
+                value = String.valueOf(randomize);
             randomize = Boolean.parseBoolean(value);
 
             // Send a message to the server to signal the start of the test
             statsClient.begin();
 
             helper.startStatistics();
-            System.err.println("Testing " + bayeuxClients.size() + " clients in " + rooms + " rooms\nSending " + batchCount + " batches of " + batchSize + "x" + messageSize + "B messages every " + batchPause + "\u00B5s");
+            System.err.printf("Testing %d clients in %d rooms%n", bayeuxClients.size(), rooms);
+            System.err.printf("Sending %d batches of %dx%d bytes messages every %d \u00B5s%n", batchCount, batchSize, messageSize, batchPause);
 
             long start = System.nanoTime();
             int clientIndex = -1;
@@ -335,13 +321,10 @@ public class BayeuxLoadClient
             long elapsedNanos = end - start;
             if (elapsedNanos > 0)
             {
-                System.err.print("Outgoing: Elapsed = ");
-                System.err.print(TimeUnit.NANOSECONDS.toMillis(elapsedNanos));
-                System.err.print(" ms | Rate = ");
-                System.err.print(batchCount * batchSize * 1000L * 1000L * 1000L / elapsedNanos);
-                System.err.print(" messages/s - ");
-                System.err.print(batchCount * 1000L * 1000L * 1000L / elapsedNanos);
-                System.err.println(" requests/s");
+                System.err.printf("Outgoing: Elapsed = %d ms | Rate = %d messages/s - %d requests/s%n",
+                        TimeUnit.NANOSECONDS.toMillis(elapsedNanos),
+                        batchCount * batchSize * 1000L * 1000L * 1000L / elapsedNanos,
+                        batchCount * 1000L * 1000L * 1000L / elapsedNanos);
             }
 
             waitForMessages(expected);
@@ -349,7 +332,7 @@ public class BayeuxLoadClient
             // Send a message to the server to signal the end of the test
             statsClient.end();
 
-            printReport(expected);
+            printReport(expected, taskQueue);
 
             reset();
         }
@@ -361,6 +344,14 @@ public class BayeuxLoadClient
         scheduler.awaitTermination(1000, TimeUnit.MILLISECONDS);
 
         httpClient.stop();
+    }
+
+    private int nextRandom(int limit)
+    {
+        synchronized (this)
+        {
+            return random.nextInt(limit);
+        }
     }
 
     private void updateLatencies(long startTime, long sendTime, long arrivalTime, long endTime)
@@ -388,7 +379,7 @@ public class BayeuxLoadClient
         int retries = maxRetries;
         while (arrived < expected)
         {
-            System.err.println("Waiting for messages to arrive " + arrived + "/" + expected);
+            System.err.printf("Waiting for messages to arrive %d/%d%n", arrived, expected);
             sleep(500000);
             if (lastArrived == arrived)
             {
@@ -405,34 +396,29 @@ public class BayeuxLoadClient
         }
         if (arrived < expected)
         {
-            System.err.println("Interrupting wait for messages " + arrived + "/" + expected);
+            System.err.printf("Interrupting wait for messages %d/%d%n", arrived, expected);
             return false;
         }
         else
         {
-            System.err.println("All messages arrived " + arrived + "/" + expected);
+            System.err.printf("All messages arrived %d/%d%n", arrived, expected);
             return true;
         }
     }
 
-    public void printReport(long expectedCount)
+    public void printReport(long expectedCount, MonitoringBlockingArrayQueue taskQueue)
     {
         long messageCount = messages.get();
-        System.err.print("Messages - Success/Expected = ");
-        System.err.print(messageCount);
-        System.err.print("/");
-        System.err.println(expectedCount);
+        System.err.printf("Messages - Success/Expected = %d/%d%n", messageCount, expectedCount);
 
         long elapsedNanos = end.get() - start.get();
         if (elapsedNanos > 0)
         {
-            System.err.print("Incoming - Elapsed = ");
-            System.err.print(TimeUnit.NANOSECONDS.toMillis(elapsedNanos));
-            System.err.print(" ms | Rate = ");
-            System.err.print(messageCount * 1000L * 1000L * 1000L / elapsedNanos);
-            System.err.print(" messages/s - ");
-            System.err.print(responses.get() * 1000L * 1000L * 1000L / elapsedNanos);
-            System.err.printf(" responses/s (%.2f%%)\n", 100.0 * responses.get() / messageCount);
+            System.err.printf("Incoming - Elapsed = %d ms | Rate = %d messages/s - %d responses/s (%.2f%%)%n",
+                    TimeUnit.NANOSECONDS.toMillis(elapsedNanos),
+                    messageCount * 1000L * 1000L * 1000L / elapsedNanos,
+                    responses.get() * 1000L * 1000L * 1000L / elapsedNanos,
+                    100.0 * responses.get() / messageCount);
         }
 
         if (wallLatencies.size() > 1)
@@ -455,7 +441,6 @@ public class BayeuxLoadClient
 
             System.err.println("Messages - Wall Latency Distribution Curve (X axis: Frequency, Y axis: Latency):");
             double percentile = 0.0;
-
             for (int i = 0; i < latencyBucketFrequencies.length; ++i)
             {
                 long latencyBucketFrequency = latencyBucketFrequencies[i];

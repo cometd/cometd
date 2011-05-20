@@ -36,9 +36,6 @@
                                 <argument>-cp</argument>
                                 <classpath />
                                 <argument>org.cometd.client.benchmark.BayeuxLoadServer</argument>
-                                <!--<argument>--ssl</argument>-->
-                                <argument>--stats</argument>
-                                <argument>--reqs</argument>
                             </arguments>
                             <classpathScope>test</classpathScope>
                         </configuration>
