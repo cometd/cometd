@@ -69,6 +69,13 @@ public class BayeuxLoadServer
             value = String.valueOf(ssl);
         ssl = Boolean.parseBoolean(value);
 
+        int acceptors = Runtime.getRuntime().availableProcessors();
+        System.err.printf("acceptors [%d]: ", acceptors);
+        value = console.readLine().trim();
+        if (value.length() == 0)
+            value = String.valueOf(acceptors);
+        acceptors = Integer.parseInt(value);
+
         int maxThreads = 256;
         System.err.printf("max threads [%d]: ", maxThreads);
         value = console.readLine().trim();
@@ -127,6 +134,7 @@ public class BayeuxLoadServer
         connector.setAcceptQueueSize(2048);
         // Make sure the server timeout on a TCP connection is large
         connector.setMaxIdleTime(240000);
+        connector.setAcceptors(acceptors);
         connector.setPort(port);
         server.addConnector(connector);
 
