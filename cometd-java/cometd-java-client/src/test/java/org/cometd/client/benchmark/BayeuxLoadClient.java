@@ -81,19 +81,19 @@ public class BayeuxLoadClient
             value = String.valueOf(ssl);
         ssl = Boolean.parseBoolean(value);
 
-        String contextPath = "/cometd";
-        System.err.printf("context [%s]: ", contextPath);
-        value = console.readLine().trim();
-        if (value.length() == 0)
-            value = contextPath;
-        String uri = value + "/cometd";
-
         int maxThreads = 256;
         System.err.printf("max threads [%d]: ", maxThreads);
         value = console.readLine().trim();
         if (value.length() == 0)
             value = String.valueOf(maxThreads);
         maxThreads = Integer.parseInt(value);
+
+        String contextPath = "/cometd";
+        System.err.printf("context [%s]: ", contextPath);
+        value = console.readLine().trim();
+        if (value.length() == 0)
+            value = contextPath;
+        String uri = value + "/cometd";
 
         HttpClient httpClient = new HttpClient();
         httpClient.setMaxConnectionsPerAddress(50000);
