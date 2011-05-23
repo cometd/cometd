@@ -56,21 +56,41 @@ public interface Channel
     public ChannelId getChannelId();
 
     /**
+     * <p>Tells whether the channel is a meta channel, that is if its
+     * {@link #getId() id} starts with {@code "/meta/"}.</p>
+     *
      * @return true if the channel is a meta channel
      */
     boolean isMeta();
 
     /**
+     * <p>Tells whether the channel is a service channel, that is if its
+     * {@link #getId() id} starts with {@code "/service/"}.</p>
+     *
      * @return true if the channel is a service channel
      */
     boolean isService();
 
     /**
+     * <p>A broadcasting channel is a channel that is neither a
+     * {@link #isMeta() meta channel} nor a {@link #isService() service channel}.</p>
+     *
+     * @return whether the channel is a broadcasting channel
+     */
+    boolean isBroadcast();
+
+    /**
+     * <p>Tells whether a channel contains the wild character '*', for example
+     * {@code /foo/*}.</p>
+     *
      * @return true if the channel is wild.
      */
     boolean isWild();
 
     /**
+     * <p>Tells whether a channel contains the deep wild characters '**', for example
+     * {@code /foo/**}</p>
+     *
      * @return true if the channel is deeply wild.
      */
     boolean isDeepWild();
@@ -79,6 +99,7 @@ public interface Channel
      * <p>Sets a named channel attribute value.</p>
      * <p>Channel attributes are convenience data that allows arbitrary
      * application data to be associated with a channel.</p>
+     *
      * @param name the attribute name
      * @param value the attribute value
      */

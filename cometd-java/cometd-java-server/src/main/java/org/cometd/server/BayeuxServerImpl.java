@@ -1164,17 +1164,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                         // fact that the channel references it.
                         if (!isSessionUnknown(from))
                         {
-                            if (from.isLocalSession() || !channel.isMeta() && !channel.isService())
-                            {
-                                if (channel.subscribe(from))
-                                    reply.setSuccessful(true);
-                                else
-                                    error(reply, "403::subscribe failed");
-                            }
-                            else
-                            {
+                            if (channel.subscribe(from))
                                 reply.setSuccessful(true);
-                            }
+                            else
+                                error(reply, "403::subscribe failed");
                         }
                         else
                         {
@@ -1207,12 +1200,15 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
                 ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscribe_id);
                 if (channel==null)
+                {
                     error(reply,"400::channel missing");
+                }
                 else
                 {
-                    if (from.isLocalSession() || !channel.isMeta() && !channel.isService())
-                        channel.unsubscribe(from);
-                    reply.setSuccessful(true);
+                    if (channel.unsubscribe(from))
+                        reply.setSuccessful(true);
+                    else
+                        error(reply, "403::unsubscribe failed");
                 }
             }
         }

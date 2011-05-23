@@ -106,7 +106,7 @@ public abstract class AbstractClientSession implements ClientSession
         }
         return channel;
     }
-    
+
     /* ------------------------------------------------------------ */
     protected ConcurrentMap<String, AbstractSessionChannel> getChannels()
     {
@@ -178,14 +178,14 @@ public abstract class AbstractClientSession implements ClientSession
     {
         _attributes.setAttribute(name,value);
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void resetSubscriptions()
     {
         for (AbstractSessionChannel ch : _channels.values())
             ch.resetSubscriptions();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * <p>Receives a message (from the server) and process it.</p>
@@ -341,6 +341,11 @@ public abstract class AbstractClientSession implements ClientSession
         public boolean isService()
         {
             return _id.isService();
+        }
+
+        public boolean isBroadcast()
+        {
+            return !isMeta() && !isService();
         }
 
         /* ------------------------------------------------------------ */

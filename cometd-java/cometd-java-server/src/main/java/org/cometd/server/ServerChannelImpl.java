@@ -27,9 +27,6 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     private final Set<ServerSession> _subscribers = new CopyOnWriteArraySet<ServerSession>();
     private final List<ServerChannelListener> _listeners = new CopyOnWriteArrayList<ServerChannelListener>();
     private final List<Authorizer> _authorizers = new CopyOnWriteArrayList<Authorizer>();
-    private final boolean _meta;
-    private final boolean _broadcast;
-    private final boolean _service;
     private final CountDownLatch _initialized;
     private boolean _lazy;
     private boolean _persistent;
@@ -40,11 +37,8 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     {
         _bayeux=bayeux;
         _id=id;
-        _meta=_id.isMeta();
-        _service=_id.isService();
-        _broadcast=!isMeta()&&!isService();
         _initialized=new CountDownLatch(1);
-        setPersistent(!_broadcast);
+        setPersistent(!isBroadcast());
     }
 
     /* ------------------------------------------------------------ */
@@ -73,16 +67,17 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         _initialized.countDown();
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @param session
-     * @return true if the subscribe succeeded.
-     */
-    protected boolean subscribe(ServerSessionImpl session)
+    public boolean subscribe(ServerSession session)
     {
         if (!session.isHandshook())
             return false;
+        if (session.isLocalSession() || isBroadcast())
+            return subscribe((ServerSessionImpl)session);
+        return false;
+    }
 
+    private boolean subscribe(ServerSessionImpl session)
+    {
         if (_subscribers.add(session))
         {
             session.subscribedTo(this);
@@ -97,8 +92,17 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         return true;
     }
 
-    /* ------------------------------------------------------------ */
-    protected void unsubscribe(ServerSessionImpl session)
+    public boolean unsubscribe(ServerSession session)
+    {
+        // The unsubscription may arrive when the session
+        // is already disconnected; unsubscribe in any case
+
+        if (session.isLocalSession() || isBroadcast())
+            return unsubscribe((ServerSessionImpl)session);
+        return false;
+    }
+
+    private boolean unsubscribe(ServerSessionImpl session)
     {
         if(_subscribers.remove(session))
         {
@@ -110,6 +114,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
                 if (listener instanceof BayeuxServer.SubscriptionListener)
                     ((BayeuxServer.SubscriptionListener)listener).unsubscribed(session,this);
         }
+        return true;
     }
 
     /* ------------------------------------------------------------ */
@@ -121,7 +126,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     /* ------------------------------------------------------------ */
     public boolean isBroadcast()
     {
-        return _broadcast;
+        return !isMeta() && !isService();
     }
 
     /* ------------------------------------------------------------ */
@@ -194,13 +199,13 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     /* ------------------------------------------------------------ */
     public boolean isMeta()
     {
-        return _meta;
+        return _id.isMeta();
     }
 
     /* ------------------------------------------------------------ */
     public boolean isService()
     {
-        return _service;
+        return _id.isService();
     }
 
     /* ------------------------------------------------------------ */

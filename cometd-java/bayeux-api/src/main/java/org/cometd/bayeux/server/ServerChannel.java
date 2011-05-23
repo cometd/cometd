@@ -25,11 +25,26 @@ public interface ServerChannel extends ConfigurableServerChannel
     Set<ServerSession> getSubscribers();
 
     /**
-     * A broadcasting channel is a channel that is neither a meta channel
-     * not a service channel.
-     * @return whether the channel is a broadcasting channel
+     * <p>Subscribes the given session to this channel.</p>
+     * <p>The subscription may fail if the session is already subscribed
+     * to the channel or if the session is expired or if the channel
+     * is not a broadcast channel.</p>
+     *
+     * @param session the session to subscribe
+     * @return whether the subscription succeeded
+     * @see #unsubscribe(ServerSession)
      */
-    boolean isBroadcast();
+    boolean subscribe(ServerSession session);
+
+    /**
+     * <p>Unsubscribes the given session from this channel.</p>
+     * <p>The unsubscription may fail if the session is already unsubscribed
+     * from the channel or if the session is expired</p>
+     *
+     * @param session the session to unsubscribe
+     * @return whether the unsubscription succeeded
+     */
+    boolean unsubscribe(ServerSession session);
 
     /**
      * <p>Publishes the given message to this channel, delivering
