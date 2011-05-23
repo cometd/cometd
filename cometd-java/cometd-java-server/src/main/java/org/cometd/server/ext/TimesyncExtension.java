@@ -67,6 +67,8 @@ import org.eclipse.jetty.util.ajax.JSON;
  */
 public class TimesyncExtension implements Extension
 {
+    public static final String LAG_ATTRIBUTE = "lag";
+
     private int _accuracyTarget=25;
 
     public TimesyncExtension()
@@ -117,7 +119,7 @@ public class TimesyncExtension implements Extension
                 sync.put("ts", System.currentTimeMillis());
                 Number lag=(Number)sync.get("l");
                 if (lag != null && from != null)
-                    from.setAttribute("lag",lag);
+                    from.setAttribute(LAG_ATTRIBUTE,lag);
             }
         }
         return true;
