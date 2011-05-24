@@ -1,8 +1,8 @@
-**/target/
+cometd-archetypes/dojo-jetty6/target
+target
 .classpath
 .project
 .settings
-*/src/main/java/META-INF/
 *.log
 *.swp
 *.diff
