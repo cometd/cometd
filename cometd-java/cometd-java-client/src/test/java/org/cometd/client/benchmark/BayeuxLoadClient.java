@@ -61,8 +61,8 @@ public class BayeuxLoadClient
     {
         System.err.println("detecting timer resolution...");
         SystemTimer systemTimer = SystemTimer.detect();
-        System.err.printf("native timer resolution: %d%n \u00B5s", systemTimer.getNativeResolution());
-        System.err.printf("emulated timer resolution: %d%n \u00B5s", systemTimer.getEmulatedResolution());
+        System.err.printf("native timer resolution: %d \u00B5s%n", systemTimer.getNativeResolution());
+        System.err.printf("emulated timer resolution: %d \u00B5s%n", systemTimer.getEmulatedResolution());
 
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
 
