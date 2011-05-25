@@ -24,9 +24,7 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerChannelImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -421,10 +419,7 @@ public class ServerAnnotationProcessorTest
         // Fake a publish
         LocalSession remote = bayeuxServer.newLocalSession("remote");
         remote.handshake();
-        ServerMessage.Mutable message = bayeuxServer.newMessage();
-        message.setChannel("/foo");
-        message.setData(new HashMap());
-        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+        remote.getChannel("/foo").publish(new HashSet());
 
         assertTrue(messageLatch.await(1000, TimeUnit.MILLISECONDS));
     }
@@ -792,11 +787,11 @@ public class ServerAnnotationProcessorTest
         S s = new S();
         boolean processed = processor.process(s);
         assertTrue(processed);
-        
+
         assertTrue(configured.contains("/foo/bar"));
         assertTrue(configured.contains("/blah"));
         assertTrue(configured.contains("/halb"));
-        
+
         S s2 = new S();
         try
         {
@@ -807,9 +802,9 @@ public class ServerAnnotationProcessorTest
         {
             assertTrue(true);
         }
-        
+
     }
-    
+
 
     @Test
     public void testConfigureNoErrorIfExists() throws Exception
@@ -832,10 +827,10 @@ public class ServerAnnotationProcessorTest
         S s2 = new S();
         processed = processor.process(s2);
         assertTrue(processed);
-        
+
         assertEquals(1,configured.size());
         assertEquals("/foo",configured.get(0));
-       
+
     }
 
     @Test
@@ -859,16 +854,13 @@ public class ServerAnnotationProcessorTest
         S s2 = new S();
         processed = processor.process(s2);
         assertTrue(processed);
-        
+
         assertEquals(2,configured.size());
         assertEquals("/foo",configured.get(0));
         assertEquals("/foo",configured.get(1));
-       
-    }
-    
-    
 
-    
+    }
+
     @Service
     private static class S
     {
