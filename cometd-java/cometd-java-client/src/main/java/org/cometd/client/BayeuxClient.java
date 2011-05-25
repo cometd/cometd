@@ -1180,15 +1180,22 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         protected abstract boolean isUpdateableTo(BayeuxClientState newState);
 
         /**
-         * Enter a new state.
-         * Called only if a new accepted state has a different type to the old state.
+         * <p>Callback invoked when the state changed from the given {@code oldState}
+         * to this state (and only when the two states are different).</p>
          *
-         * @param oldState
+         * @param oldState the previous state
+         * @see #execute()
          */
         protected void enter(State oldState)
         {
         }
 
+        /**
+         * <p>Callback invoked when this state becomes the new state, even if the
+         * previous state was equal to this state.</p>
+         *
+         * @see #enter(State)
+         */
         protected abstract void execute();
 
         public State getType()
@@ -1291,14 +1298,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         {
             // Reset the subscriptions if this is not a failure from a requested handshake.
             // Subscriptions may be queued after requested handshakes.
-            switch (oldState)
-            {
-                case HANDSHAKING:
-                    break;
-                default:
-                    // Reset subscriptions if not queued after initial handshake
-                    resetSubscriptions();
-            }
+            if (oldState != State.HANDSHAKING)
+                resetSubscriptions();
         }
 
         @Override
