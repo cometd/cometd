@@ -16,6 +16,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.Channel;
@@ -34,7 +35,7 @@ public class BayeuxLoadClient
     private final Random random = new Random();
     private final BenchmarkHelper helper = new BenchmarkHelper();
     private final List<LoadBayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<LoadBayeuxClient>());
-    private final Map<Integer, Integer> rooms = new HashMap<Integer, Integer>();
+    private final ConcurrentMap<Integer, AtomicInteger> rooms = new ConcurrentHashMap<Integer, AtomicInteger>();
     private final AtomicLong messageIds = new AtomicLong();
     private final AtomicLong start = new AtomicLong();
     private final AtomicLong end = new AtomicLong();
@@ -58,6 +59,11 @@ public class BayeuxLoadClient
 
     public void run() throws Exception
     {
+        System.err.println("detecting timer resolution...");
+        SystemTimer systemTimer = SystemTimer.detect();
+        System.err.printf("native timer resolution: %d%n \u00B5s", systemTimer.getNativeResolution());
+        System.err.printf("emulated timer resolution: %d%n \u00B5s", systemTimer.getEmulatedResolution());
+
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
 
         String host = "localhost";
@@ -180,7 +186,7 @@ public class BayeuxLoadClient
                     // reply to handshakes, connects and subscribes
                     if (i % 10 == 0)
                     {
-                        sleep(100000);
+                        TimeUnit.MILLISECONDS.sleep(100);
                     }
                 }
             }
@@ -199,7 +205,7 @@ public class BayeuxLoadClient
             int currentSize = bayeuxClients.size();
             while (currentSize != clients)
             {
-                sleep(250000);
+                TimeUnit.MILLISECONDS.sleep(250);
                 System.err.printf("Waiting for clients %d/%d%n", currentSize, clients);
                 if (lastSize == currentSize)
                 {
@@ -297,8 +303,8 @@ public class BayeuxLoadClient
                 for (int b = 0; b < batchSize; ++b)
                 {
                     int room = -1;
-                    Integer clientsPerRoom = null;
-                    while (clientsPerRoom == null || clientsPerRoom == 0)
+                    AtomicInteger clientsPerRoom = null;
+                    while (clientsPerRoom == null || clientsPerRoom.get() == 0)
                     {
                         room = nextRandom(rooms);
                         clientsPerRoom = this.rooms.get(room);
@@ -307,12 +313,12 @@ public class BayeuxLoadClient
                     message.setLength(0);
                     message.append("{").append(partialMessage).append(System.nanoTime()).append("}");
                     clientChannel.publish(new JSON.Literal(message.toString()), String.valueOf(messageIds.incrementAndGet()));
-                    expected += clientsPerRoom;
+                    expected += clientsPerRoom.get();
                 }
                 client.endBatch();
 
                 if (batchPause > 0)
-                    sleep(batchPause);
+                    systemTimer.sleep(batchPause);
             }
             long end = System.nanoTime();
 
@@ -380,7 +386,7 @@ public class BayeuxLoadClient
         while (arrived < expected)
         {
             System.err.printf("Waiting for messages to arrive %d/%d%n", arrived, expected);
-            sleep(500000);
+            TimeUnit.MILLISECONDS.sleep(500);
             if (lastArrived == arrived)
             {
                 --retries;
@@ -505,33 +511,6 @@ public class BayeuxLoadClient
         arrivalTimes.clear();
     }
 
-    /**
-     * <p>Unfortunately, {@link Thread#sleep(long)} on many platforms has a resolution of 1 ms
-     * or even of 10 ms, so calling <code>Thread.sleep(2)</code> often results in a 10 ms sleep.<br/>
-     * The same applies for {@link Thread#sleep(long, int)} and {@link Object#wait(long, int)}:
-     * they are not accurate.</p>
-     * <p>This is not good since we need to be able to control more accurately the request rate.</p>
-     * <p>{@link System#nanoTime()} is precise enough, but we would need to loop continuously
-     * checking the nano time until the sleep period is elapsed; to avoid busy looping, this
-     * method calls {@link Thread#yield()}.</p>
-     *
-     * @param micros the microseconds to sleep
-     * @throws InterruptedException if interrupted while sleeping
-     */
-    private void sleep(long micros) throws InterruptedException
-    {
-        if (micros >= 10000)
-        {
-            TimeUnit.MICROSECONDS.sleep(micros);
-        }
-        else
-        {
-            long end = System.nanoTime() + TimeUnit.MICROSECONDS.toNanos(micros);
-            while (System.nanoTime() < end)
-                Thread.yield();
-        }
-    }
-
     private class HandshakeListener implements ClientSessionChannel.MessageListener
     {
         private final String channel;
@@ -615,10 +594,15 @@ public class BayeuxLoadClient
         {
             getChannel(channel + "/" + room).subscribe(latencyListener);
 
-            Integer clientsPerRoom = rooms.get(room);
+            AtomicInteger clientsPerRoom = rooms.get(room);
             if (clientsPerRoom == null)
-                clientsPerRoom = 0;
-            rooms.put(room, ++clientsPerRoom);
+            {
+                clientsPerRoom = new AtomicInteger();
+                AtomicInteger existing = rooms.putIfAbsent(room, clientsPerRoom);
+                if (existing != null)
+                    clientsPerRoom = existing;
+            }
+            clientsPerRoom.incrementAndGet();
 
             subscriptions.add(room);
         }
@@ -629,8 +613,8 @@ public class BayeuxLoadClient
 
             for (Integer room : subscriptions)
             {
-                Integer clientsPerRoom = rooms.get(room);
-                rooms.put(room, --clientsPerRoom);
+                AtomicInteger clientsPerRoom = rooms.get(room);
+                clientsPerRoom.decrementAndGet();
             }
 
             subscriptions.clear();
