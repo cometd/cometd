@@ -5,13 +5,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -88,7 +85,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private final TransportRegistry transportRegistry = new TransportRegistry();
     private final Map<String, Object> options = new ConcurrentHashMap<String, Object>();
     private final AtomicReference<BayeuxClientState> bayeuxClientState = new AtomicReference<BayeuxClientState>();
-    private final Queue<Message.Mutable> messageQueue = new ConcurrentLinkedQueue<Message.Mutable>();
+    private final List<Message.Mutable> messageQueue = new ArrayList<Message.Mutable>(32);
     private final HttpClientTransport.CookieProvider cookieProvider = new HttpClientTransport.StandardCookieProvider();
     private final TransportListener handshakeListener = new HandshakeTransportListener();
     private final TransportListener connectListener = new ConnectTransportListener();
@@ -444,10 +441,20 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private Message.Mutable[] takeMessages()
     {
-        Queue<Message.Mutable> queue = new LinkedList<Message.Mutable>(messageQueue);
-        // Do not call messageQueue.clear(), as it can contain new messages added concurrently
-        messageQueue.removeAll(queue);
-        return queue.toArray(new Message.Mutable[queue.size()]);
+        // Multiple threads can call this method concurrently (for example
+        // a batched publish() is executed exactly when a message arrives
+        // and a listener also performs a batched publish() in response to
+        // the message).
+        // The queue must be drained atomically, otherwise we risk that the
+        // same message is drained twice.
+
+        Message.Mutable[] messages;
+        synchronized (messageQueue)
+        {
+            messages = messageQueue.toArray(new Message.Mutable[messageQueue.size()]);
+            messageQueue.clear();
+        }
+        return messages;
     }
 
     public void disconnect()
@@ -784,7 +791,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         }
         else
         {
-            messageQueue.offer(message);
+            synchronized (messageQueue)
+            {
+                messageQueue.add(message);
+            }
             logger.debug("Enqueued message {} (batching: {})", message, isBatching());
         }
     }
