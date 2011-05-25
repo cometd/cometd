@@ -1,0 +1,9 @@
+cometd-archetypes/dojo-jetty6/target
+target
+.classpath
+.project
+.settings
+*.log
+*.swp
+*.diff
+*.patch
