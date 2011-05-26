@@ -19,14 +19,13 @@ public class DefaultSecurityPolicy implements SecurityPolicy
         return true;
     }
 
-    public boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage messsage)
+    public boolean canPublish(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
     {
         return session!=null && session.isHandshook() && !channel.isMeta();
     }
 
-    public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage messsage)
+    public boolean canSubscribe(BayeuxServer server, ServerSession session, ServerChannel channel, ServerMessage message)
     {
         return session!=null && session.isLocalSession() || !channel.isMeta();
     }
-
 }
