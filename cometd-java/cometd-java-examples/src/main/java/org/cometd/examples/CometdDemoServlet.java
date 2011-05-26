@@ -16,8 +16,6 @@ package org.cometd.examples;
 
 import java.io.IOException;
 import java.util.Map;
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -52,7 +50,7 @@ public class CometdDemoServlet extends GenericServlet
 
         if (bayeux==null)
             throw new UnavailableException("No BayeuxServer!");
-        
+
         // Create extensions
         bayeux.addExtension(new TimesyncExtension());
         bayeux.addExtension(new AcknowledgedMessagesExtension());
