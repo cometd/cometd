@@ -20,10 +20,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -44,7 +42,7 @@ import org.cometd.server.transport.HttpTransport;
  * and will be passed to  {@link BayeuxServerImpl#setAllowedTransports(List)}.</p>
  * <p>All other init parameters are passed to {@link BayeuxServerImpl#setOption(String, Object)}.</p>
  */
-public class CometdServlet extends GenericServlet
+public class CometdServlet extends HttpServlet
 {
     private static final long serialVersionUID = 3637310585741732936L;
     /**
@@ -150,14 +148,6 @@ public class CometdServlet extends GenericServlet
     public List<HttpTransport> getTransports()
     {
         return Collections.unmodifiableList(_transports);
-    }
-
-    @Override
-    public void service(ServletRequest req, ServletResponse resp) throws ServletException, IOException
-    {
-        HttpServletRequest request = (HttpServletRequest)req;
-        HttpServletResponse response = (HttpServletResponse)resp;
-        service(request, response);
     }
 
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
