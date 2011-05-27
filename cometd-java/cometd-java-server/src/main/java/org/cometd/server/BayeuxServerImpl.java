@@ -59,6 +59,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public static final int INFO_LOG_LEVEL = 2;
     public static final int DEBUG_LOG_LEVEL = 3;
 
+    public static final String DEFAULT_AUTHORIZER = "defaultAuthorizer";
+    public static final String AUTHORIZER_GRANT = "grant";
+    public static final String AUTHORIZER_DENY = "deny";
+
     private final Logger _logger = Log.getLogger(getClass().getName() + "@" + System.identityHashCode(this));
     private final SecureRandom _random = new SecureRandom();
     private final List<BayeuxServerListener> _listeners = new CopyOnWriteArrayList<BayeuxServerListener>();
@@ -74,6 +78,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private Timer _timer = new Timer();
     private Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
     private SecurityPolicy _policy=new DefaultSecurityPolicy();
+    private Authorizer.Result _defaultAuthorizer = Authorizer.Result.grant();
 
     /* ------------------------------------------------------------ */
     public BayeuxServerImpl()
@@ -115,6 +120,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             for (Map.Entry<String, Object> entry : getOptions().entrySet())
                 getLogger().info(entry.getKey() + "=" + entry.getValue());
+        }
+
+        String defaultAuthorizer = String.valueOf(getOption(DEFAULT_AUTHORIZER)); // null won't be matched
+        if(AUTHORIZER_DENY.equalsIgnoreCase(defaultAuthorizer)) {
+            this._defaultAuthorizer = Authorizer.Result.deny("Denied by default: configure Channel to add an Authorizer.");
+        } else if(AUTHORIZER_GRANT.equalsIgnoreCase(defaultAuthorizer)) {
+            this._defaultAuthorizer = Authorizer.Result.grant();
         }
 
         initializeMetaChannels();
@@ -457,6 +469,17 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _policy=securityPolicy;
     }
 
+    public Authorizer.Result getDefaultAuthorizer()
+    {
+        return _defaultAuthorizer;
+    }
+
+    public void setDefaultAuthorizer(Authorizer.Result defaultAuthorizer)
+    {
+        _options.remove(DEFAULT_AUTHORIZER);
+        this._defaultAuthorizer = defaultAuthorizer;
+    }
+
     /* ------------------------------------------------------------ */
     public void addExtension(Extension extension)
     {
@@ -672,7 +695,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         if (!called)
         {
-            result = Authorizer.Result.grant();
+            result = getDefaultAuthorizer();
             _logger.debug("No authorizers, {} for channel {} {}", operation, channelId, result);
         }
         else
