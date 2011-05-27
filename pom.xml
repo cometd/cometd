@@ -11,8 +11,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.4.1.v20110513</jetty-version>
-        <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
+        <jetty7-version>7.4.1.v20110513</jetty7-version>
+        <jetty8-version>8.0.0.M2</jetty8-version>
+        <jetty-version>${jetty7-version}</jetty-version>
+        <jetty-plugin-version>${jetty7-version}</jetty-plugin-version>
     </properties>
 
     <url>http://cometd.org</url>
