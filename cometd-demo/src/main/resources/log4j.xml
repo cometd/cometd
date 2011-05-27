@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
+
+    <appender name="STDOUT" class="org.apache.log4j.ConsoleAppender">
+        <param name="target" value="System.out"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="conversionPattern" value="%d %p [%t] [%c{3}] %x - %m%n"/>
+        </layout>
+        <filter class="org.apache.log4j.varia.LevelRangeFilter">
+            <param name="levelMin" value="TRACE"/>
+            <param name="levelMax" value="INFO"/>
+        </filter>
+    </appender>
+
+    <appender name="STDERR" class="org.apache.log4j.ConsoleAppender">
+        <param name="target" value="System.err"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="conversionPattern" value="%d %p [%t] [%c{3}] %x - %m%n"/>
+        </layout>
+        <filter class="org.apache.log4j.varia.LevelRangeFilter">
+            <param name="levelMin" value="WARN"/>
+            <param name="levelMax" value="FATAL"/>
+        </filter>
+    </appender>
+
+    <!-- ========== -->
+    <!-- CATEGORIES -->
+    <!-- ========== -->
+
+    <category name="org.eclipse.jetty.util.log">
+        <priority value="INFO"/>
+    </category>
+
+    <category name="org.cometd">
+        <priority value="TRACE"/>
+    </category>
+
+    <!-- ======================= -->
+    <!-- Setup the Root category -->
+    <!-- ======================= -->
+    <root>
+        <priority value="INFO"/>
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="STDERR"/>
+    </root>
+
+</log4j:configuration>
