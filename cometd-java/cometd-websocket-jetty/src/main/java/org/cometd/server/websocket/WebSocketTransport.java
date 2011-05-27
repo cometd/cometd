@@ -58,6 +58,8 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         setTimeout(getOption(PREFIX + "." + TIMEOUT_OPTION, 15000L));
         setInterval(getOption(PREFIX + "." + INTERVAL_OPTION, 2500L));
         setMaxInterval(getOption(PREFIX + "." + MAX_INTERVAL_OPTION, 15000L));
+
+        getBayeux().getLogger().info("Init WebSocketTransport for Jetty 7");
     }
 
     @Override

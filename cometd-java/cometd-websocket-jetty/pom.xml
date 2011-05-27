@@ -8,7 +8,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>cometd-websocket-jetty</artifactId>
-    <name>CometD :: Java :: Jetty WebSocket Transport</name>
+    <name>CometD :: Java :: Jetty7 WebSocket Transport</name>
 
     <dependencies>
         <dependency>
