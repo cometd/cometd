@@ -7,3 +7,10 @@ target
 *.swp
 *.diff
 *.patch
+.idea
+*.iml
+*.ipr
+*.iws
+nbproject
+.DS_Store
+overlays
