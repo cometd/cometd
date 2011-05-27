@@ -55,9 +55,9 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
             if (!_initialized.await(5,TimeUnit.SECONDS))
                 throw new IllegalStateException("Not Initialized: "+this);
         }
-        catch(InterruptedException e)
+        catch (InterruptedException x)
         {
-            throw new IllegalStateException("Initizlization interrupted: "+this);
+            throw new IllegalStateException("Initialization interrupted: "+this, x);
         }
     }
 
@@ -71,7 +71,9 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     {
         if (!session.isHandshook())
             return false;
-        if (session.isLocalSession() || isBroadcast())
+        if (isService())
+            return true;
+        if (!isMeta())
             return subscribe((ServerSessionImpl)session);
         return false;
     }
@@ -97,7 +99,9 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         // The unsubscription may arrive when the session
         // is already disconnected; unsubscribe in any case
 
-        if (session.isLocalSession() || isBroadcast())
+        if (isService())
+            return true;
+        if (!isMeta())
             return unsubscribe((ServerSessionImpl)session);
         return false;
     }
