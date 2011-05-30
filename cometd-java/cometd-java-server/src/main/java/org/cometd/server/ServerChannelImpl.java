@@ -71,11 +71,15 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     {
         if (!session.isHandshook())
             return false;
+
+        // Maintain backward compatibility by allowing subscriptions
+        // to service channels to be a no-operation, but succeed
         if (isService())
             return true;
-        if (!isMeta())
-            return subscribe((ServerSessionImpl)session);
-        return false;
+        if (isMeta())
+            return false;
+
+        return subscribe((ServerSessionImpl)session);
     }
 
     private boolean subscribe(ServerSessionImpl session)
@@ -99,11 +103,14 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         // The unsubscription may arrive when the session
         // is already disconnected; unsubscribe in any case
 
+        // Subscriptions to service channels are allowed but
+        // are a no-operation, so be symmetric here
         if (isService())
             return true;
-        if (!isMeta())
-            return unsubscribe((ServerSessionImpl)session);
-        return false;
+        if (isMeta())
+            return false;
+
+        return unsubscribe((ServerSessionImpl)session);
     }
 
     private boolean unsubscribe(ServerSessionImpl session)
