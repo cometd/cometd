@@ -204,7 +204,7 @@ public class ChannelId
     /* ------------------------------------------------------------ */
     public String getSegment(int i)
     {
-        if (i > _segments.length)
+        if (i >= _segments.length)
             return null;
         return _segments[i];
     }
