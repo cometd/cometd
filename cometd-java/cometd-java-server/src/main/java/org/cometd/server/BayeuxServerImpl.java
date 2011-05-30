@@ -19,7 +19,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -250,7 +249,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     /* ------------------------------------------------------------ */
     /** Get an option value as a long
-     * @param name
+     * @param name The option name
      * @param dft The default value
      * @return long value
      */
@@ -391,8 +390,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     /* ------------------------------------------------------------ */
     /**
-     * @param session
-     * @param timedout
+     * @param session the session to remove
+     * @param timedout whether the remove reason is server-side expiration
      * @return true if the session was removed and was connected
      */
     public boolean removeServerSession(ServerSession session,boolean timedout)
@@ -422,12 +421,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     protected ServerSessionImpl newServerSession()
     {
         return new ServerSessionImpl(this);
-    }
-
-    /* ------------------------------------------------------------ */
-    protected ServerSessionImpl newServerSession(LocalSessionImpl local, String idHint)
-    {
-        return new ServerSessionImpl(this,local,idHint);
     }
 
     /* ------------------------------------------------------------ */
@@ -842,10 +835,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             ListIterator<Extension> i = _extensions.listIterator(_extensions.size());
             while(i.hasPrevious())
             {
-                if (!i.previous().sendMeta(to,message))
+                final Extension extension = i.previous();
+                if (!extension.sendMeta(to, message))
                 {
                     if (_logger.isDebugEnabled())
-                        _logger.debug("!  "+message);
+                        _logger.debug("Extension {} interrupted message processing for {}", extension, message);
                     return false;
                 }
             }
@@ -855,10 +849,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             ListIterator<Extension> i = _extensions.listIterator(_extensions.size());
             while(i.hasPrevious())
             {
-                if (!i.previous().send(from,to,message))
+                final Extension extension = i.previous();
+                if (!extension.send(from, to, message))
                 {
                     if (_logger.isDebugEnabled())
-                        _logger.debug("!  "+message);
+                        _logger.debug("Extension {} interrupted message processing for {}", extension, message);
                     return false;
                 }
             }
@@ -901,16 +896,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public ServerTransport getTransport(String transport)
     {
         return _transports.get(transport);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated Use {@link #addTransport(ServerTransport)} instead
-     */
-    @Deprecated
-    public void addTransport(Transport transport)
-    {
-        addTransport((ServerTransport)transport);
     }
 
     /* ------------------------------------------------------------ */

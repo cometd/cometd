@@ -1,6 +1,7 @@
 /**
  *
  */
+
 package org.cometd.oort;
 
 import java.util.Collection;
@@ -41,37 +42,39 @@ public class OortChatService
     OortChatService(ServletContext context)
     {
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
-        if (_oort==null)
-            throw new RuntimeException("!"+ Oort.OORT_ATTRIBUTE);
+        if (_oort == null)
+            throw new RuntimeException("Missing " + Oort.OORT_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
+                    "is " + OortServlet.class.getSimpleName() + " declared in web.xml ?");
         _seti = (Seti)context.getAttribute(Seti.SETI_ATTRIBUTE);
-        if (_seti==null)
-            throw new RuntimeException("!"+Seti.SETI_ATTRIBUTE);
+        if (_seti == null)
+            throw new RuntimeException("Missing " + Seti.SETI_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
+                    "is " + SetiServlet.class.getSimpleName() + " declared in web.xml ?");
 
         _oort.observeChannel("/chat/**");
         _oort.observeChannel("/members/**");
     }
 
     @SuppressWarnings("unused")
-    @Configure ({"/chat/**","/members/**"})
+    @Configure({"/chat/**", "/members/**"})
     private void configureChatStarStar(ConfigurableServerChannel channel)
     {
-        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux,new NoMarkupFilter(),new BadWordFilter());
+        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux, new NoMarkupFilter(), new BadWordFilter());
         channel.addListener(noMarkup);
         channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
     }
 
     @SuppressWarnings("unused")
-    @Configure ("/service/privatechat")
+    @Configure("/service/privatechat")
     private void configurePrivateChat(ConfigurableServerChannel channel)
     {
-        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux,new NoMarkupFilter(),new BadWordFilter());
+        final DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux, new NoMarkupFilter(), new BadWordFilter());
         channel.setPersistent(true);
         channel.addListener(noMarkup);
         channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
     }
 
     @SuppressWarnings("unused")
-    @Configure ("/service/members")
+    @Configure("/service/members")
     private void configureMembers(ConfigurableServerChannel channel)
     {
         channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
@@ -85,7 +88,8 @@ public class OortChatService
         {
             Set<String> newMembers = new HashSet<String>();
             members = _members.putIfAbsent(room, newMembers);
-            if (members == null) members = newMembers;
+            if (members == null)
+                members = newMembers;
         }
         return members;
     }
@@ -108,52 +112,52 @@ public class OortChatService
                     if (!_oort.isOort(client))
                         _seti.disassociate(userName, session);
                     members.remove(userName);
-                    broadcastMembers(room,members);
+                    broadcastMembers(room, members);
                 }
             });
 
             if (!_oort.isOort(client))
-                _seti.associate(userName,client);
+                _seti.associate(userName, client);
 
-            broadcastMembers(room,members);
+            broadcastMembers(room, members);
         }
     }
 
     @Listener("/members/**")
     public void handleMembershipBroadcast(final ServerSession client, ServerMessage message)
     {
-        String room=message.getChannel().substring("/members/".length());
+        String room = message.getChannel().substring("/members/".length());
         Object[] newMembers = (Object[])message.getData();
 
         final Collection<String> members = getMemberList(room);
         synchronized (members)
         {
-            boolean added=false;
+            boolean added = false;
             for (Object o : newMembers)
-                added|=members.add(o.toString());
+                added |= members.add(o.toString());
 
             if (added)
-                broadcastMembers(room,members);
+                broadcastMembers(room, members);
         }
     }
 
-    private void broadcastMembers(String room,Collection<String> members)
+    private void broadcastMembers(String room, Collection<String> members)
     {
         // Broadcast the new members list
-        ClientSessionChannel channel = _session.getLocalSession().getChannel("/members/"+room);
+        ClientSessionChannel channel = _session.getLocalSession().getChannel("/members/" + room);
         channel.publish(members);
     }
 
     @Listener("/service/privatechat")
     public void privateChat(ServerSession client, ServerMessage message)
     {
-        Map<String,Object> data = message.getDataAsMap();
-        String toUid=(String)data.get("peer");
-        String toChannel=(String)data.get("room");
-        data.put("scope","private");
-        data.put("user",data.get("user")+"->"+toUid);
-        client.deliver(client,toChannel,data,message.getId());
-        _seti.sendMessage(toUid,toChannel,data);
+        Map<String, Object> data = message.getDataAsMap();
+        String toUid = (String)data.get("peer");
+        String toChannel = (String)data.get("room");
+        data.put("scope", "private");
+        data.put("user", data.get("user") + "->" + toUid);
+        client.deliver(client, toChannel, data, message.getId());
+        _seti.sendMessage(toUid, toChannel, data);
     }
 
     class BadWordFilter extends JSONDataFilter
@@ -161,7 +165,7 @@ public class OortChatService
         @Override
         protected Object filterString(String string)
         {
-            if (string.indexOf("dang")>=0)
+            if (string.indexOf("dang") >= 0)
                 throw new DataFilter.Abort();
             return string;
         }

@@ -87,7 +87,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     public ServerSession getServerSession()
     {
         if (_session==null)
-            throw new IllegalStateException("!handshake");
+            throw new IllegalStateException("Method handshake() not invoked for local session " + this);
         return _session;
     }
 
@@ -150,7 +150,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     public String getId()
     {
         if (_session==null)
-            throw new IllegalStateException("!handshake");
+            throw new IllegalStateException("Method handshake() not invoked for local session " + this);
         return _session.getId();
     }
 
@@ -241,7 +241,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         public void publish(Object data, String messageId)
         {
             if (_session == null)
-                throw new IllegalStateException("!handshake");
+                throw new IllegalStateException("Method handshake() not invoked for local session " + this);
 
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setChannel(getId());
