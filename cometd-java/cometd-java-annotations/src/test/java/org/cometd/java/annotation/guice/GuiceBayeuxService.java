@@ -33,7 +33,7 @@ public class GuiceBayeuxService
     }
 
     @PostConstruct
-    public void start() // Initialization method invoked by Guice
+    public void start() // Invoked by CometD's annotation processor
     {
         if (!configured)
             throw new IllegalStateException();
@@ -41,19 +41,19 @@ public class GuiceBayeuxService
     }
 
     @PreDestroy
-    public void stop() // Destruction method invoked by Guice
+    public void stop() // Invoked by CometD's annotation processor
     {
         active = false;
     }
 
     @Configure(CHANNEL)
-    private void configureFoo(ConfigurableServerChannel channel)
+    private void configureFoo(ConfigurableServerChannel channel) // Invoked by CometD's annotation processor
     {
         configured = true;
     }
 
     @Subscription(CHANNEL)
-    public void foo(Message message) // Subscription method detected by CometD's annotation processor
+    public void foo(Message message) // Invoked by CometD's annotation processor
     {
     }
 

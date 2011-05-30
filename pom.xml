@@ -11,7 +11,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty7-version>7.4.1.v20110513</jetty7-version>
+        <jetty7-version>7.4.2.v20110526</jetty7-version>
         <jetty8-version>8.0.0.M2</jetty8-version>
         <jetty-version>${jetty7-version}</jetty-version>
         <jetty-plugin-version>${jetty7-version}</jetty-plugin-version>
@@ -179,16 +179,6 @@
                 </configuration>
             </plugin>
             <plugin>
-                <artifactId>maven-source-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
@@ -310,38 +300,6 @@
                 <artifactId>junit</artifactId>
                 <version>4.8.2</version>
                 <scope>test</scope>
-            </dependency>
-            <!-- logging -->
-            <dependency>
-                <groupId>log4j</groupId>
-                <artifactId>log4j</artifactId>
-                <version>1.2.16</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-log4j12</artifactId>
-                <version>1.6.1</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>1.6.1</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-nop</artifactId>
-                <version>1.6.1</version>
-            </dependency>
-            <dependency>
-                <groupId>commons-logging</groupId>
-                <artifactId>commons-logging</artifactId>
-                <version>1.1.1</version>
-            </dependency>
-            <!-- guice -->
-            <dependency>
-                <groupId>com.google.inject</groupId>
-                <artifactId>guice</artifactId>
-                <version>3.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

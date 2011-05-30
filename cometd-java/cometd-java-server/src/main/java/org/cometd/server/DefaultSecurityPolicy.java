@@ -28,5 +28,4 @@ public class DefaultSecurityPolicy implements SecurityPolicy
     {
         return session!=null && session.isLocalSession() || !channel.isMeta();
     }
-
 }

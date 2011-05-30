@@ -26,9 +26,11 @@ public interface ServerChannel extends ConfigurableServerChannel
 
     /**
      * <p>Subscribes the given session to this channel.</p>
+     * <p>Subscriptions are effective for {@link #isBroadcast() broadcast channels}
+     * and are successful no-operations for {@link #isService() service channels}.</p>
      * <p>The subscription may fail if the session is already subscribed
      * to the channel or if the session is expired or if the channel
-     * is not a broadcast channel.</p>
+     * is a meta channel.</p>
      *
      * @param session the session to subscribe
      * @return whether the subscription succeeded
@@ -38,8 +40,11 @@ public interface ServerChannel extends ConfigurableServerChannel
 
     /**
      * <p>Unsubscribes the given session from this channel.</p>
+     * <p>Unsubscriptions are effective for {@link #isBroadcast() broadcast channels}
+     * and are successful no-operations for {@link #isService() service channels}.</p>
      * <p>The unsubscription may fail if the session is already unsubscribed
-     * from the channel or if the session is expired</p>
+     * from the channel or if the session is expired or if the channel
+     * is a meta channel.</p>
      *
      * @param session the session to unsubscribe
      * @return whether the unsubscription succeeded
