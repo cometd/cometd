@@ -79,10 +79,16 @@
             <name>CometD Maven2 Repository</name>
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
         </repository>
-        <snapshotRepository>
+        <!--<snapshotRepository>
             <id>oss.sonatype.org</id>
             <name>CometD Maven2 Snapshot Repository</name>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>-->
+        <snapshotRepository>
+            <id>ovea-snapshots</id>
+            <name>Ovea Maven repository of snapshots</name>
+            <url>dav:http://build.intradev.ovea.com/nexus/content/repositories/ovea-snapshots/</url>
+            <uniqueVersion>false</uniqueVersion>
         </snapshotRepository>
     </distributionManagement>
 
