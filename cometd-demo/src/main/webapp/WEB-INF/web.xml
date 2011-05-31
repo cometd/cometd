@@ -88,17 +88,11 @@
     <!-- Configure Oort Cloud, used by Auction demo -->
     <servlet>
         <servlet-name>oort</servlet-name>
-        <servlet-class>org.cometd.oort.OortServlet</servlet-class>
+        <servlet-class>org.cometd.oort.OortMulticastConfigServlet</servlet-class>
         <init-param>
             <param-name>oort.url</param-name>
             <param-value>http://localhost:8080/cometd</param-value>
         </init-param>
-        <!-- Define the Oort cloud (comma separated list of other oort.urls in the cluster)
-        <init-param>
-            <param-name>oort.cloud</param-name>
-            <param-value>http://localhost:8081/cometd</param-value>
-        </init-param>
-        -->
         <load-on-startup>3</load-on-startup>
     </servlet>
 

@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletResponse;
  * <p>Override method {@link #newSeti(Oort, String)} to return a customized
  * instance of {@link Seti}.</p>
  *
- * @see OortServlet
+ * @see OortMulticastConfigServlet
  */
 public class SetiServlet implements Servlet
 {

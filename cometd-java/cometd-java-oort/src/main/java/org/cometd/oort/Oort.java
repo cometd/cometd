@@ -32,14 +32,16 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>Oort is the cluster manager that links one CometD server to a set of other CometD servers.</p>
- * <p>The Oort instance is created and configured by {@link OortServlet}.</p>
+ * <p>The Oort instance is created and configured by either {@link OortMulticastConfigServlet} or
+ * {@link OortStaticConfigServlet}.</p>
  * <p>This class maintains a collection of {@link OortComet} instances to each
  * CometD server, created by calls to {@link #observeComet(String)}.</p>
  * <p>The key configuration parameter is the Oort URL, which is
  * full public URL of the CometD servlet to which the Oort instance is bound,
  * for example: <code>http://myserver:8080/context/cometd</code>.</p>
  *
- * @see OortServlet
+ * @see OortMulticastConfigServlet
+ * @see OortStaticConfigServlet
  */
 public class Oort extends AbstractLifeCycle
 {

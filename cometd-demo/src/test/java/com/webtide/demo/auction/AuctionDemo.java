@@ -16,7 +16,7 @@ package com.webtide.demo.auction;
 
 
 import org.cometd.oort.Oort;
-import org.cometd.oort.OortServlet;
+import org.cometd.oort.OortStaticConfigServlet;
 import org.cometd.oort.SetiServlet;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.server.Server;
@@ -93,10 +93,10 @@ public class AuctionDemo
         cometd_holder.setInitOrder(1);
         context.addServlet(cometd_holder, "/cometd/*");
 
-        ServletHolder oort_holder = new ServletHolder(OortServlet.class);
-        oort_holder.setInitParameter(OortServlet.OORT_URL_PARAM,"http://localhost:"+port+"/cometd");
-        oort_holder.setInitParameter(OortServlet.OORT_CLOUD_PARAM,"");
-        // oort_holder.setInitParameter(Oort.OORT_CLOUD,(port==8080)?"http://localhost:"+8081+"/cometd":"http://localhost:"+8080+"/cometd");
+        ServletHolder oort_holder = new ServletHolder(OortStaticConfigServlet.class);
+        oort_holder.setInitParameter(OortStaticConfigServlet.OORT_URL_PARAM,"http://localhost:"+port+"/cometd");
+        oort_holder.setInitParameter(OortStaticConfigServlet.OORT_CLOUD_PARAM,"");
+        // oort_holder.setInitParameter(OortStaticConfigServlet.OORT_CLOUD_PARAM,(port==8080)?"http://localhost:"+8081+"/cometd":"http://localhost:"+8080+"/cometd");
         oort_holder.setInitOrder(2);
         context.addServlet(oort_holder, "/oort/*");
 

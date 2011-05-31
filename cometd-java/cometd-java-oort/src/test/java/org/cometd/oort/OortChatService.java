@@ -44,7 +44,7 @@ public class OortChatService
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
         if (_oort == null)
             throw new RuntimeException("Missing " + Oort.OORT_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
-                    "is " + OortServlet.class.getSimpleName() + " declared in web.xml ?");
+                    "is an Oort servlet declared in web.xml ?");
         _seti = (Seti)context.getAttribute(Seti.SETI_ATTRIBUTE);
         if (_seti == null)
             throw new RuntimeException("Missing " + Seti.SETI_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
