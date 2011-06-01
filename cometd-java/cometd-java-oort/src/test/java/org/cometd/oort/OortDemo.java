@@ -101,10 +101,9 @@ public class OortDemo
         cometd_holder.setInitOrder(1);
         context.addServlet(cometd_holder, "/cometd/*");
 
-        ServletHolder oort_holder = new ServletHolder(OortServlet.class);
-        oort_holder.setInitParameter(OortServlet.OORT_URL_PARAM,"http://localhost:"+port+"/cometd");
-        oort_holder.setInitParameter(OortServlet.OORT_CHANNELS_PARAM,"/chat/**");
-        oort_holder.setInitParameter(OortServlet.OORT_CLOUD_PARAM,((port==8080)?"http://localhost:"+8081+"/cometd":"http://localhost:"+8080+"/cometd"));
+        ServletHolder oort_holder = new ServletHolder(OortMulticastConfigServlet.class);
+        oort_holder.setInitParameter(OortMulticastConfigServlet.OORT_URL_PARAM,"http://localhost:"+port+"/cometd");
+        oort_holder.setInitParameter(OortMulticastConfigServlet.OORT_CHANNELS_PARAM,"/chat/**");
         oort_holder.setInitParameter("clientLogLevel","debug");
         oort_holder.setInitOrder(2);
         context.addServlet(oort_holder, "/oort/*");

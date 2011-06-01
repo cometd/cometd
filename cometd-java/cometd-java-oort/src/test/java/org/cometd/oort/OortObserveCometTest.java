@@ -134,7 +134,7 @@ public class OortObserveCometTest extends OortTest
         Oort oort1 = startOort(server1);
 
         Server server2 = startServer(0);
-        String url = (String)server2.getAttribute(OortServlet.OORT_URL_PARAM);
+        String url = (String)server2.getAttribute(OortConfigServlet.OORT_URL_PARAM);
         int port = new URI(url).getPort();
         stopServer(server2);
 

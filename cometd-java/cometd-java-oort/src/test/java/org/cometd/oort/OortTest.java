@@ -47,7 +47,7 @@ public abstract class OortTest
 
         server.start();
         String url = "http://localhost:" + connector.getLocalPort() + contextPath + cometdServletPath;
-        server.setAttribute(OortServlet.OORT_URL_PARAM, url);
+        server.setAttribute(OortConfigServlet.OORT_URL_PARAM, url);
         BayeuxServer bayeux = (BayeuxServer)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
         server.setAttribute(BayeuxServer.ATTRIBUTE, bayeux);
 
@@ -58,7 +58,7 @@ public abstract class OortTest
 
     protected Oort startOort(Server server) throws Exception
     {
-        String url = (String)server.getAttribute(OortServlet.OORT_URL_PARAM);
+        String url = (String)server.getAttribute(OortConfigServlet.OORT_URL_PARAM);
         Oort oort = new Oort((BayeuxServer)server.getAttribute(BayeuxServer.ATTRIBUTE), url);
         oort.start();
         oorts.add(oort);

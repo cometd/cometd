@@ -16,7 +16,6 @@ import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.oort.Oort;
-import org.cometd.oort.OortServlet;
 import org.cometd.oort.Seti;
 import org.cometd.oort.SetiServlet;
 import org.cometd.server.AbstractService;
@@ -43,7 +42,7 @@ public class AuctionService extends AbstractService implements ClientSessionChan
         _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
         if (_oort == null)
             throw new RuntimeException("Missing " + Oort.OORT_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
-                    "is " + OortServlet.class.getSimpleName() + " declared in web.xml ?");
+                    "is an Oort servlet declared in web.xml ?");
         _seti = (Seti)context.getAttribute(Seti.SETI_ATTRIBUTE);
         if (_seti == null)
             throw new RuntimeException("Missing " + Seti.SETI_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
