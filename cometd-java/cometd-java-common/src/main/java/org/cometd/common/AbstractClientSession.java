@@ -359,33 +359,27 @@ public abstract class AbstractClientSession implements ClientSession
             for (ClientSessionChannelListener listener : _listeners)
             {
                 if (listener instanceof ClientSessionChannel.MessageListener)
-                {
-                    try
-                    {
-                        ((MessageListener)listener).onMessage(this, message);
-                    }
-                    catch (Exception x)
-                    {
-                        logger.info(x);
-                    }
-                }
+                    notifyOnMessage((MessageListener)listener, message);
             }
             for (ClientSessionChannelListener listener : _subscriptions)
             {
                 if (listener instanceof ClientSessionChannel.MessageListener)
                 {
                     if (message.getData() != null)
-                    {
-                        try
-                        {
-                            ((MessageListener)listener).onMessage(this, message);
-                        }
-                        catch (Exception x)
-                        {
-                            logger.info(x);
-                        }
-                    }
+                        notifyOnMessage((MessageListener)listener, message);
                 }
+            }
+        }
+
+        private void notifyOnMessage(MessageListener listener, Message message)
+        {
+            try
+            {
+                listener.onMessage(this, message);
+            }
+            catch (Exception x)
+            {
+                logger.info("Exception while invoking listener " + listener, x);
             }
         }
 

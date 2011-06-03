@@ -89,13 +89,37 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
             session.subscribedTo(this);
             for (ServerChannelListener listener : _listeners)
                 if (listener instanceof SubscriptionListener)
-                    ((SubscriptionListener)listener).subscribed(session,this);
+                    notifySubscribed((SubscriptionListener)listener, session, this);
             for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
                 if (listener instanceof BayeuxServer.SubscriptionListener)
-                    ((BayeuxServer.SubscriptionListener)listener).subscribed(session,this);
+                    notifySubscribed((BayeuxServer.SubscriptionListener)listener, session, this);
         }
         _sweeperPasses = 0;
         return true;
+    }
+
+    private void notifySubscribed(SubscriptionListener listener, ServerSession session, ServerChannel channel)
+    {
+        try
+        {
+            listener.subscribed(session, channel);
+        }
+        catch (Exception x)
+        {
+            _bayeux.getLogger().info("Exception while invoking listener " + listener, x);
+        }
+    }
+
+    private void notifySubscribed(BayeuxServer.SubscriptionListener listener, ServerSession session, ServerChannel channel)
+    {
+        try
+        {
+            listener.subscribed(session, channel);
+        }
+        catch (Exception x)
+        {
+            _bayeux.getLogger().info("Exception while invoking listener " + listener, x);
+        }
     }
 
     public boolean unsubscribe(ServerSession session)
@@ -117,15 +141,39 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     {
         if(_subscribers.remove(session))
         {
-            session.unsubscribedTo(this);
+            session.unsubscribedFrom(this);
             for (ServerChannelListener listener : _listeners)
                 if (listener instanceof SubscriptionListener)
-                    ((SubscriptionListener)listener).unsubscribed(session,this);
+                    notifyUnsubscribed((SubscriptionListener)listener, session, this);
             for (BayeuxServer.BayeuxServerListener listener : _bayeux.getListeners())
                 if (listener instanceof BayeuxServer.SubscriptionListener)
-                    ((BayeuxServer.SubscriptionListener)listener).unsubscribed(session,this);
+                    notifyUnsubscribed((BayeuxServer.SubscriptionListener)listener, session, this);
         }
         return true;
+    }
+
+    private void notifyUnsubscribed(BayeuxServer.SubscriptionListener listener, ServerSession session, ServerChannel channel)
+    {
+        try
+        {
+            listener.unsubscribed(session, channel);
+        }
+        catch (Exception x)
+        {
+            _bayeux.getLogger().info("Exception while invoking listener " + listener, x);
+        }
+    }
+
+    private void notifyUnsubscribed(SubscriptionListener listener, ServerSession session, ServerChannel channel)
+    {
+        try
+        {
+            listener.unsubscribed(session, channel);
+        }
+        catch (Exception x)
+        {
+            _bayeux.getLogger().info("Exception while invoking listener " + listener, x);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -293,7 +341,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         if (_bayeux.removeServerChannel(this))
         {
             for (ServerSession subscriber: _subscribers)
-                ((ServerSessionImpl)subscriber).unsubscribedTo(this);
+                ((ServerSessionImpl)subscriber).unsubscribedFrom(this);
             _subscribers.clear();
         }
 

@@ -337,11 +337,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             try
             {
                 for (Initializer initializer : initializers)
-                    initializer.configureChannel(channel);
+                    notifyConfigureChannel(initializer, channel);
                 for (BayeuxServer.BayeuxServerListener listener : _listeners)
                 {
                     if (listener instanceof ServerChannel.Initializer)
-                        ((ServerChannel.Initializer)listener).configureChannel(channel);
+                        notifyConfigureChannel((Initializer)listener, channel);
                 }
             }
             finally
@@ -352,7 +352,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             for (BayeuxServer.BayeuxServerListener listener : _listeners)
             {
                 if (listener instanceof BayeuxServer.ChannelListener)
-                    ((BayeuxServer.ChannelListener)listener).channelAdded(channel);
+                    notifyChannelAdded((ChannelListener)listener, channel);
             }
 
             return true;
@@ -361,6 +361,30 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         // somebody else added it before me, so wait until it is initialized
         channel.waitForInitialized();
         return false;
+    }
+
+    private void notifyConfigureChannel(Initializer listener, ServerChannel channel)
+    {
+        try
+        {
+            listener.configureChannel(channel);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking listener " + listener, x);
+        }
+    }
+
+    private void notifyChannelAdded(ChannelListener listener, ServerChannel channel)
+    {
+        try
+        {
+            listener.channelAdded(channel);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking listener " + listener, x);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -384,7 +408,19 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         for (BayeuxServerListener listener : _listeners)
         {
             if (listener instanceof BayeuxServer.SessionListener)
-                ((SessionListener)listener).sessionAdded(session);
+                notifySessionAdded((SessionListener)listener, session);
+        }
+    }
+
+    private void notifySessionAdded(SessionListener listener, ServerSession session)
+    {
+        try
+        {
+            listener.sessionAdded(session);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking listener " + listener, x);
         }
     }
 
@@ -401,20 +437,33 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         ServerSessionImpl removed =_sessions.remove(session.getId());
 
-        if(removed==session)
+        if (removed == session)
         {
-            boolean connected = ((ServerSessionImpl)session).removed(timedout);
-
+            // Invoke BayeuxServer.SessionListener first, so that the application
+            // can be "pre-notified" that a session is being removed before the
+            // application gets notifications of channel unsubscriptions
             for (BayeuxServerListener listener : _listeners)
             {
                 if (listener instanceof BayeuxServer.SessionListener)
-                    ((SessionListener)listener).sessionRemoved(session,timedout);
+                    notifySessionRemoved((SessionListener)listener, session, timedout);
             }
 
-            return connected;
+            return ((ServerSessionImpl)session).removed(timedout);
         }
         else
             return false;
+    }
+
+    private void notifySessionRemoved(SessionListener listener, ServerSession session, boolean timedout)
+    {
+        try
+        {
+            listener.sessionRemoved(session, timedout);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking listener " + listener, x);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -718,7 +767,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 mutable.setLazy(true);
             for (ServerChannelListener listener : channel.getListeners())
                 if (listener instanceof MessageListener)
-                    if (!((MessageListener)listener).onMessage(from, to, mutable))
+                    if (!notifyOnMessage((MessageListener)listener, from, to, mutable))
                         return;
         }
 
@@ -727,7 +776,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             mutable.setLazy(true);
         for (ServerChannelListener listener : to.getListeners())
             if (listener instanceof MessageListener)
-                if (!((MessageListener)listener).onMessage(from, to, mutable))
+                if (!notifyOnMessage((MessageListener)listener, from, to, mutable))
                     return;
 
         // Exactly at this point, we convert the message to JSON and therefore
@@ -775,6 +824,18 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
+    private boolean notifyOnMessage(MessageListener listener, ServerSession from, ServerChannel to, Mutable mutable)
+    {
+        try
+        {
+            return listener.onMessage(from, to, mutable);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking listener " + listener, x);
+            return true;
+        }
+    }
 
     /* ------------------------------------------------------------ */
     public ServerMessage.Mutable extendReply(ServerSessionImpl from, ServerSessionImpl to, ServerMessage.Mutable reply)
@@ -810,25 +871,50 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    protected boolean extendRecv(ServerSessionImpl from, ServerMessage.Mutable message)
+    protected boolean extendRecv(ServerSession from, ServerMessage.Mutable message)
     {
         if (message.isMeta())
         {
-            for (Extension ext: _extensions)
-                if (!ext.rcvMeta(from,message))
+            for (Extension extension : _extensions)
+                if (!notifyRcvMeta(extension, from, message))
                     return false;
         }
         else
         {
-            for (Extension ext: _extensions)
-                if (!ext.rcv(from,message))
+            for (Extension extension : _extensions)
+                if (!notifyRcv(extension, from, message))
                     return false;
         }
         return true;
     }
 
-    /* ------------------------------------------------------------ */
-    protected boolean extendSend(ServerSessionImpl from, ServerSessionImpl to, ServerMessage.Mutable message)
+    private boolean notifyRcvMeta(Extension extension, ServerSession from, Mutable message)
+    {
+        try
+        {
+            return extension.rcvMeta(from, message);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking extension " + extension, x);
+            return true;
+        }
+    }
+
+    private boolean notifyRcv(Extension extension, ServerSession from, Mutable message)
+    {
+        try
+        {
+            return extension.rcv(from, message);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking extension " + extension, x);
+            return true;
+        }
+    }
+
+    protected boolean extendSend(ServerSession from, ServerSession to, Mutable message)
     {
         if (message.isMeta())
         {
@@ -836,7 +922,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             while(i.hasPrevious())
             {
                 final Extension extension = i.previous();
-                if (!extension.sendMeta(to, message))
+                if (!notifySendMeta(extension, to, message))
                 {
                     if (_logger.isDebugEnabled())
                         _logger.debug("Extension {} interrupted message processing for {}", extension, message);
@@ -850,7 +936,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             while(i.hasPrevious())
             {
                 final Extension extension = i.previous();
-                if (!extension.send(from, to, message))
+                if (!notifySend(extension, from, to, message))
                 {
                     if (_logger.isDebugEnabled())
                         _logger.debug("Extension {} interrupted message processing for {}", extension, message);
@@ -864,8 +950,34 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return true;
     }
 
+    private boolean notifySendMeta(Extension extension, ServerSession to, Mutable message)
+    {
+        try
+        {
+            return extension.sendMeta(to, message);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking extension " + extension, x);
+            return true;
+        }
+    }
+
+    private boolean notifySend(Extension extension, ServerSession from, ServerSession to, Mutable message)
+    {
+        try
+        {
+            return extension.send(from, to, message);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking extension " + extension, x);
+            return true;
+        }
+    }
+
     /* ------------------------------------------------------------ */
-    boolean removeServerChannel(ServerChannelImpl channel)
+    protected boolean removeServerChannel(ServerChannelImpl channel)
     {
         if(_channels.remove(channel.getId(),channel))
         {
@@ -873,17 +985,29 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             for (BayeuxServerListener listener : _listeners)
             {
                 if (listener instanceof BayeuxServer.ChannelListener)
-                    ((ChannelListener)listener).channelRemoved(channel.getId());
+                    notifyChannelRemoved((ChannelListener)listener, channel);
             }
             return true;
         }
         return false;
     }
 
-    /* ------------------------------------------------------------ */
-    List<BayeuxServerListener> getListeners()
+    private void notifyChannelRemoved(ChannelListener listener, ServerChannelImpl channel)
     {
-        return _listeners;
+        try
+        {
+            listener.channelRemoved(channel.getId());
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking listener " + listener, x);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    protected List<BayeuxServerListener> getListeners()
+    {
+        return Collections.unmodifiableList(_listeners);
     }
 
     /* ------------------------------------------------------------ */
@@ -944,7 +1068,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     protected void unknownSession(Mutable reply)
     {
-        error(reply,"402::Unknown client");
+        error(reply, "402::Unknown client");
         if (Channel.META_HANDSHAKE.equals(reply.getChannel()) || Channel.META_CONNECT.equals(reply.getChannel()))
             reply.put(Message.ADVICE_FIELD, _handshakeAdvice);
     }
