@@ -1,6 +1,7 @@
 package org.cometd.server;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -141,7 +142,7 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     protected List<Extension> getExtensions()
     {
-        return _extensions;
+        return Collections.unmodifiableList(_extensions);
     }
 
     /* ------------------------------------------------------------ */
@@ -211,22 +212,15 @@ public class ServerSessionImpl implements ServerSession
 
         for (ServerSessionListener listener : _listeners)
         {
-            try
+            if (listener instanceof MaxQueueListener && _maxQueue >=0 && _queue.size() >= _maxQueue)
             {
-                if (listener instanceof MaxQueueListener && _maxQueue >=0 && _queue.size() >= _maxQueue)
-                {
-                    if (!((MaxQueueListener)listener).queueMaxed(this,from,message))
-                        return;
-                }
-                if (listener instanceof MessageListener)
-                {
-                    if (!((MessageListener)listener).onMessage(this,from,message))
-                        return;
-                }
+                if (!notifyQueueMaxed((MaxQueueListener)listener, from, message))
+                    return;
             }
-            catch(Exception e)
+            if (listener instanceof MessageListener)
             {
-                _bayeux.getLogger().warn("Exception while invoking listener " + listener, e);
+                if (!notifyOnMessage((MessageListener)listener, from, message))
+                    return;
             }
         }
 
@@ -243,6 +237,32 @@ public class ServerSessionImpl implements ServerSession
                 flushLazy();
             else
                 flush();
+        }
+    }
+
+    private boolean notifyQueueMaxed(MaxQueueListener listener, ServerSession from, ServerMessage message)
+    {
+        try
+        {
+            return listener.queueMaxed(this, from, message);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking listener " + listener, x);
+            return true;
+        }
+    }
+
+    private boolean notifyOnMessage(MessageListener listener, ServerSession from, ServerMessage message)
+    {
+        try
+        {
+            return listener.onMessage(this, from, message);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking listener " + listener, x);
+            return true;
         }
     }
 
@@ -408,13 +428,25 @@ public class ServerSessionImpl implements ServerSession
                 for (ServerSessionListener listener : _listeners)
                 {
                     if (listener instanceof DeQueueListener)
-                        ((DeQueueListener)listener).deQueue(this, _queue);
+                        notifyDeQueue((DeQueueListener)listener, this, _queue);
                 }
                 copy.addAll(_queue);
                 _queue.clear();
             }
         }
         return copy;
+    }
+
+    private void notifyDeQueue(DeQueueListener listener, ServerSession serverSession, Queue<ServerMessage> queue)
+    {
+        try
+        {
+            listener.deQueue(serverSession, queue);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking listener " + listener, x);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -582,17 +614,43 @@ public class ServerSessionImpl implements ServerSession
     {
         if (message.isMeta())
         {
-            for (Extension ext: _extensions)
-                if (!ext.rcvMeta(this,message))
+            for (Extension extension : _extensions)
+                if (!notifyRcvMeta(extension, message))
                     return false;
         }
         else
         {
-            for (Extension ext: _extensions)
-                if (!ext.rcv(this,message))
+            for (Extension extension : _extensions)
+                if (!notifyRcv(extension, message))
                     return false;
         }
         return true;
+    }
+
+    private boolean notifyRcvMeta(Extension extension, Mutable message)
+    {
+        try
+        {
+            return extension.rcvMeta(this, message);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking extension " + extension, x);
+            return true;
+        }
+    }
+
+    private boolean notifyRcv(Extension extension, Mutable message)
+    {
+        try
+        {
+            return extension.rcv(this, message);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking extension " + extension, x);
+            return true;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -601,10 +659,24 @@ public class ServerSessionImpl implements ServerSession
         if (!message.isMeta())
             throw new IllegalStateException();
 
-        for (Extension ext : _extensions)
-            if (!ext.sendMeta(this,message))
+        for (Extension extension : _extensions)
+            if (!notifySendMeta(extension, message))
                 return false;
+
         return true;
+    }
+
+    private boolean notifySendMeta(Extension extension, Mutable message)
+    {
+        try
+        {
+            return extension.sendMeta(this, message);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking extension " + extension, x);
+            return true;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -613,13 +685,27 @@ public class ServerSessionImpl implements ServerSession
         if (message.isMeta())
             throw new IllegalStateException();
 
-        for (Extension ext : _extensions)
+        for (Extension extension : _extensions)
         {
-            message=ext.send(this,message);
-            if (message==null)
+            message = notifySend(extension, message);
+            if (message == null)
                 return null;
         }
+
         return message;
+    }
+
+    private ServerMessage notifySend(Extension extension, ServerMessage message)
+    {
+        try
+        {
+            return extension.send(this, message);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking extension " + extension, x);
+            return message;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -696,17 +782,27 @@ public class ServerSessionImpl implements ServerSession
         if (connected || handshook)
         {
             for (ServerChannelImpl channel : _subscribedTo.keySet())
-            {
                 channel.unsubscribe(this);
-            }
 
             for (ServerSessionListener listener : _listeners)
             {
                 if (listener instanceof ServerSession.RemoveListener)
-                    ((ServerSession.RemoveListener)listener).removed(this,timedout);
+                    notifyRemoved((RemoveListener)listener, this, timedout);
             }
         }
         return connected;
+    }
+
+    private void notifyRemoved(RemoveListener listener, ServerSession serverSession, boolean timedout)
+    {
+        try
+        {
+            listener.removed(serverSession, timedout);
+        }
+        catch (Exception x)
+        {
+            _logger.info("Exception while invoking listener " + listener, x);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -728,7 +824,7 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    protected void unsubscribedTo(ServerChannelImpl channel)
+    protected void unsubscribedFrom(ServerChannelImpl channel)
     {
         _subscribedTo.remove(channel);
     }
