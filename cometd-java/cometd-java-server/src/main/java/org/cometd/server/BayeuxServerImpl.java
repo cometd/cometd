@@ -437,17 +437,18 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         ServerSessionImpl removed =_sessions.remove(session.getId());
 
-        if(removed==session)
+        if (removed == session)
         {
-            boolean connected = ((ServerSessionImpl)session).removed(timedout);
-
+            // Invoke BayeuxServer.SessionListener first, so that the application
+            // can be "pre-notified" that a session is being removed before the
+            // application gets notifications of channel unsubscriptions
             for (BayeuxServerListener listener : _listeners)
             {
                 if (listener instanceof BayeuxServer.SessionListener)
                     notifySessionRemoved((SessionListener)listener, session, timedout);
             }
 
-            return connected;
+            return ((ServerSessionImpl)session).removed(timedout);
         }
         else
             return false;
