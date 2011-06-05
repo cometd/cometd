@@ -1,17 +1,3 @@
-// ========================================================================
-// Copyright (c) 2009-2009 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// All rights reserved. This program and the accompanying materials
-// are made available under the terms of the Eclipse Public License v1.0
-// and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at
-// http://www.eclipse.org/legal/epl-v10.html
-// The Apache License v2.0 is available at
-// http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses.
-// ========================================================================
-
-
 package org.cometd.bayeux.server;
 
 import java.util.List;
@@ -27,8 +13,6 @@ import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
  * important that the creation of a channel is atomic so that its
  * configuration is executed only once, and so that it is guaranteed that
  * it happens before any message can be published or received by the channel.</p>
- *
- * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
 public interface ConfigurableServerChannel extends Channel
 {

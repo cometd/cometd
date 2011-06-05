@@ -4,9 +4,6 @@ import java.util.List;
 
 import org.cometd.bayeux.Message;
 
-/**
- * @version $Revision: 902 $ $Date$
- */
 public interface TransportListener
 {
     void onSending(Message[] messages);

@@ -14,8 +14,6 @@ import org.w3c.dom.events.EventListener;
  * This mechanism is used to simulate the browser behavior in case
  * of callback-polling transport.
  * This class is used from the env.js script.
- *
- * @version $Revision$ $Date$
  */
 public class ScriptInjectionEventListener implements EventListener
 {

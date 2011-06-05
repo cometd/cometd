@@ -26,8 +26,6 @@ import org.cometd.bayeux.client.ClientSessionChannel;
  * the {@link #newLocalSession(String)} method should be used to
  * create a {@link LocalSession} that can subscribe and publish
  * like a client-side Bayeux session.</p>
- *
- * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
 public interface BayeuxServer extends Bayeux
 {

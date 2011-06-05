@@ -1,11 +1,9 @@
 package org.cometd.common;
 
 /**
- * @author gregw
- *
  * @deprecated Use org.cometd.bayeux.ChannelId
  */
-@Deprecated 
+@Deprecated
 public class ChannelId extends org.cometd.bayeux.ChannelId
 {
     public ChannelId(String name)

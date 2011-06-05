@@ -15,9 +15,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * @version $Revision$ $Date$
- */
 public class BenchmarkHelper implements Runnable
 {
     private final OperatingSystemMXBean operatingSystem;

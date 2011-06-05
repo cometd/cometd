@@ -7,8 +7,6 @@ import org.mozilla.javascript.ScriptableObject;
 
 /**
  * Implementation of the XMLHttpRequest functionality using Jetty's HttpClient.
- *
- * @version $Revision$ $Date$
  */
 public class XMLHttpRequestClient extends ScriptableObject
 {

@@ -7,9 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * @version $Revision$ $Date$
- */
 public class TransportRegistry
 {
     private final Map<String,ClientTransport> _transports = new HashMap<String,ClientTransport>();

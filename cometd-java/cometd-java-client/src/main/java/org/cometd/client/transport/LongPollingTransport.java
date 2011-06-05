@@ -22,9 +22,6 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.ajax.JSON;
 
-/**
- * @version $Revision$ $Date$
- */
 public class LongPollingTransport extends HttpClientTransport
 {
     public static LongPollingTransport create(Map<String, Object> options)

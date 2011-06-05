@@ -14,8 +14,6 @@ import org.cometd.bayeux.Message;
  *     clientSession.getChannel("/foo/bar").publish("Hello");
  *     clientSession.getChannel("/meta/*").addListener(myMetaChannelListener);
  * <pre>
- *
- * @version $Revision$ $Date$
  */
 public interface ClientSessionChannel extends Channel
 {

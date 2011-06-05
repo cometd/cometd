@@ -12,9 +12,6 @@ import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
 
-/**
- * @version $Revision$ $Date$
- */
 public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClientServerTest
 {
     private BayeuxServer bayeux;

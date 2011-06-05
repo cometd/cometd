@@ -10,9 +10,6 @@ import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 
-/**
- * @version $Revision$ $Date$
- */
 public class BayeuxServiceWithThreadPoolTest extends AbstractBayeuxClientServerTest
 {
     private BayeuxServerImpl bayeux;

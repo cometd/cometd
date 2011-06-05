@@ -10,8 +10,6 @@ import org.cometd.bayeux.Session;
  * <p>In addition to the {@link Session common Bayeux session}, this
  * interface provides method to configure extension, access channels
  * and to initiate the communication with a Bayeux server(s).</p>
- *
- * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
 public interface ClientSession extends Session
 {

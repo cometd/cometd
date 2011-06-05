@@ -14,8 +14,6 @@ import org.cometd.bayeux.client.ClientSessionChannel;
  * all the {@link ServerSession}'s subscribed to the channel.</p>
  * <p>Contrary to their client side counterpart ({@link ClientSessionChannel})
  * a {@link ServerChannel} is not scoped with a session.</p>
- *
- * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
 public interface ServerChannel extends ConfigurableServerChannel
 {

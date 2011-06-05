@@ -4,8 +4,6 @@ import org.cometd.bayeux.Message;
 
 /**
  * <p>Representation of a server side message.</p>
- *
- * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
 public interface ServerMessage extends Message
 {

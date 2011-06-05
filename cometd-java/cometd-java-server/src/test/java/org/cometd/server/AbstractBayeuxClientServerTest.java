@@ -12,9 +12,6 @@ import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 
-/**
- * @version $Revision$ $Date$
- */
 public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServerTest
 {
     protected HttpClient httpClient;

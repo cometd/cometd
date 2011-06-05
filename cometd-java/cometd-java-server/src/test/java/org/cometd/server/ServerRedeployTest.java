@@ -5,9 +5,6 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpStatus;
 
-/**
- * @version $Revision$ $Date$
- */
 public class ServerRedeployTest extends AbstractBayeuxClientServerTest
 {
     public void testServerRedeploy() throws Exception

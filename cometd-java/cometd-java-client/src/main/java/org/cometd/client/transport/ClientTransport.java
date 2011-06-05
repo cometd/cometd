@@ -7,9 +7,6 @@ import org.cometd.bayeux.Message;
 import org.cometd.common.AbstractTransport;
 import org.cometd.common.HashMapMessage;
 
-/**
- * @version $Revision: 902 $ $Date$
- */
 public abstract class ClientTransport extends AbstractTransport
 {
     public final static String TIMEOUT_OPTION = "timeout";

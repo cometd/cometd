@@ -16,9 +16,6 @@ import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
-/**
- * @version $Revision$ $Date$
- */
 public class XMLHttpRequestExchange extends ScriptableObject
 {
     private CometdExchange exchange;

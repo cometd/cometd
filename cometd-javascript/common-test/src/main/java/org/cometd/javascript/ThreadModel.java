@@ -7,9 +7,6 @@ import java.net.URL;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 
-/**
- * @version $Revision$ $Date$
- */
 public interface ThreadModel
 {
     void init() throws Exception;

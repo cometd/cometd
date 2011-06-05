@@ -8,9 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.mozilla.javascript.ScriptableObject;
 
-/**
- * @version $Revision$ $Date$
- */
 public class HttpCookieStore extends ScriptableObject
 {
     private Map<String, Map<String, Cookie>> allCookies = new HashMap<String, Map<String, Cookie>>();

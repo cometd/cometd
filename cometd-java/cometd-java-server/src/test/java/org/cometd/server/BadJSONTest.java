@@ -4,9 +4,6 @@ import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
 
-/**
- * @version $Revision$ $Date$
- */
 public class BadJSONTest extends AbstractBayeuxClientServerTest
 {
     public void testBadJSON() throws Exception

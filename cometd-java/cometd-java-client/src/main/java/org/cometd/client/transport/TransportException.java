@@ -1,8 +1,5 @@
 package org.cometd.client.transport;
 
-/**
- * @version $Revision$ $Date$
- */
 public class TransportException extends RuntimeException
 {
     public TransportException()

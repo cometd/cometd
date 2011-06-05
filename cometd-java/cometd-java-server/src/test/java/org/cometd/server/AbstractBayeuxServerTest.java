@@ -10,9 +10,6 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
-/**
- * @version $Revision$ $Date$
- */
 public abstract class AbstractBayeuxServerTest extends TestCase
 {
     protected Server server;

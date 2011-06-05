@@ -39,8 +39,6 @@ import java.util.Set;
  * <li>"long-polling.jsonp.callback" => specifies the "callback" parameter for the
  * JSONP long polling transport.</li>
  * </ul>
- *
- * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
 public interface Transport
 {

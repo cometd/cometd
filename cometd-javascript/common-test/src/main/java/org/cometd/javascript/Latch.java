@@ -5,9 +5,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.mozilla.javascript.ScriptableObject;
 
-/**
- * @version $Revision$ $Date$
- */
 public class Latch extends ScriptableObject
 {
     private volatile CountDownLatch latch;

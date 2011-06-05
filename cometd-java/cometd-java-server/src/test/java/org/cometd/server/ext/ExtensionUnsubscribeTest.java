@@ -13,9 +13,6 @@ import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 
-/**
- * @version $Revision$ $Date$
- */
 public class ExtensionUnsubscribeTest extends AbstractBayeuxClientServerTest
 {
     private CountingExtension extension;

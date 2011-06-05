@@ -17,8 +17,6 @@ import org.cometd.bayeux.Transport;
  * used for {@link ServerMessage#isLazy() lazy messages} and the style of delivery,
  * that may happen during both responses to requests and via the "/meta/connect" channel,
  * or via the "/meta/connect" channel {@link #isMetaConnectDeliveryOnly() exclusively}.
- *
- * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
 public interface ServerTransport extends Transport
 {

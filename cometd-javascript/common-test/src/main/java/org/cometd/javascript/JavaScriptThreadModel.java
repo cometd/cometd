@@ -18,8 +18,6 @@ import org.mozilla.javascript.ScriptableObject;
 
 /**
  * The thread model object, that runs all javascript in a single thread to simulate browser's environment.
- *
- * @version $Revision$ $Date$
  */
 public class JavaScriptThreadModel extends ScriptableObject implements Runnable, ThreadModel
 {
