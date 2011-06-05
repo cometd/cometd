@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.cometd.client;
 
 import java.io.IOException;
@@ -886,9 +902,9 @@ public class BayeuxClientTest extends TestCase
             {
                 Log.ignore(x);
             }
-            
+
         };
-        
+
         final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
         final AtomicReference<CountDownLatch> disconnectedLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
@@ -906,26 +922,26 @@ public class BayeuxClientTest extends TestCase
         // Wait for connect
         assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
         assertTrue(client.isConnected());
-        
+
         // Stop server
         int port = _connector.getLocalPort();
         disconnectedLatch.set(new CountDownLatch(1));
         _server.stop();
         assertTrue(disconnectedLatch.get().await(10, TimeUnit.SECONDS));
         assertTrue(!client.isConnected());
-        
+
         // restart server
         _connector.setPort(port);
         connectedLatch.set(new CountDownLatch(1));
         _server.start();
-        
+
         // Wait for connect
         assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
         assertTrue(client.isConnected());
-        
+
         Thread.sleep(10000);
     }
-    
+
     public void testAuthentication() throws Exception
     {
         final AtomicReference<String> sessionId = new AtomicReference<String>();

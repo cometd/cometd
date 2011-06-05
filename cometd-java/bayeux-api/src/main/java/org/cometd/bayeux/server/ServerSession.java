@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.cometd.bayeux.server;
 
 import java.util.Queue;
@@ -16,8 +32,6 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
  * <p>The {@link #deliver(Session, Mutable)} and {@link #deliver(Session, String, Object, String)}
  * methods may be used to directly queue messages to a session without publishing them to all subscribers
  * of a channel.</p>
- *
- * @version $Revision: 1483 $ $Date: 2009-03-04 14:56:47 +0100 (Wed, 04 Mar 2009) $
  */
 public interface ServerSession extends Session
 {
@@ -83,15 +97,15 @@ public interface ServerSession extends Session
      */
     void deliver(Session from, String channel, Object data, String id);
 
-    
+
     /* ------------------------------------------------------------ */
     /**
      * <p>Get the clients user agent</p>
      * @return The string indicating the client user agent, or null if not known
      */
     String getUserAgent();
-    
-    
+
+
     /**
      * <p>Common interface for {@link ServerSession} listeners.</p>
      * <p>Specific sub-interfaces define what kind of event listeners will be notified.</p>
