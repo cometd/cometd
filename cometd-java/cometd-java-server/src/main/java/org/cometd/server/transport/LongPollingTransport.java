@@ -170,7 +170,7 @@ public abstract class LongPollingTransport extends HttpTransport
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         // Is this a resumed connect?
-        LongPollScheduler scheduler = (LongPollScheduler)request.getAttribute("cometd.scheduler");
+        LongPollScheduler scheduler = (LongPollScheduler)request.getAttribute(LongPollScheduler.ATTRIBUTE);
         if (scheduler == null)
         {
             // No - process messages
@@ -284,7 +284,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                             continuation.suspend(response);
                                             scheduler = new LongPollScheduler(session, continuation, reply, browserId);
                                             session.setScheduler(scheduler);
-                                            request.setAttribute("cometd.scheduler", scheduler);
+                                            request.setAttribute(LongPollScheduler.ATTRIBUTE, scheduler);
                                             reply = null;
                                         }
                                         else
@@ -434,6 +434,8 @@ public abstract class LongPollingTransport extends HttpTransport
 
     private class LongPollScheduler implements AbstractServerTransport.OneTimeScheduler, ContinuationListener
     {
+        private static final String ATTRIBUTE = "org.cometd.scheduler";
+
         private final ServerSessionImpl _session;
         private final Continuation _continuation;
         private final ServerMessage.Mutable _reply;
