@@ -117,24 +117,6 @@ public class BayeuxLoadClient
             value = contextPath;
         String uri = value + "/cometd";
 
-        HttpClient httpClient = new HttpClient();
-        httpClient.setMaxConnectionsPerAddress(50000);
-        MonitoringBlockingArrayQueue taskQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
-        QueuedThreadPool threadPool = new QueuedThreadPool(taskQueue);
-        threadPool.setMaxThreads(maxThreads);
-        threadPool.setDaemon(true);
-        httpClient.setThreadPool(threadPool);
-        httpClient.setIdleTimeout(5000);
-//        httpClient.setUseDirectBuffers(false);
-        httpClient.start();
-
-        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        mbContainer.addBean(httpClient);
-        mbContainer.addBean(threadPool);
-        mbContainer.addBean(this);
-        mbContainer.addBean(Log.getLog());
-        String url = (ssl ? "https" : "http") + "://" + host + ":" + port + uri;
-
         String channel = "/chat/demo";
         System.err.printf("channel [%s]: ", channel);
         value = console.readLine().trim();
@@ -155,6 +137,24 @@ public class BayeuxLoadClient
         if (value.length() == 0)
             value = String.valueOf(roomsPerClient);
         roomsPerClient = Integer.parseInt(value);
+
+        HttpClient httpClient = new HttpClient();
+        httpClient.setMaxConnectionsPerAddress(50000);
+        MonitoringBlockingArrayQueue taskQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
+        QueuedThreadPool threadPool = new QueuedThreadPool(taskQueue);
+        threadPool.setMaxThreads(maxThreads);
+        threadPool.setDaemon(true);
+        httpClient.setThreadPool(threadPool);
+        httpClient.setIdleTimeout(5000);
+//        httpClient.setUseDirectBuffers(false);
+        httpClient.start();
+
+        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        mbContainer.addBean(httpClient);
+        mbContainer.addBean(threadPool);
+        mbContainer.addBean(this);
+        mbContainer.addBean(Log.getLog());
+        String url = (ssl ? "https" : "http") + "://" + host + ":" + port + uri;
 
         HandshakeListener handshakeListener = new HandshakeListener(channel, rooms, roomsPerClient);
         DisconnectListener disconnectListener = new DisconnectListener();
