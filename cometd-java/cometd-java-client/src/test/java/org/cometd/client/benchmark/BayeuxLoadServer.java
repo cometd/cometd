@@ -151,9 +151,11 @@ public class BayeuxLoadServer
         connector.setPort(port);
         server.addConnector(connector);
 
+//        MonitoringBlockingArrayQueue taskQueue = null;
         MonitoringBlockingArrayQueue taskQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
         QueuedThreadPool threadPool = new QueuedThreadPool(taskQueue);
         threadPool.setMaxThreads(maxThreads);
+//        ExecutorThreadPool threadPool = new ExecutorThreadPool(maxThreads, maxThreads, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
         server.setThreadPool(threadPool);
 
         HandlerWrapper handler = server;
@@ -233,7 +235,8 @@ public class BayeuxLoadServer
                 boolean started = helper.startStatistics();
                 if (started)
                 {
-                    taskQueue.reset();
+                    if (taskQueue != null)
+                        taskQueue.reset();
 
                     if (statisticsHandler != null)
                     {
@@ -243,7 +246,7 @@ public class BayeuxLoadServer
                     if (requestLatencyHandler != null)
                     {
                         requestLatencyHandler.reset();
-                        requestLatencyHandler.disableCurrent();
+                        requestLatencyHandler.doNotTrackCurrentRequest();
                     }
                 }
             }
@@ -256,10 +259,13 @@ public class BayeuxLoadServer
                 boolean stopped = helper.stopStatistics();
                 if (stopped)
                 {
-                    System.err.printf("Thread Pool Queue (max_queued | avg_latency/max_latency): %d | %d/%d ms%n",
-                            taskQueue.getMaxSize(),
-                            TimeUnit.NANOSECONDS.toMillis(taskQueue.getAverageLatency()),
-                            TimeUnit.NANOSECONDS.toMillis(taskQueue.getMaxLatency()));
+                    if (taskQueue != null)
+                    {
+                        System.err.printf("Thread Pool Queue (max_queued | avg_latency/max_latency): %d | %d/%d ms%n",
+                                taskQueue.getMaxSize(),
+                                TimeUnit.NANOSECONDS.toMillis(taskQueue.getAverageLatency()),
+                                TimeUnit.NANOSECONDS.toMillis(taskQueue.getMaxLatency()));
+                    }
 
                     if (statisticsHandler != null)
                     {
@@ -276,7 +282,7 @@ public class BayeuxLoadServer
                     if (requestLatencyHandler != null)
                     {
                         requestLatencyHandler.print();
-                        requestLatencyHandler.disableCurrent();
+                        requestLatencyHandler.doNotTrackCurrentRequest();
                     }
                 }
             }
@@ -488,7 +494,7 @@ public class BayeuxLoadServer
             }
         }
 
-        public void disableCurrent()
+        public void doNotTrackCurrentRequest()
         {
             currentEnabled.set(false);
         }
