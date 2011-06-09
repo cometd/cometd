@@ -56,7 +56,7 @@
                             <goal>test</goal>
                         </goals>
                         <configuration>
-                            <skipTests>false</skipTests>
+                            <skipTests>${skipTests}</skipTests>
                             <systemPropertyVariables>
                                 <toolkitTestProvider>org.cometd.javascript.jquery.JQueryTestProvider</toolkitTestProvider>
                             </systemPropertyVariables>
@@ -71,7 +71,7 @@
                             <goal>test</goal>
                         </goals>
                         <configuration>
-                            <skipTests>false</skipTests>
+                            <skipTests>${skipTests}</skipTests>
                             <systemPropertyVariables>
                                 <toolkitTestProvider>org.cometd.javascript.dojo.DojoTestProvider</toolkitTestProvider>
                             </systemPropertyVariables>
