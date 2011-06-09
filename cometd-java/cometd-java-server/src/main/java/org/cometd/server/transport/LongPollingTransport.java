@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
@@ -62,7 +63,6 @@ public abstract class LongPollingTransport extends HttpTransport
 
     private final ConcurrentHashMap<String, AtomicInteger> _browserMap = new ConcurrentHashMap<String, AtomicInteger>();
     private final Map<String, AtomicInteger> _browserSweep = new ConcurrentHashMap<String, AtomicInteger>();
-
     private String _browserId = "BAYEUX_BROWSER";
     private int _maxSessionsPerBrowser = 1;
     private long _multiSessionInterval = 2000;
@@ -286,6 +286,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                             session.setScheduler(scheduler);
                                             request.setAttribute(LongPollScheduler.ATTRIBUTE, scheduler);
                                             reply = null;
+                                            metaConnectSuspended(request, session, timeout);
                                         }
                                         else
                                         {
@@ -360,6 +361,8 @@ public abstract class LongPollingTransport extends HttpTransport
         {
             // Get the resumed session
             ServerSessionImpl session = scheduler.getSession();
+            metaConnectResumed(request, session);
+
             if (session.isConnected())
                 session.startIntervalTimeout();
 
@@ -373,6 +376,14 @@ public abstract class LongPollingTransport extends HttpTransport
 
             complete(writer);
         }
+    }
+
+    protected void metaConnectSuspended(HttpServletRequest request, ServerSession session, long timeout)
+    {
+    }
+
+    protected void metaConnectResumed(HttpServletRequest request, ServerSession session)
+    {
     }
 
     protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws ServletException, IOException
