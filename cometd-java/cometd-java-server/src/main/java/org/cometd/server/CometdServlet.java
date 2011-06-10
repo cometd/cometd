@@ -18,8 +18,6 @@ package org.cometd.server;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import javax.servlet.ServletException;
@@ -63,7 +61,6 @@ public class CometdServlet extends HttpServlet
     @Deprecated
     public static final int DEBUG_LEVEL = BayeuxServerImpl.DEBUG_LOG_LEVEL;
 
-    private final List<HttpTransport> _transports = new ArrayList<HttpTransport>();
     private volatile BayeuxServerImpl _bayeux;
 
     @Override
@@ -123,13 +120,6 @@ public class CometdServlet extends HttpServlet
 
             if (export)
                 getServletContext().setAttribute(BayeuxServer.ATTRIBUTE, _bayeux);
-
-            for (String transportName : _bayeux.getAllowedTransports())
-            {
-                ServerTransport transport = _bayeux.getTransport(transportName);
-                if (transport instanceof HttpTransport)
-                    _transports.add((HttpTransport)transport);
-            }
         }
         catch (Exception x)
         {
@@ -147,11 +137,6 @@ public class CometdServlet extends HttpServlet
         return new BayeuxServerImpl();
     }
 
-    public List<HttpTransport> getTransports()
-    {
-        return Collections.unmodifiableList(_transports);
-    }
-
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         if ("OPTIONS".equals(request.getMethod()))
@@ -161,12 +146,17 @@ public class CometdServlet extends HttpServlet
         }
 
         HttpTransport transport = null;
-        for (HttpTransport t : _transports)
+        for (String transportName : _bayeux.getAllowedTransports())
         {
-            if (t != null && t.accept(request))
+            ServerTransport serverTransport = _bayeux.getTransport(transportName);
+            if (serverTransport instanceof HttpTransport)
             {
-                transport = t;
-                break;
+                HttpTransport t = (HttpTransport)serverTransport;
+                if (t.accept(request))
+                {
+                    transport = t;
+                    break;
+                }
             }
         }
 
@@ -225,7 +215,5 @@ public class CometdServlet extends HttpServlet
         {
             _bayeux = null;
         }
-
-        _transports.clear();
     }
 }

@@ -33,7 +33,6 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -81,7 +80,6 @@ public class SpringFrameworkConfigurationTest
             assertEquals(logLevel, bayeuxServer.getOption("logLevel"));
 
             assertSame(bayeuxServer, cometdServlet.getBayeux());
-            assertFalse(cometdServlet.getTransports().isEmpty());
 
             int port = connector.getLocalPort();
             String bayeuxURL = "http://localhost:" + port + contextPath + cometdServletPath;
