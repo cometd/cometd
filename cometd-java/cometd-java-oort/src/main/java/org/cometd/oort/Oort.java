@@ -203,7 +203,7 @@ public class Oort extends AbstractLifeCycle
         if (_url.equals(cometURL))
             return null;
 
-        OortComet comet = new OortComet(this, cometURL);
+        OortComet comet = newOortComet(cometURL);
         OortComet existing = _knownComets.putIfAbsent(cometURL, comet);
         if (existing != null)
             return existing;
@@ -222,6 +222,11 @@ public class Oort extends AbstractLifeCycle
                 "}").get(0);
         connectComet(comet, fields);
         return comet;
+    }
+
+    protected OortComet newOortComet(String cometURL)
+    {
+        return new OortComet(this, cometURL);
     }
 
     protected String encodeSecret(String secret)
