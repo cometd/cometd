@@ -56,6 +56,9 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>The key configuration parameter is the Oort URL, which is
  * full public URL of the CometD servlet to which the Oort instance is bound,
  * for example: <code>http://myserver:8080/context/cometd</code>.</p>
+ * <p>Oort instances can be configured with a shared {@link #setSecret(String) secret}, which allows
+ * the Oort instance to distinguish handshakes coming from remote clients from handshakes coming from
+ * other Oort comets: the firsts may be subject to a stricter authentication policy than the seconds.</p>
  *
  * @see OortMulticastConfigServlet
  * @see OortStaticConfigServlet
@@ -158,9 +161,9 @@ public class Oort extends AbstractLifeCycle
         return _secret;
     }
 
-    public void setSecret(String _secret)
+    public void setSecret(String secret)
     {
-        this._secret = _secret;
+        this._secret = secret;
     }
 
     public boolean isClientDebugEnabled()
@@ -322,6 +325,7 @@ public class Oort extends AbstractLifeCycle
     /**
      * @param session the server session to test
      * @return whether the given server session is one of those created by the Oort internal working
+     * @see #isOortHandshake(Message)
      */
     public boolean isOort(ServerSession session)
     {
@@ -342,6 +346,12 @@ public class Oort extends AbstractLifeCycle
         return false;
     }
 
+    /**
+     * @param handshake the handshake message to test
+     * @return whether the given handshake message is coming from another Oort comet
+     * that has been configured with the same {@link #setSecret(String) secret}
+     * @see #isOort(ServerSession)
+     */
     public boolean isOortHandshake(Message handshake)
     {
         if (!Channel.META_HANDSHAKE.equals(handshake.getChannel()))
