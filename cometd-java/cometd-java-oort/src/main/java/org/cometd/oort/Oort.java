@@ -18,8 +18,8 @@ package org.cometd.oort;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +42,7 @@ import org.cometd.common.HashMapMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -77,9 +78,9 @@ public class Oort extends AbstractLifeCycle
     private final BayeuxServer _bayeux;
     private final String _url;
     private final Logger _logger;
-    private final String _secret;
     private final HttpClient _httpClient;
     private final LocalSession _oortSession;
+    private String _secret;
     private boolean _clientDebugEnabled;
 
     public Oort(BayeuxServer bayeux, String url)
@@ -90,9 +91,9 @@ public class Oort extends AbstractLifeCycle
         _logger = Log.getLogger(getClass().getName() + "-" + _url);
         _logger.setDebugEnabled(String.valueOf(BayeuxServerImpl.DEBUG_LOG_LEVEL).equals(bayeux.getOption(BayeuxServerImpl.LOG_LEVEL)));
 
-        _secret = Long.toHexString(new SecureRandom().nextLong());
         _httpClient = new HttpClient();
         _oortSession = bayeux.newLocalSession("oort");
+        _secret = Long.toHexString(new SecureRandom().nextLong());
     }
 
     @Override
@@ -157,6 +158,11 @@ public class Oort extends AbstractLifeCycle
         return _secret;
     }
 
+    public void setSecret(String _secret)
+    {
+        this._secret = _secret;
+    }
+
     public boolean isClientDebugEnabled()
     {
         return _clientDebugEnabled;
@@ -200,18 +206,37 @@ public class Oort extends AbstractLifeCycle
             return existing;
 
         _logger.debug("Connecting to comet {}", cometURL);
+        String b64Secret = encodeSecret(getSecret());
         Message.Mutable fields = HashMapMessage.parseMessages("" +
                 "{" +
                 "    \"" + Message.EXT_FIELD + "\": {" +
                 "        \"" + EXT_OORT_FIELD + "\": {" +
                 "            \"" + EXT_OORT_URL_FIELD + "\": \"" + getURL() + "\"," +
-                "            \"" + EXT_OORT_SECRET_FIELD + "\": \"" + getSecret() + "\"," +
+                "            \"" + EXT_OORT_SECRET_FIELD + "\": \"" + b64Secret + "\"," +
                 "            \"" + EXT_COMET_URL_FIELD + "\": \"" + cometURL + "\"" +
                 "        }" +
                 "    }" +
                 "}").get(0);
-        comet.handshake(fields);
+        connectComet(comet, fields);
         return comet;
+    }
+
+    protected String encodeSecret(String secret)
+    {
+        try
+        {
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            return new String(B64Code.encode(digest.digest(secret.getBytes("UTF-8"))));
+        }
+        catch (Exception x)
+        {
+            throw new IllegalArgumentException(x);
+        }
+    }
+
+    protected void connectComet(OortComet comet, Message.Mutable fields)
+    {
+        comet.handshake(fields);
     }
 
     public OortComet deobserveComet(String cometURL)
@@ -317,6 +342,26 @@ public class Oort extends AbstractLifeCycle
         return false;
     }
 
+    public boolean isOortHandshake(Message handshake)
+    {
+        if (!Channel.META_HANDSHAKE.equals(handshake.getChannel()))
+            return false;
+        Map<String, Object> ext = handshake.getExt();
+        if (ext == null)
+            return false;
+        Object oortExtObject = ext.get(EXT_OORT_FIELD);
+        if (!(oortExtObject instanceof Map))
+            return false;
+        @SuppressWarnings("unchecked")
+        Map<String, Object> oortExt = (Map<String, Object>)oortExtObject;
+        String cometURL = (String)oortExt.get(EXT_COMET_URL_FIELD);
+        if (!getURL().equals(cometURL))
+            return false;
+        String b64RemoteSecret = (String)oortExt.get(EXT_OORT_SECRET_FIELD);
+        String b64LocalSecret = encodeSecret(getSecret());
+        return b64LocalSecret.equals(b64RemoteSecret);
+    }
+
     public String toString()
     {
         return _url;
@@ -378,26 +423,21 @@ public class Oort extends AbstractLifeCycle
             // Skip local sessions
             if (to != null && Channel.META_HANDSHAKE.equals(message.getChannel()) && message.isSuccessful())
             {
-                Map<String, Object> extensionIn = message.getAssociated().getExt();
-                if (extensionIn != null)
+                Map<String, Object> ext = message.getAssociated().getExt();
+                if (ext != null)
                 {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> oortExtensionIn = (Map<String, Object>)extensionIn.get(EXT_OORT_FIELD);
-                    if (oortExtensionIn != null)
+                    Object oortExtObject = ext.get(EXT_OORT_FIELD);
+                    if (oortExtObject instanceof Map)
                     {
-                        String cometURL = (String)oortExtensionIn.get(EXT_COMET_URL_FIELD);
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> oortExt = (Map<String, Object>)oortExtObject;
+                        String cometURL = (String)oortExt.get(EXT_COMET_URL_FIELD);
                         if (getURL().equals(cometURL))
                         {
                             // Read incoming information
-                            String remoteOortURL = (String)oortExtensionIn.get(EXT_OORT_URL_FIELD);
-                            String remoteOortSecret = (String)oortExtensionIn.get(EXT_OORT_SECRET_FIELD);
+                            String remoteOortURL = (String)oortExt.get(EXT_OORT_URL_FIELD);
+                            String remoteOortSecret = (String)oortExt.get(EXT_OORT_SECRET_FIELD);
                             incomingCometHandshake(remoteOortURL, remoteOortSecret, to);
-
-                            // Send information about us
-                            Map<String, Object> oortExtensionOut = new HashMap<String, Object>();
-                            oortExtensionOut.put(EXT_OORT_SECRET_FIELD, getSecret());
-                            Map<String, Object> extensionOut = message.getExt(true);
-                            extensionOut.put(EXT_OORT_FIELD, oortExtensionOut);
                         }
                     }
                 }

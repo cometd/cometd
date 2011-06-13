@@ -1,0 +1,104 @@
+/*
+ * Copyright (c) 2011 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.cometd.oort;
+
+import java.util.Map;
+
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
+import org.cometd.client.BayeuxClient;
+import org.cometd.common.HashMapMessage;
+import org.cometd.server.DefaultSecurityPolicy;
+import org.eclipse.jetty.server.Server;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class OortAuthenticationTest extends OortTest
+{
+    @Test
+    public void testAuthenticationWithSecurityPolicy() throws Exception
+    {
+        Server server1 = startServer(0);
+        Oort oort1 = startOort(server1);
+        oort1.setSecret("test_secret");
+        oort1.getBayeuxServer().setSecurityPolicy(new TestSecurityPolicy(oort1));
+        Server server2 = startServer(0);
+        Oort oort2 = startOort(server2);
+        oort2.setSecret(oort1.getSecret());
+        oort2.getBayeuxServer().setSecurityPolicy(new TestSecurityPolicy(oort2));
+
+        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        OortComet oortComet21 = oort2.observeComet(oort1.getURL());
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Test that a valid remote client can connect
+        Message authFields = HashMapMessage.parseMessages("" +
+                "{" +
+                "    \"" + Message.EXT_FIELD + "\": {" +
+                "        \"" + TestSecurityPolicy.TOKEN_FIELD + "\": \"something\"" +
+                "    }" +
+                "}").get(0);
+        BayeuxClient client1 = startClient(oort1, authFields);
+        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        client1.disconnect();
+        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+
+        // An invalid client may not connect
+        BayeuxClient client2 = startClient(oort1, null);
+        Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+
+        // A client that forges an Oort comet authentication may not connect
+        Message forgedAuthFields = HashMapMessage.parseMessages("" +
+                "{" +
+                "    \"" + Message.EXT_FIELD + "\": {" +
+                "        \"" + Oort.EXT_OORT_FIELD + "\": {" +
+                "            \"" + Oort.EXT_OORT_URL_FIELD + "\": \"" + oort1.getURL() + "\"," +
+                "            \"" + Oort.EXT_OORT_SECRET_FIELD + "\": \"anything\"," +
+                "            \"" + Oort.EXT_COMET_URL_FIELD + "\": \"" + oort2.getURL() + "\"" +
+                "        }" +
+                "    }" +
+                "}").get(0);
+        BayeuxClient client3 = startClient(oort1, forgedAuthFields);
+        Assert.assertTrue(client3.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+    }
+
+    private class TestSecurityPolicy extends DefaultSecurityPolicy
+    {
+        private static final String TOKEN_FIELD = "token";
+        private final Oort oort;
+
+        private TestSecurityPolicy(Oort oort)
+        {
+            this.oort = oort;
+        }
+
+        @Override
+        public boolean canHandshake(BayeuxServer server, ServerSession session, ServerMessage message)
+        {
+            if (session.isLocalSession())
+                return true;
+            if (oort.isOortHandshake(message))
+                return true;
+            Map<String, Object> ext = message.getExt();
+            return ext != null && ext.get(TOKEN_FIELD) != null;
+        }
+    }
+}

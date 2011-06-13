@@ -17,7 +17,6 @@
 package org.cometd.oort;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -37,7 +36,6 @@ public class OortComet extends BayeuxClient
     private final ConcurrentMap<String, ClientSessionChannel.MessageListener> _subscriptions = new ConcurrentHashMap<String, ClientSessionChannel.MessageListener>();
     private final Oort _oort;
     private final String _cometURL;
-    private volatile String _cometSecret;
     private volatile boolean _subscriptionsAllowed;
 
     public OortComet(Oort oort, String cometUrl)
@@ -54,18 +52,6 @@ public class OortComet extends BayeuxClient
             {
                 if (message.isSuccessful())
                 {
-                    Map<String, Object> ext = message.getExt();
-                    if (ext == null)
-                        return;
-
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> oortExtension = (Map<String, Object>)ext.get(Oort.EXT_OORT_FIELD);
-                    if (oortExtension == null)
-                        return;
-
-                    // The secret of the remote Oort
-                    _cometSecret = (String)oortExtension.get(Oort.EXT_OORT_SECRET_FIELD);
-
                     batch(new Runnable()
                     {
                         public void run()
@@ -92,7 +78,7 @@ public class OortComet extends BayeuxClient
                             _subscriptionsAllowed = true;
                             subscribe(_oort.getObservedChannels());
 
-                            getChannel(Oort.OORT_CLOUD_CHANNEL).publish(_oort.getKnownComets().toArray(), _cometSecret);
+                            getChannel(Oort.OORT_CLOUD_CHANNEL).publish(_oort.getKnownComets().toArray());
                         }
                     });
 

@@ -54,9 +54,9 @@ public class OortObserveChannelTest extends OortTest
         OortComet oortComet32 = oort3.getComet(oort2.getURL());
         Assert.assertTrue(oortComet32.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        BayeuxClient client1 = startClient(oort1);
-        BayeuxClient client2 = startClient(oort2);
-        BayeuxClient client3 = startClient(oort3);
+        BayeuxClient client1 = startClient(oort1, null);
+        BayeuxClient client2 = startClient(oort2, null);
+        BayeuxClient client3 = startClient(oort3, null);
 
         // Oort1 observes the channel, so any publish to Oort2 or Oort3 is forwarded to Oort1
         String channelName = "/oort_test";
@@ -105,8 +105,8 @@ public class OortObserveChannelTest extends OortTest
         OortComet oortComet21 = oort2.getComet(oort1.getURL());
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        BayeuxClient client1 = startClient(oort1);
-        BayeuxClient client2 = startClient(oort2);
+        BayeuxClient client1 = startClient(oort1, null);
+        BayeuxClient client2 = startClient(oort2, null);
 
         // Oort1 observes the channel, so any publish to Oort2 or Oort3 is forwarded to Oort1
         String rootChannelName = "/oort_test";
@@ -141,8 +141,8 @@ public class OortObserveChannelTest extends OortTest
         OortComet oortComet12 = oort1.observeComet(oort2.getURL());
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        BayeuxClient client1 = startClient(oort1);
-        BayeuxClient client2 = startClient(oort2);
+        BayeuxClient client1 = startClient(oort1, null);
+        BayeuxClient client2 = startClient(oort2, null);
 
         // Oort1 observes the channel, so any publish to Oort2 or Oort3 is forwarded to Oort1
         String channelName = "/oort_test";
