@@ -80,8 +80,8 @@ public class SetiTest extends OortTest
         new SetiService(seti1);
         new SetiService(seti2);
 
-        BayeuxClient client1 = startClient(oort1);
-        BayeuxClient client2 = startClient(oort2);
+        BayeuxClient client1 = startClient(oort1, null);
+        BayeuxClient client2 = startClient(oort2, null);
 
         LatchListener publishLatch = new LatchListener();
         String loginChannelName = "/service/login";
@@ -137,8 +137,8 @@ public class SetiTest extends OortTest
         new SetiService(seti1);
         new SetiService(seti2);
 
-        BayeuxClient client1 = startClient(oort1);
-        BayeuxClient client2 = startClient(oort2);
+        BayeuxClient client1 = startClient(oort1, null);
+        BayeuxClient client2 = startClient(oort2, null);
 
         Map<String, Object> login1 = new HashMap<String, Object>();
         login1.put("user", "user1");
@@ -192,7 +192,7 @@ public class SetiTest extends OortTest
         new SetiService(seti1);
         new SetiService(seti2);
 
-        BayeuxClient client1 = startClient(oort1);
+        BayeuxClient client1 = startClient(oort1, null);
         Map<String, Object> login1 = new HashMap<String, Object>();
         login1.put("user", "user1");
         client1.getChannel("/service/login").publish(login1);
@@ -263,10 +263,10 @@ public class SetiTest extends OortTest
         new SetiService(seti2);
         new SetiService(seti3);
 
-        BayeuxClient client1A = startClient(oort1);
-        BayeuxClient client1B = startClient(oort1);
-        BayeuxClient client1C = startClient(oort2);
-        BayeuxClient client3 = startClient(oort3);
+        BayeuxClient client1A = startClient(oort1, null);
+        BayeuxClient client1B = startClient(oort1, null);
+        BayeuxClient client1C = startClient(oort2, null);
+        BayeuxClient client3 = startClient(oort3, null);
 
         LatchListener publishLatch = new LatchListener();
 

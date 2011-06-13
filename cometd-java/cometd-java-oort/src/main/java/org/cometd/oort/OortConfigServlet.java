@@ -33,6 +33,8 @@ import org.cometd.bayeux.server.BayeuxServer;
  * <p>The following servlet init parameters are used to configure the Oort instance:</p>
  * <ul>
  * <li><code>oort.url</code>, the absolute public URL to the CometD servlet</li>
+ * <li><code>oort.secret</code>, the pre-shared secret that Oort servers use to authenticate
+ * connections from other Oort comets</li>
  * <li><code>oort.channels</code>, a comma separated list of channels that
  * will be passed to {@link Oort#observeChannel(String)}</li>
  * <li><code>clientDebug</code>, a boolean that enables debugging of the
@@ -46,7 +48,9 @@ import org.cometd.bayeux.server.BayeuxServer;
 public abstract class OortConfigServlet implements Servlet
 {
     public final static String OORT_URL_PARAM = "oort.url";
+    public final static String OORT_SECRET_PARAM = "oort.secret";
     public final static String OORT_CHANNELS_PARAM = "oort.channels";
+    public final static String OORT_CLIENT_DEBUG_PARAM = "clientDebug";
 
     private ServletConfig _config;
 
@@ -75,7 +79,14 @@ public abstract class OortConfigServlet implements Servlet
         try
         {
             Oort oort = newOort(bayeux, url);
-            oort.setClientDebugEnabled(Boolean.valueOf(_config.getInitParameter("clientDebug")));
+
+            boolean clientDebug = Boolean.parseBoolean(_config.getInitParameter(OORT_CLIENT_DEBUG_PARAM));
+            oort.setClientDebugEnabled(clientDebug);
+
+            String secret = _config.getInitParameter(OORT_SECRET_PARAM);
+            if (secret != null)
+                oort.setSecret(secret);
+
             oort.start();
             _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE, oort);
 

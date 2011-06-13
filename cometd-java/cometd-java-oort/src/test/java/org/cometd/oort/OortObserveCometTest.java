@@ -218,7 +218,7 @@ public class OortObserveCometTest extends OortTest
         Assert.assertTrue(oortC.getKnownComets().contains(oortA.getURL()));
         Assert.assertTrue(oortC.getKnownComets().contains(oortB.getURL()));
 
-        BayeuxClient clientA = startClient(oortA);
+        BayeuxClient clientA = startClient(oortA, null);
         // Be sure that disconnecting clientA we do not mess with the known comets
         stopClient(clientA);
 

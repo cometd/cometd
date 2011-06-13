@@ -18,6 +18,7 @@ package org.cometd.oort;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,16 +76,17 @@ public abstract class OortTest
     protected Oort startOort(Server server) throws Exception
     {
         String url = (String)server.getAttribute(OortConfigServlet.OORT_URL_PARAM);
-        Oort oort = new Oort((BayeuxServer)server.getAttribute(BayeuxServer.ATTRIBUTE), url);
+        final BayeuxServer bayeuxServer = (BayeuxServer)server.getAttribute(BayeuxServer.ATTRIBUTE);
+        Oort oort = new Oort(bayeuxServer, url);
         oort.start();
         oorts.add(oort);
         return oort;
     }
 
-    protected BayeuxClient startClient(Oort oort)
+    protected BayeuxClient startClient(Oort oort, Map<String, Object> handshakeFields)
     {
         BayeuxClient client = new BayeuxClient(oort.getURL(), new LongPollingTransport(null, oort.getHttpClient()));
-        client.handshake();
+        client.handshake(handshakeFields);
         client.waitFor(1000, BayeuxClient.State.CONNECTED);
         clients.add(client);
         return client;
