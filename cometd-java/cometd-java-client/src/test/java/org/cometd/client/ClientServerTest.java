@@ -31,8 +31,9 @@ import org.junit.After;
 
 public class ClientServerTest
 {
-    private Server server;
-    private HttpClient httpClient;
+    protected Connector connector;
+    protected Server server;
+    protected HttpClient httpClient;
     protected String cometdURL;
     protected BayeuxServer bayeux;
     protected BayeuxClient client;
@@ -41,7 +42,7 @@ public class ClientServerTest
     {
         server = new Server();
 
-        Connector connector = new SelectChannelConnector();
+        connector = new SelectChannelConnector();
         connector.setMaxIdleTime(30000);
         server.addConnector(connector);
 

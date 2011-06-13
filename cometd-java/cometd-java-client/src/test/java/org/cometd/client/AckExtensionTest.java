@@ -16,126 +16,57 @@
 
 package org.cometd.client;
 
+import java.io.EOFException;
+import java.net.ConnectException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import junit.framework.TestCase;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
-import org.cometd.client.BayeuxClient.State;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.server.CometdServlet;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.log.Log;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
-public class AckExtensionTest extends TestCase
+public class AckExtensionTest extends ClientServerTest
 {
-    private Server _server;
-    private Connector _connector;
-    private BayeuxServer _bayeux;
-    private String _cometdURL;
-
-    private static Connector newConnector()
+    @Before
+    public void init() throws Exception
     {
-        return new SelectChannelConnector();
+        startServer(null);
     }
 
-    private static Server newServer(Connector connector) throws Exception
-    {
-        Server server = new Server();
-        server.setGracefulShutdown(500);
-        connector.setPort(0);
-        server.setConnectors(new Connector[] { connector });
-        return server;
-    }
-
-    private void startServer(Server server) throws Exception
-    {
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        server.setHandler(contexts);
-
-        String contextPath = "";
-        ServletContextHandler context = new ServletContextHandler(contexts, contextPath, ServletContextHandler.SESSIONS);
-
-        String servletPath = "/cometd";
-        ServletHolder comet = context.addServlet(CometdServlet.class, servletPath + "/*");
-
-        comet.setInitParameter("timeout", "20000");
-        comet.setInitParameter("interval", "100");
-        comet.setInitParameter("maxInterval", "10000");
-        comet.setInitParameter("multiFrameInterval", "5000");
-        comet.setInitParameter("logLevel", "3");
-        comet.setInitOrder(1);
-
-        server.start();
-
-        _bayeux=(BayeuxServer)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-        _bayeux.addExtension(new AcknowledgedMessagesExtension());
-
-        _cometdURL = "http://localhost:" + _connector.getLocalPort() + contextPath + servletPath;
-    }
-
-    private static void stopServer(Server server) throws Exception
-    {
-        server.stop();
-        server.join();
-    }
-
-    @Override
-    public void setUp() throws Exception
-    {
-        startServer(_server = newServer(_connector = newConnector()));
-        _connector.setPort(_connector.getLocalPort());
-    }
-
-    @Override
-    public void tearDown() throws Exception
-    {
-        stopServer(_server);
-        _bayeux = null;
-        _connector = null;
-        _server = null;
-    }
-
+    @Test
     public void testAck() throws Exception
     {
-        int port = _connector.getLocalPort();
-        assertTrue(port==_connector.getPort());
-
-        final BlockingQueue<Message> messages = new BlockingArrayQueue<Message>();
-
-        final BayeuxClient client = new BayeuxClient(_cometdURL, LongPollingTransport.create(null))
+        client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             public void onFailure(Throwable x, Message[] messages)
             {
-                Log.info(x.toString());
+                if (!(x instanceof EOFException || x instanceof ConnectException))
+                    super.onFailure(x, messages);
             }
-
         };
 
+        bayeux.addExtension(new AcknowledgedMessagesExtension());
         client.addExtension(new AckExtension());
 
+        final String channelName = "/chat/demo";
+        final BlockingQueue<Message> messages = new BlockingArrayQueue<Message>();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 if (message.isSuccessful())
                 {
-                    client.getChannel("/chat/demo").subscribe(new ClientSessionChannel.MessageListener()
+                    client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
                     {
                         public void onMessage(ClientSessionChannel channel, Message message)
                         {
@@ -145,77 +76,68 @@ public class AckExtensionTest extends TestCase
                 }
             }
         });
-
-        final CountDownLatch subscribed=new CountDownLatch(1);
-        _bayeux.addListener(new BayeuxServer.ChannelListener()
+        final CountDownLatch subscribed = new CountDownLatch(1);
+        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
         {
-            public void configureChannel(ConfigurableServerChannel channel)
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
-            }
-
-            public void channelRemoved(String channelId)
-            {
-            }
-
-            public void channelAdded(ServerChannel channel)
-            {
-                if ("/chat/demo".equals(channel.getId()))
+                if (message.isSuccessful() && channelName.equals(message.get(Message.SUBSCRIPTION_FIELD)))
                     subscribed.countDown();
             }
         });
-
         client.handshake();
 
-        assertTrue(subscribed.await(10,TimeUnit.SECONDS));
-        assertEquals(0,messages.size());
+        Assert.assertTrue(subscribed.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(0, messages.size());
 
-        ServerChannel publicChat = _bayeux.getChannel("/chat/demo");
-        assertNotNull(publicChat);
+        final ServerChannel chatChannel = bayeux.getChannel(channelName);
+        Assert.assertNotNull(chatChannel);
 
-        for(int i=0; i<5;i++)
+        final int count = 5;
+        client.batch(new Runnable()
         {
-            publicChat.publish(null,"hello","id"+i);
-            Thread.sleep(20);
-        }
+            public void run()
+            {
+                for (int i = 0; i < count; ++i)
+                    client.getChannel(channelName).publish("hello", "id" + i);
+            }
+        });
 
-        for(int i=0; i<5;i++)
-            assertEquals("id"+i,messages.poll(5,TimeUnit.SECONDS).getId());
+        for (int i = 0; i < count; ++i)
+            Assert.assertEquals("id" + i, messages.poll(5, TimeUnit.SECONDS).getId());
 
-        _connector.stop();
-        Thread.sleep(100);
-        assertTrue(_connector.isStopped());
+        int port = connector.getLocalPort();
+        connector.stop();
+        TimeUnit.SECONDS.sleep(1);
+        Assert.assertTrue(connector.isStopped());
 
-        // send messages while client is offline
-        for(int i=5; i<10;i++)
+        // Send messages while client is offline
+        for (int i = count; i < 2 * count; ++i)
+            chatChannel.publish(null, "hello", "id" + i);
+
+        TimeUnit.SECONDS.sleep(1);
+        Assert.assertEquals(0, messages.size());
+
+        connector.setPort(port);
+        connector.start();
+        Assert.assertTrue(client.waitFor(10000, BayeuxClient.State.CONNECTED));
+
+        // Check that the offline messages are received
+        for (int i = count; i < 2 * count; ++i)
+            Assert.assertEquals("id" + i, messages.poll(5, TimeUnit.SECONDS).getId());
+
+        // Send messages while client is online
+        client.batch(new Runnable()
         {
-            publicChat.publish(null,"hello","id"+i);
-            Thread.sleep(20);
-        }
+            public void run()
+            {
+                for (int i = 2 * count; i < 3 * count; ++i)
+                    client.getChannel(channelName).publish("hello", "id" + i);
+            }
+        });
 
-        Thread.sleep(500);
-        assertEquals(0,messages.size());
-
-
-        _connector.start();
-        assertTrue(_connector.isStarted());
-
-        // check that the offline messages are received
-        for(int i=5; i<10;i++)
-            assertEquals("id"+i,messages.poll(5,TimeUnit.SECONDS).getId());
-
-        // send messages while client is online
-        for(int i=10; i<15;i++)
-        {
-            publicChat.publish(null,"hello","id"+i);
-            Thread.sleep(500);
-        }
-
-
-        // check if messages after reconnect are received
-        for(int i=10; i<15;i++)
-            assertEquals("id"+i,messages.poll(5,TimeUnit.SECONDS).getId());
-
-        client.disconnect();
-        assertTrue(client.waitFor(1000L,State.DISCONNECTED));
+        // Check if messages after reconnect are received
+        for (int i = 2 * count; i < 3 * count; ++i)
+            Assert.assertEquals("id" + i, messages.poll(5, TimeUnit.SECONDS).getId());
     }
 }
