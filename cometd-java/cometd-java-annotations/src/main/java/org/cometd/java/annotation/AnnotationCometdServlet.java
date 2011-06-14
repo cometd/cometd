@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.ServletException;
 
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Logger;
@@ -53,7 +54,7 @@ public class AnnotationCometdServlet extends CometdServlet
     {
         super.init();
 
-        processor = new ServerAnnotationProcessor(getBayeux());
+        processor = newServerAnnotationProcessor(getBayeux());
 
         String servicesParam = getInitParameter("services");
         if (servicesParam != null && servicesParam.length() > 0)
@@ -67,12 +68,17 @@ public class AnnotationCometdServlet extends CometdServlet
         }
     }
 
+    protected ServerAnnotationProcessor newServerAnnotationProcessor(BayeuxServer bayeuxServer)
+    {
+        return new ServerAnnotationProcessor(bayeuxServer);
+    }
+
     protected Object processService(ServerAnnotationProcessor processor, String serviceClassName) throws ServletException
     {
         Logger logger = getBayeux().getLogger();
         try
         {
-            Object service = Loader.loadClass(getClass(), serviceClassName).newInstance();
+            Object service = newService(serviceClassName);
             processor.process(service);
             logger.info("Processed annotated service " + service);
             return service;
@@ -82,6 +88,11 @@ public class AnnotationCometdServlet extends CometdServlet
             logger.warn("Failed to create annotated service " + serviceClassName, x);
             throw new ServletException(x);
         }
+    }
+
+    protected Object newService(String serviceClassName) throws Exception
+    {
+        return Loader.loadClass(getClass(), serviceClassName).newInstance();
     }
 
     @Override
