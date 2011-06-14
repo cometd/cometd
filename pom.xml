@@ -86,7 +86,7 @@
 
     <scm>
         <connection>scm:git:git://github.com/cometd/cometd.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/cometd.git</developerConnection>
+        <developerConnection>scm:git:ssh://git@github.com/cometd/cometd.git</developerConnection>
         <url>https://github.com/cometd/cometd</url>
     </scm>
 
@@ -138,15 +138,14 @@
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>enforce-plugin-versions</id>
+                        <id>enforce-maven-version</id>
                         <goals>
                             <goal>enforce</goal>
                         </goals>
                         <configuration>
                             <rules>
-                                <requirePluginVersions />
                                 <requireMavenVersion>
-                                    <version>[2.2.1,)</version>
+                                    <version>[3.0,)</version>
                                 </requireMavenVersion>
                             </rules>
                         </configuration>
