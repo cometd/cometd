@@ -214,6 +214,7 @@ public class CometdServlet extends HttpServlet
         finally
         {
             _bayeux = null;
+            getServletContext().removeAttribute(BayeuxServer.ATTRIBUTE);
         }
     }
 }
