@@ -1,16 +1,18 @@
-// ========================================================================
-// Copyright 2006 Webtide LLC
-// ------------------------------------------------------------------------
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at 
-// http://www.apache.org/licenses/LICENSE-2.0
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-// ========================================================================
+/*
+ * Copyright (c) 2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.webtide.demo.auction.dao;
 
@@ -24,18 +26,12 @@ import java.util.concurrent.ConcurrentMap;
 import org.webtide.demo.auction.Category;
 import org.webtide.demo.auction.Item;
 
-
-/**
- * @author Nigel Canonizado
- * 
- *         Apr 26, 2006
- */
 public class CategoryDao
 {
     final static ConcurrentMap<Integer, Item> _items = new ConcurrentHashMap<Integer, Item>();
     final static ConcurrentMap<Integer, Category> _categories = new ConcurrentHashMap<Integer, Category>();
-    
-    public List<Item> getItemsInCategory(Integer categoryId) 
+
+    public List<Item> getItemsInCategory(Integer categoryId)
     {
         List<Item> items = new ArrayList<Item>();
         for (Item item : _items.values())
@@ -52,7 +48,7 @@ public class CategoryDao
         _categories.putIfAbsent(category.getId(),category.clone());
         _items.putIfAbsent(item.getId(),item.clone());
     }
-    
+
     public Category getCategory(int categoryId)
     {
         return _categories.get(categoryId);
@@ -65,10 +61,10 @@ public class CategoryDao
         return all;
     }
 
-    public List<Item> findItems(String expression) 
+    public List<Item> findItems(String expression)
     {
         List<Item> items = new ArrayList<Item>();
-        
+
         String[] words = expression.toLowerCase().split("[ ,]");
 
         for (Item item : _items.values())
@@ -83,12 +79,12 @@ public class CategoryDao
         return items;
     }
 
-    public Item getItem(int itemId) 
+    public Item getItem(int itemId)
     {
         return _items.get(itemId);
     }
 
-    public Collection<Item> getAllItems() 
+    public Collection<Item> getAllItems()
     {
         return _items.values();
     }

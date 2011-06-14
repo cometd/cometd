@@ -23,11 +23,13 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-showversion</argument>
-                                <argument>-verbose:gc</argument>
-                                <argument>-XX:+PrintCommandLineFlags</argument>
                                 <argument>-Xmx512m</argument>
                                 <argument>-Xms512m</argument>
                                 <argument>-Xmn256m</argument>
+                                <argument>-XX:+PrintCommandLineFlags</argument>
+                                <argument>-verbose:gc</argument>
+                                <!--<argument>-XX:+PrintGCDetails</argument>-->
+                                <!--<argument>-XX:+PrintGCDateStamps</argument>-->
                                 <argument>-XX:+UseParallelOldGC</argument>
                                 <argument>-XX:-UseAdaptiveSizePolicy</argument>
                                 <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->
@@ -54,11 +56,13 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-showversion</argument>
-                                <argument>-verbose:gc</argument>
-                                <argument>-XX:+PrintCommandLineFlags</argument>
                                 <argument>-Xmx512m</argument>
                                 <argument>-Xms512m</argument>
                                 <argument>-Xmn256m</argument>
+                                <argument>-XX:+PrintCommandLineFlags</argument>
+                                <argument>-verbose:gc</argument>
+                                <!--<argument>-XX:+PrintGCDetails</argument>-->
+                                <!--<argument>-XX:+PrintGCDateStamps</argument>-->
                                 <argument>-XX:+UseParallelOldGC</argument>
                                 <argument>-XX:-UseAdaptiveSizePolicy</argument>
                                 <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->

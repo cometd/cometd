@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.cometd.client.benchmark;
 
 import java.io.BufferedReader;
@@ -40,9 +56,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
-/**
- * @version $Revision: 781 $ $Date: 2009-10-08 19:34:08 +1100 (Thu, 08 Oct 2009) $
- */
 public class BayeuxLoadServer
 {
     public static void main(String[] args) throws Exception
@@ -138,9 +151,11 @@ public class BayeuxLoadServer
         connector.setPort(port);
         server.addConnector(connector);
 
+//        MonitoringBlockingArrayQueue taskQueue = null;
         MonitoringBlockingArrayQueue taskQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
         QueuedThreadPool threadPool = new QueuedThreadPool(taskQueue);
         threadPool.setMaxThreads(maxThreads);
+//        ExecutorThreadPool threadPool = new ExecutorThreadPool(maxThreads, maxThreads, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
         server.setThreadPool(threadPool);
 
         HandlerWrapper handler = server;
@@ -220,7 +235,8 @@ public class BayeuxLoadServer
                 boolean started = helper.startStatistics();
                 if (started)
                 {
-                    taskQueue.reset();
+                    if (taskQueue != null)
+                        taskQueue.reset();
 
                     if (statisticsHandler != null)
                     {
@@ -230,7 +246,7 @@ public class BayeuxLoadServer
                     if (requestLatencyHandler != null)
                     {
                         requestLatencyHandler.reset();
-                        requestLatencyHandler.disableCurrent();
+                        requestLatencyHandler.doNotTrackCurrentRequest();
                     }
                 }
             }
@@ -243,10 +259,13 @@ public class BayeuxLoadServer
                 boolean stopped = helper.stopStatistics();
                 if (stopped)
                 {
-                    System.err.printf("Thread Pool Queue (max_queued | avg_latency/max_latency): %d | %d/%d ms%n",
-                            taskQueue.getMaxSize(),
-                            TimeUnit.NANOSECONDS.toMillis(taskQueue.getAverageLatency()),
-                            TimeUnit.NANOSECONDS.toMillis(taskQueue.getMaxLatency()));
+                    if (taskQueue != null)
+                    {
+                        System.err.printf("Thread Pool Queue (max_queued | avg_latency/max_latency): %d | %d/%d ms%n",
+                                taskQueue.getMaxSize(),
+                                TimeUnit.NANOSECONDS.toMillis(taskQueue.getAverageLatency()),
+                                TimeUnit.NANOSECONDS.toMillis(taskQueue.getMaxLatency()));
+                    }
 
                     if (statisticsHandler != null)
                     {
@@ -263,7 +282,7 @@ public class BayeuxLoadServer
                     if (requestLatencyHandler != null)
                     {
                         requestLatencyHandler.print();
-                        requestLatencyHandler.disableCurrent();
+                        requestLatencyHandler.doNotTrackCurrentRequest();
                     }
                 }
             }
@@ -475,7 +494,7 @@ public class BayeuxLoadServer
             }
         }
 
-        public void disableCurrent()
+        public void doNotTrackCurrentRequest()
         {
             currentEnabled.set(false);
         }

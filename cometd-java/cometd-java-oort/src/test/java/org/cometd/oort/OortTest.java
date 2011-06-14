@@ -1,7 +1,24 @@
+/*
+ * Copyright (c) 2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.cometd.oort;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,16 +76,17 @@ public abstract class OortTest
     protected Oort startOort(Server server) throws Exception
     {
         String url = (String)server.getAttribute(OortConfigServlet.OORT_URL_PARAM);
-        Oort oort = new Oort((BayeuxServer)server.getAttribute(BayeuxServer.ATTRIBUTE), url);
+        final BayeuxServer bayeuxServer = (BayeuxServer)server.getAttribute(BayeuxServer.ATTRIBUTE);
+        Oort oort = new Oort(bayeuxServer, url);
         oort.start();
         oorts.add(oort);
         return oort;
     }
 
-    protected BayeuxClient startClient(Oort oort)
+    protected BayeuxClient startClient(Oort oort, Map<String, Object> handshakeFields)
     {
         BayeuxClient client = new BayeuxClient(oort.getURL(), new LongPollingTransport(null, oort.getHttpClient()));
-        client.handshake();
+        client.handshake(handshakeFields);
         client.waitFor(1000, BayeuxClient.State.CONNECTED);
         clients.add(client);
         return client;

@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.cometd.client.benchmark;
 
 import java.io.BufferedReader;
@@ -101,24 +117,6 @@ public class BayeuxLoadClient
             value = contextPath;
         String uri = value + "/cometd";
 
-        HttpClient httpClient = new HttpClient();
-        httpClient.setMaxConnectionsPerAddress(50000);
-        MonitoringBlockingArrayQueue taskQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
-        QueuedThreadPool threadPool = new QueuedThreadPool(taskQueue);
-        threadPool.setMaxThreads(maxThreads);
-        threadPool.setDaemon(true);
-        httpClient.setThreadPool(threadPool);
-        httpClient.setIdleTimeout(5000);
-//        httpClient.setUseDirectBuffers(false);
-        httpClient.start();
-
-        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        mbContainer.addBean(httpClient);
-        mbContainer.addBean(threadPool);
-        mbContainer.addBean(this);
-        mbContainer.addBean(Log.getLog());
-        String url = (ssl ? "https" : "http") + "://" + host + ":" + port + uri;
-
         String channel = "/chat/demo";
         System.err.printf("channel [%s]: ", channel);
         value = console.readLine().trim();
@@ -139,6 +137,24 @@ public class BayeuxLoadClient
         if (value.length() == 0)
             value = String.valueOf(roomsPerClient);
         roomsPerClient = Integer.parseInt(value);
+
+        HttpClient httpClient = new HttpClient();
+        httpClient.setMaxConnectionsPerAddress(50000);
+        MonitoringBlockingArrayQueue taskQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
+        QueuedThreadPool threadPool = new QueuedThreadPool(taskQueue);
+        threadPool.setMaxThreads(maxThreads);
+        threadPool.setDaemon(true);
+        httpClient.setThreadPool(threadPool);
+        httpClient.setIdleTimeout(5000);
+//        httpClient.setUseDirectBuffers(false);
+        httpClient.start();
+
+        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        mbContainer.addBean(httpClient);
+        mbContainer.addBean(threadPool);
+        mbContainer.addBean(this);
+        mbContainer.addBean(Log.getLog());
+        String url = (ssl ? "https" : "http") + "://" + host + ":" + port + uri;
 
         HandshakeListener handshakeListener = new HandshakeListener(channel, rooms, roomsPerClient);
         DisconnectListener disconnectListener = new DisconnectListener();

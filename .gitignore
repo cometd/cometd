@@ -1,5 +1,6 @@
 cometd-archetypes/dojo-jetty6/target
-target
+target/
+overlays/
 .classpath
 .project
 .settings

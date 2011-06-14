@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.cometd.server;
 
 import java.security.SecureRandom;
@@ -1232,14 +1248,42 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 return;
             }
 
-            String subscription = (String)message.get(Message.SUBSCRIPTION_FIELD);
-            reply.put(Message.SUBSCRIPTION_FIELD, subscription);
+            Object subscriptionField = message.get(Message.SUBSCRIPTION_FIELD);
+            reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
 
-            if (subscription == null)
+            // Sanity checks
+            List<String> subscriptions = new ArrayList<String>();
+            if (subscriptionField == null)
             {
-                error(reply, "403::subscription missing");
+                error(reply, "403::subscription_missing");
+                return;
+            }
+            else if (subscriptionField instanceof Object[])
+            {
+                for (Object subscription : (Object[])subscriptionField)
+                {
+                    if (subscription == null || !(subscription instanceof String))
+                    {
+                        error(reply, "403::subscription_invalid");
+                        return;
+                    }
+                    else
+                    {
+                        subscriptions.add((String)subscription);
+                    }
+                }
+            }
+            else if (!(subscriptionField instanceof String))
+            {
+                error(reply, "403::subscription_invalid");
+                return;
             }
             else
+            {
+                subscriptions.add((String)subscriptionField);
+            }
+
+            for (String subscription : subscriptions)
             {
                 ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscription);
                 if (channel == null)
@@ -1248,7 +1292,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     if (creationResult instanceof Authorizer.Result.Denied)
                     {
                         String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
-                        error(reply, "403:" + denyReason + ":create denied");
+                        error(reply, "403:" + denyReason + ":create_denied");
+                        break;
                     }
                     else
                     {
@@ -1263,7 +1308,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     if (subscribeResult instanceof Authorizer.Result.Denied)
                     {
                         String denyReason = ((Authorizer.Result.Denied)subscribeResult).getReason();
-                        error(reply, "403:" + denyReason + ":subscribe denied");
+                        error(reply, "403:" + denyReason + ":subscribe_denied");
+                        break;
                     }
                     else
                     {
@@ -1274,13 +1320,19 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                         if (!isSessionUnknown(from))
                         {
                             if (channel.subscribe(from))
+                            {
                                 reply.setSuccessful(true);
+                            }
                             else
-                                error(reply, "403::subscribe failed");
+                            {
+                                error(reply, "403::subscribe_failed");
+                                break;
+                            }
                         }
                         else
                         {
                             unknownSession(reply);
+                            break;
                         }
                     }
                 }
@@ -1292,32 +1344,67 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         public void onMessage(final ServerSessionImpl from, final Mutable message)
         {
-            ServerMessage.Mutable reply=createReply(message);
+            ServerMessage.Mutable reply = createReply(message);
             if (isSessionUnknown(from))
             {
                 unknownSession(reply);
                 return;
             }
 
-            String subscribe_id=(String)message.get(Message.SUBSCRIPTION_FIELD);
-            reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);
-            if (subscribe_id==null)
-                error(reply,"400::channel missing");
+            Object subscriptionField = message.get(Message.SUBSCRIPTION_FIELD);
+            reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
+
+            // Sanity checks
+            List<String> subscriptions = new ArrayList<String>();
+            if (subscriptionField == null)
+            {
+                error(reply, "403::subscription_missing");
+                return;
+            }
+            else if (subscriptionField instanceof Object[])
+            {
+                for (Object subscription : (Object[])subscriptionField)
+                {
+                    if (subscription == null || !(subscription instanceof String))
+                    {
+                        error(reply, "403::subscription_invalid");
+                        return;
+                    }
+                    else
+                    {
+                        subscriptions.add((String)subscription);
+                    }
+                }
+            }
+            else if (!(subscriptionField instanceof String))
+            {
+                error(reply, "403::subscription_invalid");
+                return;
+            }
             else
             {
-                reply.put(Message.SUBSCRIPTION_FIELD,subscribe_id);
+                subscriptions.add((String)subscriptionField);
+            }
 
-                ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscribe_id);
-                if (channel==null)
+            for (String subscription : subscriptions)
+            {
+                ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscription);
+                if (channel == null)
                 {
-                    error(reply,"400::channel missing");
+                    error(reply, "400::channel_missing");
+                    break;
                 }
                 else
                 {
                     if (channel.unsubscribe(from))
+                    {
                         reply.setSuccessful(true);
+                    }
                     else
-                        error(reply, "403::unsubscribe failed");
+                    {
+                        error(reply, "403::unsubscribe_failed");
+                        break;
+                    }
                 }
             }
         }

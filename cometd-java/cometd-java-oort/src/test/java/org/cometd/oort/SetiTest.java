@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.cometd.oort;
 
 import java.util.ArrayList;
@@ -64,8 +80,8 @@ public class SetiTest extends OortTest
         new SetiService(seti1);
         new SetiService(seti2);
 
-        BayeuxClient client1 = startClient(oort1);
-        BayeuxClient client2 = startClient(oort2);
+        BayeuxClient client1 = startClient(oort1, null);
+        BayeuxClient client2 = startClient(oort2, null);
 
         LatchListener publishLatch = new LatchListener();
         String loginChannelName = "/service/login";
@@ -121,8 +137,8 @@ public class SetiTest extends OortTest
         new SetiService(seti1);
         new SetiService(seti2);
 
-        BayeuxClient client1 = startClient(oort1);
-        BayeuxClient client2 = startClient(oort2);
+        BayeuxClient client1 = startClient(oort1, null);
+        BayeuxClient client2 = startClient(oort2, null);
 
         Map<String, Object> login1 = new HashMap<String, Object>();
         login1.put("user", "user1");
@@ -176,7 +192,7 @@ public class SetiTest extends OortTest
         new SetiService(seti1);
         new SetiService(seti2);
 
-        BayeuxClient client1 = startClient(oort1);
+        BayeuxClient client1 = startClient(oort1, null);
         Map<String, Object> login1 = new HashMap<String, Object>();
         login1.put("user", "user1");
         client1.getChannel("/service/login").publish(login1);
@@ -247,10 +263,10 @@ public class SetiTest extends OortTest
         new SetiService(seti2);
         new SetiService(seti3);
 
-        BayeuxClient client1A = startClient(oort1);
-        BayeuxClient client1B = startClient(oort1);
-        BayeuxClient client1C = startClient(oort2);
-        BayeuxClient client3 = startClient(oort3);
+        BayeuxClient client1A = startClient(oort1, null);
+        BayeuxClient client1B = startClient(oort1, null);
+        BayeuxClient client1C = startClient(oort2, null);
+        BayeuxClient client3 = startClient(oort3, null);
 
         LatchListener publishLatch = new LatchListener();
 

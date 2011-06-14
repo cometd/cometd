@@ -1,7 +1,22 @@
+/*
+ * Copyright (c) 2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.cometd.oort;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -21,7 +36,6 @@ public class OortComet extends BayeuxClient
     private final ConcurrentMap<String, ClientSessionChannel.MessageListener> _subscriptions = new ConcurrentHashMap<String, ClientSessionChannel.MessageListener>();
     private final Oort _oort;
     private final String _cometURL;
-    private volatile String _cometSecret;
     private volatile boolean _subscriptionsAllowed;
 
     public OortComet(Oort oort, String cometUrl)
@@ -38,18 +52,6 @@ public class OortComet extends BayeuxClient
             {
                 if (message.isSuccessful())
                 {
-                    Map<String, Object> ext = message.getExt();
-                    if (ext == null)
-                        return;
-
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> oortExtension = (Map<String, Object>)ext.get(Oort.EXT_OORT_FIELD);
-                    if (oortExtension == null)
-                        return;
-
-                    // The secret of the remote Oort
-                    _cometSecret = (String)oortExtension.get(Oort.EXT_OORT_SECRET_FIELD);
-
                     batch(new Runnable()
                     {
                         public void run()
@@ -76,7 +78,7 @@ public class OortComet extends BayeuxClient
                             _subscriptionsAllowed = true;
                             subscribe(_oort.getObservedChannels());
 
-                            getChannel(Oort.OORT_CLOUD_CHANNEL).publish(_oort.getKnownComets().toArray(), _cometSecret);
+                            getChannel(Oort.OORT_CLOUD_CHANNEL).publish(_oort.getKnownComets().toArray());
                         }
                     });
 

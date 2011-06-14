@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.cometd.server.transport;
 
 import java.io.IOException;
@@ -15,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
@@ -46,7 +63,6 @@ public abstract class LongPollingTransport extends HttpTransport
 
     private final ConcurrentHashMap<String, AtomicInteger> _browserMap = new ConcurrentHashMap<String, AtomicInteger>();
     private final Map<String, AtomicInteger> _browserSweep = new ConcurrentHashMap<String, AtomicInteger>();
-
     private String _browserId = "BAYEUX_BROWSER";
     private int _maxSessionsPerBrowser = 1;
     private long _multiSessionInterval = 2000;
@@ -154,7 +170,7 @@ public abstract class LongPollingTransport extends HttpTransport
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         // Is this a resumed connect?
-        LongPollScheduler scheduler = (LongPollScheduler)request.getAttribute("cometd.scheduler");
+        LongPollScheduler scheduler = (LongPollScheduler)request.getAttribute(LongPollScheduler.ATTRIBUTE);
         if (scheduler == null)
         {
             // No - process messages
@@ -268,8 +284,9 @@ public abstract class LongPollingTransport extends HttpTransport
                                             continuation.suspend(response);
                                             scheduler = new LongPollScheduler(session, continuation, reply, browserId);
                                             session.setScheduler(scheduler);
-                                            request.setAttribute("cometd.scheduler", scheduler);
+                                            request.setAttribute(LongPollScheduler.ATTRIBUTE, scheduler);
                                             reply = null;
+                                            metaConnectSuspended(request, session, timeout);
                                         }
                                         else
                                         {
@@ -344,6 +361,8 @@ public abstract class LongPollingTransport extends HttpTransport
         {
             // Get the resumed session
             ServerSessionImpl session = scheduler.getSession();
+            metaConnectResumed(request, session);
+
             if (session.isConnected())
                 session.startIntervalTimeout();
 
@@ -357,6 +376,14 @@ public abstract class LongPollingTransport extends HttpTransport
 
             complete(writer);
         }
+    }
+
+    protected void metaConnectSuspended(HttpServletRequest request, ServerSession session, long timeout)
+    {
+    }
+
+    protected void metaConnectResumed(HttpServletRequest request, ServerSession session)
+    {
     }
 
     protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws ServletException, IOException
@@ -418,6 +445,8 @@ public abstract class LongPollingTransport extends HttpTransport
 
     private class LongPollScheduler implements AbstractServerTransport.OneTimeScheduler, ContinuationListener
     {
+        private static final String ATTRIBUTE = "org.cometd.scheduler";
+
         private final ServerSessionImpl _session;
         private final Continuation _continuation;
         private final ServerMessage.Mutable _reply;

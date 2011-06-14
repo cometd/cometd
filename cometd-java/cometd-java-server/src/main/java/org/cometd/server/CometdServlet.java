@@ -1,23 +1,23 @@
-// ========================================================================
-// Copyright 2007 Mort Bay Consulting Pty. Ltd.
-// ------------------------------------------------------------------------
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-// http://www.apache.org/licenses/LICENSE-2.0
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//========================================================================
+/*
+ * Copyright (c) 2010 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.cometd.server;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import javax.servlet.ServletException;
@@ -61,7 +61,6 @@ public class CometdServlet extends HttpServlet
     @Deprecated
     public static final int DEBUG_LEVEL = BayeuxServerImpl.DEBUG_LOG_LEVEL;
 
-    private final List<HttpTransport> _transports = new ArrayList<HttpTransport>();
     private volatile BayeuxServerImpl _bayeux;
 
     @Override
@@ -121,13 +120,6 @@ public class CometdServlet extends HttpServlet
 
             if (export)
                 getServletContext().setAttribute(BayeuxServer.ATTRIBUTE, _bayeux);
-
-            for (String transportName : _bayeux.getAllowedTransports())
-            {
-                ServerTransport transport = _bayeux.getTransport(transportName);
-                if (transport instanceof HttpTransport)
-                    _transports.add((HttpTransport)transport);
-            }
         }
         catch (Exception x)
         {
@@ -145,11 +137,6 @@ public class CometdServlet extends HttpServlet
         return new BayeuxServerImpl();
     }
 
-    public List<HttpTransport> getTransports()
-    {
-        return Collections.unmodifiableList(_transports);
-    }
-
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         if ("OPTIONS".equals(request.getMethod()))
@@ -159,12 +146,17 @@ public class CometdServlet extends HttpServlet
         }
 
         HttpTransport transport = null;
-        for (HttpTransport t : _transports)
+        for (String transportName : _bayeux.getAllowedTransports())
         {
-            if (t != null && t.accept(request))
+            ServerTransport serverTransport = _bayeux.getTransport(transportName);
+            if (serverTransport instanceof HttpTransport)
             {
-                transport = t;
-                break;
+                HttpTransport t = (HttpTransport)serverTransport;
+                if (t.accept(request))
+                {
+                    transport = t;
+                    break;
+                }
             }
         }
 
@@ -223,7 +215,5 @@ public class CometdServlet extends HttpServlet
         {
             _bayeux = null;
         }
-
-        _transports.clear();
     }
 }
