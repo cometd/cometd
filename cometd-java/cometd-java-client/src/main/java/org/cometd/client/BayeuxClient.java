@@ -229,16 +229,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return bayeuxClientState.get().clientId;
     }
 
-    public boolean isConnected()
-    {
-        return isConnected(bayeuxClientState.get());
-    }
-
-    private boolean isConnected(BayeuxClientState bayeuxClientState)
-    {
-        return bayeuxClientState.type == State.CONNECTED;
-    }
-
     public boolean isHandshook()
     {
         return isHandshook(bayeuxClientState.get());
@@ -246,7 +236,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private boolean isHandshook(BayeuxClientState bayeuxClientState)
     {
-        return bayeuxClientState.type == State.CONNECTING ||
+        return isConnecting(bayeuxClientState) ||
                 bayeuxClientState.type == State.CONNECTED ||
                 bayeuxClientState.type == State.UNCONNECTED;
     }
@@ -255,6 +245,21 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     {
         return bayeuxClientState.type == State.HANDSHAKING ||
                 bayeuxClientState.type == State.REHANDSHAKING;
+    }
+
+    private boolean isConnecting(BayeuxClientState bayeuxClientState)
+    {
+        return bayeuxClientState.type == State.CONNECTING;
+    }
+
+    public boolean isConnected()
+    {
+        return isConnected(bayeuxClientState.get());
+    }
+
+    private boolean isConnected(BayeuxClientState bayeuxClientState)
+    {
+        return bayeuxClientState.type == State.CONNECTED;
     }
 
     /**
@@ -406,7 +411,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             Message.Mutable message = newMessage();
             message.setChannel(Channel.META_CONNECT);
             message.put(Message.CONNECTION_TYPE_FIELD, bayeuxClientState.transport.getName());
-            if (bayeuxClientState.type == State.CONNECTING || bayeuxClientState.type == State.UNCONNECTED)
+            if (isConnecting(bayeuxClientState) || bayeuxClientState.type == State.UNCONNECTED)
             {
                 // First connect after handshake or after failure, add advice
                 message.getAdvice(true).put("timeout", 0);
@@ -443,7 +448,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     protected boolean sendMessages(Message.Mutable... messages)
     {
         BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
-        if (bayeuxClientState.type == State.CONNECTING || isConnected(bayeuxClientState))
+        if (isConnecting(bayeuxClientState) || isConnected(bayeuxClientState))
         {
             bayeuxClientState.send(publishListener, messages);
             return true;
@@ -479,7 +484,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         {
             public BayeuxClientState create(BayeuxClientState oldState)
             {
-                if (isConnected(oldState))
+                if (isConnecting(oldState) || isConnected(oldState))
                     return new DisconnectingState(oldState.transport, oldState.clientId);
                 else
                     return new DisconnectedState(oldState.transport);
@@ -888,12 +893,14 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
                 if (!oldState.isUpdateableTo(newState))
                 {
-                    logger.debug("State not updateable : {} -> {}", oldState, newState);
+                    logger.debug("State not updateable: {} -> {}", oldState, newState);
                     break;
                 }
 
                 updated = bayeuxClientState.compareAndSet(oldState, newState);
-                logger.debug("State update" + (updated ? "" : " failed (concurrent update)") + ": {} -> {}", oldState, newState);
+                logger.debug("State update: {} -> {}{}", oldState, newState, updated ? "" : " failed (concurrent update)");
+                if (!updated)
+                    oldState = bayeuxClientState.get();
             }
 
             updater.postCreate();
@@ -1272,8 +1279,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         @Override
         protected boolean isUpdateableTo(BayeuxClientState newState)
         {
-            return newState.type == State.REHANDSHAKING ||
-                    newState.type == State.CONNECTING ||
+            return isConnecting(newState) ||
+                    newState.type == State.REHANDSHAKING ||
                     newState.type == State.DISCONNECTED;
         }
 
@@ -1304,7 +1311,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         @Override
         protected boolean isUpdateableTo(BayeuxClientState newState)
         {
-            return newState.type == State.CONNECTING ||
+            return isConnecting(newState) ||
                     newState.type == State.REHANDSHAKING ||
                     newState.type == State.DISCONNECTED;
         }
