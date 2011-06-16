@@ -84,7 +84,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
         client.handshake();
         assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
 
-        assertEquals(BayeuxClient.State.DISCONNECTED, client.getState());
+        assertTrue(client.isDisconnected());
     }
 
     @Test
