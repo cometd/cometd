@@ -111,7 +111,7 @@ public class OortObserveChannelTest extends OortTest
         BayeuxClient client1 = startClient(oort1, null);
         BayeuxClient client2 = startClient(oort2, null);
 
-        // Oort1 observes the channel, so any publish to Oort2 or Oort3 is forwarded to Oort1
+        // Oort1 observes the channel, so any publish to Oort2 is forwarded to Oort1
         String rootChannelName = "/oort_test";
         String wildChannelName = rootChannelName + "/*";
         String channelName = rootChannelName + "/foo";
@@ -150,7 +150,7 @@ public class OortObserveChannelTest extends OortTest
         BayeuxClient client1 = startClient(oort1, null);
         BayeuxClient client2 = startClient(oort2, null);
 
-        // Oort1 observes the channel, so any publish to Oort2 or Oort3 is forwarded to Oort1
+        // Oort1 observes the channel, so any publish to Oort2 is forwarded to Oort1
         String channelName = "/oort_test";
         oort1.observeChannel(channelName);
 
