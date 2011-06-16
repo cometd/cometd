@@ -65,7 +65,7 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDTest
         evaluateScript("cometd.configure({" +
                        "url: '" + crossOriginCometdURL + "', " +
                        "requestHeaders: { Origin: 'http://localhost:8080' }, " +
-                       "logLevel: 'debug'" +
+                       "logLevel: '" + getLogLevel() + "'" +
                        "});");
         evaluateScript("var handshakeLatch = new Latch(2);");
         evaluateScript("var connectLatch = new Latch(2);");

@@ -36,7 +36,7 @@ public class CometDDeliverTest extends AbstractCometDTest
     {
         defineClass(Latch.class);
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var pushLatch = new Latch(1);");
         Latch pushLatch = get("pushLatch");

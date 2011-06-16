@@ -62,7 +62,7 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest
         evaluateScript("cometd.configure({" +
                        "url: '" + cometdURL + "', " +
                        "maxNetworkDelay: " + maxNetworkDelay + ", " +
-                       "logLevel: 'debug'" +
+                       "logLevel: '" + getLogLevel() + "'" +
                        "});");
 
         evaluateScript("cometd.handshake();");

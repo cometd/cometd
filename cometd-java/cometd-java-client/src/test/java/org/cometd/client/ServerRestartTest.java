@@ -16,6 +16,7 @@
 
 package org.cometd.client;
 
+import java.net.ConnectException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,64 +25,17 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.server.CometdServlet;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
-public class ServerRestartTest
+public class ServerRestartTest extends ClientServerTest
 {
-    private Server server;
-    private Connector connector;
-    private String cometdURL;
-    private HttpClient httpClient;
-
     @Before
     public void init() throws Exception
     {
-        server = new Server();
-        connector = new SelectChannelConnector();
-        server.addConnector(connector);
-
-        HandlerCollection handlers = new HandlerCollection();
-        server.setHandler(handlers);
-
-        String contextPath = "/cometd";
-        ServletContextHandler context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
-
-        // Setup comet servlet
-        CometdServlet cometdServlet = new CometdServlet();
-        ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
-        cometdServletHolder.setInitParameter("logLevel", "3");
-        cometdServletHolder.setInitParameter("maxInterval", "30000");
-        String cometdServletPath = "/cometd";
-        context.addServlet(cometdServletHolder, cometdServletPath + "/*");
-
-        server.start();
-
-        int port = connector.getLocalPort();
-        String contextURL = "http://localhost:" + port + contextPath;
-        cometdURL = contextURL + cometdServletPath;
-
-        httpClient = new HttpClient();
-        httpClient.start();
-    }
-
-    @After
-    public void destroy() throws Exception
-    {
-        httpClient.stop();
-        server.stop();
-        server.join();
+        startServer(null);
     }
 
     @Test
@@ -96,7 +50,16 @@ public class ServerRestartTest
                 super.onSending(messages);
                 sendLatch.get().countDown();
             }
+
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                // Suppress expected exception logging
+                if (!(x instanceof ConnectException))
+                    super.onFailure(x, messages);
+            }
         };
+        client.setDebugEnabled(debugTests());
         long backoffIncrement = 500;
         client.setOption(BayeuxClient.BACKOFF_INCREMENT_OPTION, backoffIncrement);
         client.handshake();
@@ -141,7 +104,6 @@ public class ServerRestartTest
         assertTrue(connectLatch.await(1, TimeUnit.SECONDS));
         assertTrue(sendLatch.get().await(1, TimeUnit.SECONDS));
 
-        client.disconnect();
-        client.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+        disconnectBayeuxClient(client);
     }
 }

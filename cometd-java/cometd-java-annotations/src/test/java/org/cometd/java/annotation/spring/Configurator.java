@@ -80,7 +80,8 @@ public class Configurator implements DestructionAwareBeanPostProcessor
     public BayeuxServer bayeuxServer()
     {
         BayeuxServerImpl bean = new BayeuxServerImpl();
-        bean.setOption(BayeuxServerImpl.LOG_LEVEL, "3");
+        if (Boolean.getBoolean("debugTests"))
+            bean.setOption(BayeuxServerImpl.LOG_LEVEL, "3");
         return bean;
     }
 }

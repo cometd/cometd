@@ -56,7 +56,8 @@ public abstract class OortTest
         // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
-//        cometdServletHolder.setInitParameter("logLevel", "3");
+        if (Boolean.getBoolean("debugTests"))
+            cometdServletHolder.setInitParameter("logLevel", "3");
         cometdServletHolder.setInitOrder(1);
 
         String cometdServletPath = "/cometd";
@@ -78,6 +79,7 @@ public abstract class OortTest
         String url = (String)server.getAttribute(OortConfigServlet.OORT_URL_PARAM);
         final BayeuxServer bayeuxServer = (BayeuxServer)server.getAttribute(BayeuxServer.ATTRIBUTE);
         Oort oort = new Oort(bayeuxServer, url);
+        oort.setClientDebugEnabled(Boolean.getBoolean("debugTests"));
         oort.start();
         oorts.add(oort);
         return oort;
@@ -86,6 +88,7 @@ public abstract class OortTest
     protected BayeuxClient startClient(Oort oort, Map<String, Object> handshakeFields)
     {
         BayeuxClient client = new BayeuxClient(oort.getURL(), new LongPollingTransport(null, oort.getHttpClient()));
+        client.setDebugEnabled(Boolean.getBoolean("debugTests"));
         client.handshake(handshakeFields);
         client.waitFor(1000, BayeuxClient.State.CONNECTED);
         clients.add(client);
@@ -134,7 +137,6 @@ public abstract class OortTest
         server.stop();
         server.join();
     }
-
 
     protected static class LatchListener implements ClientSessionChannel.MessageListener
     {

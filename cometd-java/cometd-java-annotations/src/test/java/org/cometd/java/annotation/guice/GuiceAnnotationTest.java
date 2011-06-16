@@ -37,7 +37,8 @@ public class GuiceAnnotationTest
         Injector injector = Guice.createInjector(new CometDModule());
         // Manually start BayeuxServer
         BayeuxServerImpl bayeuxServer = injector.getInstance(BayeuxServerImpl.class);
-        bayeuxServer.setOption("logLevel", "3");
+        if (Boolean.getBoolean("debugTests"))
+            bayeuxServer.setOption("logLevel", "3");
         bayeuxServer.start();
 
         // Configure services

@@ -62,7 +62,7 @@ public class CometDMaxNetworkDelayLongPollTest extends AbstractCometDTest
         evaluateScript("cometd.configure({" +
                        "url: '" + cometdURL + "', " +
                        "maxNetworkDelay: " + maxNetworkDelay + ", " +
-                       "logLevel: 'debug'" +
+                       "logLevel: '" + getLogLevel() + "'" +
                        "});");
 
         AtomicReference<List<Throwable>> failures = new AtomicReference<List<Throwable>>(new ArrayList<Throwable>());

@@ -34,7 +34,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     public void testReloadDoesNotExpire() throws Exception
     {
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         evaluateScript("" +
@@ -60,7 +60,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         initExtension();
 
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = get("readyLatch");
         evaluateScript("var expireLatch = new Latch(1);");
@@ -87,7 +87,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     public void testReloadWithLongPollingTransport() throws Exception
     {
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         evaluateScript("" +
@@ -110,7 +110,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         initExtension();
 
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = get("readyLatch");
         evaluateScript("" +
@@ -137,7 +137,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         defineClass(Latch.class);
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
-        evaluateScript("cometd.configure({url: '" + url + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
         // Leave only the callback-polling transport
         evaluateScript("" +
                 "var types = cometd.getTransportTypes();" +
@@ -169,7 +169,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         initExtension();
 
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + url + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
         // Leave all the transports so that we can test if the previous transport is the one used on reload
 
         evaluateScript("var readyLatch = new Latch(1);");
@@ -233,7 +233,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     {
         evaluateScript("" +
                 "var latch = new Latch(1);" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "" +
                 "var extHandshake = null;" +
                 "var extSubscribe = null;" +

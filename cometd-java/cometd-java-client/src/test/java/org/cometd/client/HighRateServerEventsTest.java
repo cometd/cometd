@@ -23,73 +23,30 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
-import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.server.CometdServlet;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public class HighRateServerEventsTest
+public class HighRateServerEventsTest extends ClientServerTest
 {
-    private final String channelName = "/foo";
-    private Server server;
-    private String cometdURL;
-    private BayeuxServer bayeux;
-
     @Before
     public void init() throws Exception
     {
-        server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector();
-        server.addConnector(connector);
-
-        HandlerCollection handlers = new HandlerCollection();
-        server.setHandler(handlers);
-
-        String contextPath = "/cometd";
-        ServletContextHandler context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
-
-        // Setup comet servlet
-        CometdServlet cometdServlet = new CometdServlet();
-        ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
-        cometdServletHolder.setInitParameter("logLevel", "3");
-        String cometdServletPath = "/cometd";
-        context.addServlet(cometdServletHolder, cometdServletPath + "/*");
-
-        server.start();
-
-        int port = connector.getLocalPort();
-        String contextURL = "http://localhost:" + port + contextPath;
-        cometdURL = contextURL + cometdServletPath;
-
-        bayeux = cometdServlet.getBayeux();
-    }
-
-    @After
-    public void destroy() throws Exception
-    {
-        server.stop();
-        server.join();
+        startServer(null);
     }
 
     @Test
     public void testHighRateServerEvents() throws Exception
     {
+        final String channelName = "/foo";
+
         LocalSession service = bayeux.newLocalSession("high_rate_test");
         service.handshake();
 
-        final BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null));
-        client.setDebugEnabled(true);
+        final BayeuxClient client = newBayeuxClient();
         client.handshake();
         client.waitFor(1000, BayeuxClient.State.CONNECTED);
 
@@ -137,7 +94,6 @@ public class HighRateServerEventsTest
 
         assertEquals(count + 1, messages.get());
 
-        client.disconnect();
-        client.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+        disconnectBayeuxClient(client);
     }
 }

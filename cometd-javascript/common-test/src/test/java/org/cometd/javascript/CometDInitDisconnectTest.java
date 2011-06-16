@@ -25,7 +25,7 @@ public class CometDInitDisconnectTest extends AbstractCometDTest
     public void testInitDisconnect() throws Exception
     {
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var latch = new Latch(2);");
         Latch latch = get("latch");
         String script = "cometd.addListener('/**', function(message) { window.console.info(message.channel); latch.countDown(); });" +

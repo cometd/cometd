@@ -129,7 +129,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         if (logLevel >= CONFIG_LOG_LEVEL)
         {
             for (Map.Entry<String, Object> entry : getOptions().entrySet())
-                getLogger().info(entry.getKey() + "=" + entry.getValue());
+                getLogger().info("{}={}", entry.getKey(), entry.getValue());
         }
 
         initializeMetaChannels();
@@ -224,7 +224,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             for (ServerTransport t : _transports.values())
                 _allowedTransports.add(t.getName());
         }
-        _logger.info("Allowed Transports:"+_allowedTransports);
+        _logger.debug("Allowed Transports: {}", _allowedTransports);
     }
 
     /* ------------------------------------------------------------ */
@@ -349,7 +349,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             // My proposed channel was added to the map, so I'd better initialize it!
             channel=proposed;
-            _logger.debug("added {}",channel);
+            _logger.debug("Added channel {}", channel);
             try
             {
                 for (Initializer initializer : initializers)
@@ -448,8 +448,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      */
     public boolean removeServerSession(ServerSession session,boolean timedout)
     {
-        if (_logger.isDebugEnabled())
-            _logger.debug("remove "+session+(timedout?" timedout":""));
+        _logger.debug("remove {}, timed out: {}", session, timedout);
 
         ServerSessionImpl removed =_sessions.remove(session.getId());
 
@@ -573,8 +572,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      */
     public ServerMessage.Mutable handle(ServerSessionImpl session, ServerMessage.Mutable message)
     {
-        if (_logger.isDebugEnabled())
-            _logger.debug(">  " + message + " " + session);
+        final boolean debugEnabled = _logger.isDebugEnabled();
+        if (debugEnabled)
+            _logger.debug(">  {} {}", message, session);
 
         ServerMessage.Mutable reply = null;
         if (!extendRecv(session, message) || session != null && !session.extendRecv(message))
@@ -584,8 +584,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
         else
         {
-            if (_logger.isDebugEnabled())
-                _logger.debug(">> " + message);
+            if (debugEnabled)
+                _logger.debug(">> {}", message);
 
             String channelName = message.getChannel();
 
@@ -659,8 +659,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         // Here the reply may be null if this instance is stopped concurrently
 
-        if (_logger.isDebugEnabled())
-            _logger.debug("<< " + reply);
+        if (debugEnabled)
+            _logger.debug("<< {}", reply);
         return reply;
     }
 
@@ -940,8 +940,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 final Extension extension = i.previous();
                 if (!notifySendMeta(extension, to, message))
                 {
-                    if (_logger.isDebugEnabled())
-                        _logger.debug("Extension {} interrupted message processing for {}", extension, message);
+                    _logger.debug("Extension {} interrupted message processing for {}", extension, message);
                     return false;
                 }
             }
@@ -954,15 +953,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 final Extension extension = i.previous();
                 if (!notifySend(extension, from, to, message))
                 {
-                    if (_logger.isDebugEnabled())
-                        _logger.debug("Extension {} interrupted message processing for {}", extension, message);
+                    _logger.debug("Extension {} interrupted message processing for {}", extension, message);
                     return false;
                 }
             }
         }
 
-        if (_logger.isDebugEnabled())
-            _logger.debug("<  "+message);
+        _logger.debug("<  {}", message);
         return true;
     }
 
@@ -997,7 +994,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         if(_channels.remove(channel.getId(),channel))
         {
-            _logger.debug("removed {}",channel);
+            _logger.debug("Removed channel {}",channel);
             for (BayeuxServerListener listener : _listeners)
             {
                 if (listener instanceof BayeuxServer.ChannelListener)

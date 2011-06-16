@@ -53,7 +53,7 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDTest
     {
         defineClass(Latch.class);
         StringBuilder script = new StringBuilder();
-        script.append("cometd.configure({url: '").append(cometdURL).append("', logLevel: 'debug'});");
+        script.append("cometd.configure({url: '").append(cometdURL).append("', logLevel: '" + getLogLevel() + "'});");
         script.append("var outHandshake = undefined;");
         script.append("var outLatch = new Latch(1);");
         script.append("cometd.registerExtension('test', {");

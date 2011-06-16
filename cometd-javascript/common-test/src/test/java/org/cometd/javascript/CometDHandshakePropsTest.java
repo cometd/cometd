@@ -42,7 +42,7 @@ public class CometDHandshakePropsTest extends AbstractCometDTest
     public void testHandshakeProps() throws Exception
     {
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
         Latch handshakeLatch = get("handshakeLatch");
         evaluateScript("cometd.addListener('/meta/handshake', handshakeLatch, handshakeLatch.countDown);");

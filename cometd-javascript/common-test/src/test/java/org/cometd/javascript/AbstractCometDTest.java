@@ -72,7 +72,8 @@ public abstract class AbstractCometDTest
         CometdServlet cometdServlet = new CometdServlet();
         ServletHolder cometServletHolder = new ServletHolder(cometdServlet);
         cometServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
-        cometServletHolder.setInitParameter("logLevel", "3");
+        if (Boolean.getBoolean("debugTests"))
+            cometServletHolder.setInitParameter("logLevel", "3");
         context.addServlet(cometServletHolder, cometServletPath + "/*");
 
         customizeContext(context);
@@ -96,6 +97,11 @@ public abstract class AbstractCometDTest
         server.stop();
         server.join();
         cookies.clear();
+    }
+
+    protected String getLogLevel()
+    {
+        return Boolean.getBoolean("debugTests") ? "debug" : "info";
     }
 
     protected void customizeContext(ServletContextHandler context) throws Exception

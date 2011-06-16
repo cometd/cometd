@@ -36,7 +36,7 @@ public class CometDTimeSyncExtensionTest extends AbstractCometDTest
         provideTimesyncExtension();
 
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var inTimeSync = undefined;");
         evaluateScript("var outTimeSync = undefined;");

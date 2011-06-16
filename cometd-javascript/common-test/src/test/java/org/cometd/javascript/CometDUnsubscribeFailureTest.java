@@ -51,7 +51,7 @@ public class CometDUnsubscribeFailureTest extends AbstractCometDTest
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', readyLatch, 'countDown');");
-        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: 'debug'})");
+        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(readyLatch.await(10000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");

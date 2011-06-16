@@ -197,8 +197,7 @@ public abstract class AbstractService
      */
     protected void addService(String channelId, String methodName)
     {
-        if (_logger.isDebugEnabled())
-            _logger.debug("subscribe "+_name+"#"+methodName+" to "+channelId);
+        _logger.debug("Subscribing {}#{} to {}", _name, methodName, channelId);
 
         Method method=null;
 
@@ -289,8 +288,7 @@ public abstract class AbstractService
     /* ------------------------------------------------------------ */
     private void invoke(final Method method, final ServerSession fromClient, final ServerMessage msg)
     {
-        if (_logger.isDebugEnabled())
-            _logger.debug("invoke "+_name+"#"+method.getName()+" from "+fromClient+" with "+msg.getData());
+        _logger.debug("Invoking {}#{} from {} with {}", _name, method.getName(), fromClient, msg);
 
         if (_threadPool == null)
             doInvoke(method,fromClient,msg);
@@ -300,7 +298,7 @@ public abstract class AbstractService
             {
                 public void run()
                 {
-                    doInvoke(method,fromClient,msg);
+                    doInvoke(method, fromClient, msg);
                 }
             });
         }

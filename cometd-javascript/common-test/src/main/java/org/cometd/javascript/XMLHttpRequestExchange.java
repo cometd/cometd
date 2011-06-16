@@ -153,7 +153,8 @@ public class XMLHttpRequestExchange extends ScriptableObject
             getRequestFields().clear();
             if (async)
                 notifyReadyStateChange();
-            logger.setDebugEnabled(true);
+            if (Boolean.getBoolean("debugTests"))
+                logger.setDebugEnabled(true);
         }
 
         public boolean isAsynchronous()

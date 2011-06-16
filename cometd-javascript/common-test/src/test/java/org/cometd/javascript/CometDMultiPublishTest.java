@@ -57,7 +57,7 @@ public class CometDMultiPublishTest extends AbstractCometDTest
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', readyLatch, 'countDown');");
-        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");

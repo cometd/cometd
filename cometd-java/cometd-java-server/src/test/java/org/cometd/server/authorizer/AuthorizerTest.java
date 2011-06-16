@@ -38,7 +38,8 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
     protected void customizeBayeux(BayeuxServerImpl bayeux)
     {
         this.bayeux = bayeux;
-        bayeux.getLogger().setDebugEnabled(true);
+        if (Boolean.getBoolean("debugTests"))
+            bayeux.getLogger().setDebugEnabled(true);
     }
 
     public void testAuthorizersOnSlashStarStar() throws Exception

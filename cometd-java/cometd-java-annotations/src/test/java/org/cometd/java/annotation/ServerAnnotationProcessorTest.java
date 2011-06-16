@@ -60,7 +60,8 @@ public class ServerAnnotationProcessorTest
     public void init() throws Exception
     {
         bayeuxServer = new BayeuxServerImpl();
-        bayeuxServer.setOption(BayeuxServerImpl.LOG_LEVEL, "3");
+        if (Boolean.getBoolean("debugTests"))
+            bayeuxServer.setOption(BayeuxServerImpl.LOG_LEVEL, "3");
         bayeuxServer.start();
         processor = new ServerAnnotationProcessor(bayeuxServer);
     }

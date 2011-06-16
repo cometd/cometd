@@ -27,17 +27,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.AbstractService;
-import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.CometdServlet;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,59 +35,19 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class CookiesTest
+public class CookiesTest extends ClientServerTest
 {
-    private Server server;
-    private String cometdURL;
-    private BayeuxServerImpl bayeux;
-    private HttpClient httpClient;
-
     @Before
     public void init() throws Exception
     {
-        server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector();
-        server.addConnector(connector);
-
-        HandlerCollection handlers = new HandlerCollection();
-        server.setHandler(handlers);
-
-        String contextPath = "/cometd";
-        ServletContextHandler context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
-
-        // Setup comet servlet
-        CometdServlet cometdServlet = new CometdServlet();
-        ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
-        cometdServletHolder.setInitParameter("timeout", String.valueOf(5000L));
-        cometdServletHolder.setInitParameter("logLevel", "3");
-        String cometdServletPath = "/cometd";
-        context.addServlet(cometdServletHolder, cometdServletPath + "/*");
-
-        server.start();
-
-        int port = connector.getLocalPort();
-        String contextURL = "http://localhost:" + port + contextPath;
-        cometdURL = contextURL + cometdServletPath;
-        bayeux = cometdServlet.getBayeux();
-
-        httpClient = new HttpClient();
-        httpClient.start();
-    }
-
-    @After
-    public void destroy() throws Exception
-    {
-        httpClient.stop();
-
-        server.stop();
-        server.join();
+        startServer(null);
     }
 
     @Test
     public void testCookieSentOnHandshakeResponse() throws Exception
     {
         final AtomicReference<String> browserCookie = new AtomicReference<String>();
-        final BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient));
+        final BayeuxClient client = newBayeuxClient();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -109,15 +59,13 @@ public class CookiesTest
         assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         assertNotNull(browserCookie.get());
 
-        client.disconnect();
-        assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        disconnectBayeuxClient(client);
     }
 
     @Test
     public void testCookiesExpiration() throws Exception
     {
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient));
-        client.setDebugEnabled(false);
+        BayeuxClient client = newBayeuxClient();
         client.handshake();
         assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
@@ -136,8 +84,7 @@ public class CookiesTest
 
         assertNotNull(client.getCookie("foo"));
 
-        client.disconnect();
-        assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        disconnectBayeuxClient(client);
     }
 
     @Test
@@ -211,8 +158,7 @@ public class CookiesTest
             }
         };
 
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient));
-        client.setDebugEnabled(true);
+        BayeuxClient client = newBayeuxClient();
 
         client.setCookie(cookie1, "value1");
         client.setCookie(cookie2, "value2");
@@ -238,7 +184,6 @@ public class CookiesTest
         channel.unsubscribe();
         assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
 
-        client.disconnect();
-        assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        disconnectBayeuxClient(client);
     }
 }

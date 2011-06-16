@@ -50,7 +50,7 @@ public class CometDHandshakeFailureTest extends AbstractCometDTest
     public void testHandshakeFailure() throws Exception
     {
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
         Latch handshakeLatch = get("handshakeLatch");
         evaluateScript("var failureLatch = new Latch(1);");

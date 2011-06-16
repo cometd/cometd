@@ -29,15 +29,20 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
 {
+    @Before
+    public void init() throws Exception
+    {
+        startServer(null);
+    }
+
     @Test
     public void testUnsubscribeSubscribeBroadcast() throws Exception
     {
-        startServer(null);
-
         final String actionField = "action";
         final String unsubscribeAction = "unsubscribe";
         final String subscribeAction = "subscribe";
@@ -71,6 +76,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
             }
         };
 
+        BayeuxClient client = newBayeuxClient();
         client.handshake();
         Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
 
@@ -110,13 +116,13 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         messageLatch.set(new CountDownLatch(1));
         testChannel.publish(new HashMap<String, Object>());
         Assert.assertTrue(messageLatch.get().await(1, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
     }
 
     @Test
     public void testUnsubscribeSubscribeService() throws Exception
     {
-        startServer(null);
-
         final String testChannelName = "/service/test";
         new AbstractService(bayeux, "test")
         {
@@ -130,6 +136,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
             }
         };
 
+        BayeuxClient client = newBayeuxClient();
         client.handshake();
         Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
 
@@ -172,13 +179,13 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         messageLatch.set(new CountDownLatch(1));
         testChannel.publish(new HashMap<String, Object>());
         Assert.assertTrue(messageLatch.get().await(1, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
     }
 
     @Test
     public void testUnsubscribeDisconnectSubscribe() throws Exception
     {
-        startServer(null);
-
         final String actionField = "action";
         final String unsubscribeAction = "unsubscribe";
         final String testChannelName = "/test";
@@ -208,6 +215,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
             }
         };
 
+        BayeuxClient client = newBayeuxClient();
         client.handshake();
         Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
 
@@ -245,5 +253,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         Assert.assertNotNull(serverSession);
 
         Assert.assertFalse(bayeux.getChannel(testChannelName).subscribe(serverSession));
+
+        disconnectBayeuxClient(client);
     }
 }

@@ -144,8 +144,7 @@ public class ServerSessionImpl implements ServerSession
     {
         if (_intervalTimestamp != 0 && now > _intervalTimestamp)
         {
-            if (_logger.isDebugEnabled())
-                _logger.debug("Expired interval {}", this);
+            _logger.debug("Expired interval {}", this);
             synchronized (_queue)
             {
                 if (_scheduler != null)

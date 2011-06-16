@@ -27,7 +27,7 @@ public class CometDDojoHitchTest extends AbstractCometDTest
     public void testDojoHitch() throws Exception
     {
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
         Latch handshakeLatch = get("handshakeLatch");
         evaluateScript("cometd.addListener('/meta/handshake', handshakeLatch, 'countDown');");

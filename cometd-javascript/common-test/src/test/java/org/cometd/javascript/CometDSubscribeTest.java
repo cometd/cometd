@@ -32,7 +32,7 @@ public class CometDSubscribeTest extends AbstractCometDTest
         Latch unsubscribeLatch = get("unsubscribeLatch");
         evaluateScript("cometd.addListener('/meta/unsubscribe', unsubscribeLatch, 'countDown');");
 
-        evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: 'debug' });");
+        evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
         Thread.sleep(1000); // Wait for long poll
 
         evaluateScript("var subscription = cometd.subscribe('/foo', function(message) {});");
@@ -70,7 +70,7 @@ public class CometDSubscribeTest extends AbstractCometDTest
         Latch latch = get("latch");
         evaluateScript("cometd.addListener('/meta/publish', latch, 'countDown');");
 
-        evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: 'debug' });");
+        evaluateScript("cometd.init({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });");
         Thread.sleep(1000); // Wait for long poll
         evaluateScript("cometd.disconnect(true);");
         // Wait for the connect to return

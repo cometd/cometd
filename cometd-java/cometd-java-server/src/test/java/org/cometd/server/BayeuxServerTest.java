@@ -182,8 +182,6 @@ public class BayeuxServerTest extends Assert
         session1.getChannel("/foo/bar").subscribe(listener);
         session2.getChannel("/foo/bar").subscribe(listener);
 
-        System.err.println(_bayeux.dump());
-
         assertEquals(3,_bayeux.getChannel("/foo/bar").getSubscribers().size());
 
         session0.getChannel("/foo/bar").unsubscribe(listener);
@@ -392,7 +390,6 @@ public class BayeuxServerTest extends Assert
         session0.getChannel("/foo/bar").publish("ignoreRcv");
 
         Thread.sleep(100);
-        System.err.println(events);
 
         assertEquals(session0.getId(),events.poll());
         assertEquals("six",events.poll());

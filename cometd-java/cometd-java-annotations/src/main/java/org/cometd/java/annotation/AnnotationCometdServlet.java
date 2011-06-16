@@ -80,7 +80,7 @@ public class AnnotationCometdServlet extends CometdServlet
         {
             Object service = newService(serviceClassName);
             processor.process(service);
-            logger.info("Processed annotated service " + service);
+            logger.info("Processed annotated service {}", service);
             return service;
         }
         catch (Exception x)
@@ -108,7 +108,7 @@ public class AnnotationCometdServlet extends CometdServlet
     {
         Logger logger = getBayeux().getLogger();
         processor.deprocess(service);
-        logger.info("Deprocessed annotated service " + service);
+        logger.info("Deprocessed annotated service {}", service);
     }
 
     protected List<Object> getServices()

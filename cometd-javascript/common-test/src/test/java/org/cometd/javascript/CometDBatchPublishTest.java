@@ -43,7 +43,7 @@ public class CometDBatchPublishTest extends AbstractCometDTest
                 "        cometd.endBatch();" +
                 "    }" +
                 "});" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "cometd.handshake();");
         Assert.assertTrue(latch.await(1000));
 

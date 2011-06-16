@@ -51,8 +51,11 @@ public abstract class AbstractBayeuxServerTest extends TestCase
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
         Map<String, String> options = new HashMap<String, String>();
         options.put("timeout", String.valueOf(timeout));
-        options.put("logLevel", "3");
-        options.put("jsonDebug", "true");
+        if (Boolean.getBoolean("debugTests"))
+        {
+            options.put("logLevel", "3");
+            options.put("jsonDebug", "true");
+        }
         customizeOptions(options);
         for (Map.Entry<String, String> entry : options.entrySet())
             cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());

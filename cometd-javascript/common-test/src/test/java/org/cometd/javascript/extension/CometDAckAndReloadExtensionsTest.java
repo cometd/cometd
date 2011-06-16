@@ -46,7 +46,7 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest
     @Test
     public void testAckAndReloadExtensions() throws Exception
     {
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
@@ -74,7 +74,7 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest
         initPage();
         initExtensions();
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = get("readyLatch");

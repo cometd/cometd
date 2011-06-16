@@ -16,12 +16,33 @@
 
 package org.cometd.server;
 
+import java.io.IOException;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
 
 public class BadJSONTest extends AbstractBayeuxClientServerTest
 {
+    @Override
+    protected void customizeBayeux(BayeuxServerImpl bayeux)
+    {
+        bayeux.setTransports(new JSONTransport(bayeux)
+        {
+            @Override
+            protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws ServletException, IOException
+            {
+                // Suppress logging during tests
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            }
+        });
+        System.err.println("SIMON: " + Boolean.getBoolean("debugTests"));
+    }
+
     public void testBadJSON() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("[{" +

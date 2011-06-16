@@ -78,7 +78,7 @@ public class AcknowledgedMessagesExtension implements Extension
 
             if (clientRequestedAcks && to != null)
             {
-                _logger.info("Enabled message acknowledgement for client " + to);
+                _logger.info("Enabled message acknowledgement for client {}", to);
                 to.addExtension(new AcknowledgedMessagesClientExtension(to));
                 ((ServerSessionImpl)to).setMetaConnectDeliveryOnly(true);
             }

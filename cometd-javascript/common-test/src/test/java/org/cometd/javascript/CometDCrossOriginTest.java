@@ -42,7 +42,7 @@ public class CometDCrossOriginTest extends AbstractCometDTest
         evaluateScript("cometd.configure({" +
                        "url: '" + crossOriginCometdURL + "', " +
                        "requestHeaders: { Origin: 'http://localhost:8080' }, " +
-                       "logLevel: 'debug'" +
+                       "logLevel: '" + getLogLevel() + "'" +
                        "});");
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = get("connectLatch");

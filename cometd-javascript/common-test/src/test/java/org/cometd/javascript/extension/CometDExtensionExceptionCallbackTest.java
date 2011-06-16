@@ -32,7 +32,7 @@ public class CometDExtensionExceptionCallbackTest extends AbstractCometDTest
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = get("connectLatch");
         evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "cometd.addListener('/meta/connect', function(message) { connectLatch.countDown(); });" +
                 "cometd.registerExtension('testext', {" +
                 "   outgoing: function(message) { throw 'test'; }" +
@@ -64,7 +64,7 @@ public class CometDExtensionExceptionCallbackTest extends AbstractCometDTest
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = get("connectLatch");
         evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "cometd.addListener('/meta/connect', function(message) { connectLatch.countDown(); });" +
                 "cometd.registerExtension('testext', {" +
                 "   incoming: function(message) { throw 'test'; }" +

@@ -33,10 +33,10 @@ public class ClientServerTest
 {
     protected Connector connector;
     protected Server server;
+    protected ServletContextHandler context;
     protected HttpClient httpClient;
     protected String cometdURL;
     protected BayeuxServer bayeux;
-    protected BayeuxClient client;
 
     public void startServer(Map<String, String> initParams) throws Exception
     {
@@ -47,12 +47,13 @@ public class ClientServerTest
         server.addConnector(connector);
 
         String contextPath = "";
-        ServletContextHandler context = new ServletContextHandler(server, contextPath);
+        context = new ServletContextHandler(server, contextPath);
 
         // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
-        cometdServletHolder.setInitParameter("logLevel", "3");
+        if (debugTests())
+            cometdServletHolder.setInitParameter("logLevel", "3");
         cometdServletHolder.setInitOrder(1);
         if (initParams != null)
         {
@@ -71,19 +72,56 @@ public class ClientServerTest
 
         httpClient = new HttpClient();
         httpClient.start();
+    }
 
-        client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
+    protected BayeuxClient newBayeuxClient()
+    {
+        final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
+        client.setDebugEnabled(debugTests());
+        return client;
+    }
+
+    protected void disconnectBayeuxClient(BayeuxClient client)
+    {
+        // TODO: implement this feature
+//        final CountDownLatch latch = new CountDownLatch(1);
+//        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+//        {
+//            public void onMessage(ClientSessionChannel channel, Message message)
+//            {
+//                final Map<String, Object> advice = message.getAdvice();
+//                if (advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)))
+//                    latch.countDown();
+//            }
+//        });
+
+        client.disconnect();
+        client.waitFor(5000, BayeuxClient.State.DISCONNECTED);
+
+        // There is a possibility that we are in the window where the server
+        // has returned the long poll and the client has not issued it again,
+        // so wait for a while, but do not complain if the latch does not trigger.
+//        try
+//        {
+//            latch.await(1, TimeUnit.SECONDS);
+//        }
+//        catch (InterruptedException x)
+//        {
+//            Thread.currentThread().interrupt();
+//        }
     }
 
     @After
     public void stopServer() throws Exception
     {
-        client.disconnect();
-        client.waitFor(1000, BayeuxClient.State.DISCONNECTED);
-
         httpClient.stop();
 
         server.stop();
         server.join();
+    }
+
+    protected boolean debugTests()
+    {
+        return Boolean.getBoolean("debugTests");
     }
 }

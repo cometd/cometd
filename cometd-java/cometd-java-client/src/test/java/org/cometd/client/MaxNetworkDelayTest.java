@@ -16,6 +16,8 @@
 
 package org.cometd.client;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -29,63 +31,21 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.server.CometdServlet;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
-public class MaxNetworkDelayTest
+public class MaxNetworkDelayTest extends ClientServerTest
 {
-    private Server server;
-    private BayeuxServer bayeux;
-    private String cometdURL;
-    private HttpClient httpClient;
-    private long timeout = 5000;
+    private final long timeout = 5000;
 
     @Before
     public void setUp() throws Exception
     {
-        server = new Server();
-
-        Connector connector = new SelectChannelConnector();
-        server.addConnector(connector);
-
-        String contextPath = "";
-        ServletContextHandler context = new ServletContextHandler(server, contextPath);
-
-        // Cometd servlet
-        CometdServlet cometdServlet = new CometdServlet();
-        ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
-        cometdServletHolder.setInitParameter("timeout", String.valueOf(timeout));
-        cometdServletHolder.setInitParameter("logLevel", "3");
-
-        String servletPath = "/cometd";
-        context.addServlet(cometdServletHolder, servletPath + "/*");
-
-        server.start();
-
-        bayeux = cometdServlet.getBayeux();
-        cometdURL = "http://localhost:" + connector.getLocalPort() + contextPath + servletPath;
-
-        httpClient = new HttpClient();
-        httpClient.start();
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        httpClient.stop();
-
-        server.stop();
-        server.join();
+        Map<String, String> params = new HashMap<String, String>();
+        params.put("timeout", String.valueOf(timeout));
+        startServer(params);
     }
 
     @Test
@@ -127,7 +87,7 @@ public class MaxNetworkDelayTest
                     latch.countDown();
             }
         };
-        client.setDebugEnabled(true);
+        client.setDebugEnabled(debugTests());
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -140,8 +100,7 @@ public class MaxNetworkDelayTest
         client.handshake();
         assertTrue(latch.await(sleep, TimeUnit.MILLISECONDS));
 
-        client.disconnect();
-        assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        disconnectBayeuxClient(client);
     }
 
     @Test
@@ -189,7 +148,7 @@ public class MaxNetworkDelayTest
                     latch.countDown();
             }
         };
-        client.setDebugEnabled(true);
+        client.setDebugEnabled(debugTests());
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             private AtomicInteger connects = new AtomicInteger();
@@ -210,8 +169,7 @@ public class MaxNetworkDelayTest
         long end = System.nanoTime();
         assertTrue(end - begin > TimeUnit.MILLISECONDS.toNanos(timeout));
 
-        client.disconnect();
-        assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        disconnectBayeuxClient(client);
     }
 
     private class EmptyExtension implements BayeuxServer.Extension
