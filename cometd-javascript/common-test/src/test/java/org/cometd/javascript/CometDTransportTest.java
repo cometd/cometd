@@ -18,7 +18,7 @@ package org.cometd.javascript;
 
 import java.util.Arrays;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDTransportTest extends AbstractCometDTest

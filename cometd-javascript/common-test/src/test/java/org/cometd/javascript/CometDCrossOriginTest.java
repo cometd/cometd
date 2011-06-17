@@ -16,11 +16,11 @@
 
 package org.cometd.javascript;
 
-import junit.framework.Assert;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDCrossOriginTest extends AbstractCometDTest

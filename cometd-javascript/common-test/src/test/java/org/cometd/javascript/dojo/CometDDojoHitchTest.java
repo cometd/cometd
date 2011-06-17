@@ -16,9 +16,9 @@
 
 package org.cometd.javascript.dojo;
 
-import junit.framework.Assert;
 import org.cometd.javascript.AbstractCometDTest;
 import org.cometd.javascript.Latch;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDDojoHitchTest extends AbstractCometDTest

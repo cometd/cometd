@@ -18,10 +18,10 @@ package org.cometd.javascript;
 
 import java.util.Map;
 
-import junit.framework.Assert;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDDeliverTest extends AbstractCometDTest

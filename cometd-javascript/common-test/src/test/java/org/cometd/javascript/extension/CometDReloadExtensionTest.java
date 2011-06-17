@@ -16,9 +16,9 @@
 
 package org.cometd.javascript.extension;
 
-import junit.framework.Assert;
 import org.cometd.javascript.AbstractCometDTest;
 import org.cometd.javascript.Latch;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 

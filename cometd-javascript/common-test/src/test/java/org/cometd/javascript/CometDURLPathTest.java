@@ -18,13 +18,13 @@ package org.cometd.javascript;
 
 import javax.servlet.http.HttpServletRequest;
 
-import junit.framework.Assert;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.transport.HttpTransport;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDURLPathTest extends AbstractCometDTest

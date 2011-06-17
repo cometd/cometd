@@ -16,8 +16,8 @@
 
 package org.cometd.javascript;
 
-import junit.framework.Assert;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDRedeployTest extends AbstractCometDTest

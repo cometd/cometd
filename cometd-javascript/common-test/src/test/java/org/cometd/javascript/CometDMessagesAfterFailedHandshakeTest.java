@@ -18,12 +18,12 @@ package org.cometd.javascript;
 
 import java.util.Map;
 
-import junit.framework.Assert;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.DefaultSecurityPolicy;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest

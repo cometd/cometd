@@ -18,13 +18,13 @@ package org.cometd.javascript;
 
 import java.util.Map;
 
-import junit.framework.Assert;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
