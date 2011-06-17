@@ -274,7 +274,7 @@ public class ServerAnnotationProcessorTest
 
         // Be sure the channel is removed after few sweeps
         for (int i = 0; i < 3; ++i)
-            bayeuxServer.doSweep();
+            bayeuxServer.sweep();
         assertNull(bayeuxServer.getChannel(channel.getId()));
     }
 

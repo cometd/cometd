@@ -406,9 +406,9 @@ public abstract class LongPollingTransport extends HttpTransport
     /**
      * Sweep the transport for old Browser IDs
      *
-     * @see org.cometd.server.AbstractServerTransport#doSweep()
+     * @see org.cometd.server.AbstractServerTransport#sweep()
      */
-    protected void doSweep()
+    protected void sweep()
     {
         long now = System.currentTimeMillis();
         if (0 < _lastSweep && _lastSweep < now)

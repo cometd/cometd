@@ -169,11 +169,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 @Override
                 public void run()
                 {
-                    doSweep();
-
-                    final long now = System.currentTimeMillis();
-                    for (ServerSessionImpl session : _sessions.values())
-                        session.sweep(now);
+                    sweep();
                 }
             }, sweep_interval, sweep_interval);
         }
@@ -1108,16 +1104,20 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public void doSweep()
+    public void sweep()
     {
         for (ServerChannelImpl channel : _channels.values())
-            channel.doSweep();
+            channel.sweep();
 
         for (ServerTransport transport : _transports.values())
         {
             if (transport instanceof AbstractServerTransport)
-                ((AbstractServerTransport)transport).doSweep();
+                ((AbstractServerTransport)transport).sweep();
         }
+
+        long now = System.currentTimeMillis();
+        for (ServerSessionImpl session : _sessions.values())
+            session.sweep(now);
     }
 
     /* ------------------------------------------------------------ */

@@ -314,7 +314,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     }
 
     /* ------------------------------------------------------------ */
-    protected void doSweep()
+    protected void sweep()
     {
         for (ServerSession session : _subscribers)
         {

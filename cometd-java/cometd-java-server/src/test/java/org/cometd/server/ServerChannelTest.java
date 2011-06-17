@@ -327,13 +327,13 @@ public class ServerChannelTest
         assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
 
         // First sweep does not remove the channel yet
-        _bayeux.doSweep();
+        _bayeux.sweep();
         assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
         // Nor a second sweep
-        _bayeux.doSweep();
+        _bayeux.sweep();
         assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
         // Third sweep removes it
-        _bayeux.doSweep();
+        _bayeux.sweep();
         assertNull(_bayeux.getChannel("/foo/bar"));
 
         _bayeux.createIfAbsent("/foo/bar/baz");
@@ -453,7 +453,7 @@ public class ServerChannelTest
     {
         // 12 is a big enough number that will make sure channel will be swept
         for (int i = 0; i < 12; ++i)
-            _bayeux.doSweep();
+            _bayeux.sweep();
     }
 
     private ServerSessionImpl newServerSession()

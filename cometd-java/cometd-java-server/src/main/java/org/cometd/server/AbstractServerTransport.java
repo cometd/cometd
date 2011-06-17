@@ -389,7 +389,7 @@ public abstract class AbstractServerTransport implements ServerTransport
     /**
      * Housekeeping sweep, called a regular intervals
      */
-    protected void doSweep()
+    protected void sweep()
     {
     }
 
