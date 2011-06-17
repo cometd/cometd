@@ -111,6 +111,7 @@ public class AckExtensionTest extends ClientServerTest
         connector.stop();
         TimeUnit.SECONDS.sleep(1);
         Assert.assertTrue(connector.isStopped());
+        Assert.assertTrue(client.waitFor(10000, BayeuxClient.State.UNCONNECTED));
 
         // Send messages while client is offline
         for (int i = count; i < 2 * count; ++i)
