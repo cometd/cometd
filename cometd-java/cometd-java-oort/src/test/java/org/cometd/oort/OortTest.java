@@ -34,11 +34,24 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
-import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.rules.TestWatchman;
+import org.junit.runners.model.FrameworkMethod;
 
 public abstract class OortTest
 {
+    @Rule
+    public final TestWatchman testName = new TestWatchman()
+    {
+        @Override
+        public void starting(FrameworkMethod method)
+        {
+            super.starting(method);
+            Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
+        }
+    };
     private final List<Server> servers = new ArrayList<Server>();
     private final List<Oort> oorts = new ArrayList<Oort>();
     private final List<BayeuxClient> clients = new ArrayList<BayeuxClient>();
@@ -111,8 +124,7 @@ public abstract class OortTest
 
     protected void stopClient(BayeuxClient client)
     {
-        client.disconnect();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        client.disconnect(1000);
     }
 
     protected void stopOorts() throws Exception

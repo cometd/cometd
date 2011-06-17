@@ -246,8 +246,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         Assert.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
 
         // Disconnect
-        client.disconnect();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(client.disconnect(1000));
 
         final ServerSession serverSession = sessionRef.get();
         Assert.assertNotNull(serverSession);

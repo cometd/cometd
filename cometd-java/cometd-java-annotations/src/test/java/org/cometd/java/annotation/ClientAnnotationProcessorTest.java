@@ -107,8 +107,7 @@ public class ClientAnnotationProcessorTest
     @After
     public void destroy()
     {
-        bayeuxClient.disconnect();
-        bayeuxClient.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+        bayeuxClient.disconnect(1000);
     }
 
     @Test
@@ -224,8 +223,7 @@ public class ClientAnnotationProcessorTest
         assertTrue(processed);
 
         // Listener method must not be notified, since we have deconfigured
-        bayeuxClient.disconnect();
-        assertFalse(disconnectLatch.await(1000, TimeUnit.MILLISECONDS));
+        bayeuxClient.disconnect(1000);
     }
 
     @Test

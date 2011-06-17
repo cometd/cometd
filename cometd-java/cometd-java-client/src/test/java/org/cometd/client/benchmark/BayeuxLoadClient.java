@@ -359,8 +359,7 @@ public class BayeuxLoadClient
             reset();
         }
 
-        statsClient.disconnect();
-        statsClient.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+        statsClient.disconnect(1000);
 
         scheduler.shutdown();
         scheduler.awaitTermination(1000, TimeUnit.MILLISECONDS);
@@ -625,7 +624,7 @@ public class BayeuxLoadClient
 
         public void destroy()
         {
-            disconnect();
+            disconnect(1000);
 
             for (Integer room : subscriptions)
             {

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -236,7 +237,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private boolean isHandshook(BayeuxClientState bayeuxClientState)
     {
-        return isConnecting(bayeuxClientState) ||
+        return bayeuxClientState.type == State.CONNECTING ||
                 bayeuxClientState.type == State.CONNECTED ||
                 bayeuxClientState.type == State.UNCONNECTED;
     }
@@ -260,6 +261,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private boolean isConnected(BayeuxClientState bayeuxClientState)
     {
         return bayeuxClientState.type == State.CONNECTED;
+    }
+
+    private boolean isDisconnecting(BayeuxClientState bayeuxClientState)
+    {
+        return bayeuxClientState.type == State.DISCONNECTING;
     }
 
     /**
@@ -478,6 +484,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return messages;
     }
 
+    /**
+     * @see #disconnect(long)
+     */
     public void disconnect()
     {
         updateBayeuxClientState(new BayeuxClientStateUpdater()
@@ -486,10 +495,61 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             {
                 if (isConnecting(oldState) || isConnected(oldState))
                     return new DisconnectingState(oldState.transport, oldState.clientId);
+                else if (isDisconnecting(oldState))
+                    return new DisconnectingState(oldState.transport, oldState.clientId);
                 else
                     return new DisconnectedState(oldState.transport);
             }
         });
+    }
+
+    /**
+     * <p>Performs a {@link #disconnect() disconnect} and uses the given {@code timeout}
+     * to wait for the disconnect to complete.</p>
+     * <p>When a disconnect is sent to the server, the server also wakes up the long
+     * poll that may be outstanding, so that a connect reply message may arrive to
+     * the client later than the disconnect reply message.</p>
+     * <p>This method waits for the given {@code timeout} for the disconnect reply, but also
+     * waits the same timeout for the last connect reply; in the worst case the
+     * maximum time waited will therefore be twice the given {@code timeout} parameter.</p>
+     * <p>This method returns true if the disconnect reply message arrived within the
+     * given {@code timeout} parameter, no matter if the connect reply message arrived or not.</p>
+     *
+     * @param timeout the timeout to wait for the disconnect to complete
+     * @return true if the disconnect completed within the given timeout
+     */
+    public boolean disconnect(long timeout)
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+        ClientSessionChannel.MessageListener lastConnectListener = new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                final Map<String, Object> advice = message.getAdvice();
+                if (advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)))
+                    latch.countDown();
+            }
+        };
+        getChannel(Channel.META_CONNECT).addListener(lastConnectListener);
+
+        disconnect();
+        boolean disconnected = waitFor(timeout, BayeuxClient.State.DISCONNECTED);
+
+        // There is a possibility that we are in the window where the server
+        // has returned the long poll and the client has not issued it again,
+        // so wait for the timeout, but do not complain if the latch does not trigger.
+        try
+        {
+            latch.await(timeout, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException x)
+        {
+            Thread.currentThread().interrupt();
+        }
+
+        getChannel(Channel.META_CONNECT).removeListener(lastConnectListener);
+
+        return disconnected;
     }
 
     /**
@@ -610,6 +670,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 {
                     if (Message.RECONNECT_RETRY_VALUE.equals(action))
                         return new ConnectedState(oldState.handshakeFields, advice, oldState.transport, oldState.clientId);
+                    else if (Message.RECONNECT_NONE_VALUE.equals(action))
+                        // This case happens when the connect reply arrives after a disconnect
+                        // We do not go into a disconnected state to allow normal processing of the disconnect reply
+                        return new DisconnectingState(oldState.transport, oldState.clientId);
                 }
                 else
                 {
@@ -1279,7 +1343,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         @Override
         protected boolean isUpdateableTo(BayeuxClientState newState)
         {
-            return isConnecting(newState) ||
+            return newState.type == State.CONNECTING ||
                     newState.type == State.REHANDSHAKING ||
                     newState.type == State.DISCONNECTED;
         }
@@ -1311,7 +1375,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         @Override
         protected boolean isUpdateableTo(BayeuxClientState newState)
         {
-            return isConnecting(newState) ||
+            return newState.type == State.CONNECTING ||
                     newState.type == State.REHANDSHAKING ||
                     newState.type == State.DISCONNECTED;
         }

@@ -162,7 +162,7 @@ public class BayeuxClientTest extends ClientServerTest
         latch.set(new CountDownLatch(1));
         Assert.assertTrue(latch.get().await(client.getBackoffIncrement() * 2, TimeUnit.MILLISECONDS));
 
-        client.disconnect();
+        Assert.assertTrue(client.disconnect(1000));
 
         // Be sure it does not retry
         latch.set(new CountDownLatch(1));
@@ -209,7 +209,7 @@ public class BayeuxClientTest extends ClientServerTest
         latch.set(new CountDownLatch(1));
         Assert.assertTrue(latch.get().await(client.getBackoffIncrement() * 2, TimeUnit.MILLISECONDS));
 
-        client.disconnect();
+        Assert.assertTrue(client.disconnect(1000));
 
         // Be sure it does not retry
         latch.set(new CountDownLatch(1));
@@ -529,10 +529,7 @@ public class BayeuxClientTest extends ClientServerTest
         Assert.assertEquals(expected, received.get());
 
         for (BayeuxClient client : clients)
-            client.disconnect();
-
-        for (BayeuxClient client : clients)
-            Assert.assertTrue(client.waitFor(1000L, State.DISCONNECTED));
+            Assert.assertTrue(client.disconnect(1000));
     }
 
     @Test

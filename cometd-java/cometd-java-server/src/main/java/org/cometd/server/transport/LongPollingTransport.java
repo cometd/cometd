@@ -363,16 +363,27 @@ public abstract class LongPollingTransport extends HttpTransport
             ServerSessionImpl session = scheduler.getSession();
             metaConnectResumed(request, session);
 
-            if (session.isConnected())
-                session.startIntervalTimeout();
-
             // Send the message queue
             PrintWriter writer = sendQueue(request, response, session, null);
+
+            // We need to start the interval timeout before the connect reply
+            // otherwise we open up a race condition where the client receives
+            // the connect reply and sends a new connect request before we start
+            // the interval timeout, which will be wrong.
+            if (session.isConnected())
+                session.startIntervalTimeout();
 
             // Send the connect reply
             ServerMessage.Mutable reply = scheduler.getReply();
             reply = getBayeux().extendReply(session, session, reply);
-            writer = send(request, response, writer, reply);
+
+            if (reply != null)
+            {
+                if (!session.isConnected())
+                    reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+
+                writer = send(request, response, writer, reply);
+            }
 
             complete(writer);
         }

@@ -58,8 +58,7 @@ public class TimeExtensionsTest extends ClientServerTest
 
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
-        client.disconnect();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(client.disconnect(5000));
 
         Assert.assertTrue(messages.size() > 0);
 
@@ -90,8 +89,7 @@ public class TimeExtensionsTest extends ClientServerTest
 
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
-        client.disconnect();
-        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(client.disconnect(5000));
 
         Assert.assertTrue(messages.size() > 0);
 

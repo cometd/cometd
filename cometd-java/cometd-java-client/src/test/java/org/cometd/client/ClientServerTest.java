@@ -27,10 +27,24 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
+import org.junit.Rule;
+import org.junit.rules.TestWatchman;
+import org.junit.runners.model.FrameworkMethod;
 
 public class ClientServerTest
 {
+    @Rule
+    public final TestWatchman testName = new TestWatchman()
+    {
+        @Override
+        public void starting(FrameworkMethod method)
+        {
+            super.starting(method);
+            Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
+        }
+    };
     protected Connector connector;
     protected Server server;
     protected ServletContextHandler context;
@@ -83,32 +97,7 @@ public class ClientServerTest
 
     protected void disconnectBayeuxClient(BayeuxClient client)
     {
-        // TODO: implement this feature
-//        final CountDownLatch latch = new CountDownLatch(1);
-//        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-//        {
-//            public void onMessage(ClientSessionChannel channel, Message message)
-//            {
-//                final Map<String, Object> advice = message.getAdvice();
-//                if (advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)))
-//                    latch.countDown();
-//            }
-//        });
-
-        client.disconnect();
-        client.waitFor(5000, BayeuxClient.State.DISCONNECTED);
-
-        // There is a possibility that we are in the window where the server
-        // has returned the long poll and the client has not issued it again,
-        // so wait for a while, but do not complain if the latch does not trigger.
-//        try
-//        {
-//            latch.await(1, TimeUnit.SECONDS);
-//        }
-//        catch (InterruptedException x)
-//        {
-//            Thread.currentThread().interrupt();
-//        }
+        client.disconnect(5000);
     }
 
     @After
