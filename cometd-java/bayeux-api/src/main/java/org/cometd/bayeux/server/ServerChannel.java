@@ -70,7 +70,7 @@ public interface ServerChannel extends ConfigurableServerChannel
      * the message to all the {@link ServerSession}s subscribed to
      * this channel.</p>
      *
-     * @param from the session from which the message originates
+     * @param from    the session from which the message originates
      * @param message the message to publish
      * @see #publish(Session, Object, String)
      */
@@ -78,10 +78,11 @@ public interface ServerChannel extends ConfigurableServerChannel
 
     /**
      * <p>Publishes the given information to this channel.</p>
+     *
      * @param from the session from which the message originates
      * @param data the data of the message
-     * @param id the id of the message
-     * @see #publish(Session, ServerMessage)
+     * @param id   the id of the message
+     * @see #publish(Session, ServerMessage.Mutable)
      */
     void publish(Session from, Object data, String id);
 
@@ -91,7 +92,7 @@ public interface ServerChannel extends ConfigurableServerChannel
      * removing channel "/foo" will remove also "/foo/bar" and
      * "/foo/blip".</p>
      * <p>The removal will notify {@link BayeuxServer.ChannelListener}
-     * listeners.
+     * listeners.</p>
      */
     void remove();
 
@@ -112,7 +113,8 @@ public interface ServerChannel extends ConfigurableServerChannel
          * <p>Callback invoked when a message is being published.</p>
          * <p>Implementors can decide to return false to signal that the message should not be
          * published.</p>
-         * @param from the session that publishes the message
+         *
+         * @param from    the session that publishes the message
          * @param channel the channel the message is published to
          * @param message the message to be published
          * @return whether the message should be published or not
@@ -126,14 +128,16 @@ public interface ServerChannel extends ConfigurableServerChannel
     public interface SubscriptionListener extends ServerChannelListener
     {
         /**
-         * Callback invoked when the given {@link ServerSession} subscribes to the given {@link ServerChannel}.
+         * <p>Callback invoked when the given {@link ServerSession} subscribes to the given {@link ServerChannel}.</p>
+         *
          * @param session the session that subscribes
          * @param channel the channel the session subscribes to
          */
         public void subscribed(ServerSession session, ServerChannel channel);
 
         /**
-         * Callback invoked when the given {@link ServerSession} unsubscribes from the given {@link ServerChannel}.
+         * <p>Callback invoked when the given {@link ServerSession} unsubscribes from the given {@link ServerChannel}.</p>
+         *
          * @param session the session that unsubscribes
          * @param channel the channel the session unsubscribes from
          */
