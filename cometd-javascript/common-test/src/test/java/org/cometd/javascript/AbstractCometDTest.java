@@ -28,13 +28,27 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestWatchman;
+import org.junit.runners.model.FrameworkMethod;
 import org.mozilla.javascript.ScriptableObject;
 
 public abstract class AbstractCometDTest
 {
+    @Rule
+    public final TestWatchman testName = new TestWatchman()
+    {
+        @Override
+        public void starting(FrameworkMethod method)
+        {
+            super.starting(method);
+            Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
+        }
+    };
     protected TestProvider provider;
     private HttpCookieStore cookies;
     private Server server;
