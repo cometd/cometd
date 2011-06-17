@@ -685,7 +685,7 @@ public class BayeuxClientTest extends ClientServerTest
         handshakeLatch.set(new CountDownLatch(1));
         connectLatch.set(new CountDownLatch(1));
         client.handshake();
-        Assert.assertTrue(handshakeLatch.get().await(100000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(handshakeLatch.get().await(1000, TimeUnit.MILLISECONDS));
         Assert.assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
         Assert.assertTrue(client.isConnected());
 
