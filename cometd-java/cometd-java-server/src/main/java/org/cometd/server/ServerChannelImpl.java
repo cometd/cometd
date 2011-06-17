@@ -328,7 +328,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         if (_subscribers.size() > 0 || _listeners.size() > 0)
             return;
 
-        if (isWild() || isDeepWild())
+        if (isWild())
         {
             // Wild, check if has authorizers that can match other channels
             if (_authorizers.size() > 0)
