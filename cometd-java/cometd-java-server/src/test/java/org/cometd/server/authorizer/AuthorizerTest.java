@@ -29,6 +29,8 @@ import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class AuthorizerTest extends AbstractBayeuxClientServerTest
 {
@@ -42,6 +44,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
             bayeux.getLogger().setDebugEnabled(true);
     }
 
+    @Test
     public void testAuthorizersOnSlashStarStar() throws Exception
     {
         bayeux.createIfAbsent("/**", new ConfigurableServerChannel.Initializer()
@@ -69,8 +72,8 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
 
@@ -80,13 +83,13 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         httpClient.send(publish);
-        assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        assertEquals(200, publish.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
+        Assert.assertEquals(200, publish.getResponseStatus());
 
         List<Message.Mutable> messages = HashMapMessage.parseMessages(publish.getResponseContent());
-        assertEquals(1, messages.size());
+        Assert.assertEquals(1, messages.size());
         Message message = messages.get(0);
-        assertFalse(message.isSuccessful());
+        Assert.assertFalse(message.isSuccessful());
 
         publish = newBayeuxExchange("[{" +
                 "\"channel\": \"/service/foo\"," +
@@ -94,15 +97,16 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         httpClient.send(publish);
-        assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        assertEquals(200, publish.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
+        Assert.assertEquals(200, publish.getResponseStatus());
 
         messages = HashMapMessage.parseMessages(publish.getResponseContent());
-        assertEquals(1, messages.size());
+        Assert.assertEquals(1, messages.size());
         message = messages.get(0);
-        assertTrue(message.isSuccessful());
+        Assert.assertTrue(message.isSuccessful());
     }
 
+    @Test
     public void testIgnoringAuthorizerDenies() throws Exception
     {
         String channelName = "/test";
@@ -127,8 +131,8 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
 
@@ -138,13 +142,13 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         httpClient.send(publish);
-        assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        assertEquals(200, publish.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
+        Assert.assertEquals(200, publish.getResponseStatus());
 
         List<Message.Mutable> messages = HashMapMessage.parseMessages(publish.getResponseContent());
-        assertEquals(1, messages.size());
+        Assert.assertEquals(1, messages.size());
         Message message = messages.get(0);
-        assertFalse(message.isSuccessful());
+        Assert.assertFalse(message.isSuccessful());
 
         // Check that publishing to another channel does not involve authorizers
         ContentExchange grantedPublish = newBayeuxExchange("[{" +
@@ -153,15 +157,16 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         httpClient.send(grantedPublish);
-        assertEquals(HttpExchange.STATUS_COMPLETED, grantedPublish.waitForDone());
-        assertEquals(200, grantedPublish.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, grantedPublish.waitForDone());
+        Assert.assertEquals(200, grantedPublish.getResponseStatus());
 
         messages = HashMapMessage.parseMessages(grantedPublish.getResponseContent());
-        assertEquals(1, messages.size());
+        Assert.assertEquals(1, messages.size());
         message = messages.get(0);
-        assertTrue(message.isSuccessful());
+        Assert.assertTrue(message.isSuccessful());
     }
 
+    @Test
     public void testNoAuthorizersGrant() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("[{" +
@@ -171,8 +176,8 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
 
@@ -182,15 +187,16 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         httpClient.send(publish);
-        assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        assertEquals(200, publish.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
+        Assert.assertEquals(200, publish.getResponseStatus());
 
         List<Message.Mutable> messages = HashMapMessage.parseMessages(publish.getResponseContent());
-        assertEquals(1, messages.size());
+        Assert.assertEquals(1, messages.size());
         Message message = messages.get(0);
-        assertTrue(message.isSuccessful());
+        Assert.assertTrue(message.isSuccessful());
     }
 
+    @Test
     public void testDenyAuthorizerDenies() throws Exception
     {
         bayeux.createIfAbsent("/test/*", new ConfigurableServerChannel.Initializer()
@@ -222,8 +228,8 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
 
@@ -233,13 +239,13 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         httpClient.send(publish);
-        assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        assertEquals(200, publish.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
+        Assert.assertEquals(200, publish.getResponseStatus());
 
         List<Message.Mutable> messages = HashMapMessage.parseMessages(publish.getResponseContent());
-        assertEquals(1, messages.size());
+        Assert.assertEquals(1, messages.size());
         Message message = messages.get(0);
-        assertFalse(message.isSuccessful());
+        Assert.assertFalse(message.isSuccessful());
 
         // Check that publishing to another channel does not involve authorizers
         ContentExchange grantedPublish = newBayeuxExchange("[{" +
@@ -248,15 +254,16 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         httpClient.send(grantedPublish);
-        assertEquals(HttpExchange.STATUS_COMPLETED, grantedPublish.waitForDone());
-        assertEquals(200, grantedPublish.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, grantedPublish.waitForDone());
+        Assert.assertEquals(200, grantedPublish.getResponseStatus());
 
         messages = HashMapMessage.parseMessages(grantedPublish.getResponseContent());
-        assertEquals(1, messages.size());
+        Assert.assertEquals(1, messages.size());
         message = messages.get(0);
-        assertTrue(message.isSuccessful());
+        Assert.assertTrue(message.isSuccessful());
     }
 
+    @Test
     public void testAddRemoveAuthorizer() throws Exception
     {
         bayeux.createIfAbsent("/test/*", new ConfigurableServerChannel.Initializer()
@@ -289,8 +296,8 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
 
@@ -300,13 +307,13 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         httpClient.send(publish);
-        assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        assertEquals(200, publish.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
+        Assert.assertEquals(200, publish.getResponseStatus());
 
         List<Message.Mutable> messages = HashMapMessage.parseMessages(publish.getResponseContent());
-        assertEquals(1, messages.size());
+        Assert.assertEquals(1, messages.size());
         Message message = messages.get(0);
-        assertTrue(message.isSuccessful());
+        Assert.assertTrue(message.isSuccessful());
 
         // Check that publishing again fails (the authorizer has been removed)
         ContentExchange grantedPublish = newBayeuxExchange("[{" +
@@ -315,12 +322,12 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         httpClient.send(grantedPublish);
-        assertEquals(HttpExchange.STATUS_COMPLETED, grantedPublish.waitForDone());
-        assertEquals(200, grantedPublish.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, grantedPublish.waitForDone());
+        Assert.assertEquals(200, grantedPublish.getResponseStatus());
 
         messages = HashMapMessage.parseMessages(grantedPublish.getResponseContent());
-        assertEquals(1, messages.size());
+        Assert.assertEquals(1, messages.size());
         message = messages.get(0);
-        assertFalse(message.isSuccessful());
+        Assert.assertFalse(message.isSuccessful());
     }
 }

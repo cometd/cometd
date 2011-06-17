@@ -27,6 +27,8 @@ import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ExtensionPublishSentTest extends AbstractBayeuxClientServerTest
 {
@@ -39,6 +41,7 @@ public class ExtensionPublishSentTest extends AbstractBayeuxClientServerTest
         bayeux.addExtension(extension);
     }
 
+    @Test
     public void testExtension() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("[{" +
@@ -48,8 +51,8 @@ public class ExtensionPublishSentTest extends AbstractBayeuxClientServerTest
                                                   "\"supportedConnectionTypes\": [\"long-polling\"]" +
                                                   "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
 
@@ -59,13 +62,13 @@ public class ExtensionPublishSentTest extends AbstractBayeuxClientServerTest
                                                  "\"data\": {}" +
                                                  "}]");
         httpClient.send(publish);
-        assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        assertEquals(200, publish.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
+        Assert.assertEquals(200, publish.getResponseStatus());
 
-        assertEquals(1, extension.rcvs.size());
-        assertEquals(1, extension.rcvMetas.size());
-        assertEquals(2, extension.sends.size());
-        assertEquals(1, extension.sendMetas.size());
+        Assert.assertEquals(1, extension.rcvs.size());
+        Assert.assertEquals(1, extension.rcvMetas.size());
+        Assert.assertEquals(2, extension.sends.size());
+        Assert.assertEquals(1, extension.sendMetas.size());
     }
 
     private class CountingExtension implements BayeuxServer.Extension

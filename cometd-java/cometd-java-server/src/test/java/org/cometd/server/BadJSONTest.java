@@ -25,6 +25,8 @@ import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class BadJSONTest extends AbstractBayeuxClientServerTest
 {
@@ -43,6 +45,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
         System.err.println("SIMON: " + Boolean.getBoolean("debugTests"));
     }
 
+    @Test
     public void testBadJSON() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("[{" +
@@ -52,8 +55,8 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
         String bayeuxCookie = extractBayeuxCookie(handshake);
@@ -65,8 +68,8 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
                 "}]");
         connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        assertEquals(200, connect.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
+        Assert.assertEquals(200, connect.getResponseStatus());
 
         // Forge a bad JSON message
         ContentExchange badConnect = newBayeuxExchange("[{" +
@@ -76,7 +79,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
                 //"}]"); Bad JSON, missing this line
         connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(badConnect);
-        assertEquals(HttpExchange.STATUS_COMPLETED, badConnect.waitForDone());
-        assertEquals(400, badConnect.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, badConnect.waitForDone());
+        Assert.assertEquals(400, badConnect.getResponseStatus());
     }
 }
