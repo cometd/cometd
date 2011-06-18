@@ -652,40 +652,32 @@ public class BayeuxClientTest extends ClientServerTest
     @Test
     public void testAbortThenRestart() throws Exception
     {
-        final AtomicReference<CountDownLatch> handshakeLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
-        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient));
-        client.setDebugEnabled(debugTests());
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(2));
+        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
         {
-            public void onMessage(ClientSessionChannel channel, Message message)
+            @Override
+            public void onSending(Message[] messages)
             {
-                if (message.isSuccessful())
-                    handshakeLatch.get().countDown();
-            }
-        });
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isSuccessful())
+                // Need to be sure that the second connect is sent otherwise
+                // the abort and rehandshake may happen before the second
+                // connect and the test will fail.
+                super.onSending(messages);
+                if (messages.length == 1 && Channel.META_CONNECT.equals(messages[0].getChannel()))
                     connectLatch.get().countDown();
             }
-        });
+        };
+        client.setDebugEnabled(debugTests());
         client.handshake();
 
         // Wait for connect
-        Assert.assertTrue(handshakeLatch.get().await(1000, TimeUnit.MILLISECONDS));
         Assert.assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
 
         client.abort();
         Assert.assertFalse(client.isConnected());
 
         // Restart
-        handshakeLatch.set(new CountDownLatch(1));
-        connectLatch.set(new CountDownLatch(1));
+        connectLatch.set(new CountDownLatch(2));
         client.handshake();
-        Assert.assertTrue(handshakeLatch.get().await(1000, TimeUnit.MILLISECONDS));
         Assert.assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
         Assert.assertTrue(client.isConnected());
 
