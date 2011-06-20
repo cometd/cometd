@@ -36,7 +36,7 @@ public interface ServerChannel extends ConfigurableServerChannel
     /**
      * @return a snapshot of the set of subscribers of this channel
      */
-    Set<ServerSession> getSubscribers();
+    public Set<ServerSession> getSubscribers();
 
     /**
      * <p>Subscribes the given session to this channel.</p>
@@ -50,7 +50,7 @@ public interface ServerChannel extends ConfigurableServerChannel
      * @return whether the subscription succeeded
      * @see #unsubscribe(ServerSession)
      */
-    boolean subscribe(ServerSession session);
+    public boolean subscribe(ServerSession session);
 
     /**
      * <p>Unsubscribes the given session from this channel.</p>
@@ -63,7 +63,7 @@ public interface ServerChannel extends ConfigurableServerChannel
      * @param session the session to unsubscribe
      * @return whether the unsubscription succeeded
      */
-    boolean unsubscribe(ServerSession session);
+    public boolean unsubscribe(ServerSession session);
 
     /**
      * <p>Publishes the given message to this channel, delivering
@@ -74,7 +74,7 @@ public interface ServerChannel extends ConfigurableServerChannel
      * @param message the message to publish
      * @see #publish(Session, Object, String)
      */
-    void publish(Session from, ServerMessage.Mutable message);
+    public void publish(Session from, ServerMessage.Mutable message);
 
     /**
      * <p>Publishes the given information to this channel.</p>
@@ -84,7 +84,7 @@ public interface ServerChannel extends ConfigurableServerChannel
      * @param id   the id of the message
      * @see #publish(Session, ServerMessage.Mutable)
      */
-    void publish(Session from, Object data, String id);
+    public void publish(Session from, Object data, String id);
 
     /**
      * <p>Removes this channel, and all the children channels.</p>
@@ -94,14 +94,23 @@ public interface ServerChannel extends ConfigurableServerChannel
      * <p>The removal will notify {@link BayeuxServer.ChannelListener}
      * listeners.</p>
      */
-    void remove();
+    public void remove();
 
     /**
      * <p>Common interface for {@link ServerChannel} listeners.</p>
      * <p>Specific sub-interfaces define what kind of event listeners will be notified.</p>
      */
-    interface ServerChannelListener extends Bayeux.BayeuxListener
+    public interface ServerChannelListener extends Bayeux.BayeuxListener
     {
+        /**
+         * <p>Tag interface that marks {@link ServerChannelListener}s as "weak".</p>
+         * <p>{@link ServerChannel}s that are not {@link ServerChannel#isPersistent() persistent},
+         * that have no subscribers and that only have weak listeners are eligible to be
+         * {@link ServerChannel#remove() removed}.</p>
+         */
+        public interface Weak extends ServerChannelListener
+        {
+        }
     }
 
     /**
@@ -119,7 +128,7 @@ public interface ServerChannel extends ConfigurableServerChannel
          * @param message the message to be published
          * @return whether the message should be published or not
          */
-        boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message);
+        public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message);
     }
 
     /**
