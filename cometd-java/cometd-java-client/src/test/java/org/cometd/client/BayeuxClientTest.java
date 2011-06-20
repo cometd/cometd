@@ -603,6 +603,28 @@ public class BayeuxClientTest extends ClientServerTest
     }
 
     @Test
+    public void testWaitForImpliedState() throws Exception
+    {
+        final BayeuxClient client = newBayeuxClient();
+        client.setDebugEnabled(debugTests());
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.isSuccessful() && client.isHandshook())
+                    latch.countDown();
+            }
+        });
+
+        client.handshake();
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(client.waitFor(5000, State.HANDSHAKING));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
     public void testURLWithImplicitPort() throws Exception
     {
         final AtomicBoolean listening = new AtomicBoolean();

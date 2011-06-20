@@ -112,7 +112,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private volatile boolean shutdownScheduler;
     private volatile long backoffIncrement;
     private volatile long maxBackoff;
-    private int stateUpdateInProgress;
+    private int stateUpdaters;
 
     /**
      * <p>Creates a {@link BayeuxClient} that will connect to the Bayeux server at the given URL
@@ -343,7 +343,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     public State handshake(Map<String, Object> template, long waitMs)
     {
         handshake(template);
-        waitFor(waitMs, State.CONNECTING, State.DISCONNECTED);
+        waitFor(waitMs, State.CONNECTING, State.CONNECTED, State.DISCONNECTED);
         return getState();
     }
 
@@ -384,26 +384,42 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         waitForStates.addAll(Arrays.asList(states));
         synchronized (this)
         {
-            while (System.nanoTime() - start <= TimeUnit.MILLISECONDS.toNanos(waitMs))
+            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+            while (elapsed < waitMs)
             {
-                if (stateUpdateInProgress == 0)
+                // This check is needed to avoid that we return from waitFor() too early,
+                // when the state has been set, but its effects (like notifying listeners)
+                // are not completed yet (COMETD-212).
+                // Transient states (like CONNECTING or DISCONNECTING) may "miss" the
+                // wake up in this way:
+                // * T1 goes in wait - releases lock
+                // * T2 finishes update to CONNECTING - notifies lock
+                // * T3 starts a state update to CONNECTED - releases lock
+                // * T1 wakes up, takes lock, but sees update in progress, waits - releases lock
+                // * T3 finishes update to CONNECTED - notifies lock
+                // * T1 wakes up, takes lock, sees status == CONNECTED - CONNECTING has been "missed"
+                // To avoid this, we use State.implies()
+                if (stateUpdaters == 0)
                 {
                     State currentState = getState();
                     for (State s : waitForStates)
                     {
-                        if (s == currentState)
+                        if (currentState.implies(s))
                             return true;
                     }
                 }
+
                 try
                 {
-                    wait(waitMs);
+                    wait(waitMs - elapsed);
                 }
                 catch (InterruptedException x)
                 {
                     Thread.currentThread().interrupt();
                     break;
                 }
+
+                elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
             }
             return false;
         }
@@ -940,10 +956,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private void updateBayeuxClientState(BayeuxClientStateUpdater updater)
     {
+        // Increase how many threads are updating the state.
+        // This is needed so that in waitFor() we can check
+        // the state being sure that nobody is updating it.
         synchronized (this)
         {
-            ++stateUpdateInProgress;
+            ++stateUpdaters;
         }
+
+        // State update is non-blocking
         try
         {
             BayeuxClientState newState = null;
@@ -982,8 +1003,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             // Notify threads waiting in waitFor()
             synchronized (this)
             {
-                --stateUpdateInProgress;
-                if (stateUpdateInProgress == 0)
+                --stateUpdaters;
+                if (stateUpdaters == 0)
                     notifyAll();
             }
         }
@@ -1017,11 +1038,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         /**
          * State assumed when the connect is being sent for the first time
          */
-        CONNECTING,
+        CONNECTING(HANDSHAKING),
         /**
          * State assumed when this {@link BayeuxClient} is connected to the Bayeux server
          */
-        CONNECTED,
+        CONNECTED(HANDSHAKING, CONNECTING),
         /**
          * State assumed when the disconnect is being sent
          */
@@ -1029,7 +1050,26 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         /**
          * State assumed before the handshake and when the disconnect is completed
          */
-        DISCONNECTED
+        DISCONNECTED(DISCONNECTING);
+
+        private final State[] implieds;
+
+        private State(State... implieds)
+        {
+            this.implieds = implieds;
+        }
+
+        private boolean implies(State state)
+        {
+            if (state == this)
+                return true;
+            for (State implied : implieds)
+            {
+                if (state == implied)
+                    return true;
+            }
+            return false;
+        }
     }
 
     private class PublishTransportListener implements TransportListener
