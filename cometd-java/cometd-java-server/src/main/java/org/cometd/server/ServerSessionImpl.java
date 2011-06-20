@@ -31,6 +31,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
@@ -158,6 +159,11 @@ public class ServerSessionImpl implements ServerSession
     protected List<Extension> getExtensions()
     {
         return Collections.unmodifiableList(_extensions);
+    }
+
+    public Set<ServerChannel> getSubscriptions()
+    {
+        return Collections.<ServerChannel>unmodifiableSet(_subscribedTo.keySet());
     }
 
     /* ------------------------------------------------------------ */

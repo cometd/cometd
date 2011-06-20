@@ -17,12 +17,12 @@
 package org.cometd.bayeux.server;
 
 import java.util.Queue;
+import java.util.Set;
 
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
-
 
 /**
  * <p>Objects implementing this interface are the server-side representation of remote Bayeux clients.</p>
@@ -40,39 +40,39 @@ public interface ServerSession extends Session
      * @param extension the extension to add
      * @see #removeExtension(Extension)
      */
-    void addExtension(Extension extension);
+    public void addExtension(Extension extension);
 
     /**
      * Removes the given extension from this session
      * @param extension the extension to remove
      * @see #addExtension(Extension)
      */
-    void removeExtension(Extension extension);
+    public void removeExtension(Extension extension);
 
     /**
      * Adds the given listener to this session.
      * @param listener the listener to add
      * @see #removeListener(ServerSessionListener)
      */
-    void addListener(ServerSessionListener listener);
+    public void addListener(ServerSessionListener listener);
 
     /**
      * Removes the given listener from this session.
      * @param listener the listener to remove
      * @see #addListener(ServerSessionListener)
      */
-    void removeListener(ServerSessionListener listener);
+    public void removeListener(ServerSessionListener listener);
 
     /**
      * @return whether this is a session for a local client on server-side
      */
-    boolean isLocalSession();
+    public boolean isLocalSession();
 
     /**
      * @return the {@link LocalSession} associated with this session,
      * or null if this is a session representing a remote client.
      */
-    LocalSession getLocalSession();
+    public LocalSession getLocalSession();
 
     /**
      * <p>Delivers the given message to this session.</p>
@@ -85,7 +85,7 @@ public interface ServerSession extends Session
      * @param message the message to deliver
      * @see #deliver(Session, String, Object, String)
      */
-    void deliver(Session from, ServerMessage.Mutable message);
+    public void deliver(Session from, ServerMessage.Mutable message);
 
     /**
      * <p>Delivers the given information to this session.</p>
@@ -95,22 +95,24 @@ public interface ServerSession extends Session
      * @param id the id of the message, or null to let the implementation choose an id
      * @see #deliver(Session, Mutable)
      */
-    void deliver(Session from, String channel, Object data, String id);
+    public void deliver(Session from, String channel, Object data, String id);
 
+    /**
+     * @return the set of channels to which this session is subscribed to
+     */
+    public Set<ServerChannel> getSubscriptions();
 
-    /* ------------------------------------------------------------ */
     /**
      * <p>Get the clients user agent</p>
      * @return The string indicating the client user agent, or null if not known
      */
-    String getUserAgent();
-
+    public String getUserAgent();
 
     /**
      * <p>Common interface for {@link ServerSession} listeners.</p>
      * <p>Specific sub-interfaces define what kind of event listeners will be notified.</p>
      */
-    interface ServerSessionListener extends Bayeux.BayeuxListener
+    public interface ServerSessionListener extends Bayeux.BayeuxListener
     {
     }
 
@@ -197,7 +199,7 @@ public interface ServerSession extends Session
          * @param message the incoming message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean rcv(ServerSession session, ServerMessage.Mutable message);
+        public boolean rcv(ServerSession session, ServerMessage.Mutable message);
 
         /**
          * Callback method invoked every time a meta message is incoming.
@@ -205,7 +207,7 @@ public interface ServerSession extends Session
          * @param message the incoming meta message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean rcvMeta(ServerSession session, ServerMessage.Mutable message);
+        public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message);
 
         /**
          * Callback method invoked every time a normal message is outgoing.
@@ -213,7 +215,7 @@ public interface ServerSession extends Session
          * @param message the outgoing message
          * @return The message to send or null to not send the message
          */
-        ServerMessage send(ServerSession to, ServerMessage message);
+        public ServerMessage send(ServerSession to, ServerMessage message);
 
         /**
          * Callback method invoked every time a meta message is outgoing.
@@ -221,6 +223,6 @@ public interface ServerSession extends Session
          * @param message the outgoing meta message
          * @return true if message processing should continue, false if it should stop
          */
-        boolean sendMeta(ServerSession session, ServerMessage.Mutable message);
+        public boolean sendMeta(ServerSession session, ServerMessage.Mutable message);
     }
 }
