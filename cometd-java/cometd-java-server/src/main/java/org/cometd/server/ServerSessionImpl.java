@@ -222,8 +222,8 @@ public class ServerSessionImpl implements ServerSession
         ServerMessage message = null;
         if (mutable.isMeta())
         {
-            if (!extendSendMeta(mutable))
-                return;
+            if (extendSendMeta(mutable))
+                message = mutable;
         }
         else
         {
