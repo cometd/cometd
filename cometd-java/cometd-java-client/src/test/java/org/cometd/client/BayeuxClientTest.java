@@ -53,6 +53,7 @@ import org.cometd.common.HashMapMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.eclipse.jetty.client.ContentExchange;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -947,11 +948,25 @@ public class BayeuxClientTest extends ClientServerTest
     }
 
     @Test
-    public void testClient() throws Exception
+    public void testClientWithSelectConnector() throws Exception
+    {
+        testClient();
+    }
+
+    @Test
+    public void testClientWithSocketConnector() throws Exception
+    {
+        httpClient.stop();
+        httpClient.setConnectorType(HttpClient.CONNECTOR_SOCKET);
+        httpClient.start();
+        testClient();
+    }
+
+    private void testClient() throws Exception
     {
         final BlockingArrayQueue<Object> results = new BlockingArrayQueue<Object>();
 
-        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient));
+        BayeuxClient client = newBayeuxClient();
         client.setDebugEnabled(debugTests());
 
         final AtomicBoolean connected = new AtomicBoolean();
