@@ -344,7 +344,6 @@ public class ServerSessionImpl implements ServerSession
         if (connected)
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
-            message.setClientId(getId());
             message.setChannel(Channel.META_DISCONNECT);
             message.setSuccessful(true);
             deliver(this, message);
