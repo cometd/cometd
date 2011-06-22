@@ -134,8 +134,6 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTest
         S service = new S();
 
         defineClass(Latch.class);
-        evaluateScript("var subscribeLatch = new Latch(1);");
-        Latch subscribeLatch = get("subscribeLatch");
         evaluateScript("var deliverLatch = new Latch(1);");
         Latch deliverLatch = get("deliverLatch");
         evaluateScript("var disconnectLatch = new Latch(1);");
@@ -148,10 +146,8 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTest
                 "    if (message.successful)" +
                 "        cometd.addListener('" + channelName + "', deliverLatch, 'countDown');" +
                 "});" +
-                "cometd.addListener('/meta/subscribe', subscribeLatch, 'countDown');" +
                 "cometd.handshake();" +
                 "");
-        Assert.assertTrue(subscribeLatch.await(5000));
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         service.kick((String)evaluateScript("cometd.getClientId()"));
