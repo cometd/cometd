@@ -137,6 +137,10 @@ public abstract class OortConfigServlet implements Servlet
         {
             throw new RuntimeException(x);
         }
+        finally
+        {
+            _config.getServletContext().removeAttribute(Oort.OORT_ATTRIBUTE);
+        }
     }
 
     public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException

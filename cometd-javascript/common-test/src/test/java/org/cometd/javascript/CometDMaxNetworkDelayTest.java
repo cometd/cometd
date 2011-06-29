@@ -32,10 +32,10 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.Assert;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.junit.Assert;
 import org.junit.Test;
 import org.mozilla.javascript.ScriptableObject;
 
@@ -62,7 +62,7 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest
         evaluateScript("cometd.configure({" +
                        "url: '" + cometdURL + "', " +
                        "maxNetworkDelay: " + maxNetworkDelay + ", " +
-                       "logLevel: 'debug'" +
+                       "logLevel: '" + getLogLevel() + "'" +
                        "});");
 
         evaluateScript("cometd.handshake();");

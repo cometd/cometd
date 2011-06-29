@@ -27,6 +27,8 @@ import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClientServerTest
 {
@@ -37,6 +39,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
         this.bayeux = bayeux;
     }
 
+    @Test
     public void testDisconnectSubscribe() throws Exception
     {
         final AtomicBoolean subscribed = new AtomicBoolean(false);
@@ -72,8 +75,8 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
         String bayeuxCookie = extractBayeuxCookie(handshake);
@@ -85,8 +88,8 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "}]");
         connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        assertEquals(200, connect.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
+        Assert.assertEquals(200, connect.getResponseStatus());
 
         // Forge a bad sequence of messages to simulate concurrent arrival of disconnect and subscribe messages
         String channel = "/foo";
@@ -99,15 +102,16 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         httpClient.send(disconnect);
-        assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
-        assertEquals(200, disconnect.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
+        Assert.assertEquals(200, disconnect.getResponseStatus());
 
-        assertFalse("not subscribed", subscribed.get());
-        assertFalse("not serviced", serviced.get());
+        Assert.assertFalse("not subscribed", subscribed.get());
+        Assert.assertFalse("not serviced", serviced.get());
         // The response to the subscribe must be that the client is unknown
-        assertTrue(disconnect.getResponseContent().contains("402::"));
+        Assert.assertTrue(disconnect.getResponseContent().contains("402::"));
     }
 
+    @Test
     public void testDisconnectPublish() throws Exception
     {
         final String channel = "/foo";
@@ -131,8 +135,8 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
         String bayeuxCookie = extractBayeuxCookie(handshake);
@@ -144,8 +148,8 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "}]");
         connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        assertEquals(200, connect.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
+        Assert.assertEquals(200, connect.getResponseStatus());
 
         ContentExchange subscribe = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/subscribe\"," +
@@ -153,8 +157,8 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         httpClient.send(subscribe);
-        assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
-        assertEquals(200, subscribe.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
+        Assert.assertEquals(200, subscribe.getResponseStatus());
 
         // Forge a bad sequence of messages to simulate concurrent arrival of disconnect and publish messages
         ContentExchange disconnect = newBayeuxExchange("[{" +
@@ -170,10 +174,10 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"data\": {}" +
                 "}]");
         httpClient.send(disconnect);
-        assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
-        assertEquals(200, disconnect.getResponseStatus());
-        assertEquals(1, publishes.get());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
+        Assert.assertEquals(200, disconnect.getResponseStatus());
+        Assert.assertEquals(1, publishes.get());
         // The response to the subscribe must be that the client is unknown
-        assertTrue(disconnect.getResponseContent().contains("402::"));
+        Assert.assertTrue(disconnect.getResponseContent().contains("402::"));
     }
 }

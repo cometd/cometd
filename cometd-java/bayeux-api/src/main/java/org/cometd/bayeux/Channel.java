@@ -95,9 +95,9 @@ public interface Channel
 
     /**
      * <p>Tells whether a channel contains the wild character '*', for example
-     * {@code /foo/*}.</p>
+     * {@code /foo/*} or if it is {@link #isDeepWild()}.</p>
      *
-     * @return true if the channel is wild.
+     * @return true if the channel contains the '*' or '**' characters
      */
     boolean isWild();
 
@@ -105,7 +105,7 @@ public interface Channel
      * <p>Tells whether a channel contains the deep wild characters '**', for example
      * {@code /foo/**}</p>
      *
-     * @return true if the channel is deeply wild.
+     * @return true if the channel contains the '**' characters
      */
     boolean isDeepWild();
 

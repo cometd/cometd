@@ -16,7 +16,7 @@
 
 package org.cometd.javascript;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDAutoBatchTest extends AbstractCometDTest
@@ -28,7 +28,7 @@ public class CometDAutoBatchTest extends AbstractCometDTest
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', readyLatch, 'countDown');");
-        evaluateScript("cometd.init({url: '" + cometdURL + "', autoBatch: true, logLevel: 'debug'});");
+        evaluateScript("cometd.init({url: '" + cometdURL + "', autoBatch: true, logLevel: '" + getLogLevel() + "'});");
         Assert.assertTrue(readyLatch.await(1000));
 
         evaluateScript("" +

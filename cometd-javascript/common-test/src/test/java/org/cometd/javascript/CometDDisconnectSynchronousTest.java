@@ -16,7 +16,7 @@
 
 package org.cometd.javascript;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDDisconnectSynchronousTest extends AbstractCometDTest
@@ -29,7 +29,7 @@ public class CometDDisconnectSynchronousTest extends AbstractCometDTest
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });" +
                 "" +
                 "cometd.handshake();");

@@ -28,6 +28,8 @@ import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ExtensionHandshakeTest extends AbstractBayeuxClientServerTest
 {
@@ -40,6 +42,7 @@ public class ExtensionHandshakeTest extends AbstractBayeuxClientServerTest
         bayeux.addExtension(extension);
     }
 
+    @Test
     public void testExtension() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("[{" +
@@ -49,13 +52,13 @@ public class ExtensionHandshakeTest extends AbstractBayeuxClientServerTest
                                                   "\"supportedConnectionTypes\": [\"long-polling\"]" +
                                                   "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
-        assertEquals(0, extension.rcvs.size());
-        assertEquals(1, extension.rcvMetas.size());
-        assertEquals(0, extension.sends.size());
-        assertEquals(1, extension.sendMetas.size());
+        Assert.assertEquals(0, extension.rcvs.size());
+        Assert.assertEquals(1, extension.rcvMetas.size());
+        Assert.assertEquals(0, extension.sends.size());
+        Assert.assertEquals(1, extension.sendMetas.size());
     }
 
     private class CountingExtension implements BayeuxServer.Extension

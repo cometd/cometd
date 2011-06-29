@@ -46,7 +46,7 @@ public class SetiTest extends OortTest
     {
         Seti seti = new Seti(oort);
         seti.start();
-        seti.getLogger().setDebugEnabled(true);
+        seti.getLogger().setDebugEnabled(Boolean.getBoolean("debugTests"));
         setis.add(seti);
         return seti;
     }
@@ -242,13 +242,10 @@ public class SetiTest extends OortTest
     {
         Server server1 = startServer(0);
         Oort oort1 = startOort(server1);
-        oort1.getLogger().setDebugEnabled(true);
         Server server2 = startServer(0);
         Oort oort2 = startOort(server2);
-        oort2.getLogger().setDebugEnabled(true);
         Server server3 = startServer(0);
         Oort oort3 = startOort(server3);
-        oort3.getLogger().setDebugEnabled(true);
 
         OortComet oortComet12 = oort1.observeComet(oort2.getURL());
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));

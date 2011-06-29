@@ -16,7 +16,7 @@
 
 package org.cometd.javascript;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDDisconnectInListenersTest extends AbstractCometDTest
@@ -32,7 +32,7 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTest
         Latch disconnectLatch = get("disconnectLatch");
 
         evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});\n" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});\n" +
                 "cometd.addListener('/meta/handshake', function(message)" +
                 "{\n" +
                 "   cometd.disconnect();\n" +
@@ -66,7 +66,7 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTest
         Latch disconnectLatch = get("disconnectLatch");
 
         evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});\n" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});\n" +
                 "cometd.addListener('/meta/connect', function(message)" +
                 "{" +
                 "   if (connectLatch.count == 2) " +

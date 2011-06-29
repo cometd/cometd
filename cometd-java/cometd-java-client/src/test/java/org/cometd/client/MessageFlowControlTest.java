@@ -114,6 +114,7 @@ public class MessageFlowControlTest extends ClientServerTest
             }
         });
 
+        BayeuxClient client = newBayeuxClient();
         client.handshake();
         Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
 
@@ -158,5 +159,7 @@ public class MessageFlowControlTest extends ClientServerTest
         for (int i = 0; i < keptMessages.get(); ++i)
             Assert.assertNotNull(messages.poll(1, TimeUnit.SECONDS));
         Assert.assertNull(messages.poll(1, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
     }
 }

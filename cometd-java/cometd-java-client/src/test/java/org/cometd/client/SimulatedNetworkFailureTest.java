@@ -17,6 +17,7 @@
 package org.cometd.client;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,30 +26,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.server.CometdServlet;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class SimulatedNetworkFailureTest
+public class SimulatedNetworkFailureTest extends ClientServerTest
 {
-    private Server server;
-    private BayeuxServer bayeux;
-    private String cometdURL;
-    private HttpClient httpClient;
     private long timeout = 10000;
     private long maxInterval = 8000;
     private long sweepInterval = 1000;
@@ -56,41 +43,11 @@ public class SimulatedNetworkFailureTest
     @Before
     public void setUp() throws Exception
     {
-        server = new Server();
-
-        Connector connector = new SelectChannelConnector();
-        server.addConnector(connector);
-
-        String contextPath = "";
-        ServletContextHandler context = new ServletContextHandler(server, contextPath);
-
-        // Cometd servlet
-        CometdServlet cometdServlet = new CometdServlet();
-        ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
-        cometdServletHolder.setInitParameter("timeout", String.valueOf(timeout));
-        cometdServletHolder.setInitParameter("maxInterval", String.valueOf(maxInterval));
-        cometdServletHolder.setInitParameter("sweepIntervalMs", String.valueOf(sweepInterval));
-        cometdServletHolder.setInitParameter("logLevel", "3");
-
-        String servletPath = "/cometd";
-        context.addServlet(cometdServletHolder, servletPath + "/*");
-
-        server.start();
-
-        bayeux = cometdServlet.getBayeux();
-        cometdURL = "http://localhost:" + connector.getLocalPort() + contextPath + servletPath;
-
-        httpClient = new HttpClient();
-        httpClient.start();
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        httpClient.stop();
-
-        server.stop();
-        server.join();
+        Map<String, String> params = new HashMap<String, String>();
+        params.put("timeout", String.valueOf(timeout));
+        params.put("maxInterval", String.valueOf(maxInterval));
+        params.put("sweepIntervalMs", String.valueOf(sweepInterval));
+        startServer(params);
     }
 
     @Test
@@ -100,7 +57,7 @@ public class SimulatedNetworkFailureTest
         final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<CountDownLatch>();
         final AtomicBoolean connected = new AtomicBoolean(false);
 
-        TestBayeuxClient client = new TestBayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        TestBayeuxClient client = new TestBayeuxClient()
         {
             @Override
             protected boolean sendConnect()
@@ -173,8 +130,7 @@ public class SimulatedNetworkFailureTest
         channel.publish(new HashMap());
         assertFalse(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
 
-        client.disconnect();
-        assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        disconnectBayeuxClient(client);
     }
 
     @Test
@@ -185,7 +141,7 @@ public class SimulatedNetworkFailureTest
         final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<CountDownLatch>();
         final AtomicBoolean connected = new AtomicBoolean(false);
 
-        TestBayeuxClient client = new TestBayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        TestBayeuxClient client = new TestBayeuxClient()
         {
             @Override
             protected boolean sendConnect()
@@ -266,17 +222,16 @@ public class SimulatedNetworkFailureTest
         channel.publish(new HashMap());
         assertFalse(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
 
-        client.disconnect();
-        assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        disconnectBayeuxClient(client);
     }
 
     private class TestBayeuxClient extends BayeuxClient
     {
         private long networkDown;
 
-        private TestBayeuxClient(String url, ClientTransport transport)
+        private TestBayeuxClient()
         {
-            super(url, transport);
+            super(cometdURL, LongPollingTransport.create(null, httpClient));
         }
 
         public void setNetworkDown(long time)

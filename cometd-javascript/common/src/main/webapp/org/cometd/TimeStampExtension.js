@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-if (typeof dojo!="undefined")
+if (typeof dojo != "undefined")
 {
     dojo.provide("org.cometd.TimeStampExtension");
 }
@@ -22,7 +22,6 @@ if (typeof dojo!="undefined")
 /**
  * The timestamp extension adds the optional timestamp field to all outgoing messages.
  */
-
 org.cometd.TimeStampExtension = function()
 {
     this.outgoing = function(message)

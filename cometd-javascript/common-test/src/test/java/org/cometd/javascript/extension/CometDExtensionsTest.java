@@ -16,9 +16,9 @@
 
 package org.cometd.javascript.extension;
 
-import junit.framework.Assert;
 import org.cometd.javascript.AbstractCometDTest;
 import org.cometd.javascript.Latch;
+import org.junit.Assert;
 import org.junit.Test;
 import org.mozilla.javascript.ScriptableObject;
 
@@ -28,7 +28,7 @@ public class CometDExtensionsTest extends AbstractCometDTest
     public void testRegisterUnregister() throws Exception
     {
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var inCount = 0;");
         evaluateScript("var outCount = 0;");
         evaluateScript("cometd.registerExtension('testin', {" +
@@ -77,7 +77,7 @@ public class CometDExtensionsTest extends AbstractCometDTest
     {
         defineClass(Latch.class);
         defineClass(Listener.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("" +
                 "var listener = new Listener();" +
@@ -148,7 +148,7 @@ public class CometDExtensionsTest extends AbstractCometDTest
         defineClass(Latch.class);
 
         // Default incoming extension order is reverse
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("cometd.registerExtension('ext1', {" +
                        "incoming: function(message) " +
@@ -186,7 +186,7 @@ public class CometDExtensionsTest extends AbstractCometDTest
         evaluateScript("cometd.unregisterExtension('ext2');");
         evaluateScript("ok = false;");
         // Set incoming extension order to be forward
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug', reverseIncomingExtensions: false});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "', reverseIncomingExtensions: false});");
 
         evaluateScript("cometd.registerExtension('ext1', {" +
                        "incoming: function(message) " +
@@ -214,7 +214,7 @@ public class CometDExtensionsTest extends AbstractCometDTest
     @Test
     public void testExtensionRegistrationCallbacks() throws Exception
     {
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var n;");
         evaluateScript("var c;");
         evaluateScript("cometd.registerExtension('ext1', {" +

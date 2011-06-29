@@ -23,14 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.server.CometdServlet;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -38,55 +30,24 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class PublishDoesNotLeakClientIdTest
+public class PublishDoesNotLeakClientIdTest extends ClientServerTest
 {
-    private Server server;
-    private String cometdURL;
-
     @Before
     public void init() throws Exception
     {
-        server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector();
-        server.addConnector(connector);
-
-        HandlerCollection handlers = new HandlerCollection();
-        server.setHandler(handlers);
-
-        String contextPath = "/cometd";
-        ServletContextHandler context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
-
-        // Setup comet servlet
-        CometdServlet cometdServlet = new CometdServlet();
-        ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
-        cometdServletHolder.setInitParameter("logLevel", "3");
-        String cometdServletPath = "/cometd";
-        context.addServlet(cometdServletHolder, cometdServletPath + "/*");
-
-        server.start();
-
-        int port = connector.getLocalPort();
-        String contextURL = "http://localhost:" + port + contextPath;
-        cometdURL = contextURL + cometdServletPath;
-    }
-
-    @After
-    public void destroy() throws Exception
-    {
-        server.stop();
-        server.join();
+        startServer(null);
     }
 
     @Test
     public void testPublishDoesNotLeakClientId() throws Exception
     {
-        BayeuxClient client1 = new BayeuxClient(cometdURL, LongPollingTransport.create(null));
+        BayeuxClient client1 = newBayeuxClient();
         client1.handshake();
         try
         {
             assertTrue(client1.waitFor(1000, BayeuxClient.State.CONNECTED));
 
-            BayeuxClient client2 = new BayeuxClient(cometdURL, LongPollingTransport.create(null));
+            BayeuxClient client2 = newBayeuxClient();
             client2.handshake();
             try
             {
@@ -122,14 +83,12 @@ public class PublishDoesNotLeakClientIdTest
             }
             finally
             {
-                client2.disconnect();
-                client2.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+                disconnectBayeuxClient(client2);
             }
         }
         finally
         {
-            client1.disconnect();
-            client1.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+            disconnectBayeuxClient(client1);
         }
     }
 }

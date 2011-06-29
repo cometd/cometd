@@ -16,7 +16,7 @@
 
 package org.cometd.javascript;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDBatchPublishTest extends AbstractCometDTest
@@ -43,7 +43,7 @@ public class CometDBatchPublishTest extends AbstractCometDTest
                 "        cometd.endBatch();" +
                 "    }" +
                 "});" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "cometd.handshake();");
         Assert.assertTrue(latch.await(1000));
 

@@ -16,7 +16,7 @@
 
 package org.cometd.javascript;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDCallbackPollingTest extends AbstractCometDTest
@@ -28,7 +28,7 @@ public class CometDCallbackPollingTest extends AbstractCometDTest
 
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
-        evaluateScript("cometd.configure({url: '" + url + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
         // Leave only the callback-polling transport
         evaluateScript("" +
                 "var types = cometd.getTransportTypes();" +
@@ -84,7 +84,7 @@ public class CometDCallbackPollingTest extends AbstractCometDTest
 
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
-        evaluateScript("cometd.configure({url: '" + url + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
         // Leave only the callback-polling transport
         evaluateScript("" +
                 "var types = cometd.getTransportTypes();" +
@@ -128,7 +128,7 @@ public class CometDCallbackPollingTest extends AbstractCometDTest
 
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
-        evaluateScript("cometd.configure({url: '" + url + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
         // Leave only the callback-polling transport
         evaluateScript("" +
                 "var types = cometd.getTransportTypes();" +
@@ -177,7 +177,7 @@ public class CometDCallbackPollingTest extends AbstractCometDTest
 
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
-        evaluateScript("cometd.configure({url: '" + url + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
         // Leave only the callback-polling transport
         evaluateScript("" +
                 "var types = cometd.getTransportTypes();" +
@@ -226,7 +226,7 @@ public class CometDCallbackPollingTest extends AbstractCometDTest
 
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
-        evaluateScript("cometd.configure({url: '" + url + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
         // Leave only the callback-polling transport
         evaluateScript("" +
                 "var types = cometd.getTransportTypes();" +

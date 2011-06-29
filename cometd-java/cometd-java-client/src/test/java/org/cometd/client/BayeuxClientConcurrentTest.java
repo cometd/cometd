@@ -25,70 +25,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
-import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.server.CometdServlet;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class BayeuxClientConcurrentTest
+public class BayeuxClientConcurrentTest extends ClientServerTest
 {
-    private static Server server;
-    private static HttpClient httpClient;
-    private static String cometdURL;
-    private static BayeuxServer bayeux;
-
-    @BeforeClass
-    public static void startServer() throws Exception
+    @Before
+    public void startServer() throws Exception
     {
-        // Manually construct context to avoid hassles with webapp classloaders for now.
-        server = new Server();
-
-        Connector connector = new SelectChannelConnector();
-        connector.setMaxIdleTime(30000);
-        server.addConnector(connector);
-
-        String contextPath = "";
-        ServletContextHandler context = new ServletContextHandler(server, contextPath);
-
-        // Cometd servlet
-        ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
-        cometdServletHolder.setInitParameter("timeout", "10000");
-        cometdServletHolder.setInitParameter("multiFrameInterval", "2000");
-        cometdServletHolder.setInitParameter("logLevel", "3");
-        cometdServletHolder.setInitOrder(1);
-
-        String cometdServletPath = "/cometd";
-        context.addServlet(cometdServletHolder, cometdServletPath + "/*");
-
-        server.start();
-        int port = connector.getLocalPort();
-        cometdURL = "http://localhost:" + port + contextPath + cometdServletPath;
-
-        bayeux = (BayeuxServer)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-
-        httpClient = new HttpClient();
-        httpClient.start();
-    }
-
-    @AfterClass
-    public static void stopServer() throws Exception
-    {
-        httpClient.stop();
-
-        server.stop();
-        server.join();
+        startServer(null);
     }
 
     @Test
@@ -107,7 +57,7 @@ public class BayeuxClientConcurrentTest
                 return result;
             }
         };
-        client.setDebugEnabled(false);
+        client.setDebugEnabled(debugTests());
         client.handshake();
         assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
 
@@ -130,11 +80,11 @@ public class BayeuxClientConcurrentTest
                 return result;
             }
         };
-        client.setDebugEnabled(false);
+        client.setDebugEnabled(debugTests());
         client.handshake();
         assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
 
-        assertEquals(BayeuxClient.State.DISCONNECTED, client.getState());
+        assertTrue(client.isDisconnected());
     }
 
     @Test
@@ -149,7 +99,7 @@ public class BayeuxClientConcurrentTest
                 super.enqueueSend(message);
             }
         };
-        client.setDebugEnabled(false);
+        client.setDebugEnabled(debugTests());
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -187,7 +137,7 @@ public class BayeuxClientConcurrentTest
                 super.enqueueSend(message);
             }
         };
-        client.setDebugEnabled(false);
+        client.setDebugEnabled(debugTests());
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -250,7 +200,7 @@ public class BayeuxClientConcurrentTest
                 return false;
             }
         };
-        client.setDebugEnabled(false);
+        client.setDebugEnabled(debugTests());
         final CountDownLatch publishLatch = new CountDownLatch(1);
         ClientSessionChannel channel = client.getChannel(channelName);
         channel.addListener(new ClientSessionChannel.MessageListener()
@@ -268,15 +218,14 @@ public class BayeuxClientConcurrentTest
         channel.publish(new HashMap());
         assertTrue(publishLatch.await(1000, TimeUnit.MILLISECONDS));
 
-        client.disconnect();
-        assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        disconnectBayeuxClient(client);
     }
 
     @Test
     public void testHandshakeListenersAreNotifiedBeforeConnectListeners() throws Exception
     {
         final BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient));
-        client.setDebugEnabled(false);
+        client.setDebugEnabled(debugTests());
         final int sleep = 1000;
         final AtomicBoolean handshaken = new AtomicBoolean();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
@@ -307,8 +256,7 @@ public class BayeuxClientConcurrentTest
 
         assertTrue(connectLatch.await(2 * sleep, TimeUnit.MILLISECONDS));
 
-        client.disconnect();
-        assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        disconnectBayeuxClient(client);
     }
 
     @Test
@@ -324,7 +272,7 @@ public class BayeuxClientConcurrentTest
                 return super.sendMessages(messages);
             }
         };
-        client.setDebugEnabled(false);
+        client.setDebugEnabled(debugTests());
 
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
@@ -378,7 +326,6 @@ public class BayeuxClientConcurrentTest
         assertTrue(sendLatch.await(1000, TimeUnit.MILLISECONDS));
         assertTrue(messageLatch.await(1000, TimeUnit.MILLISECONDS));
 
-        client.disconnect();
-        assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        disconnectBayeuxClient(client);
     }
 }

@@ -24,6 +24,8 @@ import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class DisconnectTest extends AbstractBayeuxClientServerTest
 {
@@ -35,6 +37,7 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest
         this.bayeux = bayeux;
     }
 
+    @Test
     public void testDisconnect() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("[{" +
@@ -44,8 +47,8 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
         String bayeuxCookie = extractBayeuxCookie(handshake);
@@ -57,11 +60,11 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest
                 "}]");
         connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        assertEquals(200, connect.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
+        Assert.assertEquals(200, connect.getResponseStatus());
 
         ServerSession serverSession = bayeux.getSession(clientId);
-        assertNotNull(serverSession);
+        Assert.assertNotNull(serverSession);
 
         final CountDownLatch latch = new CountDownLatch(1);
         serverSession.addListener(new ServerSession.RemoveListener()
@@ -77,9 +80,9 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         httpClient.send(disconnect);
-        assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
-        assertEquals(200, disconnect.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
+        Assert.assertEquals(200, disconnect.getResponseStatus());
 
-        assertTrue(latch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 }

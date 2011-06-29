@@ -25,6 +25,8 @@ import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServerTest
 {
@@ -35,6 +37,7 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
         this.bayeux = bayeux;
     }
 
+    @Test
     public void testMetaNotifications() throws Exception
     {
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
@@ -85,9 +88,9 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                                                   "\"supportedConnectionTypes\": [\"long-polling\"]" +
                                                   "}]");
         httpClient.send(handshake);
-        assertTrue(handshakeLatch.await(1000, TimeUnit.MILLISECONDS));
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertTrue(handshakeLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
         String bayeuxCookie = extractBayeuxCookie(handshake);
@@ -99,9 +102,9 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                                                  "}]");
         connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
-        assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        assertEquals(200, connect.getResponseStatus());
+        Assert.assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
+        Assert.assertEquals(200, connect.getResponseStatus());
 
         String channel = "/foo";
         ContentExchange subscribe = newBayeuxExchange("[{" +
@@ -110,9 +113,9 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                                                    "\"subscription\": \"" + channel + "\"" +
                                                    "}]");
         httpClient.send(subscribe);
-        assertTrue(subscribeLatch.await(1000, TimeUnit.MILLISECONDS));
-        assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
-        assertEquals(200, subscribe.getResponseStatus());
+        Assert.assertTrue(subscribeLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
+        Assert.assertEquals(200, subscribe.getResponseStatus());
 
         ContentExchange unsubscribe = newBayeuxExchange("[{" +
                                                      "\"channel\": \"/meta/unsubscribe\"," +
@@ -120,17 +123,17 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                                                      "\"subscription\": \"" + channel + "\"" +
                                                      "}]");
         httpClient.send(unsubscribe);
-        assertTrue(unsubscribeLatch.await(1000, TimeUnit.MILLISECONDS));
-        assertEquals(HttpExchange.STATUS_COMPLETED, unsubscribe.waitForDone());
-        assertEquals(200, unsubscribe.getResponseStatus());
+        Assert.assertTrue(unsubscribeLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, unsubscribe.waitForDone());
+        Assert.assertEquals(200, unsubscribe.getResponseStatus());
 
         ContentExchange disconnect = newBayeuxExchange("[{" +
                                                     "\"channel\": \"/meta/disconnect\"," +
                                                     "\"clientId\": \"" + clientId + "\"" +
                                                     "}]");
         httpClient.send(disconnect);
-        assertTrue(disconnectLatch.await(1000, TimeUnit.MILLISECONDS));
-        assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
-        assertEquals(200, disconnect.getResponseStatus());
+        Assert.assertTrue(disconnectLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
+        Assert.assertEquals(200, disconnect.getResponseStatus());
     }
 }

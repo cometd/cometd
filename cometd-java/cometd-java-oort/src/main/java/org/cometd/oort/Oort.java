@@ -37,7 +37,6 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.client.BayeuxClient;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.authorizer.GrantAuthorizer;
@@ -124,10 +123,8 @@ public class Oort extends AbstractLifeCycle
         _oortSession.disconnect();
 
         for (OortComet comet : _knownComets.values())
-        {
-            comet.disconnect();
-            comet.waitFor(1000, BayeuxClient.State.DISCONNECTED);
-        }
+            comet.disconnect(1000);
+
         _knownComets.clear();
         _incomingComets.clear();
         _channels.clear();
@@ -203,7 +200,7 @@ public class Oort extends AbstractLifeCycle
         if (_url.equals(cometURL))
             return null;
 
-        OortComet comet = new OortComet(this, cometURL);
+        OortComet comet = newOortComet(cometURL);
         OortComet existing = _knownComets.putIfAbsent(cometURL, comet);
         if (existing != null)
             return existing;
@@ -222,6 +219,11 @@ public class Oort extends AbstractLifeCycle
                 "}").get(0);
         connectComet(comet, fields);
         return comet;
+    }
+
+    protected OortComet newOortComet(String cometURL)
+    {
+        return new OortComet(this, cometURL);
     }
 
     protected String encodeSecret(String secret)

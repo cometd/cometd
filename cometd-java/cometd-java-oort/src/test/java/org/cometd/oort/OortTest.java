@@ -34,11 +34,24 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
-import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.rules.TestWatchman;
+import org.junit.runners.model.FrameworkMethod;
 
 public abstract class OortTest
 {
+    @Rule
+    public final TestWatchman testName = new TestWatchman()
+    {
+        @Override
+        public void starting(FrameworkMethod method)
+        {
+            super.starting(method);
+            Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
+        }
+    };
     private final List<Server> servers = new ArrayList<Server>();
     private final List<Oort> oorts = new ArrayList<Oort>();
     private final List<BayeuxClient> clients = new ArrayList<BayeuxClient>();
@@ -56,7 +69,8 @@ public abstract class OortTest
         // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
-//        cometdServletHolder.setInitParameter("logLevel", "3");
+        if (Boolean.getBoolean("debugTests"))
+            cometdServletHolder.setInitParameter("logLevel", "3");
         cometdServletHolder.setInitOrder(1);
 
         String cometdServletPath = "/cometd";
@@ -78,6 +92,7 @@ public abstract class OortTest
         String url = (String)server.getAttribute(OortConfigServlet.OORT_URL_PARAM);
         final BayeuxServer bayeuxServer = (BayeuxServer)server.getAttribute(BayeuxServer.ATTRIBUTE);
         Oort oort = new Oort(bayeuxServer, url);
+        oort.setClientDebugEnabled(Boolean.getBoolean("debugTests"));
         oort.start();
         oorts.add(oort);
         return oort;
@@ -86,6 +101,7 @@ public abstract class OortTest
     protected BayeuxClient startClient(Oort oort, Map<String, Object> handshakeFields)
     {
         BayeuxClient client = new BayeuxClient(oort.getURL(), new LongPollingTransport(null, oort.getHttpClient()));
+        client.setDebugEnabled(Boolean.getBoolean("debugTests"));
         client.handshake(handshakeFields);
         client.waitFor(1000, BayeuxClient.State.CONNECTED);
         clients.add(client);
@@ -108,8 +124,7 @@ public abstract class OortTest
 
     protected void stopClient(BayeuxClient client)
     {
-        client.disconnect();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        client.disconnect(1000);
     }
 
     protected void stopOorts() throws Exception
@@ -134,7 +149,6 @@ public abstract class OortTest
         server.stop();
         server.join();
     }
-
 
     protected static class LatchListener implements ClientSessionChannel.MessageListener
     {

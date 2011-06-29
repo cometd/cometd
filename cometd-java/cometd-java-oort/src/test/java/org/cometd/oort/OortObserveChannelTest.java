@@ -62,6 +62,9 @@ public class OortObserveChannelTest extends OortTest
         String channelName = "/oort_test";
         oort1.observeChannel(channelName);
 
+        // Wait a while to be sure to be subscribed
+        Thread.sleep(1000);
+
         // Subscribe client1
         LatchListener subscribeLatch1 = new LatchListener();
         client1.getChannel(Channel.META_SUBSCRIBE).addListener(subscribeLatch1);
@@ -108,11 +111,14 @@ public class OortObserveChannelTest extends OortTest
         BayeuxClient client1 = startClient(oort1, null);
         BayeuxClient client2 = startClient(oort2, null);
 
-        // Oort1 observes the channel, so any publish to Oort2 or Oort3 is forwarded to Oort1
+        // Oort1 observes the channel, so any publish to Oort2 is forwarded to Oort1
         String rootChannelName = "/oort_test";
         String wildChannelName = rootChannelName + "/*";
         String channelName = rootChannelName + "/foo";
         oort1.observeChannel(wildChannelName);
+
+        // Wait a while to be sure to be subscribed
+        Thread.sleep(1000);
 
         // Subscribe client1
         LatchListener subscribeLatch1 = new LatchListener();
@@ -144,9 +150,12 @@ public class OortObserveChannelTest extends OortTest
         BayeuxClient client1 = startClient(oort1, null);
         BayeuxClient client2 = startClient(oort2, null);
 
-        // Oort1 observes the channel, so any publish to Oort2 or Oort3 is forwarded to Oort1
+        // Oort1 observes the channel, so any publish to Oort2 is forwarded to Oort1
         String channelName = "/oort_test";
         oort1.observeChannel(channelName);
+
+        // Wait a while to be sure to be subscribed
+        Thread.sleep(1000);
 
         // Subscribe client1
         LatchListener subscribeLatch1 = new LatchListener();

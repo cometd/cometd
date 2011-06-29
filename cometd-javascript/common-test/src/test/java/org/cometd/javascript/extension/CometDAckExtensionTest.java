@@ -16,12 +16,12 @@
 
 package org.cometd.javascript.extension;
 
-import junit.framework.Assert;
 import org.cometd.javascript.AbstractCometDTest;
 import org.cometd.javascript.Latch;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -47,7 +47,7 @@ public class CometDAckExtensionTest extends AbstractCometDTest
     {
         defineClass(Latch.class);
         evaluateScript("var cometd = cometd;");
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var ackExt = new org.cometd.AckExtension();");
         evaluateScript("cometd.registerExtension('myack', ackExt);");
 
@@ -81,7 +81,7 @@ public class CometDAckExtensionTest extends AbstractCometDTest
     public void testAcknowledgement() throws Exception
     {
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("cometd.registerExtension('ack', new org.cometd.AckExtension());");
 
         evaluateScript("var inAckId = undefined;");

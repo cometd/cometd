@@ -23,9 +23,12 @@ import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientServerTest
 {
+    @Test
     public void testSubscribeWithMultipleChannels() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("[{" +
@@ -35,8 +38,8 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
         String bayeuxCookie = extractBayeuxCookie(handshake);
@@ -48,17 +51,18 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "}]");
         subscribe.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(subscribe);
-        assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
-        assertEquals(200, subscribe.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
+        Assert.assertEquals(200, subscribe.getResponseStatus());
 
         List<Message.Mutable> messages = HashMapMessage.parseMessages(subscribe.getResponseContent());
-        assertEquals(1, messages.size());
+        Assert.assertEquals(1, messages.size());
         Message.Mutable response = messages.get(0);
-        assertTrue(response.isSuccessful());
+        Assert.assertTrue(response.isSuccessful());
         Object subscriptions = response.get(Message.SUBSCRIPTION_FIELD);
-        assertTrue(subscriptions instanceof Object[]);
+        Assert.assertTrue(subscriptions instanceof Object[]);
     }
 
+    @Test
     public void testUnsubscribeWithMultipleChannels() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("[{" +
@@ -68,8 +72,8 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
         String bayeuxCookie = extractBayeuxCookie(handshake);
@@ -81,8 +85,8 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "}]");
         subscribe.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(subscribe);
-        assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
-        assertEquals(200, subscribe.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
+        Assert.assertEquals(200, subscribe.getResponseStatus());
 
         ContentExchange unsubscribe = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/unsubscribe\"," +
@@ -91,14 +95,14 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "}]");
         unsubscribe.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(unsubscribe);
-        assertEquals(HttpExchange.STATUS_COMPLETED, unsubscribe.waitForDone());
-        assertEquals(200, unsubscribe.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, unsubscribe.waitForDone());
+        Assert.assertEquals(200, unsubscribe.getResponseStatus());
 
         List<Message.Mutable> messages = HashMapMessage.parseMessages(unsubscribe.getResponseContent());
-        assertEquals(1, messages.size());
+        Assert.assertEquals(1, messages.size());
         Message.Mutable response = messages.get(0);
-        assertTrue(response.isSuccessful());
+        Assert.assertTrue(response.isSuccessful());
         Object subscriptions = response.get(Message.SUBSCRIPTION_FIELD);
-        assertTrue(subscriptions instanceof Object[]);
+        Assert.assertTrue(subscriptions instanceof Object[]);
     }
 }

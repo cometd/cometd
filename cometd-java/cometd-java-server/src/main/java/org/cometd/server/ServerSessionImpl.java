@@ -31,6 +31,7 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
@@ -90,7 +91,7 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    protected ServerSessionImpl(BayeuxServerImpl bayeux,LocalSessionImpl localSession, String idHint)
+    protected ServerSessionImpl(BayeuxServerImpl bayeux, LocalSessionImpl localSession, String idHint)
     {
         _bayeux=bayeux;
         _logger=bayeux.getLogger();
@@ -142,16 +143,15 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     protected void sweep(long now)
     {
-        if (_intervalTimestamp!=0 && now>_intervalTimestamp)
+        if (_intervalTimestamp != 0 && now > _intervalTimestamp)
         {
-            if (_logger.isDebugEnabled())
-                _logger.debug("Expired interval "+ServerSessionImpl.this);
+            _logger.debug("Expired session {}", this);
             synchronized (_queue)
             {
-                if (_scheduler!=null)
+                if (_scheduler != null)
                     _scheduler.cancel();
             }
-            _bayeux.removeServerSession(ServerSessionImpl.this,true);
+            _bayeux.removeServerSession(this, true);
         }
     }
 
@@ -159,6 +159,11 @@ public class ServerSessionImpl implements ServerSession
     protected List<Extension> getExtensions()
     {
         return Collections.unmodifiableList(_extensions);
+    }
+
+    public Set<ServerChannel> getSubscriptions()
+    {
+        return Collections.<ServerChannel>unmodifiableSet(_subscribedTo.keySet());
     }
 
     /* ------------------------------------------------------------ */
@@ -187,26 +192,28 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    public void deliver(Session from, Mutable immutable)
+    public void deliver(Session from, Mutable message)
     {
+        ServerSession session;
+        if (from instanceof ServerSession)
+            session = (ServerSession)from;
+        else
+            session = ((LocalSession)from).getServerSession();
 
-        if (!_bayeux.extendSend((ServerSessionImpl)from,this,immutable))
+        if (!_bayeux.extendSend(session, this, message))
             return;
 
-        if (from instanceof LocalSession)
-            doDeliver(((LocalSession)from).getServerSession(),immutable);
-        else
-            doDeliver((ServerSession)from,immutable);
+        doDeliver(session, message);
     }
 
     /* ------------------------------------------------------------ */
     public void deliver(Session from, String channelId, Object data, String id)
     {
-        ServerMessage.Mutable mutable = _bayeux.newMessage();
-        mutable.setChannel(channelId);
-        mutable.setData(data);
-        mutable.setId(id);
-        deliver(from,mutable);
+        ServerMessage.Mutable message = _bayeux.newMessage();
+        message.setChannel(channelId);
+        message.setData(data);
+        message.setId(id);
+        deliver(from, message);
     }
 
     /* ------------------------------------------------------------ */
@@ -215,15 +222,15 @@ public class ServerSessionImpl implements ServerSession
         ServerMessage message = null;
         if (mutable.isMeta())
         {
-            if (!extendSendMeta(mutable))
-                return;
+            if (extendSendMeta(mutable))
+                message = mutable;
         }
         else
         {
             message = extendSendMessage(mutable);
         }
 
-        if (message==null)
+        if (message == null)
             return;
 
         for (ServerSessionListener listener : _listeners)
@@ -295,32 +302,32 @@ public class ServerSessionImpl implements ServerSession
         {
             _connected.set(true);
 
-            if (_connectTimestamp==-1)
+            if (_connectTimestamp == -1)
             {
-                HttpTransport transport=(HttpTransport)_bayeux.getCurrentTransport();
+                HttpTransport transport = (HttpTransport)_bayeux.getCurrentTransport();
 
-                if (transport!=null)
+                if (transport != null)
                 {
-                    _maxQueue=transport.getOption("maxQueue",-1);
+                    _maxQueue = transport.getOption("maxQueue", -1);
 
-                    _maxInterval=_interval>=0?(_interval+transport.getMaxInterval()-transport.getInterval()):transport.getMaxInterval();
-                    _maxLazy=transport.getMaxLazyTimeout();
+                    _maxInterval = _interval >= 0 ? (_interval + transport.getMaxInterval() - transport.getInterval()) : transport.getMaxInterval();
+                    _maxLazy = transport.getMaxLazyTimeout();
 
-                    if (_maxLazy>0)
+                    if (_maxLazy > 0)
                     {
-                        _lazyTask=new Timeout.Task()
+                        _lazyTask = new Timeout.Task()
                         {
                             @Override
                             public void expired()
                             {
-                                _lazyDispatch=false;
+                                _lazyDispatch = false;
                                 flush();
                             }
 
                             @Override
                             public String toString()
                             {
-                                return "LazyTask@"+getId();
+                                return "LazyTask@" + getId();
                             }
                         };
                     }
@@ -333,15 +340,14 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public void disconnect()
     {
-        boolean connected=_bayeux.removeServerSession(this,false);
+        boolean connected = _bayeux.removeServerSession(this, false);
         if (connected)
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
-            message.setClientId(getId());
             message.setChannel(Channel.META_DISCONNECT);
             message.setSuccessful(true);
-            deliver(this,message);
-            if (_queue.size()>0)
+            deliver(this, message);
+            if (_queue.size() > 0)
                 flush();
         }
     }
@@ -351,7 +357,7 @@ public class ServerSessionImpl implements ServerSession
     {
         synchronized (_queue)
         {
-            if (--_batch==0 && _queue.size()>0)
+            if (--_batch == 0 && _queue.size() > 0)
             {
                 flush();
                 return true;
@@ -369,7 +375,7 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public boolean isLocalSession()
     {
-        return _localSession!=null;
+        return _localSession != null;
     }
 
     /* ------------------------------------------------------------ */
@@ -377,7 +383,7 @@ public class ServerSessionImpl implements ServerSession
     {
         synchronized (_queue)
         {
-            _batch++;
+            ++_batch;
         }
     }
 
@@ -410,7 +416,7 @@ public class ServerSessionImpl implements ServerSession
     {
         synchronized (_queue)
         {
-            return _queue.size()==0;
+            return _queue.size() == 0;
         }
     }
 
@@ -478,7 +484,7 @@ public class ServerSessionImpl implements ServerSession
         {
             if (scheduler == null)
             {
-                if (_scheduler!=null)
+                if (_scheduler != null)
                 {
                     _scheduler.cancel();
                     _scheduler = null;
@@ -486,18 +492,18 @@ public class ServerSessionImpl implements ServerSession
             }
             else
             {
-                if (_scheduler!=null && _scheduler!=scheduler)
+                if (_scheduler != null && _scheduler != scheduler)
                 {
                     _scheduler.cancel();
                 }
 
-                _scheduler=scheduler;
+                _scheduler = scheduler;
 
-                if (_queue.size()>0 && _batch==0)
+                if (_queue.size() > 0 && _batch == 0)
                 {
                     _scheduler.schedule();
                     if (_scheduler instanceof OneTimeScheduler)
-                        _scheduler=null;
+                        _scheduler = null;
                 }
             }
         }
@@ -508,21 +514,21 @@ public class ServerSessionImpl implements ServerSession
     {
         synchronized (_queue)
         {
-            if (_lazyDispatch && _lazyTask!=null)
+            if (_lazyDispatch && _lazyTask != null)
                 _bayeux.cancelTimeout(_lazyTask);
 
-            Scheduler scheduler=_scheduler;
-            if (scheduler!=null)
+            Scheduler scheduler = _scheduler;
+            if (scheduler != null)
             {
                 if (_scheduler instanceof OneTimeScheduler)
-                    _scheduler=null;
+                    _scheduler = null;
                 scheduler.schedule();
                 return;
             }
         }
 
         // do local delivery
-        if  (_localSession!=null && _queue.size()>0)
+        if (_localSession != null && _queue.size() > 0)
         {
             for (ServerMessage msg : takeQueue())
             {
@@ -539,12 +545,12 @@ public class ServerSessionImpl implements ServerSession
     {
         synchronized (_queue)
         {
-            if (_maxLazy==0)
+            if (_maxLazy == 0)
                 flush();
-            else if (_maxLazy>0 && !_lazyDispatch)
+            else if (_maxLazy > 0 && !_lazyDispatch)
             {
-                _lazyDispatch=true;
-                _bayeux.startTimeout(_lazyTask,_connectTimestamp%_maxLazy);
+                _lazyDispatch = true;
+                _bayeux.startTimeout(_lazyTask, _connectTimestamp % _maxLazy);
             }
         }
     }
@@ -554,10 +560,10 @@ public class ServerSessionImpl implements ServerSession
     {
         synchronized (_queue)
         {
-            Scheduler scheduler=_scheduler;
-            if (scheduler!=null)
+            Scheduler scheduler = _scheduler;
+            if (scheduler != null)
             {
-                _scheduler=null;
+                _scheduler = null;
                 scheduler.cancel();
             }
         }
@@ -569,10 +575,10 @@ public class ServerSessionImpl implements ServerSession
         synchronized (_queue)
         {
             long now = System.currentTimeMillis();
-            if (_intervalTimestamp>0)
-                _lastInterval=now-(_intervalTimestamp-_maxInterval);
-            _connectTimestamp=now;
-            _intervalTimestamp=0;
+            if (_intervalTimestamp > 0)
+                _lastInterval = now - (_intervalTimestamp - _maxInterval);
+            _connectTimestamp = now;
+            _intervalTimestamp = 0;
         }
     }
 
@@ -582,8 +588,8 @@ public class ServerSessionImpl implements ServerSession
         synchronized (_queue)
         {
             long now = System.currentTimeMillis();
-            _lastConnect=now-_connectTimestamp;
-            _intervalTimestamp=now+_maxInterval;
+            _lastConnect = now - _connectTimestamp;
+            _intervalTimestamp = now + _maxInterval;
         }
     }
 
@@ -728,7 +734,7 @@ public class ServerSessionImpl implements ServerSession
     public Object getAdvice()
     {
         final ServerTransport transport = _bayeux.getCurrentTransport();
-        if (transport==null)
+        if (transport == null)
             return null;
 
         long timeout = getTimeout() < 0 ? transport.getTimeout() : getTimeout();
@@ -742,7 +748,7 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public void reAdvise()
     {
-        _advisedTransport=null;
+        _advisedTransport = null;
     }
 
     /* ------------------------------------------------------------ */
@@ -750,9 +756,9 @@ public class ServerSessionImpl implements ServerSession
     {
         final ServerTransport transport = _bayeux.getCurrentTransport();
 
-        if (transport!=null && transport!=_advisedTransport)
+        if (transport != null && transport != _advisedTransport)
         {
-            _advisedTransport=transport;
+            _advisedTransport = transport;
             return getAdvice();
         }
 
@@ -775,15 +781,15 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public void setTimeout(long timeoutMS)
     {
-        _timeout=timeoutMS;
-        _advisedTransport=null;
+        _timeout = timeoutMS;
+        _advisedTransport = null;
     }
 
     /* ------------------------------------------------------------ */
     public void setInterval(long intervalMS)
     {
-        _interval=intervalMS;
-        _advisedTransport=null;
+        _interval = intervalMS;
+        _advisedTransport = null;
     }
 
     /* ------------------------------------------------------------ */
@@ -824,7 +830,7 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public void setMetaConnectDeliveryOnly(boolean meta)
     {
-        _metaConnectDelivery=meta;
+        _metaConnectDelivery = meta;
     }
 
     /* ------------------------------------------------------------ */
@@ -863,14 +869,14 @@ public class ServerSessionImpl implements ServerSession
         {
             b.append(indent);
             b.append(" +-");
-            _localSession.dump(b,indent+"   ");
+            _localSession.dump(b, indent + "   ");
         }
     }
 
     /* ------------------------------------------------------------ */
     public String toDetailString()
     {
-        return _id+",lc="+_lastConnect+",li="+_lastInterval;
+        return _id + ",lc=" + _lastConnect + ",li=" + _lastInterval;
     }
 
     /* ------------------------------------------------------------ */

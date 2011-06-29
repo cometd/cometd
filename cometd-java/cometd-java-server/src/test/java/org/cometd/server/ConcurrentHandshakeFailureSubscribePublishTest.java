@@ -28,6 +28,8 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBayeuxClientServerTest
 {
@@ -39,6 +41,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
         this.bayeux.setSecurityPolicy(new Policy());
     }
 
+    @Test
     public void testConcurrentHandshakeFailureAndSubscribe() throws Exception
     {
         final AtomicBoolean subscribe = new AtomicBoolean();
@@ -69,29 +72,30 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         List<Message.Mutable> messages = HashMapMessage.parseMessages(handshake.getResponseContent());
-        assertEquals(2, messages.size());
+        Assert.assertEquals(2, messages.size());
         Message handshakeResponse = messages.get(0);
-        assertFalse(handshakeResponse.isSuccessful());
+        Assert.assertFalse(handshakeResponse.isSuccessful());
         String handshakeError = (String)handshakeResponse.get("error");
-        assertNotNull(handshakeError);
-        assertTrue(handshakeError.contains("403"));
+        Assert.assertNotNull(handshakeError);
+        Assert.assertTrue(handshakeError.contains("403"));
         Map<String, Object> advice = handshakeResponse.getAdvice();
-        assertNotNull(advice);
-        assertEquals(Message.RECONNECT_NONE_VALUE, advice.get("reconnect"));
+        Assert.assertNotNull(advice);
+        Assert.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get("reconnect"));
         Message subscribeResponse = messages.get(1);
-        assertFalse(subscribeResponse.isSuccessful());
+        Assert.assertFalse(subscribeResponse.isSuccessful());
         String subscribeError = (String)subscribeResponse.get("error");
-        assertNotNull(subscribeError);
-        assertTrue(subscribeError.contains("402"));
-        assertNull(subscribeResponse.getAdvice());
+        Assert.assertNotNull(subscribeError);
+        Assert.assertTrue(subscribeError.contains("402"));
+        Assert.assertNull(subscribeResponse.getAdvice());
 
-        assertFalse(subscribe.get());
+        Assert.assertFalse(subscribe.get());
     }
 
+    @Test
     public void testConcurrentHandshakeFailureAndPublish() throws Exception
     {
         final String channelName = "/foo";
@@ -122,27 +126,27 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
                 "\"data\": {}" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         List<Message.Mutable> messages = HashMapMessage.parseMessages(handshake.getResponseContent());
-        assertEquals(2, messages.size());
+        Assert.assertEquals(2, messages.size());
         Message handshakeResponse = messages.get(0);
-        assertFalse(handshakeResponse.isSuccessful());
+        Assert.assertFalse(handshakeResponse.isSuccessful());
         String handshakeError = (String)handshakeResponse.get("error");
-        assertNotNull(handshakeError);
-        assertTrue(handshakeError.contains("403"));
+        Assert.assertNotNull(handshakeError);
+        Assert.assertTrue(handshakeError.contains("403"));
         Map<String, Object> advice = handshakeResponse.getAdvice();
-        assertNotNull(advice);
-        assertEquals(Message.RECONNECT_NONE_VALUE, advice.get("reconnect"));
+        Assert.assertNotNull(advice);
+        Assert.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get("reconnect"));
         Message publishResponse = messages.get(1);
-        assertFalse(publishResponse.isSuccessful());
+        Assert.assertFalse(publishResponse.isSuccessful());
         String publishError = (String)publishResponse.get("error");
-        assertNotNull(publishError);
-        assertTrue(publishError.contains("402"));
-        assertNull(publishResponse.getAdvice());
+        Assert.assertNotNull(publishError);
+        Assert.assertTrue(publishError.contains("402"));
+        Assert.assertNull(publishResponse.getAdvice());
 
-        assertFalse(publish.get());
+        Assert.assertFalse(publish.get());
     }
 
     private class Policy extends DefaultSecurityPolicy

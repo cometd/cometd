@@ -33,7 +33,7 @@ public class CometDCharsetTest extends AbstractCometDTest
         String chinese = "\u2ee2"; // cjk's horse
 
         defineClass(Latch.class);
-        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var latch = new Latch(1);");
         Latch latch = (Latch)get("latch");
         evaluateScript("var data = undefined;");

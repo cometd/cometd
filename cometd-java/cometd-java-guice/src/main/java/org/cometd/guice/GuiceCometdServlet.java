@@ -49,7 +49,7 @@ public final class GuiceCometdServlet extends AnnotationCometdServlet {
     }
 
     @Override
-    protected ServerAnnotationProcessor newServerAnnotationProcessor() {
+    protected ServerAnnotationProcessor newServerAnnotationProcessor(BayeuxServer bayeuxServer) {
         return injector.getInstance(ServerAnnotationProcessor.class);
     }
 

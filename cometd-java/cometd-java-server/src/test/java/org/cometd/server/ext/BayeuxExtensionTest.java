@@ -30,6 +30,8 @@ import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
 {
@@ -54,6 +56,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         this.bayeux = bayeux;
     }
 
+    @Test
     public void testBayeuxExtensionOnHandshake() throws Exception
     {
         bayeux.addExtension(new MetaExtension());
@@ -81,24 +84,25 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
-        assertEquals(SERVER_EXT_INFO, handshakeRef.get().get(SERVER_EXT_MESSAGE_FIELD));
-        assertEquals(SERVER_EXT_INFO, handshakeRef.get().getDataAsMap().get(SERVER_EXT_DATA_FIELD));
-        assertEquals(SERVER_EXT_INFO, handshakeRef.get().getExt().get(SERVER_EXT_EXT_FIELD));
-        assertEquals(CLIENT_INFO, handshakeRef.get().get(CLIENT_MESSAGE_FIELD));
-        assertEquals(CLIENT_INFO, handshakeRef.get().getExt().get(CLIENT_EXT_FIELD));
-        assertEquals(CLIENT_INFO, handshakeRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, handshakeRef.get().get(SERVER_EXT_MESSAGE_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, handshakeRef.get().getDataAsMap().get(SERVER_EXT_DATA_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, handshakeRef.get().getExt().get(SERVER_EXT_EXT_FIELD));
+        Assert.assertEquals(CLIENT_INFO, handshakeRef.get().get(CLIENT_MESSAGE_FIELD));
+        Assert.assertEquals(CLIENT_INFO, handshakeRef.get().getExt().get(CLIENT_EXT_FIELD));
+        Assert.assertEquals(CLIENT_INFO, handshakeRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
 
         Object[] messages = (Object[])JSON.parse(handshake.getResponseContent());
-        assertEquals(1, messages.length);
+        Assert.assertEquals(1, messages.length);
         Map message = (Map)messages[0];
-        assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
-        assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_EXT_DATA_FIELD));
-        assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_EXT_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_EXT_DATA_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_EXT_FIELD));
     }
 
+    @Test
     public void testBayeuxExtensionOnServiceChannel() throws Exception
     {
         final String channel = "/service/test";
@@ -130,8 +134,8 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
 
@@ -144,27 +148,28 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
                 "}]");
         httpClient.send(publish);
-        assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        assertEquals(200, publish.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
+        Assert.assertEquals(200, publish.getResponseStatus());
 
-        assertEquals(SERVER_EXT_INFO, publishRef.get().get(SERVER_EXT_MESSAGE_FIELD));
-        assertEquals(SERVER_EXT_INFO, publishRef.get().getDataAsMap().get(SERVER_EXT_DATA_FIELD));
-        assertEquals(SERVER_EXT_INFO, publishRef.get().getExt().get(SERVER_EXT_EXT_FIELD));
-        assertEquals(CLIENT_INFO, publishRef.get().get(CLIENT_MESSAGE_FIELD));
-        assertEquals(CLIENT_INFO, publishRef.get().getExt().get(CLIENT_EXT_FIELD));
-        assertEquals(CLIENT_INFO, publishRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, publishRef.get().get(SERVER_EXT_MESSAGE_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, publishRef.get().getDataAsMap().get(SERVER_EXT_DATA_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, publishRef.get().getExt().get(SERVER_EXT_EXT_FIELD));
+        Assert.assertEquals(CLIENT_INFO, publishRef.get().get(CLIENT_MESSAGE_FIELD));
+        Assert.assertEquals(CLIENT_INFO, publishRef.get().getExt().get(CLIENT_EXT_FIELD));
+        Assert.assertEquals(CLIENT_INFO, publishRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
 
         Object[] messages = (Object[])JSON.parse(publish.getResponseContent());
-        assertEquals(2, messages.length);
+        Assert.assertEquals(2, messages.length);
         Map message = ((Map)messages[0]).containsKey(Message.DATA_FIELD) ? (Map)messages[0] : (Map)messages[1];
-        assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
-        assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_EXT_DATA_FIELD));
-        assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_EXT_FIELD));
-        assertEquals(SERVICE_INFO, message.get(SERVER_MESSAGE_FIELD));
-        assertEquals(SERVICE_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_DATA_FIELD));
-        assertEquals(SERVICE_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_EXT_DATA_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_EXT_FIELD));
+        Assert.assertEquals(SERVICE_INFO, message.get(SERVER_MESSAGE_FIELD));
+        Assert.assertEquals(SERVICE_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_DATA_FIELD));
+        Assert.assertEquals(SERVICE_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_FIELD));
     }
 
+    @Test
     public void testBayeuxExtensionOnBroadcastChannel() throws Exception
     {
         final String channel = "/test";
@@ -193,8 +198,8 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
 
@@ -205,8 +210,8 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"subscription\": \"" + channel + "\"," +
                 "}]");
         httpClient.send(subscribe);
-        assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
-        assertEquals(200, subscribe.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
+        Assert.assertEquals(200, subscribe.getResponseStatus());
 
         ContentExchange publish = newBayeuxExchange("" +
                 "[{" +
@@ -217,25 +222,25 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
                 "}]");
         httpClient.send(publish);
-        assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        assertEquals(200, publish.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
+        Assert.assertEquals(200, publish.getResponseStatus());
 
-        assertEquals(SERVER_EXT_INFO, publishRef.get().get(SERVER_EXT_MESSAGE_FIELD));
-        assertEquals(SERVER_EXT_INFO, publishRef.get().getDataAsMap().get(SERVER_EXT_DATA_FIELD));
-        assertEquals(SERVER_EXT_INFO, publishRef.get().getExt().get(SERVER_EXT_EXT_FIELD));
-        assertEquals(CLIENT_INFO, publishRef.get().get(CLIENT_MESSAGE_FIELD));
-        assertEquals(CLIENT_INFO, publishRef.get().getExt().get(CLIENT_EXT_FIELD));
-        assertEquals(CLIENT_INFO, publishRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, publishRef.get().get(SERVER_EXT_MESSAGE_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, publishRef.get().getDataAsMap().get(SERVER_EXT_DATA_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, publishRef.get().getExt().get(SERVER_EXT_EXT_FIELD));
+        Assert.assertEquals(CLIENT_INFO, publishRef.get().get(CLIENT_MESSAGE_FIELD));
+        Assert.assertEquals(CLIENT_INFO, publishRef.get().getExt().get(CLIENT_EXT_FIELD));
+        Assert.assertEquals(CLIENT_INFO, publishRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
 
         Object[] messages = (Object[])JSON.parse(publish.getResponseContent());
-        assertEquals(2, messages.length);
+        Assert.assertEquals(2, messages.length);
         Map message = ((Map)messages[0]).containsKey(Message.DATA_FIELD) ? (Map)messages[0] : (Map)messages[1];
-        assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
-        assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_EXT_DATA_FIELD));
-        assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_EXT_FIELD));
-        assertEquals(SERVICE_INFO, message.get(SERVER_MESSAGE_FIELD));
-        assertEquals(SERVICE_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_DATA_FIELD));
-        assertEquals(SERVICE_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_EXT_DATA_FIELD));
+        Assert.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_EXT_FIELD));
+        Assert.assertEquals(SERVICE_INFO, message.get(SERVER_MESSAGE_FIELD));
+        Assert.assertEquals(SERVICE_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_DATA_FIELD));
+        Assert.assertEquals(SERVICE_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_FIELD));
     }
 
     private class MetaExtension implements BayeuxServer.Extension

@@ -16,8 +16,8 @@
 
 package org.cometd.javascript;
 
-import junit.framework.Assert;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDRedeployTest extends AbstractCometDTest
@@ -35,7 +35,7 @@ public class CometDRedeployTest extends AbstractCometDTest
     public void testRedeploy() throws Exception
     {
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
         Latch handshakeLatch = get("handshakeLatch");
         evaluateScript("var connectLatch = new Latch(1);");

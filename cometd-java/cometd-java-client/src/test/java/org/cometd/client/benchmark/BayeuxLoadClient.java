@@ -138,6 +138,13 @@ public class BayeuxLoadClient
             value = String.valueOf(roomsPerClient);
         roomsPerClient = Integer.parseInt(value);
 
+        boolean recordLatencyDetails = true;
+        System.err.printf("record latency details [%b]: ", recordLatencyDetails);
+        value = console.readLine().trim();
+        if (value.length() == 0)
+            value = String.valueOf(recordLatencyDetails);
+        recordLatencyDetails = Boolean.parseBoolean(value);
+
         HttpClient httpClient = new HttpClient();
         httpClient.setMaxConnectionsPerAddress(50000);
         MonitoringBlockingArrayQueue taskQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
@@ -158,7 +165,7 @@ public class BayeuxLoadClient
 
         HandshakeListener handshakeListener = new HandshakeListener(channel, rooms, roomsPerClient);
         DisconnectListener disconnectListener = new DisconnectListener();
-        LatencyListener latencyListener = new LatencyListener();
+        LatencyListener latencyListener = new LatencyListener(recordLatencyDetails);
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(8);
 
@@ -359,8 +366,7 @@ public class BayeuxLoadClient
             reset();
         }
 
-        statsClient.disconnect();
-        statsClient.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+        statsClient.disconnect(1000);
 
         scheduler.shutdown();
         scheduler.awaitTermination(1000, TimeUnit.MILLISECONDS);
@@ -376,7 +382,7 @@ public class BayeuxLoadClient
         }
     }
 
-    private void updateLatencies(long startTime, long sendTime, long arrivalTime, long endTime)
+    private void updateLatencies(long startTime, long sendTime, long arrivalTime, long endTime, boolean recordDetails)
     {
         long wallLatency = endTime - startTime;
         long latency = arrivalTime - sendTime;
@@ -389,8 +395,11 @@ public class BayeuxLoadClient
         Atomics.updateMax(maxLatency, latency);
         totLatency.addAndGet(latency);
 
-        wallLatencies.putIfAbsent(wallLatency, new AtomicLong(0L));
-        wallLatencies.get(wallLatency).incrementAndGet();
+        if (recordDetails)
+        {
+            wallLatencies.putIfAbsent(wallLatency, new AtomicLong(0L));
+            wallLatencies.get(wallLatency).incrementAndGet();
+        }
     }
 
     private boolean waitForMessages(long expected) throws InterruptedException
@@ -572,6 +581,13 @@ public class BayeuxLoadClient
 
     private class LatencyListener implements ClientSessionChannel.MessageListener
     {
+        private final boolean recordDetails;
+
+        public LatencyListener(boolean recordDetails)
+        {
+            this.recordDetails = recordDetails;
+        }
+
         public void onMessage(ClientSessionChannel channel, Message message)
         {
             Map<String, Object> data = message.getDataAsMap();
@@ -586,10 +602,10 @@ public class BayeuxLoadClient
                     end.set(endTime);
                     messages.incrementAndGet();
                     String messageId = message.getId();
-                    Long sendTime = sendTimes.get(messageId);
-                    Long arrivalTime = arrivalTimes.get(messageId);
+                    Long sendTime = sendTimes.remove(messageId);
+                    Long arrivalTime = arrivalTimes.remove(messageId);
                     if (sendTime != null && arrivalTime != null)
-                        updateLatencies(startTime, sendTime, arrivalTime, endTime);
+                        updateLatencies(startTime, sendTime, arrivalTime, endTime, recordDetails);
                 }
             }
         }
@@ -608,7 +624,8 @@ public class BayeuxLoadClient
 
         public void init(String channel, int room)
         {
-            getChannel(channel + "/" + room).subscribe(latencyListener);
+            if (latencyListener != null)
+                getChannel(channel + "/" + room).subscribe(latencyListener);
 
             AtomicInteger clientsPerRoom = rooms.get(room);
             if (clientsPerRoom == null)
@@ -625,7 +642,7 @@ public class BayeuxLoadClient
 
         public void destroy()
         {
-            disconnect();
+            disconnect(1000);
 
             for (Integer room : subscriptions)
             {

@@ -16,7 +16,7 @@
 
 package org.cometd.javascript;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDListenerExceptionCallbackTest extends AbstractCometDTest
@@ -30,7 +30,7 @@ public class CometDListenerExceptionCallbackTest extends AbstractCometDTest
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = get("connectLatch");
         evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "var handshakeSubscription = cometd.addListener('/meta/handshake', function(message) { throw 'test'; });" +
                 "cometd.addListener('/meta/connect', function(message) { connectLatch.countDown(); });" +
                 "" +
@@ -58,7 +58,7 @@ public class CometDListenerExceptionCallbackTest extends AbstractCometDTest
         evaluateScript("var latch = new Latch(1);");
         Latch latch = (Latch)get("latch");
         evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "var channelSubscription = undefined;" +
                 "cometd.onListenerException = function(exception, subscriptionHandle, isListener, message) " +
                 "{" +

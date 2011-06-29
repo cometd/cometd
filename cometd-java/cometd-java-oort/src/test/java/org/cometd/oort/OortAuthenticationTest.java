@@ -58,8 +58,7 @@ public class OortAuthenticationTest extends OortTest
                 "}").get(0);
         BayeuxClient client1 = startClient(oort1, authFields);
         Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
-        client1.disconnect();
-        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(client1.disconnect(5000));
 
         // An invalid client may not connect
         BayeuxClient client2 = startClient(oort1, null);

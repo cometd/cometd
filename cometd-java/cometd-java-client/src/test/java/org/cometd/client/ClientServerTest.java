@@ -27,16 +27,30 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
+import org.junit.Rule;
+import org.junit.rules.TestWatchman;
+import org.junit.runners.model.FrameworkMethod;
 
 public class ClientServerTest
 {
+    @Rule
+    public final TestWatchman testName = new TestWatchman()
+    {
+        @Override
+        public void starting(FrameworkMethod method)
+        {
+            super.starting(method);
+            Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
+        }
+    };
     protected Connector connector;
     protected Server server;
+    protected ServletContextHandler context;
     protected HttpClient httpClient;
     protected String cometdURL;
     protected BayeuxServer bayeux;
-    protected BayeuxClient client;
 
     public void startServer(Map<String, String> initParams) throws Exception
     {
@@ -47,12 +61,13 @@ public class ClientServerTest
         server.addConnector(connector);
 
         String contextPath = "";
-        ServletContextHandler context = new ServletContextHandler(server, contextPath);
+        context = new ServletContextHandler(server, contextPath);
 
         // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
-        cometdServletHolder.setInitParameter("logLevel", "3");
+        if (debugTests())
+            cometdServletHolder.setInitParameter("logLevel", "3");
         cometdServletHolder.setInitOrder(1);
         if (initParams != null)
         {
@@ -71,19 +86,31 @@ public class ClientServerTest
 
         httpClient = new HttpClient();
         httpClient.start();
+    }
 
-        client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
+    protected BayeuxClient newBayeuxClient()
+    {
+        final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
+        client.setDebugEnabled(debugTests());
+        return client;
+    }
+
+    protected void disconnectBayeuxClient(BayeuxClient client)
+    {
+        client.disconnect(5000);
     }
 
     @After
     public void stopServer() throws Exception
     {
-        client.disconnect();
-        client.waitFor(1000, BayeuxClient.State.DISCONNECTED);
-
         httpClient.stop();
 
         server.stop();
         server.join();
+    }
+
+    protected boolean debugTests()
+    {
+        return Boolean.getBoolean("debugTests");
     }
 }

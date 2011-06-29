@@ -18,13 +18,13 @@ package org.cometd.javascript;
 
 import javax.servlet.http.HttpServletRequest;
 
-import junit.framework.Assert;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.transport.HttpTransport;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDURLPathTest extends AbstractCometDTest
@@ -45,7 +45,7 @@ public class CometDURLPathTest extends AbstractCometDTest
         evaluateScript("var connect = undefined;");
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
-        evaluateScript("cometd.init({url: '" + cometdURL + "/', logLevel: 'debug'})");
+        evaluateScript("cometd.init({url: '" + cometdURL + "/', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(connectLatch.await(1000));
 
         evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
@@ -81,7 +81,7 @@ public class CometDURLPathTest extends AbstractCometDTest
         evaluateScript("var connect = undefined;");
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
-        evaluateScript("cometd.init({url: '" + cometdURL + "/target.cometd', logLevel: 'debug'})");
+        evaluateScript("cometd.init({url: '" + cometdURL + "/target.cometd', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(connectLatch.await(1000));
 
         evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
@@ -117,7 +117,7 @@ public class CometDURLPathTest extends AbstractCometDTest
         evaluateScript("var connect = undefined;");
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
-        evaluateScript("cometd.init({url: '" + cometdURL + "/?param=1', logLevel: 'debug'})");
+        evaluateScript("cometd.init({url: '" + cometdURL + "/?param=1', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(connectLatch.await(1000));
 
         evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
@@ -153,7 +153,7 @@ public class CometDURLPathTest extends AbstractCometDTest
         evaluateScript("var connect = undefined;");
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
-        evaluateScript("cometd.init({url: '" + cometdURL + "/', logLevel: 'debug', appendMessageTypeToURL: false})");
+        evaluateScript("cometd.init({url: '" + cometdURL + "/', logLevel: '" + getLogLevel() + "', appendMessageTypeToURL: false})");
         Assert.assertTrue(connectLatch.await(1000));
 
         evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");

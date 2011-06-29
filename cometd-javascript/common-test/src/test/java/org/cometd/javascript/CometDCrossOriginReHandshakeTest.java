@@ -26,7 +26,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.Assert;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDCrossOriginReHandshakeTest extends AbstractCometDTest
@@ -65,7 +65,7 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDTest
         evaluateScript("cometd.configure({" +
                        "url: '" + crossOriginCometdURL + "', " +
                        "requestHeaders: { Origin: 'http://localhost:8080' }, " +
-                       "logLevel: 'debug'" +
+                       "logLevel: '" + getLogLevel() + "'" +
                        "});");
         evaluateScript("var handshakeLatch = new Latch(2);");
         evaluateScript("var connectLatch = new Latch(2);");

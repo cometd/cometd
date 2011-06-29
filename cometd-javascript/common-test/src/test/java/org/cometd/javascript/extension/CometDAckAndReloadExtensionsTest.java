@@ -16,12 +16,12 @@
 
 package org.cometd.javascript.extension;
 
-import junit.framework.Assert;
 import org.cometd.javascript.AbstractCometDTest;
 import org.cometd.javascript.Latch;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -46,7 +46,7 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest
     @Test
     public void testAckAndReloadExtensions() throws Exception
     {
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
@@ -74,7 +74,7 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest
         initPage();
         initExtensions();
 
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = get("readyLatch");

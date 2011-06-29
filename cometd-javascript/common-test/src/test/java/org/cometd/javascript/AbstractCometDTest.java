@@ -28,13 +28,27 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestWatchman;
+import org.junit.runners.model.FrameworkMethod;
 import org.mozilla.javascript.ScriptableObject;
 
 public abstract class AbstractCometDTest
 {
+    @Rule
+    public final TestWatchman testName = new TestWatchman()
+    {
+        @Override
+        public void starting(FrameworkMethod method)
+        {
+            super.starting(method);
+            Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
+        }
+    };
     protected TestProvider provider;
     private HttpCookieStore cookies;
     private Server server;
@@ -72,7 +86,8 @@ public abstract class AbstractCometDTest
         CometdServlet cometdServlet = new CometdServlet();
         ServletHolder cometServletHolder = new ServletHolder(cometdServlet);
         cometServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
-        cometServletHolder.setInitParameter("logLevel", "3");
+        if (Boolean.getBoolean("debugTests"))
+            cometServletHolder.setInitParameter("logLevel", "3");
         context.addServlet(cometServletHolder, cometServletPath + "/*");
 
         customizeContext(context);
@@ -96,6 +111,11 @@ public abstract class AbstractCometDTest
         server.stop();
         server.join();
         cookies.clear();
+    }
+
+    protected String getLogLevel()
+    {
+        return Boolean.getBoolean("debugTests") ? "debug" : "info";
     }
 
     protected void customizeContext(ServletContextHandler context) throws Exception

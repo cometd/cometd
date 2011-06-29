@@ -16,8 +16,11 @@
 
 package org.cometd.oort;
 
+import java.net.ConnectException;
 import java.net.URI;
 
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.server.Server;
 import org.junit.Assert;
@@ -147,21 +150,43 @@ public class OortObserveCometTest extends OortTest
     public void testObserveNonStartedOortAndDetectStart() throws Exception
     {
         Server server1 = startServer(0);
-        Oort oort1 = startOort(server1);
+        String url = (String)server1.getAttribute(OortConfigServlet.OORT_URL_PARAM);
+        final BayeuxServer bayeuxServer = (BayeuxServer)server1.getAttribute(BayeuxServer.ATTRIBUTE);
+        Oort oort1 = new Oort(bayeuxServer, url)
+        {
+            @Override
+            protected OortComet newOortComet(String cometURL)
+            {
+                return new OortComet(this, cometURL)
+                {
+                    @Override
+                    public void onFailure(Throwable x, Message[] messages)
+                    {
+                        // Suppress expected exceptions
+                        if (!(x instanceof ConnectException))
+                            super.onFailure(x, messages);
+                    }
+                };
+            }
+        };
+        oort1.setClientDebugEnabled(Boolean.getBoolean("debugTests"));
+        oort1.start();
 
         Server server2 = startServer(0);
-        String url = (String)server2.getAttribute(OortConfigServlet.OORT_URL_PARAM);
-        int port = new URI(url).getPort();
+        String url2 = (String)server2.getAttribute(OortConfigServlet.OORT_URL_PARAM);
+        int port = new URI(url2).getPort();
         stopServer(server2);
 
-        OortComet oortComet12 = oort1.observeComet(url);
+        OortComet oortComet12 = oort1.observeComet(url2);
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.REHANDSHAKING));
 
         server2 = startServer(port);
         Oort oort2 = startOort(server2);
-        Assert.assertEquals(oort2.getURL(), url);
+        Assert.assertEquals(oort2.getURL(), url2);
 
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        stopOort(oort1);
     }
 
     @Test

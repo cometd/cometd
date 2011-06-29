@@ -25,6 +25,8 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class BayeuxServiceWithThreadPoolTest extends AbstractBayeuxClientServerTest
 {
@@ -35,6 +37,7 @@ public class BayeuxServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
         this.bayeux = bayeux;
     }
 
+    @Test
     public void testBayeuxServiceWithThreadPool() throws Exception
     {
         final String channel = "/foo";
@@ -48,8 +51,8 @@ public class BayeuxServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
                                                   "\"supportedConnectionTypes\": [\"long-polling\"]" +
                                                   "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
 
@@ -59,8 +62,8 @@ public class BayeuxServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
                                                    "\"subscription\": \"" + channel + "\"" +
                                                    "}]");
         httpClient.send(subscribe);
-        assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
-        assertEquals(200, subscribe.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
+        Assert.assertEquals(200, subscribe.getResponseStatus());
 
         ContentExchange publish = newBayeuxExchange("[{" +
                                                     "\"channel\": \"" + channel + "\"," +
@@ -68,15 +71,15 @@ public class BayeuxServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
                                                     "\"data\": {}" +
                                                     "}]");
         httpClient.send(publish);
-        assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        assertEquals(200, publish.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
+        Assert.assertEquals(200, publish.getResponseStatus());
 
-        assertTrue(service.await(1000));
+        Assert.assertTrue(service.await(1000));
 
         Message message = service.getMessage();
-        assertNotNull(message);
-        assertNotNull(message.getChannel());
-        assertNotNull(message.getData());
+        Assert.assertNotNull(message);
+        Assert.assertNotNull(message.getChannel());
+        Assert.assertNotNull(message.getData());
     }
 
     public static class TestService extends AbstractService

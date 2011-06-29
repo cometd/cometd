@@ -4,7 +4,7 @@
        xsi:schemaLocation=" http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
 
     <bean id="logLevel" class="java.lang.String">
-        <constructor-arg value="3" />
+        <constructor-arg value="1" />
     </bean>
 
     <bean id="bayeux" class="org.cometd.server.BayeuxServerImpl" init-method="start" destroy-method="stop">

@@ -25,6 +25,8 @@ import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class BrowserMappingTest extends AbstractBayeuxClientServerTest
 {
@@ -36,18 +38,20 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         this.bayeux = bayeux;
     }
 
+    @Test
     public void testBayeuxBrowserMapping() throws Exception
     {
         LongPollingTransport transport = new JSONTransport(bayeux);
 
         String browserId = "browser1";
-        assertTrue(transport.incBrowserId(browserId));
-        assertFalse(transport.incBrowserId(browserId));
+        Assert.assertTrue(transport.incBrowserId(browserId));
+        Assert.assertFalse(transport.incBrowserId(browserId));
         transport.decBrowserId(browserId);
-        assertTrue(transport.incBrowserId(browserId));
+        Assert.assertTrue(transport.incBrowserId(browserId));
         transport.decBrowserId(browserId);
     }
 
+    @Test
     public void testSameDomainWithCookieHoldsConnect() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("" +
@@ -58,8 +62,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
         String bayeuxCookie = extractBayeuxCookie(handshake);
@@ -72,8 +76,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "}]");
         connect1.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect1);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        assertEquals(200, connect1.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
+        Assert.assertEquals(200, connect1.getResponseStatus());
 
         long begin = System.nanoTime();
         ContentExchange connect2 = newBayeuxExchange("[{" +
@@ -83,12 +87,13 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "}]");
         connect2.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect2);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
-        assertEquals(200, connect2.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
+        Assert.assertEquals(200, connect2.getResponseStatus());
         long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
-        assertTrue("" + elapsed, elapsed >= timeout);
+        Assert.assertTrue("" + elapsed, elapsed >= timeout);
     }
 
+    @Test
     public void testSameDomainWithoutCookieDoesNotHoldConnect() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("" +
@@ -99,8 +104,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
 
@@ -111,8 +116,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         httpClient.send(connect1);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        assertEquals(200, connect1.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
+        Assert.assertEquals(200, connect1.getResponseStatus());
 
         long begin = System.nanoTime();
         ContentExchange connect2 = newBayeuxExchange("[{" +
@@ -121,12 +126,13 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         httpClient.send(connect2);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
-        assertEquals(200, connect2.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
+        Assert.assertEquals(200, connect2.getResponseStatus());
         long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
-        assertTrue("" + elapsed, elapsed < timeout / 2);
+        Assert.assertTrue("" + elapsed, elapsed < timeout / 2);
     }
 
+    @Test
     public void testSameDomainWithoutCookieWithOptionHoldsConnect() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("" +
@@ -137,8 +143,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         AbstractServerTransport transport = (AbstractServerTransport)bayeux.getTransport("long-polling");
         transport.setOption(LongPollingTransport.ALLOW_MULTI_SESSIONS_NO_BROWSER_OPTION, true);
@@ -155,8 +161,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         httpClient.send(connect1);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        assertEquals(200, connect1.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
+        Assert.assertEquals(200, connect1.getResponseStatus());
 
         long begin = System.nanoTime();
         ContentExchange connect2 = newBayeuxExchange("[{" +
@@ -165,12 +171,13 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         httpClient.send(connect2);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
-        assertEquals(200, connect2.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
+        Assert.assertEquals(200, connect2.getResponseStatus());
         long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
-        assertTrue("" + elapsed, elapsed >= timeout);
+        Assert.assertTrue("" + elapsed, elapsed >= timeout);
     }
 
+    @Test
     public void testDifferentDomainWithoutCookieHoldsConnect() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("" +
@@ -181,8 +188,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
 
@@ -195,8 +202,8 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         connect1.setRequestHeader(HttpHeaders.HOST, "http://127.0.0.1:" + port);
         connect1.setRequestHeader("Origin", "http://localhost:" + port);
         httpClient.send(connect1);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        assertEquals(200, connect1.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
+        Assert.assertEquals(200, connect1.getResponseStatus());
 
         long begin = System.nanoTime();
         ContentExchange connect2 = newBayeuxExchange("[{" +
@@ -207,9 +214,9 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         connect2.setRequestHeader(HttpHeaders.HOST, "http://127.0.0.1:" + port);
         connect2.setRequestHeader("Origin", "http://localhost:" + port);
         httpClient.send(connect2);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
-        assertEquals(200, connect2.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
+        Assert.assertEquals(200, connect2.getResponseStatus());
         long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
-        assertTrue("" + elapsed, elapsed >= timeout);
+        Assert.assertTrue("" + elapsed, elapsed >= timeout);
     }
 }

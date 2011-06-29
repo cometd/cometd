@@ -20,9 +20,12 @@ import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpStatus;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ServerRedeployTest extends AbstractBayeuxClientServerTest
 {
+    @Test
     public void testServerRedeploy() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("" +
@@ -33,8 +36,8 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
         String bayeuxCookie = extractBayeuxCookie(handshake);
@@ -48,8 +51,8 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest
                 "}]");
         connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        assertEquals(200, connect.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
+        Assert.assertEquals(200, connect.getResponseStatus());
 
         connect = newBayeuxExchange("" +
                 "[{" +
@@ -67,7 +70,7 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest
         context.stop();
 
         // Expect the connect to be back with an exception
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        assertEquals(HttpStatus.REQUEST_TIMEOUT_408,connect.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
+        Assert.assertEquals(HttpStatus.REQUEST_TIMEOUT_408, connect.getResponseStatus());
     }
 }

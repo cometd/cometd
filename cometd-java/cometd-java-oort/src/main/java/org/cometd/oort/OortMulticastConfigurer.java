@@ -73,8 +73,6 @@ public class OortMulticastConfigurer
 
     public void start() throws Exception
     {
-        logger.setDebugEnabled(true);
-
         // Bind sender to an ephemeral port and set the TTL
         MulticastSocket sender = new MulticastSocket();
         sender.setTimeToLive(timeToLive);

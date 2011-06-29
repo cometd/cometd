@@ -25,6 +25,8 @@ import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientServerTest
 {
@@ -34,6 +36,7 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
         options.put("long-polling.json.metaConnectDeliverOnly", "true");
     }
 
+    @Test
     public void testJSONTransportMetaConnectDelivery() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("[{" +
@@ -43,8 +46,8 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         String clientId = extractClientId(handshake);
         String bayeuxCookie = extractBayeuxCookie(handshake);
@@ -56,8 +59,8 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "}]");
         connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        assertEquals(200, connect.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
+        Assert.assertEquals(200, connect.getResponseStatus());
 
         String channel = "/foo";
 
@@ -67,8 +70,8 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         httpClient.send(subscribe);
-        assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
-        assertEquals(200, subscribe.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
+        Assert.assertEquals(200, subscribe.getResponseStatus());
 
         ContentExchange publish = newBayeuxExchange("[{" +
                 "\"channel\": \"" + channel + "\"," +
@@ -76,12 +79,12 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"data\": {}" +
                 "}]");
         httpClient.send(publish);
-        assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        assertEquals(200, publish.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
+        Assert.assertEquals(200, publish.getResponseStatus());
 
         // Expect only the meta response to the publish
         List<Message.Mutable> messages = HashMapMessage.parseMessages(publish.getResponseContent());
-        assertEquals(1, messages.size());
+        Assert.assertEquals(1, messages.size());
 
         connect = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -90,11 +93,11 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "}]");
         connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
-        assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        assertEquals(200, connect.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
+        Assert.assertEquals(200, connect.getResponseStatus());
 
         // Expect meta response to the connect plus the published message
         messages = HashMapMessage.parseMessages(connect.getResponseContent());
-        assertEquals(2, messages.size());
+        Assert.assertEquals(2, messages.size());
     }
 }

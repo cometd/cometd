@@ -86,6 +86,10 @@ public class SetiServlet implements Servlet
         {
             throw new RuntimeException(x);
         }
+        finally
+        {
+            _config.getServletContext().removeAttribute(Seti.SETI_ATTRIBUTE);
+        }
     }
 
     public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException

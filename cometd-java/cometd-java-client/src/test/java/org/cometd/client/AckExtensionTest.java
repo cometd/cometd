@@ -45,7 +45,7 @@ public class AckExtensionTest extends ClientServerTest
     @Test
     public void testAck() throws Exception
     {
-        client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
+        final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
         {
             @Override
             public void onFailure(Throwable x, Message[] messages)
@@ -54,6 +54,7 @@ public class AckExtensionTest extends ClientServerTest
                     super.onFailure(x, messages);
             }
         };
+        client.setDebugEnabled(debugTests());
 
         bayeux.addExtension(new AcknowledgedMessagesExtension());
         client.addExtension(new AckExtension());
@@ -110,6 +111,7 @@ public class AckExtensionTest extends ClientServerTest
         connector.stop();
         TimeUnit.SECONDS.sleep(1);
         Assert.assertTrue(connector.isStopped());
+        Assert.assertTrue(client.waitFor(10000, BayeuxClient.State.UNCONNECTED));
 
         // Send messages while client is offline
         for (int i = count; i < 2 * count; ++i)
@@ -139,5 +141,7 @@ public class AckExtensionTest extends ClientServerTest
         // Check if messages after reconnect are received
         for (int i = 2 * count; i < 3 * count; ++i)
             Assert.assertEquals("id" + i, messages.poll(5, TimeUnit.SECONDS).getId());
+
+        disconnectBayeuxClient(client);
     }
 }

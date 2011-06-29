@@ -27,6 +27,8 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HandshakeFailureCustomResponseTest extends AbstractBayeuxClientServerTest
 {
@@ -50,6 +52,7 @@ public class HandshakeFailureCustomResponseTest extends AbstractBayeuxClientServ
         });
     }
 
+    @Test
     public void testHandshakeFailureCustomResponse() throws Exception
     {
         ContentExchange handshake = newBayeuxExchange("[{" +
@@ -59,19 +62,19 @@ public class HandshakeFailureCustomResponseTest extends AbstractBayeuxClientServ
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         httpClient.send(handshake);
-        assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        assertEquals(200, handshake.getResponseStatus());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
+        Assert.assertEquals(200, handshake.getResponseStatus());
 
         List<Message.Mutable> responses = HashMapMessage.parseMessages(handshake.getResponseContent());
-        assertEquals(1, responses.size());
+        Assert.assertEquals(1, responses.size());
         Message response = responses.get(0);
         Map<String, Object> advice = response.getAdvice();
-        assertNotNull(advice);
-        assertEquals(Message.RECONNECT_HANDSHAKE_VALUE, advice.get(Message.RECONNECT_FIELD));
+        Assert.assertNotNull(advice);
+        Assert.assertEquals(Message.RECONNECT_HANDSHAKE_VALUE, advice.get(Message.RECONNECT_FIELD));
         Map<String, Object> ext = response.getExt();
-        assertNotNull(ext);
+        Assert.assertNotNull(ext);
         Map<String, Object> authentication = (Map<String, Object>)ext.get("com.acme.auth");
-        assertNotNull(authentication);
-        assertEquals("test", authentication.get("failure"));
+        Assert.assertNotNull(authentication);
+        Assert.assertEquals("test", authentication.get("failure"));
     }
 }

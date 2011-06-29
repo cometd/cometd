@@ -88,8 +88,7 @@ public class ConsoleChatClient
                 data.put("membership", "leave");
                 data.put("chat", nickname + " has left");
                 client.getChannel("/chat/demo").publish(data);
-                client.disconnect();
-                client.waitFor(1000, BayeuxClient.State.DISCONNECTED);
+                client.disconnect(1000);
                 break;
             }
 

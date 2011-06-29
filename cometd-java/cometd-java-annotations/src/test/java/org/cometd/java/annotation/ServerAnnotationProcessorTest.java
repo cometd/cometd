@@ -60,7 +60,8 @@ public class ServerAnnotationProcessorTest
     public void init() throws Exception
     {
         bayeuxServer = new BayeuxServerImpl();
-        bayeuxServer.setOption(BayeuxServerImpl.LOG_LEVEL, "3");
+        if (Boolean.getBoolean("debugTests"))
+            bayeuxServer.setOption(BayeuxServerImpl.LOG_LEVEL, "3");
         bayeuxServer.start();
         processor = new ServerAnnotationProcessor(bayeuxServer);
     }
@@ -273,7 +274,7 @@ public class ServerAnnotationProcessorTest
 
         // Be sure the channel is removed after few sweeps
         for (int i = 0; i < 3; ++i)
-            bayeuxServer.doSweep();
+            bayeuxServer.sweep();
         assertNull(bayeuxServer.getChannel(channel.getId()));
     }
 

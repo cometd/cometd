@@ -19,22 +19,38 @@ package org.cometd.server;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.TestCase;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.Log;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestWatchman;
+import org.junit.runners.model.FrameworkMethod;
 
-public abstract class AbstractBayeuxServerTest extends TestCase
+public abstract class AbstractBayeuxServerTest
 {
+    @Rule
+    public final TestWatchman testName = new TestWatchman()
+    {
+        @Override
+        public void starting(FrameworkMethod method)
+        {
+            super.starting(method);
+            Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
+        }
+    };
     protected Server server;
     protected int port;
     protected ServletContextHandler context;
     protected String cometdURL;
     protected long timeout = 5000;
 
-    protected void setUp() throws Exception
+    @Before
+    public void startServer() throws Exception
     {
         server = new Server();
         SelectChannelConnector connector = new SelectChannelConnector();
@@ -51,8 +67,11 @@ public abstract class AbstractBayeuxServerTest extends TestCase
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
         Map<String, String> options = new HashMap<String, String>();
         options.put("timeout", String.valueOf(timeout));
-        options.put("logLevel", "3");
-        options.put("jsonDebug", "true");
+        if (Boolean.getBoolean("debugTests"))
+        {
+            options.put("logLevel", "3");
+            options.put("jsonDebug", "true");
+        }
         customizeOptions(options);
         for (Map.Entry<String, String> entry : options.entrySet())
             cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
@@ -69,7 +88,8 @@ public abstract class AbstractBayeuxServerTest extends TestCase
         customizeBayeux(bayeux);
     }
 
-    protected void tearDown() throws Exception
+    @After
+    public void stopServer() throws Exception
     {
         server.stop();
         server.join();

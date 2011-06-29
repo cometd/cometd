@@ -44,48 +44,46 @@ public class AcknowledgedMessagesClientExtension implements Extension
 
     public AcknowledgedMessagesClientExtension(ServerSession session)
     {
-        _session=(ServerSessionImpl)session;
-        _lock=_session.getLock();
+        _session = (ServerSessionImpl)session;
+        _lock = _session.getLock();
 
         List<ServerMessage> copy = _session.takeQueue();
         _session.replaceQueue(copy);
-        _unackedQueue=new ArrayIdQueue<ServerMessage>(16,32,copy);
+        _unackedQueue = new ArrayIdQueue<ServerMessage>(16, 32, copy);
         _unackedQueue.setCurrentId(1);
     }
 
-    /* ------------------------------------------------------------ */
     public boolean rcv(ServerSession from, Mutable message)
     {
         return true;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean rcvMeta(ServerSession session, Mutable message)
     {
         if (Channel.META_CONNECT.equals(message.getChannel()))
         {
-            Map<String,Object> ext=message.getExt(false);
+            Map<String,Object> ext = message.getExt(false);
             if (ext != null)
             {
-                assert session==_session;
+                assert session == _session;
 
                 synchronized(_lock)
                 {
-                    Long acked=(Long)ext.get("ack");
+                    Long acked = (Long)ext.get("ack");
                     if (acked != null)
                     {
-                        if (acked.longValue()<=_lastAck)
+                        if (acked <=_lastAck)
                         {
-                            _logger.debug(session + " lost ACK " + acked.longValue() + "<=" + _lastAck);
+                            _logger.debug("Session {} lost ack: {}<={}", session, acked, _lastAck);
                             _session.replaceQueue(_unackedQueue);
                         }
                         else
                         {
-                            _lastAck=acked.longValue();
+                            _lastAck = acked;
 
                             // We have received an ack ID, so delete the acked
                             // messages.
-                            final int s=_unackedQueue.size();
+                            final int s = _unackedQueue.size();
                             if (s > 0)
                             {
                                 if (_unackedQueue.getAssociatedIdUnsafe(s - 1) <= acked)
@@ -96,12 +94,12 @@ public class AcknowledgedMessagesClientExtension implements Extension
                                 else
                                 {
                                     // we need to remove elements until we see unacked
-                                    for (int i=0; i < s; i++)
+                                    for (int i = 0; i < s; ++i)
                                     {
-                                        final long a=_unackedQueue.getAssociatedIdUnsafe(0);
+                                        final long a = _unackedQueue.getAssociatedIdUnsafe(0);
                                         if (a <= acked)
                                         {
-                                            final ServerMessage q=_unackedQueue.remove();
+                                            _unackedQueue.remove();
                                             continue;
                                         }
                                         break;
@@ -117,32 +115,28 @@ public class AcknowledgedMessagesClientExtension implements Extension
         return true;
     }
 
-    /* ------------------------------------------------------------ */
     public ServerMessage send(ServerSession to, ServerMessage message)
     {
-        synchronized(_lock)
+        synchronized (_lock)
         {
             _unackedQueue.add(message);
         }
-
         return message;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean sendMeta(ServerSession to, Mutable message)
     {
         if (message.getChannel().equals(Channel.META_CONNECT))
         {
-            synchronized(_lock)
+            synchronized (_lock)
             {
-                Map<String,Object> ext=message.getExt(true);
-                ext.put("ack",_unackedQueue.getCurrentId());
+                Map<String,Object> ext = message.getExt(true);
+                ext.put("ack", _unackedQueue.getCurrentId());
                 _unackedQueue.incrementCurrentId();
             }
         }
         return true;
     }
-
 }
 
 

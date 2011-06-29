@@ -314,7 +314,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     }
 
     /* ------------------------------------------------------------ */
-    protected void doSweep()
+    protected void sweep()
     {
         for (ServerSession session : _subscribers)
         {
@@ -325,10 +325,10 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         if (isPersistent())
             return;
 
-        if (_subscribers.size() > 0 || _listeners.size() > 0)
+        if (_subscribers.size() > 0)
             return;
 
-        if (isWild() || isDeepWild())
+        if (isWild())
         {
             // Wild, check if has authorizers that can match other channels
             if (_authorizers.size() > 0)
@@ -341,6 +341,10 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
                 if (_id.isParentOf(channel.getChannelId()))
                     return;
         }
+
+        for (ServerChannelListener listener : _listeners)
+            if (!(listener instanceof ServerChannelListener.Weak))
+                return;
 
         if (++_sweeperPasses < 3)
             return;

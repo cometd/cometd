@@ -19,7 +19,7 @@ package org.cometd.javascript;
 import java.util.Arrays;
 import java.util.List;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTest
@@ -29,7 +29,7 @@ public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTest
     {
         defineClass(Latch.class);
         evaluateScript("" +
-                "cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "var latch = new Latch(2);" +
                 "var savedChannels;" +
                 "var channels = [];" +

@@ -43,14 +43,14 @@ public class CometDTwoInstancesTest extends AbstractCometDTest
                 "cometd.addListener('/meta/handshake', handshakeLatch, 'countDown');" +
                 "cometd2.addListener('/meta/handshake', handshakeLatch2, 'countDown');" +
                 "" +
-                "cometd.init({url: '" + cometdURL + "', logLevel: 'debug'});" +
+                "cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "");
         Assert.assertTrue(handshakeLatch.await(1000));
         Assert.assertFalse(handshakeLatch2.await(1000));
 
         String cometdURL2 = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("" +
-                "cometd2.init({url: '" + cometdURL2 + "', logLevel: 'debug'});" +
+                "cometd2.init({url: '" + cometdURL2 + "', logLevel: '" + getLogLevel() + "'});" +
                 "");
         Assert.assertTrue(handshakeLatch2.await(1000));
 

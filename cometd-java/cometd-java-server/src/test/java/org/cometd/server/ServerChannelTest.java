@@ -327,13 +327,13 @@ public class ServerChannelTest
         assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
 
         // First sweep does not remove the channel yet
-        _bayeux.doSweep();
+        _bayeux.sweep();
         assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
         // Nor a second sweep
-        _bayeux.doSweep();
+        _bayeux.sweep();
         assertEquals(foobar, _bayeux.getChannel("/foo/bar"));
         // Third sweep removes it
-        _bayeux.doSweep();
+        _bayeux.sweep();
         assertNull(_bayeux.getChannel("/foo/bar"));
 
         _bayeux.createIfAbsent("/foo/bar/baz");
@@ -449,11 +449,48 @@ public class ServerChannelTest
         assertNull(_bayeux.getChannel(wildName2));
     }
 
+    @Test
+    public void testSweepOfWeakListeners()
+    {
+        class L implements ServerChannel.MessageListener
+        {
+            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
+            {
+                return true;
+            }
+        }
+        class W extends L implements ServerChannel.ServerChannelListener.Weak
+        {
+        }
+
+        final ServerChannel.ServerChannelListener listener = new L();
+        final String channelName = "/weak";
+        _bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.addListener(listener);
+                channel.addListener(new W());
+            }
+        });
+
+        sweep();
+
+        // Non-weak listener present, must not be swept
+        assertNotNull(_bayeux.getChannel(channelName));
+
+        _bayeux.getChannel(channelName).removeListener(listener);
+        sweep();
+
+        // Only weak listeners present, must be swept
+        assertNull(_bayeux.getChannel(channelName));
+    }
+
     private void sweep()
     {
         // 12 is a big enough number that will make sure channel will be swept
         for (int i = 0; i < 12; ++i)
-            _bayeux.doSweep();
+            _bayeux.sweep();
     }
 
     private ServerSessionImpl newServerSession()

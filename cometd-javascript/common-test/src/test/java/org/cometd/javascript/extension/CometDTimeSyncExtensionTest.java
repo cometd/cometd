@@ -16,11 +16,11 @@
 
 package org.cometd.javascript.extension;
 
-import junit.framework.Assert;
 import org.cometd.javascript.AbstractCometDTest;
 import org.cometd.javascript.Latch;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ext.TimesyncExtension;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDTimeSyncExtensionTest extends AbstractCometDTest
@@ -36,7 +36,7 @@ public class CometDTimeSyncExtensionTest extends AbstractCometDTest
         provideTimesyncExtension();
 
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
         evaluateScript("var inTimeSync = undefined;");
         evaluateScript("var outTimeSync = undefined;");

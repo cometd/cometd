@@ -16,9 +16,9 @@
 
 package org.cometd.javascript.extension;
 
-import junit.framework.Assert;
 import org.cometd.javascript.AbstractCometDTest;
 import org.cometd.javascript.Latch;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTest
@@ -31,7 +31,7 @@ public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTest
         provideReloadExtension();
 
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', readyLatch, 'countDown');");
@@ -53,7 +53,7 @@ public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTest
         provideReloadExtension();
 
         defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: 'debug'});");
+        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = get("readyLatch");
         evaluateScript("" +

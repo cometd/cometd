@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.ServletException;
 
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Logger;
@@ -53,7 +54,7 @@ public class AnnotationCometdServlet extends CometdServlet
     {
         super.init();
 
-        processor = newServerAnnotationProcessor();
+        processor = newServerAnnotationProcessor(getBayeux());
 
         String servicesParam = getInitParameter("services");
         if (servicesParam != null && servicesParam.length() > 0)
@@ -67,9 +68,9 @@ public class AnnotationCometdServlet extends CometdServlet
         }
     }
 
-    protected ServerAnnotationProcessor newServerAnnotationProcessor()
+    protected ServerAnnotationProcessor newServerAnnotationProcessor(BayeuxServer bayeuxServer)
     {
-        return new ServerAnnotationProcessor(getBayeux());
+        return new ServerAnnotationProcessor(bayeuxServer);
     }
 
     protected Object processService(ServerAnnotationProcessor processor, String serviceClassName) throws ServletException
@@ -79,7 +80,7 @@ public class AnnotationCometdServlet extends CometdServlet
         {
             Object service = newService(serviceClassName);
             processor.process(service);
-            logger.info("Processed annotated service " + service);
+            logger.info("Processed annotated service {}", service);
             return service;
         }
         catch (Exception x)
@@ -89,7 +90,8 @@ public class AnnotationCometdServlet extends CometdServlet
         }
     }
 
-    protected Object newService(String serviceClassName) throws Exception {
+    protected Object newService(String serviceClassName) throws Exception
+    {
         return Loader.loadClass(getClass(), serviceClassName).newInstance();
     }
 
@@ -106,7 +108,7 @@ public class AnnotationCometdServlet extends CometdServlet
     {
         Logger logger = getBayeux().getLogger();
         processor.deprocess(service);
-        logger.info("Deprocessed annotated service " + service);
+        logger.info("Deprocessed annotated service {}", service);
     }
 
     protected List<Object> getServices()
