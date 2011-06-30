@@ -42,7 +42,6 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             }
         });
-        System.err.println("SIMON: " + Boolean.getBoolean("debugTests"));
     }
 
     @Test
