@@ -202,10 +202,13 @@ public abstract class HttpTransport extends AbstractServerTransport
         public String getCookie(String name)
         {
             Cookie[] cookies = _request.getCookies();
-            for (Cookie c : cookies)
+            if (cookies != null)
             {
-                if (name.equals(c.getName()))
-                    return c.getValue();
+                for (Cookie c : cookies)
+                {
+                    if (name.equals(c.getName()))
+                        return c.getValue();
+                }
             }
             return null;
         }
