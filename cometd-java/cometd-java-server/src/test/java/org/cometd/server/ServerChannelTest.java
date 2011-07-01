@@ -45,7 +45,7 @@ public class ServerChannelTest
         _bayeuxChannelListener = new BayeuxChannelListener();
         _bayeuxSubscriptionListener = new BayeuxSubscriptionListener();
         _bayeux = new BayeuxServerImpl();
-
+        _bayeux.getLogger().setDebugEnabled(Boolean.getBoolean("debugTests"));
         _bayeux.addListener(_bayeuxChannelListener);
         _bayeux.addListener(_bayeuxSubscriptionListener);
     }
@@ -102,7 +102,7 @@ public class ServerChannelTest
 
         ServerSessionImpl session1 = newServerSession();
         _bayeux.createIfAbsent("/foo/*");
-        ((ServerChannelImpl)_bayeux.getChannel("/foo/*")).subscribe(session1);
+        _bayeux.getChannel("/foo/*").subscribe(session1);
 
         assertEquals("subscribed", _bayeuxSubscriptionListener._method);
         assertEquals("/foo/*", _bayeuxSubscriptionListener._channel.getId());
@@ -113,7 +113,7 @@ public class ServerChannelTest
 
         ServerSessionImpl session2 = newServerSession();
         _bayeux.createIfAbsent("/**");
-        ((ServerChannelImpl)_bayeux.getChannel("/**")).subscribe(session2);
+        _bayeux.getChannel("/**").subscribe(session2);
 
         assertEquals("subscribed", _bayeuxSubscriptionListener._method);
         assertEquals("/**", _bayeuxSubscriptionListener._channel.getId());
@@ -233,8 +233,6 @@ public class ServerChannelTest
         ServerSessionImpl session1 = newServerSession();
         foostar.subscribe(session1);
         ServerSessionImpl session2 = newServerSession();
-        _bayeux.addServerSession(session2);
-        session2.connect();
         starstar.subscribe(session2);
 
         ServerMessage.Mutable msg = _bayeux.newMessage();
@@ -354,7 +352,7 @@ public class ServerChannelTest
         ServerChannelImpl foobarbaz = (ServerChannelImpl)_bayeux.getChannel("/foo/bar/baz");
         ServerSessionImpl session0 = newServerSession();
         foobarbaz.subscribe(session0);
-        ((ServerChannelImpl)_bayeux.getChannel("/foo")).subscribe(session0);
+        _bayeux.getChannel("/foo").subscribe(session0);
 
         sweep();
         assertNotNull(_bayeux.getChannel("/foo/bar/baz"));
@@ -368,7 +366,7 @@ public class ServerChannelTest
         assertNull(_bayeux.getChannel("/foo/bar"));
         assertNotNull(_bayeux.getChannel("/foo"));
 
-        ((ServerChannelImpl)_bayeux.getChannel("/foo")).unsubscribe(session0);
+        _bayeux.getChannel("/foo").unsubscribe(session0);
 
         sweep();
         assertNull(_bayeux.getChannel("/foo"));
