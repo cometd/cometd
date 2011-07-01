@@ -250,7 +250,7 @@ public abstract class LongPollingTransport extends HttpTransport
                             // Special handling for connect
                             if (connect)
                             {
-//                                try
+                                try
                                 {
                                     writer = sendQueue(request, response, session, writer);
 
@@ -312,7 +312,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                         }
                                     }
                                 }
-//                                finally
+                                finally
                                 {
                                     if (reply != null && session.isConnected())
                                         session.startIntervalTimeout();
@@ -374,12 +374,12 @@ public abstract class LongPollingTransport extends HttpTransport
             metaConnectResumed(request, session);
 
             PrintWriter writer;
-//            try
+            try
             {
                 // Send the message queue
                 writer = sendQueue(request, response, session, null);
             }
-//            finally
+            finally
             {
                 // We need to start the interval timeout before the connect reply
                 // otherwise we open up a race condition where the client receives

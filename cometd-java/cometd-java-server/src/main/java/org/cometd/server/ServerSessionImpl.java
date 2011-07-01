@@ -71,8 +71,9 @@ public class ServerSessionImpl implements ServerSession
     private long _transientInterval=-1;
     private long _timeout=-1;
     private long _interval=-1;
-    private long _maxInterval;
+    private long _maxInterval=-1;
     private long _maxLazy=-1;
+    private long _maxConnectDelay=-1;
     private boolean _metaConnectDelivery;
     private int _batch;
     private String _userAgent;
@@ -143,16 +144,30 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     protected void sweep(long now)
     {
-        if (_intervalTimestamp != 0 && now > _intervalTimestamp)
+        boolean remove = false;
+        synchronized (_queue)
         {
-            _logger.debug("Sweeping session {}", this);
-            synchronized (_queue)
+            if (_intervalTimestamp == 0)
             {
-                if (_scheduler != null)
-                    _scheduler.cancel();
+                if (now > _connectTimestamp + _maxConnectDelay)
+                {
+                    _logger.info("Emergency sweeping session {}", this);
+                    remove = true;
+                }
             }
-            _bayeux.removeServerSession(this, true);
+            else
+            {
+                if (now > _intervalTimestamp)
+                {
+                    _logger.debug("Sweeping session {}", this);
+                    remove = true;
+                }
+            }
+            if (remove && _scheduler != null)
+                _scheduler.cancel();
         }
+        if (remove)
+            _bayeux.removeServerSession(this, true);
     }
 
     /* ------------------------------------------------------------ */
@@ -298,20 +313,19 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     protected void connect()
     {
+        _connected.set(true);
+
         synchronized (_queue)
         {
-            _connected.set(true);
-
             if (_connectTimestamp == -1)
             {
                 HttpTransport transport = (HttpTransport)_bayeux.getCurrentTransport();
-
                 if (transport != null)
                 {
                     _maxQueue = transport.getOption("maxQueue", -1);
-
                     _maxInterval = _interval >= 0 ? (_interval + transport.getMaxInterval() - transport.getInterval()) : transport.getMaxInterval();
                     _maxLazy = transport.getMaxLazyTimeout();
+                    _maxConnectDelay = transport.getOption("maxConnectDelay", 16 * 60 * 1000L);
 
                     if (_maxLazy > 0)
                     {
