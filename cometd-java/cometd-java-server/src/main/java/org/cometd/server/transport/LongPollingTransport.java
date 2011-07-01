@@ -224,7 +224,7 @@ public abstract class LongPollingTransport extends HttpTransport
                     // Forward handling of the message.
                     // The actual reply is return from the call, but other messages may
                     // also be queued on the session.
-                    ServerMessage.Mutable reply = getBayeux().handle(session, message);
+                    ServerMessage.Mutable reply = bayeuxServerHandle(session, message);
 
                     // Do we have a reply ?
                     if (reply != null)
@@ -247,82 +247,92 @@ public abstract class LongPollingTransport extends HttpTransport
                         }
                         else
                         {
-                            // If this is a connect or we can send messages with any response
-                            if (connect || !(isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly()))
-                            {
-                                // Send the queued messages
-                                writer = sendQueue(request, response, session, writer);
-                            }
-
                             // Special handling for connect
                             if (connect)
                             {
-                                long timeout = session.calculateTimeout(getTimeout());
-
-                                // If the writer is non null, we have already started sending a response, so we should not suspend
-                                if (writer == null && reply.isSuccessful() && session.isQueueEmpty())
+//                                try
                                 {
-                                    // Detect if we have multiple sessions from the same browser
-                                    // Note that CORS requests do not send cookies, so we need to handle them specially
-                                    // CORS requests always have the Origin header
+                                    writer = sendQueue(request, response, session, writer);
 
-                                    String browserId = findBrowserId(request);
-                                    boolean shouldSuspend;
-                                    if (browserId != null)
-                                        shouldSuspend = incBrowserId(browserId);
-                                    else
-                                        shouldSuspend = _allowMultiSessionsNoBrowser || request.getHeader("Origin") != null;
-
-                                    if (shouldSuspend)
+                                    // If the writer is non null, we have already started sending a response, so we should not suspend
+                                    if (writer == null && reply.isSuccessful() && session.isQueueEmpty())
                                     {
-                                        // Support old clients that do not send advice:{timeout:0} on the first connect
-                                        if (timeout > 0 && wasConnected)
-                                        {
-                                            // Suspend and wait for messages
-                                            Continuation continuation = ContinuationSupport.getContinuation(request);
-                                            continuation.setTimeout(timeout);
-                                            continuation.suspend(response);
-                                            scheduler = new LongPollScheduler(session, continuation, reply, browserId);
-                                            session.setScheduler(scheduler);
-                                            request.setAttribute(LongPollScheduler.ATTRIBUTE, scheduler);
-                                            reply = null;
-                                            metaConnectSuspended(request, session, timeout);
-                                        }
-                                        else
-                                        {
-                                            decBrowserId(browserId);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        // There are multiple sessions from the same browser
-                                        Map<String, Object> advice = reply.getAdvice(true);
+                                        // Detect if we have multiple sessions from the same browser
+                                        // Note that CORS requests do not send cookies, so we need to handle them specially
+                                        // CORS requests always have the Origin header
 
+                                        String browserId = findBrowserId(request);
+                                        boolean allowSuspendConnect;
                                         if (browserId != null)
-                                            advice.put("multiple-clients", true);
+                                            allowSuspendConnect = incBrowserId(browserId);
+                                        else
+                                            allowSuspendConnect = _allowMultiSessionsNoBrowser || request.getHeader("Origin") != null;
 
-                                        if (_multiSessionInterval > 0)
+                                        if (allowSuspendConnect)
                                         {
-                                            advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
-                                            advice.put(Message.INTERVAL_FIELD, _multiSessionInterval);
+                                            long timeout = session.calculateTimeout(getTimeout());
+
+                                            // Support old clients that do not send advice:{timeout:0} on the first connect
+                                            if (timeout > 0 && wasConnected && session.isConnected())
+                                            {
+                                                // Suspend and wait for messages
+                                                Continuation continuation = ContinuationSupport.getContinuation(request);
+                                                continuation.setTimeout(timeout);
+                                                continuation.suspend(response);
+                                                scheduler = new LongPollScheduler(session, continuation, reply, browserId);
+                                                session.setScheduler(scheduler);
+                                                request.setAttribute(LongPollScheduler.ATTRIBUTE, scheduler);
+                                                reply = null;
+                                                metaConnectSuspended(request, session, timeout);
+                                            }
+                                            else
+                                            {
+                                                decBrowserId(browserId);
+                                            }
                                         }
                                         else
                                         {
-                                            advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                                            reply.setSuccessful(false);
+                                            // There are multiple sessions from the same browser
+                                            Map<String, Object> advice = reply.getAdvice(true);
+
+                                            if (browserId != null)
+                                                advice.put("multiple-clients", true);
+
+                                            if (_multiSessionInterval > 0)
+                                            {
+                                                advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
+                                                advice.put(Message.INTERVAL_FIELD, _multiSessionInterval);
+                                            }
+                                            else
+                                            {
+                                                advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+                                                reply.setSuccessful(false);
+                                            }
+                                            session.reAdvise();
                                         }
-                                        session.reAdvise();
                                     }
                                 }
-
-                                if (reply != null && session.isConnected())
-                                    session.startIntervalTimeout();
+//                                finally
+                                {
+                                    if (reply != null && session.isConnected())
+                                        session.startIntervalTimeout();
+                                }
+                            }
+                            else
+                            {
+                                if (!isMetaConnectDeliveryOnly() && !session.isMetaConnectDeliveryOnly())
+                                {
+                                    writer = sendQueue(request, response, session, writer);
+                                }
                             }
                         }
 
                         // If the reply has not been otherwise handled, send it
                         if (reply != null)
                         {
+                            if (connect && session != null && !session.isConnected())
+                                reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+
                             reply = getBayeux().extendReply(session, session, reply);
 
                             if (reply != null)
@@ -363,30 +373,43 @@ public abstract class LongPollingTransport extends HttpTransport
             ServerSessionImpl session = scheduler.getSession();
             metaConnectResumed(request, session);
 
-            // Send the message queue
-            PrintWriter writer = sendQueue(request, response, session, null);
-
-            // We need to start the interval timeout before the connect reply
-            // otherwise we open up a race condition where the client receives
-            // the connect reply and sends a new connect request before we start
-            // the interval timeout, which will be wrong.
-            if (session.isConnected())
-                session.startIntervalTimeout();
+            PrintWriter writer;
+//            try
+            {
+                // Send the message queue
+                writer = sendQueue(request, response, session, null);
+            }
+//            finally
+            {
+                // We need to start the interval timeout before the connect reply
+                // otherwise we open up a race condition where the client receives
+                // the connect reply and sends a new connect request before we start
+                // the interval timeout, which will be wrong.
+                // We need to put this into a finally block in case sending the queue
+                // throws an exception (for example because the client is gone), so that
+                // we start the interval timeout that is important to sweep the session
+                if (session.isConnected())
+                    session.startIntervalTimeout();
+            }
 
             // Send the connect reply
             ServerMessage.Mutable reply = scheduler.getReply();
+
+            if (!session.isConnected())
+                reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+
             reply = getBayeux().extendReply(session, session, reply);
 
             if (reply != null)
-            {
-                if (!session.isConnected())
-                    reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-
                 writer = send(request, response, writer, reply);
-            }
 
             complete(writer);
         }
+    }
+
+    protected ServerMessage.Mutable bayeuxServerHandle(ServerSessionImpl session, ServerMessage.Mutable message)
+    {
+        return getBayeux().handle(session, message);
     }
 
     protected void metaConnectSuspended(HttpServletRequest request, ServerSession session, long timeout)
