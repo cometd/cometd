@@ -444,7 +444,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      */
     public boolean removeServerSession(ServerSession session,boolean timedout)
     {
-        _logger.debug("remove {}, timed out: {}", session, timedout);
+        _logger.debug("Removing session {}, timed out: {}", session, timedout);
 
         ServerSessionImpl removed =_sessions.remove(session.getId());
 
