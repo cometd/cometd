@@ -33,17 +33,11 @@ import org.junit.Test;
 
 public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBayeuxClientServerTest
 {
-    private BayeuxServer bayeux;
-
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        this.bayeux = bayeux;
-        this.bayeux.setSecurityPolicy(new Policy());
-    }
-
     @Test
     public void testConcurrentHandshakeFailureAndSubscribe() throws Exception
     {
+        bayeux.setSecurityPolicy(new Policy());
+
         final AtomicBoolean subscribe = new AtomicBoolean();
         new AbstractService(bayeux, "test")
         {
@@ -98,6 +92,8 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
     @Test
     public void testConcurrentHandshakeFailureAndPublish() throws Exception
     {
+        bayeux.setSecurityPolicy(new Policy());
+
         final String channelName = "/foo";
         final AtomicBoolean publish = new AtomicBoolean();
         new AbstractService(bayeux, "test")

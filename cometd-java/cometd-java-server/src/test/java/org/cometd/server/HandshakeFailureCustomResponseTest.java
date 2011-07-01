@@ -32,8 +32,8 @@ import org.junit.Test;
 
 public class HandshakeFailureCustomResponseTest extends AbstractBayeuxClientServerTest
 {
-    @Override
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
+    @Test
+    public void testHandshakeFailureCustomResponse() throws Exception
     {
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy()
         {
@@ -50,11 +50,7 @@ public class HandshakeFailureCustomResponseTest extends AbstractBayeuxClientServ
                 return false;
             }
         });
-    }
 
-    @Test
-    public void testHandshakeFailureCustomResponse() throws Exception
-    {
         ContentExchange handshake = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +

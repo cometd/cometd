@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.AbstractServerTransport;
-import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
@@ -30,14 +29,6 @@ import org.junit.Test;
 
 public class BrowserMappingTest extends AbstractBayeuxClientServerTest
 {
-    private BayeuxServerImpl bayeux;
-
-    @Override
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        this.bayeux = bayeux;
-    }
-
     @Test
     public void testBayeuxBrowserMapping() throws Exception
     {

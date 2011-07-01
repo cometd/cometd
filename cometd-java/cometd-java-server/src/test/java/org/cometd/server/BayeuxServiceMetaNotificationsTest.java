@@ -30,13 +30,6 @@ import org.junit.Test;
 
 public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServerTest
 {
-    private BayeuxServerImpl bayeux;
-
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        this.bayeux = bayeux;
-    }
-
     @Test
     public void testMetaNotifications() throws Exception
     {

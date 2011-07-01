@@ -47,6 +47,7 @@ public abstract class AbstractBayeuxServerTest
     protected int port;
     protected ServletContextHandler context;
     protected String cometdURL;
+    protected BayeuxServerImpl bayeux;
     protected long timeout = 5000;
 
     @Before
@@ -84,8 +85,7 @@ public abstract class AbstractBayeuxServerTest
         String contextURL = "http://localhost:" + port + contextPath;
         cometdURL = contextURL + cometdServletPath;
 
-        BayeuxServerImpl bayeux = cometdServlet.getBayeux();
-        customizeBayeux(bayeux);
+        bayeux = cometdServlet.getBayeux();
     }
 
     @After
@@ -96,10 +96,6 @@ public abstract class AbstractBayeuxServerTest
     }
 
     protected void customizeOptions(Map<String, String> options)
-    {
-    }
-
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
     {
     }
 }

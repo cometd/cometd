@@ -19,7 +19,6 @@ package org.cometd.server;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
@@ -29,14 +28,6 @@ import org.junit.Test;
 
 public class DisconnectTest extends AbstractBayeuxClientServerTest
 {
-    private BayeuxServer bayeux;
-
-    @Override
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        this.bayeux = bayeux;
-    }
-
     @Test
     public void testDisconnect() throws Exception
     {

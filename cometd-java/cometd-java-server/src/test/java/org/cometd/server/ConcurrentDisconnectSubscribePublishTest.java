@@ -32,13 +32,6 @@ import org.junit.Test;
 
 public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClientServerTest
 {
-    private BayeuxServer bayeux;
-
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        this.bayeux = bayeux;
-    }
-
     @Test
     public void testDisconnectSubscribe() throws Exception
     {

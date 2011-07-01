@@ -25,7 +25,6 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractBayeuxClientServerTest;
-import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.junit.Assert;
@@ -33,18 +32,13 @@ import org.junit.Test;
 
 public class ExtensionHandshakeTest extends AbstractBayeuxClientServerTest
 {
-    private CountingExtension extension;
-
-    @Override
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        extension = new CountingExtension();
-        bayeux.addExtension(extension);
-    }
+    private CountingExtension extension = new CountingExtension();
 
     @Test
     public void testExtension() throws Exception
     {
+        bayeux.addExtension(extension);
+
         ContentExchange handshake = newBayeuxExchange("[{" +
                                                   "\"channel\": \"/meta/handshake\"," +
                                                   "\"version\": \"1.0\"," +

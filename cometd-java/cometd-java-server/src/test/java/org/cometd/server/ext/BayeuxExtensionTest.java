@@ -26,7 +26,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.AbstractService;
-import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -47,14 +46,6 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
     private static final String SERVER_EXT_INFO = "fromExtension";
     private static final String CLIENT_INFO = "fromClient";
     private static final String SERVICE_INFO = "fromService";
-
-    private BayeuxServerImpl bayeux;
-
-    @Override
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        this.bayeux = bayeux;
-    }
 
     @Test
     public void testBayeuxExtensionOnHandshake() throws Exception

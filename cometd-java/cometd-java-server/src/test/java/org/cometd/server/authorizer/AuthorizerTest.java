@@ -26,7 +26,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.AbstractBayeuxClientServerTest;
-import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.junit.Assert;
@@ -34,16 +33,6 @@ import org.junit.Test;
 
 public class AuthorizerTest extends AbstractBayeuxClientServerTest
 {
-    private BayeuxServerImpl bayeux;
-
-    @Override
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        this.bayeux = bayeux;
-        if (Boolean.getBoolean("debugTests"))
-            bayeux.getLogger().setDebugEnabled(true);
-    }
-
     @Test
     public void testAuthorizersOnSlashStarStar() throws Exception
     {
