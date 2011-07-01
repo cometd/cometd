@@ -149,7 +149,7 @@ public class ServerSessionImpl implements ServerSession
         {
             if (_intervalTimestamp == 0)
             {
-                if (now > _connectTimestamp + _maxConnectDelay)
+                if (_maxConnectDelay > 0 && now > _connectTimestamp + _maxConnectDelay)
                 {
                     _logger.info("Emergency sweeping session {}", this);
                     remove = true;
