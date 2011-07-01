@@ -274,15 +274,15 @@ public abstract class AbstractService
      * Handle Exception. This method is called when a mapped subscription method
      * throws and exception while handling a message.
      *
-     * @param fromClient
-     * @param toClient
-     * @param msg
-     * @param th
+     * @param method the name of the method invoked that threw an exception
+     * @param fromClient the remote session that sent the message
+     * @param toClient the local session associated to this service
+     * @param msg the message sent by the remote session
+     * @param x the exception thrown
      */
-    protected void exception(String method,ServerSession fromClient, LocalSession toClient, ServerMessage msg, Throwable th)
+    protected void exception(String method, ServerSession fromClient, LocalSession toClient, ServerMessage msg, Throwable x)
     {
-        System.err.println(method+": "+msg);
-        th.printStackTrace();
+        _logger.info("Exception while invoking " + _name + "#" + method + " from " + fromClient + " with " + msg, x);
     }
 
     /* ------------------------------------------------------------ */
