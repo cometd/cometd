@@ -49,7 +49,7 @@ public class CometDSubscribeWithPublishDeniedTest extends AbstractCometDTest
                 "cometd.addListener('/meta/subscribe', function(message)" +
                 "{" +
                 "    if (!message.successful)" +
-                "        failed = true;" +
+                "        subscribeFailed = true;" +
                 "    subscribeLatch.countDown();" +
                 "});" +
                 "" +
