@@ -57,6 +57,7 @@ public abstract class AbstractCometDTest
     protected int port;
     protected String contextURL;
     protected String cometdURL;
+    protected BayeuxServerImpl bayeuxServer;
     protected int expirationPeriod = 2500;
     private ThreadModel threadModel;
     private XMLHttpRequestClient xhrClient;
@@ -98,7 +99,7 @@ public abstract class AbstractCometDTest
         contextURL = "http://localhost:" + port + contextPath;
         cometdURL = contextURL + cometServletPath;
 
-        customizeBayeux(cometdServlet.getBayeux());
+        bayeuxServer = cometdServlet.getBayeux();
 
         initPage();
     }
@@ -130,10 +131,6 @@ public abstract class AbstractCometDTest
             mainResourcesDirectory.getCanonicalPath(),
             testResourcesDirectory.getCanonicalPath()
         }));
-    }
-
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
     }
 
     protected void initPage() throws Exception

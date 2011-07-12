@@ -23,7 +23,6 @@ import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.BayeuxServerImpl;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -32,15 +31,11 @@ import org.junit.Test;
  */
 public class CometDHandshakePropsTest extends AbstractCometDTest
 {
-    @Override
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        bayeux.setSecurityPolicy(new TokenSecurityPolicy());
-    }
-
     @Test
     public void testHandshakeProps() throws Exception
     {
+        bayeuxServer.setSecurityPolicy(new TokenSecurityPolicy());
+
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");

@@ -29,16 +29,11 @@ public class CometDAckExtensionTest extends AbstractCometDTest
 {
     private AckService ackService;
 
-    @Override
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        bayeux.addExtension(new AcknowledgedMessagesExtension());
-        ackService = new AckService(bayeux);
-    }
-
     @Before
     public void initExtension() throws Exception
     {
+        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
+        ackService = new AckService(bayeuxServer);
         provideMessageAcknowledgeExtension();
     }
 

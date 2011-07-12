@@ -22,24 +22,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
-import org.cometd.server.BayeuxServerImpl;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDDisconnectServerSideTest extends AbstractCometDTest
 {
-    private BayeuxServer bayeux;
-
-    @Override
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        this.bayeux = bayeux;
-    }
-
     @Test
     public void testServerSideDisconnect() throws Exception
     {
@@ -50,7 +40,7 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTest
 
             S()
             {
-                super(bayeux, "test_server_side_disconnect");
+                super(bayeuxServer, "test_server_side_disconnect");
                 addService(Channel.META_CONNECT, "processMetaConnect");
             }
 
@@ -100,7 +90,7 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTest
 
             S()
             {
-                super(bayeux, "test_disconnect_with_messages");
+                super(bayeuxServer, "test_disconnect_with_messages");
                 addService(Channel.META_CONNECT, "processMetaConnect");
             }
 
@@ -112,7 +102,7 @@ public class CometDDisconnectServerSideTest extends AbstractCometDTest
 
             public void kick(String sessionId)
             {
-                final ServerMessage.Mutable kickMessage = bayeux.newMessage();
+                final ServerMessage.Mutable kickMessage = bayeuxServer.newMessage();
                 kickMessage.setChannel(channelName);
                 kickMessage.setData(new HashMap());
 

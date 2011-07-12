@@ -30,7 +30,6 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -40,8 +39,6 @@ import org.junit.Test;
 
 public class CometDCrossOriginReHandshakeTest extends AbstractCometDTest
 {
-    private BayeuxServerImpl bayeux;
-
     @Override
     protected void customizeContext(ServletContextHandler context) throws Exception
     {
@@ -50,16 +47,11 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDTest
         context.addFilter(new FilterHolder(new ConnectThrowingFilter()), cometServletPath + "/*", FilterMapping.REQUEST);
     }
 
-    @Override
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        this.bayeux = bayeux;
-        bayeux.addExtension(new ReHandshakeExtension());
-    }
-
     @Test
     public void testCrossOriginReHandshakeDoesNotChangeTransportType() throws Exception
     {
+        bayeuxServer.addExtension(new ReHandshakeExtension());
+
         defineClass(Latch.class);
         String crossOriginCometdURL = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({" +
@@ -109,7 +101,7 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDTest
                 if (connects == 1)
                 {
                     // Fake the removal of the session due to timeout
-                    bayeux.removeServerSession(session, true);
+                    bayeuxServer.removeServerSession(session, true);
                 }
             }
             return true;

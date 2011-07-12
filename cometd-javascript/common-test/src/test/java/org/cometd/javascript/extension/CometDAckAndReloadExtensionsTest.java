@@ -27,18 +27,10 @@ import org.junit.Test;
 
 public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest
 {
-    private AckService ackService;
-
-    @Override
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        bayeux.addExtension(new AcknowledgedMessagesExtension());
-        ackService = new AckService(bayeux);
-    }
-
     @Before
     public void initExtensions() throws Exception
     {
+        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
         provideMessageAcknowledgeExtension();
         provideReloadExtension();
     }
@@ -46,6 +38,8 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest
     @Test
     public void testAckAndReloadExtensions() throws Exception
     {
+        AckService ackService = new AckService(bayeuxServer);
+
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");

@@ -21,22 +21,17 @@ import java.util.Map;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest
 {
-    @Override
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        bayeux.setSecurityPolicy(new Policy());
-    }
-
     @Test
     public void testSubscribeAfterFailedHandshake() throws Exception
     {
+        bayeuxServer.setSecurityPolicy(new Policy());
+
         defineClass(Latch.class);
 
         evaluateScript("var handshakeLatch = new Latch(1);");

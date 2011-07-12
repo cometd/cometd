@@ -26,14 +26,11 @@ import org.junit.Test;
 
 public class CometDDeliverTest extends AbstractCometDTest
 {
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
-    {
-        new DeliverService(bayeux);
-    }
-
     @Test
     public void testDeliver() throws Exception
     {
+        new DeliverService(bayeuxServer);
+
         defineClass(Latch.class);
 
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");

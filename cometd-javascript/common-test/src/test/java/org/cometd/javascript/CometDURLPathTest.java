@@ -25,15 +25,17 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.transport.HttpTransport;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class CometDURLPathTest extends AbstractCometDTest
 {
-    @Override
-    protected void customizeBayeux(BayeuxServerImpl bayeux)
+    @Before
+    public void init()
     {
-        bayeux.addExtension(new BayeuxURLExtension(bayeux));
+        bayeuxServer.addExtension(new BayeuxURLExtension(bayeuxServer));
     }
+
 
     @Test
     public void testURLPath() throws Exception
