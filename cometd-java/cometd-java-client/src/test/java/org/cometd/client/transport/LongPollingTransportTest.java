@@ -28,7 +28,11 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.log.Log;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatchman;
+import org.junit.runners.model.FrameworkMethod;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -36,6 +40,17 @@ import static org.junit.Assert.assertTrue;
 
 public class LongPollingTransportTest
 {
+    @Rule
+    public final TestWatchman testName = new TestWatchman()
+    {
+        @Override
+        public void starting(FrameworkMethod method)
+        {
+            super.starting(method);
+            Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
+        }
+    };
+
     @Test
     public void testType()
     {
@@ -110,7 +125,8 @@ public class LongPollingTransportTest
                 }, new HashMapMessage());
                 long end = System.nanoTime();
 
-                assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
+                long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
+                assertTrue("elapsed=" + elapsed + ", processing=" + processingTime, elapsed <= processingTime);
                 assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
             }
             catch (Exception e)
@@ -188,7 +204,8 @@ public class LongPollingTransportTest
                 });
                 long end = System.nanoTime();
 
-                assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
+                long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
+                assertTrue("elapsed=" + elapsed + ", processing=" + processingTime, elapsed <= processingTime);
                 assertTrue(latch.await(2000 + 2 * processingTime, TimeUnit.MILLISECONDS));
             }
             finally
@@ -289,7 +306,8 @@ public class LongPollingTransportTest
                 });
                 long end = System.nanoTime();
 
-                assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) < processingTime);
+                long elapsed = TimeUnit.NANOSECONDS.toMillis(end - start);
+                assertTrue("elapsed=" + elapsed + ", processing=" + processingTime, elapsed <= processingTime);
                 assertTrue(latch.await(2 * processingTime, TimeUnit.MILLISECONDS));
             }
             finally
