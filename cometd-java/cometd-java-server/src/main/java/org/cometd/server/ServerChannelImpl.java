@@ -48,36 +48,37 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     private boolean _persistent;
     private volatile int _sweeperPasses = 0;
 
-    /* ------------------------------------------------------------ */
     protected ServerChannelImpl(BayeuxServerImpl bayeux, ChannelId id)
     {
-        _bayeux=bayeux;
-        _id=id;
-        _initialized=new CountDownLatch(1);
+        _bayeux = bayeux;
+        _id = id;
+        _initialized = new CountDownLatch(1);
         setPersistent(!isBroadcast());
     }
 
-    /* ------------------------------------------------------------ */
-    /* wait for initialised call.
-     * wait for bayeux max interval for the channel to be initialised,
-     * which means waiting for addChild to finish calling bayeux.addChannel,
-     * which calls all the listeners.
-     *
+    /**
+     * Waits for the channel to be {@link #initialized() initialized}, to avoid
+     * that channels are returned to applications in a half-initialized state,
+     * in particular before {@link Initializer}s have run.
+     * @see BayeuxServerImpl#createIfAbsent(String, Initializer...)
      */
     void waitForInitialized()
     {
         try
         {
-            if (!_initialized.await(5,TimeUnit.SECONDS))
-                throw new IllegalStateException("Not Initialized: "+this);
+            if (!_initialized.await(5, TimeUnit.SECONDS))
+                throw new IllegalStateException("Not Initialized: " + this);
         }
         catch (InterruptedException x)
         {
-            throw new IllegalStateException("Initialization interrupted: "+this, x);
+            throw new IllegalStateException("Initialization interrupted: " + this, x);
         }
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * Marks this channel as initialized, notifying other threads that may
+     * {@link #waitForInitialized() wait for initialization}.
+     */
     void initialized()
     {
         _initialized.countDown();
@@ -155,7 +156,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
 
     private boolean unsubscribe(ServerSessionImpl session)
     {
-        if(_subscribers.remove(session))
+        if (_subscribers.remove(session))
         {
             session.unsubscribedFrom(this);
             for (ServerChannelListener listener : _listeners)
@@ -192,128 +193,110 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         }
     }
 
-    /* ------------------------------------------------------------ */
     public Set<ServerSession> getSubscribers()
     {
         return Collections.unmodifiableSet(_subscribers);
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isBroadcast()
     {
         return !isMeta() && !isService();
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isDeepWild()
     {
         return _id.isDeepWild();
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isLazy()
     {
         return _lazy;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isPersistent()
     {
         return _persistent;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isWild()
     {
         return _id.isWild();
     }
 
-    /* ------------------------------------------------------------ */
     public void setLazy(boolean lazy)
     {
-        _lazy=lazy;
+        _lazy = lazy;
     }
 
-    /* ------------------------------------------------------------ */
     public void setPersistent(boolean persistent)
     {
-        _persistent=persistent;
+        _persistent = persistent;
     }
 
-    /* ------------------------------------------------------------ */
     public void addListener(ServerChannelListener listener)
     {
         _listeners.add(listener);
         _sweeperPasses = 0;
     }
 
-    /* ------------------------------------------------------------ */
     public void removeListener(ServerChannelListener listener)
     {
         _listeners.remove(listener);
     }
 
-    /* ------------------------------------------------------------ */
     public List<ServerChannelListener> getListeners()
     {
         return Collections.unmodifiableList(_listeners);
     }
 
-    /* ------------------------------------------------------------ */
     public ChannelId getChannelId()
     {
         return _id;
     }
 
-    /* ------------------------------------------------------------ */
     public String getId()
     {
         return _id.toString();
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isMeta()
     {
         return _id.isMeta();
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isService()
     {
         return _id.isService();
     }
 
-    /* ------------------------------------------------------------ */
     public void publish(Session from, ServerMessage.Mutable mutable)
     {
         if (isWild())
             throw new IllegalStateException("Wild publish");
 
-        ServerSessionImpl session=(from instanceof ServerSessionImpl)
-          ?(ServerSessionImpl)from
-          :((from instanceof LocalSession)?(ServerSessionImpl)((LocalSession)from).getServerSession():null);
+        ServerSessionImpl session = (from instanceof ServerSessionImpl)
+                ? (ServerSessionImpl)from
+                : ((from instanceof LocalSession) ? (ServerSessionImpl)((LocalSession)from).getServerSession() : null);
 
         // Do not leak the clientId to other subscribers
         // as we are now "sending" this message
         mutable.setClientId(null);
 
-        if(_bayeux.extendSend(session,null,mutable))
-            _bayeux.doPublish(session,this,mutable);
+        if (_bayeux.extendSend(session, null, mutable))
+            _bayeux.doPublish(session, this, mutable);
     }
 
-    /* ------------------------------------------------------------ */
     public void publish(Session from, Object data, String id)
     {
         ServerMessage.Mutable mutable = _bayeux.newMessage();
         mutable.setChannel(getId());
-        if(from!=null)
+        if (from != null)
             mutable.setClientId(from.getId());
         mutable.setData(data);
         mutable.setId(id);
-        publish(from,mutable);
+        publish(from, mutable);
     }
 
-    /* ------------------------------------------------------------ */
     protected void sweep()
     {
         for (ServerSession session : _subscribers)
@@ -352,7 +335,6 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         remove();
     }
 
-    /* ------------------------------------------------------------ */
     public void remove()
     {
         for (ServerChannelImpl child : _bayeux.getChannelChildren(_id))
@@ -360,7 +342,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
 
         if (_bayeux.removeServerChannel(this))
         {
-            for (ServerSession subscriber: _subscribers)
+            for (ServerSession subscriber : _subscribers)
                 ((ServerSessionImpl)subscriber).unsubscribedFrom(this);
             _subscribers.clear();
         }
@@ -390,27 +372,26 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         return old;
     }
 
-    /* ------------------------------------------------------------ */
-    protected void dump(StringBuilder b,String indent)
+    protected void dump(StringBuilder b, String indent)
     {
         b.append(toString());
-        b.append(isLazy()?" lazy":"");
+        b.append(isLazy() ? " lazy" : "");
         b.append('\n');
 
-        List<ServerChannelImpl> children =_bayeux.getChannelChildren(_id);
-        int leaves=children.size()+_subscribers.size()+_listeners.size();
-        int i=0;
+        List<ServerChannelImpl> children = _bayeux.getChannelChildren(_id);
+        int leaves = children.size() + _subscribers.size() + _listeners.size();
+        int i = 0;
         for (ServerChannelImpl child : children)
         {
             b.append(indent);
             b.append(" +-");
-            child.dump(b,indent+((++i==leaves)?"   ":" | "));
+            child.dump(b, indent + ((++i == leaves) ? "   " : " | "));
         }
         for (ServerSession child : _subscribers)
         {
             b.append(indent);
             b.append(" +-");
-            ((ServerSessionImpl)child).dump(b,indent+((++i==leaves)?"   ":" | "));
+            ((ServerSessionImpl)child).dump(b, indent + ((++i == leaves) ? "   " : " | "));
         }
         for (ServerChannelListener child : _listeners)
         {
@@ -421,25 +402,21 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void addAuthorizer(Authorizer authorizer)
     {
         _authorizers.add(authorizer);
     }
 
-    /* ------------------------------------------------------------ */
     public void removeAuthorizer(Authorizer authorizer)
     {
         _authorizers.remove(authorizer);
     }
 
-    /* ------------------------------------------------------------ */
     public List<Authorizer> getAuthorizers()
     {
         return Collections.unmodifiableList(_authorizers);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
