@@ -332,45 +332,47 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public boolean createIfAbsent(String channelId, ServerChannel.Initializer... initializers)
     {
-        if (_channels.containsKey(channelId))
-            return false;
-
-        ChannelId id = new ChannelId(channelId);
-        if (id.depth()>1)
-            createIfAbsent(id.getParent());
-
-        ServerChannelImpl proposed = new ServerChannelImpl(this,id);
-        ServerChannelImpl channel = _channels.putIfAbsent(channelId,proposed);
-        if (channel==null)
+        ServerChannelImpl channel = _channels.get(channelId);
+        if (channel == null)
         {
-            // My proposed channel was added to the map, so I'd better initialize it!
-            channel=proposed;
-            _logger.debug("Added channel {}", channel);
-            try
+            ChannelId id = new ChannelId(channelId);
+            if (id.depth() > 1)
+                createIfAbsent(id.getParent());
+
+            ServerChannelImpl proposed = new ServerChannelImpl(this, id);
+            channel = _channels.putIfAbsent(channelId, proposed);
+            if (channel == null)
             {
-                for (Initializer initializer : initializers)
-                    notifyConfigureChannel(initializer, channel);
+                // My proposed channel was added to the map, so I'd better initialize it!
+                channel = proposed;
+                _logger.debug("Added channel {}", channel);
+
+                try
+                {
+                    for (Initializer initializer : initializers)
+                        notifyConfigureChannel(initializer, channel);
+
+                    for (BayeuxServer.BayeuxServerListener listener : _listeners)
+                    {
+                        if (listener instanceof ServerChannel.Initializer)
+                            notifyConfigureChannel((Initializer)listener, channel);
+                    }
+                }
+                finally
+                {
+                    channel.initialized();
+                }
+
                 for (BayeuxServer.BayeuxServerListener listener : _listeners)
                 {
-                    if (listener instanceof ServerChannel.Initializer)
-                        notifyConfigureChannel((Initializer)listener, channel);
+                    if (listener instanceof BayeuxServer.ChannelListener)
+                        notifyChannelAdded((ChannelListener)listener, channel);
                 }
-            }
-            finally
-            {
-                channel.initialized();
-            }
 
-            for (BayeuxServer.BayeuxServerListener listener : _listeners)
-            {
-                if (listener instanceof BayeuxServer.ChannelListener)
-                    notifyChannelAdded((ChannelListener)listener, channel);
+                return true;
             }
-
-            return true;
         }
-
-        // somebody else added it before me, so wait until it is initialized
+        // Another thread may add this channel concurrently, so wait until it is initialized
         channel.waitForInitialized();
         return false;
     }
@@ -533,13 +535,21 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public ServerChannel getChannel(String channelId)
     {
-        return _channels.get(channelId);
+        ServerChannelImpl channel = _channels.get(channelId);
+        channel.waitForInitialized();
+        return channel;
     }
 
     /* ------------------------------------------------------------ */
     public List<ServerChannel> getChannels()
     {
-        return Collections.unmodifiableList(new ArrayList<ServerChannel>(_channels.values()));
+        List<ServerChannel> result = new ArrayList<ServerChannel>();
+        for (ServerChannelImpl channel : _channels.values())
+        {
+            channel.waitForInitialized();
+            result.add(channel);
+        }
+        return result;
     }
 
     /* ------------------------------------------------------------ */
@@ -548,6 +558,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         ArrayList<ServerChannelImpl> children = new ArrayList<ServerChannelImpl>();
         for (ServerChannelImpl channel :_channels.values())
         {
+            channel.waitForInitialized();
             if (id.isParentOf(channel.getChannelId()))
                 children.add(channel);
         }
