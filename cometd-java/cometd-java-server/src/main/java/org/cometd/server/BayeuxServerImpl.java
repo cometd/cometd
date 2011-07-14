@@ -31,6 +31,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicMarkableReference;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -330,21 +331,37 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public boolean createIfAbsent(String channelId, ServerChannel.Initializer... initializers)
+    public boolean createIfAbsent(String channelName, Initializer... initializers)
     {
-        ServerChannelImpl channel = _channels.get(channelId);
+        return createChannelIfAbsent(channelName, initializers).isMarked();
+    }
+
+    private AtomicMarkableReference<ServerChannelImpl> createChannelIfAbsent(String channelName, Initializer... initializers)
+    {
+        boolean initialized = false;
+        ServerChannelImpl channel = _channels.get(channelName);
         if (channel == null)
         {
-            ChannelId id = new ChannelId(channelId);
-            if (id.depth() > 1)
-                createIfAbsent(id.getParent());
+            ChannelId channelId = new ChannelId(channelName);
 
-            ServerChannelImpl proposed = new ServerChannelImpl(this, id);
-            channel = _channels.putIfAbsent(channelId, proposed);
+            // Be sure the parent is there
+            ServerChannelImpl parentChannel = null;
+            if (channelId.depth() > 1)
+            {
+                String parentName = channelId.getParent();
+                // If the parent needs to be re-created, we are missing its initializers,
+                // but there is nothing we can do: in this case, the application needs
+                // to make the parent persistent through an initializer.
+                parentChannel = createChannelIfAbsent(parentName).getReference();
+            }
+
+            ServerChannelImpl candidate = new ServerChannelImpl(this, channelId, parentChannel);
+            channel = _channels.putIfAbsent(channelName, candidate);
             if (channel == null)
             {
-                // My proposed channel was added to the map, so I'd better initialize it!
-                channel = proposed;
+                // My candidate channel was added to the map, so I'd better initialize it
+
+                channel = candidate;
                 _logger.debug("Added channel {}", channel);
 
                 try
@@ -369,12 +386,21 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                         notifyChannelAdded((ChannelListener)listener, channel);
                 }
 
-                return true;
+                initialized = true;
             }
+        }
+        else
+        {
+            channel.resetSweeperPasses();
+            // Double check if the sweeper removed this channel between the check at the top and here.
+            // This is not 100% fool proof (e.g. this thread is preempted long enough for the sweeper
+            // to remove the channel, but the alternative is to have a global lock)
+            _channels.putIfAbsent(channelName, channel);
+
         }
         // Another thread may add this channel concurrently, so wait until it is initialized
         channel.waitForInitialized();
-        return false;
+        return new AtomicMarkableReference<ServerChannelImpl>(channel, initialized);
     }
 
     private void notifyConfigureChannel(Initializer listener, ServerChannel channel)
@@ -554,13 +580,24 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /* ------------------------------------------------------------ */
-    public List<ServerChannelImpl> getChannelChildren(ChannelId id)
+
+    /**
+     * Scans all the channels and returns those identified by a {@link ChannelId channel id}
+     * that is a child of the given {@code channelId}.
+     * @param channelId the parent channel id used to look for children
+     * @return a list of channels identified by a {@link ChannelId channel id}
+     * that is a child of the given {@code channelId}
+     * @deprecated because it scans all the existing channels and therefore is inefficient;
+     * if the functionality is needed, then we may consider adding it to ServerChannel.
+     */
+    @Deprecated
+    public List<ServerChannelImpl> getChannelChildren(ChannelId channelId)
     {
         ArrayList<ServerChannelImpl> children = new ArrayList<ServerChannelImpl>();
         for (ServerChannelImpl channel :_channels.values())
         {
             channel.waitForInitialized();
-            if (id.isParentOf(channel.getChannelId()))
+            if (channelId.isParentOf(channel.getChannelId()))
                 children.add(channel);
         }
         return children;
