@@ -23,15 +23,20 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest
 {
+    @Before
+    public void init()
+    {
+        bayeuxServer.setSecurityPolicy(new Policy());
+    }
+
     @Test
     public void testSubscribeAfterFailedHandshake() throws Exception
     {
-        bayeuxServer.setSecurityPolicy(new Policy());
-
         defineClass(Latch.class);
 
         evaluateScript("var handshakeLatch = new Latch(1);");
