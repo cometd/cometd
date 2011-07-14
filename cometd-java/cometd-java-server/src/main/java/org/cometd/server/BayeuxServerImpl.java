@@ -536,7 +536,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public ServerChannel getChannel(String channelId)
     {
         ServerChannelImpl channel = _channels.get(channelId);
-        channel.waitForInitialized();
+        if (channel != null)
+            channel.waitForInitialized();
         return channel;
     }
 
