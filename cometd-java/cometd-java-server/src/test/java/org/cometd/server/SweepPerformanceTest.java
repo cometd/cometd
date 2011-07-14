@@ -16,6 +16,9 @@
 
 package org.cometd.server;
 
+import java.util.concurrent.TimeUnit;
+
+import junit.framework.Assert;
 import org.junit.Test;
 
 public class SweepPerformanceTest
@@ -24,41 +27,82 @@ public class SweepPerformanceTest
     public void testChannelsSweepPerformance()
     {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
-        bayeuxServer.getLogger().setDebugEnabled(Boolean.getBoolean("debugTests"));
 
-        int count = 500000;
+        StringBuilder builder = new StringBuilder();
+        int count = 5000;
+        int children = 5;
         for (int i = 0; i < count; ++i)
         {
-            bayeuxServer.createIfAbsent("/" + i);
+            builder.setLength(0);
+            for (int j = 0; j < children; ++j)
+            {
+                char letter = (char)('a' + j);
+                String name = builder.append("/").append(letter).append(i).toString();
+                bayeuxServer.createIfAbsent(name);
+            }
         }
-        System.out.println("Channels created");
 
         long start = System.nanoTime();
         bayeuxServer.sweep();
         long end = System.nanoTime();
 
-        long elapsed = end - start;
-        System.out.println("elapsed = " + elapsed);
+        long elapsedMicros = TimeUnit.NANOSECONDS.toMicros(end - start);
+        int microsPerSweepPerChannel = 100;
+        final int expectedMicros = count * children * microsPerSweepPerChannel;
+        Assert.assertTrue("elapsed micros " + elapsedMicros + ", expecting < " + expectedMicros, elapsedMicros < expectedMicros);
+    }
+
+    @Test
+    public void testChannelsAreSwept()
+    {
+        BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
+
+        StringBuilder builder = new StringBuilder();
+        int count = 100;
+        int children = 5;
+        for (int i = 0; i < count; ++i)
+        {
+            builder.setLength(0);
+            for (int j = 0; j < children; ++j)
+            {
+                char letter = (char)('a' + j);
+                String name = builder.append("/").append(letter).append(i).toString();
+                bayeuxServer.createIfAbsent(name);
+            }
+        }
+
+        int sweepPasses = 3;
+        int maxIterations = sweepPasses * children * 2;
+        int iterations = 0;
+        while (bayeuxServer.getChannels().size() > 0)
+        {
+            bayeuxServer.sweep();
+            ++iterations;
+            if (iterations > maxIterations)
+                break;
+        }
+
+        Assert.assertEquals(0, bayeuxServer.getChannels().size());
     }
 
     @Test
     public void testSessionsSweepPerformance()
     {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
-        bayeuxServer.getLogger().setDebugEnabled(Boolean.getBoolean("debugTests"));
 
-        int count = 500000;
+        int count = 25000;
         for (int i = 0; i < count; ++i)
         {
             bayeuxServer.addServerSession(bayeuxServer.newServerSession());
         }
-        System.out.println("Sessions created");
 
         long start = System.nanoTime();
         bayeuxServer.sweep();
         long end = System.nanoTime();
 
-        long elapsed = end - start;
-        System.out.println("elapsed = " + elapsed);
+        long elapsedMicros = TimeUnit.NANOSECONDS.toMicros(end - start);
+        int microsPerSweepPerChannel = 100;
+        final int expectedMicros = count * microsPerSweepPerChannel;
+        Assert.assertTrue("elapsed micros " + elapsedMicros + ", expecting < " + expectedMicros, elapsedMicros < expectedMicros);
     }
 }

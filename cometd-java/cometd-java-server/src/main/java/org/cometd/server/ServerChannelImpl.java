@@ -23,6 +23,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Session;
@@ -34,6 +35,7 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 
 public class ServerChannelImpl implements ServerChannel, ConfigurableServerChannel
 {
@@ -43,16 +45,20 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
     private final Set<ServerSession> _subscribers = new CopyOnWriteArraySet<ServerSession>();
     private final List<ServerChannelListener> _listeners = new CopyOnWriteArrayList<ServerChannelListener>();
     private final List<Authorizer> _authorizers = new CopyOnWriteArrayList<Authorizer>();
-    private final CountDownLatch _initialized;
+    private final CountDownLatch _initialized = new CountDownLatch(1);
+    private final AtomicInteger _sweeperPasses = new AtomicInteger();
+    private final Set<ServerChannelImpl> _children = new ConcurrentHashSet<ServerChannelImpl>();
+    private final ServerChannelImpl _parent;
     private boolean _lazy;
     private boolean _persistent;
-    private volatile int _sweeperPasses = 0;
 
-    protected ServerChannelImpl(BayeuxServerImpl bayeux, ChannelId id)
+    protected ServerChannelImpl(BayeuxServerImpl bayeux, ChannelId id, ServerChannelImpl parent)
     {
         _bayeux = bayeux;
         _id = id;
-        _initialized = new CountDownLatch(1);
+        _parent = parent;
+        if (parent != null)
+            parent.addChild(this);
         setPersistent(!isBroadcast());
     }
 
@@ -81,7 +87,13 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
      */
     void initialized()
     {
+        resetSweeperPasses();
         _initialized.countDown();
+    }
+
+    void resetSweeperPasses()
+    {
+        _sweeperPasses.set(0);
     }
 
     public boolean subscribe(ServerSession session)
@@ -101,6 +113,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
 
     private boolean subscribe(ServerSessionImpl session)
     {
+        resetSweeperPasses();
         if (_subscribers.add(session))
         {
             session.subscribedTo(this);
@@ -111,7 +124,6 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
                 if (listener instanceof BayeuxServer.SubscriptionListener)
                     notifySubscribed((BayeuxServer.SubscriptionListener)listener, session, this);
         }
-        _sweeperPasses = 0;
         return true;
     }
 
@@ -230,13 +242,14 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
 
     public void setPersistent(boolean persistent)
     {
+        resetSweeperPasses();
         _persistent = persistent;
     }
 
     public void addListener(ServerChannelListener listener)
     {
+        resetSweeperPasses();
         _listeners.add(listener);
-        _sweeperPasses = 0;
     }
 
     public void removeListener(ServerChannelListener listener)
@@ -299,6 +312,8 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
 
     protected void sweep()
     {
+        waitForInitialized();
+
         for (ServerSession session : _subscribers)
         {
             if (!session.isHandshook())
@@ -320,16 +335,15 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         else
         {
             // Not wild, then check if it has children
-            for (ServerChannel channel : _bayeux.getChannels())
-                if (_id.isParentOf(channel.getChannelId()))
-                    return;
+            if (_children.size() > 0)
+                return;
         }
 
         for (ServerChannelListener listener : _listeners)
             if (!(listener instanceof ServerChannelListener.Weak))
                 return;
 
-        if (++_sweeperPasses < 3)
+        if (_sweeperPasses.incrementAndGet() < 3)
             return;
 
         remove();
@@ -337,7 +351,10 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
 
     public void remove()
     {
-        for (ServerChannelImpl child : _bayeux.getChannelChildren(_id))
+        if (_parent != null)
+            _parent.removeChild(this);
+
+        for (ServerChannelImpl child : _children)
             child.remove();
 
         if (_bayeux.removeServerChannel(this))
@@ -372,16 +389,25 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         return old;
     }
 
+    private void addChild(ServerChannelImpl child)
+    {
+        _children.add(child);
+    }
+
+    private void removeChild(ServerChannelImpl child)
+    {
+        _children.remove(child);
+    }
+
     protected void dump(StringBuilder b, String indent)
     {
         b.append(toString());
         b.append(isLazy() ? " lazy" : "");
         b.append('\n');
 
-        List<ServerChannelImpl> children = _bayeux.getChannelChildren(_id);
-        int leaves = children.size() + _subscribers.size() + _listeners.size();
+        int leaves = _children.size() + _subscribers.size() + _listeners.size();
         int i = 0;
-        for (ServerChannelImpl child : children)
+        for (ServerChannelImpl child : _children)
         {
             b.append(indent);
             b.append(" +-");
