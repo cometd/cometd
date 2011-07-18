@@ -951,7 +951,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
      */
     public void onFailure(Throwable x, Message[] messages)
     {
-        logger.info("Messages failed " + Arrays.toString(messages), x);
+        logger.info("Messages failed " + Arrays.toString(messages)+": "+x);
+        logger.debug(x);
     }
 
     private void updateBayeuxClientState(BayeuxClientStateUpdater updater)
