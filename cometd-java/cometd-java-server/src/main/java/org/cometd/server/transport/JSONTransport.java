@@ -21,8 +21,11 @@ import java.io.PrintWriter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.transport.HttpTransport.HttpContext;
+import org.cometd.server.transport.JSONPTransport.JSONPContext;
 
 public class JSONTransport extends LongPollingTransport
 {
@@ -79,5 +82,27 @@ public class JSONTransport extends LongPollingTransport
     {
         writer.append("]\n");
         writer.close();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.cometd.bayeux.server.ServerTransport#getContext()
+     */
+    public BayeuxContext getContext()
+    {
+        HttpServletRequest request=getCurrentRequest();
+        if (request!=null)
+            return new JSONContext(request);
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    protected static class JSONContext extends HttpContext
+    {
+        JSONContext(HttpServletRequest request)
+        {
+            super(request);
+        }
+        
     }
 }

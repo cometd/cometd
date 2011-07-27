@@ -94,6 +94,7 @@ public class CometdDemo
                         Resource.newResource("../../cometd-demo/src/main/webapp/"),
 
                         Resource.newResource("../../cometd-javascript/common/src/main/webapp/"),
+                        Resource.newResource("../../cometd-javascript/common-test/target/scripts/"),
                         Resource.newResource("../../cometd-javascript/jquery/src/main/webapp/"),
                         Resource.newResource("../../cometd-javascript/examples-jquery/src/main/webapp/"),
 
