@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.cometd.client.benchmark;
+package org.cometd.benchmark;
 
 import java.lang.management.CompilationMXBean;
 import java.lang.management.GarbageCollectorMXBean;

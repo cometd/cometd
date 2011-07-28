@@ -285,7 +285,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     /**
      * @return the current state of this {@link BayeuxClient}
      */
-    protected State getState()
+    public State getState()
     {
         return bayeuxClientState.get().type;
     }
