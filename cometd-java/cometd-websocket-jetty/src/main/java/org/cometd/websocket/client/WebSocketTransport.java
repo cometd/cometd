@@ -12,6 +12,7 @@ import org.cometd.bayeux.Message.Mutable;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocket.Connection;
 import org.eclipse.jetty.websocket.WebSocketClient;
@@ -97,31 +98,53 @@ public class WebSocketTransport extends HttpClientTransport
     public void abort()
     {
         // TODO Auto-generated method stub
-        
+
+        System.err.println("abort ");
     }
 
     @Override
     public void reset()
     {
         // TODO Auto-generated method stub
-        
+
+        System.err.println("reset ");
+        final Connection connection;
+        synchronized (WebSocketTransport.this)
+        {
+            connection=_connection;
+        }
+        if (connection!=null)
+            connection.disconnect();
     }
 
     @Override
     public void send(TransportListener listener, Mutable... messages)
     {
         _listener=listener;
-        Connection connection=_connection;
         
-        if (connection==null)
+        final Connection connection;
+
+        synchronized (WebSocketTransport.this)
         {
-            // TODO - This is a hack, to delay the handshake until the connection is completed.
-            // This produced an error and an unwanted delay
-            // Also can't tell between a legitimate startup delay (maybe if _listener==null) and after an onClose
+            try
+            {
+                if (_connection==null)
+                    WebSocketTransport.this.wait(_webSocketClient.getConnectTimeout());
+            }
+            catch(InterruptedException e)
+            {
+                Log.ignore(e);
+            }
             
-            listener.onConnectException(new Throwable(),messages);
-            return;
+            if (_connection==null)
+            {
+                listener.onConnectException(new Throwable(),messages);
+                return;
+            }
+            connection=_connection;
         }
+        
+        
         
         String content = JSON.toString(messages);
         System.err.println("send "+content);
@@ -142,14 +165,23 @@ public class WebSocketTransport extends HttpClientTransport
         public void onOpen(Connection connection)
         {
             System.err.println("onOpen "+connection);
-            _connection=connection;
+            synchronized (WebSocketTransport.this)
+            {
+                WebSocketTransport.this._connection=connection;
+                WebSocketTransport.this.notifyAll();
+            }
         }
 
         public void onClose(int closeCode, String message)
         {
             System.err.println("onClose "+closeCode+" "+message);
+            synchronized (WebSocketTransport.this)
+            {
+                WebSocketTransport.this._connection=null;
+            }
             _connection=null;
-            // TODO
+            
+            // TODO Surely more to do here?
         }
 
         public void onMessage(String data)
