@@ -55,9 +55,9 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-showversion</argument>
-                                <argument>-Xmx1024m</argument>
-                                <argument>-Xms1024m</argument>
-                                <argument>-Xmn512m</argument>
+                                <argument>-Xmx512m</argument>
+                                <argument>-Xms512m</argument>
+                                <argument>-Xmn256m</argument>
                                 <argument>-XX:+PrintCommandLineFlags</argument>
                                 <argument>-verbose:gc</argument>
                                 <!--<argument>-XX:+PrintGCDetails</argument>-->

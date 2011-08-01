@@ -98,7 +98,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     public static final String MAX_BACKOFF_OPTION = "maxBackoff";
     public static final String BAYEUX_VERSION = "1.0";
 
-    private final Logger logger = Log.getLogger(getClass().getName() + (Log.isDebugEnabled()?("@"+System.identityHashCode(this)):""));
+    private final Logger logger = Log.getLogger(getClass().getName() + "@" + System.identityHashCode(this));
     private final TransportRegistry transportRegistry = new TransportRegistry();
     private final Map<String, Object> options = new ConcurrentHashMap<String, Object>();
     private final AtomicReference<BayeuxClientState> bayeuxClientState = new AtomicReference<BayeuxClientState>();
@@ -951,9 +951,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
      */
     public void onFailure(Throwable x, Message[] messages)
     {
-        String channel=(messages!=null && messages.length>0)?messages[0].getChannelId().toString():"none";
-        logger.info("onFailure for "+channel+": " +x);
-        logger.debug("Messages failed {}" + Arrays.toString(messages),x);
+        logger.info("Messages failed " + Arrays.toString(messages), x);
     }
 
     private void updateBayeuxClientState(BayeuxClientStateUpdater updater)

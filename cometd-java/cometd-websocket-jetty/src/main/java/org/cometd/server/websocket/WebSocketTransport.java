@@ -54,7 +54,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     public final static String BUFFER_SIZE_OPTION = "bufferSize";
 
     private final WebSocketFactory _factory = new WebSocketFactory(this);
-    private final ThreadLocal<WebSocketContext> _handshake = new ThreadLocal<WebSocketContext>();
+    private final ThreadLocal<Handshake> _handshake = new ThreadLocal<Handshake>();
     private String _protocol;
 
     public WebSocketTransport(BayeuxServerImpl bayeux)
@@ -108,7 +108,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         if (sameProtocol)
         {
-            WebSocketContext handshake = new WebSocketContext(request);
+            Handshake handshake = new Handshake(request);
             return new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
         }
 
@@ -124,7 +124,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
     protected class WebSocketScheduler implements WebSocket.OnTextMessage, AbstractServerTransport.Scheduler
     {
-        protected final WebSocketContext _addresses;
+        protected final Handshake _addresses;
         protected final String _userAgent;
         protected ServerSessionImpl _session;
         protected Connection _connection;
@@ -142,7 +142,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             }
         };
 
-        public WebSocketScheduler(WebSocketContext addresses, String userAgent)
+        public WebSocketScheduler(Handshake addresses, String userAgent)
         {
             _addresses = addresses;
             _userAgent = userAgent;
@@ -316,7 +316,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         return _handshake.get();
     }
 
-    private class WebSocketContext implements BayeuxContext
+    private class Handshake implements BayeuxContext
     {
         private final Principal _principal;
         private final InetSocketAddress _local;
@@ -330,7 +330,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         private final String _url;
 
         @SuppressWarnings("unchecked")
-        WebSocketContext(HttpServletRequest request)
+        Handshake(HttpServletRequest request)
         {
             _local = new InetSocketAddress(request.getLocalAddr(), request.getLocalPort());
             _remote = new InetSocketAddress(request.getRemoteAddr(), request.getRemotePort());
