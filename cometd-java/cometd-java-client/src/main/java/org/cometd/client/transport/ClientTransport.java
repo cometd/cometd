@@ -48,6 +48,25 @@ public abstract class ClientTransport extends AbstractTransport
 
     protected List<Message.Mutable> parseMessages(String content)
     {
+        // Easy to replace with JSONParser.parse();
+        // where the JSONParser is a transport option
+
         return HashMapMessage.parseMessages(content);
+    }
+
+    protected String generateJSON(Message.Mutable[] messages)
+    {
+        // TODO: replace this with a JSONGenerator.generate()
+
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < messages.length; ++i)
+        {
+            if (i > 0)
+                json.append(",");
+            Message message = messages[i];
+            json.append(message.getJSON());
+        }
+        json.append("]");
+        return json.toString();
     }
 }

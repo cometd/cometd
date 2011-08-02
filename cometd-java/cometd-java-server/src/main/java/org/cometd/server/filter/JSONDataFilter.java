@@ -59,10 +59,12 @@ public class JSONDataFilter implements DataFilter
             return filterBoolean((Boolean)data);
         if (data instanceof String)
             return filterString((String)data);
+/*
         if (data instanceof JSON.Literal)
             return filterJSON(from,to,(JSON.Literal)data);
         if (data instanceof JSON.Generator)
             return filterJSON(from,to,(JSON.Generator)data);
+*/
         return filterObject(from,to,data);
     }
 
@@ -108,7 +110,7 @@ public class JSONDataFilter implements DataFilter
 
         return map;
     }
-
+/*
     protected Object filterJSON(ServerSession from, ServerChannel to, JSON.Generator generator)
     {
         String json=JSON.toString(generator);
@@ -121,10 +123,9 @@ public class JSONDataFilter implements DataFilter
         Object data=JSON.parse(json.toString());
         return filter(from,to,data);
     }
-
+*/
     protected Object filterObject(ServerSession from, ServerChannel to, Object obj)
     {
         return obj;
     }
-
 }

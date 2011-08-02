@@ -36,7 +36,6 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.ajax.JSON;
 
 public class LongPollingTransport extends HttpClientTransport
 {
@@ -131,7 +130,8 @@ public class LongPollingTransport extends HttpClientTransport
             httpExchange.setURL(url);
         }
 
-        String content = JSON.toString(messages);
+        String content = generateJSON(messages);
+
         httpExchange.setRequestContentType("application/json;charset=UTF-8");
         try
         {

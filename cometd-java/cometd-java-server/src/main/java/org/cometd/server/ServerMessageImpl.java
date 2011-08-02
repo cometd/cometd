@@ -30,7 +30,7 @@ import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public class ServerMessageImpl extends HashMapMessage implements ServerMessage.Mutable, JSON.Generator
+public class ServerMessageImpl extends HashMapMessage implements ServerMessage.Mutable
 {
     private static final long serialVersionUID = 6412048662640296067L;
 

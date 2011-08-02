@@ -16,18 +16,13 @@
 
 package org.cometd.common;
 
-public class JSONLiteral
-{
-    private final String json;
+import org.eclipse.jetty.util.ajax.JSON;
 
+// TODO: remove dependency on JSON.Literal and eventually add de/serializers to handle this class
+public class JSONLiteral extends JSON.Literal
+{
     public JSONLiteral(String json)
     {
-        this.json = json;
-    }
-
-    @Override
-    public String toString()
-    {
-        return json;
+        super(json);
     }
 }

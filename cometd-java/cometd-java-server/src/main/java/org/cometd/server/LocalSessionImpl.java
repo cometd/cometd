@@ -135,7 +135,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             message = _bayeux.newMessage();
             message.setChannel(Channel.META_CONNECT);
             message.setClientId(_session.getId());
-            message.getAdvice(true).put(Message.INTERVAL_FIELD, -1);
+            message.getAdvice(true).put(Message.INTERVAL_FIELD, -1L);
             message.setId(newMessageId());
 
             doSend(session,message);
