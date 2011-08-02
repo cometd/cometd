@@ -49,9 +49,9 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
+import org.cometd.common.JSONLiteral;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
-import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -88,7 +88,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final Timeout _timeout = new Timeout();
 
     private Timer _timer = new Timer();
-    private Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
+    private Object _handshakeAdvice=new JSONLiteral("{\"reconnect\":\"handshake\",\"interval\":500}");
     private SecurityPolicy _policy=new DefaultSecurityPolicy();
 
     /* ------------------------------------------------------------ */

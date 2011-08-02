@@ -56,7 +56,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
     public Map<String, Object> getAdvice()
     {
         Object advice = get(ADVICE_FIELD);
-        if (advice instanceof JSON.Literal)
+        if (advice instanceof JSONLiteral)
         {
             advice = _jsonParser.parse(new JSON.StringSource(advice.toString()));
             put(ADVICE_FIELD, advice);
@@ -87,7 +87,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
     public Map<String, Object> getDataAsMap()
     {
         Object data = get(DATA_FIELD);
-        if (data instanceof JSON.Literal)
+        if (data instanceof JSONLiteral)
         {
             data = _jsonParser.parse(new JSON.StringSource(data.toString()));
             put(DATA_FIELD, data);
@@ -98,7 +98,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
     public Map<String, Object> getExt()
     {
         Object ext = get(EXT_FIELD);
-        if (ext instanceof JSON.Literal)
+        if (ext instanceof JSONLiteral)
         {
             ext = _jsonParser.parse(new JSON.StringSource(ext.toString()));
             put(EXT_FIELD, ext);

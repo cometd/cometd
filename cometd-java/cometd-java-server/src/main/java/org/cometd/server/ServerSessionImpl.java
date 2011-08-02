@@ -37,12 +37,12 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.HashMapMessage;
+import org.cometd.common.JSONLiteral;
 import org.cometd.server.AbstractServerTransport.OneTimeScheduler;
 import org.cometd.server.AbstractServerTransport.Scheduler;
 import org.cometd.server.transport.HttpTransport;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.util.thread.Timeout.Task;
@@ -754,7 +754,7 @@ public class ServerSessionImpl implements ServerSession
         long timeout = getTimeout() < 0 ? transport.getTimeout() : getTimeout();
         long interval = getInterval() < 0 ? transport.getInterval() : getInterval();
 
-        return new JSON.Literal("{\"reconnect\":\"retry\"," +
+        return new JSONLiteral("{\"reconnect\":\"retry\"," +
                 "\"interval\":" + interval + "," +
                 "\"timeout\":" + timeout + "}");
     }

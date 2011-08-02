@@ -23,8 +23,8 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.common.JSONLiteral;
 import org.cometd.server.ServerSessionImpl;
-import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class AcknowledgedMessagesExtension implements Extension
 {
     private final Logger _logger = Log.getLogger(getClass().getName());
-    private final JSON.Literal _replyExt = new JSON.Literal("{\"ack\":true}");
+    private final JSONLiteral _replyExt = new JSONLiteral("{\"ack\":true}");
 
     /* ------------------------------------------------------------ */
     public boolean rcv(ServerSession from, Mutable message)

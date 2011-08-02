@@ -22,7 +22,7 @@ import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
-import org.eclipse.jetty.util.ajax.JSON;
+import org.cometd.common.JSONLiteral;
 
 /* ------------------------------------------------------------ */
 /**
@@ -154,7 +154,7 @@ public class TimesyncExtension implements Extension
                     {
                         // old style timesync
                         Map<String,Object> extOut=message.getExt(true);
-                        JSON.Literal timesync=new JSON.Literal("{\"tc\":" + tc + ",\"ts\":" + ts + ",\"p\":" + (System.currentTimeMillis() - ts) + "}");
+                        JSONLiteral timesync=new JSONLiteral("{\"tc\":" + tc + ",\"ts\":" + ts + ",\"p\":" + (System.currentTimeMillis() - ts) + "}");
                         extOut.put("timesync",timesync);
                     }
                     else
@@ -167,7 +167,7 @@ public class TimesyncExtension implements Extension
                         if (l == 0 || a >= _accuracyTarget || a <= -_accuracyTarget)
                         {
                             Map<String,Object> extOut = message.getExt(true);
-                            JSON.Literal timesync=new JSON.Literal("{\"tc\":" + tc + ",\"ts\":" + ts + ",\"p\":" + (System.currentTimeMillis() - ts)
+                            JSONLiteral timesync=new JSONLiteral("{\"tc\":" + tc + ",\"ts\":" + ts + ",\"p\":" + (System.currentTimeMillis() - ts)
                                     + ",\"a\":" + a + "}");
 
                             extOut.put("timesync",timesync);

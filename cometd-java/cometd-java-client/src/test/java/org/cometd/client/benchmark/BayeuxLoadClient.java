@@ -40,9 +40,9 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.common.JSONLiteral;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -335,7 +335,7 @@ public class BayeuxLoadClient
                     ClientSessionChannel clientChannel = client.getChannel(channel + "/" + room);
                     message.setLength(0);
                     message.append("{").append(partialMessage).append(System.nanoTime()).append("}");
-                    clientChannel.publish(new JSON.Literal(message.toString()), String.valueOf(messageIds.incrementAndGet()));
+                    clientChannel.publish(new JSONLiteral(message.toString()), String.valueOf(messageIds.incrementAndGet()));
                     expected += clientsPerRoom.get();
                 }
                 client.endBatch();

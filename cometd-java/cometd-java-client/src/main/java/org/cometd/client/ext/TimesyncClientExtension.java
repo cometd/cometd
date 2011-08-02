@@ -21,7 +21,7 @@ import java.util.Map;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSession.Extension;
-import org.eclipse.jetty.util.ajax.JSON;
+import org.cometd.common.JSONLiteral;
 
 public class TimesyncClientExtension implements Extension
 {
@@ -68,7 +68,7 @@ public class TimesyncClientExtension implements Extension
     {
         Map<String,Object> ext=message.getExt(true);
         long now = System.currentTimeMillis();
-        JSON.Literal timesync=new JSON.Literal("{\"tc\":"+now+",\"l\":"+_lag+",\"o\":"+_offset+"}");
+        JSONLiteral timesync=new JSONLiteral("{\"tc\":"+now+",\"l\":"+_lag+",\"o\":"+_offset+"}");
         ext.put("timesync",timesync);
         return true;
     }

@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.cometd.bayeux.server.ServerTransport;
-import org.eclipse.jetty.util.ajax.JSON;
+import org.cometd.common.JSONLiteral;
 
 
 /* ------------------------------------------------------------ */
@@ -326,7 +326,7 @@ public abstract class AbstractServerTransport implements ServerTransport
         _maxLazyTimeout=getOption(MAX_LAZY_OPTION,_maxLazyTimeout);
         _metaConnectDeliveryOnly=getOption(META_CONNECT_DELIVERY_OPTION,_metaConnectDeliveryOnly);
 
-        _advice=new JSON.Literal("{\"reconnect\":\"retry\",\"interval\":" + _interval + ",\"timeout\":" + _timeout + "}");
+        _advice=new JSONLiteral("{\"reconnect\":\"retry\",\"interval\":" + _interval + ",\"timeout\":" + _timeout + "}");
     }
 
 

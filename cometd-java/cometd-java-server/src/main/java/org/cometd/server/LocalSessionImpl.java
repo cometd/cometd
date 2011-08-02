@@ -29,7 +29,6 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.AbstractClientSession;
-import org.eclipse.jetty.util.ajax.JSON;
 
 
 /* ------------------------------------------------------------ */
@@ -42,7 +41,6 @@ import org.eclipse.jetty.util.ajax.JSON;
  */
 public class LocalSessionImpl extends AbstractClientSession implements LocalSession
 {
-    private static final Object LOCAL_ADVICE=JSON.parse("{\"interval\":-1}");
     private final Queue<ServerMessage.Mutable> _queue = new ConcurrentLinkedQueue<ServerMessage.Mutable>();
     private final BayeuxServerImpl _bayeux;
     private final String _idHint;
@@ -137,7 +135,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             message = _bayeux.newMessage();
             message.setChannel(Channel.META_CONNECT);
             message.setClientId(_session.getId());
-            message.put(Message.ADVICE_FIELD,LOCAL_ADVICE);
+            message.getAdvice(true).put(Message.INTERVAL_FIELD, -1);
             message.setId(newMessageId());
 
             doSend(session,message);
