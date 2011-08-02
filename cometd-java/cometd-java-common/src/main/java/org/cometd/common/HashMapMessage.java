@@ -58,7 +58,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         Object advice = get(ADVICE_FIELD);
         if (advice instanceof JSON.Literal)
         {
-            advice = jsonParser.parse(advice.toString());
+            advice = _jsonParser.parse(new JSON.StringSource(advice.toString()));
             put(ADVICE_FIELD, advice);
         }
         return (Map<String, Object>)advice;
@@ -89,7 +89,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         Object data = get(DATA_FIELD);
         if (data instanceof JSON.Literal)
         {
-            data = jsonParser.parse(data.toString());
+            data = _jsonParser.parse(new JSON.StringSource(data.toString()));
             put(DATA_FIELD, data);
         }
         return (Map<String, Object>)data;
@@ -100,7 +100,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         Object ext = get(EXT_FIELD);
         if (ext instanceof JSON.Literal)
         {
-            ext = jsonParser.parse(ext.toString());
+            ext = _jsonParser.parse(new JSON.StringSource(ext.toString()));
             put(EXT_FIELD, ext);
         }
         return (Map<String, Object>)ext;
@@ -115,8 +115,8 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     public String getJSON()
     {
-        Appendable buf = new StringBuilder(jsonParser.getStringBufferSize());
-        jsonParser.appendMap(buf, this);
+        Appendable buf = new StringBuilder(_jsonParser.getStringBufferSize());
+        _jsonParser.appendMap(buf, this);
         return buf.toString();
     }
 
@@ -209,13 +209,18 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     public static List<Mutable> parseMessages(String content)
     {
-        Object object = messagesParser.parse(new JSON.StringSource(content));
+        Object object = _messagesParser.parse(new JSON.StringSource(content));
         if (object instanceof Message.Mutable)
             return Collections.singletonList((Message.Mutable)object);
         return Arrays.asList((Message.Mutable[])object);
     }
 
-    protected static JSON jsonParser = new JSON();
+    public static Mutable parseMessage(String content)
+    {
+        return (Mutable)_messageParser.parse(new JSON.StringSource(content));
+    }
+
+    protected static JSON _jsonParser = new JSON();
     private static JSON _messageParser = new JSON()
     {
         @Override
@@ -227,10 +232,10 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         @Override
         protected JSON contextFor(String field)
         {
-            return jsonParser;
+            return _jsonParser;
         }
     };
-    private static JSON messagesParser = new JSON()
+    private static JSON _messagesParser = new JSON()
     {
         @Override
         protected Map<String, Object> newMap()
@@ -247,7 +252,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         @Override
         protected JSON contextFor(String field)
         {
-            return jsonParser;
+            return _jsonParser;
         }
 
         @Override

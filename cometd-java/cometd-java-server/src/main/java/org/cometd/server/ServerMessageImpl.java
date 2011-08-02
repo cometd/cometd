@@ -124,7 +124,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
         return advice;
     }
 
-    private static JSON serverMessageParser = new JSON()
+    private static JSON _serverMessageParser = new JSON()
     {
         @Override
         protected Map<String, Object> newMap()
@@ -135,10 +135,10 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
         @Override
         protected JSON contextFor(String field)
         {
-            return jsonParser;
+            return _jsonParser;
         }
     };
-    private static JSON serverMessagesParser = new JSON()
+    private static JSON _serverMessagesParser = new JSON()
     {
         @Override
         protected Map<String, Object> newMap()
@@ -155,13 +155,13 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
         @Override
         protected JSON contextFor(String field)
         {
-            return jsonParser;
+            return _jsonParser;
         }
 
         @Override
         protected JSON contextForArray()
         {
-            return serverMessageParser;
+            return _serverMessageParser;
         }
     };
 
@@ -172,7 +172,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
 
         try
         {
-            Object batch = serverMessagesParser.parse(new JSON.ReaderSource(reader));
+            Object batch = _serverMessagesParser.parse(new JSON.ReaderSource(reader));
             if (batch == null)
                 return new ServerMessage.Mutable[0];
             if (batch.getClass().isArray())
@@ -189,7 +189,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     {
         try
         {
-            Object batch = serverMessagesParser.parse(new JSON.StringSource(s));
+            Object batch = _serverMessagesParser.parse(new JSON.StringSource(s));
             if (batch == null)
                 return new ServerMessage.Mutable[0];
             if (batch.getClass().isArray())
