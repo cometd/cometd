@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.common.JSONContext;
 import org.eclipse.jetty.util.log.Log;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -77,7 +78,8 @@ public class ServerMessageImplTest
                 "}" +
                 "}";
 
-        ServerMessage.Mutable[] messages = ServerMessageImpl.parseServerMessages(originalJSON);
+        JSONContext<ServerMessage.Mutable> jsonContext = new JettyServerJSONContext();
+        ServerMessage.Mutable[] messages = jsonContext.parse(originalJSON);
         ServerMessageImpl message = (ServerMessageImpl)messages[0];
 
         String json = message.getJSON();
@@ -230,7 +232,8 @@ public class ServerMessageImplTest
                 "  }" +
                 "}";
 
-        ServerMessage.Mutable[] messages = ServerMessageImpl.parseServerMessages(originalJSON);
+        JSONContext<ServerMessage.Mutable> jsonContext = new JettyServerJSONContext();
+        ServerMessage.Mutable[] messages = jsonContext.parse(originalJSON);
         ServerMessageImpl message = (ServerMessageImpl)messages[0];
         Map<String, Object> data = message.getDataAsMap();
         assertNull(data.get("nullData"));

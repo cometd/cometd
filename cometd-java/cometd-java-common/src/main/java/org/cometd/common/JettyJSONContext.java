@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ajax.JSON;
 
 public class JettyJSONContext implements JSONContext<Message.Mutable>
@@ -42,9 +41,12 @@ public class JettyJSONContext implements JSONContext<Message.Mutable>
     {
         try
         {
-            return parse(IO.toString(reader));
+            Object object = _messagesParser.parse(new JSON.ReaderSource(reader));
+            if (object instanceof Message.Mutable)
+                return new Message.Mutable[]{(Message.Mutable)object};
+            return (Message.Mutable[])object;
         }
-        catch (IOException x)
+        catch (Exception x)
         {
             throw (ParseException)new ParseException("", -1).initCause(x);
         }
@@ -61,8 +63,13 @@ public class JettyJSONContext implements JSONContext<Message.Mutable>
         }
         catch (Exception x)
         {
-            throw (ParseException)new ParseException("", -1).initCause(x);
+            throw (ParseException)new ParseException(json, -1).initCause(x);
         }
+    }
+
+    public String generate(Message.Mutable message)
+    {
+        return _messageParser.toJSON(message);
     }
 
     public String generate(Message.Mutable... messages)

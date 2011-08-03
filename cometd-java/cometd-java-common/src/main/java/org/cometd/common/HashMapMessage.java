@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
-import org.eclipse.jetty.util.ajax.JSON;
 
 public class HashMapMessage extends HashMap<String, Object> implements Message.Mutable, Serializable
 {
@@ -90,9 +89,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     public String getJSON()
     {
-        Appendable buf = new StringBuilder(_jsonParser.getStringBufferSize());
-        _jsonParser.appendMap(buf, this);
-        return buf.toString();
+        return _jsonContext.generate(this);
     }
 
     public Map<String, Object> getAdvice(boolean create)
@@ -223,7 +220,4 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
             throw new RuntimeException(x);
         }
     }
-
-    // TODO: remove this
-    protected static JSON _jsonParser = new JSON();
 }

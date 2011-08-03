@@ -38,7 +38,6 @@ import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.transport.HttpTransport;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -170,7 +169,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 WebSocketTransport.this._handshake.set(_addresses);
                 getBayeux().setCurrentTransport(WebSocketTransport.this);
 
-                ServerMessage.Mutable[] messages = ServerMessageImpl.parseServerMessages(data);
+                ServerMessage.Mutable[] messages = parseMessages(data);
 
                 for (ServerMessage.Mutable message : messages)
                 {

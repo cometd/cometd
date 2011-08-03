@@ -61,6 +61,18 @@ public class JacksonJSONContext implements JSONContext<Message.Mutable>
         }
     }
 
+    public String generate(Message.Mutable message)
+    {
+        try
+        {
+            return objectMapper.writeValueAsString(message);
+        }
+        catch (IOException x)
+        {
+            throw new RuntimeException(x);
+        }
+    }
+
     public String generate(Message.Mutable... messages)
     {
         try

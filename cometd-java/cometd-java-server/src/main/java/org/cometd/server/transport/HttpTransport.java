@@ -16,6 +16,7 @@
 
 package org.cometd.server.transport;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.Principal;
@@ -37,7 +38,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerMessageImpl;
-
+import org.eclipse.jetty.util.IO;
 
 /**
  * HTTP Transport base class.
@@ -76,7 +77,7 @@ public abstract class HttpTransport extends AbstractServerTransport
 
         // Get message batches either as JSON body or as message parameters
         if (content_type!=null && !content_type.startsWith("application/x-www-form-urlencoded"))
-            return ServerMessageImpl.parseServerMessages(request.getReader(), _jsonDebug);
+            return parseMessages(request.getReader(), _jsonDebug);
 
         String[] batches=request.getParameterValues(MESSAGE_PARAM);
 
@@ -84,16 +85,29 @@ public abstract class HttpTransport extends AbstractServerTransport
             return null;
 
         if (batches.length == 1)
-            return ServerMessageImpl.parseServerMessages(batches[0]);
+            return parseMessages(batches[0]);
 
         List<ServerMessage.Mutable> messages=new ArrayList<ServerMessage.Mutable>();
         for (String batch : batches)
         {
             if (batch == null)
                 continue;
-            messages.addAll(Arrays.asList(ServerMessageImpl.parseServerMessages(batch)));
+            messages.addAll(Arrays.asList(parseMessages(batch)));
         }
         return messages.toArray(new ServerMessage.Mutable[messages.size()]);
+    }
+
+    protected ServerMessage.Mutable[] parseMessages(BufferedReader reader, boolean jsonDebug) throws ParseException, IOException
+    {
+        if (jsonDebug)
+            return parseMessages(IO.toString(reader));
+        else
+            return ServerMessageImpl.parseServerMessages(reader, false);
+    }
+
+    protected ServerMessage.Mutable[] parseMessages(String json) throws ParseException
+    {
+        return ServerMessageImpl.parseServerMessages(json);
     }
 
     /* ------------------------------------------------------------ */

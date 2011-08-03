@@ -27,5 +27,7 @@ public interface JSONContext<T extends Message.Mutable>
 
     public T[] parse(String json) throws ParseException;
 
+    public String generate(T message);
+
     public String generate(T... messages);
 }
