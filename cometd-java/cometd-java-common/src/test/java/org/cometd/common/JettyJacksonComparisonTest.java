@@ -87,12 +87,13 @@ public class JettyJacksonComparisonTest
         }
 
         // Jetty
+        JettyJSONContext jettyJSONContext = new JettyJSONContext();
         for (int j = 0; j < iterations; ++j)
         {
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                HashMapMessage.parseMessage(json);
+                jettyJSONContext.parseMessage(json);
             }
             long end = System.nanoTime();
             System.err.printf("jetty iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
@@ -152,12 +153,13 @@ public class JettyJacksonComparisonTest
         }
 
         // Jetty
+        JettyJSONContext jettyJSONContext = new JettyJSONContext();
         for (int j = 0; j < iterations; ++j)
         {
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                message.getJSON();
+                jettyJSONContext.generateMessage(message);
             }
             long end = System.nanoTime();
             System.err.printf("jetty iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));

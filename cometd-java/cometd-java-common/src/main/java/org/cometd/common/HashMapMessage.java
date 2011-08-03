@@ -16,10 +16,8 @@
 
 package org.cometd.common;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +26,7 @@ import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public class HashMapMessage extends HashMap<String, Object> implements Message.Mutable, JSON.Generator, Serializable
+public class HashMapMessage extends HashMap<String, Object> implements Message.Mutable, Serializable
 {
     private static final long serialVersionUID = 4318697940670212190L;
 
@@ -41,26 +39,10 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         putAll(message);
     }
 
-    public void addJSON(Appendable buffer)
-    {
-        try
-        {
-            buffer.append(getJSON());
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
     public Map<String, Object> getAdvice()
     {
         Object advice = get(ADVICE_FIELD);
-        if (advice instanceof JSONLiteral)
-        {
-            advice = _jsonParser.parse(new JSON.StringSource(advice.toString()));
-            put(ADVICE_FIELD, advice);
-        }
+        advice = checkIfJSONLiteral(ADVICE_FIELD, advice);
         return (Map<String, Object>)advice;
     }
 
@@ -87,22 +69,14 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
     public Map<String, Object> getDataAsMap()
     {
         Object data = get(DATA_FIELD);
-        if (data instanceof JSONLiteral)
-        {
-            data = _jsonParser.parse(new JSON.StringSource(data.toString()));
-            put(DATA_FIELD, data);
-        }
+        data = checkIfJSONLiteral(DATA_FIELD, data);
         return (Map<String, Object>)data;
     }
 
     public Map<String, Object> getExt()
     {
         Object ext = get(EXT_FIELD);
-        if (ext instanceof JSONLiteral)
-        {
-            ext = _jsonParser.parse(new JSON.StringSource(ext.toString()));
-            put(EXT_FIELD, ext);
-        }
+        ext = checkIfJSONLiteral(EXT_FIELD, ext);
         return (Map<String, Object>)ext;
     }
 
@@ -207,58 +181,34 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         put(SUCCESSFUL_FIELD, successful);
     }
 
+    // The code below is a relic of a mistake in the API, but it is kept for backward compatibility
+
+    private static final JSONContext<Mutable> _jsonContext = new JettyJSONContext();
+
+    private Object checkIfJSONLiteral(String field, Object value)
+    {
+        if (value instanceof JSONLiteral)
+        {
+            // TODO: add a warning to not use this style anymore
+            value = _jsonContext.parse(value.toString());
+            put(field, value);
+        }
+        return value;
+    }
+
+    /**
+     * <p>Parses the given string into a list of {@link Mutable}s.</p>
+     *
+     * @param content the string to parse
+     * @return the list of parsed {@link Mutable}s
+     * @deprecated Use {@link JSONContext#parse(String)} instead
+     */
+    @Deprecated
     public static List<Mutable> parseMessages(String content)
     {
-        Object object = _messagesParser.parse(new JSON.StringSource(content));
-        if (object instanceof Message.Mutable)
-            return Collections.singletonList((Message.Mutable)object);
-        return Arrays.asList((Message.Mutable[])object);
+        return Arrays.asList(_jsonContext.parse(content));
     }
 
-    public static Mutable parseMessage(String content)
-    {
-        return (Mutable)_messageParser.parse(new JSON.StringSource(content));
-    }
-
+    // TODO: remove this
     protected static JSON _jsonParser = new JSON();
-    private static JSON _messageParser = new JSON()
-    {
-        @Override
-        protected Map<String, Object> newMap()
-        {
-            return new HashMapMessage();
-        }
-
-        @Override
-        protected JSON contextFor(String field)
-        {
-            return _jsonParser;
-        }
-    };
-    private static JSON _messagesParser = new JSON()
-    {
-        @Override
-        protected Map<String, Object> newMap()
-        {
-            return new HashMapMessage();
-        }
-
-        @Override
-        protected Object[] newArray(int size)
-        {
-            return new Message.Mutable[size];
-        }
-
-        @Override
-        protected JSON contextFor(String field)
-        {
-            return _jsonParser;
-        }
-
-        @Override
-        protected JSON contextForArray()
-        {
-            return _messageParser;
-        }
-    };
 }

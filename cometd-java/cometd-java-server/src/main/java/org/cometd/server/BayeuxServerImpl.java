@@ -20,6 +20,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
@@ -49,7 +50,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
-import org.cometd.common.JSONLiteral;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -86,9 +86,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final ThreadLocal<AbstractServerTransport> _currentTransport = new ThreadLocal<AbstractServerTransport>();
     private final Map<String,Object> _options = new TreeMap<String, Object>();
     private final Timeout _timeout = new Timeout();
+    private final Map<String, Object> _handshakeAdvice;
 
     private Timer _timer = new Timer();
-    private Object _handshakeAdvice=new JSONLiteral("{\"reconnect\":\"handshake\",\"interval\":500}");
     private SecurityPolicy _policy=new DefaultSecurityPolicy();
 
     /* ------------------------------------------------------------ */
@@ -96,12 +96,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         addTransport(new JSONTransport(this));
         addTransport(new JSONPTransport(this));
-    }
-
-    /* ------------------------------------------------------------ */
-    public BayeuxServerImpl(List<ServerTransport> transports)
-    {
-        setTransports(transports);
+        _handshakeAdvice = new HashMap<String, Object>(2);
+        _handshakeAdvice.put(Message.RECONNECT_FIELD, Message.RECONNECT_HANDSHAKE_VALUE);
+        _handshakeAdvice.put(Message.INTERVAL_FIELD, 0L);
     }
 
     /* ------------------------------------------------------------ */
@@ -197,16 +194,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     protected void initializeMetaChannels()
     {
-        createIfAbsent(Channel.META_HANDSHAKE);
-        createIfAbsent(Channel.META_CONNECT);
-        createIfAbsent(Channel.META_SUBSCRIBE);
-        createIfAbsent(Channel.META_UNSUBSCRIBE);
-        createIfAbsent(Channel.META_DISCONNECT);
-        getChannel(Channel.META_HANDSHAKE).addListener(new HandshakeHandler());
-        getChannel(Channel.META_CONNECT).addListener(new ConnectHandler());
-        getChannel(Channel.META_SUBSCRIBE).addListener(new SubscribeHandler());
-        getChannel(Channel.META_UNSUBSCRIBE).addListener(new UnsubscribeHandler());
-        getChannel(Channel.META_DISCONNECT).addListener(new DisconnectHandler());
+        createChannelIfAbsent(Channel.META_HANDSHAKE).getReference().addListener(new HandshakeHandler());
+        createChannelIfAbsent(Channel.META_CONNECT).getReference().addListener(new ConnectHandler());
+        createChannelIfAbsent(Channel.META_SUBSCRIBE).getReference().addListener(new SubscribeHandler());
+        createChannelIfAbsent(Channel.META_UNSUBSCRIBE).getReference().addListener(new UnsubscribeHandler());
+        createChannelIfAbsent(Channel.META_DISCONNECT).getReference().addListener(new DisconnectHandler());
     }
 
     /* ------------------------------------------------------------ */
@@ -654,8 +646,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     }
                     else
                     {
-                        createIfAbsent(channelName);
-                        channel = getChannel(channelName);
+                        channel = createChannelIfAbsent(channelName).getReference();
                     }
                 }
 
@@ -1343,8 +1334,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     }
                     else
                     {
-                        createIfAbsent(subscription);
-                        channel = (ServerChannelImpl)getChannel(subscription);
+                        channel = createChannelIfAbsent(subscription).getReference();
                     }
                 }
 

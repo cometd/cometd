@@ -16,22 +16,15 @@
 
 package org.cometd.common;
 
-import org.eclipse.jetty.util.ajax.JSON;
+import java.io.Reader;
 
-// TODO: remove dependency with JSON.Literal when the server JSON parsing/generation is done
-public class JSONLiteral extends JSON.Literal
+import org.cometd.bayeux.Message;
+
+public interface JSONContext<T extends Message.Mutable>
 {
-    private final String json;
+    public T[] parse(Reader reader);
 
-    public JSONLiteral(String json)
-    {
-        super(json);
-        this.json = json;
-    }
+    public T[] parse(String json);
 
-    @Override
-    public String toString()
-    {
-        return json;
-    }
+    public String generate(T... message);
 }

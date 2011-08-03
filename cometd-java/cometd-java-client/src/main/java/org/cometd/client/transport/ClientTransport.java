@@ -16,18 +16,23 @@
 
 package org.cometd.client.transport;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
 import org.cometd.common.AbstractTransport;
-import org.cometd.common.HashMapMessage;
+import org.cometd.common.JSONContext;
+import org.cometd.common.JettyJSONContext;
 
 public abstract class ClientTransport extends AbstractTransport
 {
-    public final static String TIMEOUT_OPTION = "timeout";
-    public final static String INTERVAL_OPTION = "interval";
-    public final static String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
+    public static final String TIMEOUT_OPTION = "timeout";
+    public static final String INTERVAL_OPTION = "interval";
+    public static final String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
+    public static final String JSON_CONTEXT = "jsonContext";
+
+    private JSONContext<Message.Mutable> jsonContext;
 
     protected ClientTransport(String name, Map<String, Object> options)
     {
@@ -36,6 +41,9 @@ public abstract class ClientTransport extends AbstractTransport
 
     public void init()
     {
+        jsonContext = (JSONContext<Message.Mutable>)getOption(JSON_CONTEXT);
+        if (jsonContext == null)
+            jsonContext = new JettyJSONContext();
     }
 
     public abstract void abort();
@@ -48,25 +56,11 @@ public abstract class ClientTransport extends AbstractTransport
 
     protected List<Message.Mutable> parseMessages(String content)
     {
-        // Easy to replace with JSONParser.parse();
-        // where the JSONParser is a transport option
-
-        return HashMapMessage.parseMessages(content);
+        return Arrays.asList(jsonContext.parse(content));
     }
 
     protected String generateJSON(Message.Mutable[] messages)
     {
-        // TODO: replace this with a JSONGenerator.generate()
-
-        StringBuilder json = new StringBuilder("[");
-        for (int i = 0; i < messages.length; ++i)
-        {
-            if (i > 0)
-                json.append(",");
-            Message message = messages[i];
-            json.append(message.getJSON());
-        }
-        json.append("]");
-        return json.toString();
+        return jsonContext.generate(messages);
     }
 }

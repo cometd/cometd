@@ -18,6 +18,7 @@ package org.cometd.server;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -37,7 +38,6 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.HashMapMessage;
-import org.cometd.common.JSONLiteral;
 import org.cometd.server.AbstractServerTransport.OneTimeScheduler;
 import org.cometd.server.AbstractServerTransport.Scheduler;
 import org.cometd.server.transport.HttpTransport;
@@ -754,9 +754,11 @@ public class ServerSessionImpl implements ServerSession
         long timeout = getTimeout() < 0 ? transport.getTimeout() : getTimeout();
         long interval = getInterval() < 0 ? transport.getInterval() : getInterval();
 
-        return new JSONLiteral("{\"reconnect\":\"retry\"," +
-                "\"interval\":" + interval + "," +
-                "\"timeout\":" + timeout + "}");
+        Map<String, Object> advice = new HashMap<String, Object>(3);
+        advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
+        advice.put(Message.INTERVAL_FIELD, interval);
+        advice.put(Message.TIMEOUT_FIELD, timeout);
+        return advice;
     }
 
     /* ------------------------------------------------------------ */

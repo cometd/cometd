@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.cometd.bayeux.server.ServerTransport;
-import org.cometd.common.JSONLiteral;
 
 
 /* ------------------------------------------------------------ */
@@ -325,8 +324,6 @@ public abstract class AbstractServerTransport implements ServerTransport
         _timeout=getOption(TIMEOUT_OPTION,_timeout);
         _maxLazyTimeout=getOption(MAX_LAZY_OPTION,_maxLazyTimeout);
         _metaConnectDeliveryOnly=getOption(META_CONNECT_DELIVERY_OPTION,_metaConnectDeliveryOnly);
-
-        _advice=new JSONLiteral("{\"reconnect\":\"retry\",\"interval\":" + _interval + ",\"timeout\":" + _timeout + "}");
     }
 
 
@@ -402,5 +399,6 @@ public abstract class AbstractServerTransport implements ServerTransport
 
     /* ------------------------------------------------------------ */
     public interface OneTimeScheduler extends Scheduler
-    {}
+    {
+    }
 }
