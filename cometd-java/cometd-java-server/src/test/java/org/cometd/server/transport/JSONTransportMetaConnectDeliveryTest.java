@@ -16,11 +16,11 @@
 
 package org.cometd.server.transport;
 
-import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
-import org.cometd.common.HashMapMessage;
+import org.cometd.common.JSONContext;
+import org.cometd.common.JettyJSONContext;
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
@@ -83,8 +83,9 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
         Assert.assertEquals(200, publish.getResponseStatus());
 
         // Expect only the meta response to the publish
-        List<Message.Mutable> messages = HashMapMessage.parseMessages(publish.getResponseContent());
-        Assert.assertEquals(1, messages.size());
+        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
+        Assert.assertEquals(1, messages.length);
 
         connect = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -97,7 +98,7 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
         Assert.assertEquals(200, connect.getResponseStatus());
 
         // Expect meta response to the connect plus the published message
-        messages = HashMapMessage.parseMessages(connect.getResponseContent());
-        Assert.assertEquals(2, messages.size());
+        messages = jsonContext.parse(connect.getResponseContent());
+        Assert.assertEquals(2, messages.length);
     }
 }

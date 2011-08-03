@@ -17,14 +17,14 @@
 package org.cometd.server;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.common.HashMapMessage;
+import org.cometd.common.JSONContext;
+import org.cometd.common.JettyJSONContext;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.junit.Assert;
@@ -61,9 +61,10 @@ public class HandshakeFailureCustomResponseTest extends AbstractBayeuxClientServ
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
         Assert.assertEquals(200, handshake.getResponseStatus());
 
-        List<Message.Mutable> responses = HashMapMessage.parseMessages(handshake.getResponseContent());
-        Assert.assertEquals(1, responses.size());
-        Message response = responses.get(0);
+        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        Message.Mutable[] responses = jsonContext.parse(handshake.getResponseContent());
+        Assert.assertEquals(1, responses.length);
+        Message response = responses[0];
         Map<String, Object> advice = response.getAdvice();
         Assert.assertNotNull(advice);
         Assert.assertEquals(Message.RECONNECT_HANDSHAKE_VALUE, advice.get(Message.RECONNECT_FIELD));

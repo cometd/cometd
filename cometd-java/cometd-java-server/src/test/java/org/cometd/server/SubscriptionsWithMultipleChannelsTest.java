@@ -16,10 +16,9 @@
 
 package org.cometd.server;
 
-import java.util.List;
-
 import org.cometd.bayeux.Message;
-import org.cometd.common.HashMapMessage;
+import org.cometd.common.JSONContext;
+import org.cometd.common.JettyJSONContext;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
@@ -54,9 +53,10 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
         Assert.assertEquals(200, subscribe.getResponseStatus());
 
-        List<Message.Mutable> messages = HashMapMessage.parseMessages(subscribe.getResponseContent());
-        Assert.assertEquals(1, messages.size());
-        Message.Mutable response = messages.get(0);
+        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        Message.Mutable[] messages = jsonContext.parse(subscribe.getResponseContent());
+        Assert.assertEquals(1, messages.length);
+        Message.Mutable response = messages[0];
         Assert.assertTrue(response.isSuccessful());
         Object subscriptions = response.get(Message.SUBSCRIPTION_FIELD);
         Assert.assertTrue(subscriptions instanceof Object[]);
@@ -98,9 +98,10 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, unsubscribe.waitForDone());
         Assert.assertEquals(200, unsubscribe.getResponseStatus());
 
-        List<Message.Mutable> messages = HashMapMessage.parseMessages(unsubscribe.getResponseContent());
-        Assert.assertEquals(1, messages.size());
-        Message.Mutable response = messages.get(0);
+        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        Message.Mutable[] messages = jsonContext.parse(unsubscribe.getResponseContent());
+        Assert.assertEquals(1, messages.length);
+        Message.Mutable response = messages[0];
         Assert.assertTrue(response.isSuccessful());
         Object subscriptions = response.get(Message.SUBSCRIPTION_FIELD);
         Assert.assertTrue(subscriptions instanceof Object[]);

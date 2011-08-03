@@ -16,6 +16,7 @@
 
 package org.cometd.oort;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
@@ -50,12 +51,8 @@ public class OortAuthenticationTest extends OortTest
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Test that a valid remote client can connect
-        Message authFields = HashMapMessage.parseMessages("" +
-                "{" +
-                "    \"" + Message.EXT_FIELD + "\": {" +
-                "        \"" + TestSecurityPolicy.TOKEN_FIELD + "\": \"something\"" +
-                "    }" +
-                "}").get(0);
+        Message.Mutable authFields = new HashMapMessage();
+        authFields.getExt(true).put(TestSecurityPolicy.TOKEN_FIELD, "something");
         BayeuxClient client1 = startClient(oort1, authFields);
         Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
         Assert.assertTrue(client1.disconnect(5000));
@@ -65,16 +62,13 @@ public class OortAuthenticationTest extends OortTest
         Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
         // A client that forges an Oort comet authentication may not connect
-        Message forgedAuthFields = HashMapMessage.parseMessages("" +
-                "{" +
-                "    \"" + Message.EXT_FIELD + "\": {" +
-                "        \"" + Oort.EXT_OORT_FIELD + "\": {" +
-                "            \"" + Oort.EXT_OORT_URL_FIELD + "\": \"" + oort1.getURL() + "\"," +
-                "            \"" + Oort.EXT_OORT_SECRET_FIELD + "\": \"anything\"," +
-                "            \"" + Oort.EXT_COMET_URL_FIELD + "\": \"" + oort2.getURL() + "\"" +
-                "        }" +
-                "    }" +
-                "}").get(0);
+        Message.Mutable forgedAuthFields = new HashMapMessage();
+        Map<String, Object> ext = forgedAuthFields.getExt(true);
+        Map<String, Object> oortExt = new HashMap<String, Object>();
+        ext.put(Oort.EXT_OORT_FIELD, oortExt);
+        oortExt.put(Oort.EXT_OORT_URL_FIELD, oort1.getURL());
+        oortExt.put(Oort.EXT_OORT_SECRET_FIELD, "anything");
+        oortExt.put(Oort.EXT_COMET_URL_FIELD, oort2.getURL());
         BayeuxClient client3 = startClient(oort1, forgedAuthFields);
         Assert.assertTrue(client3.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
