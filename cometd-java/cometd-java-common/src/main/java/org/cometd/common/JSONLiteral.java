@@ -16,16 +16,12 @@
 
 package org.cometd.common;
 
-import org.eclipse.jetty.util.ajax.JSON;
-
-// TODO: remove dependency with JSON.Literal when the server JSON parsing/generation is done
-public class JSONLiteral extends JSON.Literal
+public class JSONLiteral
 {
     private final String json;
 
     public JSONLiteral(String json)
     {
-        super(json);
         this.json = json;
     }
 

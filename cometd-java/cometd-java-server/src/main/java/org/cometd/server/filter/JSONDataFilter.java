@@ -24,15 +24,15 @@ import java.util.Map;
 
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerSession;
-import org.eclipse.jetty.util.ajax.JSON;
 
 /**
- * JSON DataFilter This {@link DataFilter} walks an Object as if it was a call
- * to {@link JSON#toString(Object)} and calls the protected methods
- * {@link #filterString(String)}, {@link #filterNumber(Number)},
- * {@link #filterBoolean(Boolean)}, {@link #filterArray(Object, ClientImpl)} or
- * {@link #filterMap(Map, ClientImpl)} appropriate. Derived filters may override
- * one or more of these methods to provide filtering of specific types.
+ * <p>{@link JSONDataFilter} walks an object to see if it is a JSON data structure
+ * and calls the appropriate protected method {@link #filterString(String)},
+ * {@link #filterNumber(Number)}, {@link #filterBoolean(Boolean)},
+ * {@link #filterArray(ServerSession, ServerChannel, Object)} or
+ * {@link #filterMap(ServerSession, ServerChannel, Map)}.</p>
+ * <p>Derived filters may override one or more of these methods to provide
+ * filtering of specific types.</p>
  */
 public class JSONDataFilter implements DataFilter
 {
@@ -59,12 +59,6 @@ public class JSONDataFilter implements DataFilter
             return filterBoolean((Boolean)data);
         if (data instanceof String)
             return filterString((String)data);
-/*
-        if (data instanceof JSON.Literal)
-            return filterJSON(from,to,(JSON.Literal)data);
-        if (data instanceof JSON.Generator)
-            return filterJSON(from,to,(JSON.Generator)data);
-*/
         return filterObject(from,to,data);
     }
 
@@ -110,20 +104,7 @@ public class JSONDataFilter implements DataFilter
 
         return map;
     }
-/*
-    protected Object filterJSON(ServerSession from, ServerChannel to, JSON.Generator generator)
-    {
-        String json=JSON.toString(generator);
-        Object data=JSON.parse(json);
-        return filter(from,to,data);
-    }
 
-    protected Object filterJSON(ServerSession from, ServerChannel to, JSON.Literal json)
-    {
-        Object data=JSON.parse(json.toString());
-        return filter(from,to,data);
-    }
-*/
     protected Object filterObject(ServerSession from, ServerChannel to, Object obj)
     {
         return obj;

@@ -16,7 +16,6 @@
 
 package org.cometd.server.transport;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.Principal;
@@ -37,8 +36,6 @@ import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerMessageImpl;
-import org.eclipse.jetty.util.IO;
 
 /**
  * HTTP Transport base class.
@@ -97,61 +94,32 @@ public abstract class HttpTransport extends AbstractServerTransport
         return messages.toArray(new ServerMessage.Mutable[messages.size()]);
     }
 
-    protected ServerMessage.Mutable[] parseMessages(BufferedReader reader, boolean jsonDebug) throws ParseException, IOException
-    {
-        if (jsonDebug)
-            return parseMessages(IO.toString(reader));
-        else
-            return ServerMessageImpl.parseServerMessages(reader, false);
-    }
-
-    protected ServerMessage.Mutable[] parseMessages(String json) throws ParseException
-    {
-        return ServerMessageImpl.parseServerMessages(json);
-    }
-
-    /* ------------------------------------------------------------ */
     public void setCurrentRequest(HttpServletRequest request)
     {
         _currentRequest.set(request);
     }
-    /* ------------------------------------------------------------ */
 
     public HttpServletRequest getCurrentRequest()
     {
         return _currentRequest.get();
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.bayeux.server.ServerTransport#getCurrentLocalAddress()
-     */
     public InetSocketAddress getCurrentLocalAddress()
     {
         BayeuxContext context = getContext();
         if (context!=null)
             return context.getLocalAddress();
-
         return null;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.bayeux.server.ServerTransport#getCurrentRemoteAddress()
-     */
     public InetSocketAddress getCurrentRemoteAddress()
     {
         BayeuxContext context = getContext();
         if (context!=null)
             return context.getRemoteAddress();
-
         return null;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.bayeux.server.ServerTransport#getContext()
-     */
     public BayeuxContext getContext()
     {
         HttpServletRequest request=getCurrentRequest();
@@ -160,9 +128,6 @@ public abstract class HttpTransport extends AbstractServerTransport
         return null;
     }
 
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     private static class HttpContext implements BayeuxContext
     {
         final HttpServletRequest _request;
@@ -266,17 +231,18 @@ public abstract class HttpTransport extends AbstractServerTransport
 
         private ServletContext getServletContext()
         {
-            ServletContext c = null;
             HttpSession s = _request.getSession(false);
             if (s!=null)
-                c=s.getServletContext();
+            {
+                return s.getServletContext();
+            }
             else
             {
                 s=_request.getSession(true);
-                c=s.getServletContext();
+                ServletContext servletContext = s.getServletContext();
                 s.invalidate();
+                return servletContext;
             }
-            return c;
         }
 
         public Object getContextAttribute(String name)
