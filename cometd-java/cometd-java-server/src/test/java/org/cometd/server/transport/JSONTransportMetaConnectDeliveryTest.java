@@ -20,7 +20,7 @@ import java.util.Map;
 
 import org.cometd.bayeux.Message;
 import org.cometd.common.JSONContext;
-import org.cometd.common.JettyJSONContext;
+import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
@@ -83,7 +83,7 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
         Assert.assertEquals(200, publish.getResponseStatus());
 
         // Expect only the meta response to the publish
-        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
         Assert.assertEquals(1, messages.length);
 

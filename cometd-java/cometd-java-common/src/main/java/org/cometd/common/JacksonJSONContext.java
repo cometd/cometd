@@ -28,20 +28,22 @@ import org.codehaus.jackson.map.SerializerProvider;
 import org.codehaus.jackson.map.module.SimpleModule;
 import org.cometd.bayeux.Message;
 
-public class JacksonJSONContext implements JSONContext<Message.Mutable>
+public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
 {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public JacksonJSONContext()
+    protected JacksonJSONContext()
     {
         objectMapper.registerModule(new CometDModule("cometd", Version.unknownVersion()));
     }
 
-    public Message.Mutable[] parse(Reader reader) throws ParseException
+    protected abstract Class<I[]> rootArrayClass();
+
+    public T[] parse(Reader reader) throws ParseException
     {
         try
         {
-            return objectMapper.readValue(reader, HashMapMessage[].class);
+            return objectMapper.readValue(reader, rootArrayClass());
         }
         catch (IOException x)
         {
@@ -49,19 +51,19 @@ public class JacksonJSONContext implements JSONContext<Message.Mutable>
         }
     }
 
-    public Message.Mutable[] parse(String json) throws ParseException
+    public T[] parse(String json) throws ParseException
     {
         try
         {
-            return objectMapper.readValue(json, HashMapMessage[].class);
+            return objectMapper.readValue(json, rootArrayClass());
         }
         catch (IOException x)
         {
-            throw (ParseException)new ParseException("", -1).initCause(x);
+            throw (ParseException)new ParseException(json, -1).initCause(x);
         }
     }
 
-    public String generate(Message.Mutable message)
+    public String generate(T message)
     {
         try
         {
@@ -73,7 +75,7 @@ public class JacksonJSONContext implements JSONContext<Message.Mutable>
         }
     }
 
-    public String generate(Message.Mutable... messages)
+    public String generate(T[] messages)
     {
         try
         {
@@ -85,9 +87,9 @@ public class JacksonJSONContext implements JSONContext<Message.Mutable>
         }
     }
 
-    private class CometDModule extends SimpleModule
+    protected class CometDModule extends SimpleModule
     {
-        private CometDModule(String name, Version version)
+        public CometDModule(String name, Version version)
         {
             super(name, version);
             addSerializer(JSONLiteral.class, new JSONLiteralSerializer());

@@ -14,32 +14,23 @@
  * limitations under the License.
  */
 
-package org.cometd.common;
+package org.cometd.server;
 
-import java.io.Reader;
-import java.text.ParseException;
-
-import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.common.JSONContext;
+import org.cometd.common.JettyJSONContext;
 
-public interface JSONContext
+public class JettyJSONContextServer extends JettyJSONContext<ServerMessage.Mutable> implements JSONContext.Server
 {
-    public interface Client extends JSONParserGenerator<Message.Mutable>
+    @Override
+    protected ServerMessage.Mutable newRoot()
     {
+        return new ServerMessageImpl();
     }
 
-    public interface Server extends JSONParserGenerator<ServerMessage.Mutable>
+    @Override
+    protected ServerMessage.Mutable[] newRootArray(int size)
     {
+        return new ServerMessage.Mutable[size];
     }
-}
-
-interface JSONParserGenerator<T extends Message.Mutable>
-{
-    public T[] parse(Reader reader) throws ParseException;
-
-    public T[] parse(String json) throws ParseException;
-
-    public String generate(T message);
-
-    public String generate(T[] messages);
 }

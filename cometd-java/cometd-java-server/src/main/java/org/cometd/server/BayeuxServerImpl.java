@@ -50,6 +50,7 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
+import org.cometd.common.JSONContext;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -74,6 +75,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public static final int CONFIG_LOG_LEVEL = 1;
     public static final int INFO_LOG_LEVEL = 2;
     public static final int DEBUG_LOG_LEVEL = 3;
+    public static final String JSON_CONTEXT = "jsonContext";
 
     private final Logger _logger = Log.getLogger(getClass().getName() + "@" + System.identityHashCode(this));
     private final SecureRandom _random = new SecureRandom();
@@ -87,9 +89,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final Map<String,Object> _options = new TreeMap<String, Object>();
     private final Timeout _timeout = new Timeout();
     private final Map<String, Object> _handshakeAdvice;
-
-    private Timer _timer = new Timer();
-    private SecurityPolicy _policy=new DefaultSecurityPolicy();
+    private SecurityPolicy _policy = new DefaultSecurityPolicy();
+    private JSONContext.Server _jsonContext;
+    private Timer _timer;
 
     /* ------------------------------------------------------------ */
     public BayeuxServerImpl()
@@ -131,6 +133,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
 
         initializeMetaChannels();
+
+        initializeJSONContext();
 
         initializeDefaultTransports();
 
@@ -199,6 +203,39 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         createChannelIfAbsent(Channel.META_SUBSCRIBE).getReference().addListener(new SubscribeHandler());
         createChannelIfAbsent(Channel.META_UNSUBSCRIBE).getReference().addListener(new UnsubscribeHandler());
         createChannelIfAbsent(Channel.META_DISCONNECT).getReference().addListener(new DisconnectHandler());
+    }
+
+    protected void initializeJSONContext() throws Exception
+    {
+        Object option = getOption(JSON_CONTEXT);
+        if (option == null)
+        {
+            _jsonContext = new JettyJSONContextServer();
+        }
+        else
+        {
+            if (option instanceof String)
+            {
+                Class<?> jsonContextClass = Thread.currentThread().getContextClassLoader().loadClass((String)option);
+                if (JSONContext.Server.class.isAssignableFrom(jsonContextClass))
+                {
+                    _jsonContext = (JSONContext.Server)jsonContextClass.newInstance();
+                }
+                else
+                {
+                    throw new IllegalArgumentException("Invalid " + JSONContext.Server.class.getName() + " implementation class");
+                }
+            }
+            else if (option instanceof JSONContext.Server)
+            {
+                _jsonContext = (JSONContext.Server)option;
+            }
+            else
+            {
+                throw new IllegalArgumentException("Invalid " + JSONContext.Server.class.getName() + " implementation class");
+            }
+        }
+        _options.put(JSON_CONTEXT, _jsonContext);
     }
 
     /* ------------------------------------------------------------ */
@@ -841,7 +878,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         // For example, it is impossible to prevent things like
         // ((CustomObject)serverMessage.getData()).change() or
         // ((Map)serverMessage.getExt().get("map")).put().
-        ((ServerMessageImpl)mutable).freeze();
+        String json = _jsonContext.generate(mutable);
+        ((ServerMessageImpl)mutable).freeze(json);
 
         // Call the wild subscribers
         HashSet<String> wild_subscribers=null;

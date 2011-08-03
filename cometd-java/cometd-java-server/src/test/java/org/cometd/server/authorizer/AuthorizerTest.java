@@ -23,7 +23,7 @@ import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JSONContext;
-import org.cometd.common.JettyJSONContext;
+import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
@@ -74,7 +74,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
         Assert.assertEquals(200, publish.getResponseStatus());
 
-        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];
@@ -134,7 +134,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
         Assert.assertEquals(200, publish.getResponseStatus());
 
-        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];
@@ -180,7 +180,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
         Assert.assertEquals(200, publish.getResponseStatus());
 
-        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];
@@ -233,7 +233,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
         Assert.assertEquals(200, publish.getResponseStatus());
 
-        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];
@@ -302,7 +302,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
         Assert.assertEquals(200, publish.getResponseStatus());
 
-        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];

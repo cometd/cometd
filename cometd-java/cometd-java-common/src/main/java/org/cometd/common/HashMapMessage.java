@@ -181,15 +181,16 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     // The code below is a relic of a mistake in the API, but it is kept for backward compatibility
 
-    private static final JSONContext<Mutable> _jsonContext = new JettyJSONContext();
+    private static final JSONContext.Client _jsonContext = new JettyJSONContextClient();
 
-    private Object checkIfJSONLiteral(String field, Object value)
+    protected Object checkIfJSONLiteral(String field, Object value)
     {
         try
         {
             if (value instanceof JSONLiteral)
             {
                 // TODO: add a warning to not use this style anymore
+                // TODO: this must generate a Map, not a Message !!!
                 value = _jsonContext.parse(value.toString());
                 put(field, value);
             }

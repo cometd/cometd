@@ -44,7 +44,6 @@ public abstract class AbstractServerTransport implements ServerTransport
     public static final String MAX_INTERVAL_OPTION = "maxInterval";
     public static final String MAX_LAZY_OPTION = "maxLazyTimeout";
     public static final String META_CONNECT_DELIVERY_OPTION = "metaConnectDeliverOnly";
-    public static final String JSON_CONTEXT = "jsonContext";
 
     private final String _name;
     private final Map<String, Object> _options;
@@ -54,7 +53,7 @@ public abstract class AbstractServerTransport implements ServerTransport
     private long _timeout = 30000;
     private long _maxLazyTimeout = 5000;
     private boolean _metaConnectDeliveryOnly = false;
-    private JSONContext<ServerMessage.Mutable> jsonContext;
+    private JSONContext.Server jsonContext;
     private Object _advice;
     private String _optionPrefix = "";
     private String[] _prefix = new String[]{};
@@ -308,9 +307,7 @@ public abstract class AbstractServerTransport implements ServerTransport
         _timeout = getOption(TIMEOUT_OPTION, _timeout);
         _maxLazyTimeout = getOption(MAX_LAZY_OPTION, _maxLazyTimeout);
         _metaConnectDeliveryOnly = getOption(META_CONNECT_DELIVERY_OPTION, _metaConnectDeliveryOnly);
-        jsonContext = (JSONContext<ServerMessage.Mutable>)getOption(JSON_CONTEXT);
-        if (jsonContext == null)
-            jsonContext = new JettyServerJSONContext();
+        jsonContext = (JSONContext.Server)getOption(BayeuxServerImpl.JSON_CONTEXT);
     }
 
     protected ServerMessage.Mutable[] parseMessages(BufferedReader reader, boolean jsonDebug) throws ParseException, IOException

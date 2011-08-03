@@ -24,7 +24,7 @@ import java.util.Map;
 import org.cometd.bayeux.Message;
 import org.cometd.common.AbstractTransport;
 import org.cometd.common.JSONContext;
-import org.cometd.common.JettyJSONContext;
+import org.cometd.common.JettyJSONContextClient;
 
 public abstract class ClientTransport extends AbstractTransport
 {
@@ -33,7 +33,7 @@ public abstract class ClientTransport extends AbstractTransport
     public static final String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
     public static final String JSON_CONTEXT = "jsonContext";
 
-    private JSONContext<Message.Mutable> jsonContext;
+    private JSONContext.Client jsonContext;
 
     protected ClientTransport(String name, Map<String, Object> options)
     {
@@ -42,9 +42,9 @@ public abstract class ClientTransport extends AbstractTransport
 
     public void init()
     {
-        jsonContext = (JSONContext<Message.Mutable>)getOption(JSON_CONTEXT);
+        jsonContext = (JSONContext.Client)getOption(JSON_CONTEXT);
         if (jsonContext == null)
-            jsonContext = new JettyJSONContext();
+            jsonContext = new JettyJSONContextClient();
     }
 
     public abstract void abort();

@@ -87,26 +87,26 @@ public class JettyJacksonComparisonTest
         }
 
         // Jackson
-        JacksonJSONContext jacksonJSONContext = new JacksonJSONContext();
+        JacksonJSONContextClient jacksonJSONContextClient = new JacksonJSONContextClient();
         for (int j = 0; j < iterations; ++j)
         {
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                jacksonJSONContext.parse(json);
+                jacksonJSONContextClient.parse(json);
             }
             long end = System.nanoTime();
             System.err.printf("jackson context iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
         }
 
         // Jetty
-        JettyJSONContext jettyJSONContext = new JettyJSONContext();
+        JettyJSONContextClient jettyJSONContextClient = new JettyJSONContextClient();
         for (int j = 0; j < iterations; ++j)
         {
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                jettyJSONContext.parse(json);
+                jettyJSONContextClient.parse(json);
             }
             long end = System.nanoTime();
             System.err.printf("jetty iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
@@ -166,26 +166,26 @@ public class JettyJacksonComparisonTest
         }
 
         // Jackson
-        JacksonJSONContext jacksonJSONContext = new JacksonJSONContext();
+        JacksonJSONContextClient jacksonJSONContextClient = new JacksonJSONContextClient();
         for (int j = 0; j < iterations; ++j)
         {
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                jacksonJSONContext.generate(message);
+                jacksonJSONContextClient.generate(message);
             }
             long end = System.nanoTime();
             System.err.printf("jackson context iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
         }
 
         // Jetty
-        JettyJSONContext jettyJSONContext = new JettyJSONContext();
+        JettyJSONContextClient jettyJSONContextClient = new JettyJSONContextClient();
         for (int j = 0; j < iterations; ++j)
         {
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                jettyJSONContext.generateMessage(message);
+                jettyJSONContextClient.generate(message);
             }
             long end = System.nanoTime();
             System.err.printf("jetty iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));

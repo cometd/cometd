@@ -53,7 +53,6 @@ import org.cometd.common.HashMapMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -945,96 +944,6 @@ public class BayeuxClientTest extends ClientServerTest
         {
             bayeux.setSecurityPolicy(oldPolicy);
         }
-    }
-
-    @Test
-    public void testClientWithSelectConnector() throws Exception
-    {
-        testClient();
-    }
-
-    @Test
-    public void testClientWithSocketConnector() throws Exception
-    {
-        httpClient.stop();
-        httpClient.setConnectorType(HttpClient.CONNECTOR_SOCKET);
-        httpClient.start();
-        testClient();
-    }
-
-    private void testClient() throws Exception
-    {
-        final BlockingArrayQueue<Object> results = new BlockingArrayQueue<Object>();
-
-        BayeuxClient client = newBayeuxClient();
-        client.setDebugEnabled(debugTests());
-
-        final AtomicBoolean connected = new AtomicBoolean();
-
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                connected.set(message.isSuccessful());
-            }
-        });
-
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                connected.set(false);
-            }
-        });
-
-        client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                System.err.println("<<" + message + " @ " + channel);
-                results.offer(message);
-            }
-        });
-
-        client.handshake();
-
-        Message message = (Message)results.poll(1, TimeUnit.SECONDS);
-        Assert.assertNotNull(message);
-        Assert.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
-        String id = client.getId();
-        Assert.assertNotNull(id);
-
-        message = (Message)results.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(Channel.META_CONNECT, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
-
-        ClientSessionChannel.MessageListener subscriber = new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                System.err.println("a<" + message + " @ " + channel);
-                results.offer(message);
-            }
-        };
-        ClientSessionChannel aChannel = client.getChannel("/a/channel");
-        aChannel.subscribe(subscriber);
-
-        message = (Message)results.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
-
-        String data = "data";
-        aChannel.publish(data);
-        message = (Message)results.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(data, message.getData());
-
-        aChannel.unsubscribe(subscriber);
-        message = (Message)results.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(Channel.META_UNSUBSCRIBE, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
-
-        disconnectBayeuxClient(client);
     }
 
     @Test

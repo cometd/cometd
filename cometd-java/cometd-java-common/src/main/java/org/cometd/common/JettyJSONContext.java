@@ -26,7 +26,7 @@ import java.util.Map;
 import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.ajax.JSON;
 
-public class JettyJSONContext implements JSONContext<Message.Mutable>
+public abstract class JettyJSONContext<T extends Message.Mutable>
 {
     private JSON _jsonParser = new FieldJSON();
     private JSON _messageParser = new MessageJSON();
@@ -37,14 +37,16 @@ public class JettyJSONContext implements JSONContext<Message.Mutable>
         _jsonParser.addConvertor(JSONLiteral.class, new JSONLiteralConvertor());
     }
 
-    public Message.Mutable[] parse(Reader reader) throws ParseException
+    protected abstract T newRoot();
+
+    protected abstract T[] newRootArray(int size);
+
+    public T[] parse(Reader reader) throws ParseException
     {
         try
         {
             Object object = _messagesParser.parse(new JSON.ReaderSource(reader));
-            if (object instanceof Message.Mutable)
-                return new Message.Mutable[]{(Message.Mutable)object};
-            return (Message.Mutable[])object;
+            return adapt(object);
         }
         catch (Exception x)
         {
@@ -52,14 +54,21 @@ public class JettyJSONContext implements JSONContext<Message.Mutable>
         }
     }
 
-    public Message.Mutable[] parse(String json) throws ParseException
+    private T[] adapt(Object object)
+    {
+        if (object.getClass().isArray())
+            return (T[])object;
+        T[] result = newRootArray(1);
+        result[0] = (T)object;
+        return result;
+    }
+
+    public T[] parse(String json) throws ParseException
     {
         try
         {
             Object object = _messagesParser.parse(new JSON.StringSource(json));
-            if (object instanceof Message.Mutable)
-                return new Message.Mutable[]{(Message.Mutable)object};
-            return (Message.Mutable[])object;
+            return adapt(object);
         }
         catch (Exception x)
         {
@@ -67,19 +76,14 @@ public class JettyJSONContext implements JSONContext<Message.Mutable>
         }
     }
 
-    public String generate(Message.Mutable message)
+    public String generate(T message)
     {
         return _messageParser.toJSON(message);
     }
 
-    public String generate(Message.Mutable... messages)
+    public String generate(T[] messages)
     {
         return _messagesParser.toJSON(messages);
-    }
-
-    public String generateMessage(Message.Mutable message)
-    {
-        return _messageParser.toJSON(message);
     }
 
     private class FieldJSON extends JSON
@@ -135,7 +139,7 @@ public class JettyJSONContext implements JSONContext<Message.Mutable>
         @Override
         protected Map<String, Object> newMap()
         {
-            return new HashMapMessage();
+            return newRoot();
         }
 
         @Override
@@ -150,13 +154,13 @@ public class JettyJSONContext implements JSONContext<Message.Mutable>
         @Override
         protected Map<String, Object> newMap()
         {
-            return new HashMapMessage();
+            return newRoot();
         }
 
         @Override
         protected Object[] newArray(int size)
         {
-            return new Message.Mutable[size];
+            return newRootArray(size);
         }
 
         @Override

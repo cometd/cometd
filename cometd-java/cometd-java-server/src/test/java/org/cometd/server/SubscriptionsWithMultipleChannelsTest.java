@@ -18,7 +18,7 @@ package org.cometd.server;
 
 import org.cometd.bayeux.Message;
 import org.cometd.common.JSONContext;
-import org.cometd.common.JettyJSONContext;
+import org.cometd.common.JettyJSONContextClient;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
@@ -53,7 +53,7 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
         Assert.assertEquals(200, subscribe.getResponseStatus());
 
-        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(subscribe.getResponseContent());
         Assert.assertEquals(1, messages.length);
         Message.Mutable response = messages[0];
@@ -98,7 +98,7 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, unsubscribe.waitForDone());
         Assert.assertEquals(200, unsubscribe.getResponseStatus());
 
-        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(unsubscribe.getResponseContent());
         Assert.assertEquals(1, messages.length);
         Message.Mutable response = messages[0];

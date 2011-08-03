@@ -16,30 +16,18 @@
 
 package org.cometd.common;
 
-import java.io.Reader;
-import java.text.ParseException;
-
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.server.ServerMessage;
 
-public interface JSONContext
+public class JettyJSONContextClient extends JettyJSONContext<Message.Mutable> implements JSONContext.Client
 {
-    public interface Client extends JSONParserGenerator<Message.Mutable>
+    protected Message.Mutable newRoot()
     {
+        return new HashMapMessage();
     }
 
-    public interface Server extends JSONParserGenerator<ServerMessage.Mutable>
+    @Override
+    protected Message.Mutable[] newRootArray(int size)
     {
+        return new Message.Mutable[size];
     }
-}
-
-interface JSONParserGenerator<T extends Message.Mutable>
-{
-    public T[] parse(Reader reader) throws ParseException;
-
-    public T[] parse(String json) throws ParseException;
-
-    public String generate(T message);
-
-    public String generate(T[] messages);
 }

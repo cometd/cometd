@@ -27,7 +27,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JSONContext;
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.AbstractService;
-import org.cometd.server.JettyServerJSONContext;
+import org.cometd.server.JettyJSONContextServer;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.junit.Assert;
@@ -86,7 +86,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(CLIENT_INFO, handshakeRef.get().getExt().get(CLIENT_EXT_FIELD));
         Assert.assertEquals(CLIENT_INFO, handshakeRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
 
-        JSONContext<ServerMessage.Mutable> jsonContext = new JettyServerJSONContext();
+        JSONContext.Server jsonContext = new JettyJSONContextServer();
         ServerMessage.Mutable[] messages = jsonContext.parse(handshake.getResponseContent());
         Assert.assertEquals(1, messages.length);
         Map message = messages[0];
@@ -151,7 +151,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(CLIENT_INFO, publishRef.get().getExt().get(CLIENT_EXT_FIELD));
         Assert.assertEquals(CLIENT_INFO, publishRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
 
-        JSONContext<ServerMessage.Mutable> jsonContext = new JettyServerJSONContext();
+        JSONContext.Server jsonContext = new JettyJSONContextServer();
         ServerMessage.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
         Assert.assertEquals(2, messages.length);
         Map message = messages[0].containsKey(Message.DATA_FIELD) ? messages[0] : messages[1];
@@ -226,7 +226,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(CLIENT_INFO, publishRef.get().getExt().get(CLIENT_EXT_FIELD));
         Assert.assertEquals(CLIENT_INFO, publishRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
 
-        JSONContext<ServerMessage.Mutable> jsonContext = new JettyServerJSONContext();
+        JSONContext.Server jsonContext = new JettyJSONContextServer();
         ServerMessage.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
         Assert.assertEquals(2, messages.length);
         Map message = messages[0].containsKey(Message.DATA_FIELD) ? messages[0] : messages[1];

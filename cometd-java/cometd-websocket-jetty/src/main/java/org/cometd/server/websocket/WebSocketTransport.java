@@ -294,8 +294,6 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         protected void send(List<ServerMessage> messages) throws IOException
         {
-            // TODO: replace this with a JSONGenerator.generate()
-
             StringBuilder data = new StringBuilder("[");
             for (int i = 0; i < messages.size(); ++i)
             {

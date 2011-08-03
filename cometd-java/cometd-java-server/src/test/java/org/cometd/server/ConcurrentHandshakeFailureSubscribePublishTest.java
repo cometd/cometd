@@ -25,7 +25,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JSONContext;
-import org.cometd.common.JettyJSONContext;
+import org.cometd.common.JettyJSONContextClient;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.junit.Assert;
@@ -69,7 +69,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
         Assert.assertEquals(200, handshake.getResponseStatus());
 
-        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(handshake.getResponseContent());
         Assert.assertEquals(2, messages.length);
         Message handshakeResponse = messages[0];
@@ -126,7 +126,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
         Assert.assertEquals(200, handshake.getResponseStatus());
 
-        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] messages = jsonContext.parse(handshake.getResponseContent());
         Assert.assertEquals(2, messages.length);
         Message handshakeResponse = messages[0];

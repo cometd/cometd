@@ -24,7 +24,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JSONContext;
-import org.cometd.common.JettyJSONContext;
+import org.cometd.common.JettyJSONContextClient;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.junit.Assert;
@@ -61,7 +61,7 @@ public class HandshakeFailureCustomResponseTest extends AbstractBayeuxClientServ
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
         Assert.assertEquals(200, handshake.getResponseStatus());
 
-        JSONContext<Message.Mutable> jsonContext = new JettyJSONContext();
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
         Message.Mutable[] responses = jsonContext.parse(handshake.getResponseContent());
         Assert.assertEquals(1, responses.length);
         Message response = responses[0];
