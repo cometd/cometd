@@ -17,6 +17,7 @@
 package org.cometd.common;
 
 import java.io.Serializable;
+import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -187,13 +188,20 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     private Object checkIfJSONLiteral(String field, Object value)
     {
-        if (value instanceof JSONLiteral)
+        try
         {
-            // TODO: add a warning to not use this style anymore
-            value = _jsonContext.parse(value.toString());
-            put(field, value);
+            if (value instanceof JSONLiteral)
+            {
+                // TODO: add a warning to not use this style anymore
+                value = _jsonContext.parse(value.toString());
+                put(field, value);
+            }
+            return value;
         }
-        return value;
+        catch (ParseException x)
+        {
+            throw new RuntimeException(x);
+        }
     }
 
     /**
@@ -206,7 +214,14 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
     @Deprecated
     public static List<Mutable> parseMessages(String content)
     {
-        return Arrays.asList(_jsonContext.parse(content));
+        try
+        {
+            return Arrays.asList(_jsonContext.parse(content));
+        }
+        catch (ParseException x)
+        {
+            throw new RuntimeException(x);
+        }
     }
 
     // TODO: remove this

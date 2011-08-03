@@ -34,7 +34,7 @@ public class JettyJacksonComparisonTest
     public void testParse() throws Exception
     {
         String json = "" +
-                "{" +
+                "[{" +
                 "   \"successful\":true," +
                 "   \"id\":\"1\"," +
                 "   \"clientId\":\"abcdefghijklmnopqrstuvwxyz\"," +
@@ -53,7 +53,7 @@ public class JettyJacksonComparisonTest
                 "           \"token\":\"0123456789\"" +
                 "       }" +
                 "   }" +
-                "}";
+                "}]";
 
         int iterations = 5;
         int count = 100000;
@@ -66,7 +66,7 @@ public class JettyJacksonComparisonTest
             for (int i = 0; i < count; ++i)
             {
                 JsonParser jsonParser = jsonFactory.createJsonParser(json);
-                jsonParser.readValueAs(HashMapMessage.class);
+                jsonParser.readValueAs(HashMapMessage[].class);
                 jsonParser.close();
             }
             long end = System.nanoTime();
@@ -80,10 +80,23 @@ public class JettyJacksonComparisonTest
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                objectMapper.readValue(json, HashMapMessage.class);
+                objectMapper.readValue(json, HashMapMessage[].class);
             }
             long end = System.nanoTime();
             System.err.printf("jackson mapper iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+        }
+
+        // Jackson
+        JacksonJSONContext jacksonJSONContext = new JacksonJSONContext();
+        for (int j = 0; j < iterations; ++j)
+        {
+            long start = System.nanoTime();
+            for (int i = 0; i < count; ++i)
+            {
+                jacksonJSONContext.parse(json);
+            }
+            long end = System.nanoTime();
+            System.err.printf("jackson context iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
         }
 
         // Jetty
@@ -93,7 +106,7 @@ public class JettyJacksonComparisonTest
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                jettyJSONContext.parseMessage(json);
+                jettyJSONContext.parse(json);
             }
             long end = System.nanoTime();
             System.err.printf("jetty iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
@@ -150,6 +163,19 @@ public class JettyJacksonComparisonTest
             }
             long end = System.nanoTime();
             System.err.printf("jackson mapper iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+        }
+
+        // Jackson
+        JacksonJSONContext jacksonJSONContext = new JacksonJSONContext();
+        for (int j = 0; j < iterations; ++j)
+        {
+            long start = System.nanoTime();
+            for (int i = 0; i < count; ++i)
+            {
+                jacksonJSONContext.generate(message);
+            }
+            long end = System.nanoTime();
+            System.err.printf("jackson context iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
         }
 
         // Jetty

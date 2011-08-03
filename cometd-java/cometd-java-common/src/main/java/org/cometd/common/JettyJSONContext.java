@@ -18,13 +18,13 @@ package org.cometd.common;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.ajax.JSON;
 
 public class JettyJSONContext implements JSONContext<Message.Mutable>
@@ -38,7 +38,7 @@ public class JettyJSONContext implements JSONContext<Message.Mutable>
         _jsonParser.addConvertor(JSONLiteral.class, new JSONLiteralConvertor());
     }
 
-    public Message.Mutable[] parse(Reader reader)
+    public Message.Mutable[] parse(Reader reader) throws ParseException
     {
         try
         {
@@ -46,21 +46,23 @@ public class JettyJSONContext implements JSONContext<Message.Mutable>
         }
         catch (IOException x)
         {
-            throw new IllegalStateException(x);
+            throw (ParseException)new ParseException("", -1).initCause(x);
         }
     }
 
-    public Message.Mutable[] parse(String json)
+    public Message.Mutable[] parse(String json) throws ParseException
     {
-        Object object = _messagesParser.parse(new JSON.StringSource(json));
-        if (object instanceof Message.Mutable)
-            return new Message.Mutable[]{(Message.Mutable)object};
-        return (Message.Mutable[])object;
-    }
-
-    public Message.Mutable parseMessage(String json)
-    {
-        return (Message.Mutable)_messageParser.parse(new JSON.StringSource(json));
+        try
+        {
+            Object object = _messagesParser.parse(new JSON.StringSource(json));
+            if (object instanceof Message.Mutable)
+                return new Message.Mutable[]{(Message.Mutable)object};
+            return (Message.Mutable[])object;
+        }
+        catch (Exception x)
+        {
+            throw (ParseException)new ParseException("", -1).initCause(x);
+        }
     }
 
     public String generate(Message.Mutable... messages)
@@ -115,8 +117,8 @@ public class JettyJSONContext implements JSONContext<Message.Mutable>
             }
             else
             {
-                QuotedStringTokenizer.quote(buffer, string);
-//                StringQuoter.quote(buffer, string);
+//                QuotedStringTokenizer.quote(buffer, string);
+                StringQuoter.quote(buffer, string);
             }
         }
     }

@@ -17,14 +17,15 @@
 package org.cometd.common;
 
 import java.io.Reader;
+import java.text.ParseException;
 
 import org.cometd.bayeux.Message;
 
 public interface JSONContext<T extends Message.Mutable>
 {
-    public T[] parse(Reader reader);
+    public T[] parse(Reader reader) throws ParseException;
 
-    public T[] parse(String json);
+    public T[] parse(String json) throws ParseException;
 
-    public String generate(T... message);
+    public String generate(T... messages);
 }
