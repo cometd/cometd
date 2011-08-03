@@ -284,17 +284,24 @@ public class LongPollingTransport extends HttpClientTransport
                 String content = getResponseContent();
                 if (content != null && content.length() > 0)
                 {
-                    List<Message.Mutable> messages = parseMessages(getResponseContent());
-                    for (Message.Mutable message : messages)
+                    try
                     {
-                        if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel()))
+                        List<Message.Mutable> messages = parseMessages(getResponseContent());
+                        for (Message.Mutable message : messages)
                         {
-                            Map<String, Object> advice = message.getAdvice();
-                            if (advice != null && advice.get("timeout") != null)
-                                _advice = advice;
+                            if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel()))
+                            {
+                                Map<String, Object> advice = message.getAdvice();
+                                if (advice != null && advice.get("timeout") != null)
+                                    _advice = advice;
+                            }
                         }
+                        _listener.onMessages(messages);
                     }
-                    _listener.onMessages(messages);
+                    catch (ParseException x)
+                    {
+                        onException(x);
+                    }
                 }
                 else
                     _listener.onProtocolError("Empty response: " + this, _messages);
