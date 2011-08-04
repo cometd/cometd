@@ -29,9 +29,21 @@ public abstract class ClientTransport extends AbstractTransport
     public final static String INTERVAL_OPTION = "interval";
     public final static String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
 
+    private volatile TransportListener transportListener;
+
     protected ClientTransport(String name, Map<String, Object> options)
     {
         super(name, options);
+    }
+
+    public void setDefaultTransportListener(TransportListener transportListener)
+    {
+        this.transportListener = transportListener;
+    }
+
+    protected TransportListener getDefaultTransportListener()
+    {
+        return transportListener;
     }
 
     public void init()

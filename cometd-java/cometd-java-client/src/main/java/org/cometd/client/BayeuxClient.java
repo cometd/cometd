@@ -153,6 +153,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         for (String transportName : transportRegistry.getKnownTransports())
         {
             ClientTransport clientTransport = transportRegistry.getTransport(transportName);
+            clientTransport.setDefaultTransportListener(publishListener);
             if (clientTransport instanceof HttpClientTransport)
             {
                 HttpClientTransport httpTransport = (HttpClientTransport)clientTransport;
@@ -358,8 +359,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             message.setChannel(Channel.META_HANDSHAKE);
             message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, getAllowedTransports());
             message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
-            if (message.getId() == null)
-                message.setId(newMessageId());
 
             logger.debug("Handshaking with extra fields {}, transport {}", bayeuxClientState.handshakeFields, bayeuxClientState.transport);
             bayeuxClientState.send(handshakeListener, message);
@@ -1286,13 +1285,24 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             {
                 Message.Mutable message = iterator.next();
 
-                if (message.getId() == null)
-                    message.setId(newMessageId());
+                String messageId = message.getId();
+                if (message.isMeta() || messageId == null)
+                {
+                    messageId = newMessageId();
+                    message.setId(messageId);
+                }
+
                 if (clientId != null)
                     message.setClientId(clientId);
 
                 if (!extendSend(message))
                     iterator.remove();
+
+                // Extensions may have modified the messageId, but we need to own
+                // the messageId in case of meta messages to link request/response
+                // in non request/response transports such as websocket
+                if (message.isMeta())
+                    message.setId(messageId);
             }
             if (!messageList.isEmpty())
             {
