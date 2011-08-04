@@ -32,6 +32,7 @@ import org.cometd.server.JacksonJSONContextServer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class BayeuxClientUsageTest extends ClientServerTest
@@ -53,6 +54,7 @@ public class BayeuxClientUsageTest extends ClientServerTest
         testClient(newBayeuxClient());
     }
 
+    @Ignore
     @Test
     public void testClientWithJackson() throws Exception
     {
