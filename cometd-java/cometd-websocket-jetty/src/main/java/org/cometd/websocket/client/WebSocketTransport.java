@@ -1,7 +1,6 @@
 package org.cometd.websocket.client;
 
 import java.net.URI;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +22,7 @@ public class WebSocketTransport extends HttpClientTransport
     public final static String NAME = "websocket";
     public final static String PROTOCOL_OPTION = "protocol";
     public final static String BUFFER_SIZE_OPTION = "bufferSize";
-    
+
     public static WebSocketTransport create(Map<String, Object> options)
     {
         WebSocketClient webSocketClient = new WebSocketClient();
@@ -49,7 +48,7 @@ public class WebSocketTransport extends HttpClientTransport
     }
 
     private final WebSocketClient _webSocketClient;
-    private final WebSocket _websocket = new CometdWebSocket();
+    private final WebSocket _websocket = new CometDWebSocket();
     private WebSocket.Connection _connection;
     private String _protocol="cometd";
     private volatile TransportListener _listener;
@@ -78,11 +77,11 @@ public class WebSocketTransport extends HttpClientTransport
             getOption(TIMEOUT_OPTION,30000)+
             getOption(INTERVAL_OPTION,10000)+
             getOption(MAX_NETWORK_DELAY_OPTION,5000)*2;
-        
+
         Map<String,String> cookies = new HashMap<String,String>();
         for (Cookie cookie : getCookieProvider().getCookies())
             cookies.put(cookie.getName(),cookie.getValue());
-        
+
         try
         {
             URI uri=new URI(getURL());
@@ -93,7 +92,7 @@ public class WebSocketTransport extends HttpClientTransport
             throw new RuntimeException(e);
         }
     }
-    
+
     @Override
     public void abort()
     {
@@ -121,7 +120,7 @@ public class WebSocketTransport extends HttpClientTransport
     public void send(TransportListener listener, Mutable... messages)
     {
         _listener=listener;
-        
+
         final Connection connection;
 
         synchronized (WebSocketTransport.this)
@@ -135,7 +134,7 @@ public class WebSocketTransport extends HttpClientTransport
             {
                 Log.ignore(e);
             }
-            
+
             if (_connection==null)
             {
                 listener.onConnectException(new Throwable(),messages);
@@ -143,9 +142,9 @@ public class WebSocketTransport extends HttpClientTransport
             }
             connection=_connection;
         }
-        
-        
-        
+
+
+
         String content = JSON.toString(messages);
         System.err.println("send "+content);
         try
@@ -159,8 +158,8 @@ public class WebSocketTransport extends HttpClientTransport
             listener.onException(x, messages);
         }
     }
-    
-    protected class CometdWebSocket implements WebSocket.OnTextMessage
+
+    protected class CometDWebSocket implements WebSocket.OnTextMessage
     {
         public void onOpen(Connection connection)
         {
@@ -180,8 +179,12 @@ public class WebSocketTransport extends HttpClientTransport
                 WebSocketTransport.this._connection=null;
             }
             _connection=null;
-            
+
             // TODO Surely more to do here?
+        }
+
+        public void onError(String message, Throwable ex)
+        {
         }
 
         public void onMessage(String data)

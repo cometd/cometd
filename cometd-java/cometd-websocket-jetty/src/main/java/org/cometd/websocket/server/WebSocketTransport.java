@@ -163,6 +163,11 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             }
         }
 
+        public void onError(String message, Throwable ex)
+        {
+            getBayeux().getLogger().warn("Websocket error: " + message, ex);
+        }
+
         public void onMessage(String data)
         {
             boolean batch = false;
@@ -287,9 +292,9 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     if (queue.size() > 0)
                         send(queue);
                 }
-                catch (IOException e)
+                catch (IOException x)
                 {
-                    getBayeux().getLogger().warn("io ", e);
+                    getBayeux().getLogger().warn("Could not send messages " + queue, x);
                 }
             }
         }
