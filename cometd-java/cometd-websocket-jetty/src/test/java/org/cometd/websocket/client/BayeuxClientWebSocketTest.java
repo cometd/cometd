@@ -32,7 +32,7 @@ import org.junit.Test;
 public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 {
     @Test
-    public void testClientCanNegotiateTransportWithServerWithoutWebSocket() throws Exception
+    public void testClientCanNegotiateTransportWithServerNotSupportingWebSocket() throws Exception
     {
         startServer(null);
 
@@ -68,8 +68,11 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         Assert.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
 
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        // Allow long polling to establish for a clean disconnect
+        Thread.sleep(1000);
 
         disconnectBayeuxClient(client);
     }
+
+
 }

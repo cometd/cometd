@@ -35,7 +35,7 @@ import org.junit.Rule;
 import org.junit.rules.TestWatchman;
 import org.junit.runners.model.FrameworkMethod;
 
-public class ClientServerWebSocketTest
+public abstract class ClientServerWebSocketTest
 {
     @Rule
     public final TestWatchman testName = new TestWatchman()

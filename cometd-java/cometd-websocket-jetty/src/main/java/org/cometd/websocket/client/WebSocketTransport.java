@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -71,6 +72,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private boolean _aborted;
     private volatile boolean _webSocketSupported = true;
     private volatile WebSocket.Connection _connection;
+    private volatile CountDownLatch _opened;
     private volatile String _protocol = "cometd";
     private volatile TransportListener _listener;
     private volatile Map<String, Object> _advice;
@@ -172,6 +174,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         {
             URI uri = new URI(url);
             logger.debug("Opening websocket connection to {}", uri);
+            _opened = new CountDownLatch(1);
             _webSocketClient.open(uri, _websocket, _protocol, 0, cookies, null);
             return _connection;
         }
@@ -331,6 +334,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
             _connection = connection;
             logger.debug("Opened websocket connection {}", connection);
+            _opened.countDown();
         }
 
         public void onClose(int closeCode, String message)
@@ -345,6 +349,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                     for (WebSocketExchange exchange : exchanges)
                         exchange.task.cancel(false);
             }
+            // TODO: must count down opened ?
+//            _opened.countDown();
         }
 
         public void onError(String message, Throwable ex)
@@ -352,6 +358,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             _webSocketSupported = false;
             _aborted = true;
             failExchangesForProtocol(message);
+            _opened.countDown();
         }
 
         public void onMessage(String data)
