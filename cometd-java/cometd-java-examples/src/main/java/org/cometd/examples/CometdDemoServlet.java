@@ -18,8 +18,6 @@ package org.cometd.examples;
 
 import java.io.IOException;
 import java.util.Map;
-
-import javax.inject.Inject;
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -28,13 +26,11 @@ import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.java.annotation.Configure;
 import org.cometd.java.annotation.Listener;
 import org.cometd.java.annotation.ServerAnnotationProcessor;
@@ -122,14 +118,10 @@ public class CometdDemoServlet extends GenericServlet
     @Service("monitor")
     public static class Monitor
     {
-        @Inject
-        private BayeuxServer _bayeux;
-        
         @Listener("/meta/subscribe")
         public void monitorSubscribe(ServerSession session, ServerMessage message)
         {
-            BayeuxContext context = ((ServerTransport)_bayeux.getCurrentTransport()).getContext();
-            Log.info("Monitored Subscribe from "+session+"/"+context.getClass().getSimpleName()+" for "+message.get(Message.SUBSCRIPTION_FIELD));
+            Log.info("Monitored Subscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
         }
 
         @Listener("/meta/unsubscribe")

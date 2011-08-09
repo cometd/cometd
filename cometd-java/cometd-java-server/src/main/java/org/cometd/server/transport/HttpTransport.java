@@ -149,7 +149,7 @@ public abstract class HttpTransport extends AbstractServerTransport
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    protected static class HttpContext implements BayeuxContext
+    private static class HttpContext implements BayeuxContext
     {
         final HttpServletRequest _request;
 

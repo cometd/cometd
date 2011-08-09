@@ -19,7 +19,6 @@ package org.cometd.client.transport;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -170,8 +169,7 @@ public class LongPollingTransportTest
                                     "Connection: close\r\n" +
                                     "\r\n").getBytes("UTF-8"));
                     output.flush();
-                    socket.shutdownOutput();
-                    Thread.sleep(processingTime/2);
+
                     socket.close();
                 }
                 catch (Exception x)
