@@ -37,12 +37,12 @@ import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
@@ -153,7 +153,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         for (String transportName : transportRegistry.getKnownTransports())
         {
             ClientTransport clientTransport = transportRegistry.getTransport(transportName);
-            clientTransport.setDefaultTransportListener(publishListener);
+            if (clientTransport instanceof MessageClientTransport)
+            {
+                ((MessageClientTransport)clientTransport).setMessageTransportListener(publishListener);
+            }
             if (clientTransport instanceof HttpClientTransport)
             {
                 HttpClientTransport httpTransport = (HttpClientTransport)clientTransport;
@@ -302,7 +305,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         final List<String> allowedTransports = getAllowedTransports();
         // Pick the first transport for the handshake, it will renegotiate if not right
-        final ClientTransport initialTransport = transportRegistry.getTransport(allowedTransports.get(0));
+        final ClientTransport initialTransport = transportRegistry.negotiate(allowedTransports.toArray(), BAYEUX_VERSION).get(0);
         initialTransport.init();
         logger.debug("Using initial transport {} from {}", initialTransport.getName(), allowedTransports);
 
@@ -357,7 +360,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             if (bayeuxClientState.handshakeFields != null)
                 message.putAll(bayeuxClientState.handshakeFields);
             message.setChannel(Channel.META_HANDSHAKE);
-            message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, getAllowedTransports());
+            List<ClientTransport> transports = transportRegistry.negotiate(getAllowedTransports().toArray(), BAYEUX_VERSION);
+            String[] transportNames = new String[transports.size()];
+            for (int i = 0; i < transportNames.length; ++i)
+                transportNames[i] = transports.get(i).getName();
+            message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, transportNames);
             message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
 
             logger.debug("Handshaking with extra fields {}, transport {}", bayeuxClientState.handshakeFields, bayeuxClientState.transport);
@@ -590,13 +597,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         if (handshake.isSuccessful())
         {
             Object[] serverTransports = (Object[])handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD);
-            List<ClientTransport> negotiatedTransports = transportRegistry.negotiate(serverTransports, BayeuxClient.BAYEUX_VERSION);
+            List<ClientTransport> negotiatedTransports = transportRegistry.negotiate(serverTransports, BAYEUX_VERSION);
             final ClientTransport newTransport = negotiatedTransports.isEmpty() ? null : negotiatedTransports.get(0);
             if (newTransport == null)
             {
                 // Signal the failure
                 String error = "405:c" +
-                        transportRegistry.getAllowedTransports() +
+                        getAllowedTransports() +
                         ",s" +
                         Arrays.toString(serverTransports) +
                         ":no transport";
@@ -796,9 +803,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return transportRegistry.getKnownTransports();
     }
 
-    public Transport getTransport(String transport)
+    public ClientTransport getTransport(String transport)
     {
         return transportRegistry.getTransport(transport);
+    }
+
+    public ClientTransport getTransport()
+    {
+        BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
+        return bayeuxClientState == null ? null : bayeuxClientState.transport;
     }
 
     /**
@@ -952,7 +965,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     {
         String channel=(messages!=null && messages.length>0)?messages[0].getChannelId().toString():"none";
         logger.info("onFailure for "+channel+": " +x);
-        logger.debug("Messages failed {}" + Arrays.toString(messages),x);
+        logger.debug("Messages failed {}" + Arrays.toString(messages), x);
     }
 
     private void updateBayeuxClientState(BayeuxClientStateUpdater updater)
@@ -1127,7 +1140,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             {
                 public BayeuxClientState create(BayeuxClientState oldState)
                 {
-                    return new RehandshakingState(oldState.handshakeFields, oldState.transport, oldState.nextBackoff());
+                    List<ClientTransport> transports = transportRegistry.negotiate(getAllowedTransports().toArray(), BAYEUX_VERSION);
+                    if (transports.isEmpty())
+                        return new DisconnectedState(oldState.transport);
+                    else
+                        return new RehandshakingState(oldState.handshakeFields, transports.get(0), oldState.nextBackoff());
                 }
             });
             super.onFailure(x, messages);

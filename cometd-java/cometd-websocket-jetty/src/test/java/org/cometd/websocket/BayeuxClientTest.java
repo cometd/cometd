@@ -16,11 +16,6 @@
 
 package org.cometd.websocket;
 
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.ProtocolException;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -29,16 +24,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -49,18 +36,13 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.BayeuxClient.State;
-import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.HashMapMessage;
-import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
 import org.cometd.server.DefaultSecurityPolicy;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpClient;
+import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -73,7 +55,7 @@ import org.junit.Test;
 import org.junit.rules.TestWatchman;
 import org.junit.runners.model.FrameworkMethod;
 
-public class BayeuxClientTest 
+public class BayeuxClientTest
 {
     private boolean stress = Boolean.getBoolean("STRESS");
     private Random random = new Random();
@@ -83,7 +65,6 @@ public class BayeuxClientTest
     protected ServletContextHandler context;
     protected String cometdURL;
     protected BayeuxServer bayeux;
-
 
     @Rule
     public final TestWatchman testName = new TestWatchman()
@@ -95,7 +76,7 @@ public class BayeuxClientTest
             Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
         }
     };
-    
+
     public void startServer(Map<String, String> initParams) throws Exception
     {
         server = new Server();
@@ -109,7 +90,7 @@ public class BayeuxClientTest
 
         // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
-        cometdServletHolder.setInitParameter("transports", "org.cometd.websocket.server.WebSocketTransport");
+        cometdServletHolder.setInitParameter("transports", org.cometd.websocket.server.WebSocketTransport.class.getName());
         cometdServletHolder.setInitParameter("allowedTransports", "websocket");
         cometdServletHolder.setInitParameter("timeout", "10000");
         if (debugTests())
@@ -126,7 +107,7 @@ public class BayeuxClientTest
 
         server.start();
         // server.dumpStdErr();
-        
+
         int port = connector.getLocalPort();
         cometdURL = "http://localhost:" + port + contextPath + cometdServletPath;
 
@@ -137,7 +118,7 @@ public class BayeuxClientTest
     protected BayeuxClient newBayeuxClient()
     {
         System.err.println("newBayeuxClient "+cometdURL);
-        final BayeuxClient client = new BayeuxClient(cometdURL, org.cometd.websocket.client.WebSocketTransport.create(null));
+        final BayeuxClient client = new BayeuxClient(cometdURL, WebSocketTransport.create(null));
         client.setDebugEnabled(debugTests());
         return client;
     }
@@ -158,8 +139,7 @@ public class BayeuxClientTest
     {
         return Boolean.getBoolean("debugTests");
     }
-    
-    
+
     @Before
     public void setUp() throws Exception
     {

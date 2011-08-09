@@ -36,16 +36,6 @@ public abstract class ClientTransport extends AbstractTransport
         super(name, options);
     }
 
-    public void setDefaultTransportListener(TransportListener transportListener)
-    {
-        this.transportListener = transportListener;
-    }
-
-    protected TransportListener getDefaultTransportListener()
-    {
-        return transportListener;
-    }
-
     public void init()
     {
     }
