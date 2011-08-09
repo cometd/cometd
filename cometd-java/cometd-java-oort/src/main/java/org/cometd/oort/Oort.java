@@ -22,6 +22,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -458,7 +459,8 @@ public class Oort extends AbstractLifeCycle
 
     protected void joinComets(String cometURL, Message message)
     {
-        Object[] array = (Object[])message.getData();
+        Object data = message.getData();
+        Object[] array = data instanceof List ? ((List)data).toArray() : (Object[])data;
         Set<String> comets = new HashSet<String>();
         for (Object o : array)
             comets.add(o.toString());

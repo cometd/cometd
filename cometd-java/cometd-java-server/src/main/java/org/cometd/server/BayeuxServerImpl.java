@@ -1289,10 +1289,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             Map<String,Object> adviceIn=message.getAdvice();
             if (adviceIn != null)
             {
-                Long timeout=(Long)adviceIn.get("timeout");
-                session.updateTransientTimeout(timeout==null?-1:timeout);
-                Long interval=(Long)adviceIn.get("interval");
-                session.updateTransientInterval(interval==null?-1:interval);
+                Number timeout=(Number)adviceIn.get("timeout");
+                session.updateTransientTimeout(timeout==null?-1L:timeout.longValue());
+                Number interval=(Number)adviceIn.get("interval");
+                session.updateTransientInterval(interval==null?-1L:interval.longValue());
                 // Force the server to send the advice, as the client may
                 // have forgotten it (for example because of a reload)
                 session.reAdvise();
@@ -1333,8 +1333,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 error(reply, "403::subscription_missing");
                 return;
             }
-            else if (subscriptionField instanceof Object[])
+            else if (subscriptionField instanceof Object[] || subscriptionField instanceof List)
             {
+                if (subscriptionField instanceof List)
+                    subscriptionField = ((List)subscriptionField).toArray();
+
                 for (Object subscription : (Object[])subscriptionField)
                 {
                     if (subscription == null || !(subscription instanceof String))
@@ -1435,8 +1438,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 error(reply, "403::subscription_missing");
                 return;
             }
-            else if (subscriptionField instanceof Object[])
+            else if (subscriptionField instanceof Object[] || subscriptionField instanceof List)
             {
+                if (subscriptionField instanceof List)
+                    subscriptionField = ((List)subscriptionField).toArray();
+
                 for (Object subscription : (Object[])subscriptionField)
                 {
                     if (subscription == null || !(subscription instanceof String))

@@ -69,9 +69,10 @@ public class AcknowledgedMessagesClientExtension implements Extension
 
                 synchronized(_lock)
                 {
-                    Long acked = (Long)ext.get("ack");
-                    if (acked != null)
+                    Number ackValue = (Number)ext.get("ack");
+                    if (ackValue != null)
                     {
+                        long acked = ackValue.longValue();
                         if (acked <=_lastAck)
                         {
                             _logger.debug("Session {} lost ack: {}<={}", session, acked, _lastAck);

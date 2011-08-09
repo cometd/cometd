@@ -590,7 +590,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         logger.debug("Processing handshake {}", handshake);
         if (handshake.isSuccessful())
         {
-            Object[] serverTransports = (Object[])handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD);
+            Object field = handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD);
+            Object[] serverTransports = field instanceof List ? ((List)field).toArray() : (Object[])field;
             List<ClientTransport> negotiatedTransports = transportRegistry.negotiate(serverTransports, BayeuxClient.BAYEUX_VERSION);
             final ClientTransport newTransport = negotiatedTransports.isEmpty() ? null : negotiatedTransports.get(0);
             if (newTransport == null)
