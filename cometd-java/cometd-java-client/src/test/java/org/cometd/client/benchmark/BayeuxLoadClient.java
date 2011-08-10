@@ -40,7 +40,6 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.common.JSONLiteral;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.util.log.Log;
@@ -304,7 +303,6 @@ public class BayeuxLoadClient
             long start = System.nanoTime();
             int clientIndex = -1;
             long expected = 0;
-            StringBuilder message = new StringBuilder();
             for (int i = 0; i < batchCount; ++i)
             {
                 if (randomize)
@@ -318,10 +316,7 @@ public class BayeuxLoadClient
                         clientIndex = 0;
                 }
                 LoadBayeuxClient client = bayeuxClients.get(clientIndex);
-                String partialMessage = new StringBuilder()
-                        .append("\"user\":").append(clientIndex).append(",")
-                        .append("\"chat\":\"").append(chat).append("\",")
-                        .append("\"start\":").toString();
+
                 client.startBatch();
                 for (int b = 0; b < batchSize; ++b)
                 {
@@ -333,9 +328,11 @@ public class BayeuxLoadClient
                         clientsPerRoom = this.rooms.get(room);
                     }
                     ClientSessionChannel clientChannel = client.getChannel(channel + "/" + room);
-                    message.setLength(0);
-                    message.append("{").append(partialMessage).append(System.nanoTime()).append("}");
-                    clientChannel.publish(new JSONLiteral(message.toString()), String.valueOf(messageIds.incrementAndGet()));
+                    Map<String, Object> message = new HashMap<String, Object>(3);
+                    message.put("user", clientIndex);
+                    message.put("chat", chat);
+                    message.put("start", System.nanoTime());
+                    clientChannel.publish(message, String.valueOf(messageIds.incrementAndGet()));
                     expected += clientsPerRoom.get();
                 }
                 client.endBatch();
@@ -675,7 +672,7 @@ public class BayeuxLoadClient
                     latch.countDown();
                 }
             });
-            channel.publish(new HashMap<String, Object>());
+            channel.publish(new HashMap<String, Object>(1));
             latch.await();
         }
 
