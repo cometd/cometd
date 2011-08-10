@@ -64,6 +64,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     @Override
     public void init()
     {
+        super.init();
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
         _factory.setBufferSize(getOption(BUFFER_SIZE_OPTION, _factory.getBufferSize()));
 
