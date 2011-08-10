@@ -102,7 +102,7 @@ public class JSONPTransport extends LongPollingTransport
     @Override
     protected void complete(PrintWriter writer) throws IOException
     {
-        writer.append("])\r\n");
+        writer.append("])");
         writer.close();
     }
 

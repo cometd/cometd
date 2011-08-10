@@ -35,6 +35,10 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
     {
         bayeux.setTransports(new JSONTransport(bayeux)
         {
+            {
+                init();
+            }
+
             @Override
             protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws ServletException, IOException
             {

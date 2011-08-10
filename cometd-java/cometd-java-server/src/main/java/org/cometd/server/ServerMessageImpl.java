@@ -27,10 +27,10 @@ import java.util.Set;
 
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.common.HashMapMessage;
+import org.cometd.common.JSONContext;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.ajax.JSON;
 
-public class ServerMessageImpl extends HashMapMessage implements ServerMessage.Mutable, JSON.Generator
+public class ServerMessageImpl extends HashMapMessage implements ServerMessage.Mutable
 {
     private static final long serialVersionUID = 6412048662640296067L;
 
@@ -58,17 +58,17 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
         _lazy = lazy;
     }
 
-    public void freeze()
+    public void freeze(String json)
     {
         assert _json == null;
-        _json = getJSON();
+        _json = json;
     }
 
     @Override
     public String getJSON()
     {
         if (_json == null)
-            return super.getJSON();
+            return _jsonContext.generate(this);
         return _json;
     }
 
@@ -122,84 +122,6 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
         if (_json != null && advice != null)
             return Collections.unmodifiableMap(advice);
         return advice;
-    }
-
-    private static JSON serverMessageParser = new JSON()
-    {
-        @Override
-        protected Map<String, Object> newMap()
-        {
-            return new ServerMessageImpl();
-        }
-
-        @Override
-        protected JSON contextFor(String field)
-        {
-            return jsonParser;
-        }
-    };
-    private static JSON serverMessagesParser = new JSON()
-    {
-        @Override
-        protected Map<String, Object> newMap()
-        {
-            return new ServerMessageImpl();
-        }
-
-        @Override
-        protected Object[] newArray(int size)
-        {
-            return new ServerMessage.Mutable[size];
-        }
-
-        @Override
-        protected JSON contextFor(String field)
-        {
-            return jsonParser;
-        }
-
-        @Override
-        protected JSON contextForArray()
-        {
-            return serverMessageParser;
-        }
-    };
-
-    public static ServerMessage.Mutable[] parseServerMessages(Reader reader, boolean jsonDebug) throws ParseException, IOException
-    {
-        if (jsonDebug)
-            return parseServerMessages(IO.toString(reader));
-
-        try
-        {
-            Object batch = serverMessagesParser.parse(new JSON.ReaderSource(reader));
-            if (batch == null)
-                return new ServerMessage.Mutable[0];
-            if (batch.getClass().isArray())
-                return (ServerMessage.Mutable[])batch;
-            return new ServerMessage.Mutable[]{(ServerMessage.Mutable)batch};
-        }
-        catch (Exception x)
-        {
-            throw (ParseException)new ParseException("", -1).initCause(x);
-        }
-    }
-
-    public static ServerMessage.Mutable[] parseServerMessages(String s) throws ParseException
-    {
-        try
-        {
-            Object batch = serverMessagesParser.parse(new JSON.StringSource(s));
-            if (batch == null)
-                return new ServerMessage.Mutable[0];
-            if (batch.getClass().isArray())
-                return (ServerMessage.Mutable[])batch;
-            return new ServerMessage.Mutable[]{(ServerMessage.Mutable)batch};
-        }
-        catch (Exception x)
-        {
-            throw (ParseException)new ParseException(s, -1).initCause(x);
-        }
     }
 
     private static class ImmutableEntrySet extends AbstractSet<Map.Entry<String, Object>>
@@ -272,5 +194,41 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
                 }
             }
         }
+    }
+
+    // The code below is a relic of a mistake in the API, but it is kept for backward compatibility
+
+    private static final JSONContext.Server _jsonContext = new JettyJSONContextServer();
+
+    /**
+     * <p>Parses the content of the given reader into an array of {@link ServerMessage.Mutable}s.</p>
+     *
+     * @param reader the reader to read from
+     * @param jsonDebug whether or not read the whole content of the reader into a string and then parse the string
+     * @return an array of {@link ServerMessage.Mutable}s
+     * @throws ParseException if the parsing fails
+     * @throws IOException if reading from the reader fails
+     * @deprecated
+     */
+    @Deprecated
+    public static ServerMessage.Mutable[] parseServerMessages(Reader reader, boolean jsonDebug) throws ParseException, IOException
+    {
+        if (jsonDebug)
+            return _jsonContext.parse(IO.toString(reader));
+        return _jsonContext.parse(reader);
+    }
+
+    /**
+     * <p>Parses the given string into an array of {@link ServerMessage.Mutable}s.</p>
+     *
+     * @param json the string to parse
+     * @return an array of {@link ServerMessage.Mutable}s
+     * @throws ParseException if the parsing fails
+     * @deprecated
+     */
+    @Deprecated
+    public static ServerMessage.Mutable[] parseServerMessages(String json) throws ParseException
+    {
+        return _jsonContext.parse(json);
     }
 }

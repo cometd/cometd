@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.common.JSONContext;
 import org.eclipse.jetty.util.log.Log;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -77,7 +78,8 @@ public class ServerMessageImplTest
                 "}" +
                 "}";
 
-        ServerMessage.Mutable[] messages = ServerMessageImpl.parseServerMessages(originalJSON);
+        JSONContext.Server jsonContext = new JettyJSONContextServer();
+        ServerMessage.Mutable[] messages = jsonContext.parse(originalJSON);
         ServerMessageImpl message = (ServerMessageImpl)messages[0];
 
         String json = message.getJSON();
@@ -96,7 +98,7 @@ public class ServerMessageImplTest
         assertTrue(json.contains("\"id\":\"54321\""));
 
         // Freeze the message
-        message.freeze();
+        message.freeze(json);
 
         try
         {
@@ -159,7 +161,9 @@ public class ServerMessageImplTest
         ServerMessageImpl associated = new ServerMessageImpl();
         associated.put("associated", true);
         message.setAssociated(associated);
-        message.freeze();
+
+        String json = new JettyJSONContextServer().generate(message);
+        message.freeze(json);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -199,7 +203,8 @@ public class ServerMessageImplTest
             }
         }
 
-        message.freeze();
+        String json = new JettyJSONContextServer().generate(message);
+        message.freeze(json);
 
         for (Map.Entry<String, Object> field : message.entrySet())
         {
@@ -230,7 +235,8 @@ public class ServerMessageImplTest
                 "  }" +
                 "}";
 
-        ServerMessage.Mutable[] messages = ServerMessageImpl.parseServerMessages(originalJSON);
+        JSONContext.Server jsonContext = new JettyJSONContextServer();
+        ServerMessage.Mutable[] messages = jsonContext.parse(originalJSON);
         ServerMessageImpl message = (ServerMessageImpl)messages[0];
         Map<String, Object> data = message.getDataAsMap();
         assertNull(data.get("nullData"));

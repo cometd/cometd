@@ -20,6 +20,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
@@ -49,9 +50,9 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
+import org.cometd.common.JSONContext;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
-import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -74,6 +75,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public static final int CONFIG_LOG_LEVEL = 1;
     public static final int INFO_LOG_LEVEL = 2;
     public static final int DEBUG_LOG_LEVEL = 3;
+    public static final String JSON_CONTEXT = "jsonContext";
 
     private final Logger _logger = Log.getLogger(getClass().getName() + "@" + System.identityHashCode(this));
     private final SecureRandom _random = new SecureRandom();
@@ -86,22 +88,19 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final ThreadLocal<AbstractServerTransport> _currentTransport = new ThreadLocal<AbstractServerTransport>();
     private final Map<String,Object> _options = new TreeMap<String, Object>();
     private final Timeout _timeout = new Timeout();
-
-    private Timer _timer = new Timer();
-    private Object _handshakeAdvice=new JSON.Literal("{\"reconnect\":\"handshake\",\"interval\":500}");
-    private SecurityPolicy _policy=new DefaultSecurityPolicy();
+    private final Map<String, Object> _handshakeAdvice;
+    private SecurityPolicy _policy = new DefaultSecurityPolicy();
+    private JSONContext.Server _jsonContext;
+    private Timer _timer;
 
     /* ------------------------------------------------------------ */
     public BayeuxServerImpl()
     {
         addTransport(new JSONTransport(this));
         addTransport(new JSONPTransport(this));
-    }
-
-    /* ------------------------------------------------------------ */
-    public BayeuxServerImpl(List<ServerTransport> transports)
-    {
-        setTransports(transports);
+        _handshakeAdvice = new HashMap<String, Object>(2);
+        _handshakeAdvice.put(Message.RECONNECT_FIELD, Message.RECONNECT_HANDSHAKE_VALUE);
+        _handshakeAdvice.put(Message.INTERVAL_FIELD, 0L);
     }
 
     /* ------------------------------------------------------------ */
@@ -134,6 +133,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
 
         initializeMetaChannels();
+
+        initializeJSONContext();
 
         initializeDefaultTransports();
 
@@ -197,16 +198,44 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     protected void initializeMetaChannels()
     {
-        createIfAbsent(Channel.META_HANDSHAKE);
-        createIfAbsent(Channel.META_CONNECT);
-        createIfAbsent(Channel.META_SUBSCRIBE);
-        createIfAbsent(Channel.META_UNSUBSCRIBE);
-        createIfAbsent(Channel.META_DISCONNECT);
-        getChannel(Channel.META_HANDSHAKE).addListener(new HandshakeHandler());
-        getChannel(Channel.META_CONNECT).addListener(new ConnectHandler());
-        getChannel(Channel.META_SUBSCRIBE).addListener(new SubscribeHandler());
-        getChannel(Channel.META_UNSUBSCRIBE).addListener(new UnsubscribeHandler());
-        getChannel(Channel.META_DISCONNECT).addListener(new DisconnectHandler());
+        createChannelIfAbsent(Channel.META_HANDSHAKE).getReference().addListener(new HandshakeHandler());
+        createChannelIfAbsent(Channel.META_CONNECT).getReference().addListener(new ConnectHandler());
+        createChannelIfAbsent(Channel.META_SUBSCRIBE).getReference().addListener(new SubscribeHandler());
+        createChannelIfAbsent(Channel.META_UNSUBSCRIBE).getReference().addListener(new UnsubscribeHandler());
+        createChannelIfAbsent(Channel.META_DISCONNECT).getReference().addListener(new DisconnectHandler());
+    }
+
+    protected void initializeJSONContext() throws Exception
+    {
+        Object option = getOption(JSON_CONTEXT);
+        if (option == null)
+        {
+            _jsonContext = new JettyJSONContextServer();
+        }
+        else
+        {
+            if (option instanceof String)
+            {
+                Class<?> jsonContextClass = Thread.currentThread().getContextClassLoader().loadClass((String)option);
+                if (JSONContext.Server.class.isAssignableFrom(jsonContextClass))
+                {
+                    _jsonContext = (JSONContext.Server)jsonContextClass.newInstance();
+                }
+                else
+                {
+                    throw new IllegalArgumentException("Invalid " + JSONContext.Server.class.getName() + " implementation class");
+                }
+            }
+            else if (option instanceof JSONContext.Server)
+            {
+                _jsonContext = (JSONContext.Server)option;
+            }
+            else
+            {
+                throw new IllegalArgumentException("Invalid " + JSONContext.Server.class.getName() + " implementation class");
+            }
+        }
+        _options.put(JSON_CONTEXT, _jsonContext);
     }
 
     /* ------------------------------------------------------------ */
@@ -654,8 +683,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     }
                     else
                     {
-                        createIfAbsent(channelName);
-                        channel = getChannel(channelName);
+                        channel = createChannelIfAbsent(channelName).getReference();
                     }
                 }
 
@@ -850,7 +878,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         // For example, it is impossible to prevent things like
         // ((CustomObject)serverMessage.getData()).change() or
         // ((Map)serverMessage.getExt().get("map")).put().
-        ((ServerMessageImpl)mutable).freeze();
+        String json = _jsonContext.generate(mutable);
+        ((ServerMessageImpl)mutable).freeze(json);
 
         // Call the wild subscribers
         HashSet<String> wild_subscribers=null;
@@ -1260,10 +1289,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             Map<String,Object> adviceIn=message.getAdvice();
             if (adviceIn != null)
             {
-                Long timeout=(Long)adviceIn.get("timeout");
-                session.updateTransientTimeout(timeout==null?-1:timeout);
-                Long interval=(Long)adviceIn.get("interval");
-                session.updateTransientInterval(interval==null?-1:interval);
+                Number timeout=(Number)adviceIn.get("timeout");
+                session.updateTransientTimeout(timeout==null?-1L:timeout.longValue());
+                Number interval=(Number)adviceIn.get("interval");
+                session.updateTransientInterval(interval==null?-1L:interval.longValue());
                 // Force the server to send the advice, as the client may
                 // have forgotten it (for example because of a reload)
                 session.reAdvise();
@@ -1304,8 +1333,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 error(reply, "403::subscription_missing");
                 return;
             }
-            else if (subscriptionField instanceof Object[])
+            else if (subscriptionField instanceof Object[] || subscriptionField instanceof List)
             {
+                if (subscriptionField instanceof List)
+                    subscriptionField = ((List)subscriptionField).toArray();
+
                 for (Object subscription : (Object[])subscriptionField)
                 {
                     if (subscription == null || !(subscription instanceof String))
@@ -1343,8 +1375,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     }
                     else
                     {
-                        createIfAbsent(subscription);
-                        channel = (ServerChannelImpl)getChannel(subscription);
+                        channel = createChannelIfAbsent(subscription).getReference();
                     }
                 }
 
@@ -1407,8 +1438,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 error(reply, "403::subscription_missing");
                 return;
             }
-            else if (subscriptionField instanceof Object[])
+            else if (subscriptionField instanceof Object[] || subscriptionField instanceof List)
             {
+                if (subscriptionField instanceof List)
+                    subscriptionField = ((List)subscriptionField).toArray();
+
                 for (Object subscription : (Object[])subscriptionField)
                 {
                     if (subscription == null || !(subscription instanceof String))

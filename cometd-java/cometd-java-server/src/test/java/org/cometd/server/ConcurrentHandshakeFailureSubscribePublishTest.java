@@ -16,7 +16,6 @@
 
 package org.cometd.server;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -25,7 +24,8 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.common.HashMapMessage;
+import org.cometd.common.JSONContext;
+import org.cometd.common.JettyJSONContextClient;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.junit.Assert;
@@ -69,9 +69,10 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
         Assert.assertEquals(200, handshake.getResponseStatus());
 
-        List<Message.Mutable> messages = HashMapMessage.parseMessages(handshake.getResponseContent());
-        Assert.assertEquals(2, messages.size());
-        Message handshakeResponse = messages.get(0);
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
+        Message.Mutable[] messages = jsonContext.parse(handshake.getResponseContent());
+        Assert.assertEquals(2, messages.length);
+        Message handshakeResponse = messages[0];
         Assert.assertFalse(handshakeResponse.isSuccessful());
         String handshakeError = (String)handshakeResponse.get("error");
         Assert.assertNotNull(handshakeError);
@@ -79,7 +80,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
         Map<String, Object> advice = handshakeResponse.getAdvice();
         Assert.assertNotNull(advice);
         Assert.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get("reconnect"));
-        Message subscribeResponse = messages.get(1);
+        Message subscribeResponse = messages[1];
         Assert.assertFalse(subscribeResponse.isSuccessful());
         String subscribeError = (String)subscribeResponse.get("error");
         Assert.assertNotNull(subscribeError);
@@ -125,9 +126,10 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
         Assert.assertEquals(200, handshake.getResponseStatus());
 
-        List<Message.Mutable> messages = HashMapMessage.parseMessages(handshake.getResponseContent());
-        Assert.assertEquals(2, messages.size());
-        Message handshakeResponse = messages.get(0);
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
+        Message.Mutable[] messages = jsonContext.parse(handshake.getResponseContent());
+        Assert.assertEquals(2, messages.length);
+        Message handshakeResponse = messages[0];
         Assert.assertFalse(handshakeResponse.isSuccessful());
         String handshakeError = (String)handshakeResponse.get("error");
         Assert.assertNotNull(handshakeError);
@@ -135,7 +137,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
         Map<String, Object> advice = handshakeResponse.getAdvice();
         Assert.assertNotNull(advice);
         Assert.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get("reconnect"));
-        Message publishResponse = messages.get(1);
+        Message publishResponse = messages[1];
         Assert.assertFalse(publishResponse.isSuccessful());
         String publishError = (String)publishResponse.get("error");
         Assert.assertNotNull(publishError);

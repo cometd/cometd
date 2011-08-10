@@ -22,6 +22,7 @@ package org.cometd.oort;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -143,7 +144,9 @@ public class OortChatService
     public void handleMembershipBroadcast(final ServerSession client, ServerMessage message)
     {
         String room = message.getChannel().substring("/members/".length());
-        Object[] newMembers = (Object[])message.getData();
+
+        Object data = message.getData();
+        Object[] newMembers = data instanceof List ? ((List)data).toArray() : (Object[])data;
 
         final Collection<String> members = getMemberList(room);
         synchronized (members)

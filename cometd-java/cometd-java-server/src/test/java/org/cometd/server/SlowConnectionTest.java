@@ -60,6 +60,10 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         final CountDownLatch closeLatch = new CountDownLatch(1);
         final JSONTransport transport = new JSONTransport(bayeux)
         {
+            {
+                init();
+            }
+
             @Override
             protected PrintWriter send(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerMessage message) throws IOException
             {

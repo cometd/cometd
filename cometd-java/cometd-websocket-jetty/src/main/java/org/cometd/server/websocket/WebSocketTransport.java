@@ -38,10 +38,8 @@ import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.transport.HttpTransport;
-import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketFactory;
@@ -171,7 +169,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 WebSocketTransport.this._handshake.set(_addresses);
                 getBayeux().setCurrentTransport(WebSocketTransport.this);
 
-                ServerMessage.Mutable[] messages = ServerMessageImpl.parseServerMessages(data);
+                ServerMessage.Mutable[] messages = parseMessages(data);
 
                 for (ServerMessage.Mutable message : messages)
                 {
@@ -296,8 +294,16 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         protected void send(List<ServerMessage> messages) throws IOException
         {
-            String data = JSON.toString(messages);
-            _connection.sendMessage(data);
+            StringBuilder data = new StringBuilder("[");
+            for (int i = 0; i < messages.size(); ++i)
+            {
+                if (i > 0)
+                    data.append(",");
+                ServerMessage message = messages.get(i);
+                data.append(message.getJSON());
+            }
+            data.append("]");
+            _connection.sendMessage(data.toString());
         }
 
         protected void send(ServerMessage message) throws IOException

@@ -16,18 +16,24 @@
 
 package org.cometd.client.transport;
 
+import java.text.ParseException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
 import org.cometd.common.AbstractTransport;
-import org.cometd.common.HashMapMessage;
+import org.cometd.common.JSONContext;
+import org.cometd.common.JettyJSONContextClient;
 
 public abstract class ClientTransport extends AbstractTransport
 {
-    public final static String TIMEOUT_OPTION = "timeout";
-    public final static String INTERVAL_OPTION = "interval";
-    public final static String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
+    public static final String TIMEOUT_OPTION = "timeout";
+    public static final String INTERVAL_OPTION = "interval";
+    public static final String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
+    public static final String JSON_CONTEXT = "jsonContext";
+
+    private JSONContext.Client jsonContext;
 
     protected ClientTransport(String name, Map<String, Object> options)
     {
@@ -36,6 +42,9 @@ public abstract class ClientTransport extends AbstractTransport
 
     public void init()
     {
+        jsonContext = (JSONContext.Client)getOption(JSON_CONTEXT);
+        if (jsonContext == null)
+            jsonContext = new JettyJSONContextClient();
     }
 
     public abstract void abort();
@@ -46,8 +55,13 @@ public abstract class ClientTransport extends AbstractTransport
 
     public abstract void send(TransportListener listener, Message.Mutable... messages);
 
-    protected List<Message.Mutable> parseMessages(String content)
+    protected List<Message.Mutable> parseMessages(String content) throws ParseException
     {
-        return HashMapMessage.parseMessages(content);
+        return Arrays.asList(jsonContext.parse(content));
+    }
+
+    protected String generateJSON(Message.Mutable[] messages)
+    {
+        return jsonContext.generate(messages);
     }
 }

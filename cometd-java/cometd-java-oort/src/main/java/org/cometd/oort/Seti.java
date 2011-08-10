@@ -546,6 +546,7 @@ public class Seti extends AbstractLifeCycle
 
         private SetiMessage(String toUser, String toChannel, Object data)
         {
+            super(4);
             put(USER_ID_FIELD, toUser);
             put(CHANNEL_FIELD, toChannel);
             put(SETI_ID_FIELD, _setiId);
@@ -561,6 +562,7 @@ public class Seti extends AbstractLifeCycle
 
         private SetiPresence(String userId, boolean on)
         {
+            super(3);
             put(USER_ID_FIELD, userId);
             put(SETI_ID_FIELD, _setiId);
             put(PRESENCE_FIELD, on);

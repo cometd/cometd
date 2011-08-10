@@ -50,7 +50,6 @@ public class RegexFilter extends JSONDataFilter
 
     protected void checkPatterns()
     {
-        // TODO replace this check with a terracotta transient init clause
         synchronized(this)
         {
             if (_patterns == null)

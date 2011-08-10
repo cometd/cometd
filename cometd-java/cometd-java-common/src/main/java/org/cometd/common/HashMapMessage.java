@@ -16,19 +16,17 @@
 
 package org.cometd.common;
 
-import java.io.IOException;
 import java.io.Serializable;
+import java.text.ParseException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
-import org.eclipse.jetty.util.ajax.JSON;
 
-public class HashMapMessage extends HashMap<String, Object> implements Message.Mutable, JSON.Generator, Serializable
+public class HashMapMessage extends HashMap<String, Object> implements Message.Mutable, Serializable
 {
     private static final long serialVersionUID = 4318697940670212190L;
 
@@ -41,27 +39,9 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         putAll(message);
     }
 
-    public void addJSON(Appendable buffer)
-    {
-        try
-        {
-            buffer.append(getJSON());
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
     public Map<String, Object> getAdvice()
     {
-        Object advice = get(ADVICE_FIELD);
-        if (advice instanceof JSON.Literal)
-        {
-            advice = jsonParser.parse(advice.toString());
-            put(ADVICE_FIELD, advice);
-        }
-        return (Map<String, Object>)advice;
+        return (Map<String, Object>)get(ADVICE_FIELD);
     }
 
     public String getChannel()
@@ -86,24 +66,12 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     public Map<String, Object> getDataAsMap()
     {
-        Object data = get(DATA_FIELD);
-        if (data instanceof JSON.Literal)
-        {
-            data = jsonParser.parse(data.toString());
-            put(DATA_FIELD, data);
-        }
-        return (Map<String, Object>)data;
+        return (Map<String, Object>)get(DATA_FIELD);
     }
 
     public Map<String, Object> getExt()
     {
-        Object ext = get(EXT_FIELD);
-        if (ext instanceof JSON.Literal)
-        {
-            ext = jsonParser.parse(ext.toString());
-            put(EXT_FIELD, ext);
-        }
-        return (Map<String, Object>)ext;
+        return (Map<String, Object>)get(EXT_FIELD);
     }
 
     public String getId()
@@ -115,9 +83,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     public String getJSON()
     {
-        Appendable buf = new StringBuilder(jsonParser.getStringBufferSize());
-        jsonParser.appendMap(buf, this);
-        return buf.toString();
+        return _jsonContext.generate(this);
     }
 
     public Map<String, Object> getAdvice(boolean create)
@@ -125,7 +91,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         Map<String, Object> advice = getAdvice();
         if (create && advice == null)
         {
-            advice = new HashMap<String, Object>();
+            advice = new HashMap<String, Object>(4);
             put(ADVICE_FIELD, advice);
         }
         return advice;
@@ -207,53 +173,27 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         put(SUCCESSFUL_FIELD, successful);
     }
 
+    // The code below is a relic of a mistake in the API, but it is kept for backward compatibility.
+
+    private static final JSONContext.Client _jsonContext = new JettyJSONContextClient();
+
+    /**
+     * <p>Parses the given string into a list of {@link Mutable}s.</p>
+     *
+     * @param content the string to parse
+     * @return the list of parsed {@link Mutable}s
+     * @deprecated Use {@link JSONContext#parse(String)} instead
+     */
+    @Deprecated
     public static List<Mutable> parseMessages(String content)
     {
-        Object object = messagesParser.parse(new JSON.StringSource(content));
-        if (object instanceof Message.Mutable)
-            return Collections.singletonList((Message.Mutable)object);
-        return Arrays.asList((Message.Mutable[])object);
+        try
+        {
+            return Arrays.asList(_jsonContext.parse(content));
+        }
+        catch (ParseException x)
+        {
+            throw new RuntimeException(x);
+        }
     }
-
-    protected static JSON jsonParser = new JSON();
-    private static JSON _messageParser = new JSON()
-    {
-        @Override
-        protected Map<String, Object> newMap()
-        {
-            return new HashMapMessage();
-        }
-
-        @Override
-        protected JSON contextFor(String field)
-        {
-            return jsonParser;
-        }
-    };
-    private static JSON messagesParser = new JSON()
-    {
-        @Override
-        protected Map<String, Object> newMap()
-        {
-            return new HashMapMessage();
-        }
-
-        @Override
-        protected Object[] newArray(int size)
-        {
-            return new Message.Mutable[size];
-        }
-
-        @Override
-        protected JSON contextFor(String field)
-        {
-            return jsonParser;
-        }
-
-        @Override
-        protected JSON contextForArray()
-        {
-            return _messageParser;
-        }
-    };
 }
