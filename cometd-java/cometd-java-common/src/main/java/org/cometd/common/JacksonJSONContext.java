@@ -20,12 +20,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.text.ParseException;
 
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.Version;
-import org.codehaus.jackson.map.JsonSerializer;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializerProvider;
-import org.codehaus.jackson.map.module.SimpleModule;
 import org.cometd.bayeux.Message;
 
 public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
@@ -34,7 +29,11 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
 
     protected JacksonJSONContext()
     {
-        objectMapper.registerModule(new CometDModule("cometd", Version.unknownVersion()));
+    }
+
+    protected ObjectMapper getObjectMapper()
+    {
+        return objectMapper;
     }
 
     protected abstract Class<I[]> rootArrayClass();
@@ -43,7 +42,7 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
     {
         try
         {
-            return objectMapper.readValue(reader, rootArrayClass());
+            return getObjectMapper().readValue(reader, rootArrayClass());
         }
         catch (IOException x)
         {
@@ -55,7 +54,7 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
     {
         try
         {
-            return objectMapper.readValue(json, rootArrayClass());
+            return getObjectMapper().readValue(json, rootArrayClass());
         }
         catch (IOException x)
         {
@@ -67,7 +66,7 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
     {
         try
         {
-            return objectMapper.writeValueAsString(message);
+            return getObjectMapper().writeValueAsString(message);
         }
         catch (IOException x)
         {
@@ -79,29 +78,11 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
     {
         try
         {
-            return objectMapper.writeValueAsString(messages);
+            return getObjectMapper().writeValueAsString(messages);
         }
         catch (IOException x)
         {
             throw new RuntimeException(x);
-        }
-    }
-
-    protected class CometDModule extends SimpleModule
-    {
-        public CometDModule(String name, Version version)
-        {
-            super(name, version);
-            addSerializer(JSONLiteral.class, new JSONLiteralSerializer());
-        }
-    }
-
-    private class JSONLiteralSerializer extends JsonSerializer<JSONLiteral>
-    {
-        @Override
-        public void serialize(JSONLiteral value, JsonGenerator jgen, SerializerProvider provider) throws IOException
-        {
-            jgen.writeRaw(value.toString());
         }
     }
 }

@@ -41,9 +41,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     public Map<String, Object> getAdvice()
     {
-        Object advice = get(ADVICE_FIELD);
-        advice = checkIfJSONLiteral(ADVICE_FIELD, advice);
-        return (Map<String, Object>)advice;
+        return (Map<String, Object>)get(ADVICE_FIELD);
     }
 
     public String getChannel()
@@ -68,16 +66,12 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     public Map<String, Object> getDataAsMap()
     {
-        Object data = get(DATA_FIELD);
-        data = checkIfJSONLiteral(DATA_FIELD, data);
-        return (Map<String, Object>)data;
+        return (Map<String, Object>)get(DATA_FIELD);
     }
 
     public Map<String, Object> getExt()
     {
-        Object ext = get(EXT_FIELD);
-        ext = checkIfJSONLiteral(EXT_FIELD, ext);
-        return (Map<String, Object>)ext;
+        return (Map<String, Object>)get(EXT_FIELD);
     }
 
     public String getId()
@@ -179,28 +173,9 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         put(SUCCESSFUL_FIELD, successful);
     }
 
-    // The code below is a relic of a mistake in the API, but it is kept for backward compatibility
+    // The code below is a relic of a mistake in the API, but it is kept for backward compatibility.
 
     private static final JSONContext.Client _jsonContext = new JettyJSONContextClient();
-
-    protected Object checkIfJSONLiteral(String field, Object value)
-    {
-        try
-        {
-            if (value instanceof JSONLiteral)
-            {
-                // TODO: add a warning to not use this style anymore
-                // TODO: this must generate a Map, not a Message !!!
-                value = _jsonContext.parse(value.toString());
-                put(field, value);
-            }
-            return value;
-        }
-        catch (ParseException x)
-        {
-            throw new RuntimeException(x);
-        }
-    }
 
     /**
      * <p>Parses the given string into a list of {@link Mutable}s.</p>
