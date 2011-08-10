@@ -74,7 +74,7 @@ var room = {
             return;
         }
 
-        dojox.cometd.ackEnabled = dojo.query("#ackEnabled").attr("checked");
+        dojox.cometd.ackEnabled = dojo.byId("ackEnabled").checked;
 
         dojox.cometd.websocketEnabled = true;
         var cometdURL = location.protocol + "//" + location.host + config.contextPath + "/cometd";
