@@ -32,7 +32,7 @@ public class AbstractTransport implements Transport
     protected AbstractTransport(String name, Map<String, Object> options)
     {
         _name = name;
-        _options = options == null ? new HashMap<String, Object>() : options;
+        _options = options == null ? new HashMap<String, Object>(1) : options;
     }
 
     public String getName()

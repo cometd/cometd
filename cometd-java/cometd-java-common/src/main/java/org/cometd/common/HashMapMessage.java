@@ -97,7 +97,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         Map<String, Object> advice = getAdvice();
         if (create && advice == null)
         {
-            advice = new HashMap<String, Object>();
+            advice = new HashMap<String, Object>(4);
             put(ADVICE_FIELD, advice);
         }
         return advice;

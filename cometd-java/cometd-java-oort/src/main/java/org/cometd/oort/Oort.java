@@ -211,7 +211,7 @@ public class Oort extends AbstractLifeCycle
         String b64Secret = encodeSecret(getSecret());
         Message.Mutable fields = new HashMapMessage();
         Map<String, Object> ext = fields.getExt(true);
-        Map<String, Object> oortExt = new HashMap<String, Object>();
+        Map<String, Object> oortExt = new HashMap<String, Object>(3);
         ext.put(EXT_OORT_FIELD, oortExt);
         oortExt.put(EXT_OORT_URL_FIELD, getURL());
         oortExt.put(EXT_OORT_SECRET_FIELD, b64Secret);
