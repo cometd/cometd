@@ -1,8 +1,5 @@
 package org.cometd.websocket.client;
 
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -10,7 +7,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -34,6 +30,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     public final static String PREFIX = "ws";
     public final static String NAME = "websocket";
     public final static String PROTOCOL_OPTION = "protocol";
+    public final static String CONNECT_TIMEOUT = "connectTimeout";
 
     public static WebSocketTransport create(Map<String, Object> options)
     {
@@ -72,7 +69,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private boolean _aborted;
     private volatile boolean _webSocketSupported = true;
     private volatile WebSocket.Connection _connection;
-    private volatile CountDownLatch _opened;
     private volatile String _protocol = "cometd";
     private volatile TransportListener _listener;
     private volatile Map<String, Object> _advice;
@@ -132,6 +128,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         try
         {
+            // TODO: avoid JSON dependency
             String content = JSON.toString(messages);
 
             for (Message.Mutable message : messages)
@@ -172,16 +169,24 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         try
         {
+/*
+            WebSocketClient client=new WebSocketClient(_webSocketClient);
+            client.setMaxIdleTime(maxIdleTime);
+            client.setProtocol(_protocol);
+            client.getCookies().putAll(cookies);
+            _handshake=client.open(uri,_websocket);
+*/
+
             URI uri = new URI(url);
             logger.debug("Opening websocket connection to {}", uri);
-            _opened = new CountDownLatch(1);
-            _webSocketClient.open(uri, _websocket, _protocol, 0, cookies, null);
+//            _webSocketClient.open(uri, _websocket, _protocol, 0, cookies, null);
             return _connection;
         }
         catch (URISyntaxException x)
         {
             listener.onProtocolError(x.getMessage(), messages);
         }
+/*
         catch (ConnectException x)
         {
             listener.onConnectException(x, messages);
@@ -194,6 +199,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         {
             listener.onException(x, messages);
         }
+*/
         return null;
     }
 
@@ -334,7 +340,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
             _connection = connection;
             logger.debug("Opened websocket connection {}", connection);
-            _opened.countDown();
         }
 
         public void onClose(int closeCode, String message)
@@ -358,7 +363,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             _webSocketSupported = false;
             _aborted = true;
             failExchangesForProtocol(message);
-            _opened.countDown();
         }
 
         public void onMessage(String data)
