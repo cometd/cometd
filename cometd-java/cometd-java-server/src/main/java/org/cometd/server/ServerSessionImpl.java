@@ -79,7 +79,6 @@ public class ServerSessionImpl implements ServerSession
     private String _userAgent;
     private long _connectTimestamp=-1;
     private long _intervalTimestamp;
-    private long _lastInterval;
     private long _lastConnect;
     private volatile boolean _lazyDispatch;
 
@@ -586,24 +585,23 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public void cancelIntervalTimeout()
     {
+        long now = System.currentTimeMillis();
         synchronized (_queue)
         {
-            long now = System.currentTimeMillis();
-            if (_intervalTimestamp > 0)
-                _lastInterval = now - (_intervalTimestamp - _maxInterval);
             _connectTimestamp = now;
             _intervalTimestamp = 0;
         }
     }
 
     /* ------------------------------------------------------------ */
-    public void startIntervalTimeout()
+    public void startIntervalTimeout(long defaultInterval)
     {
+        long interval = calculateInterval(defaultInterval);
+        long now = System.currentTimeMillis();
         synchronized (_queue)
         {
-            long now = System.currentTimeMillis();
             _lastConnect = now - _connectTimestamp;
-            _intervalTimestamp = now + _maxInterval;
+            _intervalTimestamp = now + interval + _maxInterval;
         }
     }
 
@@ -892,7 +890,7 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public String toDetailString()
     {
-        return _id + ",lc=" + _lastConnect + ",li=" + _lastInterval;
+        return _id + ",lc=" + _lastConnect;
     }
 
     /* ------------------------------------------------------------ */
