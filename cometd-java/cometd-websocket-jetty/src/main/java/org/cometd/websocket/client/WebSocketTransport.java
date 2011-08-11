@@ -5,6 +5,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -23,6 +26,7 @@ public class WebSocketTransport extends HttpClientTransport
     public final static String NAME = "websocket";
     public final static String PROTOCOL_OPTION = "protocol";
     public final static String BUFFER_SIZE_OPTION = "bufferSize";
+    public final static String CONNECT_TIMEOUT = "connectTimeout";
     
     public static WebSocketTransport create(Map<String, Object> options)
     {
@@ -50,6 +54,7 @@ public class WebSocketTransport extends HttpClientTransport
 
     private final WebSocketClient _webSocketClient;
     private final WebSocket _websocket = new CometdWebSocket();
+    private Future<WebSocket.Connection> _handshake;
     private WebSocket.Connection _connection;
     private String _protocol="cometd";
     private volatile TransportListener _listener;
@@ -85,8 +90,15 @@ public class WebSocketTransport extends HttpClientTransport
         
         try
         {
-            URI uri=new URI(getURL());
-            _webSocketClient.open(uri,_websocket,_protocol,maxIdleTime,cookies,null);
+            String url=getURL();
+            if (url.startsWith("http"))
+                url="ws"+url.substring(4);
+            URI uri=new URI(url);
+            WebSocketClient client=new WebSocketClient(_webSocketClient);
+            client.setMaxIdleTime(maxIdleTime);
+            client.setProtocol(_protocol);
+            client.getCookies().putAll(cookies);
+            _handshake=client.open(uri,_websocket);
         }
         catch(Exception e)
         {
@@ -122,30 +134,26 @@ public class WebSocketTransport extends HttpClientTransport
     {
         _listener=listener;
         
-        final Connection connection;
+        Connection connection=_connection;
 
-        synchronized (WebSocketTransport.this)
+        System.err.println("connection "+connection);
+        if (connection==null)
         {
             try
             {
-                if (_connection==null)
-                    WebSocketTransport.this.wait(_webSocketClient.getConnectTimeout());
+                int connectTimeout=getOption(CONNECT_TIMEOUT,10000);
+                connection=_handshake.get(connectTimeout,TimeUnit.MILLISECONDS);
             }
-            catch(InterruptedException e)
+            catch(Exception e)
             {
-                Log.ignore(e);
-            }
-            
-            if (_connection==null)
-            {
-                listener.onConnectException(new Throwable(),messages);
+                e.printStackTrace();
+                Log.debug(e);
+                listener.onConnectException(e,messages);
                 return;
             }
-            connection=_connection;
         }
         
-        
-        
+        // TODO avoid JSON dependency
         String content = JSON.toString(messages);
         System.err.println("send "+content);
         try
@@ -168,7 +176,6 @@ public class WebSocketTransport extends HttpClientTransport
             synchronized (WebSocketTransport.this)
             {
                 WebSocketTransport.this._connection=connection;
-                WebSocketTransport.this.notifyAll();
             }
         }
 
@@ -179,7 +186,6 @@ public class WebSocketTransport extends HttpClientTransport
             {
                 WebSocketTransport.this._connection=null;
             }
-            _connection=null;
             
             // TODO Surely more to do here?
         }
