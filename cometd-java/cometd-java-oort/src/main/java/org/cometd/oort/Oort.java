@@ -20,7 +20,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -207,16 +209,13 @@ public class Oort extends AbstractLifeCycle
 
         _logger.debug("Connecting to comet {}", cometURL);
         String b64Secret = encodeSecret(getSecret());
-        Message.Mutable fields = HashMapMessage.parseMessages("" +
-                "{" +
-                "    \"" + Message.EXT_FIELD + "\": {" +
-                "        \"" + EXT_OORT_FIELD + "\": {" +
-                "            \"" + EXT_OORT_URL_FIELD + "\": \"" + getURL() + "\"," +
-                "            \"" + EXT_OORT_SECRET_FIELD + "\": \"" + b64Secret + "\"," +
-                "            \"" + EXT_COMET_URL_FIELD + "\": \"" + cometURL + "\"" +
-                "        }" +
-                "    }" +
-                "}").get(0);
+        Message.Mutable fields = new HashMapMessage();
+        Map<String, Object> ext = fields.getExt(true);
+        Map<String, Object> oortExt = new HashMap<String, Object>(3);
+        ext.put(EXT_OORT_FIELD, oortExt);
+        oortExt.put(EXT_OORT_URL_FIELD, getURL());
+        oortExt.put(EXT_OORT_SECRET_FIELD, b64Secret);
+        oortExt.put(EXT_COMET_URL_FIELD, cometURL);
         connectComet(comet, fields);
         return comet;
     }
@@ -460,7 +459,8 @@ public class Oort extends AbstractLifeCycle
 
     protected void joinComets(String cometURL, Message message)
     {
-        Object[] array = (Object[])message.getData();
+        Object data = message.getData();
+        Object[] array = data instanceof List ? ((List)data).toArray() : (Object[])data;
         Set<String> comets = new HashSet<String>();
         for (Object o : array)
             comets.add(o.toString());

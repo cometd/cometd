@@ -119,6 +119,10 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         final CountDownLatch suspendLatch = new CountDownLatch(1);
         bayeux.setTransports(new JSONTransport(bayeux)
         {
+            {
+                init();
+            }
+
             @Override
             protected ServerMessage.Mutable bayeuxServerHandle(ServerSessionImpl session, ServerMessage.Mutable message)
             {

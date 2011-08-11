@@ -14,23 +14,17 @@
  * limitations under the License.
  */
 
-package org.cometd.server.websocket;
+package org.cometd.server;
 
-import org.cometd.server.BayeuxServerImpl;
-import org.eclipse.jetty.util.log.Log;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.common.JSONContext;
+import org.cometd.common.JacksonJSONContext;
 
-/**
- * @deprecated use org.cometd.websocket.server.WebSocketTransport
- */
-@Deprecated
-public class WebSocketTransport extends org.cometd.websocket.server.WebSocketTransport
+public class JacksonJSONContextServer extends JacksonJSONContext<ServerMessage.Mutable, ServerMessageImpl> implements JSONContext.Server
 {
+    @Override
+    protected Class<ServerMessageImpl[]> rootArrayClass()
     {
-        Log.warn("Deprecated org.cometd.server.websocket.WebSocketTransport, use org.cometd.websocket.server.WebSocketTransport");
-    }
-
-    public WebSocketTransport(BayeuxServerImpl bayeux)
-    {
-        super(bayeux);
+        return ServerMessageImpl[].class;
     }
 }

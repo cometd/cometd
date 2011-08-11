@@ -16,15 +16,14 @@
 
 package org.cometd.server.authorizer;
 
-import java.util.List;
-
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.common.HashMapMessage;
+import org.cometd.common.JSONContext;
+import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
@@ -75,9 +74,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
         Assert.assertEquals(200, publish.getResponseStatus());
 
-        List<Message.Mutable> messages = HashMapMessage.parseMessages(publish.getResponseContent());
-        Assert.assertEquals(1, messages.size());
-        Message message = messages.get(0);
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
+        Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
+        Assert.assertEquals(1, messages.length);
+        Message message = messages[0];
         Assert.assertFalse(message.isSuccessful());
 
         publish = newBayeuxExchange("[{" +
@@ -89,9 +89,9 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
         Assert.assertEquals(200, publish.getResponseStatus());
 
-        messages = HashMapMessage.parseMessages(publish.getResponseContent());
-        Assert.assertEquals(1, messages.size());
-        message = messages.get(0);
+        messages = jsonContext.parse(publish.getResponseContent());
+        Assert.assertEquals(1, messages.length);
+        message = messages[0];
         Assert.assertTrue(message.isSuccessful());
     }
 
@@ -134,9 +134,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
         Assert.assertEquals(200, publish.getResponseStatus());
 
-        List<Message.Mutable> messages = HashMapMessage.parseMessages(publish.getResponseContent());
-        Assert.assertEquals(1, messages.size());
-        Message message = messages.get(0);
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
+        Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
+        Assert.assertEquals(1, messages.length);
+        Message message = messages[0];
         Assert.assertFalse(message.isSuccessful());
 
         // Check that publishing to another channel does not involve authorizers
@@ -149,9 +150,9 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, grantedPublish.waitForDone());
         Assert.assertEquals(200, grantedPublish.getResponseStatus());
 
-        messages = HashMapMessage.parseMessages(grantedPublish.getResponseContent());
-        Assert.assertEquals(1, messages.size());
-        message = messages.get(0);
+        messages = jsonContext.parse(grantedPublish.getResponseContent());
+        Assert.assertEquals(1, messages.length);
+        message = messages[0];
         Assert.assertTrue(message.isSuccessful());
     }
 
@@ -179,9 +180,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
         Assert.assertEquals(200, publish.getResponseStatus());
 
-        List<Message.Mutable> messages = HashMapMessage.parseMessages(publish.getResponseContent());
-        Assert.assertEquals(1, messages.size());
-        Message message = messages.get(0);
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
+        Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
+        Assert.assertEquals(1, messages.length);
+        Message message = messages[0];
         Assert.assertTrue(message.isSuccessful());
     }
 
@@ -231,9 +233,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
         Assert.assertEquals(200, publish.getResponseStatus());
 
-        List<Message.Mutable> messages = HashMapMessage.parseMessages(publish.getResponseContent());
-        Assert.assertEquals(1, messages.size());
-        Message message = messages.get(0);
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
+        Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
+        Assert.assertEquals(1, messages.length);
+        Message message = messages[0];
         Assert.assertFalse(message.isSuccessful());
 
         // Check that publishing to another channel does not involve authorizers
@@ -246,9 +249,9 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, grantedPublish.waitForDone());
         Assert.assertEquals(200, grantedPublish.getResponseStatus());
 
-        messages = HashMapMessage.parseMessages(grantedPublish.getResponseContent());
-        Assert.assertEquals(1, messages.size());
-        message = messages.get(0);
+        messages = jsonContext.parse(grantedPublish.getResponseContent());
+        Assert.assertEquals(1, messages.length);
+        message = messages[0];
         Assert.assertTrue(message.isSuccessful());
     }
 
@@ -299,9 +302,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
         Assert.assertEquals(200, publish.getResponseStatus());
 
-        List<Message.Mutable> messages = HashMapMessage.parseMessages(publish.getResponseContent());
-        Assert.assertEquals(1, messages.size());
-        Message message = messages.get(0);
+        JSONContext.Client jsonContext = new JettyJSONContextClient();
+        Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
+        Assert.assertEquals(1, messages.length);
+        Message message = messages[0];
         Assert.assertTrue(message.isSuccessful());
 
         // Check that publishing again fails (the authorizer has been removed)
@@ -314,9 +318,9 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, grantedPublish.waitForDone());
         Assert.assertEquals(200, grantedPublish.getResponseStatus());
 
-        messages = HashMapMessage.parseMessages(grantedPublish.getResponseContent());
-        Assert.assertEquals(1, messages.size());
-        message = messages.get(0);
+        messages = jsonContext.parse(grantedPublish.getResponseContent());
+        Assert.assertEquals(1, messages.length);
+        message = messages[0];
         Assert.assertFalse(message.isSuccessful());
     }
 }

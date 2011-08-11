@@ -46,6 +46,7 @@ public interface Message extends Map<String, Object>
     public static final String SUPPORTED_CONNECTION_TYPES_FIELD = "supportedConnectionTypes";
     public static final String RECONNECT_FIELD = "reconnect";
     public static final String INTERVAL_FIELD = "interval";
+    public static final String TIMEOUT_FIELD = "timeout";
     public static final String RECONNECT_RETRY_VALUE = "retry";
     public static final String RECONNECT_HANDSHAKE_VALUE = "handshake";
     public static final String RECONNECT_NONE_VALUE = "none";

@@ -16,12 +16,12 @@
 
 package org.cometd.client.ext;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSession.Extension;
-import org.eclipse.jetty.util.ajax.JSON;
 
 public class TimesyncClientExtension implements Extension
 {
@@ -68,7 +68,10 @@ public class TimesyncClientExtension implements Extension
     {
         Map<String,Object> ext=message.getExt(true);
         long now = System.currentTimeMillis();
-        JSON.Literal timesync=new JSON.Literal("{\"tc\":"+now+",\"l\":"+_lag+",\"o\":"+_offset+"}");
+        Map<String, Object> timesync = new HashMap<String, Object>(3);
+        timesync.put("tc", now);
+        timesync.put("l", _lag);
+        timesync.put("o", _offset);
         ext.put("timesync",timesync);
         return true;
     }

@@ -228,7 +228,7 @@ public class BayeuxClientTest
             latch.set(new CountDownLatch(1));
             Assert.assertFalse(latch.get().await(client.getBackoffIncrement() * 2, TimeUnit.MILLISECONDS));
 
-            Assert.assertEquals(BayeuxClient.State.DISCONNECTED, client.getState());
+            Assert.assertTrue(client.waitFor(1000, State.DISCONNECTED));
         }
         finally
         {

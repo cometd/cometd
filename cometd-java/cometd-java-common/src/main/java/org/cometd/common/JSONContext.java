@@ -14,23 +14,32 @@
  * limitations under the License.
  */
 
-package org.cometd.server.websocket;
+package org.cometd.common;
 
-import org.cometd.server.BayeuxServerImpl;
-import org.eclipse.jetty.util.log.Log;
+import java.io.Reader;
+import java.text.ParseException;
 
-/**
- * @deprecated use org.cometd.websocket.server.WebSocketTransport
- */
-@Deprecated
-public class WebSocketTransport extends org.cometd.websocket.server.WebSocketTransport
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.ServerMessage;
+
+public interface JSONContext
 {
+    public interface Client extends JSONParserGenerator<Message.Mutable>
     {
-        Log.warn("Deprecated org.cometd.server.websocket.WebSocketTransport, use org.cometd.websocket.server.WebSocketTransport");
     }
 
-    public WebSocketTransport(BayeuxServerImpl bayeux)
+    public interface Server extends JSONParserGenerator<ServerMessage.Mutable>
     {
-        super(bayeux);
     }
+}
+
+interface JSONParserGenerator<T extends Message.Mutable>
+{
+    public T[] parse(Reader reader) throws ParseException;
+
+    public T[] parse(String json) throws ParseException;
+
+    public String generate(T message);
+
+    public String generate(T[] messages);
 }

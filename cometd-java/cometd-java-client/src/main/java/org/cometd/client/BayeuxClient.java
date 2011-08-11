@@ -289,7 +289,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     /**
      * @return the current state of this {@link BayeuxClient}
      */
-    public State getState()
+    protected State getState()
     {
         return bayeuxClientState.get().type;
     }
@@ -303,7 +303,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     {
         initialize();
 
-        final List<String> allowedTransports = getAllowedTransports();
+        List<String> allowedTransports = getAllowedTransports();
         // Pick the first transport for the handshake, it will renegotiate if not right
         final ClientTransport initialTransport = transportRegistry.negotiate(allowedTransports.toArray(), BAYEUX_VERSION).get(0);
         initialTransport.init();
@@ -596,7 +596,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         logger.debug("Processing handshake {}", handshake);
         if (handshake.isSuccessful())
         {
-            Object[] serverTransports = (Object[])handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD);
+            Object field = handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD);
+            Object[] serverTransports = field instanceof List ? ((List)field).toArray() : (Object[])field;
             List<ClientTransport> negotiatedTransports = transportRegistry.negotiate(serverTransports, BAYEUX_VERSION);
             final ClientTransport newTransport = negotiatedTransports.isEmpty() ? null : negotiatedTransports.get(0);
             if (newTransport == null)

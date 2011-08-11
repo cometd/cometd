@@ -185,6 +185,7 @@ public class ServerChannelTest
     @Test
     public void testPublish() throws Exception
     {
+        _bayeux.start();
         _bayeux.createIfAbsent("/foo/bar");
         _bayeux.createIfAbsent("/foo/*");
         _bayeux.createIfAbsent("/**");
@@ -284,6 +285,7 @@ public class ServerChannelTest
     @Test
     public void testPublishFromSweptChannelSucceeds() throws Exception
     {
+        _bayeux.start();
         _bayeux.createIfAbsent("/foo/**");
         ServerChannelImpl fooStarStar = (ServerChannelImpl)_bayeux.getChannel("/foo/**");
 

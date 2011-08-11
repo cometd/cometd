@@ -16,13 +16,13 @@
 
 package org.cometd.server.ext;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
-import org.eclipse.jetty.util.ajax.JSON;
 
 /* ------------------------------------------------------------ */
 /**
@@ -154,7 +154,10 @@ public class TimesyncExtension implements Extension
                     {
                         // old style timesync
                         Map<String,Object> extOut=message.getExt(true);
-                        JSON.Literal timesync=new JSON.Literal("{\"tc\":" + tc + ",\"ts\":" + ts + ",\"p\":" + (System.currentTimeMillis() - ts) + "}");
+                        Map<String, Object> timesync = new HashMap<String, Object>(3);
+                        timesync.put("tc", tc);
+                        timesync.put("ts", ts);
+                        timesync.put("p", System.currentTimeMillis() - ts);
                         extOut.put("timesync",timesync);
                     }
                     else
@@ -167,9 +170,11 @@ public class TimesyncExtension implements Extension
                         if (l == 0 || a >= _accuracyTarget || a <= -_accuracyTarget)
                         {
                             Map<String,Object> extOut = message.getExt(true);
-                            JSON.Literal timesync=new JSON.Literal("{\"tc\":" + tc + ",\"ts\":" + ts + ",\"p\":" + (System.currentTimeMillis() - ts)
-                                    + ",\"a\":" + a + "}");
-
+                            Map<String, Object> timesync = new HashMap<String, Object>(4);
+                            timesync.put("tc", tc);
+                            timesync.put("ts", ts);
+                            timesync.put("p", System.currentTimeMillis() - ts);
+                            timesync.put("a", a);
                             extOut.put("timesync",timesync);
                         }
                     }
