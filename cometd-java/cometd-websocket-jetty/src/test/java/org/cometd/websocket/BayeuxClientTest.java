@@ -37,109 +37,14 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.BayeuxClient.State;
 import org.cometd.common.HashMapMessage;
-import org.cometd.server.CometdServlet;
 import org.cometd.server.DefaultSecurityPolicy;
-import org.cometd.websocket.client.WebSocketTransport;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.log.Log;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestWatchman;
-import org.junit.runners.model.FrameworkMethod;
 
-public class BayeuxClientTest
+public class BayeuxClientTest extends ClientServerWebSocketTest
 {
-    private boolean stress = Boolean.getBoolean("STRESS");
-    private Random random = new Random();
-
-    protected Connector connector;
-    protected Server server;
-    protected ServletContextHandler context;
-    protected String cometdURL;
-    protected BayeuxServer bayeux;
-
-    @Rule
-    public final TestWatchman testName = new TestWatchman()
-    {
-        @Override
-        public void starting(FrameworkMethod method)
-        {
-            super.starting(method);
-            Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
-        }
-    };
-
-    public void startServer(Map<String, String> initParams) throws Exception
-    {
-        server = new Server();
-
-        connector = new SelectChannelConnector();
-        connector.setMaxIdleTime(30000);
-        server.addConnector(connector);
-
-        String contextPath = "";
-        context = new ServletContextHandler(server, contextPath,ServletContextHandler.SESSIONS);
-
-        // CometD servlet
-        ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
-        cometdServletHolder.setInitParameter("transports", org.cometd.websocket.server.WebSocketTransport.class.getName());
-        cometdServletHolder.setInitParameter("allowedTransports", "websocket");
-        cometdServletHolder.setInitParameter("timeout", "10000");
-        if (debugTests())
-            cometdServletHolder.setInitParameter("logLevel", "3");
-        cometdServletHolder.setInitOrder(1);
-        if (initParams != null)
-        {
-            for (Map.Entry<String, String> entry : initParams.entrySet())
-                cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
-        }
-
-        String cometdServletPath = "/cometd";
-        context.addServlet(cometdServletHolder, cometdServletPath + "/*");
-
-        server.start();
-        // server.dumpStdErr();
-
-        int port = connector.getLocalPort();
-        cometdURL = "http://localhost:" + port + contextPath + cometdServletPath;
-
-        bayeux = (BayeuxServer)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-
-    }
-
-    protected BayeuxClient newBayeuxClient()
-    {
-        System.err.println("newBayeuxClient "+cometdURL);
-        final BayeuxClient client = new BayeuxClient(cometdURL, WebSocketTransport.create(null));
-        client.setDebugEnabled(debugTests());
-        return client;
-    }
-
-    protected void disconnectBayeuxClient(BayeuxClient client)
-    {
-        client.disconnect(5000);
-    }
-
-    @After
-    public void stopServer() throws Exception
-    {
-        server.stop();
-        server.join();
-    }
-
-    protected boolean debugTests()
-    {
-        return Boolean.getBoolean("debugTests");
-    }
-
     @Before
     public void setUp() throws Exception
     {
@@ -242,6 +147,9 @@ public class BayeuxClientTest
     @Test
     public void testPerf() throws Exception
     {
+        boolean stress = Boolean.getBoolean("STRESS");
+        Random random = new Random();
+
         final int rooms = stress ? 100 : 10;
         final int publish = stress ? 4000 : 100;
         final int batch = stress ? 10 : 2;
@@ -304,7 +212,7 @@ public class BayeuxClientTest
 
             String data = "data from " + sender + " to " + channel;
             // System.err.println(data);
-            clients[sender].getChannel(channel).publish(data, "" + i);
+            clients[sender].getChannel(channel).publish(data);
 
             if (i % batch == (batch - 1))
             {

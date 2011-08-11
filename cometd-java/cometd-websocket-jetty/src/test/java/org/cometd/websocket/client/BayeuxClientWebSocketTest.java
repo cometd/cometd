@@ -16,9 +16,11 @@
 
 package org.cometd.websocket.client;
 
+import java.net.ConnectException;
 import java.net.ProtocolException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -38,12 +40,16 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         bayeux.setAllowedTransports("long-polling");
 
-        final BayeuxClient client = new BayeuxClient(cometdURL, WebSocketTransport.create(null), LongPollingTransport.create(null))
+        WebSocketTransport webSocketTransport = WebSocketTransport.create(null);
+        webSocketTransport.setDebugEnabled(debugTests());
+        LongPollingTransport longPollingTransport = LongPollingTransport.create(null);
+        longPollingTransport.setDebugEnabled(debugTests());
+        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
         {
             @Override
             public void onFailure(Throwable x, Message[] messages)
             {
-                // Expect a ProtocolException and suppress stack trace
+                // Expect exception and suppress stack trace logging
                 if (!(x instanceof ProtocolException))
                     super.onFailure(x, messages);
             }
@@ -68,11 +74,101 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         Assert.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
 
-        // Allow long polling to establish for a clean disconnect
-        Thread.sleep(1000);
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testClientRetriesWebSocketTransportIfCannotConnect() throws Exception
+    {
+        startServer(null);
+        int port = connector.getLocalPort();
+        stopServer();
+
+        final CountDownLatch connectLatch = new CountDownLatch(2);
+        WebSocketTransport webSocketTransport = WebSocketTransport.create(null);
+        webSocketTransport.setDebugEnabled(debugTests());
+        LongPollingTransport longPollingTransport = LongPollingTransport.create(null);
+        longPollingTransport.setDebugEnabled(debugTests());
+        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
+        {
+            @Override
+            protected boolean sendConnect()
+            {
+                if ("websocket".equals(getTransport().getName()))
+                    connectLatch.countDown();
+                return super.sendConnect();
+            }
+
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                // Expect exception and suppress stack trace logging
+                if (!(x instanceof ConnectException))
+                    super.onFailure(x, messages);
+            }
+        };
+        client.setDebugEnabled(debugTests());
+
+        final CountDownLatch failedLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (!message.isSuccessful())
+                    failedLatch.countDown();
+            }
+        });
+
+        client.handshake();
+
+        Assert.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
+
+        connector.setPort(port);
+        server.start();
+
+        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
 
+    @Test
+    public void testAbortThenRestart() throws Exception
+    {
+        startServer(null);
 
+        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(2));
+        WebSocketTransport webSocketTransport = WebSocketTransport.create(null);
+        webSocketTransport.setDebugEnabled(debugTests());
+        BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport)
+        {
+            @Override
+            public void onSending(Message[] messages)
+            {
+                // Need to be sure that the second connect is sent otherwise
+                // the abort and rehandshake may happen before the second
+                // connect and the test will fail.
+                super.onSending(messages);
+                if (messages.length == 1 && Channel.META_CONNECT.equals(messages[0].getChannel()))
+                    connectLatch.get().countDown();
+            }
+        };
+        client.setDebugEnabled(debugTests());
+        client.handshake();
+
+        // Wait for connect
+        Assert.assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+
+        client.abort();
+        Assert.assertFalse(client.isConnected());
+
+        // Restart
+        connectLatch.set(new CountDownLatch(2));
+        client.handshake();
+        Assert.assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(client.isConnected());
+
+        disconnectBayeuxClient(client);
+    }
+
+    // TODO: add test for expiration of a message
 }

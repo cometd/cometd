@@ -63,12 +63,11 @@ public abstract class ClientServerWebSocketTest
         server.addConnector(connector);
 
         String contextPath = "";
-        context = new ServletContextHandler(server, contextPath);
+        context = new ServletContextHandler(server, contextPath, true, false);
 
         // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
         cometdServletHolder.setInitParameter("transports", org.cometd.websocket.server.WebSocketTransport.class.getName());
-//        cometdServletHolder.setInitParameter("allowedTransports", "websocket");
         cometdServletHolder.setInitParameter("timeout", "10000");
         if (debugTests())
             cometdServletHolder.setInitParameter("logLevel", "3");
@@ -94,14 +93,16 @@ public abstract class ClientServerWebSocketTest
 
     protected BayeuxClient newBayeuxClient()
     {
-        final BayeuxClient client = new BayeuxClient(cometdURL, WebSocketTransport.create(null));
+        WebSocketTransport transport = WebSocketTransport.create(null);
+        transport.setDebugEnabled(debugTests());
+        final BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.setDebugEnabled(debugTests());
         return client;
     }
 
     protected void disconnectBayeuxClient(BayeuxClient client)
     {
-        client.disconnect(5000);
+        client.disconnect(1000);
     }
 
     @After

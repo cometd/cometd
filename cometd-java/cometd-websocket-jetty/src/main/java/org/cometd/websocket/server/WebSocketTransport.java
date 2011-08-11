@@ -38,10 +38,8 @@ import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerMessageImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.transport.HttpTransport;
-import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketFactory;
@@ -66,14 +64,17 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     @Override
     public void init()
     {
+        super.init();
+
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
         _factory.setBufferSize(getOption(BUFFER_SIZE_OPTION, _factory.getBufferSize()));
 
+        // TODO: remove this code
         // Change the default values for this transport to better suited ones
         // but only if they were not specifically set for this transport
-        setTimeout(getOption(PREFIX + "." + TIMEOUT_OPTION, 15000L));
-        setInterval(getOption(PREFIX + "." + INTERVAL_OPTION, 2500L));
-        setMaxInterval(getOption(PREFIX + "." + MAX_INTERVAL_OPTION, 15000L));
+//        setTimeout(getOption(PREFIX + "." + TIMEOUT_OPTION, 15000L));
+//        setInterval(getOption(PREFIX + "." + INTERVAL_OPTION, 2500L));
+//        setMaxInterval(getOption(PREFIX + "." + MAX_INTERVAL_OPTION, 15000L));
     }
 
     @Override
@@ -163,11 +164,6 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             }
         }
 
-        public void onError(String message, Throwable ex)
-        {
-            getBayeux().getLogger().warn("Websocket error: " + message, ex);
-        }
-
         public void onMessage(String data)
         {
             boolean batch = false;
@@ -176,7 +172,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 WebSocketTransport.this._handshake.set(_addresses);
                 getBayeux().setCurrentTransport(WebSocketTransport.this);
 
-                ServerMessage.Mutable[] messages = ServerMessageImpl.parseServerMessages(data);
+                ServerMessage.Mutable[] messages = parseMessages(data);
 
                 for (ServerMessage.Mutable message : messages)
                 {
@@ -223,7 +219,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                         }
                         else if (!was_connected)
                         {
-                            _session.startIntervalTimeout();
+                            _session.startIntervalTimeout(getInterval());
                         }
                     }
 
@@ -237,7 +233,9 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                             _session.addQueue(reply);
                         }
                         else
+                        {
                             send(reply);
+                        }
                     }
 
                     // disassociate the reply
@@ -269,6 +267,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         public void cancel()
         {
+            // TODO: we must have a state to detect if we're shutting down, and if so, close the connection
         }
 
         public void schedule()
@@ -285,7 +284,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 {
                     queue.add(getBayeux().extendReply(session, session, _connectReply));
                     _connectReply = null;
-                    session.startIntervalTimeout();
+                    session.startIntervalTimeout(getInterval());
                 }
                 try
                 {
@@ -301,14 +300,22 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         protected void send(List<ServerMessage> messages) throws IOException
         {
-            String data = JSON.toString(messages);
-            _connection.sendMessage(data);
+            StringBuilder builder = new StringBuilder(messages.size() * 4 * 32).append("[");
+            for (int i = 0; i < messages.size(); i++)
+            {
+                if (i > 0)
+                    builder.append(",");
+                ServerMessage serverMessage = messages.get(i);
+                builder.append(serverMessage.getJSON());
+            }
+            builder.append("]");
+            _connection.sendMessage(builder.toString());
         }
 
         protected void send(ServerMessage message) throws IOException
         {
-            String data = message.getJSON();
-            _connection.sendMessage("[" + data + "]");
+            StringBuilder builder = new StringBuilder(message.size() * 32).append("[").append(message.getJSON()).append("]");
+            _connection.sendMessage(builder.toString());
         }
     }
 

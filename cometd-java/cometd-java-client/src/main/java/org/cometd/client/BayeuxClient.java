@@ -1141,9 +1141,19 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 {
                     List<ClientTransport> transports = transportRegistry.negotiate(getAllowedTransports().toArray(), BAYEUX_VERSION);
                     if (transports.isEmpty())
+                    {
                         return new DisconnectedState(oldState.transport);
+                    }
                     else
-                        return new RehandshakingState(oldState.handshakeFields, transports.get(0), oldState.nextBackoff());
+                    {
+                        ClientTransport newTransport = transports.get(0);
+                        if (newTransport != oldState.transport)
+                        {
+                            oldState.transport.reset();
+                            newTransport.init();
+                        }
+                        return new RehandshakingState(oldState.handshakeFields, newTransport, oldState.nextBackoff());
+                    }
                 }
             });
             super.onFailure(x, messages);
