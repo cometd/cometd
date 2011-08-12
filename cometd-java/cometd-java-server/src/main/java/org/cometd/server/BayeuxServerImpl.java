@@ -1112,6 +1112,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public void addTransport(ServerTransport transport)
     {
+        _logger.info("addTransport {} from {}",transport.getName(),transport.getClass());
         _transports.put(transport.getName(), transport);
     }
 
@@ -1144,12 +1145,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public void setAllowedTransports(List<String> allowed)
     {
+        _logger.debug("setAllowedTransport {} of {}",allowed,_transports);
         _allowedTransports.clear();
         for (String transport : allowed)
         {
             if (_transports.containsKey(transport))
                 _allowedTransports.add(transport);
         }
+        _logger.debug("allowedTransports ",_allowedTransports);
     }
 
     /* ------------------------------------------------------------ */

@@ -66,7 +66,7 @@
         </init-param>
         <init-param>
             <param-name>transports</param-name>
-            <param-value>org.cometd.server.websocket.WebSocketTransport</param-value>
+            <param-value>org.cometd.websocket.server.WebSocketTransport</param-value>
         </init-param>
         <init-param>
             <param-name>services</param-name>

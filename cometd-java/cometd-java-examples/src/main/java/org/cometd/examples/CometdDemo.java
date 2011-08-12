@@ -116,7 +116,7 @@ public class CometdDemo
         comet.setInitParameter("multiFrameInterval","5000");
         comet.setInitParameter("logLevel","1");
         comet.setInitParameter("services","org.cometd.examples.ChatService");
-        comet.setInitParameter("transports","org.cometd.server.websocket.WebSocketTransport");
+        comet.setInitParameter("transports","org.cometd.websocket.server.WebSocketTransport");
         comet.setInitOrder(2);
 
         ServletHolder demo=context.addServlet(CometdDemoServlet.class, "/demo");

@@ -74,42 +74,47 @@ public class CometdServlet extends HttpServlet
             {
                 export = true;
                 _bayeux = newBayeuxServer();
-
+                
+                String value=getInitParameter("transports");
+                if (value!=null)
+                {
+                    ClassLoader loader = Thread.currentThread().getContextClassLoader();
+                    if (loader == null)
+                        loader = this.getClass().getClassLoader();
+                    for (String className : value.split(","))
+                    {
+                        className = className.trim();
+                        try
+                        {
+                            Class<? extends ServerTransport> transportClass = (Class<? extends ServerTransport>)loader.loadClass(className);
+                            Constructor<? extends ServerTransport> constructor = transportClass.getConstructor(BayeuxServerImpl.class);
+                            ServerTransport transport = constructor.newInstance(_bayeux);
+                            _bayeux.addTransport(transport);
+                        }
+                        catch (Throwable x)
+                        {
+                            _bayeux.getLogger().warn("Failed to add transport " + className, x);
+                        }
+                    }
+                }
+                
+                value=getInitParameter("allowedTransports");
+                if (value!=null)
+                {
+                    String[] allowedTransports = value.split(",");
+                    for (int i = 0; i < allowedTransports.length; ++i)
+                        allowedTransports[i] = allowedTransports[i].trim();
+                    _bayeux.setAllowedTransports(allowedTransports);
+                }
+                
                 // Transfer all servlet init parameters to the BayeuxServer implementation
                 for (Enumeration initParameterNames = getInitParameterNames(); initParameterNames.hasMoreElements();)
                 {
                     String initParameterName = (String)initParameterNames.nextElement();
-                    String value = getInitParameter(initParameterName);
+                    value = getInitParameter(initParameterName);
 
-                    if ("transports".equals(initParameterName))
-                    {
-                        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                        if (loader == null)
-                            loader = this.getClass().getClassLoader();
-                        for (String className : value.split(","))
-                        {
-                            className = className.trim();
-                            try
-                            {
-                                Class<? extends ServerTransport> transportClass = (Class<? extends ServerTransport>)loader.loadClass(className);
-                                Constructor<? extends ServerTransport> constructor = transportClass.getConstructor(BayeuxServerImpl.class);
-                                ServerTransport transport = constructor.newInstance(_bayeux);
-                                _bayeux.addTransport(transport);
-                            }
-                            catch (Throwable x)
-                            {
-                                _bayeux.getLogger().warn("Failed to add transport " + className, x);
-                            }
-                        }
-                    }
-                    else if ("allowedTransports".equalsIgnoreCase(initParameterName))
-                    {
-                        String[] allowedTransports = value.split(",");
-                        for (int i = 0; i < allowedTransports.length; ++i)
-                            allowedTransports[i] = allowedTransports[i].trim();
-                        _bayeux.setAllowedTransports(allowedTransports);
-                    }
-                    else
+                    if (!"transports".equals(initParameterName) &&
+                        !"allowedTransports".equalsIgnoreCase(initParameterName))
                     {
                         _bayeux.setOption(initParameterName, value);
                     }

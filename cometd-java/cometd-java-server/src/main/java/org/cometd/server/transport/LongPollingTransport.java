@@ -315,7 +315,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                 finally
                                 {
                                     if (reply != null && session.isConnected())
-                                        session.startIntervalTimeout();
+                                        session.startIntervalTimeout(getInterval());
                                 }
                             }
                             else
@@ -389,7 +389,7 @@ public abstract class LongPollingTransport extends HttpTransport
                 // throws an exception (for example because the client is gone), so that
                 // we start the interval timeout that is important to sweep the session
                 if (session.isConnected())
-                    session.startIntervalTimeout();
+                    session.startIntervalTimeout(getInterval());
             }
 
             // Send the connect reply
