@@ -110,7 +110,7 @@ public class OortComet extends BayeuxClient
                     _oort.getLogger().debug("Republishing message {} from {}", message, _cometURL);
                     // BayeuxServer may sweep channels, so calling bayeux.getChannel(...)
                     // may return null, and therefore we use the client to send the message
-                    _oort.getOortSession().getChannel(message.getChannel()).publish(message.getData(), message.getId());
+                    _oort.getOortSession().getChannel(message.getChannel()).publish(message.getData());
                 }
             };
 

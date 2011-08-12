@@ -100,12 +100,12 @@ public class AckExtensionTest extends ClientServerTest
             public void run()
             {
                 for (int i = 0; i < count; ++i)
-                    client.getChannel(channelName).publish("hello", "id" + i);
+                    client.getChannel(channelName).publish("hello_" + i);
             }
         });
 
         for (int i = 0; i < count; ++i)
-            Assert.assertEquals("id" + i, messages.poll(5, TimeUnit.SECONDS).getId());
+            Assert.assertEquals("hello_" + i, messages.poll(5, TimeUnit.SECONDS).getData());
 
         int port = connector.getLocalPort();
         connector.stop();
@@ -115,7 +115,7 @@ public class AckExtensionTest extends ClientServerTest
 
         // Send messages while client is offline
         for (int i = count; i < 2 * count; ++i)
-            chatChannel.publish(null, "hello", "id" + i);
+            chatChannel.publish(null, "hello_" + i, null);
 
         TimeUnit.SECONDS.sleep(1);
         Assert.assertEquals(0, messages.size());
@@ -126,7 +126,7 @@ public class AckExtensionTest extends ClientServerTest
 
         // Check that the offline messages are received
         for (int i = count; i < 2 * count; ++i)
-            Assert.assertEquals("id" + i, messages.poll(5, TimeUnit.SECONDS).getId());
+            Assert.assertEquals("hello_" + i, messages.poll(5, TimeUnit.SECONDS).getData());
 
         // Send messages while client is online
         client.batch(new Runnable()
@@ -134,13 +134,13 @@ public class AckExtensionTest extends ClientServerTest
             public void run()
             {
                 for (int i = 2 * count; i < 3 * count; ++i)
-                    client.getChannel(channelName).publish("hello", "id" + i);
+                    client.getChannel(channelName).publish("hello_" + i);
             }
         });
 
         // Check if messages after reconnect are received
         for (int i = 2 * count; i < 3 * count; ++i)
-            Assert.assertEquals("id" + i, messages.poll(5, TimeUnit.SECONDS).getId());
+            Assert.assertEquals("hello_" + i, messages.poll(5, TimeUnit.SECONDS).getData());
 
         disconnectBayeuxClient(client);
     }

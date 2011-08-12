@@ -26,56 +26,102 @@ import org.cometd.bayeux.Message;
  * that is obtained by a call to {@link ClientSession#getChannel(String)}.</p>
  * <p>Typical usage examples are:</p>
  * <pre>
- *     clientSession.getChannel("/foo/bar").subscribe(mySubscriptionListener);
- *     clientSession.getChannel("/foo/bar").publish("Hello");
- *     clientSession.getChannel("/meta/*").addListener(myMetaChannelListener);
+ * clientSession.getChannel("/foo/bar").subscribe(mySubscriptionListener);
+ * clientSession.getChannel("/foo/bar").publish("Hello");
+ * clientSession.getChannel("/meta/*").addListener(myMetaChannelListener);
  * <pre>
  */
 public interface ClientSessionChannel extends Channel
 {
     /**
+     * <p>Adds a listener to this channel.</p>
+     * <p>If the listener is a {@link MessageListener}, it will be invoked
+     * if a message arrives to this channel.</p>
+     * <p>Adding a listener never involves communication with the server,
+     * differently from {@link #subscribe(MessageListener)}.</p>
+     * <p>Listeners are best suited to receive messages from
+     * {@link #isMeta() meta channels}.</p>
+     *
      * @param listener the listener to add
+     * @see #removeListener(ClientSessionChannelListener)
      */
-    void addListener(ClientSessionChannelListener listener);
+    public void addListener(ClientSessionChannelListener listener);
 
     /**
+     * <p>Removes the given {@code listener} from this channel.</p>
+     * <p>Removing a listener never involves communication with the server,
+     * differently from {@link #unsubscribe(MessageListener)}.</p>
+     *
      * @param listener the listener to remove
+     * @see #addListener(ClientSessionChannelListener)
      */
-    void removeListener(ClientSessionChannelListener listener);
+    public void removeListener(ClientSessionChannelListener listener);
 
     /**
      * @return the client session associated with this channel
      */
-    ClientSession getSession();
+    public ClientSession getSession();
 
     /**
-     * Equivalent to {@link #publish(Object, Object) publish(data, null)}.
+     * <p>Publishes the given {@code data} onto this channel.</p>
+     * <p>The {@code data} published must not be null and can be any object that
+     * can be natively converted to JSON (numbers, strings, arrays, lists, maps),
+     * or objects for which a JSON converter has been registered with the
+     * infrastructure responsible of the JSON conversion.</p>
+     *
      * @param data the data to publish
      */
-    void publish(Object data);
+    public void publish(Object data);
 
     /**
-     * Publishes the given {@code data} to this channel,
-     * optionally specifying the {@code messageId} to set on the
-     * publish message.
-     * @param data the data to publish
+     * <p>Same as {@link #publish(Object)}, but with the ability to specify the
+     * {@link Message#getId() id of the message} to send.</p>
+     *
+     * @param data      the data to publish
      * @param messageId the message id to set on the message, or null to let the
-     * implementation choose the message id.
-     * @see Message#getId()
+     *                  implementation choose the message id.
+     * @deprecated Use {@link #publish(Object)} instead. Specifying a messageId
+     *             other than null may cause performance slowdown in certain transports.
+     *             Information passed as the messageId should be passed into the data object instead.
      */
-    void publish(Object data, String messageId);
+    @Deprecated
+    public void publish(Object data, String messageId);
 
-    void subscribe(MessageListener listener);
+    /**
+     * <p>Subscribes the given {@code listener} to receive messages sent to this channel.</p>
+     * <p>Subscription involves communication with the server only for the first listener
+     * subscribed to this channel. Listeners registered after the first will not cause a message
+     * being sent to the server.</p>
+     *
+     * @param listener the listener to register and invoke when a message arrives on this channel.
+     * @see #unsubscribe(MessageListener)
+     * @see #addListener(ClientSessionChannelListener)
+     */
+    public void subscribe(MessageListener listener);
 
-    void unsubscribe(MessageListener listener);
+    /**
+     * <p>Unsubscribes the given {@code listener} from receiving messages sent to this channel.</p>
+     * <p>Unsubscription involves communication with the server only for the last listener
+     * unsubscribed from this channel.</p>
+     *
+     * @param listener the listener to unsubscribe
+     * @see #subscribe(MessageListener)
+     * @see #unsubscribe()
+     */
+    public void unsubscribe(MessageListener listener);
 
-    void unsubscribe();
+    /**
+     * <p>Unsubscribes all subscribers registered on this channel.</p>
+     *
+     * @see #subscribe(MessageListener)
+     */
+    public void unsubscribe();
 
     /**
      * <p>Represents a listener on a {@link ClientSessionChannel}.</p>
      * <p>Sub-interfaces specify the exact semantic of the listener.</p>
      */
-    interface ClientSessionChannelListener extends Bayeux.BayeuxListener
+    public interface ClientSessionChannelListener extends Bayeux.BayeuxListener
     {
     }
 
@@ -86,9 +132,10 @@ public interface ClientSessionChannel extends Channel
     {
         /**
          * Callback invoked when a message is received on the given {@code channel}.
+         *
          * @param channel the channel that received the message
          * @param message the message received
          */
-        void onMessage(ClientSessionChannel channel, Message message);
+        public void onMessage(ClientSessionChannel channel, Message message);
     }
 }

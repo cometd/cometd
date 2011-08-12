@@ -51,7 +51,6 @@ public class BayeuxLoadClient
     private final BenchmarkHelper helper = new BenchmarkHelper();
     private final List<LoadBayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<LoadBayeuxClient>());
     private final ConcurrentMap<Integer, AtomicInteger> rooms = new ConcurrentHashMap<Integer, AtomicInteger>();
-    private final AtomicLong messageIds = new AtomicLong();
     private final AtomicLong start = new AtomicLong();
     private final AtomicLong end = new AtomicLong();
     private final AtomicLong responses = new AtomicLong();
@@ -332,7 +331,7 @@ public class BayeuxLoadClient
                     message.put("user", clientIndex);
                     message.put("chat", chat);
                     message.put("start", System.nanoTime());
-                    clientChannel.publish(message, String.valueOf(messageIds.incrementAndGet()));
+                    clientChannel.publish(message);
                     expected += clientsPerRoom.get();
                 }
                 client.endBatch();
@@ -517,7 +516,6 @@ public class BayeuxLoadClient
 
     private void reset()
     {
-        messageIds.set(0L);
         start.set(0L);
         end.set(0L);
         responses.set(0L);

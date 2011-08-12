@@ -504,7 +504,7 @@ public class BayeuxClientTest extends ClientServerTest
 
             String data = "data from " + sender + " to " + channel;
             // System.err.println(data);
-            clients[sender].getChannel(channel).publish(data, "" + i);
+            clients[sender].getChannel(channel).publish(data);
 
             if (i % batch == (batch - 1))
             {
