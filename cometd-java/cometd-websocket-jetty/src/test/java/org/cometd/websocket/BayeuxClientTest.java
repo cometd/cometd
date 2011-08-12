@@ -55,7 +55,6 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
     public void testBatchingAfterHandshake() throws Exception
     {
         final BayeuxClient client = newBayeuxClient();
-        client.setDebugEnabled(debugTests());
         final AtomicBoolean connected = new AtomicBoolean();
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -105,7 +104,6 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
     public void testHandshakeDenied() throws Exception
     {
         BayeuxClient client = newBayeuxClient();
-        client.setDebugEnabled(debugTests());
         SecurityPolicy oldPolicy = bayeux.getSecurityPolicy();
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy()
         {
@@ -142,8 +140,6 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         }
     }
 
-
-
     @Test
     public void testPerf() throws Exception
     {
@@ -163,7 +159,6 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         {
             final AtomicBoolean connected = new AtomicBoolean();
             final BayeuxClient client = newBayeuxClient();
-            client.setDebugEnabled(debugTests());
             final String room = "/channel/" + (i % rooms);
             clients[i] = client;
 
@@ -259,7 +254,6 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         });
 
         BayeuxClient client = newBayeuxClient();
-        client.setDebugEnabled(debugTests());
         client.handshake();
         Assert.assertTrue(client.waitFor(10000, State.CONNECTED));
 
@@ -293,19 +287,29 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         });
 
         BayeuxClient client = newBayeuxClient();
-        client.setDebugEnabled(debugTests());
         long wait = 1000L;
         long start = System.nanoTime();
         client.handshake(wait);
         long stop = System.nanoTime();
         Assert.assertTrue(TimeUnit.NANOSECONDS.toMillis(stop - start) < wait);
         Assert.assertNotNull(client.getId());
+
         String data = "Hello World";
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.getChannel(channelName).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                latch.countDown();
+            }
+        });
         client.getChannel(channelName).publish(data);
 
         Assert.assertEquals(client.getId(), results.poll(1, TimeUnit.SECONDS));
         Assert.assertEquals(channelName, results.poll(1, TimeUnit.SECONDS));
         Assert.assertEquals(data, results.poll(1, TimeUnit.SECONDS));
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -314,7 +318,6 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
     public void testWaitForImpliedState() throws Exception
     {
         final BayeuxClient client = newBayeuxClient();
-        client.setDebugEnabled(debugTests());
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -331,8 +334,6 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
 
         disconnectBayeuxClient(client);
     }
-
-
 
     @Test
     public void testAuthentication() throws Exception
@@ -376,7 +377,6 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         try
         {
             BayeuxClient client = newBayeuxClient();
-            client.setDebugEnabled(debugTests());
 
             Map<String, Object> authentication = new HashMap<String, Object>();
             authentication.put("token", "1234567890");
@@ -401,77 +401,73 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
     @Test
     public void testClient() throws Exception
     {
-        final BlockingArrayQueue<Object> results = new BlockingArrayQueue<Object>();
-
         BayeuxClient client = newBayeuxClient();
-        client.setDebugEnabled(debugTests());
 
-        final AtomicBoolean connected = new AtomicBoolean();
-
-        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                connected.set(message.isSuccessful());
-            }
-        });
-
+        final CountDownLatch handshakeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                connected.set(false);
+                System.err.println("<<" + message + " @ " + channel);
+                if (message.isSuccessful())
+                    handshakeLatch.countDown();
             }
         });
-
-        client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
+        final CountDownLatch connectLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 System.err.println("<<" + message + " @ " + channel);
-                results.offer(message);
+                if (message.isSuccessful())
+                    connectLatch.countDown();
+            }
+        });
+        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                System.err.println("<<" + message + " @ " + channel);
+                if (message.isSuccessful())
+                    subscribeLatch.countDown();
+            }
+        });
+        final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                System.err.println("<<" + message + " @ " + channel);
+                if (message.isSuccessful())
+                    unsubscribeLatch.countDown();
             }
         });
 
         client.handshake();
+        Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
-        Message message = (Message)results.poll(1, TimeUnit.SECONDS);
-        Assert.assertNotNull(message);
-        Assert.assertEquals(Channel.META_HANDSHAKE, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
-        String id = client.getId();
-        Assert.assertNotNull(id);
-
-        message = (Message)results.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(Channel.META_CONNECT, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
-
+        final CountDownLatch publishLatch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener subscriber = new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                System.err.println("a<" + message + " @ " + channel);
-                results.offer(message);
+                System.err.println(" <" + message + " @ " + channel);
+                publishLatch.countDown();
             }
         };
         ClientSessionChannel aChannel = client.getChannel("/a/channel");
         aChannel.subscribe(subscriber);
-
-        message = (Message)results.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
+        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         String data = "data";
         aChannel.publish(data);
-        message = (Message)results.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(data, message.getData());
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         aChannel.unsubscribe(subscriber);
-        message = (Message)results.poll(1, TimeUnit.SECONDS);
-        Assert.assertEquals(Channel.META_UNSUBSCRIBE, message.getChannel());
-        Assert.assertTrue(message.isSuccessful());
+        Assert.assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
-
 }

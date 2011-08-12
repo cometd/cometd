@@ -164,7 +164,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     {
         Connection connection = _connection;
         _connection = null;
-        if (connection != null)
+        if (connection != null && connection.isOpen())
         {
             _logger.debug("Disconnecting websocket connection {}", connection);
             connection.disconnect();
@@ -345,7 +345,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         else
         {
             // Check if it is a publish reply
-            if (message.getData() == null)
+            if (isPublishReply(message))
             {
                 synchronized (this)
                 {
@@ -372,15 +372,23 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _logger.debug("Deregistering {} for response {}", exchange, message);
 
         if (exchange != null)
-            exchange.task.cancel(true);
+            exchange.task.cancel(false);
 
         return exchange;
     }
 
-    private void failMessages()
+    private boolean isReply(Message message)
     {
-        IOException cause = new IOException("Failed");
+        return message.isMeta() || isPublishReply(message);
+    }
 
+    private boolean isPublishReply(Message message)
+    {
+        return !message.containsKey(Message.DATA_FIELD);
+    }
+
+    private void failMessages(Throwable cause)
+    {
         List<WebSocketExchange> exchanges = new ArrayList<WebSocketExchange>(_metaExchanges.values());
         for (WebSocketExchange exchange : exchanges)
         {
@@ -419,7 +427,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             Connection connection = _connection;
             _connection = null;
             _logger.debug("Closed websocket connection with code {}: {} ", closeCode, connection);
-            failMessages();
+            failMessages(new IOException("Connection closed with code " + closeCode));
         }
 
         public void onMessage(String data)
@@ -437,11 +445,18 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                         if (advice != null && advice.get("timeout") != null)
                             _advice = advice;
                     }
-                    WebSocketExchange exchange = deregisterMessage(message);
-                    if (exchange != null)
-                        exchange.listener.onMessages(Collections.singletonList(message));
+
+                    if (isReply(message))
+                    {
+                        WebSocketExchange exchange = deregisterMessage(message);
+                        if (exchange != null)
+                            exchange.listener.onMessages(Collections.singletonList(message));
+                        // If the exchange is missing, then the message has expired, and we do not notify
+                    }
                     else
+                    {
                         _listener.onMessages(Collections.singletonList(message));
+                    }
                 }
             }
             catch (ParseException x)
