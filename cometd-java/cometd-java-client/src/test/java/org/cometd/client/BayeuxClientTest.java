@@ -862,6 +862,7 @@ public class BayeuxClientTest extends ClientServerTest
         // Wait for connect
         Assert.assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
         Assert.assertTrue(client.isConnected());
+        Thread.sleep(1000);
 
         // Stop server
         int port = connector.getLocalPort();
