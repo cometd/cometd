@@ -137,6 +137,10 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         jsonContext = (JSONContext.Server)getOption(BayeuxServerImpl.JSON_CONTEXT);
     }
 
+    protected void destroy()
+    {
+    }
+
     protected ServerMessage.Mutable[] parseMessages(BufferedReader reader, boolean jsonDebug) throws ParseException, IOException
     {
         if (jsonDebug)

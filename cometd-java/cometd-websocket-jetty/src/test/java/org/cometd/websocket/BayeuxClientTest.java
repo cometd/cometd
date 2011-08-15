@@ -232,7 +232,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         Assert.assertEquals(expected, received.get());
 
         for (BayeuxClient client : clients)
-            Assert.assertTrue(client.disconnect(1000));
+            Assert.assertTrue(client.disconnect(stress ? 5000 : 2000));
     }
 
     @Test
@@ -310,27 +310,6 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         Assert.assertEquals(data, results.poll(1, TimeUnit.SECONDS));
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-
-        disconnectBayeuxClient(client);
-    }
-
-    @Test
-    public void testWaitForImpliedState() throws Exception
-    {
-        final BayeuxClient client = newBayeuxClient();
-        final CountDownLatch latch = new CountDownLatch(1);
-        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isSuccessful() && client.isHandshook())
-                    latch.countDown();
-            }
-        });
-
-        client.handshake();
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(client.waitFor(5000, State.HANDSHAKING));
 
         disconnectBayeuxClient(client);
     }

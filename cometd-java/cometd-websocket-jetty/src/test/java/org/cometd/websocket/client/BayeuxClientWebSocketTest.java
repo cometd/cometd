@@ -28,12 +28,17 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
+import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.server.AbstractServerTransport;
+import org.cometd.server.ServerSessionImpl;
 import org.cometd.websocket.ClientServerWebSocketTest;
 import org.junit.Assert;
 import org.junit.Before;
@@ -235,5 +240,290 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         Assert.assertTrue(latch.await(maxNetworkDelay * 2 + client.getBackoffIncrement() * 2, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testMetaConnectNotRespondedOnServerSidePublish() throws Exception
+    {
+        final BayeuxClient client = newBayeuxClient();
+
+        final String channelName = "/test";
+        final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel metaHandshake, Message handshake)
+            {
+                if (handshake.isSuccessful())
+                {
+                    client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
+                    {
+                        public void onMessage(ClientSessionChannel channel, Message message)
+                        {
+                            publishLatch.get().countDown();
+                        }
+                    });
+                }
+            }
+        });
+        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(2));
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                connectLatch.get().countDown();
+            }
+        });
+        client.handshake();
+
+        // Wait for the long poll to establish
+        Thread.sleep(1000);
+
+        // Test publish triggered by an external event
+        final LocalSession emitter = bayeux.newLocalSession("test_emitter");
+        emitter.handshake();
+        final String data = "test_data";
+        bayeux.getChannel(channelName).publish(emitter, data, null);
+
+        Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
+        // Make sure long poll is not responded
+        Assert.assertFalse(connectLatch.get().await(1, TimeUnit.SECONDS));
+
+        // Test publish triggered by a message sent by the client
+        // There will be a response pending so the case is different
+        publishLatch.set(new CountDownLatch(1));
+        connectLatch.set(new CountDownLatch(1));
+        String serviceChannelName = "/service/test";
+        bayeux.createIfAbsent(serviceChannelName, new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+            }
+        });
+        bayeux.getChannel(serviceChannelName).addListener(new ServerChannel.MessageListener()
+        {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
+            {
+                bayeux.getChannel(channelName).publish(emitter, data, null);
+                return true;
+            }
+        });
+        client.getChannel(serviceChannelName).publish(new HashMap());
+
+        Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
+        // Make sure long poll is not responded
+        Assert.assertFalse(connectLatch.get().await(1, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testMetaConnectDeliveryOnlyTransport() throws Exception
+    {
+        stopServer();
+
+        Map<String, String> options = new HashMap<String, String>();
+        options.put(AbstractServerTransport.META_CONNECT_DELIVERY_OPTION, "true");
+        options.put("ws." + org.cometd.websocket.server.WebSocketTransport.THREAD_POOL_MAX_SIZE, "8");
+        startServer(options);
+
+        final BayeuxClient client = newBayeuxClient();
+
+        final String channelName = "/test";
+        final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel metaHandshake, Message handshake)
+            {
+                if (handshake.isSuccessful())
+                {
+                    client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
+                    {
+                        public void onMessage(ClientSessionChannel channel, Message message)
+                        {
+                            publishLatch.get().countDown();
+                        }
+                    });
+                }
+            }
+        });
+        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(2));
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                connectLatch.get().countDown();
+            }
+        });
+        client.handshake();
+
+        // Wait for the long poll to establish
+        Thread.sleep(1000);
+
+        // Test publish triggered by an external event
+        final LocalSession emitter = bayeux.newLocalSession("test_emitter");
+        emitter.handshake();
+        final String data = "test_data";
+        bayeux.getChannel(channelName).publish(emitter, data, null);
+
+        Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
+        // Make sure long poll is responded
+        Assert.assertTrue(connectLatch.get().await(1, TimeUnit.SECONDS));
+
+        // Test publish triggered by a message sent by the client
+        // There will be a response pending so the case is different
+        publishLatch.set(new CountDownLatch(1));
+        connectLatch.set(new CountDownLatch(1));
+        String serviceChannelName = "/service/test";
+        bayeux.createIfAbsent(serviceChannelName, new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+            }
+        });
+        bayeux.getChannel(serviceChannelName).addListener(new ServerChannel.MessageListener()
+        {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
+            {
+                bayeux.getChannel(channelName).publish(emitter, data, null);
+                return true;
+            }
+        });
+        client.getChannel(serviceChannelName).publish(new HashMap());
+
+        Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
+        // Make sure long poll is responded
+        Assert.assertTrue(connectLatch.get().await(1, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testMetaConnectDeliveryOnlySession() throws Exception
+    {
+        bayeux.addExtension(new BayeuxServer.Extension()
+        {
+            public boolean rcv(ServerSession from, ServerMessage.Mutable message)
+            {
+                return true;
+            }
+
+            public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
+            {
+                return true;
+            }
+
+            public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
+            {
+                return true;
+            }
+
+            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
+            {
+                if (Channel.META_HANDSHAKE.equals(message.getChannel()))
+                {
+                    if (to != null && !to.isLocalSession())
+                        ((ServerSessionImpl)to).setMetaConnectDeliveryOnly(true);
+                }
+                return true;
+            }
+        });
+
+        final BayeuxClient client = newBayeuxClient();
+
+        final String channelName = "/test";
+        final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel metaHandshake, Message handshake)
+            {
+                if (handshake.isSuccessful())
+                {
+                    client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
+                    {
+                        public void onMessage(ClientSessionChannel channel, Message message)
+                        {
+                            publishLatch.get().countDown();
+                        }
+                    });
+                }
+            }
+        });
+        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(2));
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                connectLatch.get().countDown();
+            }
+        });
+        client.handshake();
+
+        // Wait for the long poll to establish
+        Thread.sleep(1000);
+
+        // Test publish triggered by an external event
+        final LocalSession emitter = bayeux.newLocalSession("test_emitter");
+        emitter.handshake();
+        final String data = "test_data";
+        bayeux.getChannel(channelName).publish(emitter, data, null);
+
+        Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
+        // Make sure long poll is responded
+        Assert.assertTrue(connectLatch.get().await(1, TimeUnit.SECONDS));
+
+        // Test publish triggered by a message sent by the client
+        // There will be a response pending so the case is different
+        publishLatch.set(new CountDownLatch(1));
+        connectLatch.set(new CountDownLatch(1));
+        String serviceChannelName = "/service/test";
+        bayeux.createIfAbsent(serviceChannelName, new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+            }
+        });
+        bayeux.getChannel(serviceChannelName).addListener(new ServerChannel.MessageListener()
+        {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
+            {
+                bayeux.getChannel(channelName).publish(emitter, data, null);
+                return true;
+            }
+        });
+        client.getChannel(serviceChannelName).publish(new HashMap());
+
+        Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
+        // Make sure long poll is responded
+        Assert.assertTrue(connectLatch.get().await(1, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testMetaConnectExpires() throws Exception
+    {
+        stopServer();
+        long timeout = 2000;
+        Map<String, String> options = new HashMap<String, String>();
+        options.put(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(timeout));
+        startServer(options);
+
+        final BayeuxClient client = newBayeuxClient();
+        final CountDownLatch connectLatch = new CountDownLatch(2);
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                connectLatch.countDown();
+                if (connectLatch.getCount() == 0)
+                    client.disconnect();
+            }
+        });
+        client.handshake();
+
+        Assert.assertTrue(connectLatch.await(timeout + timeout / 2, TimeUnit.MILLISECONDS));
     }
 }

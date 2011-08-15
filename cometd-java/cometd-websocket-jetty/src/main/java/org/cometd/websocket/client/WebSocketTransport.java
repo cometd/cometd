@@ -145,13 +145,13 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     public void abort()
     {
         _aborted = true;
+        disconnect();
         reset();
     }
 
     @Override
     public void reset()
     {
-        disconnect();
         if (_shutdownScheduler)
         {
             _shutdownScheduler = false;
@@ -226,7 +226,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
             if (_aborted)
             {
-                reset();
                 listener.onException(new IOException("Aborted"), messages);
             }
 
@@ -418,8 +417,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         public void onOpen(Connection connection)
         {
             _logger.debug("Opened websocket connection {}", connection);
-            if (_aborted)
-                reset();
         }
 
         public void onClose(int closeCode, String message)
