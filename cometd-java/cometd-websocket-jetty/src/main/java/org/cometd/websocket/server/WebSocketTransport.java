@@ -116,11 +116,9 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         return null;
     }
 
-    public String checkOrigin(HttpServletRequest request, String host, String origin)
+    public boolean checkOrigin(HttpServletRequest request, String origin)
     {
-        if (origin == null)
-            origin = host;
-        return origin;
+        return true;
     }
 
     protected class WebSocketScheduler implements WebSocket.OnTextMessage, AbstractServerTransport.Scheduler
