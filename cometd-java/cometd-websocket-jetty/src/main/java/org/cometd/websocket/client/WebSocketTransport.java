@@ -16,6 +16,7 @@
 
 package org.cometd.websocket.client;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.ProtocolException;
@@ -424,7 +425,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             Connection connection = _connection;
             _connection = null;
             _logger.debug("Closed websocket connection with code {}: {} ", closeCode, connection);
-            failMessages(new IOException("Connection closed with code " + closeCode));
+            failMessages(new EOFException("Connection closed with code " + closeCode));
         }
 
         public void onMessage(String data)
