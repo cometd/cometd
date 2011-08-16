@@ -45,7 +45,9 @@ public class AckExtensionTest extends ClientServerTest
     @Test
     public void testAck() throws Exception
     {
-        final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
+        LongPollingTransport transport = new LongPollingTransport(null, httpClient);
+        transport.setDebugEnabled(debugTests());
+        final BayeuxClient client = new BayeuxClient(cometdURL, transport)
         {
             @Override
             public void onFailure(Throwable x, Message[] messages)
