@@ -26,29 +26,26 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
     /* ------------------------------------------------------------ */
     public ArrayIdQueue()
     {
-        super();
-        _ids=new int[DEFAULT_CAPACITY];
+        this(DEFAULT_CAPACITY);
     }
 
     /* ------------------------------------------------------------ */
     public ArrayIdQueue(int capacity)
     {
-        super(capacity);
-        _ids=new int[capacity];
+        this(capacity, -1);
     }
 
     /* ------------------------------------------------------------ */
     public ArrayIdQueue(int initCapacity, int growBy)
     {
-        super(initCapacity,growBy);
-        _ids=new int[initCapacity];
+        this(initCapacity, growBy, null);
     }
 
     /* ------------------------------------------------------------ */
     public ArrayIdQueue(int initCapacity, int growBy, Object lock)
     {
-        super(initCapacity,growBy,lock);
-        _ids=new int[initCapacity];
+        super(initCapacity, growBy, lock);
+        _ids = new int[initCapacity];
     }
 
     /* ------------------------------------------------------------ */
@@ -57,7 +54,7 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
      */
     public int getCurrentId()
     {
-        synchronized(_lock)
+        synchronized (_lock)
         {
             return _currentId;
         }
@@ -66,16 +63,16 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
     /* ------------------------------------------------------------ */
     public void setCurrentId(int currentId)
     {
-        synchronized(_lock)
+        synchronized (_lock)
         {
-            _currentId=currentId;
+            _currentId = currentId;
         }
     }
 
     /* ------------------------------------------------------------ */
     public void incrementCurrentId()
     {
-        synchronized(_lock)
+        synchronized (_lock)
         {
             _currentId++;
         }
@@ -84,84 +81,77 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
     /* ------------------------------------------------------------ */
     public boolean add(E e)
     {
-        synchronized(_lock)
+        synchronized (_lock)
         {
-            final int nextSlot=_nextSlot;
-            super.add(e);
-            _ids[nextSlot]=_currentId;
+            final int nextSlot = _nextSlot;
+            boolean result = super.add(e);
+            _ids[nextSlot] = _currentId;
+            return result;
         }
-        return true;
     }
 
     /* ------------------------------------------------------------ */
     public void addUnsafe(E e)
     {
-        int nextSlot=_nextSlot;
+        int nextSlot = _nextSlot;
         super.addUnsafe(e);
-        _ids[nextSlot]=_currentId;
-
+        _ids[nextSlot] = _currentId;
     }
 
     /* ------------------------------------------------------------ */
     public boolean offer(E e)
     {
-        synchronized(_lock)
+        synchronized (_lock)
         {
-            final int nextSlot=_nextSlot;
-            super.offer(e);
-            _ids[nextSlot]=_currentId;
+            final int nextSlot = _nextSlot;
+            boolean result = super.offer(e);
+            _ids[nextSlot] = _currentId;
+            return result;
         }
-        return true;
-
     }
 
     /* ------------------------------------------------------------ */
     public int getAssociatedId(int index)
     {
-        synchronized(_lock)
+        synchronized (_lock)
         {
             if (index < 0 || index >= _size)
                 throw new IndexOutOfBoundsException("!(" + 0 + "<" + index + "<=" + _size + ")");
-            int i=(_nextE + index) % _ids.length;
-            return _ids[i];
+            return getAssociatedIdUnsafe(index);
         }
     }
 
     /* ------------------------------------------------------------ */
-    public long getAssociatedIdUnsafe(int index)
+    public int getAssociatedIdUnsafe(int index)
     {
-        int i=(_nextE + index) % _ids.length;
+        int i = (_nextE + index) % _ids.length;
         return _ids[i];
     }
 
     /* ------------------------------------------------------------ */
     public E remove(int index)
     {
-        synchronized(_lock)
+        synchronized (_lock)
         {
-            int nextSlot=_nextSlot;
-            E e=super.remove(index);
+            int nextSlot = _nextSlot;
+            E e = super.remove(index);
 
-            int i=_nextE + index;
+            int i = _nextE + index;
             if (i >= _ids.length)
-                i-=_ids.length;
+                i -= _ids.length;
 
             if (i < nextSlot)
             {
-                System.arraycopy(_ids,i + 1,_ids,i,nextSlot - i);
-                nextSlot--;
+                System.arraycopy(_ids, i + 1, _ids, i, nextSlot - i);
             }
             else
             {
-                System.arraycopy(_ids,i + 1,_ids,i,_ids.length - i - 1);
+                System.arraycopy(_ids, i + 1, _ids, i, _ids.length - i - 1);
                 if (nextSlot > 0)
                 {
-                    _ids[_ids.length - 1]=_ids[0];
-                    System.arraycopy(_ids,1,_ids,0,nextSlot - 1);
-                    nextSlot--;
+                    _ids[_ids.length - 1] = _ids[0];
+                    System.arraycopy(_ids, 1, _ids, 0, nextSlot - 1);
                 }
-                else
-                    nextSlot=_ids.length - 1;
             }
 
             return e;
@@ -171,15 +161,15 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
     /* ------------------------------------------------------------ */
     public E set(int index, E element)
     {
-        synchronized(_lock)
+        synchronized (_lock)
         {
-            E old=super.set(index,element);
+            E old = super.set(index, element);
 
-            int i=_nextE + index;
+            int i = _nextE + index;
             if (i >= _ids.length)
-                i-=_ids.length;
+                i -= _ids.length;
             // TODO: what if the id is not meant to be the latest?
-            _ids[i]=_currentId;
+            _ids[i] = _currentId;
             return old;
         }
     }
@@ -187,36 +177,36 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
     /* ------------------------------------------------------------ */
     public void add(int index, E element)
     {
-        synchronized(_lock)
+        synchronized (_lock)
         {
-            int nextSlot=_nextSlot;
-            super.add(index,element);
+            int nextSlot = _nextSlot;
+            super.add(index, element);
 
             if (index == _size)
             {
-                _ids[index]=_currentId;
+                _ids[index] = _currentId;
             }
             else
             {
-                int i=_nextE + index;
+                int i = _nextE + index;
                 if (i >= _ids.length)
-                    i-=_ids.length;
+                    i -= _ids.length;
 
                 if (i < nextSlot)
                 {
-                    System.arraycopy(_ids,i,_ids,i + 1,nextSlot - i);
-                    _ids[i]=_currentId;
+                    System.arraycopy(_ids, i, _ids, i + 1, nextSlot - i);
+                    _ids[i] = _currentId;
                 }
                 else
                 {
                     if (nextSlot > 0)
                     {
-                        System.arraycopy(_ids,0,_ids,1,nextSlot);
-                        _ids[0]=_ids[_ids.length - 1];
+                        System.arraycopy(_ids, 0, _ids, 1, nextSlot);
+                        _ids[0] = _ids[_ids.length - 1];
                     }
 
-                    System.arraycopy(_ids,i,_ids,i + 1,_ids.length - i - 1);
-                    _ids[i]=_currentId;
+                    System.arraycopy(_ids, i, _ids, i + 1, _ids.length - i - 1);
+                    _ids[i] = _currentId;
                 }
             }
         }
@@ -224,21 +214,23 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
 
     protected boolean grow()
     {
-        int nextE=_nextE;
-        int nextSlot=_nextSlot;
+        synchronized (_lock)
+        {
+            int nextE = _nextE;
+            int nextSlot = _nextSlot;
 
-        if (!super.grow())
-            return false;
+            if (!super.grow())
+                return false;
 
-        int[] Ids=new int[_elements.length];
-        int split=_ids.length - nextE;
-        if (split > 0)
-            System.arraycopy(_ids,nextE,Ids,0,split);
-        if (nextE != 0)
-            System.arraycopy(_ids,0,Ids,split,nextSlot);
+            int[] Ids = new int[_elements.length];
+            int split = _ids.length - nextE;
+            if (split > 0)
+                System.arraycopy(_ids, nextE, Ids, 0, split);
+            if (nextE != 0)
+                System.arraycopy(_ids, 0, Ids, split, nextSlot);
 
-        _ids=Ids;
-        return true;
+            _ids = Ids;
+            return true;
+        }
     }
-
 }
