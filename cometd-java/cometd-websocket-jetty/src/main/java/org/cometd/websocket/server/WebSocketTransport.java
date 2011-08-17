@@ -149,7 +149,6 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     protected void handleException(WebSocket.Connection connection, Throwable exception)
     {
         getBayeux().getLogger().warn("", exception);
-        connection.disconnect();
     }
 
     protected class WebSocketScheduler implements WebSocket.OnTextMessage, AbstractServerTransport.Scheduler, Runnable
@@ -193,7 +192,6 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         public void onMessage(String data)
         {
-            boolean batch = false;
             try
             {
                 _handshake.set(_context);
@@ -217,24 +215,16 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     // Session expired concurrently ?
                     if (session != null && !session.isHandshook())
                     {
-                        batch = false;
                         session = null;
                         _session = session;
-                    }
-
-                    if (!batch && session != null)
-                    {
-                        // Start a batch to group all resulting messages into a single response.
-                        batch = true;
-                        session.startBatch();
                     }
 
                     // Remember the connected status
                     boolean wasConnected = session != null && session.isConnected();
 
                     // Handle the message.
-                    // The actual reply is return from the call, but other messages may
-                    // also be queued on the session.
+                    // The actual reply is return from the call, but
+                    // other messages may also be queued on the session.
                     ServerMessage.Mutable reply = getBayeux().handle(session, message);
                     if (reply != null)
                     {
@@ -242,26 +232,42 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                         {
                             session = (ServerSessionImpl)getBayeux().getSession(reply.getClientId());
                             if (session != null)
+                            {
                                 session.setUserAgent(_userAgent);
+                                session.setScheduler(this);
+                            }
                         }
 
+                        List<ServerMessage> queue = null;
+
+                        // Check again if session is connected, BayeuxServer.handle() may have caused a disconnection
                         if (connect && reply.isSuccessful() && session != null && session.isConnected())
                         {
+                            // We need to set the scheduler again, in case the connection
+                            // has temporarily broken and we have created a new scheduler
                             session.setScheduler(this);
 
-                            long timeout = session.calculateTimeout(getTimeout());
-
-                            boolean shouldHoldMetaConnectReply = timeout > 0 && wasConnected;
-                            if (shouldHoldMetaConnectReply)
+                            // If we deliver only via meta connect, and we have messages,
+                            // we need to send the queue and the meta connect reply
+                            boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
+                            boolean hasMessages = !session.isQueueEmpty();
+                            boolean replyToMetaConnect = hasMessages && metaConnectDelivery;
+                            if (replyToMetaConnect)
                             {
-                                // Delay the connect reply until timeout.
-                                getBayeux().startTimeout(_timeoutTask, timeout);
-                                _connectReply = reply;
-                                reply = null;
+                                queue = session.takeQueue();
                             }
                             else
                             {
-                                session.startIntervalTimeout(getInterval());
+                                long timeout = session.calculateTimeout(getTimeout());
+                                boolean holdMetaConnect = timeout > 0 && wasConnected;
+                                if (holdMetaConnect)
+                                {
+                                    // Delay the connect reply until timeout.
+                                    _connectReply = reply;
+                                    getBayeux().getLogger().debug("{}@{} holding meta connect, reply: {}", getClass().getSimpleName(), System.identityHashCode(this), reply);
+                                    reply = null;
+                                    getBayeux().startTimeout(_timeoutTask, timeout);
+                                }
                             }
                         }
 
@@ -271,11 +277,19 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                             reply = getBayeux().extendReply(session, session, reply);
                             if (reply != null)
                             {
-                                boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session != null && session.isMetaConnectDeliveryOnly();
-                                if (session != null && batch && !metaConnectDelivery)
-                                    session.addQueue(reply);
+                                // Check again if session is connected, extensions may have disconnected
+                                if (connect && session != null && session.isConnected())
+                                    session.startIntervalTimeout(getInterval());
+
+                                if (queue != null)
+                                {
+                                    queue.add(reply);
+                                    send(queue);
+                                }
                                 else
+                                {
                                     send(reply);
+                                }
                             }
                         }
                     }
@@ -296,21 +310,21 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             {
                 _handshake.set(null);
                 getBayeux().setCurrentTransport(null);
-
-                // If we started a batch - end it now
-                if (batch)
-                    _session.endBatch();
             }
         }
 
         public void cancel()
         {
-            // TODO: we must have a state to detect if we're shutting down, and if so, close the connection
         }
 
         public void schedule()
         {
             _threadPool.execute(this);
+        }
+
+        public void run()
+        {
+            schedule(false);
         }
 
         private void schedule(boolean timeout)
@@ -319,13 +333,20 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             if (session == null)
                 return;
 
+            boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
+            ServerMessage.Mutable reply = _connectReply;
+
+            // If we need to deliver only via meta connect,
+            // but we do not have one, wait until it arrives
+            if (metaConnectDelivery && reply == null)
+                return;
+
             List<ServerMessage> queue = session.takeQueue();
 
-            ServerMessage.Mutable reply = _connectReply;
             if (reply != null)
             {
                 boolean disconnected = !session.isConnected();
-                if (timeout || disconnected || isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly())
+                if (timeout || disconnected || metaConnectDelivery)
                 {
                     if (disconnected)
                         reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
@@ -350,11 +371,6 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             {
                 handleException(_connection, x);
             }
-        }
-
-        public void run()
-        {
-            schedule(false);
         }
 
         protected void send(List<ServerMessage> messages) throws IOException
