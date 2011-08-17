@@ -447,6 +447,13 @@ public class ServerSessionImpl implements ServerSession
     {
         synchronized (_queue)
         {
+            // TODO: this is not strictly correct, as we may clear messages
+            // that are not in the queue parameter
+            // For example, right now we do not queue meta responses, but if
+            // we do, and the ack extension requests to replace the queue by
+            // calling this method, then the queue parameter will not contain
+            // meta responses so they will be lost. We should only retain all
+            // messages that are not also present in the queue parameter.
             _queue.clear();
             _queue.addAll(queue);
         }
