@@ -26,6 +26,7 @@ import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.MappingJsonFactory;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.JavaType;
 import org.junit.Test;
 
 public class JettyJacksonComparisonTest
@@ -75,15 +76,29 @@ public class JettyJacksonComparisonTest
 
         // Jackson
         ObjectMapper objectMapper = new ObjectMapper();
+        JavaType type = objectMapper.constructType(HashMapMessage[].class);
         for (int j = 0; j < iterations; ++j)
         {
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                objectMapper.readValue(json, HashMapMessage[].class);
+                objectMapper.readValue(json, type);
             }
             long end = System.nanoTime();
-            System.err.printf("jackson mapper iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            System.err.printf("jackson mapper string iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+        }
+
+        // Jackson
+        byte[] bytes = json.getBytes("UTF-8");
+        for (int j = 0; j < iterations; ++j)
+        {
+            long start = System.nanoTime();
+            for (int i = 0; i < count; ++i)
+            {
+                objectMapper.readValue(bytes, type);
+            }
+            long end = System.nanoTime();
+            System.err.printf("jackson mapper bytes iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
         }
 
         // Jackson
@@ -109,7 +124,7 @@ public class JettyJacksonComparisonTest
                 jettyJSONContextClient.parse(json);
             }
             long end = System.nanoTime();
-            System.err.printf("jetty iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            System.err.printf("jetty context iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
         }
     }
 
@@ -188,7 +203,7 @@ public class JettyJacksonComparisonTest
                 jettyJSONContextClient.generate(message);
             }
             long end = System.nanoTime();
-            System.err.printf("jetty iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            System.err.printf("jetty context iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
         }
     }
 }
