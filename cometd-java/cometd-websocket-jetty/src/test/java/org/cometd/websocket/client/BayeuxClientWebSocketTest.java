@@ -412,6 +412,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         // Test publish triggered by a message sent by the client
         // There will be a response pending so the case is different
+        // from the server-side publish
         publishLatch.set(new CountDownLatch(1));
         connectLatch.set(new CountDownLatch(1));
         String serviceChannelName = "/service/test";
@@ -537,7 +538,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is responded
-        Assert.assertTrue(connectLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
