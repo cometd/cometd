@@ -16,6 +16,7 @@
 
 package org.cometd.common;
 
+import java.io.InputStream;
 import java.io.Reader;
 import java.text.ParseException;
 
@@ -35,6 +36,8 @@ public interface JSONContext
 
 interface JSONParserGenerator<T extends Message.Mutable>
 {
+    public T[] parse(InputStream stream) throws ParseException;
+
     public T[] parse(Reader reader) throws ParseException;
 
     public T[] parse(String json) throws ParseException;

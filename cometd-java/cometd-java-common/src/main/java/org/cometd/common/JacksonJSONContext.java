@@ -17,6 +17,7 @@
 package org.cometd.common;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.text.ParseException;
 
@@ -40,6 +41,18 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
     }
 
     protected abstract Class<I[]> rootArrayClass();
+
+    public T[] parse(InputStream stream) throws ParseException
+    {
+        try
+        {
+            return getObjectMapper().readValue(stream, rootArrayType);
+        }
+        catch (IOException x)
+        {
+            throw (ParseException)new ParseException("", -1).initCause(x);
+        }
+    }
 
     public T[] parse(Reader reader) throws ParseException
     {
