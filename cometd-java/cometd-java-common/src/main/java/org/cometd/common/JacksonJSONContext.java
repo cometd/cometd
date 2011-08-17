@@ -21,14 +21,17 @@ import java.io.Reader;
 import java.text.ParseException;
 
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.JavaType;
 import org.cometd.bayeux.Message;
 
 public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
 {
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final JavaType rootArrayType;
 
     protected JacksonJSONContext()
     {
+        rootArrayType = objectMapper.constructType(rootArrayClass());
     }
 
     protected ObjectMapper getObjectMapper()
@@ -42,7 +45,7 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
     {
         try
         {
-            return getObjectMapper().readValue(reader, rootArrayClass());
+            return getObjectMapper().readValue(reader, rootArrayType);
         }
         catch (IOException x)
         {
@@ -54,7 +57,7 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
     {
         try
         {
-            return getObjectMapper().readValue(json, rootArrayClass());
+            return getObjectMapper().readValue(json, rootArrayType);
         }
         catch (IOException x)
         {
