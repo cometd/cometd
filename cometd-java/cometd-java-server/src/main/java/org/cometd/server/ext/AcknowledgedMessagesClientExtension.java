@@ -16,10 +16,11 @@
 
 package org.cometd.server.ext;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
@@ -40,17 +41,18 @@ public class AcknowledgedMessagesClientExtension implements Extension
     private final ServerSessionImpl _session;
     private final Object _lock;
     private final ArrayIdQueue<ServerMessage> _unackedQueue;
-    private long _lastAck;
+    private volatile long _lastAck;
 
     public AcknowledgedMessagesClientExtension(ServerSession session)
     {
         _session = (ServerSessionImpl)session;
         _lock = _session.getLock();
-
-        List<ServerMessage> copy = _session.takeQueue();
-        _session.replaceQueue(copy);
-        _unackedQueue = new ArrayIdQueue<ServerMessage>(16, 32, copy);
-        _unackedQueue.setCurrentId(1);
+        synchronized (_lock)
+        {
+            Queue<ServerMessage> queue = _session.getQueue();
+            _unackedQueue = new ArrayIdQueue<ServerMessage>(16, 32, queue);
+            _unackedQueue.setCurrentId(1);
+        }
     }
 
     public boolean rcv(ServerSession from, Mutable message)
@@ -118,9 +120,12 @@ public class AcknowledgedMessagesClientExtension implements Extension
 
     public ServerMessage send(ServerSession to, ServerMessage message)
     {
-        synchronized (_lock)
+        if (message.containsKey(Message.DATA_FIELD))
         {
-            _unackedQueue.add(message);
+            synchronized (_lock)
+            {
+                _unackedQueue.add(message);
+            }
         }
         return message;
     }
