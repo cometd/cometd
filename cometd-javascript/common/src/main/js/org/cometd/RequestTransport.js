@@ -162,7 +162,7 @@ org.cometd.RequestTransport = function()
     {
         if (!request.expired)
         {
-            clearTimeout(request.timeout);
+            this.clearTimeout(request.timeout);
             this.complete(request, true, request.metaConnect);
             if (responses && responses.length > 0)
             {
@@ -179,7 +179,7 @@ org.cometd.RequestTransport = function()
     {
         if (!request.expired)
         {
-            clearTimeout(request.timeout);
+            this.clearTimeout(request.timeout);
             this.complete(request, false, request.metaConnect);
             envelope.onFailure(request.xhr, envelope.messages, reason, exception);
         }

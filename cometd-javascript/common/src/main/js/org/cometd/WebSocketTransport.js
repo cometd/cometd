@@ -107,7 +107,7 @@ org.cometd.WebSocketTransport = function()
                         var timeout = _timeouts[message.id];
                         if (timeout)
                         {
-                            clearTimeout(timeout);
+                            this.clearTimeout(timeout);
                             delete _timeouts[message.id];
                             this._debug('Transport', this.getType(), 'removed timeout for message', message.id, ', timeouts', _timeouts);
                         }
@@ -162,7 +162,7 @@ org.cometd.WebSocketTransport = function()
 
         for (var id in _timeouts)
         {
-            clearTimeout(_timeouts[id]);
+            this.clearTimeout(_timeouts[id]);
             delete _timeouts[id];
         }
 

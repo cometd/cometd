@@ -36,7 +36,7 @@ org.cometd.CallbackPollingTransport = function()
             // which sum up to about 50 chars
             if (urlLength > _maxLength)
             {
-                if (length == 1)
+                if (length === 1)
                 {
                     var x = 'Bayeux message too big (' + urlLength + ' bytes, max is ' + _maxLength + ') ' +
                             'for transport ' + this.getType();

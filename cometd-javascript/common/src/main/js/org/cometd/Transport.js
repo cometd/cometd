@@ -53,6 +53,11 @@ org.cometd.Transport = function()
         return org.cometd.Utils.setTimeout(_cometd, funktion, delay);
     };
 
+    this.clearTimeout = function(handle)
+    {
+        org.cometd.Utils.clearTimeout(handle);
+    };
+
     /**
      * Converts the given response into an array of bayeux messages
      * @param response the response to convert

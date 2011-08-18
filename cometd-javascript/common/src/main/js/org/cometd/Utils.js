@@ -28,7 +28,7 @@ org.cometd.Utils.inArray = function(element, array)
 {
     for (var i = 0; i < array.length; ++i)
     {
-        if (element == array[i])
+        if (element === array[i])
         {
             return i;
         }
@@ -38,7 +38,7 @@ org.cometd.Utils.inArray = function(element, array)
 
 org.cometd.Utils.setTimeout = function(cometd, funktion, delay)
 {
-    return setTimeout(function()
+    return window.setTimeout(function()
     {
         try
         {
@@ -49,4 +49,9 @@ org.cometd.Utils.setTimeout = function(cometd, funktion, delay)
             cometd._debug('Exception invoking timed function', funktion, x);
         }
     }, delay);
+};
+
+org.cometd.Utils.clearTimeout = function(timeoutHandle)
+{
+    window.clearTimeout(timeoutHandle);
 };

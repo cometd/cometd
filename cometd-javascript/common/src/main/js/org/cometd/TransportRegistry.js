@@ -32,7 +32,7 @@ org.cometd.TransportRegistry = function()
             var type = _types[i];
             for (var j = 0; j < types.length; ++j)
             {
-                if (type == types[j])
+                if (type === types[j])
                 {
                     var transport = _transports[type];
                     if (transport.accept(version, crossDomain, url) === true)
@@ -50,7 +50,7 @@ org.cometd.TransportRegistry = function()
         var existing = false;
         for (var i = 0; i < _types.length; ++i)
         {
-            if (_types[i] == type)
+            if (_types[i] === type)
             {
                 existing = true;
                 break;
@@ -77,7 +77,7 @@ org.cometd.TransportRegistry = function()
     {
         for (var i = 0; i < _types.length; ++i)
         {
-            if (_types[i] == type)
+            if (_types[i] === type)
             {
                 return _transports[type];
             }
@@ -89,7 +89,7 @@ org.cometd.TransportRegistry = function()
     {
         for (var i = 0; i < _types.length; ++i)
         {
-            if (_types[i] == type)
+            if (_types[i] === type)
             {
                 _types.splice(i, 1);
                 var transport = _transports[type];
