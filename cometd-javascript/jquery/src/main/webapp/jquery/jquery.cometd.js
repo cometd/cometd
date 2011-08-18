@@ -49,6 +49,11 @@
                 type: 'POST',
                 contentType: 'application/json;charset=UTF-8',
                 data: packet.body,
+                xhrFields: {
+                    // Has no effect if the request is not cross domain
+                    // but if it is, allows cookies to be sent to the server
+                    withCredentials: true
+                },
                 beforeSend: function(xhr)
                 {
                     _setHeaders(xhr, packet.headers);
