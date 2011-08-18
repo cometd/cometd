@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
@@ -37,11 +38,11 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class AbstractClientSession implements ClientSession
 {
+    private static final AtomicLong _idGen = new AtomicLong(0);
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
     private final AttributesMap _attributes = new AttributesMap();
     private final ConcurrentMap<String, AbstractSessionChannel> _channels = new ConcurrentHashMap<String, AbstractSessionChannel>();
     private final AtomicInteger _batch = new AtomicInteger();
-    private final AtomicInteger _idGen = new AtomicInteger(0);
 
     /* ------------------------------------------------------------ */
     protected AbstractClientSession()
