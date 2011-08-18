@@ -43,6 +43,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.cometd.server.CometdServlet;
+import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Request;
@@ -128,7 +129,7 @@ public class BayeuxLoadServer
         if (ssl)
         {
             SslSelectChannelConnector sslConnector = new SslSelectChannelConnector();
-            File keyStoreFile = new File("src/test/resources/keystore.jks");
+            File keyStoreFile = new File("src/main/resources/keystore.jks");
             if (!keyStoreFile.exists())
                 throw new FileNotFoundException(keyStoreFile.getAbsolutePath());
             SslContextFactory sslContextFactory = sslConnector.getSslContextFactory();
@@ -194,15 +195,16 @@ public class BayeuxLoadServer
         // Setup comet servlet
         String cometServletPath = "/cometd";
         CometdServlet cometServlet = new CometdServlet();
-        ServletHolder cometServletHolder = new ServletHolder(cometServlet);
+        ServletHolder cometdServletHolder = new ServletHolder(cometServlet);
         // Make sure the expiration timeout is large to avoid clients to timeout
         // This value must be several times larger than the client value
         // (e.g. 60 s on server vs 5 s on client) so that it's guaranteed that
         // it will be the client to dispose idle connections.
-        cometServletHolder.setInitParameter("maxInterval", String.valueOf(60000));
+        cometdServletHolder.setInitParameter("maxInterval", String.valueOf(60000));
         // Explicitly set the timeout value
-        cometServletHolder.setInitParameter("timeout", String.valueOf(30000));
-        context.addServlet(cometServletHolder, cometServletPath + "/*");
+        cometdServletHolder.setInitParameter("timeout", String.valueOf(30000));
+        cometdServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
+        context.addServlet(cometdServletHolder, cometServletPath + "/*");
 
         server.start();
 

@@ -39,11 +39,13 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.WebSocketClient;
 
 public class BayeuxLoadClient
 {
@@ -64,11 +66,24 @@ public class BayeuxLoadClient
     private final ConcurrentMap<Long, AtomicLong> wallLatencies = new ConcurrentHashMap<Long, AtomicLong>();
     private final Map<String, Long> sendTimes = new ConcurrentHashMap<String, Long>();
     private final Map<String, Long> arrivalTimes = new ConcurrentHashMap<String, Long>();
+    private ScheduledExecutorService scheduler;
+    private HttpClient httpClient;
+    private WebSocketClient webSocketClient;
 
     public static void main(String[] args) throws Exception
     {
         BayeuxLoadClient client = new BayeuxLoadClient();
         client.run();
+    }
+
+    public long getResponses()
+    {
+        return responses.get();
+    }
+
+    public long getMessages()
+    {
+        return messages.get();
     }
 
     public void run() throws Exception
@@ -77,6 +92,7 @@ public class BayeuxLoadClient
         SystemTimer systemTimer = SystemTimer.detect();
         System.err.printf("native timer resolution: %d \u00B5s%n", systemTimer.getNativeResolution());
         System.err.printf("emulated timer resolution: %d \u00B5s%n", systemTimer.getEmulatedResolution());
+        System.err.println();
 
         BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
 
@@ -93,6 +109,16 @@ public class BayeuxLoadClient
         if (value.length() == 0)
             value = String.valueOf(port);
         port = Integer.parseInt(value);
+
+        ClientTransportType clientTransportType = ClientTransportType.LONG_POLLING;
+        System.err.printf("transports:%n");
+        for (ClientTransportType type : ClientTransportType.values())
+            System.err.printf("  %d - %s%n", type.ordinal(), type.getName());
+        System.err.printf("transport [%d]: ", clientTransportType.ordinal());
+        value = console.readLine().trim();
+        if (value.length() == 0)
+            value = String.valueOf(clientTransportType.ordinal());
+        clientTransportType = ClientTransportType.values()[Integer.parseInt(value)];
 
         boolean ssl = false;
         System.err.printf("use ssl [%b]: ", ssl);
@@ -114,6 +140,7 @@ public class BayeuxLoadClient
         if (value.length() == 0)
             value = contextPath;
         String uri = value + "/cometd";
+        String url = (ssl ? "https" : "http") + "://" + host + ":" + port + uri;
 
         String channel = "/chat/demo";
         System.err.printf("channel [%s]: ", channel);
@@ -143,31 +170,34 @@ public class BayeuxLoadClient
             value = String.valueOf(recordLatencyDetails);
         recordLatencyDetails = Boolean.parseBoolean(value);
 
-        HttpClient httpClient = new HttpClient();
-        httpClient.setMaxConnectionsPerAddress(50000);
+        scheduler = Executors.newScheduledThreadPool(8);
+
+        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        mbContainer.addBean(this);
+
         MonitoringBlockingArrayQueue taskQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
         QueuedThreadPool threadPool = new QueuedThreadPool(taskQueue);
+        mbContainer.addBean(threadPool);
+
+        httpClient = new HttpClient();
+        httpClient.setMaxConnectionsPerAddress(50000);
         threadPool.setMaxThreads(maxThreads);
         threadPool.setDaemon(true);
         httpClient.setThreadPool(threadPool);
         httpClient.setIdleTimeout(5000);
 //        httpClient.setUseDirectBuffers(false);
         httpClient.start();
-
-        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         mbContainer.addBean(httpClient);
-        mbContainer.addBean(threadPool);
-        mbContainer.addBean(this);
-        mbContainer.addBean(Log.getLog());
-        String url = (ssl ? "https" : "http") + "://" + host + ":" + port + uri;
+
+        webSocketClient = new WebSocketClient(threadPool);
+        webSocketClient.start();
+        mbContainer.addBean(webSocketClient);
 
         HandshakeListener handshakeListener = new HandshakeListener(channel, rooms, roomsPerClient);
         DisconnectListener disconnectListener = new DisconnectListener();
         LatencyListener latencyListener = new LatencyListener(recordLatencyDetails);
 
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(8);
-
-        LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, httpClient, null);
+        LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, newClientTransport(clientTransportType), null);
         statsClient.handshake();
 
         int clients = 100;
@@ -198,7 +228,7 @@ public class BayeuxLoadClient
             {
                 for (int i = 0; i < clients - currentClients; ++i)
                 {
-                    LoadBayeuxClient client = new LoadBayeuxClient(url, scheduler, httpClient, latencyListener);
+                    LoadBayeuxClient client = new LoadBayeuxClient(url, scheduler, newClientTransport(clientTransportType), latencyListener);
                     client.getChannel(Channel.META_HANDSHAKE).addListener(handshakeListener);
                     client.getChannel(Channel.META_DISCONNECT).addListener(disconnectListener);
                     client.handshake();
@@ -364,10 +394,29 @@ public class BayeuxLoadClient
 
         statsClient.disconnect(1000);
 
-        scheduler.shutdown();
-        scheduler.awaitTermination(1000, TimeUnit.MILLISECONDS);
+        webSocketClient.stop();
 
         httpClient.stop();
+
+        scheduler.shutdown();
+        scheduler.awaitTermination(1000, TimeUnit.MILLISECONDS);
+    }
+
+    private ClientTransport newClientTransport(ClientTransportType clientTransportType)
+    {
+        switch (clientTransportType)
+        {
+            case LONG_POLLING:
+            {
+                return new LongPollingTransport(null, httpClient);
+            }
+            case WEBSOCKET:
+            {
+                return new WebSocketTransport(null, new WebSocketClient(webSocketClient), scheduler);
+            }
+            default:
+                throw new IllegalArgumentException();
+        }
     }
 
     private int nextRandom(int limit)
@@ -611,9 +660,9 @@ public class BayeuxLoadClient
         private final List<Integer> subscriptions = new ArrayList<Integer>();
         private final ClientSessionChannel.MessageListener latencyListener;
 
-        private LoadBayeuxClient(String url, ScheduledExecutorService scheduler, HttpClient httpClient, ClientSessionChannel.MessageListener listener)
+        private LoadBayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport transport, ClientSessionChannel.MessageListener listener)
         {
-            super(url, scheduler, LongPollingTransport.create(null, httpClient));
+            super(url, scheduler, transport);
             this.latencyListener = listener;
         }
 
@@ -702,6 +751,23 @@ public class BayeuxLoadClient
             }
             if (response)
                 responses.incrementAndGet();
+        }
+    }
+
+    private enum ClientTransportType
+    {
+        LONG_POLLING("long-polling"), WEBSOCKET("websocket");
+
+        private final String name;
+
+        private ClientTransportType(String name)
+        {
+            this.name = name;
+        }
+
+        public String getName()
+        {
+            return name;
         }
     }
 }
