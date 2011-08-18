@@ -190,8 +190,11 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                 registerMessage(message, listener);
 
             _logger.debug("Sending messages {}", content);
-            connection.sendMessage(content);
+            // The onSending() callback must be invoked before the actual send
+            // otherwise we may have a race condition where the response is so
+            // fast that it arrives before the onSending() is called.
             listener.onSending(messages);
+            connection.sendMessage(content);
         }
         catch (Exception x)
         {
