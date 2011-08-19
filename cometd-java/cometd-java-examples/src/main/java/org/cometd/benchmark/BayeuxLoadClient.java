@@ -501,7 +501,7 @@ public class BayeuxLoadClient
                     messageCount * 1000L * 1000L * 1000L / elapsedNanos,
                     responses.get() * 1000L * 1000L * 1000L / elapsedNanos,
                     100.0 * responses.get() / messageCount,
-                    messageCount * messageSize * 8L * 1000L * 1000L * 1000L / elapsedNanos / 1024 / 1024.0
+                    messageCount * messageSize * 8.0D * 1000.0D * 1000.0D * 1000.0D / elapsedNanos / 1024.0D / 1024.0D
                     );
         }
 
