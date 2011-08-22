@@ -144,6 +144,14 @@ public class ChannelId
         return _segments.length > 0 && "service".equals(_segments[0]);
     }
 
+    /**
+     * @return whether this {@code ChannelId} is neither {@link #isMeta() meta} nor {@link #isService() service}
+     */
+    public boolean isBroadcast()
+    {
+        return !isMeta() && !isService();
+    }
+
     @Override
     public boolean equals(Object obj)
     {
@@ -316,5 +324,17 @@ public class ChannelId
     public static boolean isService(String channelId)
     {
         return channelId != null && channelId.startsWith("/service/");
+    }
+
+    /**
+     * <p>Helper method to test if the string form of a {@code ChannelId}
+     * represents a {@link #isBroadcast()} broadcast} {@code ChannelId}.</p>
+     *
+     * @param channelId the channel id to test
+     * @return whether the given channel id is a broadcast channel id
+     */
+    public static boolean isBroadcast(String channelId)
+    {
+        return !isMeta(channelId) && !isService(channelId);
     }
 }
