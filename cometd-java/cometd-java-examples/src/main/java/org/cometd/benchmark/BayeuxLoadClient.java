@@ -158,7 +158,7 @@ public class BayeuxLoadClient
             value = String.valueOf(rooms);
         rooms = Integer.parseInt(value);
 
-        int roomsPerClient = 1;
+        int roomsPerClient = 10;
         System.err.printf("rooms per client [%d]: ", roomsPerClient);
         value = console.readLine().trim();
         if (value.length() == 0)
@@ -328,7 +328,7 @@ public class BayeuxLoadClient
             statsClient.begin();
 
             helper.startStatistics();
-            System.err.printf("Testing %d clients in %d rooms%n", bayeuxClients.size(), rooms);
+            System.err.printf("Testing %d clients in %d rooms, %d rooms/client%n", bayeuxClients.size(), rooms, roomsPerClient);
             System.err.printf("Sending %d batches of %dx%d bytes messages every %d \u00B5s%n", batchCount, batchSize, messageSize, batchPause);
 
             long start = System.nanoTime();
@@ -379,10 +379,12 @@ public class BayeuxLoadClient
             long elapsedNanos = end - start;
             if (elapsedNanos > 0)
             {
-                System.err.printf("Outgoing: Elapsed = %d ms | Rate = %d messages/s - %d requests/s%n",
+                System.err.printf("Outgoing: Elapsed = %d ms | Rate = %d messages/s - %d requests/s - ~%.3f Mib/s%n",
                         TimeUnit.NANOSECONDS.toMillis(elapsedNanos),
-                        batchCount * batchSize * 1000L * 1000L * 1000L / elapsedNanos,
-                        batchCount * 1000L * 1000L * 1000L / elapsedNanos);
+                        batchCount * batchSize * 1000L * 1000 * 1000 / elapsedNanos,
+                        batchCount * 1000L * 1000 * 1000 / elapsedNanos,
+                        batchCount * batchSize * messageSize * 8F * 1000 * 1000 * 1000  / elapsedNanos / 1024 / 1024
+                        );
             }
 
             waitForMessages(expected);
@@ -390,7 +392,7 @@ public class BayeuxLoadClient
             // Send a message to the server to signal the end of the test
             statsClient.end();
 
-            printReport(expected, taskQueue);
+            printReport(expected, messageSize, taskQueue);
 
             reset();
         }
@@ -445,8 +447,15 @@ public class BayeuxLoadClient
 
         if (recordDetails)
         {
-            wallLatencies.putIfAbsent(wallLatency, new AtomicLong(0L));
-            wallLatencies.get(wallLatency).incrementAndGet();
+            AtomicLong count = wallLatencies.get(wallLatency);
+            if (count == null)
+            {
+                count = new AtomicLong();
+                AtomicLong existing = wallLatencies.putIfAbsent(wallLatency, count);
+                if (existing != null)
+                    count = existing;
+            }
+            count.incrementAndGet();
         }
     }
 
@@ -485,7 +494,7 @@ public class BayeuxLoadClient
         }
     }
 
-    public void printReport(long expectedCount, MonitoringBlockingArrayQueue taskQueue)
+    public void printReport(long expectedCount, int messageSize, MonitoringBlockingArrayQueue taskQueue)
     {
         long messageCount = messages.get();
         System.err.printf("Messages - Success/Expected = %d/%d%n", messageCount, expectedCount);
@@ -493,15 +502,18 @@ public class BayeuxLoadClient
         long elapsedNanos = end.get() - start.get();
         if (elapsedNanos > 0)
         {
-            System.err.printf("Incoming - Elapsed = %d ms | Rate = %d messages/s - %d responses/s (%.2f%%)%n",
+            System.err.printf("Incoming - Elapsed = %d ms | Rate = %d messages/s - %d responses/s(%.2f%%) - ~%.3f Mib/s%n",
                     TimeUnit.NANOSECONDS.toMillis(elapsedNanos),
-                    messageCount * 1000L * 1000L * 1000L / elapsedNanos,
-                    responses.get() * 1000L * 1000L * 1000L / elapsedNanos,
-                    100.0 * responses.get() / messageCount);
+                    messageCount * 1000L * 1000 * 1000 / elapsedNanos,
+                    responses.get() * 1000L * 1000 * 1000 / elapsedNanos,
+                    100F * responses.get() / messageCount,
+                    messageCount * messageSize * 8F * 1000 * 1000 * 1000 / elapsedNanos / 1024 / 1024
+                    );
         }
 
         if (wallLatencies.size() > 1)
         {
+            long messages = 0L;
             long maxLatencyBucketFrequency = 0L;
             long[] latencyBucketFrequencies = new long[20];
             long latencyRange = maxWallLatency.get() - minWallLatency.get();
@@ -512,11 +524,15 @@ public class BayeuxLoadClient
                 Long bucketIndex = latencyRange == 0 ? 0 : (latency - minWallLatency.get()) * latencyBucketFrequencies.length / latencyRange;
                 int index = bucketIndex.intValue() == latencyBucketFrequencies.length ? latencyBucketFrequencies.length - 1 : bucketIndex.intValue();
                 long value = entry.getValue().get();
+                messages += value;
                 latencyBucketFrequencies[index] += value;
                 if (latencyBucketFrequencies[index] > maxLatencyBucketFrequency)
                     maxLatencyBucketFrequency = latencyBucketFrequencies[index];
                 entries.remove();
             }
+
+            if (messages != messageCount)
+                System.err.printf("Counted messages (%d) != Latency messages sum (%d)%n", messageCount, messages);
 
             System.err.println("Messages - Wall Latency Distribution Curve (X axis: Frequency, Y axis: Latency):");
             double percentile = 0.0;
@@ -532,10 +548,11 @@ public class BayeuxLoadClient
                 for (int j = value + 1; j < latencyBucketFrequencies.length; ++j)
                     System.err.print(" ");
                 System.err.print("  _  ");
+                double percentage = 100D * latencyBucketFrequency / messages;
                 System.err.print(TimeUnit.NANOSECONDS.toMillis((latencyRange * (i + 1) / latencyBucketFrequencies.length) + minWallLatency.get()));
-                System.err.printf(" ms (%d, %.2f%%)", latencyBucketFrequency, (100.0 * latencyBucketFrequency / messageCount));
+                System.err.printf(" ms (%d, %.2f%%)", latencyBucketFrequency, percentage);
                 double last = percentile;
-                percentile += (100.0 * latencyBucketFrequency / messageCount);
+                percentile += percentage;
                 if (last < 50.0 && percentile >= 50.0)
                     System.err.print(" ^50%");
                 if (last < 85.0 && percentile >= 85.0)
@@ -550,7 +567,7 @@ public class BayeuxLoadClient
             }
         }
 
-        System.err.printf("Thread Pool Queue (max_queued | avg_latency/max_latency): %d | %d/%d ms%n",
+        System.err.printf("Thread Pool - Max Queued = %d | Latency avg/max = %d/%d ms%n",
                 taskQueue.getMaxSize(),
                 TimeUnit.NANOSECONDS.toMillis(taskQueue.getAverageLatency()),
                 TimeUnit.NANOSECONDS.toMillis(taskQueue.getMaxLatency()));
@@ -669,6 +686,14 @@ public class BayeuxLoadClient
 
                     updateLatencies(startTime, sendTime, arrivalTime, endTime, recordDetails);
                 }
+                else
+                {
+                    throw new IllegalStateException("No 'start' field in message " + message);
+                }
+            }
+            else
+            {
+                throw new IllegalStateException("No 'data' field in message " + message);
             }
         }
     }

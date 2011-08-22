@@ -89,8 +89,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile ScheduledExecutorService _scheduler;
     private volatile boolean _shutdownScheduler;
     private volatile String _protocol = "cometd";
-    private volatile long _maxNetworkDelay = 5000L;
-    private volatile long _connectTimeout = 15000L;
+    private volatile long _maxNetworkDelay = 15000L;
+    private volatile long _connectTimeout = 30000L;
     private volatile boolean _uniqueMessageId = true;
     private boolean _aborted;
     private volatile boolean _webSocketSupported = true;
