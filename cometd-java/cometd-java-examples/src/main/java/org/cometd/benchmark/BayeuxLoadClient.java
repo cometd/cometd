@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -34,6 +35,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicStampedReference;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -64,8 +66,8 @@ public class BayeuxLoadClient
     private final AtomicLong maxLatency = new AtomicLong();
     private final AtomicLong totLatency = new AtomicLong();
     private final ConcurrentMap<Long, AtomicLong> wallLatencies = new ConcurrentHashMap<Long, AtomicLong>();
-    private final Map<String, Long> sendTimes = new ConcurrentHashMap<String, Long>();
-    private final Map<String, Long> arrivalTimes = new ConcurrentHashMap<String, Long>();
+    private final Map<String, AtomicStampedReference<Long>> sendTimes = new ConcurrentHashMap<String, AtomicStampedReference<Long>>();
+    private final Map<String, AtomicStampedReference<List<Long>>> arrivalTimes = new ConcurrentHashMap<String, AtomicStampedReference<List<Long>>>();
     private ScheduledExecutorService scheduler;
     private HttpClient httpClient;
     private WebSocketClient webSocketClient;
@@ -357,7 +359,8 @@ public class BayeuxLoadClient
                         clientsPerRoom = this.rooms.get(room);
                     }
                     ClientSessionChannel clientChannel = client.getChannel(channel + "/" + room);
-                    Map<String, Object> message = new HashMap<String, Object>(3);
+                    Map<String, Object> message = new HashMap<String, Object>(4);
+                    message.put("room", room);
                     message.put("user", clientIndex);
                     message.put("chat", chat);
                     message.put("start", System.nanoTime());
@@ -603,9 +606,14 @@ public class BayeuxLoadClient
                 {
                     public void run()
                     {
+                        List<Integer> roomsSubscribedTo = new ArrayList<Integer>();
                         for (int j = 0; j < roomsPerClient; ++j)
                         {
+                            // Avoid to subscribe the same client twice to the same room
                             int room = nextRandom(rooms);
+                            while (roomsSubscribedTo.contains(room))
+                                room = nextRandom(rooms);
+                            roomsSubscribedTo.add(room);
                             client.init(HandshakeListener.this.channel, room);
                         }
                     }
@@ -645,11 +653,21 @@ public class BayeuxLoadClient
                         start.set(endTime);
                     end.set(endTime);
                     messages.incrementAndGet();
+
                     String messageId = message.getId();
-                    Long sendTime = sendTimes.remove(messageId);
-                    Long arrivalTime = arrivalTimes.remove(messageId);
-                    if (sendTime != null && arrivalTime != null)
-                        updateLatencies(startTime, sendTime, arrivalTime, endTime, recordDetails);
+                    AtomicStampedReference<Long> sendTimeRef = sendTimes.get(messageId);
+                    long sendTime = sendTimeRef.getReference();
+                    // Update count atomically
+                    if (Atomics.decrement(sendTimeRef) == 0)
+                        sendTimes.remove(messageId);
+
+                    AtomicStampedReference<List<Long>> arrivalTimeRef = arrivalTimes.get(messageId);
+                    long arrivalTime = arrivalTimeRef.getReference().remove(0);
+                    // Update count atomically
+                    if (Atomics.decrement(arrivalTimeRef) == 0)
+                        arrivalTimes.remove(messageId);
+
+                    updateLatencies(startTime, sendTime, arrivalTime, endTime, recordDetails);
                 }
             }
         }
@@ -729,9 +747,14 @@ public class BayeuxLoadClient
             long now = System.nanoTime();
             for (Message message : messages)
             {
-                if (message.getData() != null)
+                Map<String, Object> data = message.getDataAsMap();
+                if (data != null && message.getChannelId().isBroadcast())
                 {
-                    sendTimes.put(message.getId(), now);
+                    int room = (Integer)data.get("room");
+                    int clientsInRoom = rooms.get(room).get();
+                    sendTimes.put(message.getId(), new AtomicStampedReference<Long>(now, clientsInRoom));
+                    // There is no write-cheap concurrent list in JDK, so let's use a synchronized wrapper
+                    arrivalTimes.put(message.getId(), new AtomicStampedReference<List<Long>>(Collections.synchronizedList(new LinkedList<Long>()), clientsInRoom));
                 }
             }
         }
@@ -739,14 +762,14 @@ public class BayeuxLoadClient
         @Override
         public void onMessages(List<Message.Mutable> messages)
         {
-            boolean response = false;
             long now = System.nanoTime();
+            boolean response = false;
             for (Message message : messages)
             {
                 if (message.getData() != null)
                 {
                     response = true;
-                    arrivalTimes.put(message.getId(), now);
+                    arrivalTimes.get(message.getId()).getReference().add(now);
                 }
             }
             if (response)

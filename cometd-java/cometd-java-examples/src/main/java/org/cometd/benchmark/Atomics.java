@@ -18,6 +18,7 @@ package org.cometd.benchmark;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicStampedReference;
 
 public class Atomics
 {
@@ -63,5 +64,13 @@ public class Atomics
                 break;
             oldValue = currentMax.get();
         }
+    }
+
+    public static <T> int decrement(AtomicStampedReference<T> reference)
+    {
+        int oldCount = reference.getStamp();
+        while (!reference.attemptStamp(reference.getReference(), oldCount - 1))
+            oldCount = reference.getStamp();
+        return oldCount - 1;
     }
 }
