@@ -1769,4 +1769,15 @@ org.cometd.Cometd = function(name)
     {
         return this._mixin(true, {}, _advice);
     };
+
+    // WebSocket handling for Firefox, which deploys WebSocket
+    // under the name of MozWebSocket in Firefox 6 and 7
+    if (!window.WebSocket)
+    {
+        window.WebSocket = window.MozWebSocket;
+    }
+    if (window.WebSocket)
+    {
+        _cometd.registerTransport('websocket', new org.cometd.WebSocketTransport());
+    }
 };

@@ -80,10 +80,6 @@ dojox.Cometd = function(name)
         return that;
     }
 
-    if (window.WebSocket)
-    {
-        cometd.registerTransport('websocket', new org.cometd.WebSocketTransport());
-    }
     cometd.registerTransport('long-polling', new LongPollingTransport());
     cometd.registerTransport('callback-polling', new CallbackPollingTransport());
 
