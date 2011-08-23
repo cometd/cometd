@@ -189,11 +189,15 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         public void onClose(int code, String message)
         {
-            if (_session != null)
+            final ServerSessionImpl session = _session;
+            if (session != null)
             {
-                _session.cancelIntervalTimeout();
+                // There is no need to call BayeuxServerImpl.removeServerSession(),
+                // because the connection may have been closed for a reload, so
+                // just null out the current session to have it retrieved again
+                _session = null;
+                session.cancelIntervalTimeout();
                 getBayeux().cancelTimeout(_timeoutTask);
-                getBayeux().removeServerSession(_session, false);
             }
         }
 
