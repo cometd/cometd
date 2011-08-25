@@ -192,6 +192,7 @@ public class BayeuxLoadClient
         mbContainer.addBean(httpClient);
 
         webSocketClient = new WebSocketClient(threadPool);
+        webSocketClient.setNullMaskGen(true);
         webSocketClient.start();
         mbContainer.addBean(webSocketClient);
 
@@ -238,9 +239,7 @@ public class BayeuxLoadClient
                     // Give some time to the server to accept connections and
                     // reply to handshakes, connects and subscribes
                     if (i % 10 == 0)
-                    {
-                        TimeUnit.MILLISECONDS.sleep(100);
-                    }
+                        TimeUnit.MILLISECONDS.sleep(50);
                 }
             }
             else if (currentClients > clients)
@@ -417,7 +416,7 @@ public class BayeuxLoadClient
             }
             case WEBSOCKET:
             {
-                return new WebSocketTransport(null, new WebSocketClient(webSocketClient), scheduler);
+                return new WebSocketTransport(null, webSocketClient, scheduler);
             }
             default:
                 throw new IllegalArgumentException();
@@ -567,7 +566,7 @@ public class BayeuxLoadClient
             }
         }
 
-        System.err.printf("Thread Pool - Max Queued = %d | Latency avg/max = %d/%d ms%n",
+        System.err.printf("Thread Pool - Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
                 taskQueue.getMaxSize(),
                 TimeUnit.NANOSECONDS.toMillis(taskQueue.getAverageLatency()),
                 TimeUnit.NANOSECONDS.toMillis(taskQueue.getMaxLatency()));
