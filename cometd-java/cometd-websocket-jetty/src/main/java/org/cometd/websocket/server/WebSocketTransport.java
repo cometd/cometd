@@ -164,14 +164,21 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         private volatile ServerSessionImpl _session;
         private volatile Connection _connection;
         private volatile ServerMessage.Mutable _connectReply;
+        private volatile long _connectExpiration;
         private final Timeout.Task _timeoutTask = new Timeout.Task()
         {
             @Override
             public void expired()
             {
+                long now = System.currentTimeMillis();
+                long jitter = now - _connectExpiration;
+                if (jitter > 5000) // TODO: make the max jitter a parameter ?
+                    _logger.info("/meta/connect timeout expired too late {}", jitter);
+
                 // Send the meta connect response after timeout.
-                // We do not flip the _scheduling variable, since we *must* execute
-                // the schedule(true) otherwise the client will timeout the meta connect.
+                // We *must* execute schedule(true) otherwise
+                // the client will timeout the meta connect, so we
+                // do not care about flipping the _scheduling field.
                 WebSocketScheduler.this.schedule(true);
             }
         };
@@ -210,17 +217,15 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 ServerMessage.Mutable[] messages = parseMessages(data);
                 _logger.debug("Received messages {}", data);
                 for (ServerMessage.Mutable message : messages)
-                {
                     onMessage(message);
-                }
-            }
-            catch (IOException x)
-            {
-                handleException(_connection, x);
             }
             catch (ParseException x)
             {
                 handleJSONParseException(_connection, data, x);
+            }
+            catch (Exception x)
+            {
+                handleException(_connection, x);
             }
             finally
             {
@@ -293,10 +298,24 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                         boolean holdMetaConnect = timeout > 0 && wasConnected;
                         if (holdMetaConnect)
                         {
-                            // Delay the connect reply until timeout.
-                            _connectReply = reply;
-                            reply = null;
-                            getBayeux().startTimeout(_timeoutTask, timeout);
+                            // Decide atomically if we need to hold the meta connect or not
+                            // In schedule() we decide atomically if reply to the meta connect
+                            synchronized (session.getLock())
+                            {
+                                if (session.isQueueEmpty())
+                                {
+                                    // Delay the connect reply until timeout.
+                                    _connectReply = reply;
+                                    _connectExpiration = System.currentTimeMillis() + timeout;
+                                    reply = null;
+                                }
+                                else
+                                {
+                                    queue = session.takeQueue();
+                                }
+                            }
+                            if (reply == null)
+                                getBayeux().startTimeout(_timeoutTask, timeout);
                         }
                     }
                 }
@@ -323,26 +342,18 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     }
                 }
             }
-
-            // Disassociate the reply
-            message.setAssociated(null);
         }
 
         public void cancel()
         {
+            getBayeux().cancelTimeout(_timeoutTask);
         }
 
         public void schedule()
         {
             // This method may be called concurrently, for example when 2 clients
             // publish concurrently on the same channel.
-            // We must avoid to dispatch multiple times, for two reasons: to save
-            // threads, and to enforce the semantic of the ack extension.
-            // In the ack extension case and in the example above, 2 threads will be
-            // allocated to flush the queue and they may both find a non-empty queue
-            // and a non-null metaConnectReply, possibly resulting in non-ordered
-            // message delivery (this is because we chose to not make atomic
-            // _connectReply=null with session.takeQueue())
+            // We must avoid to dispatch multiple times, to save threads.
             // However, the CAS operation introduces a window where a schedule()
             // is skipped and the queue remains full; to avoid this situation,
             // we reschedule at the end of schedule(boolean).
@@ -357,6 +368,9 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         private void schedule(boolean timeout)
         {
+            // This method may be executed concurrently by a thread triggered by
+            // schedule() and by the timeout thread that replies to the meta connect.
+
             boolean reschedule = false;
             ServerSessionImpl session = _session;
             try
@@ -364,37 +378,52 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 if (session == null)
                     return;
 
+                // Decide atomically if we have to reply to the meta connect
+                // We need to guarantee the metaConnectDeliverOnly semantic
+                // and allow only one thread to reply to the meta connect
+                // otherwise we may have out of order delivery.
                 boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
-                ServerMessage.Mutable reply = _connectReply;
-
-                // If we need to deliver only via meta connect,
-                // but we do not have one, wait until it arrives
-                if (metaConnectDelivery && reply == null)
+                boolean disconnected = !session.isConnected();
+                boolean reply = false;
+                ServerMessage.Mutable connectReply;
+                synchronized (session.getLock())
                 {
-                    _logger.debug("Flushing skipped since metaConnectDelivery={}, metaConnectReply={}", metaConnectDelivery, reply);
-                    return;
+                    connectReply = _connectReply;
+
+                    if (connectReply == null)
+                    {
+                        if (metaConnectDelivery)
+                        {
+                            // If we need to deliver only via meta connect, but we
+                            // do not have one outstanding, wait until it arrives
+                            _logger.debug("Flushing skipped since metaConnectDelivery={}, metaConnectReply={}", metaConnectDelivery, connectReply);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        if (timeout || disconnected || metaConnectDelivery)
+                        {
+                            _connectReply = null;
+                            reply = true;
+                        }
+                    }
                 }
 
                 reschedule = true;
                 List<ServerMessage> queue = session.takeQueue();
 
-                if (reply != null)
+                if (reply)
                 {
-                    boolean disconnected = !session.isConnected();
-                    if (timeout || disconnected || metaConnectDelivery)
-                    {
-                        if (disconnected)
-                            reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+                    if (disconnected)
+                        connectReply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
 
-                        reply = getBayeux().extendReply(session, session, reply);
-                        if (reply != null)
-                            queue.add(reply);
+                    connectReply = getBayeux().extendReply(session, session, connectReply);
+                    if (connectReply != null)
+                        queue.add(connectReply);
 
-                        _connectReply = null;
-
-                        if (!disconnected)
-                            session.startIntervalTimeout(getInterval());
-                    }
+                    if (!disconnected)
+                        session.startIntervalTimeout(getInterval());
                 }
 
                 if (queue.size() > 0)
@@ -403,7 +432,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     send(queue);
                 }
             }
-            catch (IOException x)
+            catch (Exception x)
             {
                 handleException(_connection, x);
             }
