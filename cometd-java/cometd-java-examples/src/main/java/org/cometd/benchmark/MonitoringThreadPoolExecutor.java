@@ -31,6 +31,7 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
     private final AtomicLong taskCount = new AtomicLong();
     private final AtomicLong maxLatency = new AtomicLong();
     private final AtomicLong totalLatency = new AtomicLong();
+    private final AtomicInteger threads = new AtomicInteger();
     private final AtomicInteger maxThreads = new AtomicInteger();
 
     public MonitoringThreadPoolExecutor(int maximumPoolSize, long keepAliveTime, TimeUnit unit)
@@ -50,6 +51,7 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
         taskCount.set(0);
         maxLatency.set(0);
         totalLatency.set(0);
+        threads.set(0);
         maxThreads.set(0);
     }
 
@@ -103,14 +105,14 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
         taskCount.incrementAndGet();
         Atomics.updateMax(maxLatency, time);
         totalLatency.addAndGet(time);
-        Atomics.updateMax(maxThreads, maxThreads.incrementAndGet());
+        Atomics.updateMax(maxThreads, threads.incrementAndGet());
         super.beforeExecute(thread, task);
     }
 
     @Override
     protected void afterExecute(Runnable r, Throwable t)
     {
-        maxThreads.decrementAndGet();
+        threads.decrementAndGet();
         super.afterExecute(r, t);
     }
 
