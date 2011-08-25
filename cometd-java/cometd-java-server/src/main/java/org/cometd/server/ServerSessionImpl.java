@@ -144,6 +144,7 @@ public class ServerSessionImpl implements ServerSession
     protected void sweep(long now)
     {
         boolean remove = false;
+        Scheduler scheduler = null;
         synchronized (_queue)
         {
             if (_intervalTimestamp == 0)
@@ -162,11 +163,15 @@ public class ServerSessionImpl implements ServerSession
                     remove = true;
                 }
             }
-            if (remove && _scheduler != null)
-                _scheduler.cancel();
+            if (remove)
+                scheduler = _scheduler;
         }
         if (remove)
+        {
+            if (scheduler != null)
+                scheduler.cancel();
             _bayeux.removeServerSession(this, true);
+        }
     }
 
     /* ------------------------------------------------------------ */
