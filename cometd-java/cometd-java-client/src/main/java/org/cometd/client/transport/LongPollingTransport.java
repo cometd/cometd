@@ -39,6 +39,9 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 
 public class LongPollingTransport extends HttpClientTransport
 {
+    public static final String NAME = "long-polling";
+    public static final String PREFIX = "long-polling.json";
+    
     public static LongPollingTransport create(Map<String, Object> options)
     {
         HttpClient httpClient = new HttpClient();
@@ -74,9 +77,9 @@ public class LongPollingTransport extends HttpClientTransport
 
     public LongPollingTransport(Map<String, Object> options, HttpClient httpClient)
     {
-        super("long-polling", options);
+        super(NAME, options);
         _httpClient = httpClient;
-        setOptionPrefix("long-polling.json");
+        setOptionPrefix(PREFIX);
     }
 
     public boolean accept(String bayeuxVersion)

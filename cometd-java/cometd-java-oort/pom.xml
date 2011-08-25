@@ -28,7 +28,12 @@
             <artifactId>cometd-java-client</artifactId>
             <version>${project.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.cometd.java</groupId>
+            <artifactId>cometd-websocket-jetty</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

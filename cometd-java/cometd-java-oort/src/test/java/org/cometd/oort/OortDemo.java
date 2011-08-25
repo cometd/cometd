@@ -19,6 +19,10 @@ package org.cometd.oort;
 import java.lang.management.ManagementFactory;
 
 import org.cometd.server.CometdServlet;
+import org.cometd.server.transport.JSONPTransport;
+import org.cometd.server.transport.JSONTransport;
+import org.cometd.server.transport.LongPollingTransport;
+import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -84,7 +88,7 @@ public class OortDemo
         context.setBaseResource(new ResourceCollection(new Resource[]
         {
             Resource.newResource(base+"/../../cometd-demo/src/main/webapp/"),
-            Resource.newResource(base+"/../../cometd-demo/target/cometd-demo-2.1.0-SNAPSHOT/"),
+            Resource.newResource(base+"/../../cometd-demo/target/cometd-demo-2.4.0-SNAPSHOT/"),
         }));
 
         // Cometd servlet
@@ -94,6 +98,8 @@ public class OortDemo
         cometd_holder.setInitParameter("maxInterval","100000");
         cometd_holder.setInitParameter("multiFrameInterval","1500");
         cometd_holder.setInitParameter("logLevel","1");
+        cometd_holder.setInitParameter("transports",WebSocketTransport.class.getName());
+        cometd_holder.setInitParameter("allowedTransports",WebSocketTransport.NAME+","+JSONTransport.NAME+","+JSONPTransport.NAME);
         cometd_holder.setInitOrder(1);
         context.addServlet(cometd_holder, "/cometd/*");
 

@@ -29,6 +29,7 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.CometdServlet;
+import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -69,6 +70,7 @@ public abstract class OortTest
         // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
+        cometdServletHolder.setInitParameter("transports", org.cometd.websocket.server.WebSocketTransport.class.getName());
         if (Boolean.getBoolean("debugTests"))
             cometdServletHolder.setInitParameter("logLevel", "3");
         cometdServletHolder.setInitOrder(1);

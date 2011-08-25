@@ -493,9 +493,21 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             }
             else
             {
-                HttpSession s = request.getSession(true);
-                _context = s.getServletContext();
-                s.invalidate();
+                ServletContext context=null;
+                try
+                {
+                    HttpSession s = request.getSession(true);
+                    context = s.getServletContext();
+                    s.invalidate();
+                }
+                catch(IllegalStateException e)
+                {
+                    _logger.ignore(e);
+                }
+                finally
+                {
+                    _context=context;
+                }
             }
 
             StringBuffer url = request.getRequestURL();
