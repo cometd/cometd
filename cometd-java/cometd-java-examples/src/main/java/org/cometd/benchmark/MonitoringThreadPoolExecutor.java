@@ -31,6 +31,7 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
     private final AtomicLong taskCount = new AtomicLong();
     private final AtomicLong maxLatency = new AtomicLong();
     private final AtomicLong totalLatency = new AtomicLong();
+    private final AtomicInteger maxThreads = new AtomicInteger();
 
     public MonitoringThreadPoolExecutor(int maximumPoolSize, long keepAliveTime, TimeUnit unit)
     {
@@ -49,29 +50,50 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
         taskCount.set(0);
         maxLatency.set(0);
         totalLatency.set(0);
+        maxThreads.set(0);
     }
 
-    public long getMaxLatency()
+    public long getMaxQueueLatency()
     {
         return maxLatency.get();
     }
 
-    public long getAverageLatency()
+    public long getAverageQueueLatency()
     {
         long count = taskCount.get();
         return count == 0 ? -1 : totalLatency.get() / count;
     }
 
-    public int getMaxSize()
+    public int getMaxQueueSize()
     {
         return ((MonitoringLinkedBlockingQueue)getQueue()).maxSize.get();
     }
 
-    @Override
-    public void execute(Runnable task)
+    public int getMaxThreads()
     {
-        tasks.putIfAbsent(task, System.nanoTime());
-        super.execute(task);
+        return maxThreads.get();
+    }
+
+    @Override
+    public void execute(final Runnable task)
+    {
+        Runnable runnable = task;
+        long nanos = System.nanoTime();
+        Long existing = tasks.putIfAbsent(runnable, nanos);
+        if (existing != null)
+        {
+            // Need to wrap in order to guarantee
+            // that we're not passed the same task
+            runnable = new Runnable()
+            {
+                public void run()
+                {
+                    task.run();
+                }
+            };
+            tasks.put(runnable, nanos);
+        }
+        super.execute(runnable);
     }
 
     @Override
@@ -81,7 +103,15 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
         taskCount.incrementAndGet();
         Atomics.updateMax(maxLatency, time);
         totalLatency.addAndGet(time);
+        Atomics.updateMax(maxThreads, maxThreads.incrementAndGet());
         super.beforeExecute(thread, task);
+    }
+
+    @Override
+    protected void afterExecute(Runnable r, Throwable t)
+    {
+        maxThreads.decrementAndGet();
+        super.afterExecute(r, t);
     }
 
     private static class MonitoringLinkedBlockingQueue extends LinkedBlockingQueue<Runnable>

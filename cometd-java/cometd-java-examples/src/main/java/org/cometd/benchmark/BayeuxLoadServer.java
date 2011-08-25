@@ -275,17 +275,18 @@ public class BayeuxLoadServer
                 {
                     if (jettyThreadPoolQueue != null)
                     {
-                        System.err.printf("Jetty Thread Pool Queue (max_queued | avg_latency/max_latency): %d | %d/%d ms%n",
+                        System.err.printf("Jetty Thread Pool - Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
                                 jettyThreadPoolQueue.getMaxSize(),
                                 TimeUnit.NANOSECONDS.toMillis(jettyThreadPoolQueue.getAverageLatency()),
                                 TimeUnit.NANOSECONDS.toMillis(jettyThreadPoolQueue.getMaxLatency()));
                     }
                     if (websocketThreadPool != null)
                     {
-                        System.err.printf("WebSocket Thread Pool Queue (max_queued | avg_latency/max_latency): %d | %d/%d ms%n",
-                                websocketThreadPool.getMaxSize(),
-                                TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getAverageLatency()),
-                                TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getMaxLatency()));
+                        System.err.printf("WebSocket Thread Pool - Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+                                websocketThreadPool.getMaxThreads(),
+                                websocketThreadPool.getMaxQueueSize(),
+                                TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getAverageQueueLatency()),
+                                TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getMaxQueueLatency()));
                     }
 
                     if (statisticsHandler != null)
