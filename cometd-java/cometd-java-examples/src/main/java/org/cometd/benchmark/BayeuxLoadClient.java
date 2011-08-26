@@ -192,7 +192,7 @@ public class BayeuxLoadClient
         mbContainer.addBean(httpClient);
 
         webSocketClient = new WebSocketClient(threadPool);
-        webSocketClient.setNullMaskGen(true);
+        webSocketClient.setMaskingEnabled(false);
         webSocketClient.start();
         mbContainer.addBean(webSocketClient);
 

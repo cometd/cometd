@@ -58,11 +58,11 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-showversion</argument>
-                                <argument>-Xmx2048m</argument>
-                                <argument>-Xms2048m</argument>
-                                <argument>-Xmn256m</argument>
+                                <argument>-Xmx2g</argument>
+                                <argument>-Xms2g</argument>
+                                <argument>-Xmn1g</argument>
                                 <argument>-XX:+PrintCommandLineFlags</argument>
-                                <!--<argument>-verbose:gc</argument>-->
+                                <argument>-verbose:gc</argument>
                                 <!--<argument>-XX:+PrintGCDetails</argument>-->
                                 <!--<argument>-XX:+PrintGCDateStamps</argument>-->
                                 <argument>-XX:+UseParallelOldGC</argument>
@@ -91,11 +91,11 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-showversion</argument>
-                                <argument>-Xmx512m</argument>
-                                <argument>-Xms512m</argument>
-                                <argument>-Xmn256m</argument>
+                                <argument>-Xmx2g</argument>
+                                <argument>-Xms2g</argument>
+                                <argument>-Xmn1g</argument>
                                 <argument>-XX:+PrintCommandLineFlags</argument>
-                                <!--<argument>-verbose:gc</argument>-->
+                                <argument>-verbose:gc</argument>
                                 <!--<argument>-XX:+PrintGCDetails</argument>-->
                                 <!--<argument>-XX:+PrintGCDateStamps</argument>-->
                                 <argument>-XX:+UseParallelOldGC</argument>
