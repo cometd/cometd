@@ -46,6 +46,7 @@ import org.cometd.client.transport.TransportListener;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocket.Connection;
 import org.eclipse.jetty.websocket.WebSocketClient;
+import org.eclipse.jetty.websocket.WebSocketClientFactory;
 
 public class WebSocketTransport extends HttpClientTransport implements MessageClientTransport
 {
@@ -57,22 +58,22 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     public static WebSocketTransport create(Map<String, Object> options)
     {
-        return create(options, new WebSocketClient());
+        return create(options, new WebSocketClientFactory());
     }
 
-    public static WebSocketTransport create(Map<String, Object> options, WebSocketClient websocketClient)
+    public static WebSocketTransport create(Map<String, Object> options, WebSocketClientFactory webSocketClientFactory)
     {
-        return create(options, websocketClient, null);
+        return create(options, webSocketClientFactory, null);
     }
 
-    public static WebSocketTransport create(Map<String, Object> options, WebSocketClient websocketClient, ScheduledExecutorService scheduler)
+    public static WebSocketTransport create(Map<String, Object> options, WebSocketClientFactory webSocketClientFactory, ScheduledExecutorService scheduler)
     {
-        WebSocketTransport transport = new WebSocketTransport(options, websocketClient, scheduler);
-        if (!websocketClient.isStarted())
+        WebSocketTransport transport = new WebSocketTransport(options, webSocketClientFactory, scheduler);
+        if (!webSocketClientFactory.isStarted())
         {
             try
             {
-                websocketClient.start();
+                webSocketClientFactory.start();
             }
             catch (Exception x)
             {
@@ -85,7 +86,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private final WebSocket _websocket = new CometDWebSocket();
     private final Map<String, WebSocketExchange> _metaExchanges = new ConcurrentHashMap<String, WebSocketExchange>();
     private final Map<String, List<WebSocketExchange>> _exchanges = new HashMap<String, List<WebSocketExchange>>();
-    private final WebSocketClient _webSocketClient;
+    private final WebSocketClientFactory _webSocketClientFactory;
     private volatile ScheduledExecutorService _scheduler;
     private volatile boolean _shutdownScheduler;
     private volatile String _protocol = "cometd";
@@ -98,10 +99,10 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile TransportListener _listener;
     private volatile Map<String, Object> _advice;
 
-    public WebSocketTransport(Map<String, Object> options, WebSocketClient client, ScheduledExecutorService scheduler)
+    public WebSocketTransport(Map<String, Object> options, WebSocketClientFactory webSocketClientFactory, ScheduledExecutorService scheduler)
     {
         super(NAME, options);
-        _webSocketClient = client;
+        _webSocketClientFactory = webSocketClientFactory;
         _scheduler = scheduler;
         setOptionPrefix(PREFIX);
     }
@@ -222,7 +223,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             for (Cookie cookie : getCookieProvider().getCookies())
                 cookies.put(cookie.getName(), cookie.getValue());
 
-            WebSocketClient client = new WebSocketClient(_webSocketClient);
+            WebSocketClient client = _webSocketClientFactory.newWebSocketClient();
             client.setProtocol(_protocol);
             client.getCookies().putAll(cookies);
 
