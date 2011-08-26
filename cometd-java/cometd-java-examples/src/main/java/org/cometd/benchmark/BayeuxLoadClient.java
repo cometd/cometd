@@ -48,6 +48,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.WebSocketClient;
+import org.eclipse.jetty.websocket.WebSocketClientFactory;
 
 public class BayeuxLoadClient
 {
@@ -70,7 +71,7 @@ public class BayeuxLoadClient
     private final Map<String, AtomicStampedReference<List<Long>>> arrivalTimes = new ConcurrentHashMap<String, AtomicStampedReference<List<Long>>>();
     private ScheduledExecutorService scheduler;
     private HttpClient httpClient;
-    private WebSocketClient webSocketClient;
+    private WebSocketClientFactory webSocketClientFactory;
 
     public static void main(String[] args) throws Exception
     {
@@ -191,9 +192,9 @@ public class BayeuxLoadClient
         httpClient.start();
         mbContainer.addBean(httpClient);
 
-        webSocketClient = new WebSocketClient(threadPool);
-        webSocketClient.start();
-        mbContainer.addBean(webSocketClient);
+        webSocketClientFactory = new WebSocketClientFactory(threadPool);
+        webSocketClientFactory.start();
+        mbContainer.addBean(webSocketClientFactory);
 
         HandshakeListener handshakeListener = new HandshakeListener(channel, rooms, roomsPerClient);
         DisconnectListener disconnectListener = new DisconnectListener();
@@ -399,7 +400,7 @@ public class BayeuxLoadClient
 
         statsClient.disconnect(1000);
 
-        webSocketClient.stop();
+        webSocketClientFactory.stop();
 
         httpClient.stop();
 
@@ -417,7 +418,7 @@ public class BayeuxLoadClient
             }
             case WEBSOCKET:
             {
-                return new WebSocketTransport(null, new WebSocketClient(webSocketClient), scheduler);
+                return new WebSocketTransport(null, webSocketClientFactory.newWebSocketClient(), scheduler);
             }
             default:
                 throw new IllegalArgumentException();
