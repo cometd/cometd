@@ -593,7 +593,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected void processHandshake(final Message.Mutable handshake)
     {
-        logger.debug("Processing handshake {}", handshake);
+        logger.debug("Processing meta handshake {}", handshake);
         if (handshake.isSuccessful())
         {
             Object field = handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD);
@@ -679,7 +679,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected void processConnect(final Message.Mutable connect)
     {
-        logger.debug("Processing connect {}", connect);
+        // TODO: Split "connected" state into connectSent+connectReceived ?
+        // It may happen that the server replies to the meta connect with a delay
+        // that exceeds the maxNetworkTimeout (for example because the server is
+        // busy and the meta connect reply thread is starved).
+        // In this case, it is possible that we issue 2 concurrent connects, one
+        // for the response arrived late, and one from the unconnected state.
+        // We should avoid this, although it is a very rare case.
+
+        logger.debug("Processing meta connect {}", connect);
         updateBayeuxClientState(new BayeuxClientStateUpdater()
         {
             public BayeuxClientState create(BayeuxClientState oldState)
@@ -720,7 +728,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected void processDisconnect(final Message.Mutable disconnect)
     {
-        logger.debug("Processing disconnect {}", disconnect);
+        logger.debug("Processing meta disconnect {}", disconnect);
 
         updateBayeuxClientState(new BayeuxClientStateUpdater()
         {
