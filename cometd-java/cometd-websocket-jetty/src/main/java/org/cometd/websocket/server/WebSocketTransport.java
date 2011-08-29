@@ -30,6 +30,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -49,7 +51,6 @@ import org.cometd.server.transport.HttpTransport;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketFactory;
 
@@ -66,7 +67,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     private final ThreadLocal<WebSocketContext> _handshake = new ThreadLocal<WebSocketContext>();
     private String _protocol;
     private Executor _executor;
-    private Executor _scheduler;
+    private ScheduledExecutorService _scheduler;
 
     public WebSocketTransport(BayeuxServerImpl bayeux)
     {
@@ -88,6 +89,8 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     @Override
     protected void destroy()
     {
+        _scheduler.shutdown();
+
         Executor threadPool = _executor;
         if (threadPool instanceof ExecutorService)
         {
@@ -104,6 +107,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 _logger.ignore(x);
             }
         }
+
         super.destroy();
     }
 
@@ -164,6 +168,12 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         _logger.warn("", exception);
     }
 
+    @Override
+    public BayeuxContext getContext()
+    {
+        return _handshake.get();
+    }
+
     protected class WebSocketScheduler implements WebSocket.OnTextMessage, AbstractServerTransport.Scheduler, Runnable
     {
         private final AtomicBoolean _scheduling = new AtomicBoolean();
@@ -171,25 +181,8 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         private final String _userAgent;
         private volatile ServerSessionImpl _session;
         private volatile Connection _connection;
-        private volatile ServerMessage.Mutable _connectReply;
-        private volatile long _connectExpiration;
-        private final Timeout.Task _timeoutTask = new Timeout.Task()
-        {
-            @Override
-            public void expired()
-            {
-                long now = System.currentTimeMillis();
-                long jitter = now - _connectExpiration;
-                if (jitter > 5000) // TODO: make the max jitter a parameter ?
-                    _logger.info("/meta/connect timeout expired too late {}", jitter);
-
-                // Send the meta connect response after timeout.
-                // We *must* execute schedule(true) otherwise
-                // the client will timeout the meta connect, so we
-                // do not care about flipping the _scheduling field.
-                WebSocketScheduler.this.schedule(true);
-            }
-        };
+        private ServerMessage.Mutable _connectReply;
+        private ScheduledFuture _connectTask;
 
         public WebSocketScheduler(WebSocketContext context, String userAgent)
         {
@@ -212,8 +205,15 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 // just null out the current session to have it retrieved again
                 _session = null;
                 session.cancelIntervalTimeout();
-                getBayeux().cancelTimeout(_timeoutTask);
+                cancelMetaConnectReply();
             }
+        }
+
+        private void cancelMetaConnectReply()
+        {
+            final ScheduledFuture connectTask = _connectTask;
+            if (connectTask != null)
+                connectTask.cancel(false);
         }
 
         public void onMessage(String data)
@@ -312,15 +312,21 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                             {
                                 if (session.isQueueEmpty())
                                 {
-                                    // Delay the connect reply until timeout.
+                                    if (_connectTask != null)
+                                    {
+                                        _logger.debug("Cancelling unresponded meta connect {}", _connectTask);
+                                        _connectTask.cancel(false);
+                                    }
+
                                     _connectReply = reply;
-                                    _connectExpiration = System.currentTimeMillis() + timeout;
+
+                                    // Delay the connect reply until timeout.
+                                    long expiration = System.currentTimeMillis() + timeout;
+                                    _connectTask = _scheduler.schedule(new MetaConnectReplyTask(reply, expiration), timeout, TimeUnit.MILLISECONDS);
                                     reply = null;
                                 }
                             }
-                            if (reply == null)
-                                getBayeux().startTimeout(_timeoutTask, timeout);
-                            else
+                            if (reply != null)
                                 queue = session.takeQueue();
                         }
                     }
@@ -358,7 +364,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         public void cancel()
         {
-            getBayeux().cancelTimeout(_timeoutTask);
+            cancelMetaConnectReply();
         }
 
         public void schedule()
@@ -375,10 +381,10 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         public void run()
         {
-            schedule(false);
+            schedule(false, null);
         }
 
-        private void schedule(boolean timeout)
+        private void schedule(boolean timeout, ServerMessage.Mutable expiredConnectReply)
         {
             // This method may be executed concurrently by a thread triggered by
             // schedule() and by the timeout thread that replies to the meta connect.
@@ -401,6 +407,14 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 synchronized (session.getLock())
                 {
                     connectReply = _connectReply;
+
+                    if (timeout && connectReply != expiredConnectReply)
+                    {
+                        // We had a second meta connect arrived while we were expiring the first:
+                        // just ignore to reply to the first connect as if we were able to cancel it
+                        _logger.debug("Flushing skipped replies to do not match: {} != {}", connectReply, expiredConnectReply);
+                        return;
+                    }
 
                     if (connectReply == null)
                     {
@@ -479,15 +493,32 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             _logger.debug("Sending {}", builder);
             _connection.sendMessage(builder.toString());
         }
-    }
 
-    /**
-     * @see org.cometd.server.transport.HttpTransport#getContext()
-     */
-    @Override
-    public BayeuxContext getContext()
-    {
-        return _handshake.get();
+        private class MetaConnectReplyTask implements Runnable
+        {
+            private final ServerMessage.Mutable _connectReply;
+            private final long _connectExpiration;
+
+            private MetaConnectReplyTask(ServerMessage.Mutable connectReply, long connectExpiration)
+            {
+                this._connectReply = connectReply;
+                this._connectExpiration = connectExpiration;
+            }
+
+            public void run()
+            {
+                long now = System.currentTimeMillis();
+                long delay = now - _connectExpiration;
+                if (delay > 5000) // TODO: make the max delay a parameter ?
+                    _logger.debug("/meta/connect timeout expired {} ms too late", delay);
+
+                // Send the meta connect response after timeout.
+                // We *must* execute the next schedule() otherwise
+                // the client will timeout the meta connect, so we
+                // do not care about flipping the _scheduling field.
+                schedule(true, _connectReply);
+            }
+        }
     }
 
     private class WebSocketContext implements BayeuxContext

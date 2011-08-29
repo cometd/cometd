@@ -25,6 +25,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Channel;
@@ -669,6 +670,104 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         // Check if messages after reconnect are received
         for (int i = 2 * count; i < 3 * count; ++i)
             Assert.assertEquals("hello_" + i, messages.poll(5, TimeUnit.SECONDS).getData());
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testMetaConnectDelayedOnServerRespondedBeforeRetry() throws Exception
+    {
+        final long maxNetworkDelay = 2000;
+        final long backoffIncrement = 2000;
+        testMetaConnectDelayedOnServer(maxNetworkDelay, backoffIncrement, maxNetworkDelay + backoffIncrement / 2);
+    }
+
+    @Test
+    public void testMetaConnectDelayedOnServerRespondedAfterRetry() throws Exception
+    {
+        final long maxNetworkDelay = 2000;
+        final long backoffIncrement = 1000;
+        testMetaConnectDelayedOnServer(maxNetworkDelay, backoffIncrement, maxNetworkDelay + backoffIncrement * 2);
+    }
+
+    private void testMetaConnectDelayedOnServer(final long maxNetworkDelay, final long backoffIncrement, final long delay) throws Exception
+    {
+        Map<String, Object> options = new HashMap<String, Object>();
+        options.put("ws.maxNetworkDelay", maxNetworkDelay);
+        WebSocketTransport transport = WebSocketTransport.create(options);
+        transport.setDebugEnabled(debugTests());
+        BayeuxClient client = new BayeuxClient(cometdURL, transport)
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                if (!(x instanceof TimeoutException))
+                    super.onFailure(x, messages);
+            }
+        };
+        client.setOption(BayeuxClient.BACKOFF_INCREMENT_OPTION, backoffIncrement);
+        client.setDebugEnabled(debugTests());
+
+        bayeux.stop();
+        long timeout = 5000;
+        bayeux.setOption("timeout", timeout);
+        bayeux.addTransport(new org.cometd.websocket.server.WebSocketTransport(bayeux));
+        bayeux.setAllowedTransports("websocket");
+        bayeux.start();
+
+        bayeux.getChannel(Channel.META_CONNECT).addListener(new ServerChannel.MessageListener()
+        {
+            private final AtomicInteger connects = new AtomicInteger();
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
+            {
+                int connects = this.connects.incrementAndGet();
+                if (connects == 2)
+                {
+                    try
+                    {
+                        // We delay the second connect, so the client can expire it
+                        Thread.sleep(delay);
+                    }
+                    catch (InterruptedException x)
+                    {
+                        x.printStackTrace();
+                        return false;
+                    }
+                }
+                return true;
+            }
+        });
+
+        // The second connect must fail, and should never be notified on client
+        final CountDownLatch connectLatch1 = new CountDownLatch(2);
+        final CountDownLatch connectLatch2 = new CountDownLatch(1);
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            private final AtomicInteger connects = new AtomicInteger();
+            public String failedId;
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                int connects = this.connects.incrementAndGet();
+                if (connects == 1 && message.isSuccessful())
+                {
+                    connectLatch1.countDown();
+                }
+                else if (connects == 2 && !message.isSuccessful())
+                {
+                    connectLatch1.countDown();
+                    failedId = message.getId();
+                }
+                else if (connects > 2 && !failedId.equals(message.getId()))
+                {
+                    connectLatch2.countDown();
+                }
+            }
+        });
+
+        client.handshake();
+
+        Assert.assertTrue(connectLatch1.await(timeout + 2 * maxNetworkDelay, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(connectLatch2.await(client.getBackoffIncrement() * 2, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
     }
