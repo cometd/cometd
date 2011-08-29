@@ -533,7 +533,7 @@ public class BayeuxLoadServer
         }
 
         @Override
-        protected Executor newThreadPool()
+        protected Executor newExecutor()
         {
             return executor;
         }

@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -64,7 +65,8 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     private final WebSocketFactory _factory = new WebSocketFactory(this);
     private final ThreadLocal<WebSocketContext> _handshake = new ThreadLocal<WebSocketContext>();
     private String _protocol;
-    private Executor _threadPool;
+    private Executor _executor;
+    private Executor _scheduler;
 
     public WebSocketTransport(BayeuxServerImpl bayeux)
     {
@@ -79,13 +81,14 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         _logger.setDebugEnabled(getBayeux().getLogger().isDebugEnabled());
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
         _factory.setBufferSize(getOption(BUFFER_SIZE_OPTION, _factory.getBufferSize()));
-        _threadPool = newThreadPool();
+        _executor = newExecutor();
+        _scheduler = newScheduledExecutor();
     }
 
     @Override
     protected void destroy()
     {
-        Executor threadPool = _threadPool;
+        Executor threadPool = _executor;
         if (threadPool instanceof ExecutorService)
         {
             ((ExecutorService)threadPool).shutdown();
@@ -104,10 +107,15 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         super.destroy();
     }
 
-    protected Executor newThreadPool()
+    protected Executor newExecutor()
     {
         int size = getOption(THREAD_POOL_MAX_SIZE, 64);
         return Executors.newFixedThreadPool(size);
+    }
+
+    protected ScheduledExecutorService newScheduledExecutor()
+    {
+        return Executors.newSingleThreadScheduledExecutor();
     }
 
     @Override
@@ -309,13 +317,11 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                                     _connectExpiration = System.currentTimeMillis() + timeout;
                                     reply = null;
                                 }
-                                else
-                                {
-                                    queue = session.takeQueue();
-                                }
                             }
                             if (reply == null)
                                 getBayeux().startTimeout(_timeoutTask, timeout);
+                            else
+                                queue = session.takeQueue();
                         }
                     }
                 }
@@ -323,23 +329,29 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 // Send the reply
                 if (reply != null)
                 {
-                    reply = getBayeux().extendReply(session, session, reply);
-                    if (reply != null)
+                    try
                     {
-                        // Check again if session is connected, extensions may have disconnected
-                        if (connect && session != null && session.isConnected())
-                            session.startIntervalTimeout(getInterval());
-
                         if (queue != null)
-                        {
-                            queue.add(reply);
                             send(queue);
-                        }
-                        else
+                    }
+                    finally
+                    {
+                        // Start the interval timeout before sending the reply to
+                        // avoid race conditions, and even if sending the queue
+                        // throws an exception so that we can sweep the session
+                        if (connect && session != null)
                         {
-                            send(reply);
+                            if (session.isConnected())
+                                session.startIntervalTimeout(getInterval());
+                            else
+                                reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                         }
                     }
+
+                    reply = getBayeux().extendReply(session, session, reply);
+
+                    if (reply != null)
+                        send(reply);
                 }
             }
         }
@@ -355,10 +367,10 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             // publish concurrently on the same channel.
             // We must avoid to dispatch multiple times, to save threads.
             // However, the CAS operation introduces a window where a schedule()
-            // is skipped and the queue remains full; to avoid this situation,
+            // is skipped and the queue may remain full; to avoid this situation,
             // we reschedule at the end of schedule(boolean).
             if (_scheduling.compareAndSet(false, true))
-                _threadPool.execute(this);
+                _executor.execute(this);
         }
 
         public void run()

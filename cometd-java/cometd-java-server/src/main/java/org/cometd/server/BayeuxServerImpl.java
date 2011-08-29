@@ -1116,7 +1116,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /* ------------------------------------------------------------ */
     public void addTransport(ServerTransport transport)
     {
-        _logger.info("addTransport {} from {}",transport.getName(),transport.getClass());
+        _logger.debug("addTransport {} from {}",transport.getName(),transport.getClass());
         _transports.put(transport.getName(), transport);
     }
 

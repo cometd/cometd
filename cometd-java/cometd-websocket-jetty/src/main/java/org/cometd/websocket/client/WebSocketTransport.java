@@ -271,7 +271,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         return _connection;
     }
 
-    private void complete(Message.Mutable... messages)
+    private void complete(Message.Mutable[] messages)
     {
         for (Message.Mutable message : messages)
             deregisterMessage(message);
@@ -297,12 +297,23 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         }
 
         // Schedule a task to expire if the maxNetworkDelay elapses
+        final long expiration = System.currentTimeMillis() + maxNetworkDelay;
         ScheduledFuture<?> task = _scheduler.schedule(new Runnable()
         {
             public void run()
             {
-                complete(message);
-                listener.onExpire(new Message[]{message});
+                long now = System.currentTimeMillis();
+                long jitter = now - expiration;
+                if (jitter > 5000) // TODO: make the max jitter a parameter ?
+                    _logger.info("Expired too late {} for {}", jitter, message);
+
+                if (_metaExchanges.get(message.getId()) == null) // TODO: remove this debug code
+                    _logger.info("Expiring {}, registration missing", message);
+
+                // Notify only if we won the race to deregister the message
+                WebSocketExchange exchange = deregisterMessage(message);
+                if (exchange != null)
+                    listener.onExpire(new Message[]{message});
             }
         }, maxNetworkDelay, TimeUnit.MILLISECONDS);
 
@@ -388,7 +399,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     private boolean isPublishReply(Message message)
     {
-        return !message.containsKey(Message.DATA_FIELD);
+        return !message.containsKey(Message.DATA_FIELD) && !message.isMeta();
     }
 
     private void failMessages(Throwable cause)
@@ -437,14 +448,14 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             try
             {
                 List<Mutable> messages = parseMessages(data);
-                _logger.debug("Received messages {}", messages);
+                _logger.debug("Received messages {}", data);
                 for (Mutable message : messages)
                 {
-                    if (message.isSuccessful() && Channel.META_CONNECT.equals(message.getChannel()))
+                    if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful())
                     {
                         // Remember the advice so that we can properly calculate the max network delay
                         Map<String, Object> advice = message.getAdvice();
-                        if (advice != null && advice.get("timeout") != null)
+                        if (advice != null && advice.get(Message.TIMEOUT_FIELD) != null)
                             _advice = advice;
                     }
 
@@ -452,8 +463,14 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                     {
                         WebSocketExchange exchange = deregisterMessage(message);
                         if (exchange != null)
+                        {
                             exchange.listener.onMessages(Collections.singletonList(message));
-                        // If the exchange is missing, then the message has expired, and we do not notify
+                        }
+                        else
+                        {
+                            // If the exchange is missing, then the message has expired, and we do not notify
+                            _logger.info("Could not find request for reply {}", message); // TODO: use debug()
+                        }
                     }
                     else
                     {

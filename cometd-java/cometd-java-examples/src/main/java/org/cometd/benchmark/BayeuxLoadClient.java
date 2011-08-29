@@ -671,6 +671,7 @@ public class BayeuxLoadClient
                     messages.incrementAndGet();
 
                     String messageId = message.getId();
+
                     AtomicStampedReference<Long> sendTimeRef = sendTimes.get(messageId);
                     long sendTime = sendTimeRef.getReference();
                     // Update count atomically
