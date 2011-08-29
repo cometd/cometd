@@ -305,10 +305,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                 long now = System.currentTimeMillis();
                 long jitter = now - expiration;
                 if (jitter > 5000) // TODO: make the max jitter a parameter ?
-                    _logger.info("Expired too late {} for {}", jitter, message);
-
-                if (_metaExchanges.get(message.getId()) == null) // TODO: remove this debug code
-                    _logger.info("Expiring {}, registration missing", message);
+                    _logger.debug("Expired too late {} for {}", jitter, message);
 
                 // Notify only if we won the race to deregister the message
                 WebSocketExchange exchange = deregisterMessage(message);
@@ -469,7 +466,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                         else
                         {
                             // If the exchange is missing, then the message has expired, and we do not notify
-                            _logger.info("Could not find request for reply {}", message); // TODO: use debug()
+                            _logger.debug("Could not find request for reply {}", message);
                         }
                     }
                     else
