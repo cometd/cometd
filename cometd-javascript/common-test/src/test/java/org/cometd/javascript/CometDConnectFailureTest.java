@@ -95,11 +95,9 @@ public class CometDConnectFailureTest extends AbstractCometDTest
         // Disconnect so that connect is not performed anymore
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = get("disconnectLatch");
-        failureLatch.reset(1);
         evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
         evaluateScript("cometd.disconnect();");
         Assert.assertTrue(disconnectLatch.await(1000));
-        Assert.assertTrue(failureLatch.await(1000));
         String status = evaluateScript("cometd.getStatus();");
         Assert.assertEquals("disconnected", status);
 
@@ -122,7 +120,7 @@ public class CometDConnectFailureTest extends AbstractCometDTest
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             String uri = request.getRequestURI();
-            if (uri.endsWith("connect"))
+            if (uri.endsWith("/connect"))
                 throw new IOException();
             chain.doFilter(request, response);
         }

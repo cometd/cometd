@@ -127,7 +127,7 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             String uri = request.getRequestURI();
-            if (!uri.endsWith("handshake") && !uri.endsWith("connect"))
+            if (!uri.endsWith("/handshake") && !uri.endsWith("/connect"))
             {
                 // We hold the publish longer than the maxNetworkDelay
                 try

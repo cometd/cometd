@@ -89,7 +89,7 @@ public class CometDDisconnectFailureTest extends AbstractCometDTest
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             String uri = request.getRequestURI();
-            if (uri.endsWith("disconnect"))
+            if (uri.endsWith("/disconnect"))
                 throw new IOException();
             chain.doFilter(request, response);
         }

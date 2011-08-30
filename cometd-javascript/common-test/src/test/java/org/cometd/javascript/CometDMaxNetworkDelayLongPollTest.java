@@ -135,7 +135,7 @@ public class CometDMaxNetworkDelayLongPollTest extends AbstractCometDTest
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             String uri = request.getRequestURI();
-            if (uri.endsWith("connect"))
+            if (uri.endsWith("/connect"))
                 ++connects;
             // We hold the second connect longer than the long poll timeout + maxNetworkDelay
             if (connects == 2)

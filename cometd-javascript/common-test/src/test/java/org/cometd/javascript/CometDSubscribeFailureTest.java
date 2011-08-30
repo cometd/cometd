@@ -87,7 +87,7 @@ public class CometDSubscribeFailureTest extends AbstractCometDTest
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             String uri = request.getRequestURI();
-            if (!uri.endsWith("handshake") && !uri.endsWith("connect"))
+            if (!uri.endsWith("/handshake") && !uri.endsWith("/connect"))
                 throw new IOException();
             chain.doFilter(request, response);
         }

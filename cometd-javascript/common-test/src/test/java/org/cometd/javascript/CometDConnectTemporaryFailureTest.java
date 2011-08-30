@@ -110,7 +110,7 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTest
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             String uri = request.getRequestURI();
-            if (uri.endsWith("connect"))
+            if (uri.endsWith("/connect"))
                 ++connects;
             if (connects == 3)
                 throw new IOException();

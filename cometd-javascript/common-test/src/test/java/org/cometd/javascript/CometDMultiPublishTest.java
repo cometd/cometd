@@ -164,7 +164,7 @@ public class CometDMultiPublishTest extends AbstractCometDTest
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             String uri = request.getRequestURI();
-            if (!uri.endsWith("handshake") && !uri.endsWith("connect"))
+            if (!uri.endsWith("/handshake") && !uri.endsWith("/connect"))
                 ++messages;
             // The third non-handshake and non-connect message will be the second publish, throw
             if (messages == 3)

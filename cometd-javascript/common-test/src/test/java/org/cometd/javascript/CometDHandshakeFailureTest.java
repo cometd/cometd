@@ -121,7 +121,7 @@ public class CometDHandshakeFailureTest extends AbstractCometDTest
         private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             String uri = request.getRequestURI();
-            if (uri.endsWith("handshake"))
+            if (uri.endsWith("/handshake"))
                 throw new IOException();
             chain.doFilter(request, response);
         }
