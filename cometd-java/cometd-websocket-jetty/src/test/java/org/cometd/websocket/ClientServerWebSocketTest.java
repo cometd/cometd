@@ -30,7 +30,9 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.websocket.WebSocketClientFactory;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestWatchman;
 import org.junit.runners.model.FrameworkMethod;
@@ -51,6 +53,7 @@ public abstract class ClientServerWebSocketTest
     protected Server server;
     protected ServletContextHandler context;
     protected HttpClient httpClient;
+    protected WebSocketClientFactory factory = new WebSocketClientFactory();
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
 
@@ -93,7 +96,7 @@ public abstract class ClientServerWebSocketTest
 
     protected BayeuxClient newBayeuxClient()
     {
-        WebSocketTransport transport = WebSocketTransport.create(null);
+        WebSocketTransport transport = WebSocketTransport.create(null,factory);
         transport.setDebugEnabled(debugTests());
         final BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.setDebugEnabled(debugTests());
@@ -104,6 +107,7 @@ public abstract class ClientServerWebSocketTest
     {
         client.disconnect(1000);
     }
+    
 
     @After
     public void stopServer() throws Exception
@@ -112,6 +116,18 @@ public abstract class ClientServerWebSocketTest
 
         server.stop();
         server.join();
+    }
+
+    @Before
+    public void startWS() throws Exception
+    {
+        factory.start();
+    } 
+    
+    @After
+    public void stopWS() throws Exception
+    {
+        factory.stop();
     }
 
     protected boolean debugTests()
