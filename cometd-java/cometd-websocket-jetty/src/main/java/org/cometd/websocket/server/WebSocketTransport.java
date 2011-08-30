@@ -205,15 +205,22 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 // just null out the current session to have it retrieved again
                 _session = null;
                 session.cancelIntervalTimeout();
-                cancelMetaConnectReply();
+                cancelMetaConnectTask(session);
             }
         }
 
-        private void cancelMetaConnectReply()
+        private boolean cancelMetaConnectTask(ServerSessionImpl session)
         {
-            final ScheduledFuture connectTask = _connectTask;
-            if (connectTask != null)
-                connectTask.cancel(false);
+            final ScheduledFuture connectTask;
+            synchronized (session.getLock())
+            {
+                connectTask = _connectTask;
+                _connectTask = null;
+            }
+            if (connectTask == null)
+                return false;
+            connectTask.cancel(false);
+            return true;
         }
 
         public void onMessage(String data)
@@ -312,11 +319,8 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                             {
                                 if (session.isQueueEmpty())
                                 {
-                                    if (_connectTask != null)
-                                    {
-                                        _logger.debug("Cancelling unresponded meta connect {}", _connectTask);
-                                        _connectTask.cancel(false);
-                                    }
+                                    if (cancelMetaConnectTask(session))
+                                        _logger.debug("Cancelled unresponded meta connect {}", _connectReply);
 
                                     _connectReply = reply;
 
@@ -364,7 +368,9 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         public void cancel()
         {
-            cancelMetaConnectReply();
+            final ServerSessionImpl session = _session;
+            if (session != null)
+                cancelMetaConnectTask(session);
         }
 
         public void schedule()
@@ -412,7 +418,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     {
                         // We had a second meta connect arrived while we were expiring the first:
                         // just ignore to reply to the first connect as if we were able to cancel it
-                        _logger.debug("Flushing skipped replies to do not match: {} != {}", connectReply, expiredConnectReply);
+                        _logger.debug("Flushing skipped replies that do not match: {} != {}", connectReply, expiredConnectReply);
                         return;
                     }
 
@@ -430,6 +436,8 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     {
                         if (timeout || disconnected || metaConnectDelivery)
                         {
+                            // We will reply to the meta connect, so cancel the timeout task
+                            cancelMetaConnectTask(session);
                             _connectReply = null;
                             reply = true;
                         }
