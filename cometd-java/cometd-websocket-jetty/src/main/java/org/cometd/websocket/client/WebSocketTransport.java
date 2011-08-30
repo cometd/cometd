@@ -56,11 +56,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     public final static String CONNECT_TIMEOUT_OPTION = "connectTimeout";
     public final static String UNIQUE_MESSAGE_ID_GUARANTEED_OPTION = "uniqueMessageIdGuaranteed";
 
-    public static WebSocketTransport create(Map<String, Object> options)
-    {
-        return create(options, new WebSocketClientFactory());
-    }
-
     public static WebSocketTransport create(Map<String, Object> options, WebSocketClientFactory webSocketClientFactory)
     {
         return create(options, webSocketClientFactory, null);
@@ -436,8 +431,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         {
             Connection connection = _connection;
             _connection = null;
-            _logger.debug("Closed websocket connection with code {}: {} ", closeCode, connection);
-            failMessages(new EOFException("Connection closed with code " + closeCode));
+            _logger.debug("Closed websocket connection with code {} {}: {} ", closeCode, message, connection);
+            failMessages(new EOFException("Connection closed " + closeCode+" "+message));
         }
 
         public void onMessage(String data)

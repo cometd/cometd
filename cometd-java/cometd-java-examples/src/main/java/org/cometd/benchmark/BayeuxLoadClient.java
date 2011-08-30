@@ -186,6 +186,7 @@ public class BayeuxLoadClient
         httpClient.setMaxConnectionsPerAddress(50000);
         threadPool.setMaxThreads(maxThreads);
         threadPool.setDaemon(true);
+        threadPool.start();
         httpClient.setThreadPool(threadPool);
         httpClient.setIdleTimeout(5000);
 //        httpClient.setUseDirectBuffers(false);

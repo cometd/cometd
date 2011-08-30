@@ -146,11 +146,11 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         boolean stress = Boolean.getBoolean("STRESS");
         Random random = new Random();
 
-        final int rooms = stress ? 100 : 10;
+        final int rooms = stress ? 100 : 1;
         final int publish = stress ? 4000 : 100;
         final int batch = stress ? 10 : 2;
         final int pause = stress ? 50 : 10;
-        BayeuxClient[] clients = new BayeuxClient[stress ? 500 : 2 * rooms];
+        BayeuxClient[] clients = new BayeuxClient[stress ? 500 : 1 * rooms];
 
         final AtomicInteger connections = new AtomicInteger();
         final AtomicInteger received = new AtomicInteger();
