@@ -45,8 +45,12 @@ import org.cometd.server.authorizer.GrantAuthorizer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.websocket.WebSocketClientFactory;
 
 /**
  * <p>Oort is the cluster manager that links one CometD server to a set of other CometD servers.</p>
@@ -64,7 +68,7 @@ import org.eclipse.jetty.util.log.Logger;
  * @see OortMulticastConfigServlet
  * @see OortStaticConfigServlet
  */
-public class Oort extends AbstractLifeCycle
+public class Oort extends AggregateLifeCycle
 {
     public final static String OORT_ATTRIBUTE = Oort.class.getName();
     public static final String EXT_OORT_FIELD = "org.cometd.oort";
@@ -82,7 +86,9 @@ public class Oort extends AbstractLifeCycle
     private final BayeuxServer _bayeux;
     private final String _url;
     private final Logger _logger;
+    private final ThreadPool _threadPool;
     private final HttpClient _httpClient;
+    private final WebSocketClientFactory _wsFactory;
     private final LocalSession _oortSession;
     private String _secret;
     private boolean _clientDebugEnabled;
@@ -95,7 +101,14 @@ public class Oort extends AbstractLifeCycle
         _logger = Log.getLogger(getClass().getName() + "-" + _url);
         _logger.setDebugEnabled(String.valueOf(BayeuxServerImpl.DEBUG_LOG_LEVEL).equals(bayeux.getOption(BayeuxServerImpl.LOG_LEVEL)));
 
+        _threadPool = new QueuedThreadPool();
+        addBean(_threadPool);
         _httpClient = new HttpClient();
+        _httpClient.setThreadPool(_threadPool);
+        addBean(_httpClient);
+        _wsFactory=new WebSocketClientFactory(_threadPool);
+        addBean(_wsFactory);
+        
         _oortSession = bayeux.newLocalSession("oort");
         _secret = Long.toHexString(new SecureRandom().nextLong());
     }
@@ -103,7 +116,7 @@ public class Oort extends AbstractLifeCycle
     @Override
     protected void doStart() throws Exception
     {
-        _httpClient.start();
+        super.doStart();
 
         _bayeux.addExtension(_oortExtension);
         _bayeux.createIfAbsent(OORT_CLOUD_CHANNEL, new ConfigurableServerChannel.Initializer()
@@ -139,7 +152,7 @@ public class Oort extends AbstractLifeCycle
         }
         _bayeux.removeExtension(_oortExtension);
 
-        _httpClient.stop();
+        super.doStop();
     }
 
     public BayeuxServer getBayeuxServer()
@@ -488,6 +501,16 @@ public class Oort extends AbstractLifeCycle
         }
     }
 
+    public ThreadPool getThreadPool()
+    {
+        return _threadPool;
+    }
+    
+    public WebSocketClientFactory getWebSocketClientFactory()
+    {
+        return _wsFactory;
+    }
+    
     public HttpClient getHttpClient()
     {
         return _httpClient;
@@ -551,4 +574,5 @@ public class Oort extends AbstractLifeCycle
             return true;
         }
     }
+
 }
