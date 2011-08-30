@@ -439,23 +439,31 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 reschedule = true;
                 List<ServerMessage> queue = session.takeQueue();
 
-                if (reply)
-                {
-                    if (disconnected)
-                        connectReply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-
-                    connectReply = getBayeux().extendReply(session, session, connectReply);
-                    if (connectReply != null)
-                        queue.add(connectReply);
-
-                    if (!disconnected)
-                        session.startIntervalTimeout(getInterval());
-                }
-
-                if (queue.size() > 0)
+                try
                 {
                     _logger.debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", session, timeout, metaConnectDelivery, reply, queue);
                     send(queue);
+                }
+                finally
+                {
+                    if (reply)
+                    {
+                        // Start the interval timeout before sending the reply to
+                        // avoid race conditions, and even if sending the queue
+                        // throws an exception so that we can sweep the session
+                        if (!disconnected)
+                            session.startIntervalTimeout(getInterval());
+                        else
+                            connectReply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
+                    }
+                }
+
+                if (reply)
+                {
+                    connectReply = getBayeux().extendReply(session, session, connectReply);
+
+                    if (connectReply != null)
+                        send(connectReply);
                 }
             }
             catch (Exception x)
@@ -474,6 +482,8 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         protected void send(List<ServerMessage> messages) throws IOException
         {
+            if (messages.isEmpty())
+                return;
             StringBuilder builder = new StringBuilder(messages.size() * 4 * 32).append("[");
             for (int i = 0; i < messages.size(); i++)
             {
