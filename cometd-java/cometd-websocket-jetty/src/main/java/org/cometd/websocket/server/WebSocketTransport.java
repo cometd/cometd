@@ -59,6 +59,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     public static final String PREFIX = "ws";
     public static final String NAME = "websocket";
     public static final String PROTOCOL_OPTION = "protocol";
+    private static final String MESSAGES_PER_FRAME_OPTION = "messagesPerFrame";
     public static final String BUFFER_SIZE_OPTION = "bufferSize";
     public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
 
@@ -68,6 +69,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     private String _protocol;
     private Executor _executor;
     private ScheduledExecutorService _scheduler;
+    private int _messagesPerFrame = 1;
 
     public WebSocketTransport(BayeuxServerImpl bayeux)
     {
@@ -82,6 +84,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         _logger.setDebugEnabled(getBayeux().getLogger().isDebugEnabled());
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
         _factory.setBufferSize(getOption(BUFFER_SIZE_OPTION, _factory.getBufferSize()));
+        _messagesPerFrame = getOption(MESSAGES_PER_FRAME_OPTION, _messagesPerFrame);
         _executor = newExecutor();
         _scheduler = newScheduledExecutor();
     }
@@ -380,7 +383,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             // We must avoid to dispatch multiple times, to save threads.
             // However, the CAS operation introduces a window where a schedule()
             // is skipped and the queue may remain full; to avoid this situation,
-            // we reschedule at the end of schedule(boolean).
+            // we reschedule at the end of schedule(boolean, ServerMessage.Mutable).
             if (_scheduling.compareAndSet(false, true))
                 _executor.execute(this);
         }
@@ -492,22 +495,41 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         {
             if (messages.isEmpty())
                 return;
-            StringBuilder builder = new StringBuilder(messages.size() * 4 * 32).append("[");
-            for (int i = 0; i < messages.size(); i++)
+
+            // Under load, it is possible that we have many bayeux messages and
+            // that these would generate a large websocket message that the client
+            // could not handle, so we need to split the messages into batches.
+
+            int count = messages.size();
+            int batchSize = _messagesPerFrame > 0 ? Math.min(_messagesPerFrame, count) : count;
+            // Assume 4 fields of 32 chars per message
+            int capacity = batchSize * 4 * 32;
+            StringBuilder builder = new StringBuilder(capacity);
+
+            int index = 0;
+            while (index < count)
             {
-                if (i > 0)
-                    builder.append(",");
-                ServerMessage serverMessage = messages.get(i);
-                builder.append(serverMessage.getJSON());
+                builder.setLength(0);
+                builder.append("[");
+                int batch = Math.min(batchSize, count - index);
+                for (int b = 0; b < batch; ++b)
+                {
+                    if (b > 0)
+                        builder.append(",");
+                    ServerMessage serverMessage = messages.get(index + b);
+                    builder.append(serverMessage.getJSON());
+                }
+                builder.append("]");
+                index += batch;
+                _logger.debug("Sending {}", builder);
+                _connection.sendMessage(builder.toString());
             }
-            builder.append("]");
-            _logger.debug("Sending {}", builder);
-            _connection.sendMessage(builder.toString());
         }
 
         protected void send(ServerMessage message) throws IOException
         {
-            StringBuilder builder = new StringBuilder(message.size() * 32).append("[").append(message.getJSON()).append("]");
+            StringBuilder builder = new StringBuilder(message.size() * 32);
+            builder.append("[").append(message.getJSON()).append("]");
             _logger.debug("Sending {}", builder);
             _connection.sendMessage(builder.toString());
         }
