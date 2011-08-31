@@ -177,6 +177,53 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         return _handshake.get();
     }
 
+    protected void send(WebSocket.Connection connection, List<ServerMessage> messages) throws IOException
+    {
+        if (messages.isEmpty())
+            return;
+
+        // Under load, it is possible that we have many bayeux messages and
+        // that these would generate a large websocket message that the client
+        // could not handle, so we need to split the messages into batches.
+
+        int count = messages.size();
+        int batchSize = _messagesPerFrame > 0 ? Math.min(_messagesPerFrame, count) : count;
+        // Assume 4 fields of 32 chars per message
+        int capacity = batchSize * 4 * 32;
+        StringBuilder builder = new StringBuilder(capacity);
+
+        int index = 0;
+        while (index < count)
+        {
+            builder.setLength(0);
+            builder.append("[");
+            int batch = Math.min(batchSize, count - index);
+            for (int b = 0; b < batch; ++b)
+            {
+                if (b > 0)
+                    builder.append(",");
+                ServerMessage serverMessage = messages.get(index + b);
+                builder.append(serverMessage.getJSON());
+            }
+            builder.append("]");
+            index += batch;
+            send(connection, builder.toString());
+        }
+    }
+
+    protected void send(WebSocket.Connection connection, ServerMessage message) throws IOException
+    {
+        StringBuilder builder = new StringBuilder(message.size() * 32);
+        builder.append("[").append(message.getJSON()).append("]");
+        send(connection, builder.toString());
+    }
+
+    protected void send(WebSocket.Connection connection, String data) throws IOException
+    {
+        _logger.debug("Sending {}", data);
+        connection.sendMessage(data);
+    }
+
     protected class WebSocketScheduler implements WebSocket.OnTextMessage, AbstractServerTransport.Scheduler, Runnable
     {
         private final AtomicBoolean _scheduling = new AtomicBoolean();
@@ -345,7 +392,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     try
                     {
                         if (queue != null)
-                            send(queue);
+                            send(_connection, queue);
                     }
                     finally
                     {
@@ -364,7 +411,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     reply = getBayeux().extendReply(session, session, reply);
 
                     if (reply != null)
-                        send(reply);
+                        send(_connection, reply);
                 }
             }
         }
@@ -453,7 +500,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 try
                 {
                     _logger.debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", session, timeout, metaConnectDelivery, reply, queue);
-                    send(queue);
+                    send(_connection, queue);
                 }
                 finally
                 {
@@ -474,7 +521,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     connectReply = getBayeux().extendReply(session, session, connectReply);
 
                     if (connectReply != null)
-                        send(connectReply);
+                        send(_connection, connectReply);
                 }
             }
             catch (Exception x)
@@ -489,49 +536,6 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 if (reschedule && !session.isQueueEmpty())
                     schedule();
             }
-        }
-
-        protected void send(List<ServerMessage> messages) throws IOException
-        {
-            if (messages.isEmpty())
-                return;
-
-            // Under load, it is possible that we have many bayeux messages and
-            // that these would generate a large websocket message that the client
-            // could not handle, so we need to split the messages into batches.
-
-            int count = messages.size();
-            int batchSize = _messagesPerFrame > 0 ? Math.min(_messagesPerFrame, count) : count;
-            // Assume 4 fields of 32 chars per message
-            int capacity = batchSize * 4 * 32;
-            StringBuilder builder = new StringBuilder(capacity);
-
-            int index = 0;
-            while (index < count)
-            {
-                builder.setLength(0);
-                builder.append("[");
-                int batch = Math.min(batchSize, count - index);
-                for (int b = 0; b < batch; ++b)
-                {
-                    if (b > 0)
-                        builder.append(",");
-                    ServerMessage serverMessage = messages.get(index + b);
-                    builder.append(serverMessage.getJSON());
-                }
-                builder.append("]");
-                index += batch;
-                _logger.debug("Sending {}", builder);
-                _connection.sendMessage(builder.toString());
-            }
-        }
-
-        protected void send(ServerMessage message) throws IOException
-        {
-            StringBuilder builder = new StringBuilder(message.size() * 32);
-            builder.append("[").append(message.getJSON()).append("]");
-            _logger.debug("Sending {}", builder);
-            _connection.sendMessage(builder.toString());
         }
 
         private class MetaConnectReplyTask implements Runnable

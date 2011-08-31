@@ -420,6 +420,38 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         }
     }
 
+    protected void onMessages(List<Mutable> messages)
+    {
+        for (Mutable message : messages)
+        {
+            if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful())
+            {
+                // Remember the advice so that we can properly calculate the max network delay
+                Map<String, Object> advice = message.getAdvice();
+                if (advice != null && advice.get(Message.TIMEOUT_FIELD) != null)
+                    _advice = advice;
+            }
+
+            if (isReply(message))
+            {
+                WebSocketExchange exchange = deregisterMessage(message);
+                if (exchange != null)
+                {
+                    exchange.listener.onMessages(Collections.singletonList(message));
+                }
+                else
+                {
+                    // If the exchange is missing, then the message has expired, and we do not notify
+                    _logger.debug("Could not find request for reply {}", message);
+                }
+            }
+            else
+            {
+                _listener.onMessages(Collections.singletonList(message));
+            }
+        }
+    }
+
     protected class CometDWebSocket implements WebSocket.OnTextMessage
     {
         public void onOpen(Connection connection)
@@ -441,34 +473,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             {
                 List<Mutable> messages = parseMessages(data);
                 _logger.debug("Received messages {}", data);
-                for (Mutable message : messages)
-                {
-                    if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful())
-                    {
-                        // Remember the advice so that we can properly calculate the max network delay
-                        Map<String, Object> advice = message.getAdvice();
-                        if (advice != null && advice.get(Message.TIMEOUT_FIELD) != null)
-                            _advice = advice;
-                    }
-
-                    if (isReply(message))
-                    {
-                        WebSocketExchange exchange = deregisterMessage(message);
-                        if (exchange != null)
-                        {
-                            exchange.listener.onMessages(Collections.singletonList(message));
-                        }
-                        else
-                        {
-                            // If the exchange is missing, then the message has expired, and we do not notify
-                            _logger.debug("Could not find request for reply {}", message);
-                        }
-                    }
-                    else
-                    {
-                        _listener.onMessages(Collections.singletonList(message));
-                    }
-                }
+                onMessages(messages);
             }
             catch (ParseException x)
             {
