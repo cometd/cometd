@@ -59,7 +59,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     public static final String PREFIX = "ws";
     public static final String NAME = "websocket";
     public static final String PROTOCOL_OPTION = "protocol";
-    private static final String MESSAGES_PER_FRAME_OPTION = "messagesPerFrame";
+    public static final String MESSAGES_PER_FRAME_OPTION = "messagesPerFrame";
     public static final String BUFFER_SIZE_OPTION = "bufferSize";
     public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
 
