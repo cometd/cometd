@@ -193,7 +193,7 @@ public class BayeuxLoadClient
         httpClient.start();
         mbContainer.addBean(httpClient);
 
-        webSocketClientFactory = new WebSocketClientFactory(threadPool, new ZeroMaskGen(), 2048);
+        webSocketClientFactory = new WebSocketClientFactory(threadPool, new ZeroMaskGen(), 8 * 1024);
         webSocketClientFactory.start();
         mbContainer.addBean(webSocketClientFactory);
 
@@ -602,6 +602,7 @@ public class BayeuxLoadClient
 
     private class HandshakeListener implements ClientSessionChannel.MessageListener
     {
+        private static final String SESSION_ID_ATTRIBUTE = "handshook";
         private final String channel;
         private final int rooms;
         private final int roomsPerClient;
@@ -618,23 +619,34 @@ public class BayeuxLoadClient
             if (message.isSuccessful())
             {
                 final LoadBayeuxClient client = (LoadBayeuxClient)channel.getSession();
-                bayeuxClients.add(client);
-                client.batch(new Runnable()
+
+                String sessionId = (String)client.getAttribute(SESSION_ID_ATTRIBUTE);
+                if (sessionId == null)
                 {
-                    public void run()
+                    client.setAttribute(SESSION_ID_ATTRIBUTE, client.getId());
+                    bayeuxClients.add(client);
+
+                    client.batch(new Runnable()
                     {
-                        List<Integer> roomsSubscribedTo = new ArrayList<Integer>();
-                        for (int j = 0; j < roomsPerClient; ++j)
+                        public void run()
                         {
-                            // Avoid to subscribe the same client twice to the same room
-                            int room = nextRandom(rooms);
-                            while (roomsSubscribedTo.contains(room))
-                                room = nextRandom(rooms);
-                            roomsSubscribedTo.add(room);
-                            client.init(HandshakeListener.this.channel, room);
+                            List<Integer> roomsSubscribedTo = new ArrayList<Integer>();
+                            for (int j = 0; j < roomsPerClient; ++j)
+                            {
+                                // Avoid to subscribe the same client twice to the same room
+                                int room = nextRandom(rooms);
+                                while (roomsSubscribedTo.contains(room))
+                                    room = nextRandom(rooms);
+                                roomsSubscribedTo.add(room);
+                                client.init(HandshakeListener.this.channel, room);
+                            }
                         }
-                    }
-                });
+                    });
+                }
+                else
+                {
+                    System.err.printf("Second handshake for client %s: old session %s, new session %s%n", this, sessionId, client.getId());
+                }
             }
         }
     }
