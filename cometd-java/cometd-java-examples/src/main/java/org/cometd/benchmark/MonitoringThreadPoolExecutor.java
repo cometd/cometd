@@ -71,7 +71,7 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
         return ((MonitoringLinkedBlockingQueue)getQueue()).maxSize.get();
     }
 
-    public int getMaxThreads()
+    public int getMaxActiveThreads()
     {
         return maxThreads.get();
     }

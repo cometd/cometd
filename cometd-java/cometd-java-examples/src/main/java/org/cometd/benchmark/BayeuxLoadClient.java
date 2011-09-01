@@ -46,7 +46,6 @@ import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.WebSocketClientFactory;
 import org.eclipse.jetty.websocket.ZeroMaskGen;
 
@@ -70,6 +69,7 @@ public class BayeuxLoadClient
     private final Map<String, AtomicStampedReference<Long>> sendTimes = new ConcurrentHashMap<String, AtomicStampedReference<Long>>();
     private final Map<String, AtomicStampedReference<List<Long>>> arrivalTimes = new ConcurrentHashMap<String, AtomicStampedReference<List<Long>>>();
     private ScheduledExecutorService scheduler;
+    private MonitoringQueuedThreadPool threadPool;
     private HttpClient httpClient;
     private WebSocketClientFactory webSocketClientFactory;
 
@@ -178,15 +178,13 @@ public class BayeuxLoadClient
         MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         mbContainer.addBean(this);
 
-        MonitoringBlockingArrayQueue taskQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
-        QueuedThreadPool threadPool = new QueuedThreadPool(taskQueue);
+        threadPool = new MonitoringQueuedThreadPool(maxThreads);
+        threadPool.setDaemon(true);
+        threadPool.start();
         mbContainer.addBean(threadPool);
 
         httpClient = new HttpClient();
         httpClient.setMaxConnectionsPerAddress(50000);
-        threadPool.setMaxThreads(maxThreads);
-        threadPool.setDaemon(true);
-        threadPool.start();
         httpClient.setThreadPool(threadPool);
         httpClient.setIdleTimeout(5000);
 //        httpClient.setUseDirectBuffers(false);
@@ -392,7 +390,7 @@ public class BayeuxLoadClient
             // Send a message to the server to signal the end of the test
             statsClient.end();
 
-            printReport(expected, messageSize, taskQueue);
+            printReport(expected, messageSize);
 
             reset();
         }
@@ -494,7 +492,7 @@ public class BayeuxLoadClient
         }
     }
 
-    public void printReport(long expectedCount, int messageSize, MonitoringBlockingArrayQueue taskQueue)
+    public void printReport(long expectedCount, int messageSize)
     {
         long messageCount = messages.get();
         System.err.printf("Messages - Success/Expected = %d/%d%n", messageCount, expectedCount);
@@ -567,10 +565,11 @@ public class BayeuxLoadClient
             }
         }
 
-        System.err.printf("Thread Pool - Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
-                taskQueue.getMaxSize(),
-                TimeUnit.NANOSECONDS.toMillis(taskQueue.getAverageLatency()),
-                TimeUnit.NANOSECONDS.toMillis(taskQueue.getMaxLatency()));
+        System.err.printf("Thread Pool - Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+                threadPool.getMaxActiveThreads(),
+                threadPool.getMaxQueueSize(),
+                TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageQueueLatency()),
+                TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxQueueLatency()));
 
         System.err.print("Messages - Wall Latency Min/Ave/Max = ");
         System.err.print(TimeUnit.NANOSECONDS.toMillis(minWallLatency.get()) + "/");
@@ -585,6 +584,7 @@ public class BayeuxLoadClient
 
     private void reset()
     {
+        threadPool.reset();
         start.set(0L);
         end.set(0L);
         responses.set(0L);

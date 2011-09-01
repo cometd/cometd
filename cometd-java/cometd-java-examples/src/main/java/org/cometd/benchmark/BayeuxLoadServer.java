@@ -58,7 +58,6 @@ import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class BayeuxLoadServer
 {
@@ -155,12 +154,9 @@ public class BayeuxLoadServer
         connector.setPort(port);
         server.addConnector(connector);
 
-//        MonitoringBlockingArrayQueue jettyThreadPoolQueue = null;
-        MonitoringBlockingArrayQueue jettyThreadPoolQueue = new MonitoringBlockingArrayQueue(maxThreads, maxThreads);
-        QueuedThreadPool threadPool = new QueuedThreadPool(jettyThreadPoolQueue);
-        threadPool.setMaxThreads(maxThreads);
-//        ExecutorThreadPool threadPool = new ExecutorThreadPool(maxThreads, maxThreads, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
-        server.setThreadPool(threadPool);
+        MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(maxThreads);
+//        ExecutorThreadPool jettyThreadPool = new ExecutorThreadPool(maxThreads, maxThreads, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+        server.setThreadPool(jettyThreadPool);
 
         HandlerWrapper handler = server;
 
@@ -212,28 +208,28 @@ public class BayeuxLoadServer
 
         BayeuxServerImpl bayeux = cometServlet.getBayeux();
 
-        MonitoringThreadPoolExecutor websocketThreadPool = new MonitoringThreadPoolExecutor(maxThreads, threadPool.getMaxIdleTimeMs(), TimeUnit.MILLISECONDS, new ThreadPoolExecutor.AbortPolicy());
+        MonitoringThreadPoolExecutor websocketThreadPool = new MonitoringThreadPoolExecutor(maxThreads, jettyThreadPool.getMaxIdleTimeMs(), TimeUnit.MILLISECONDS, new ThreadPoolExecutor.AbortPolicy());
 
         LoadWebSocketTransport webSocketTransport = new LoadWebSocketTransport(bayeux, websocketThreadPool);
         webSocketTransport.init();
         bayeux.addTransport(webSocketTransport);
         bayeux.setAllowedTransports("websocket", "long-polling");
 
-        new StatisticsService(bayeux, jettyThreadPoolQueue, websocketThreadPool, statisticsHandler, requestLatencyHandler);
+        new StatisticsService(bayeux, jettyThreadPool, websocketThreadPool, statisticsHandler, requestLatencyHandler);
     }
 
     public static class StatisticsService extends AbstractService
     {
         private final BenchmarkHelper helper = new BenchmarkHelper();
-        private final MonitoringBlockingArrayQueue jettyThreadPoolQueue;
+        private final MonitoringQueuedThreadPool jettyThreadPool;
         private final MonitoringThreadPoolExecutor websocketThreadPool;
         private final StatisticsHandler statisticsHandler;
         private final RequestLatencyHandler requestLatencyHandler;
 
-        private StatisticsService(BayeuxServer bayeux, MonitoringBlockingArrayQueue jettyThreadPoolQueue, MonitoringThreadPoolExecutor websocketThreadPool, StatisticsHandler statisticsHandler, RequestLatencyHandler requestLatencyHandler)
+        private StatisticsService(BayeuxServer bayeux, MonitoringQueuedThreadPool jettyThreadPool, MonitoringThreadPoolExecutor websocketThreadPool, StatisticsHandler statisticsHandler, RequestLatencyHandler requestLatencyHandler)
         {
             super(bayeux, "statistics-service");
-            this.jettyThreadPoolQueue = jettyThreadPoolQueue;
+            this.jettyThreadPool = jettyThreadPool;
             this.websocketThreadPool = websocketThreadPool;
             this.statisticsHandler = statisticsHandler;
             this.requestLatencyHandler = requestLatencyHandler;
@@ -249,8 +245,8 @@ public class BayeuxLoadServer
                 boolean started = helper.startStatistics();
                 if (started)
                 {
-                    if (jettyThreadPoolQueue != null)
-                        jettyThreadPoolQueue.reset();
+                    if (jettyThreadPool != null)
+                        jettyThreadPool.reset();
                     if (websocketThreadPool != null)
                         websocketThreadPool.reset();
 
@@ -273,17 +269,18 @@ public class BayeuxLoadServer
                 boolean stopped = helper.stopStatistics();
                 if (stopped)
                 {
-                    if (jettyThreadPoolQueue != null)
+                    if (jettyThreadPool != null)
                     {
-                        System.err.printf("Jetty Thread Pool - Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
-                                jettyThreadPoolQueue.getMaxSize(),
-                                TimeUnit.NANOSECONDS.toMillis(jettyThreadPoolQueue.getAverageLatency()),
-                                TimeUnit.NANOSECONDS.toMillis(jettyThreadPoolQueue.getMaxLatency()));
+                        System.err.printf("Jetty Thread Pool - Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+                                jettyThreadPool.getMaxActiveThreads(),
+                                jettyThreadPool.getMaxQueueSize(),
+                                TimeUnit.NANOSECONDS.toMillis(jettyThreadPool.getAverageQueueLatency()),
+                                TimeUnit.NANOSECONDS.toMillis(jettyThreadPool.getMaxQueueLatency()));
                     }
                     if (websocketThreadPool != null)
                     {
                         System.err.printf("WebSocket Thread Pool - Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
-                                websocketThreadPool.getMaxThreads(),
+                                websocketThreadPool.getMaxActiveThreads(),
                                 websocketThreadPool.getMaxQueueSize(),
                                 TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getAverageQueueLatency()),
                                 TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getMaxQueueLatency()));
