@@ -10,23 +10,9 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.5.0-SNAPSHOT</jetty-version>
+        <jetty-version>7.5.0.v20110901</jetty-version>
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
     </properties>
-
-    <!-- TODO: remove when Jetty 7.5.0 is in central -->
-    <repositories>
-        <repository>
-            <id>jetty-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
 
     <url>http://cometd.org</url>
     <description>
