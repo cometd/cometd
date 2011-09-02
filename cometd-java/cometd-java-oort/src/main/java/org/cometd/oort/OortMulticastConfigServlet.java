@@ -90,8 +90,11 @@ public class OortMulticastConfigServlet extends OortConfigServlet
     @Override
     public void destroy()
     {
-        configurer.stop();
-        configurer.join(1000);
+        if (configurer != null)
+        {
+            configurer.stop();
+            configurer.join(1000);
+        }
         super.destroy();
     }
 }
