@@ -14,6 +14,20 @@
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
     </properties>
 
+    <!-- TODO: remove when Jetty 7.5.1 is in central -->
+    <repositories>
+        <repository>
+            <id>jetty-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <url>http://cometd.org</url>
     <description>
         The CometD project is a scalable HTTP-based event routing bus that uses the AJAX push technology pattern known as "Comet"
