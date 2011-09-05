@@ -1,0 +1,94 @@
+/*
+ * Copyright (c) 2011 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.cometd.client;
+
+import java.util.Collections;
+import java.util.concurrent.TimeUnit;
+
+import org.cometd.client.transport.LongPollingTransport;
+import org.eclipse.jetty.client.ContentExchange;
+import org.eclipse.jetty.http.security.Constraint;
+import org.eclipse.jetty.http.security.Credential;
+import org.eclipse.jetty.security.ConstraintMapping;
+import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.util.B64Code;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class HandshakeWithAuthenticationTest extends ClientServerTest
+{
+    @Test
+    public void testHandshakeWithBasicAuthenticationHeaders() throws Exception
+    {
+        startServer(null);
+        int port = connector.getLocalPort();
+        server.stop();
+
+        final String userName = "cometd";
+        final String password = "cometd";
+        String[] roles = {"admin"};
+        HashLoginService loginService = new HashLoginService("CometD-Realm");
+        loginService.putUser(userName, Credential.getCredential(password), roles);
+        server.addBean(loginService);
+
+        Handler handler = server.getHandler();
+        ConstraintSecurityHandler security = new ConstraintSecurityHandler();
+        server.setHandler(security);
+        security.setHandler(handler);
+
+        Constraint constraint = new Constraint();
+        constraint.setAuthenticate(true);
+        constraint.setRoles(roles);
+
+        ConstraintMapping mapping = new ConstraintMapping();
+        mapping.setPathSpec(cometdServletPath + "/*");
+        mapping.setConstraint(constraint);
+
+        security.setConstraintMappings(Collections.singletonList(mapping));
+        security.setAuthenticator(new BasicAuthenticator());
+        security.setLoginService(loginService);
+
+        connector.setPort(port);
+        server.start();
+
+        LongPollingTransport transport = new LongPollingTransport(null, httpClient)
+        {
+            @Override
+            protected void customize(ContentExchange exchange)
+            {
+                super.customize(exchange);
+                String authorization = userName + ":" + password;
+                authorization = B64Code.encode(authorization);
+                exchange.addRequestHeader("Authorization", "Basic " + authorization);
+            }
+        };
+        BayeuxClient client = new BayeuxClient(cometdURL, transport);
+        client.setDebugEnabled(debugTests());
+
+        client.handshake();
+
+        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+
+        // Allow long poll to establish
+        TimeUnit.SECONDS.sleep(1);
+
+        disconnectBayeuxClient(client);
+    }
+}

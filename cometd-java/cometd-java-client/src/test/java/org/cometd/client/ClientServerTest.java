@@ -49,6 +49,7 @@ public class ClientServerTest
     protected Server server;
     protected ServletContextHandler context;
     protected HttpClient httpClient;
+    protected String cometdServletPath;
     protected String cometdURL;
     protected BayeuxServer bayeux;
 
@@ -75,7 +76,7 @@ public class ClientServerTest
                 cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
         }
 
-        String cometdServletPath = "/cometd";
+        cometdServletPath = "/cometd";
         context.addServlet(cometdServletHolder, cometdServletPath + "/*");
 
         server.start();
