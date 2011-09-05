@@ -1233,7 +1233,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         return b.toString();
     }
-
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     abstract class HandlerListener implements ServerChannel.ServerChannelListener
@@ -1243,6 +1243,32 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             return session == null || getSession(session.getId()) == null;
         }
 
+        /* ------------------------------------------------------------ */
+        protected List<String> toChannelList(Object channels)
+        {
+            if (channels instanceof String)
+                return Collections.singletonList((String)channels);
+            
+            if (channels instanceof Object[])
+            {
+                Object[] array=(Object[])channels;
+                List<String> channelList=new ArrayList<String>();
+                for (Object o:array)
+                    channelList.add(String.valueOf(o));
+                return channelList;
+            }
+
+            if (channels instanceof List)
+            {
+                List<?> list=(List<?>)channels;
+                List<String> channelList=new ArrayList<String>();
+                for (Object o:list)
+                    channelList.add(String.valueOf(o));
+                return channelList;
+            }
+
+            return null;
+        }
         public abstract void onMessage(final ServerSessionImpl from, final ServerMessage.Mutable message);
     }
 
@@ -1332,40 +1358,18 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             Object subscriptionField = message.get(Message.SUBSCRIPTION_FIELD);
             reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
-
-            // Sanity checks
-            List<String> subscriptions = new ArrayList<String>();
+            
             if (subscriptionField == null)
             {
                 error(reply, "403::subscription_missing");
                 return;
             }
-            else if (subscriptionField instanceof Object[] || subscriptionField instanceof List)
-            {
-                if (subscriptionField instanceof List)
-                    subscriptionField = ((List)subscriptionField).toArray();
 
-                for (Object subscription : (Object[])subscriptionField)
-                {
-                    if (subscription == null || !(subscription instanceof String))
-                    {
-                        error(reply, "403::subscription_invalid");
-                        return;
-                    }
-                    else
-                    {
-                        subscriptions.add((String)subscription);
-                    }
-                }
-            }
-            else if (!(subscriptionField instanceof String))
+            List<String> subscriptions = toChannelList(subscriptionField);
+            if (subscriptions==null)
             {
                 error(reply, "403::subscription_invalid");
                 return;
-            }
-            else
-            {
-                subscriptions.add((String)subscriptionField);
             }
 
             for (String subscription : subscriptions)
@@ -1438,39 +1442,17 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             Object subscriptionField = message.get(Message.SUBSCRIPTION_FIELD);
             reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
 
-            // Sanity checks
-            List<String> subscriptions = new ArrayList<String>();
             if (subscriptionField == null)
             {
                 error(reply, "403::subscription_missing");
                 return;
             }
-            else if (subscriptionField instanceof Object[] || subscriptionField instanceof List)
-            {
-                if (subscriptionField instanceof List)
-                    subscriptionField = ((List)subscriptionField).toArray();
-
-                for (Object subscription : (Object[])subscriptionField)
-                {
-                    if (subscription == null || !(subscription instanceof String))
-                    {
-                        error(reply, "403::subscription_invalid");
-                        return;
-                    }
-                    else
-                    {
-                        subscriptions.add((String)subscription);
-                    }
-                }
-            }
-            else if (!(subscriptionField instanceof String))
+            
+            List<String> subscriptions = toChannelList(subscriptionField);
+            if (subscriptions==null)
             {
                 error(reply, "403::subscription_invalid");
                 return;
-            }
-            else
-            {
-                subscriptions.add((String)subscriptionField);
             }
 
             for (String subscription : subscriptions)
