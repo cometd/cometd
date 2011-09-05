@@ -482,7 +482,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         }
     }
 
-    private class WebSocketExchange
+    private static class WebSocketExchange
     {
         private final Mutable message;
         private final TransportListener listener;
