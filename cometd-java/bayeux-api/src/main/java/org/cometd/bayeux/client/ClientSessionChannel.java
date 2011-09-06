@@ -16,6 +16,8 @@
 
 package org.cometd.bayeux.client;
 
+import java.util.List;
+
 import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -56,6 +58,12 @@ public interface ClientSessionChannel extends Channel
      * @see #addListener(ClientSessionChannelListener)
      */
     public void removeListener(ClientSessionChannelListener listener);
+
+    /**
+     * @return an immutable snapshot of the listeners
+     * @see #addListener(ClientSessionChannelListener)
+     */
+    public List<ClientSessionChannelListener> getListeners();
 
     /**
      * @return the client session associated with this channel
@@ -116,6 +124,23 @@ public interface ClientSessionChannel extends Channel
      * @see #subscribe(MessageListener)
      */
     public void unsubscribe();
+
+    /**
+     * @return an immutable snapshot of the subscribers
+     * @see #subscribe(MessageListener)
+     */
+    public List<MessageListener> getSubscribers();
+
+    /**
+     * <p>Releases this channel from its {@link ClientSession}.</p>
+     * <p>If the release is successful, subsequent invocations of {@link ClientSession#getChannel(String)}
+     * will return a new, different, instance of a {@link ClientSessionChannel}.</p>
+     * <p>The release of a {@link ClientSessionChannel} is successful only if no listeners and no
+     * subscribers are present at the moment of the release.</p>
+     *
+     * @return true if the release was successful, false otherwise
+     */
+    public boolean release();
 
     /**
      * <p>Represents a listener on a {@link ClientSessionChannel}.</p>

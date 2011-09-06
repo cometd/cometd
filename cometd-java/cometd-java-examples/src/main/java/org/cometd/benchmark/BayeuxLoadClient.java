@@ -363,6 +363,7 @@ public class BayeuxLoadClient
                     message.put("chat", chat);
                     message.put("start", System.nanoTime());
                     clientChannel.publish(message);
+                    clientChannel.release();
                     expected += clientsPerRoom.get();
                 }
                 client.endBatch();
