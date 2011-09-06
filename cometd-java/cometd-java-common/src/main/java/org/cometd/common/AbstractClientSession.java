@@ -16,6 +16,7 @@
 
 package org.cometd.common;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -209,7 +210,6 @@ public abstract class AbstractClientSession implements ClientSession
      * <p>Processing the message involves calling the receive {@link Extension extensions}
      * and the channel {@link ClientSessionChannel.ClientSessionChannelListener listeners}.</p>
      * @param message the message received.
-     * @param mutable the mutable version of the message received
      */
     public void receive(final Message.Mutable message)
     {
@@ -256,7 +256,7 @@ public abstract class AbstractClientSession implements ClientSession
     /**
      * <p>A channel scoped to a {@link ClientSession}.</p>
      */
-    protected abstract static class AbstractSessionChannel implements ClientSessionChannel
+    protected abstract class AbstractSessionChannel implements ClientSessionChannel
     {
         protected final Logger logger = Log.getLogger(getClass().getName());
         private final ChannelId _id;
@@ -287,6 +287,11 @@ public abstract class AbstractClientSession implements ClientSession
         public void removeListener(ClientSessionChannelListener listener)
         {
             _listeners.remove(listener);
+        }
+
+        public List<ClientSessionChannelListener> getListeners()
+        {
+            return Collections.unmodifiableList(_listeners);
         }
 
         /* ------------------------------------------------------------ */
@@ -324,6 +329,16 @@ public abstract class AbstractClientSession implements ClientSession
         {
             for (MessageListener listener : _subscriptions)
                 unsubscribe(listener);
+        }
+
+        public List<MessageListener> getSubscribers()
+        {
+            return Collections.unmodifiableList(_subscriptions);
+        }
+
+        public boolean release()
+        {
+            return _subscriptions.isEmpty() && _listeners.isEmpty() && _channels.remove(getId(), this);
         }
 
         /* ------------------------------------------------------------ */
