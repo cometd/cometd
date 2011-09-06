@@ -30,9 +30,9 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.WebSocketClientFactory;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestWatchman;
 import org.junit.runners.model.FrameworkMethod;
@@ -53,7 +53,7 @@ public abstract class ClientServerWebSocketTest
     protected Server server;
     protected ServletContextHandler context;
     protected HttpClient httpClient;
-    protected WebSocketClientFactory factory = new WebSocketClientFactory();
+    protected WebSocketClientFactory wsFactory;
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
 
@@ -92,13 +92,18 @@ public abstract class ClientServerWebSocketTest
 
         httpClient = new HttpClient();
         httpClient.start();
+
+        QueuedThreadPool wsPool = new QueuedThreadPool();
+        wsPool.setName(wsPool.getName() + "-client");
+        wsFactory = new WebSocketClientFactory(wsPool);
+        wsFactory.start();
     }
 
     protected BayeuxClient newBayeuxClient()
     {
-        WebSocketTransport transport = WebSocketTransport.create(null,factory);
+        WebSocketTransport transport = WebSocketTransport.create(null, wsFactory);
         transport.setDebugEnabled(debugTests());
-        final BayeuxClient client = new BayeuxClient(cometdURL, transport);
+        BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.setDebugEnabled(debugTests());
         return client;
     }
@@ -107,27 +112,16 @@ public abstract class ClientServerWebSocketTest
     {
         client.disconnect(1000);
     }
-    
 
     @After
     public void stopServer() throws Exception
     {
+        wsFactory.stop();
+
         httpClient.stop();
 
         server.stop();
         server.join();
-    }
-
-    @Before
-    public void startWS() throws Exception
-    {
-        factory.start();
-    } 
-    
-    @After
-    public void stopWS() throws Exception
-    {
-        factory.stop();
     }
 
     protected boolean debugTests()

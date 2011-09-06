@@ -61,6 +61,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     public static final String PROTOCOL_OPTION = "protocol";
     public static final String MESSAGES_PER_FRAME_OPTION = "messagesPerFrame";
     public static final String BUFFER_SIZE_OPTION = "bufferSize";
+    public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
     public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
 
     private final Logger _logger = Log.getLogger(getClass().getName());
@@ -83,8 +84,11 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         super.init();
         _logger.setDebugEnabled(getBayeux().getLogger().isDebugEnabled());
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
-        _factory.setBufferSize(getOption(BUFFER_SIZE_OPTION, _factory.getBufferSize()));
         _messagesPerFrame = getOption(MESSAGES_PER_FRAME_OPTION, _messagesPerFrame);
+        int bufferSize = getOption(BUFFER_SIZE_OPTION, _factory.getBufferSize());
+        _factory.setBufferSize(bufferSize);
+        int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, bufferSize - 16);
+        _factory.setMaxTextMessageSize(maxMessageSize);
         _executor = newExecutor();
         _scheduler = newScheduledExecutor();
     }
