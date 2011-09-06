@@ -196,23 +196,26 @@ org.cometd.Cometd = function(name)
         }
 
         // Check if we're cross domain
-        // [1] = protocol:, [2] = //host:port, [3] = host:port, [4] = host, [5] = :port, [6] = port, [7] = uri, [8] = rest
-        var urlParts = /(^https?:)?(\/\/(([^:\/\?#]+)(:(\d+))?))?([^\?#]*)(.*)?/.exec(_config.url);
-        _crossDomain = _cometd._isCrossDomain(urlParts[3]);
+        // [1] = protocol://, [2] = host:port, [3] = host, [4] = IPv6_host, [5] = IPv4_host, [6] = :port, [7] = port, [8] = uri, [9] = rest
+        var urlParts = /(^https?:\/\/)?(((\[[^\]]+\])|([^:\/\?#]+))(:(\d+))?)?([^\?#]*)(.*)?/.exec(_config.url);
+        var hostAndPort = urlParts[2];
+        var uri = urlParts[8];
+        var afterURI = urlParts[9];
+        _crossDomain = _cometd._isCrossDomain(hostAndPort);
 
         // Check if appending extra path is supported
         if (_config.appendMessageTypeToURL)
         {
-            if (urlParts[8] !== undefined && urlParts[8].length > 0)
+            if (afterURI !== undefined && afterURI.length > 0)
             {
-                _cometd._info('Appending message type to URI ' + urlParts[7] + urlParts[8] + ' is not supported, disabling \'appendMessageTypeToURL\' configuration');
+                _cometd._info('Appending message type to URI ' + uri + afterURI + ' is not supported, disabling \'appendMessageTypeToURL\' configuration');
                 _config.appendMessageTypeToURL = false;
             }
             else
             {
-                var uriSegments = urlParts[7].split('/');
+                var uriSegments = uri.split('/');
                 var lastSegmentIndex = uriSegments.length - 1;
-                if (urlParts[7].match(/\/$/))
+                if (uri.match(/\/$/))
                 {
                     lastSegmentIndex -= 1;
                 }
@@ -220,7 +223,7 @@ org.cometd.Cometd = function(name)
                 {
                     // Very likely the CometD servlet's URL pattern is mapped to an extension, such as *.cometd
                     // It will be difficult to add the extra path in this case
-                    _cometd._info('Appending message type to URI ' + urlParts[7] + ' is not supported, disabling \'appendMessageTypeToURL\' configuration');
+                    _cometd._info('Appending message type to URI ' + uri + ' is not supported, disabling \'appendMessageTypeToURL\' configuration');
                     _config.appendMessageTypeToURL = false;
                 }
             }
