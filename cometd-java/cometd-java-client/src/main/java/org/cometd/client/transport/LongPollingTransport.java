@@ -41,7 +41,7 @@ public class LongPollingTransport extends HttpClientTransport
 {
     public static final String NAME = "long-polling";
     public static final String PREFIX = "long-polling.json";
-    
+
     public static LongPollingTransport create(Map<String, Object> options)
     {
         HttpClient httpClient = new HttpClient();
@@ -93,11 +93,11 @@ public class LongPollingTransport extends HttpClientTransport
         super.init();
         _aborted = false;
         _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, _httpClient.getTimeout());
-        Pattern uriRegexp = Pattern.compile("(^https?://(([^:/\\?#]+)(:(\\d+))?))?([^\\?#]*)(.*)?");
+        Pattern uriRegexp = Pattern.compile("(^https?://(((\\[[^\\]]+\\])|([^:/\\?#]+))(:(\\d+))?))?([^\\?#]*)(.*)?");
         Matcher uriMatcher = uriRegexp.matcher(getURL());
         if (uriMatcher.matches())
         {
-            String afterPath = uriMatcher.group(7);
+            String afterPath = uriMatcher.group(9);
             _appendMessageType = afterPath == null || afterPath.trim().length() == 0;
         }
     }

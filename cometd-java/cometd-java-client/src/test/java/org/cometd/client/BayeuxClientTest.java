@@ -73,10 +73,25 @@ public class BayeuxClientTest extends ClientServerTest
     }
 
     @Test
+    public void testIPv6Address() throws Exception
+    {
+        cometdURL = cometdURL.replace("localhost", "[::1]");
+
+        BayeuxClient client = newBayeuxClient();
+        client.handshake();
+
+        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+
+        // Allow long poll to establish
+        TimeUnit.SECONDS.sleep(1);
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
     public void testBatchingAfterHandshake() throws Exception
     {
         final BayeuxClient client = newBayeuxClient();
-        client.setDebugEnabled(debugTests());
         final AtomicBoolean connected = new AtomicBoolean();
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -220,7 +235,6 @@ public class BayeuxClientTest extends ClientServerTest
     public void testHandshakeDenied() throws Exception
     {
         BayeuxClient client = newBayeuxClient();
-        client.setDebugEnabled(debugTests());
         SecurityPolicy oldPolicy = bayeux.getSecurityPolicy();
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy()
         {
@@ -455,7 +469,6 @@ public class BayeuxClientTest extends ClientServerTest
         {
             final AtomicBoolean connected = new AtomicBoolean();
             final BayeuxClient client = newBayeuxClient();
-            client.setDebugEnabled(debugTests());
             final String room = "/channel/" + (i % rooms);
             clients[i] = client;
 
@@ -551,7 +564,6 @@ public class BayeuxClientTest extends ClientServerTest
         });
 
         BayeuxClient client = newBayeuxClient();
-        client.setDebugEnabled(debugTests());
         client.handshake();
         Assert.assertTrue(client.waitFor(10000, State.CONNECTED));
 
@@ -585,7 +597,6 @@ public class BayeuxClientTest extends ClientServerTest
         });
 
         BayeuxClient client = newBayeuxClient();
-        client.setDebugEnabled(debugTests());
         long wait = 1000L;
         long start = System.nanoTime();
         client.handshake(wait);
@@ -606,7 +617,6 @@ public class BayeuxClientTest extends ClientServerTest
     public void testWaitForImpliedState() throws Exception
     {
         final BayeuxClient client = newBayeuxClient();
-        client.setDebugEnabled(debugTests());
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -924,8 +934,7 @@ public class BayeuxClientTest extends ClientServerTest
         bayeux.setSecurityPolicy(authenticator);
         try
         {
-            BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient));
-            client.setDebugEnabled(debugTests());
+            BayeuxClient client = newBayeuxClient();
 
             Map<String, Object> authentication = new HashMap<String, Object>();
             authentication.put("token", "1234567890");
