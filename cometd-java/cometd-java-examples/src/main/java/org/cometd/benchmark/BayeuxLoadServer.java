@@ -43,9 +43,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
+import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -199,9 +201,11 @@ public class BayeuxLoadServer
         // This value must be several times larger than the client value
         // (e.g. 60 s on server vs 5 s on client) so that it's guaranteed that
         // it will be the client to dispose idle connections.
-        cometdServletHolder.setInitParameter("maxInterval", String.valueOf(60000));
+        cometdServletHolder.setInitParameter(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(60000));
         // Explicitly set the timeout value
-        cometdServletHolder.setInitParameter("timeout", String.valueOf(30000));
+        cometdServletHolder.setInitParameter(AbstractServerTransport.TIMEOUT_OPTION, String.valueOf(30000));
+        // Use the faster JSON parser/generator
+        cometdServletHolder.setInitParameter(BayeuxServerImpl.JSON_CONTEXT, JacksonJSONContextServer.class.getName());
         context.addServlet(cometdServletHolder, cometServletPath + "/*");
 
         server.start();

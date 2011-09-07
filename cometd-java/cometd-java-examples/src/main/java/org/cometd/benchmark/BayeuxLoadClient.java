@@ -43,6 +43,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -356,12 +357,12 @@ public class BayeuxLoadClient
                         room = nextRandom(rooms);
                         clientsPerRoom = this.rooms.get(room);
                     }
-                    ClientSessionChannel clientChannel = client.getChannel(channel + "/" + room);
                     Map<String, Object> message = new HashMap<String, Object>(4);
                     message.put("room", room);
                     message.put("user", clientIndex);
                     message.put("chat", chat);
                     message.put("start", System.nanoTime());
+                    ClientSessionChannel clientChannel = client.getChannel(channel + "/" + room);
                     clientChannel.publish(message);
                     clientChannel.release();
                     expected += clientsPerRoom.get();
@@ -412,14 +413,20 @@ public class BayeuxLoadClient
         {
             case LONG_POLLING:
             {
-                return new LongPollingTransport(null, httpClient);
+                Map<String, Object> options = new HashMap<String, Object>();
+                options.put(ClientTransport.JSON_CONTEXT, new JacksonJSONContextClient());
+                return new LongPollingTransport(options, httpClient);
             }
             case WEBSOCKET:
             {
-                return new WebSocketTransport(null, webSocketClientFactory, scheduler);
+                Map<String, Object> options = new HashMap<String, Object>();
+                options.put(ClientTransport.JSON_CONTEXT, new JacksonJSONContextClient());
+                return new WebSocketTransport(options, webSocketClientFactory, scheduler);
             }
             default:
+            {
                 throw new IllegalArgumentException();
+            }
         }
     }
 
