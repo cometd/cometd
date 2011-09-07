@@ -139,8 +139,15 @@ public interface ClientSessionChannel extends Channel
      * subscribers are present at the moment of the release.</p>
      *
      * @return true if the release was successful, false otherwise
+     * @see #isReleased()
      */
     public boolean release();
+
+    /**
+     * @return whether this channel has been released
+     * @see #release()
+     */
+    public boolean isReleased();
 
     /**
      * <p>Represents a listener on a {@link ClientSessionChannel}.</p>

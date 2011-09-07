@@ -242,18 +242,21 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         /* ------------------------------------------------------------ */
         public ClientSession getSession()
         {
+            throwIfReleased();
             return LocalSessionImpl.this;
         }
 
         /* ------------------------------------------------------------ */
         public void publish(Object data)
         {
+            throwIfReleased();
             publish(data, null);
         }
 
         /* ------------------------------------------------------------ */
         public void publish(Object data, String messageId)
         {
+            throwIfReleased();
             if (_session == null)
                 throw new IllegalStateException("Method handshake() not invoked for local session " + this);
 

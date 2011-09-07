@@ -162,4 +162,123 @@ public class ChannelReleaseTest extends ClientServerTest
 
         disconnectBayeuxClient(client);
     }
+
+    @Test
+    public void testReleasedChannelCannotOperate() throws Exception
+    {
+        startServer(null);
+
+        BayeuxClient client = newBayeuxClient();
+        client.handshake();
+        client.waitFor(1000, BayeuxClient.State.CONNECTED);
+
+        // Wait for the long poll
+        TimeUnit.MILLISECONDS.sleep(500);
+
+        String channelName = "/foo";
+        ClientSessionChannel channel = client.getChannel(channelName);
+        Assert.assertTrue(channel.release());
+        Assert.assertTrue(channel.isReleased());
+
+        ClientSessionChannel.ClientSessionChannelListener channelListener = new ClientSessionChannel.ClientSessionChannelListener()
+        {
+        };
+        try
+        {
+            channel.addListener(channelListener);
+            Assert.fail();
+        }
+        catch (IllegalStateException expected)
+        {
+        }
+
+        try
+        {
+            channel.removeListener(channelListener);
+            Assert.fail();
+        }
+        catch (IllegalStateException expected)
+        {
+        }
+
+        try
+        {
+            channel.setAttribute("foo", "bar");
+            Assert.fail();
+        }
+        catch (IllegalStateException expected)
+        {
+        }
+
+        try
+        {
+            channel.removeAttribute("foo");
+            Assert.fail();
+        }
+        catch (IllegalStateException expected)
+        {
+        }
+
+        try
+        {
+            channel.getAttributeNames();
+            Assert.fail();
+        }
+        catch (IllegalStateException expected)
+        {
+        }
+
+        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+            }
+        };
+        try
+        {
+            channel.subscribe(listener);
+            Assert.fail();
+        }
+        catch (IllegalStateException expected)
+        {
+        }
+
+        try
+        {
+            channel.unsubscribe(listener);
+            Assert.fail();
+        }
+        catch (IllegalStateException expected)
+        {
+        }
+
+        try
+        {
+            channel.unsubscribe();
+            Assert.fail();
+        }
+        catch (IllegalStateException expected)
+        {
+        }
+
+        try
+        {
+            channel.publish("");
+            Assert.fail();
+        }
+        catch (IllegalStateException expected)
+        {
+        }
+
+        try
+        {
+            channel.getSession();
+            Assert.fail();
+        }
+        catch (IllegalStateException expected)
+        {
+        }
+
+        disconnectBayeuxClient(client);
+    }
 }

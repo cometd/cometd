@@ -1236,6 +1236,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         public ClientSession getSession()
         {
+            throwIfReleased();
             return BayeuxClient.this;
         }
 
@@ -1257,11 +1258,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         public void publish(Object data)
         {
+            throwIfReleased();
             publish(data, null);
         }
 
         public void publish(Object data, String messageId)
         {
+            throwIfReleased();
             Message.Mutable message = newMessage();
             message.setChannel(getId());
             message.setData(data);

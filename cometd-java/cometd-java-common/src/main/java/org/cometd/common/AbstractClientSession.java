@@ -39,36 +39,32 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class AbstractClientSession implements ClientSession
 {
+    protected static final Logger logger = Log.getLogger(ClientSession.class);
     private static final AtomicLong _idGen = new AtomicLong(0);
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
     private final AttributesMap _attributes = new AttributesMap();
     private final ConcurrentMap<String, AbstractSessionChannel> _channels = new ConcurrentHashMap<String, AbstractSessionChannel>();
     private final AtomicInteger _batch = new AtomicInteger();
 
-    /* ------------------------------------------------------------ */
     protected AbstractClientSession()
     {
     }
 
-    /* ------------------------------------------------------------ */
     protected String newMessageId()
     {
         return String.valueOf(_idGen.incrementAndGet());
     }
 
-    /* ------------------------------------------------------------ */
     public void addExtension(Extension extension)
     {
         _extensions.add(extension);
     }
 
-    /* ------------------------------------------------------------ */
     public void removeExtension(Extension extension)
     {
         _extensions.remove(extension);
     }
 
-    /* ------------------------------------------------------------ */
     protected boolean extendSend(Message.Mutable message)
     {
         if (message.isMeta())
@@ -86,7 +82,6 @@ public abstract class AbstractClientSession implements ClientSession
         return true;
     }
 
-    /* ------------------------------------------------------------ */
     protected boolean extendRcv(Message.Mutable message)
     {
         if (message.isMeta())
@@ -104,13 +99,10 @@ public abstract class AbstractClientSession implements ClientSession
         return true;
     }
 
-    /* ------------------------------------------------------------ */
     protected abstract ChannelId newChannelId(String channelId);
 
-    /* ------------------------------------------------------------ */
     protected abstract AbstractSessionChannel newChannel(ChannelId channelId);
 
-    /* ------------------------------------------------------------ */
     public ClientSessionChannel getChannel(String channelId)
     {
         AbstractSessionChannel channel = _channels.get(channelId);
@@ -125,22 +117,18 @@ public abstract class AbstractClientSession implements ClientSession
         return channel;
     }
 
-    /* ------------------------------------------------------------ */
     protected ConcurrentMap<String, AbstractSessionChannel> getChannels()
     {
         return _channels;
     }
 
-    /* ------------------------------------------------------------ */
     public void startBatch()
     {
         _batch.incrementAndGet();
     }
 
-    /* ------------------------------------------------------------ */
     protected abstract void sendBatch();
 
-    /* ------------------------------------------------------------ */
     public boolean endBatch()
     {
         if (_batch.decrementAndGet()==0)
@@ -151,7 +139,6 @@ public abstract class AbstractClientSession implements ClientSession
         return false;
     }
 
-    /* ------------------------------------------------------------ */
     public void batch(Runnable batch)
     {
         startBatch();
@@ -165,25 +152,21 @@ public abstract class AbstractClientSession implements ClientSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected boolean isBatching()
     {
         return _batch.get() > 0;
     }
 
-    /* ------------------------------------------------------------ */
     public Object getAttribute(String name)
     {
         return _attributes.getAttribute(name);
     }
 
-    /* ------------------------------------------------------------ */
     public Set<String> getAttributeNames()
     {
         return _attributes.getAttributeNameSet();
     }
 
-    /* ------------------------------------------------------------ */
     public Object removeAttribute(String name)
     {
         Object old = _attributes.getAttribute(name);
@@ -191,20 +174,17 @@ public abstract class AbstractClientSession implements ClientSession
         return old;
     }
 
-    /* ------------------------------------------------------------ */
     public void setAttribute(String name, Object value)
     {
         _attributes.setAttribute(name,value);
     }
 
-    /* ------------------------------------------------------------ */
     protected void resetSubscriptions()
     {
         for (AbstractSessionChannel ch : _channels.values())
             ch.resetSubscriptions();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * <p>Receives a message (from the server) and process it.</p>
      * <p>Processing the message involves calling the receive {@link Extension extensions}
@@ -220,23 +200,34 @@ public abstract class AbstractClientSession implements ClientSession
         if (!extendRcv(message))
             return;
 
-        AbstractSessionChannel channel = (AbstractSessionChannel)getChannel(id);
+        AbstractSessionChannel channel = getReleasableChannel(id);
         ChannelId channelId = channel.getChannelId();
-
         channel.notifyMessageListeners(message);
+        channel.release();
 
-        for (String channelPattern : channelId.getWilds())
+        for (String wildChannelName : channelId.getWilds())
         {
-            ChannelId channelIdPattern = newChannelId(channelPattern);
-            if (channelIdPattern.matches(channelId))
+            ChannelId wildChannelId = newChannelId(wildChannelName);
+            if (wildChannelId.matches(channelId))
             {
-                AbstractSessionChannel wildChannel = (AbstractSessionChannel)getChannel(channelPattern);
+                AbstractSessionChannel wildChannel = getReleasableChannel(wildChannelName);
                 wildChannel.notifyMessageListeners(message);
+                wildChannel.release();
             }
         }
     }
 
-    /* ------------------------------------------------------------ */
+    private AbstractSessionChannel getReleasableChannel(String id)
+    {
+        // Use getChannels().get(channelName) instead of getChannel(channelName)
+        // to avoid to cache channels that can be released immediately.
+
+        AbstractSessionChannel channel = ChannelId.isMeta(id) ? (AbstractSessionChannel)getChannel(id) : getChannels().get(id);
+        if (channel == null)
+            channel = newChannel(newChannelId(id));
+        return channel;
+    }
+
     public void dump(StringBuilder b,String indent)
     {
         b.append(toString());
@@ -252,40 +243,37 @@ public abstract class AbstractClientSession implements ClientSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * <p>A channel scoped to a {@link ClientSession}.</p>
      */
     protected abstract class AbstractSessionChannel implements ClientSessionChannel
     {
-        protected final Logger logger = Log.getLogger(getClass().getName());
         private final ChannelId _id;
         private final AttributesMap _attributes = new AttributesMap();
         private final CopyOnWriteArrayList<MessageListener> _subscriptions = new CopyOnWriteArrayList<MessageListener>();
         private final AtomicInteger _subscriptionCount = new AtomicInteger();
         private final CopyOnWriteArrayList<ClientSessionChannelListener> _listeners = new CopyOnWriteArrayList<ClientSessionChannelListener>();
+        private volatile boolean _released;
 
-        /* ------------------------------------------------------------ */
         protected AbstractSessionChannel(ChannelId id)
         {
             _id=id;
         }
 
-        /* ------------------------------------------------------------ */
         public ChannelId getChannelId()
         {
             return _id;
         }
 
-        /* ------------------------------------------------------------ */
         public void addListener(ClientSessionChannelListener listener)
         {
+            throwIfReleased();
             _listeners.add(listener);
         }
 
-        /* ------------------------------------------------------------ */
         public void removeListener(ClientSessionChannelListener listener)
         {
+            throwIfReleased();
             _listeners.remove(listener);
         }
 
@@ -294,15 +282,13 @@ public abstract class AbstractClientSession implements ClientSession
             return Collections.unmodifiableList(_listeners);
         }
 
-        /* ------------------------------------------------------------ */
         protected abstract void sendSubscribe();
 
-        /* ------------------------------------------------------------ */
         protected abstract void sendUnSubscribe();
 
-        /* ------------------------------------------------------------ */
         public void subscribe(MessageListener listener)
         {
+            throwIfReleased();
             boolean added = _subscriptions.add(listener);
             if (added)
             {
@@ -312,9 +298,9 @@ public abstract class AbstractClientSession implements ClientSession
             }
         }
 
-        /* ------------------------------------------------------------ */
         public void unsubscribe(MessageListener listener)
         {
+            throwIfReleased();
             boolean removed = _subscriptions.remove(listener);
             if (removed)
             {
@@ -324,9 +310,9 @@ public abstract class AbstractClientSession implements ClientSession
             }
         }
 
-        /* ------------------------------------------------------------ */
         public void unsubscribe()
         {
+            throwIfReleased();
             for (MessageListener listener : _subscriptions)
                 unsubscribe(listener);
         }
@@ -338,12 +324,26 @@ public abstract class AbstractClientSession implements ClientSession
 
         public boolean release()
         {
-            return _subscriptions.isEmpty() && _listeners.isEmpty() && _channels.remove(getId(), this);
+            if (_released)
+                return false;
+
+            if (_subscriptions.isEmpty() && _listeners.isEmpty())
+            {
+                boolean removed = _channels.remove(getId(), this);
+                _released = removed;
+                return removed;
+            }
+            return false;
         }
 
-        /* ------------------------------------------------------------ */
+        public boolean isReleased()
+        {
+            return _released;
+        }
+
         protected void resetSubscriptions()
         {
+            throwIfReleased();
             for (MessageListener l : _subscriptions)
             {
                 if (_subscriptions.remove(l))
@@ -351,25 +351,21 @@ public abstract class AbstractClientSession implements ClientSession
             }
         }
 
-        /* ------------------------------------------------------------ */
         public String getId()
         {
             return _id.toString();
         }
 
-        /* ------------------------------------------------------------ */
         public boolean isDeepWild()
         {
             return _id.isDeepWild();
         }
 
-        /* ------------------------------------------------------------ */
         public boolean isMeta()
         {
             return _id.isMeta();
         }
 
-        /* ------------------------------------------------------------ */
         public boolean isService()
         {
             return _id.isService();
@@ -380,7 +376,6 @@ public abstract class AbstractClientSession implements ClientSession
             return !isMeta() && !isService();
         }
 
-        /* ------------------------------------------------------------ */
         public boolean isWild()
         {
             return _id.isWild();
@@ -388,6 +383,7 @@ public abstract class AbstractClientSession implements ClientSession
 
         protected void notifyMessageListeners(Message message)
         {
+            throwIfReleased();
             for (ClientSessionChannelListener listener : _listeners)
             {
                 if (listener instanceof ClientSessionChannel.MessageListener)
@@ -405,6 +401,7 @@ public abstract class AbstractClientSession implements ClientSession
 
         private void notifyOnMessage(MessageListener listener, Message message)
         {
+            throwIfReleased();
             try
             {
                 listener.onMessage(this, message);
@@ -417,21 +414,25 @@ public abstract class AbstractClientSession implements ClientSession
 
         public void setAttribute(String name, Object value)
         {
+            throwIfReleased();
             _attributes.setAttribute(name, value);
         }
 
         public Object getAttribute(String name)
         {
+            throwIfReleased();
             return _attributes.getAttribute(name);
         }
 
         public Set<String> getAttributeNames()
         {
+            throwIfReleased();
             return _attributes.keySet();
         }
 
         public Object removeAttribute(String name)
         {
+            throwIfReleased();
             Object old = getAttribute(name);
             _attributes.removeAttribute(name);
             return old;
@@ -458,7 +459,12 @@ public abstract class AbstractClientSession implements ClientSession
             }
         }
 
-        /* ------------------------------------------------------------ */
+        protected void throwIfReleased()
+        {
+            if (isReleased())
+                throw new IllegalStateException("Channel " + this + " has been released");
+        }
+
         @Override
         public String toString()
         {
