@@ -218,6 +218,10 @@ org.cometd.WebSocketTransport = function()
             {
                 self.onClose();
             };
+            _webSocket.onerror = function()
+            {
+                self.onClose();
+            };
             _webSocket.onmessage = function(message)
             {
                 self.onMessage(message);
