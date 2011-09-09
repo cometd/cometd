@@ -41,7 +41,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
     private final ServerSessionImpl _session;
     private final Object _lock;
     private final ArrayIdQueue<ServerMessage> _unackedQueue;
-    private volatile long _lastAck;
+    private long _lastAck;
 
     public AcknowledgedMessagesClientExtension(ServerSession session)
     {
@@ -72,12 +72,12 @@ public class AcknowledgedMessagesClientExtension implements Extension
                 synchronized(_lock)
                 {
                     Number ackValue = (Number)ext.get("ack");
+                    _logger.debug("Session {} received ack {}, lastAck {}", session, ackValue, _lastAck);
                     if (ackValue != null)
                     {
                         long acked = ackValue.longValue();
                         if (acked <=_lastAck)
                         {
-                            _logger.debug("Session {} lost ack: {}<={}", session, acked, _lastAck);
                             _session.replaceQueue(_unackedQueue);
                         }
                         else
