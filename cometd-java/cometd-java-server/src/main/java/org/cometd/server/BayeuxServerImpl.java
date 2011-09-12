@@ -1020,8 +1020,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         if (message.isMeta())
         {
-            ListIterator<Extension> i = _extensions.listIterator(_extensions.size());
-            while(i.hasPrevious())
+            // Cannot use listIterator(int): it is not thread safe
+            ListIterator<Extension> i = _extensions.listIterator();
+            while (i.hasNext())
+                i.next();
+            while (i.hasPrevious())
             {
                 final Extension extension = i.previous();
                 if (!notifySendMeta(extension, to, message))
@@ -1033,8 +1036,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
         else
         {
-            ListIterator<Extension> i = _extensions.listIterator(_extensions.size());
-            while(i.hasPrevious())
+            ListIterator<Extension> i = _extensions.listIterator();
+            while (i.hasNext())
+                i.next();
+            while (i.hasPrevious())
             {
                 final Extension extension = i.previous();
                 if (!notifySend(extension, from, to, message))
