@@ -150,7 +150,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         final int publish = stress ? 4000 : 100;
         final int batch = stress ? 10 : 2;
         final int pause = stress ? 50 : 10;
-        BayeuxClient[] clients = new BayeuxClient[stress ? 500 : 1 * rooms];
+        BayeuxClient[] clients = new BayeuxClient[stress ? 500 : 2 * rooms];
 
         final AtomicInteger connections = new AtomicInteger();
         final AtomicInteger received = new AtomicInteger();
