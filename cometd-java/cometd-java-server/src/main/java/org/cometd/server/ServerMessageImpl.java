@@ -203,7 +203,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
 
     // The code below is a relic of a mistake in the API, but it is kept for backward compatibility
 
-    private static final JSONContext.Server _jsonContext = new JettyJSONContextServer();
+    private static JSONContext.Server _jsonContext = new JettyJSONContextServer();
 
     /**
      * <p>Parses the content of the given reader into an array of {@link ServerMessage.Mutable}s.</p>

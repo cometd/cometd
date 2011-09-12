@@ -173,7 +173,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     // The code below is a relic of a mistake in the API, but it is kept for backward compatibility.
 
-    private static final JSONContext.Client _jsonContext = new JettyJSONContextClient();
+    private static JSONContext.Client _jsonContext = new JettyJSONContextClient();
 
     /**
      * <p>Parses the given string into a list of {@link Mutable}s.</p>
