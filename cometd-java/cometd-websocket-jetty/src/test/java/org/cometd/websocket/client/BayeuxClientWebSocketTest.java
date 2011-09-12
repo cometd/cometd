@@ -207,6 +207,13 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                 if (messages.length == 1 && Channel.META_CONNECT.equals(messages[0].getChannel()))
                     connectLatch.get().countDown();
             }
+
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                if (!(x instanceof EOFException))
+                    super.onFailure(x, messages);
+            }
         };
         client.setDebugEnabled(debugTests());
         client.handshake();
