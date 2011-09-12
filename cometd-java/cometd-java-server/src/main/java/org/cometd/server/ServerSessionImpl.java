@@ -252,6 +252,8 @@ public class ServerSessionImpl implements ServerSession
         if (message == null)
             return;
 
+        _bayeux.freeze(mutable);
+
         for (ServerSessionListener listener : _listeners)
         {
             if (listener instanceof MaxQueueListener && _maxQueue >=0 && _queue.size() >= _maxQueue)

@@ -882,8 +882,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         // For example, it is impossible to prevent things like
         // ((CustomObject)serverMessage.getData()).change() or
         // ((Map)serverMessage.getExt().get("map")).put().
-        String json = _jsonContext.generate(mutable);
-        ((ServerMessageImpl)mutable).freeze(json);
+        freeze(mutable);
 
         // Call the wild subscribers
         HashSet<String> wild_subscribers=null;
@@ -916,6 +915,15 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 if (listener instanceof BayeuxServerImpl.HandlerListener)
                     ((BayeuxServerImpl.HandlerListener)listener).onMessage(from,mutable);
         }
+    }
+
+    public void freeze(Mutable mutable)
+    {
+        ServerMessageImpl message = (ServerMessageImpl)mutable;
+        if (message.isFrozen())
+            return;
+        String json = _jsonContext.generate(message);
+        message.freeze(json);
     }
 
     private boolean notifyOnMessage(MessageListener listener, ServerSession from, ServerChannel to, Mutable mutable)
@@ -1233,7 +1241,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         return b.toString();
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     abstract class HandlerListener implements ServerChannel.ServerChannelListener
@@ -1248,7 +1256,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             if (channels instanceof String)
                 return Collections.singletonList((String)channels);
-            
+
             if (channels instanceof Object[])
             {
                 Object[] array=(Object[])channels;
@@ -1358,7 +1366,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             Object subscriptionField = message.get(Message.SUBSCRIPTION_FIELD);
             reply.put(Message.SUBSCRIPTION_FIELD, subscriptionField);
-            
+
             if (subscriptionField == null)
             {
                 error(reply, "403::subscription_missing");
@@ -1447,7 +1455,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 error(reply, "403::subscription_missing");
                 return;
             }
-            
+
             List<String> subscriptions = toChannelList(subscriptionField);
             if (subscriptions==null)
             {

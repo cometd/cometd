@@ -415,7 +415,10 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     reply = getBayeux().extendReply(session, session, reply);
 
                     if (reply != null)
+                    {
+                        getBayeux().freeze(reply);
                         send(_connection, reply);
+                    }
                 }
             }
         }
@@ -525,7 +528,10 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     connectReply = getBayeux().extendReply(session, session, connectReply);
 
                     if (connectReply != null)
+                    {
+                        getBayeux().freeze(connectReply);
                         send(_connection, connectReply);
+                    }
                 }
             }
             catch (Exception x)

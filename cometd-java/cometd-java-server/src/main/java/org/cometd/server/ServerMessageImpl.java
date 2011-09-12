@@ -58,10 +58,15 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
         _lazy = lazy;
     }
 
-    public void freeze(String json)
+    protected void freeze(String json)
     {
         assert _json == null;
         _json = json;
+    }
+
+    protected boolean isFrozen()
+    {
+        return _json != null;
     }
 
     @Override
@@ -76,7 +81,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     public Object getData()
     {
         Object data = super.getData();
-        if (_json != null && data instanceof Map)
+        if (isFrozen() && data instanceof Map)
             return Collections.unmodifiableMap((Map<String, Object>)data);
         return data;
     }
@@ -84,7 +89,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     @Override
     public Object put(String key, Object value)
     {
-        if (_json != null)
+        if (isFrozen())
             throw new UnsupportedOperationException();
         return super.put(key, value);
     }
@@ -92,7 +97,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     @Override
     public Set<Map.Entry<String, Object>> entrySet()
     {
-        if (_json != null)
+        if (isFrozen())
             return new ImmutableEntrySet(super.entrySet());
         return super.entrySet();
     }
@@ -101,7 +106,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     public Map<String, Object> getDataAsMap()
     {
         Map<String, Object> data = super.getDataAsMap();
-        if (_json != null && data != null)
+        if (isFrozen() && data != null)
             return Collections.unmodifiableMap(data);
         return data;
     }
@@ -110,7 +115,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     public Map<String, Object> getExt()
     {
         Map<String, Object> ext = super.getExt();
-        if (_json != null && ext != null)
+        if (isFrozen() && ext != null)
             return Collections.unmodifiableMap(ext);
         return ext;
     }
@@ -119,7 +124,7 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     public Map<String, Object> getAdvice()
     {
         Map<String, Object> advice = super.getAdvice();
-        if (_json != null && advice != null)
+        if (isFrozen() && advice != null)
             return Collections.unmodifiableMap(advice);
         return advice;
     }

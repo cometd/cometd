@@ -39,6 +39,7 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         putAll(message);
     }
 
+    @SuppressWarnings("unchecked")
     public Map<String, Object> getAdvice()
     {
         return (Map<String, Object>)get(ADVICE_FIELD);
@@ -64,11 +65,13 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         return get(DATA_FIELD);
     }
 
+    @SuppressWarnings("unchecked")
     public Map<String, Object> getDataAsMap()
     {
         return (Map<String, Object>)get(DATA_FIELD);
     }
 
+    @SuppressWarnings("unchecked")
     public Map<String, Object> getExt()
     {
         return (Map<String, Object>)get(EXT_FIELD);
@@ -129,11 +132,6 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
     {
         Boolean value = (Boolean)get(Message.SUCCESSFUL_FIELD);
         return value != null && value;
-    }
-
-    public String toString()
-    {
-        return getJSON();
     }
 
     public void setChannel(String channel)

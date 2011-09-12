@@ -336,7 +336,10 @@ public abstract class LongPollingTransport extends HttpTransport
                             reply = getBayeux().extendReply(session, session, reply);
 
                             if (reply != null)
+                            {
+                                getBayeux().freeze(reply);
                                 writer = send(request, response, writer, reply);
+                            }
                         }
                     }
 
@@ -401,7 +404,10 @@ public abstract class LongPollingTransport extends HttpTransport
             reply = getBayeux().extendReply(session, session, reply);
 
             if (reply != null)
+            {
+                getBayeux().freeze(reply);
                 writer = send(request, response, writer, reply);
+            }
 
             complete(writer);
         }

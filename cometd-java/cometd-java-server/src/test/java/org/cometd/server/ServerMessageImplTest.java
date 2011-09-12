@@ -82,7 +82,7 @@ public class ServerMessageImplTest
         ServerMessage.Mutable[] messages = jsonContext.parse(originalJSON);
         ServerMessageImpl message = (ServerMessageImpl)messages[0];
 
-        String json = message.getJSON();
+        String json = jsonContext.generate(message);
         assertTrue(json.contains("\"ext\":{\"extName\":\"extValue\"}"));
         assertTrue(json.contains("\"clientId\":\"jva73siaj92jdafa\""));
         assertTrue(json.contains("\"dataName\":\"dataValue\""));
@@ -94,7 +94,7 @@ public class ServerMessageImplTest
         Assert.assertEquals("54321", message.getId());
 
         // Be sure the JSON reflects the modifications
-        json = message.getJSON();
+        json = jsonContext.generate(message);
         assertTrue(json.contains("\"id\":\"54321\""));
 
         // Freeze the message
