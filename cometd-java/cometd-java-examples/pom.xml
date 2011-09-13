@@ -61,11 +61,13 @@
                                 <argument>-Xms2g</argument>
                                 <argument>-Xmn1g</argument>
                                 <argument>-XX:+PrintCommandLineFlags</argument>
+                                <argument>-XX:-UseSplitVerifier</argument>
                                 <argument>-verbose:gc</argument>
                                 <!--<argument>-XX:+PrintGCDetails</argument>-->
                                 <!--<argument>-XX:+PrintGCDateStamps</argument>-->
                                 <argument>-XX:+UseParallelOldGC</argument>
                                 <argument>-XX:-UseAdaptiveSizePolicy</argument>
+                                <argument>-XX:+UseNUMA</argument>
                                 <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->
                                 <!--<argument>-XX:+UnlockExperimentalVMOptions</argument>-->
                                 <!--<argument>-XX:+UseG1GC</argument>-->
@@ -94,11 +96,13 @@
                                 <argument>-Xms2g</argument>
                                 <argument>-Xmn1g</argument>
                                 <argument>-XX:+PrintCommandLineFlags</argument>
+                                <argument>-XX:-UseSplitVerifier</argument>
                                 <argument>-verbose:gc</argument>
                                 <!--<argument>-XX:+PrintGCDetails</argument>-->
                                 <!--<argument>-XX:+PrintGCDateStamps</argument>-->
                                 <argument>-XX:+UseParallelOldGC</argument>
                                 <argument>-XX:-UseAdaptiveSizePolicy</argument>
+                                <argument>-XX:+UseNUMA</argument>
                                 <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->
                                 <!--<argument>-XX:+UnlockExperimentalVMOptions</argument>-->
                                 <!--<argument>-XX:+UseG1GC</argument>-->
