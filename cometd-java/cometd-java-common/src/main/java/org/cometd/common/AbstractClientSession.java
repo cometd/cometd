@@ -210,15 +210,11 @@ public abstract class AbstractClientSession implements ClientSession
         ChannelId channelId = channel.getChannelId();
         for (String wildChannelName : channelId.getWilds())
         {
-            ChannelId wildChannelId = newChannelId(wildChannelName);
-            if (wildChannelId.matches(channelId))
-            {
-                MarkableReference<AbstractSessionChannel> wildChannelRef = getReleasableChannel(wildChannelName);
-                AbstractSessionChannel wildChannel = wildChannelRef.getReference();
-                wildChannel.notifyMessageListeners(message);
-                if (wildChannelRef.isMarked())
-                    wildChannel.release();
-            }
+            MarkableReference<AbstractSessionChannel> wildChannelRef = getReleasableChannel(wildChannelName);
+            AbstractSessionChannel wildChannel = wildChannelRef.getReference();
+            wildChannel.notifyMessageListeners(message);
+            if (wildChannelRef.isMarked())
+                wildChannel.release();
         }
     }
 
