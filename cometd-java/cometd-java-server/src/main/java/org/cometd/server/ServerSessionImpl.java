@@ -254,9 +254,11 @@ public class ServerSessionImpl implements ServerSession
 
         _bayeux.freeze(mutable);
 
+        int maxQueueSize = _maxQueue;
+        int queueSize = _queue.size();
         for (ServerSessionListener listener : _listeners)
         {
-            if (listener instanceof MaxQueueListener && _maxQueue >=0 && _queue.size() >= _maxQueue)
+            if (maxQueueSize > 0 && queueSize > maxQueueSize && listener instanceof MaxQueueListener)
             {
                 if (!notifyQueueMaxed((MaxQueueListener)listener, from, message))
                     return;
@@ -822,10 +824,10 @@ public class ServerSessionImpl implements ServerSession
 
     /* ------------------------------------------------------------ */
     /**
-     * @param timedout
+     * @param timedOut whether the session has been timed out
      * @return True if the session was connected.
      */
-    protected boolean removed(boolean timedout)
+    protected boolean removed(boolean timedOut)
     {
         boolean connected = _connected.getAndSet(false);
         boolean handshook = _handshook.getAndSet(false);
@@ -837,7 +839,7 @@ public class ServerSessionImpl implements ServerSession
             for (ServerSessionListener listener : _listeners)
             {
                 if (listener instanceof ServerSession.RemoveListener)
-                    notifyRemoved((RemoveListener)listener, this, timedout);
+                    notifyRemoved((RemoveListener)listener, this, timedOut);
             }
         }
         return connected;
