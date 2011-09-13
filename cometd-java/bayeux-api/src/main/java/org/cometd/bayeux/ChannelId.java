@@ -35,10 +35,10 @@ public class ChannelId
     public final static String DEEPWILD = "**";
 
     private final String _id;
-    private final String[] _segments;
-    private final int _wild;
-    private final List<String> _wilds;
-    private final String _parent;
+    private volatile String[] _segments;
+    private int _wild;
+    private List<String> _wilds;
+    private String _parent;
 
     /**
      * Constructs a new {@code ChannelId} with the given id
@@ -55,38 +55,53 @@ public class ChannelId
             id = id.substring(0, id.length() - 1);
 
         _id = id;
+    }
 
-        _segments = id.substring(1).split("/");
-        String[] wilds = new String[_segments.length + 1];
-        StringBuilder b = new StringBuilder();
-        b.append('/');
-
-        for (int i = 0; i < _segments.length; ++i)
+    private void resolve()
+    {
+        synchronized (this)
         {
-            if (_segments[i] == null || _segments[i].length() == 0)
-                throw new IllegalArgumentException("Invalid channel id: " + id);
+            if (_segments != null)
+                return;
 
-            if (i > 0)
-                b.append(_segments[i - 1]).append('/');
+            String[] segments = _id.substring(1).split("/");
+            if (segments.length < 1)
+                throw new IllegalArgumentException("Invalid channel id:" + this);
 
-            wilds[_segments.length - i] = b + "**";
+            String lastSegment = segments[segments.length - 1];
+            int wild = 0;
+            if (WILD.equals(lastSegment))
+                wild = 1;
+            else if (DEEPWILD.equals(lastSegment))
+                wild = 2;
+            _wild = wild;
+
+            if (wild > 0)
+            {
+                _wilds = Collections.emptyList();
+            }
+            else
+            {
+                String[] wilds = new String[segments.length + 1];
+                StringBuilder b = new StringBuilder(_id.length());
+                b.append('/');
+                for (int i = 0; i < segments.length; ++i)
+                {
+                    if (segments[i].trim().length() == 0)
+                        throw new IllegalArgumentException("Invalid channel id:" + this);
+                    if (i > 0)
+                        b.append(segments[i - 1]).append('/');
+                    wilds[segments.length - i] = b + "**";
+                }
+                wilds[0] = b + "*";
+                _wilds = Collections.unmodifiableList(Arrays.asList(wilds));
+            }
+
+            _parent = segments.length == 1 ? null : _id.substring(0, _id.length() - lastSegment.length() - 1);
+
+            // Volatile write, other members will be visible as well
+            _segments = segments;
         }
-        wilds[0] = b + "*";
-        _parent = _segments.length == 1 ? null : b.substring(0, b.length() - 1);
-
-        if (_segments.length == 0)
-            _wild = 0;
-        else if (WILD.equals(_segments[_segments.length - 1]))
-            _wild = 1;
-        else if (DEEPWILD.equals(_segments[_segments.length - 1]))
-            _wild = 2;
-        else
-            _wild = 0;
-
-        if (_wild == 0)
-            _wilds = Collections.unmodifiableList(Arrays.asList(wilds));
-        else
-            _wilds = Collections.emptyList();
     }
 
     /**
@@ -95,6 +110,7 @@ public class ChannelId
      */
     public boolean isWild()
     {
+        resolve();
         return _wild > 0;
     }
 
@@ -121,6 +137,7 @@ public class ChannelId
      */
     public boolean isDeepWild()
     {
+        resolve();
         return _wild > 1;
     }
 
@@ -131,6 +148,7 @@ public class ChannelId
      */
     public boolean isMeta()
     {
+        resolve();
         return _segments.length > 0 && "meta".equals(_segments[0]);
     }
 
@@ -141,6 +159,7 @@ public class ChannelId
      */
     public boolean isService()
     {
+        resolve();
         return _segments.length > 0 && "service".equals(_segments[0]);
     }
 
@@ -178,15 +197,17 @@ public class ChannelId
      * <p>If this {@code ChannelId} is non-wild,
      * then it matches only if it is equal to the given {@code ChannelId}.</p>
      * <p>Otherwise, this {@code ChannelId} is either shallow or deep wild, and
-     * matches {@code ChannelId}s with the same number of segments (if it is
+     * matches {@code ChannelId}s with the same number of equal segments (if it is
      * shallow wild), or {@code ChannelId}s with the same or a greater number of
-     * segments (if it is deep wild).</p>
+     * equal segments (if it is deep wild).</p>
      *
      * @param channelId the channelId to match
      * @return true if this {@code ChannelId} matches the given {@code ChannelId}
      */
     public boolean matches(ChannelId channelId)
     {
+        resolve();
+
         if (channelId.isWild())
             return equals(channelId);
 
@@ -233,6 +254,7 @@ public class ChannelId
      */
     public int depth()
     {
+        resolve();
         return _segments.length;
     }
 
@@ -243,6 +265,8 @@ public class ChannelId
      */
     public boolean isAncestorOf(ChannelId id)
     {
+        resolve();
+
         if (isWild() || depth() >= id.depth())
             return false;
 
@@ -261,6 +285,8 @@ public class ChannelId
      */
     public boolean isParentOf(ChannelId id)
     {
+        resolve();
+
         if (isWild() || depth() != id.depth() - 1)
             return false;
 
@@ -278,6 +304,7 @@ public class ChannelId
      */
     public String getParent()
     {
+        resolve();
         return _parent;
     }
 
@@ -288,6 +315,7 @@ public class ChannelId
      */
     public String getSegment(int i)
     {
+        resolve();
         if (i >= _segments.length)
             return null;
         return _segments[i];
@@ -299,6 +327,7 @@ public class ChannelId
      */
     public List<String> getWilds()
     {
+        resolve();
         return _wilds;
     }
 
