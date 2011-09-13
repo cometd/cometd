@@ -16,8 +16,6 @@
 
 package org.cometd.benchmark;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -27,12 +25,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
 {
-    private final ConcurrentMap<Runnable, Long> tasks = new ConcurrentHashMap<Runnable, Long>();
-    private final AtomicLong taskCount = new AtomicLong();
+    private final AtomicLong tasks = new AtomicLong();
     private final AtomicLong maxLatency = new AtomicLong();
     private final AtomicLong totalLatency = new AtomicLong();
     private final AtomicInteger threads = new AtomicInteger();
     private final AtomicInteger maxThreads = new AtomicInteger();
+    private final MonitoringLinkedBlockingQueue queue;
 
     public MonitoringThreadPoolExecutor(int maximumPoolSize, long keepAliveTime, TimeUnit unit)
     {
@@ -42,13 +40,13 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
     public MonitoringThreadPoolExecutor(int maximumPoolSize, long keepAliveTime, TimeUnit unit, RejectedExecutionHandler handler)
     {
         super(maximumPoolSize, maximumPoolSize, keepAliveTime, unit, new MonitoringLinkedBlockingQueue(), handler);
+        queue = (MonitoringLinkedBlockingQueue)getQueue();
     }
 
     public void reset()
     {
-        ((MonitoringLinkedBlockingQueue)getQueue()).reset();
-        tasks.clear();
-        taskCount.set(0);
+        queue.reset();
+        tasks.set(0);
         maxLatency.set(0);
         totalLatency.set(0);
         threads.set(0);
@@ -62,13 +60,13 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
 
     public long getAverageQueueLatency()
     {
-        long count = taskCount.get();
+        long count = this.tasks.get();
         return count == 0 ? -1 : totalLatency.get() / count;
     }
 
     public int getMaxQueueSize()
     {
-        return ((MonitoringLinkedBlockingQueue)getQueue()).maxSize.get();
+        return queue.maxSize.get();
     }
 
     public int getMaxActiveThreads()
@@ -79,41 +77,26 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
     @Override
     public void execute(final Runnable task)
     {
-        Runnable runnable = task;
-        long nanos = System.nanoTime();
-        Long existing = tasks.putIfAbsent(runnable, nanos);
-        if (existing != null)
+        final long begin = System.nanoTime();
+        super.execute(new Runnable()
         {
-            // Need to wrap in order to guarantee
-            // that we're not passed the same task
-            runnable = new Runnable()
+            public void run()
             {
-                public void run()
+                long latency = System.nanoTime() - begin;
+                Atomics.updateMax(maxLatency, latency);
+                totalLatency.addAndGet(latency);
+                tasks.incrementAndGet();
+                Atomics.updateMax(maxThreads, threads.incrementAndGet());
+                try
                 {
                     task.run();
                 }
-            };
-            tasks.put(runnable, nanos);
-        }
-        super.execute(runnable);
-    }
-
-    @Override
-    protected void beforeExecute(Thread thread, Runnable task)
-    {
-        long time = System.nanoTime() - tasks.remove(task);
-        taskCount.incrementAndGet();
-        Atomics.updateMax(maxLatency, time);
-        totalLatency.addAndGet(time);
-        Atomics.updateMax(maxThreads, threads.incrementAndGet());
-        super.beforeExecute(thread, task);
-    }
-
-    @Override
-    protected void afterExecute(Runnable r, Throwable t)
-    {
-        threads.decrementAndGet();
-        super.afterExecute(r, t);
+                finally
+                {
+                    threads.decrementAndGet();
+                }
+            }
+        });
     }
 
     private static class MonitoringLinkedBlockingQueue extends LinkedBlockingQueue<Runnable>
@@ -125,6 +108,13 @@ public class MonitoringThreadPoolExecutor extends ThreadPoolExecutor
         {
             size.set(0);
             maxSize.set(0);
+        }
+
+        @Override
+        public void clear()
+        {
+            reset();
+            super.clear();
         }
 
         @Override

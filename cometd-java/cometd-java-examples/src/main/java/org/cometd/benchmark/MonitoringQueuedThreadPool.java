@@ -25,6 +25,9 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class MonitoringQueuedThreadPool extends QueuedThreadPool
 {
+    private final AtomicInteger jobs = new AtomicInteger();
+    private final AtomicLong maxLatency = new AtomicLong();
+    private final AtomicLong totalLatency = new AtomicLong();
     private final AtomicInteger threads = new AtomicInteger();
     private final AtomicInteger maxThreads = new AtomicInteger();
     private final MonitoringBlockingArrayQueue queue;
@@ -38,24 +41,38 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
     }
 
     @Override
-    protected void runJob(Runnable job)
+    public boolean dispatch(final Runnable job)
     {
-        Atomics.updateMax(maxThreads, threads.incrementAndGet());
-        try
+        final long begin = System.nanoTime();
+        return super.dispatch(new Runnable()
         {
-            super.runJob(job);
-        }
-        finally
-        {
-            threads.decrementAndGet();
-        }
+            public void run()
+            {
+                long latency = System.nanoTime() - begin;
+                Atomics.updateMax(maxLatency, latency);
+                totalLatency.addAndGet(latency);
+                jobs.incrementAndGet();
+                Atomics.updateMax(maxThreads, threads.incrementAndGet());
+                try
+                {
+                    job.run();
+                }
+                finally
+                {
+                    threads.decrementAndGet();
+                }
+            }
+        });
     }
 
     public void reset()
     {
+        queue.reset();
+        jobs.set(0);
+        maxLatency.set(0);
+        totalLatency.set(0);
         threads.set(0);
         maxThreads.set(0);
-        queue.reset();
     }
 
     public int getMaxActiveThreads()
@@ -65,30 +82,34 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
 
     public int getMaxQueueSize()
     {
-        return queue.getMaxSize();
+        return queue.maxSize.get();
     }
 
     public long getAverageQueueLatency()
     {
-        return queue.getAverageLatency();
+        int count = jobs.get();
+        return count == 0 ? -1 : totalLatency.get() / count;
     }
 
     public long getMaxQueueLatency()
     {
-        return queue.getMaxLatency();
+        return maxLatency.get();
     }
 
     public static class MonitoringBlockingArrayQueue extends BlockingArrayQueue<Runnable>
     {
-        private final AtomicInteger count = new AtomicInteger();
         private final AtomicInteger size = new AtomicInteger();
         private final AtomicInteger maxSize = new AtomicInteger();
-        private final AtomicLong maxLatency = new AtomicLong();
-        private final AtomicLong totLatency = new AtomicLong();
 
         public MonitoringBlockingArrayQueue(int capacity, int growBy)
         {
             super(capacity, growBy);
+        }
+
+        public void reset()
+        {
+            size.set(0);
+            maxSize.set(0);
         }
 
         @Override
@@ -99,29 +120,17 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
         }
 
         @Override
-        public boolean offer(final Runnable job)
+        public boolean offer(Runnable job)
         {
-            final long begin = System.nanoTime();
-            boolean result = super.offer(new Runnable()
-            {
-                public void run()
-                {
-                    count.incrementAndGet();
-                    long latency = System.nanoTime() - begin;
-                    Atomics.updateMax(maxLatency, latency);
-                    totLatency.addAndGet(latency);
-                    job.run();
-                }
-            });
-            if (result)
+            boolean added = super.offer(job);
+            if (added)
                 increment();
-            return result;
+            return added;
         }
 
         private void increment()
         {
-            int value = size.incrementAndGet();
-            Atomics.updateMax(maxSize, value);
+            Atomics.updateMax(maxSize, size.incrementAndGet());
         }
 
         @Override
@@ -153,31 +162,6 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
         private void decrement()
         {
             size.decrementAndGet();
-        }
-
-        public void reset()
-        {
-            count.set(0);
-            size.set(0);
-            maxSize.set(0);
-            maxLatency.set(0);
-            totLatency.set(0);
-        }
-
-        public int getMaxSize()
-        {
-            return maxSize.get();
-        }
-
-        public long getMaxLatency()
-        {
-            return maxLatency.get();
-        }
-
-        public long getAverageLatency()
-        {
-            int count = this.count.get();
-            return count == 0 ? -1 : totLatency.get() / count;
         }
     }
 }
