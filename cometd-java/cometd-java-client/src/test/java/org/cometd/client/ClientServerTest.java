@@ -104,10 +104,14 @@ public class ClientServerTest
     @After
     public void stopServer() throws Exception
     {
-        httpClient.stop();
+        if (httpClient != null)
+            httpClient.stop();
 
-        server.stop();
-        server.join();
+        if (server != null)
+        {
+            server.stop();
+            server.join();
+        }
     }
 
     protected boolean debugTests()
