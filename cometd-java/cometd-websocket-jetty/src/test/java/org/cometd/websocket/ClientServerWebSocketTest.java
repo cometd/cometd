@@ -95,6 +95,7 @@ public abstract class ClientServerWebSocketTest
 
         QueuedThreadPool wsPool = new QueuedThreadPool();
         wsPool.setName(wsPool.getName() + "-client");
+        wsPool.setMaxStopTimeMs(1000);
         wsFactory = new WebSocketClientFactory(wsPool);
         wsFactory.start();
     }
