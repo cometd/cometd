@@ -1258,7 +1258,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         public void publish(Object data)
         {
-            throwIfReleased();
             publish(data, null);
         }
 

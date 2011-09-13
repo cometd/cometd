@@ -249,7 +249,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         /* ------------------------------------------------------------ */
         public void publish(Object data)
         {
-            throwIfReleased();
             publish(data, null);
         }
 
