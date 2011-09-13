@@ -34,6 +34,7 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
         super(new MonitoringBlockingArrayQueue(maxThreads, maxThreads));
         setMaxThreads(maxThreads);
         queue = (MonitoringBlockingArrayQueue)getQueue();
+        setMaxStopTimeMs(2000);
     }
 
     @Override
