@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
@@ -273,6 +274,25 @@ public class BayeuxLoadServer
                 boolean stopped = helper.stopStatistics();
                 if (stopped)
                 {
+                    if (requestLatencyHandler != null)
+                    {
+                        requestLatencyHandler.print();
+                        requestLatencyHandler.doNotTrackCurrentRequest();
+                    }
+
+                    if (statisticsHandler != null)
+                    {
+                        System.err.printf("Requests times (total/avg/max - stddev): %d/%d/%d ms - %d%n",
+                                statisticsHandler.getDispatchedTimeTotal(),
+                                ((Double)statisticsHandler.getDispatchedTimeMean()).longValue(),
+                                statisticsHandler.getDispatchedTimeMax(),
+                                ((Double)statisticsHandler.getDispatchedTimeStdDev()).longValue());
+                        System.err.printf("Requests (total/failed/max): %d/%d/%d%n",
+                                statisticsHandler.getDispatched(),
+                                (statisticsHandler.getResponses4xx() + statisticsHandler.getResponses5xx()),
+                                statisticsHandler.getDispatchedActiveMax());
+                    }
+
                     if (jettyThreadPool != null)
                     {
                         System.err.printf("Jetty Thread Pool - Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
@@ -288,24 +308,6 @@ public class BayeuxLoadServer
                                 websocketThreadPool.getMaxQueueSize(),
                                 TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getAverageQueueLatency()),
                                 TimeUnit.NANOSECONDS.toMillis(websocketThreadPool.getMaxQueueLatency()));
-                    }
-
-                    if (statisticsHandler != null)
-                    {
-                        System.err.println("Requests (total/failed/max): " + statisticsHandler.getDispatched() + "/" +
-                                (statisticsHandler.getResponses4xx() + statisticsHandler.getResponses5xx()) + "/" +
-                                statisticsHandler.getDispatchedActiveMax());
-                        System.err.println("Requests times (total/avg/max - stddev): " +
-                                statisticsHandler.getDispatchedTimeTotal() + "/" +
-                                ((Double)statisticsHandler.getDispatchedTimeMean()).longValue() + "/" +
-                                statisticsHandler.getDispatchedTimeMax() + " ms - " +
-                                ((Double)statisticsHandler.getDispatchedTimeStdDev()).longValue());
-                    }
-
-                    if (requestLatencyHandler != null)
-                    {
-                        requestLatencyHandler.print();
-                        requestLatencyHandler.doNotTrackCurrentRequest();
                     }
                 }
             }
@@ -454,36 +456,59 @@ public class BayeuxLoadServer
 
         private void updateLatencies(long begin, long end)
         {
-            long latency = end - begin;
+            // Latencies are in nanoseconds, but microsecond accuracy is enough
+            long latency = TimeUnit.MICROSECONDS.toNanos(TimeUnit.NANOSECONDS.toMicros(end - begin));
             Atomics.updateMin(minLatency, latency);
             Atomics.updateMax(maxLatency, latency);
             totLatency.addAndGet(latency);
-            latencies.putIfAbsent(latency, new AtomicLong(0));
-            latencies.get(latency).incrementAndGet();
+            AtomicLong count = latencies.get(latency);
+            if (count == null)
+            {
+                count = new AtomicLong();
+                AtomicLong existing = latencies.put(latency, count);
+                if (existing != null)
+                    count = existing;
+            }
+            count.incrementAndGet();
         }
 
         private void print()
         {
             if (latencies.size() > 1)
             {
-                long maxLatencyBucketFrequency = 0L;
+                long requestCount = requests.get();
+
+                // Needs to be sorted in order to calculate the median (aka latency at 50th percentile)
+                Map<Long, AtomicLong> sortedLatencies = new TreeMap<Long, AtomicLong>(latencies);
+                latencies.clear();
+
+                long requests = 0;
+                long maxLatencyBucketFrequency = 0;
+                long previousLatency = 0;
+                long latencyAt50thPercentile = 0;
+                long latencyAt99thPercentile = 0;
                 long[] latencyBucketFrequencies = new long[20];
                 long minLatency = this.minLatency.get();
                 long latencyRange = maxLatency.get() - minLatency;
-                for (Iterator<Map.Entry<Long, AtomicLong>> entries = latencies.entrySet().iterator(); entries.hasNext(); )
+                for (Iterator<Map.Entry<Long, AtomicLong>> entries = sortedLatencies.entrySet().iterator(); entries.hasNext(); )
                 {
                     Map.Entry<Long, AtomicLong> entry = entries.next();
+                    entries.remove();
                     long latency = entry.getKey();
                     Long bucketIndex = latencyRange == 0 ? 0 : (latency - minLatency) * latencyBucketFrequencies.length / latencyRange;
                     int index = bucketIndex.intValue() == latencyBucketFrequencies.length ? latencyBucketFrequencies.length - 1 : bucketIndex.intValue();
                     long value = entry.getValue().get();
+                    requests += value;
                     latencyBucketFrequencies[index] += value;
                     if (latencyBucketFrequencies[index] > maxLatencyBucketFrequency)
                         maxLatencyBucketFrequency = latencyBucketFrequencies[index];
-                    entries.remove();
+                    if (latencyAt50thPercentile == 0 && requests > requestCount / 2)
+                        latencyAt50thPercentile = (previousLatency + latency) / 2;
+                    if (latencyAt99thPercentile == 0 && requests > requestCount - requestCount / 100)
+                        latencyAt99thPercentile = (previousLatency + latency) / 2;
+                    previousLatency = latency;
                 }
 
-                long requestCount = requests.get();
                 System.err.println("Requests - Latency Distribution Curve (X axis: Frequency, Y axis: Latency):");
                 double percentile = 0.0;
                 for (int i = 0; i < latencyBucketFrequencies.length; ++i)
@@ -514,6 +539,10 @@ public class BayeuxLoadServer
                         System.err.print(" ^99.9%");
                     System.err.println();
                 }
+
+                System.err.printf("Requests - Latency 50th%%/99th%% = %d/%d ms%n",
+                        TimeUnit.NANOSECONDS.toMillis(latencyAt50thPercentile),
+                        TimeUnit.NANOSECONDS.toMillis(latencyAt99thPercentile));
             }
         }
 

@@ -27,6 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -440,8 +441,9 @@ public class BayeuxLoadClient
 
     private void updateLatencies(long startTime, long sendTime, long arrivalTime, long endTime, boolean recordDetails)
     {
-        long wallLatency = endTime - startTime;
-        long latency = arrivalTime - sendTime;
+        // Latencies are in nanoseconds, but microsecond accuracy is enough
+        long wallLatency = TimeUnit.MICROSECONDS.toNanos(TimeUnit.NANOSECONDS.toMicros(endTime - startTime));
+        long latency = TimeUnit.MICROSECONDS.toNanos(TimeUnit.NANOSECONDS.toMicros(arrivalTime - sendTime));
 
         // Update the latencies using a non-blocking algorithm
         Atomics.updateMin(minWallLatency, wallLatency);
@@ -519,22 +521,35 @@ public class BayeuxLoadClient
 
         if (wallLatencies.size() > 1)
         {
-            long messages = 0L;
-            long maxLatencyBucketFrequency = 0L;
+            // Needs to be sorted in order to calculate the median (aka latency at 50th percentile)
+            Map<Long, AtomicLong> sortedWallLatencies = new TreeMap<Long, AtomicLong>(wallLatencies);
+            wallLatencies.clear();
+
+            long messages = 0;
+            long maxLatencyBucketFrequency = 0;
+            long previousLatency = 0;
+            long latencyAt50thPercentile = 0;
+            long latencyAt99thPercentile = 0;
             long[] latencyBucketFrequencies = new long[20];
-            long latencyRange = maxWallLatency.get() - minWallLatency.get();
-            for (Iterator<Map.Entry<Long, AtomicLong>> entries = wallLatencies.entrySet().iterator(); entries.hasNext(); )
+            long minWallLatency = this.minWallLatency.get();
+            long latencyRange = maxWallLatency.get() - minWallLatency;
+            for (Iterator<Map.Entry<Long, AtomicLong>> entries = sortedWallLatencies.entrySet().iterator(); entries.hasNext();)
             {
                 Map.Entry<Long, AtomicLong> entry = entries.next();
+                entries.remove();
                 long latency = entry.getKey();
-                Long bucketIndex = latencyRange == 0 ? 0 : (latency - minWallLatency.get()) * latencyBucketFrequencies.length / latencyRange;
+                Long bucketIndex = latencyRange == 0 ? 0 : (latency - minWallLatency) * latencyBucketFrequencies.length / latencyRange;
                 int index = bucketIndex.intValue() == latencyBucketFrequencies.length ? latencyBucketFrequencies.length - 1 : bucketIndex.intValue();
                 long value = entry.getValue().get();
                 messages += value;
                 latencyBucketFrequencies[index] += value;
                 if (latencyBucketFrequencies[index] > maxLatencyBucketFrequency)
                     maxLatencyBucketFrequency = latencyBucketFrequencies[index];
-                entries.remove();
+                if (latencyAt50thPercentile == 0 && messages > messageCount / 2)
+                    latencyAt50thPercentile = (previousLatency + latency) / 2;
+                if (latencyAt99thPercentile == 0 && messages > messageCount - messageCount / 100)
+                    latencyAt99thPercentile = (previousLatency + latency) / 2;
+                previousLatency = latency;
             }
 
             if (messages != messageCount)
@@ -555,7 +570,7 @@ public class BayeuxLoadClient
                     System.err.print(" ");
                 System.err.print("  _  ");
                 double percentage = 100D * latencyBucketFrequency / messages;
-                System.err.print(TimeUnit.NANOSECONDS.toMillis((latencyRange * (i + 1) / latencyBucketFrequencies.length) + minWallLatency.get()));
+                System.err.print(TimeUnit.NANOSECONDS.toMillis((latencyRange * (i + 1) / latencyBucketFrequencies.length) + minWallLatency));
                 System.err.printf(" ms (%d, %.2f%%)", latencyBucketFrequency, percentage);
                 double last = percentile;
                 percentile += percentage;
@@ -571,23 +586,27 @@ public class BayeuxLoadClient
                     System.err.print(" ^99.9%");
                 System.err.println();
             }
+
+            System.err.printf("Messages - Wall Latency 50th%%/99th%% = %d/%d ms%n",
+                    TimeUnit.NANOSECONDS.toMillis(latencyAt50thPercentile),
+                    TimeUnit.NANOSECONDS.toMillis(latencyAt99thPercentile));
         }
+
+        System.err.printf("Messages - Wall Latency Min/Ave/Max = %d/%d/%d ms%n",
+                TimeUnit.NANOSECONDS.toMillis(minWallLatency.get()),
+                messageCount == 0 ? -1 : TimeUnit.NANOSECONDS.toMillis(totWallLatency.get() / messageCount),
+                TimeUnit.NANOSECONDS.toMillis(maxWallLatency.get()));
+
+        System.err.printf("Messages - Network Latency Min/Ave/Max = %d/%d/%d ms%n",
+                TimeUnit.NANOSECONDS.toMillis(minLatency.get()),
+                messageCount == 0 ? -1 : TimeUnit.NANOSECONDS.toMillis(totLatency.get() / messageCount),
+                TimeUnit.NANOSECONDS.toMillis(maxLatency.get()));
 
         System.err.printf("Thread Pool - Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
                 threadPool.getMaxActiveThreads(),
                 threadPool.getMaxQueueSize(),
                 TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageQueueLatency()),
                 TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxQueueLatency()));
-
-        System.err.print("Messages - Wall Latency Min/Ave/Max = ");
-        System.err.print(TimeUnit.NANOSECONDS.toMillis(minWallLatency.get()) + "/");
-        System.err.print(messageCount == 0 ? "-/" : TimeUnit.NANOSECONDS.toMillis(totWallLatency.get() / messageCount) + "/");
-        System.err.println(TimeUnit.NANOSECONDS.toMillis(maxWallLatency.get()) + " ms");
-
-        System.err.print("Messages - Network Latency Min/Ave/Max = ");
-        System.err.print(TimeUnit.NANOSECONDS.toMillis(minLatency.get()) + "/");
-        System.err.print(messageCount == 0 ? "-/" : TimeUnit.NANOSECONDS.toMillis(totLatency.get() / messageCount) + "/");
-        System.err.println(TimeUnit.NANOSECONDS.toMillis(maxLatency.get()) + " ms");
     }
 
     private void reset()
