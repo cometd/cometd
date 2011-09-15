@@ -248,7 +248,7 @@ public class BayeuxLoadClient
                 for (int i = 0; i < currentClients - clients; ++i)
                 {
                     LoadBayeuxClient client = bayeuxClients.get(currentClients - i - 1);
-                    client.destroy();
+                    client.disconnect(1000);
                 }
             }
 
@@ -683,7 +683,11 @@ public class BayeuxLoadClient
         public void onMessage(ClientSessionChannel channel, Message message)
         {
             if (message.isSuccessful())
-                bayeuxClients.remove((LoadBayeuxClient)channel.getSession());
+            {
+                LoadBayeuxClient client = (LoadBayeuxClient)channel.getSession();
+                bayeuxClients.remove(client);
+                client.destroy();
+            }
         }
     }
 
@@ -769,14 +773,11 @@ public class BayeuxLoadClient
 
         public void destroy()
         {
-            disconnect(1000);
-
             for (Integer room : subscriptions)
             {
                 AtomicInteger clientsPerRoom = rooms.get(room);
                 clientsPerRoom.decrementAndGet();
             }
-
             subscriptions.clear();
         }
 
