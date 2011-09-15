@@ -27,6 +27,8 @@ import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.Version;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.annotate.JsonTypeInfo;
 import org.codehaus.jackson.map.BeanProperty;
 import org.codehaus.jackson.map.ContextualDeserializer;
 import org.codehaus.jackson.map.DeserializationConfig;
@@ -50,8 +52,8 @@ import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.ServerMessageImpl;
-import org.eclipse.jetty.util.B64Code;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class JacksonContextTest extends ClientServerTest
@@ -60,16 +62,16 @@ public class JacksonContextTest extends ClientServerTest
     public void testAllMessagesUseJackson() throws Exception
     {
         Map<String, String> serverParams = new HashMap<String, String>();
-        serverParams.put(BayeuxServerImpl.JSON_CONTEXT, TestJacksonJSONContextServer.class.getName());
+        serverParams.put(BayeuxServerImpl.JSON_CONTEXT, JacksonJSONContextServer.class.getName());
         startServer(serverParams);
 
         Map<String, Object> clientParams = new HashMap<String, Object>();
-        clientParams.put(ClientTransport.JSON_CONTEXT, new TestJacksonJSONContextClient());
+        clientParams.put(ClientTransport.JSON_CONTEXT, new JacksonJSONContextClient());
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientParams, httpClient));
         client.setDebugEnabled(debugTests());
 
         client.handshake();
-        Assert.assertTrue(client.waitFor(100000, BayeuxClient.State.CONNECTED)); // TODO
+        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
         Thread.sleep(500);
@@ -155,12 +157,34 @@ public class JacksonContextTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
+    @Ignore
+    @Test
+    public void testJacksonCustomSerialization() throws Exception
+    {
+        TestJacksonJSONContextClient jsonContext = new TestJacksonJSONContextClient();
+
+        HashMapMessage message = new HashMapMessage();
+        message.setChannel("/foo");
+        message.setData(new ByteArray(new byte[]{0, 0}));
+
+        ByteArray object = new ByteArray(new byte[]{0, 0});
+
+        String json = jsonContext.getObjectMapper().writeValueAsString(object);
+        System.err.println("json = " + json);
+    }
+
     public static class  TestJacksonJSONContextClient extends JacksonJSONContextClient
     {
         public TestJacksonJSONContextClient()
         {
             ObjectMapper objectMapper = getObjectMapper();
             objectMapper.registerModule(new TestModule());
+        }
+
+        @Override
+        public ObjectMapper getObjectMapper()
+        {
+            return super.getObjectMapper();
         }
     }
 
@@ -186,6 +210,8 @@ public class JacksonContextTest extends ClientServerTest
         public void setupModule(SetupContext context)
         {
             super.setupModule(context);
+            context.setMixInAnnotations(Message.class, MessageMixIn.class);
+            context.setMixInAnnotations(ByteArray.class, ByteArrayMixIn.class);
         }
     }
 
@@ -204,17 +230,32 @@ public class JacksonContextTest extends ClientServerTest
         }
     }
 
+    public static abstract class ByteArrayMixIn
+    {
+        @JsonProperty("object")
+        @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+        public abstract Object getObject();
+    }
+
+    public static abstract class MessageMixIn
+    {
+        @JsonProperty("data")
+        @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+        public abstract Object getData();
+    }
+
+
     public static class ByteArraySerializer extends JsonSerializer<ByteArray>
     {
         @Override
         public void serialize(ByteArray byteArray, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException, JsonProcessingException
         {
-            char[] encoded = B64Code.encode(byteArray.bytes);
-            jsonGenerator.writeStartObject();
-            jsonGenerator.writeStringField("@class", byteArray.getClass().getName());
-            jsonGenerator.writeFieldName("data");
-            jsonGenerator.writeString(encoded, 0, encoded.length);
-            jsonGenerator.writeEndObject();
+//            char[] encoded = B64Code.encode(byteArray.bytes);
+//            jsonGenerator.writeStartObject();
+//            jsonGenerator.writeStringField("@class", byteArray.getClass().getName());
+//            jsonGenerator.writeFieldName("data");
+//            jsonGenerator.writeString(encoded, 0, encoded.length);
+//            jsonGenerator.writeEndObject();
         }
     }
 
