@@ -573,7 +573,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
         if (bayeuxClientState.type == State.DISCONNECTED)
-            bayeuxClientState.transport.terminate();
+            if (bayeuxClientState.transport != null)
+                bayeuxClientState.transport.terminate();
 
         return disconnected;
     }
