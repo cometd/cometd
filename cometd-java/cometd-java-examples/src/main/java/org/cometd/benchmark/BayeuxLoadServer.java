@@ -287,10 +287,11 @@ public class BayeuxLoadServer
                                 ((Double)statisticsHandler.getDispatchedTimeMean()).longValue(),
                                 statisticsHandler.getDispatchedTimeMax(),
                                 ((Double)statisticsHandler.getDispatchedTimeStdDev()).longValue());
-                        System.err.printf("Requests (total/failed/max): %d/%d/%d%n",
+                        System.err.printf("Requests (total/failed/max - rate): %d/%d/%d - %d requests/s%n",
                                 statisticsHandler.getDispatched(),
-                                (statisticsHandler.getResponses4xx() + statisticsHandler.getResponses5xx()),
-                                statisticsHandler.getDispatchedActiveMax());
+                                statisticsHandler.getResponses4xx() + statisticsHandler.getResponses5xx(),
+                                statisticsHandler.getDispatchedActiveMax(),
+                                statisticsHandler.getStatsOnMs() == 0 ? -1 : statisticsHandler.getDispatched() * 1000L / statisticsHandler.getStatsOnMs());
                     }
 
                     if (jettyThreadPool != null)
