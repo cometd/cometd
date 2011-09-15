@@ -75,7 +75,6 @@
                                 <classpath />
                                 <argument>org.cometd.benchmark.BayeuxLoadServer</argument>
                             </arguments>
-                            <classpathScope>test</classpathScope>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -110,7 +109,6 @@
                                 <classpath />
                                 <argument>org.cometd.benchmark.BayeuxLoadClient</argument>
                             </arguments>
-                            <classpathScope>test</classpathScope>
 <!--
                             <systemProperties>
                                 <systemProperty>

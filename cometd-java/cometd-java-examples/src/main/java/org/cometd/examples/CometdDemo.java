@@ -73,10 +73,10 @@ public class CometdDemo
         /*
         SslSelectChannelConnector ssl_connector=new SslSelectChannelConnector();
         ssl_connector.setPort(port-80+443);
-        ssl_connector.setKeystore(base+"/examples/src/test/resources/keystore");
+        ssl_connector.setKeystore(base+"/examples/src/main/resources/keystore.jks");
         ssl_connector.setPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         ssl_connector.setKeyPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        ssl_connector.setTruststore(base+"/examples/src/test/resources/keystore");
+        ssl_connector.setTruststore(base+"/examples/src/main/resources/keystore.jks");
         ssl_connector.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         server.addConnector(ssl_connector);
         */
