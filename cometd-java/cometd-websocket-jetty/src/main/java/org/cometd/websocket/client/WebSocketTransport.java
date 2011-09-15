@@ -152,12 +152,20 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     @Override
     public void reset()
     {
+        super.reset();
         if (_shutdownScheduler)
         {
             _shutdownScheduler = false;
             _scheduler.shutdown();
             _scheduler = null;
         }
+    }
+
+    @Override
+    public void terminate()
+    {
+        super.terminate();
+        disconnect();
     }
 
     private void disconnect()

@@ -57,7 +57,13 @@ public abstract class ClientTransport extends AbstractTransport
 
     public abstract void abort();
 
-    public abstract void reset();
+    public void reset()
+    {
+    }
+
+    public void terminate()
+    {
+    }
 
     public abstract boolean accept(String version);
 

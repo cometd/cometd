@@ -571,6 +571,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         getChannel(Channel.META_CONNECT).removeListener(lastConnectListener);
 
+        BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
+        if (bayeuxClientState.type == State.DISCONNECTED)
+            bayeuxClientState.transport.terminate();
+
         return disconnected;
     }
 

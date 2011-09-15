@@ -114,11 +114,6 @@ public class LongPollingTransport extends HttpClientTransport
     }
 
     @Override
-    public void reset()
-    {
-    }
-
-    @Override
     public void send(final TransportListener listener, Message.Mutable... messages)
     {
         TransportExchange httpExchange = new TransportExchange(listener, messages);

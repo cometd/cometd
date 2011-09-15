@@ -228,6 +228,10 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         connection.sendMessage(data);
     }
 
+    protected void onClose(int code, String message)
+    {
+    }
+
     protected class WebSocketScheduler implements WebSocket.OnTextMessage, AbstractServerTransport.Scheduler, Runnable
     {
         private final AtomicBoolean _scheduling = new AtomicBoolean();
@@ -261,6 +265,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 session.cancelIntervalTimeout();
                 cancelMetaConnectTask(session);
             }
+            WebSocketTransport.this.onClose(code, message);
         }
 
         private boolean cancelMetaConnectTask(ServerSessionImpl session)
