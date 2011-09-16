@@ -884,20 +884,26 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         // ((Map)serverMessage.getExt().get("map")).put().
         freeze(mutable);
 
-        // Call the wild subscribers
-        HashSet<String> wild_subscribers=null;
-        for (final ServerChannelImpl channel : wild_channels)
+        // Call the wild subscribers, which can only get broadcast messages.
+        // We need a special treatment in case of subscription to /**, otherwise
+        // we will deliver meta messages and service messages as if it could be
+        // possible to subscribe to meta channels and service channels.
+        HashSet<String> wild_subscribers = null;
+        if (ChannelId.isBroadcast(mutable.getChannel()))
         {
-            if (channel == null)
-                continue;
-
-            for (ServerSession session : channel.getSubscribers())
+            for (final ServerChannelImpl channel : wild_channels)
             {
-                if (wild_subscribers==null)
-                    wild_subscribers=new HashSet<String>();
+                if (channel == null)
+                    continue;
 
-                if (wild_subscribers.add(session.getId()))
-                    ((ServerSessionImpl)session).doDeliver(from, mutable);
+                for (ServerSession session : channel.getSubscribers())
+                {
+                    if (wild_subscribers == null)
+                        wild_subscribers = new HashSet<String>();
+
+                    if (wild_subscribers.add(session.getId()))
+                        ((ServerSessionImpl)session).doDeliver(from, mutable);
+                }
             }
         }
 

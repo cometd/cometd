@@ -42,7 +42,6 @@ import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
@@ -235,7 +234,6 @@ public class BayeuxClientTest extends ClientServerTest
     public void testHandshakeDenied() throws Exception
     {
         BayeuxClient client = newBayeuxClient();
-        SecurityPolicy oldPolicy = bayeux.getSecurityPolicy();
         bayeux.setSecurityPolicy(new DefaultSecurityPolicy()
         {
             @Override
@@ -244,31 +242,24 @@ public class BayeuxClientTest extends ClientServerTest
                 return false;
             }
         });
-        try
+        final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
-            final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
-            client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
-                public void onMessage(ClientSessionChannel channel, Message message)
-                {
-                    Assert.assertFalse(message.isSuccessful());
-                    latch.get().countDown();
-                }
-            });
-            client.handshake();
-            Assert.assertTrue(latch.get().await(1000, TimeUnit.MILLISECONDS));
+                Assert.assertFalse(message.isSuccessful());
+                latch.get().countDown();
+            }
+        });
+        client.handshake();
+        Assert.assertTrue(latch.get().await(1000, TimeUnit.MILLISECONDS));
 
-            // Be sure it does not retry
-            latch.set(new CountDownLatch(1));
-            Assert.assertFalse(latch.get().await(client.getBackoffIncrement() * 2, TimeUnit.MILLISECONDS));
+        // Be sure it does not retry
+        latch.set(new CountDownLatch(1));
+        Assert.assertFalse(latch.get().await(client.getBackoffIncrement() * 2, TimeUnit.MILLISECONDS));
 
-            Assert.assertEquals(BayeuxClient.State.DISCONNECTED, client.getState());
-        }
-        finally
-        {
-            bayeux.setSecurityPolicy(oldPolicy);
-            disconnectBayeuxClient(client);
-        }
+        Assert.assertEquals(BayeuxClient.State.DISCONNECTED, client.getState());
+        disconnectBayeuxClient(client);
     }
 
     @Test
@@ -930,30 +921,96 @@ public class BayeuxClientTest extends ClientServerTest
         }
         A authenticator = new A();
 
-        SecurityPolicy oldPolicy = bayeux.getSecurityPolicy();
         bayeux.setSecurityPolicy(authenticator);
-        try
+        BayeuxClient client = newBayeuxClient();
+
+        Map<String, Object> authentication = new HashMap<String, Object>();
+        authentication.put("token", "1234567890");
+        Message.Mutable fields = new HashMapMessage();
+        fields.getExt(true).put("authentication", authentication);
+        client.handshake(fields);
+
+        Assert.assertTrue(client.waitFor(1000, State.CONNECTED));
+
+        Assert.assertEquals(client.getId(), sessionId.get());
+
+        disconnectBayeuxClient(client);
+
+        Assert.assertNull(sessionId.get());
+    }
+
+    @Test
+    public void testSubscribeToSlashStarStarDoesNotSendMetaMessages() throws Exception
+    {
+        stopServer();
+
+        long timeout = 5000;
+        Map<String, String> serverParams = new HashMap<String, String>();
+        serverParams.put("timeout", String.valueOf(timeout));
+        startServer(serverParams);
+
+        BayeuxClient client = newBayeuxClient();
+        client.handshake();
+        Assert.assertTrue(client.waitFor(1000, State.CONNECTED));
+        // Allow long poll to establish
+        Thread.sleep(500);
+
+        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
         {
-            BayeuxClient client = newBayeuxClient();
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.isSuccessful())
+                    subscribeLatch.countDown();
+            }
+        });
 
-            Map<String, Object> authentication = new HashMap<String, Object>();
-            authentication.put("token", "1234567890");
-            Message.Mutable fields = new HashMapMessage();
-            fields.getExt(true).put("authentication", authentication);
-            client.handshake(fields);
-
-            Assert.assertTrue(client.waitFor(1000, State.CONNECTED));
-
-            Assert.assertEquals(client.getId(), sessionId.get());
-
-            disconnectBayeuxClient(client);
-
-            Assert.assertNull(sessionId.get());
-        }
-        finally
+        String channelName = "/**";
+        final CountDownLatch publishLatch = new CountDownLatch(1);
+        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
         {
-            bayeux.setSecurityPolicy(oldPolicy);
-        }
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                publishLatch.countDown();
+            }
+        });
+
+        Assert.assertTrue(subscribeLatch.await(1, TimeUnit.SECONDS));
+
+        // Register a listener to a service channel, to be sure that
+        // they are not broadcasted due to the subscription to /**
+        final CountDownLatch serviceLatch = new CountDownLatch(1);
+        client.getChannel("/service/foo").addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                // Ignore publish reply, only care about message with data
+                if (message.containsKey(Message.DATA_FIELD))
+                    serviceLatch.countDown();
+            }
+        });
+
+        // Register a listener to /meta/connect, to be sure that /meta/connect messages
+        // sent by the client are not broadcasted back due to the subscription to /**
+        final CountDownLatch metaLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (!message.isSuccessful())
+                    metaLatch.countDown();
+            }
+        });
+
+        client.getChannel("/foo").publish(new HashMap<String, Object>());
+        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+
+        client.getChannel("/service/foo").publish(new HashMap<String, Object>());
+        Assert.assertFalse(serviceLatch.await(1, TimeUnit.SECONDS));
+
+        Assert.assertFalse(metaLatch.await(timeout + timeout / 2, TimeUnit.MILLISECONDS));
+
+        disconnectBayeuxClient(client);
     }
 
     @Test

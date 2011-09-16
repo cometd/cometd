@@ -443,15 +443,6 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    public void addQueue(ServerMessage message)
-    {
-        synchronized (_queue)
-        {
-            _queue.add(message);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
     public void replaceQueue(List<ServerMessage> queue)
     {
         synchronized (_queue)
