@@ -48,8 +48,6 @@ public class CometdDemo
     {
         int port = args.length==0?8080:Integer.parseInt(args[0]);
 
-        String base="..";
-
         // Manually contruct context to avoid hassles with webapp classloaders for now.
         Server server = new Server();
         QueuedThreadPool qtp = new QueuedThreadPool();
@@ -94,6 +92,7 @@ public class CometdDemo
                         Resource.newResource("../../cometd-demo/src/main/webapp/"),
 
                         Resource.newResource("../../cometd-javascript/common/src/main/webapp/"),
+                        Resource.newResource("../../cometd-javascript/common-test/target/scripts/"),
                         Resource.newResource("../../cometd-javascript/jquery/src/main/webapp/"),
                         Resource.newResource("../../cometd-javascript/examples-jquery/src/main/webapp/"),
 

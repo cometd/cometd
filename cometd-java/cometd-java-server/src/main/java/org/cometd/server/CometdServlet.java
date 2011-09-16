@@ -61,7 +61,7 @@ public class CometdServlet extends HttpServlet
     @Deprecated
     public static final int DEBUG_LEVEL = BayeuxServerImpl.DEBUG_LOG_LEVEL;
 
-    private volatile BayeuxServerImpl _bayeux;
+    private BayeuxServerImpl _bayeux;
 
     @Override
     public void init() throws ServletException
@@ -69,66 +69,83 @@ public class CometdServlet extends HttpServlet
         try
         {
             boolean export = false;
-            _bayeux = (BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-            if (_bayeux == null)
+            BayeuxServerImpl bayeux = (BayeuxServerImpl)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+            if (bayeux == null)
             {
                 export = true;
-                _bayeux = newBayeuxServer();
-                
-                String value=getInitParameter("transports");
-                if (value!=null)
-                {
-                    ClassLoader loader = Thread.currentThread().getContextClassLoader();
-                    if (loader == null)
-                        loader = this.getClass().getClassLoader();
-                    for (String className : value.split(","))
-                    {
-                        className = className.trim();
-                        try
-                        {
-                            Class<? extends ServerTransport> transportClass = (Class<? extends ServerTransport>)loader.loadClass(className);
-                            Constructor<? extends ServerTransport> constructor = transportClass.getConstructor(BayeuxServerImpl.class);
-                            ServerTransport transport = constructor.newInstance(_bayeux);
-                            _bayeux.addTransport(transport);
-                        }
-                        catch (Throwable x)
-                        {
-                            _bayeux.getLogger().warn("Failed to add transport " + className, x);
-                        }
-                    }
-                }
-                
-                value=getInitParameter("allowedTransports");
-                if (value!=null)
-                {
-                    String[] allowedTransports = value.split(",");
-                    for (int i = 0; i < allowedTransports.length; ++i)
-                        allowedTransports[i] = allowedTransports[i].trim();
-                    _bayeux.setAllowedTransports(allowedTransports);
-                }
-                
-                // Transfer all servlet init parameters to the BayeuxServer implementation
-                for (Enumeration initParameterNames = getInitParameterNames(); initParameterNames.hasMoreElements();)
-                {
-                    String initParameterName = (String)initParameterNames.nextElement();
-                    value = getInitParameter(initParameterName);
-
-                    if (!"transports".equals(initParameterName) &&
-                        !"allowedTransports".equalsIgnoreCase(initParameterName))
-                    {
-                        _bayeux.setOption(initParameterName, value);
-                    }
-                }
+                bayeux = newBayeuxServer();
+                addTransports(bayeux);
+                allowTransports(bayeux);
+                setOptions(bayeux);
             }
 
-            _bayeux.start();
+            _bayeux=bayeux;
+            bayeux.start();
 
             if (export)
-                getServletContext().setAttribute(BayeuxServer.ATTRIBUTE, _bayeux);
+                getServletContext().setAttribute(BayeuxServer.ATTRIBUTE, bayeux);
         }
         catch (Exception x)
         {
             throw new ServletException(x);
+        }
+    }
+
+    protected void addTransports(BayeuxServerImpl bayeux)
+    {
+        String value=getInitParameter("transports");
+        if (value!=null)
+        {
+            String[] transports =value.split(",");
+
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            if (loader == null)
+                loader = this.getClass().getClassLoader();
+            for (String className : transports)
+            {
+                className = className.trim();
+                try
+                {
+                    Class<? extends ServerTransport> transportClass = (Class<? extends ServerTransport>)loader.loadClass(className);
+                    Constructor<? extends ServerTransport> constructor = transportClass.getConstructor(BayeuxServerImpl.class);
+                    ServerTransport transport = constructor.newInstance(bayeux);
+                    bayeux.addTransport(transport);
+                }
+                catch (Throwable x)
+                {
+                    bayeux.getLogger().warn("Failed to add transport " + className, x);
+                }
+            }
+        }
+    }
+    
+    protected void allowTransports(BayeuxServerImpl bayeux)
+    {
+        String value=getInitParameter("allowedTransports");
+        if (value!=null)
+        {
+            String[] transports =value.split(",");
+
+            String[] allowedTransports = new String[transports.length];
+            for (int i = 0; i < transports.length; ++i)
+                allowedTransports[i] = transports[i].trim();
+            bayeux.setAllowedTransports(allowedTransports);
+        }
+    }
+    
+    protected void setOptions(BayeuxServerImpl bayeux)
+    {
+        // Transfer all servlet init parameters to the BayeuxServer implementation
+        for (Enumeration initParameterNames = getInitParameterNames(); initParameterNames.hasMoreElements();)
+        {
+            String initParameterName = (String)initParameterNames.nextElement();
+            String value = getInitParameter(initParameterName);
+
+            if (!"transports".equals(initParameterName) &&
+                !"allowedTransports".equalsIgnoreCase(initParameterName))
+            {
+                bayeux.setOption(initParameterName, value);
+            }
         }
     }
 
@@ -142,18 +159,32 @@ public class CometdServlet extends HttpServlet
         return new BayeuxServerImpl();
     }
 
-    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void service(HttpServletRequest request, HttpServletResponse response) 
+        throws ServletException, IOException
     {
         if ("OPTIONS".equals(request.getMethod()))
         {
             serviceOptions(request, response);
             return;
         }
-
-        HttpTransport transport = null;
-        for (String transportName : _bayeux.getAllowedTransports())
+        
+        final BayeuxServerImpl bayeux = getBayeux();
+        if (bayeux==null)
         {
-            ServerTransport serverTransport = _bayeux.getTransport(transportName);
+            response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            return;
+        }
+        
+        service(bayeux,request,response);
+    }
+    
+    protected void service(BayeuxServerImpl bayeux, HttpServletRequest request, HttpServletResponse response) 
+        throws ServletException, IOException       
+    {
+        HttpTransport transport = null;
+        for (String transportName : bayeux.getAllowedTransports())
+        {
+            ServerTransport serverTransport = bayeux.getTransport(transportName);
             if (serverTransport instanceof HttpTransport)
             {
                 HttpTransport t = (HttpTransport)serverTransport;
@@ -173,16 +204,14 @@ public class CometdServlet extends HttpServlet
         {
             try
             {
-                _bayeux.setCurrentTransport(transport);
+                bayeux.setCurrentTransport(transport);
                 transport.setCurrentRequest(request);
                 transport.handle(request, response);
             }
             finally
             {
                 transport.setCurrentRequest(null);
-                BayeuxServerImpl bayeux = _bayeux;
-                if (bayeux != null)
-                    bayeux.setCurrentTransport(null);
+                bayeux.setCurrentTransport(null);
             }
         }
     }
@@ -205,16 +234,18 @@ public class CometdServlet extends HttpServlet
     @Override
     public void destroy()
     {
-        for (ServerSession session : _bayeux.getSessions())
+        final BayeuxServerImpl bayeux = getBayeux();
+        
+        for (ServerSession session : bayeux.getSessions())
             ((ServerSessionImpl)session).cancelSchedule();
 
         try
         {
-            _bayeux.stop();
+            bayeux.stop();
         }
         catch (Exception x)
         {
-            _bayeux.getLogger().debug(x);
+            bayeux.getLogger().debug(x);
         }
         finally
         {
