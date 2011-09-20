@@ -21,7 +21,6 @@
             <artifactId>cometd-java-common</artifactId>
             <version>${project.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-util</artifactId>
@@ -41,6 +40,11 @@
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-client</artifactId>
             <version>${jetty-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j-version}</version>
         </dependency>
 
         <dependency>

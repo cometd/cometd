@@ -54,7 +54,7 @@ public class ChatService
     @Configure ({"/chat/**","/members/**"})
     protected void configureChatStarStar(ConfigurableServerChannel channel)
     {
-        DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux,new NoMarkupFilter(),new BadWordFilter());
+        DataFilterMessageListener noMarkup = new DataFilterMessageListener(new NoMarkupFilter(),new BadWordFilter());
         channel.addListener(noMarkup);
         channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
     }
@@ -103,7 +103,7 @@ public class ChatService
     @Configure ("/service/privatechat")
     protected void configurePrivateChat(ConfigurableServerChannel channel)
     {
-        DataFilterMessageListener noMarkup = new DataFilterMessageListener(_bayeux,new NoMarkupFilter(),new BadWordFilter());
+        DataFilterMessageListener noMarkup = new DataFilterMessageListener(new NoMarkupFilter(),new BadWordFilter());
         channel.setPersistent(true);
         channel.addListener(noMarkup);
         channel.addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);

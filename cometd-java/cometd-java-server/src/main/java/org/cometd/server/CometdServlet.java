@@ -29,6 +29,8 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.server.transport.HttpTransport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The CometD Servlet maps HTTP requests to the {@link HttpTransport} of a {@link BayeuxServer} instance.</p>
@@ -61,6 +63,7 @@ public class CometdServlet extends HttpServlet
     @Deprecated
     public static final int DEBUG_LEVEL = BayeuxServerImpl.DEBUG_LOG_LEVEL;
 
+    protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private volatile BayeuxServerImpl _bayeux;
 
     @Override
@@ -74,7 +77,7 @@ public class CometdServlet extends HttpServlet
             {
                 export = true;
                 _bayeux = newBayeuxServer();
-                
+
                 String value=getInitParameter("transports");
                 if (value!=null)
                 {
@@ -93,11 +96,11 @@ public class CometdServlet extends HttpServlet
                         }
                         catch (Throwable x)
                         {
-                            _bayeux.getLogger().warn("Failed to add transport " + className, x);
+                            _logger.warn("Failed to add transport " + className, x);
                         }
                     }
                 }
-                
+
                 value=getInitParameter("allowedTransports");
                 if (value!=null)
                 {
@@ -106,7 +109,7 @@ public class CometdServlet extends HttpServlet
                         allowedTransports[i] = allowedTransports[i].trim();
                     _bayeux.setAllowedTransports(allowedTransports);
                 }
-                
+
                 // Transfer all servlet init parameters to the BayeuxServer implementation
                 for (Enumeration initParameterNames = getInitParameterNames(); initParameterNames.hasMoreElements();)
                 {
@@ -214,7 +217,7 @@ public class CometdServlet extends HttpServlet
         }
         catch (Exception x)
         {
-            _bayeux.getLogger().debug(x);
+            _logger.debug("", x);
         }
         finally
         {

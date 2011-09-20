@@ -38,6 +38,8 @@ import org.cometd.server.ServerSessionImpl;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /* ------------------------------------------------------------ */
 /**
@@ -61,6 +63,7 @@ public abstract class LongPollingTransport extends HttpTransport
     public final static String AUTOBATCH_OPTION = "autoBatch";
     public final static String ALLOW_MULTI_SESSIONS_NO_BROWSER_OPTION = "allowMultiSessionsNoBrowser";
 
+    private final Logger _logger = LoggerFactory.getLogger(getClass());
     private final ConcurrentHashMap<String, AtomicInteger> _browserMap = new ConcurrentHashMap<String, AtomicInteger>();
     private final Map<String, AtomicInteger> _browserSweep = new ConcurrentHashMap<String, AtomicInteger>();
     private String _browserId = "BAYEUX_BROWSER";
@@ -428,7 +431,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
     protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws ServletException, IOException
     {
-        getBayeux().getLogger().debug("Error parsing JSON: " + json, exception);
+        _logger.debug("Error parsing JSON: " + json, exception);
         response.sendError(HttpServletResponse.SC_BAD_REQUEST);
     }
 
@@ -457,7 +460,7 @@ public abstract class LongPollingTransport extends HttpTransport
                     if (_browserSweep.remove(key) == count && _browserMap.get(key).get() == 0)
                     {
                         _browserMap.remove(key);
-                        getBayeux().getLogger().debug("Swept browserId {}", key);
+                        _logger.debug("Swept browserId {}", key);
                     }
                 }
             }
@@ -510,18 +513,18 @@ public abstract class LongPollingTransport extends HttpTransport
                     decBrowserId();
                     ((HttpServletResponse)_continuation.getServletResponse()).sendError(HttpServletResponse.SC_REQUEST_TIMEOUT);
                 }
-                catch (IOException e)
+                catch (IOException x)
                 {
-                    getBayeux().getLogger().ignore(e);
+                    _logger.trace("", x);
                 }
 
                 try
                 {
                     _continuation.complete();
                 }
-                catch (Exception e)
+                catch (Exception x)
                 {
-                    getBayeux().getLogger().ignore(e);
+                    _logger.trace("", x);
                 }
             }
         }

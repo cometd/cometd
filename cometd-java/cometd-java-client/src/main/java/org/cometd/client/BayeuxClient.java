@@ -47,8 +47,8 @@ import org.cometd.client.transport.TransportListener;
 import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
 import org.cometd.common.HashMapMessage;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>{@link BayeuxClient} is the implementation of a client for the Bayeux protocol.</p>
@@ -98,7 +98,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     public static final String MAX_BACKOFF_OPTION = "maxBackoff";
     public static final String BAYEUX_VERSION = "1.0";
 
-    private final Logger logger = Log.getLogger(getClass().getName() + "@" + System.identityHashCode(this));
+    private final Logger logger = LoggerFactory.getLogger(getClass().getName() + "@" + System.identityHashCode(this));
     private final TransportRegistry transportRegistry = new TransportRegistry();
     private final Map<String, Object> options = new ConcurrentHashMap<String, Object>();
     private final AtomicReference<BayeuxClientState> bayeuxClientState = new AtomicReference<BayeuxClientState>();
@@ -113,6 +113,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private volatile long backoffIncrement;
     private volatile long maxBackoff;
     private int stateUpdaters;
+    private boolean debug;
 
     /**
      * <p>Creates a {@link BayeuxClient} that will connect to the Bayeux server at the given URL
@@ -307,7 +308,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         // Pick the first transport for the handshake, it will renegotiate if not right
         final ClientTransport initialTransport = transportRegistry.negotiate(allowedTransports.toArray(), BAYEUX_VERSION).get(0);
         initialTransport.init();
-        logger.debug("Using initial transport {} from {}", initialTransport.getName(), allowedTransports);
+        debug("Using initial transport {} from {}", initialTransport.getName(), allowedTransports);
 
         updateBayeuxClientState(new BayeuxClientStateUpdater()
         {
@@ -367,7 +368,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, transportNames);
             message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
 
-            logger.debug("Handshaking with extra fields {}, transport {}", bayeuxClientState.handshakeFields, bayeuxClientState.transport);
+            debug("Handshaking with extra fields {}, transport {}", bayeuxClientState.handshakeFields, bayeuxClientState.transport);
             bayeuxClientState.send(handshakeListener, message);
             return true;
         }
@@ -444,7 +445,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 // First connect after handshake or after failure, add advice
                 message.getAdvice(true).put("timeout", 0);
             }
-            logger.debug("Connecting, transport {}", bayeuxClientState.transport);
+            debug("Connecting, transport {}", bayeuxClientState.transport);
             bayeuxClientState.send(connectListener, message);
             return true;
         }
@@ -598,7 +599,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected void processHandshake(final Message.Mutable handshake)
     {
-        logger.debug("Processing meta handshake {}", handshake);
+        debug("Processing meta handshake {}", handshake);
         if (handshake.isSuccessful())
         {
             Object field = handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD);
@@ -692,7 +693,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         // for the response arrived late, and one from the unconnected state.
         // We should avoid this, although it is a very rare case.
 
-        logger.debug("Processing meta connect {}", connect);
+        debug("Processing meta connect {}", connect);
         updateBayeuxClientState(new BayeuxClientStateUpdater()
         {
             public BayeuxClientState create(BayeuxClientState oldState)
@@ -733,7 +734,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected void processDisconnect(final Message.Mutable disconnect)
     {
-        logger.debug("Processing meta disconnect {}", disconnect);
+        debug("Processing meta disconnect {}", disconnect);
 
         updateBayeuxClientState(new BayeuxClientStateUpdater()
         {
@@ -752,7 +753,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     protected void processMessage(Message.Mutable message)
     {
-        logger.debug("Processing message {}", message);
+        debug("Processing message {}", message);
         receive(message);
     }
 
@@ -800,10 +801,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             catch (RejectedExecutionException x)
             {
                 // It has been shut down
-                logger.debug(x);
+                logger.trace("", x);
             }
         }
-        logger.debug("Could not schedule action {} to scheduler {}", action, scheduler);
+        debug("Could not schedule action {} to scheduler {}", action, scheduler);
         return false;
     }
 
@@ -834,7 +835,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
      */
     public void setDebugEnabled(boolean debug)
     {
-        logger.setDebugEnabled(debug);
+        this.debug = debug;
     }
 
     /**
@@ -843,7 +844,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
      */
     public boolean isDebugEnabled()
     {
-        return logger.isDebugEnabled();
+        return debug;
+    }
+
+    protected void debug(String message, Object... args)
+    {
+        if (isDebugEnabled())
+            logger.info(message, args);
+        else
+            logger.debug(message, args);
     }
 
     protected void initialize()
@@ -914,7 +923,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         if (canSend())
         {
             boolean sent = sendMessages(message);
-            logger.debug("{} message {}", sent ? "Sent" : "Failed", message);
+            debug("{} message {}", sent ? "Sent" : "Failed", message);
         }
         else
         {
@@ -922,7 +931,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             {
                 messageQueue.add(message);
             }
-            logger.debug("Enqueued message {} (batching: {})", message, isBatching());
+            debug("Enqueued message {} (batching: {})", message, isBatching());
         }
     }
 
@@ -1004,12 +1013,12 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
                 if (!oldState.isUpdateableTo(newState))
                 {
-                    logger.debug("State not updateable: {} -> {}", oldState, newState);
+                    debug("State not updateable: {} -> {}", oldState, newState);
                     break;
                 }
 
                 updated = bayeuxClientState.compareAndSet(oldState, newState);
-                logger.debug("State update: {} -> {}{}", oldState, newState, updated ? "" : " failed (concurrent update)");
+                debug("State update: {} -> {}{}", oldState, newState, updated ? "" : " failed (concurrent update)");
                 if (!updated)
                     oldState = bayeuxClientState.get();
             }
@@ -1347,7 +1356,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             }
             if (!messageList.isEmpty())
             {
-                logger.debug("Sending messages {}", messageList);
+                debug("Sending messages {}", messageList);
                 transport.send(listener, messageList.toArray(new Message.Mutable[messageList.size()]));
             }
         }

@@ -174,7 +174,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _connection = null;
         if (connection != null && connection.isOpen())
         {
-            _logger.debug("Disconnecting websocket connection {}", connection);
+            debug("Disconnecting websocket connection {}", connection);
             connection.disconnect();
         }
     }
@@ -196,7 +196,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             for (Message.Mutable message : messages)
                 registerMessage(message, listener);
 
-            _logger.debug("Sending messages {}", content);
+            debug("Sending messages {}", content);
             // The onSending() callback must be invoked before the actual send
             // otherwise we may have a race condition where the response is so
             // fast that it arrives before the onSending() is called.
@@ -222,7 +222,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             String url = getURL();
             url = url.replaceFirst("^http", "ws");
             URI uri = new URI(url);
-            _logger.debug("Opening websocket connection to {}", uri);
+            debug("Opening websocket connection to {}", uri);
 
             // Prepare the cookies
             Map<String, String> cookies = new HashMap<String, String>();
@@ -318,7 +318,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                 long now = System.currentTimeMillis();
                 long jitter = now - expiration;
                 if (jitter > 5000) // TODO: make the max jitter a parameter ?
-                    _logger.debug("Expired too late {} for {}", jitter, message);
+                    debug("Expired too late {} for {}", jitter, message);
 
                 // Notify only if we won the race to deregister the message
                 WebSocketExchange exchange = deregisterMessage(message);
@@ -334,7 +334,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         // messageId, so we need to take that in account
 
         WebSocketExchange exchange = new WebSocketExchange(message, listener, task);
-        _logger.debug("Registering {}", exchange);
+        debug("Registering {}", exchange);
         if (_uniqueMessageId || message.isMeta())
         {
             Object existing = _metaExchanges.put(message.getId(), exchange);
@@ -394,7 +394,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             }
         }
 
-        _logger.debug("Deregistering {} for response {}", exchange, message);
+        debug("Deregistering {} for response {}", exchange, message);
 
         if (exchange != null)
             exchange.task.cancel(false);
@@ -460,7 +460,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                 else
                 {
                     // If the exchange is missing, then the message has expired, and we do not notify
-                    _logger.debug("Could not find request for reply {}", message);
+                    debug("Could not find request for reply {}", message);
                 }
             }
             else
@@ -474,14 +474,14 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     {
         public void onOpen(Connection connection)
         {
-            _logger.debug("Opened websocket connection {}", connection);
+            debug("Opened websocket connection {}", connection);
         }
 
         public void onClose(int closeCode, String message)
         {
             Connection connection = _connection;
             _connection = null;
-            _logger.debug("Closed websocket connection with code {} {}: {} ", closeCode, message, connection);
+            debug("Closed websocket connection with code {} {}: {} ", closeCode, message, connection);
             failMessages(new EOFException("Connection closed " + closeCode+" "+message));
         }
 
@@ -490,7 +490,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             try
             {
                 List<Mutable> messages = parseMessages(data);
-                _logger.debug("Received messages {}", data);
+                debug("Received messages {}", data);
                 onMessages(messages);
             }
             catch (ParseException x)

@@ -21,27 +21,25 @@ import java.util.Map;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.ServerSessionImpl;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Acknowledged Messages extension.
+ * <p>Installing this extension in a {@link BayeuxServer} provides support to
+ * message acknowledgement if a client also supports it.</p>
  *
- * Installing this extension in a bayeux server allows it to handle the ack
- * extension if a client also supports it.
- *
- * The main role of this extension is to install the
- * {@link AcknowledgedMessagesClientExtension} on the {@link Client} instances
- * created during handshake for clients that also support the ack extension.
- *
+ * <p>The main role of this extension is to install the
+ * {@link AcknowledgedMessagesClientExtension} on the {@link ServerSession} instances
+ * created during handshake for clients that also support the ack extension.</p>
  */
 public class AcknowledgedMessagesExtension implements Extension
 {
-    private final Logger _logger = Log.getLogger(getClass().getName());
+    private final Logger _logger = LoggerFactory.getLogger(getClass().getName());
     private final Map<String, Object> _replyExt;
 
     public AcknowledgedMessagesExtension()

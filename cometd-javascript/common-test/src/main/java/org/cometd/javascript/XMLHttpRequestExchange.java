@@ -26,11 +26,11 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class XMLHttpRequestExchange extends ScriptableObject
 {
@@ -128,7 +128,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
             UNSENT, OPENED, HEADERS_RECEIVED, LOADING, DONE
         }
 
-        private final Logger logger = Log.getLogger(getClass().getName());
+        private final Logger logger = LoggerFactory.getLogger(getClass().getName());
         private final HttpCookieStore cookieStore;
         private final ThreadModel threads;
         private volatile Scriptable thiz;
@@ -153,8 +153,6 @@ public class XMLHttpRequestExchange extends ScriptableObject
             getRequestFields().clear();
             if (async)
                 notifyReadyStateChange();
-            if (Boolean.getBoolean("debugTests"))
-                logger.setDebugEnabled(true);
         }
 
         public boolean isAsynchronous()
@@ -175,7 +173,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
             if (cookies.length() > 0)
                 setRequestHeader(HttpHeaders.COOKIE, cookies);
             httpClient.send(this);
-            logger.debug("Exchange {} submitted", this);
+            log("Exchange {} submitted", this);
         }
 
         @Override
@@ -283,7 +281,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         {
             if (!aborted)
             {
-                logger.debug("Exchange {} completed", this);
+                log("Exchange {} completed", this);
                 responseText = getResponseContent();
                 readyState = ReadyState.DONE;
                 if (async)
@@ -302,14 +300,22 @@ public class XMLHttpRequestExchange extends ScriptableObject
         protected void onRequestCommitted() throws IOException
         {
             super.onRequestCommitted();
-            logger.debug("Exchange {} committed", this);
+            log("Exchange {} committed", this);
         }
 
         @Override
         protected void onRequestComplete() throws IOException
         {
             super.onRequestComplete();
-            logger.debug("Exchange {} sent", this);
+            log("Exchange {} sent", this);
+        }
+
+        private void log(String message, Object... args)
+        {
+            if (Boolean.getBoolean("debugTests"))
+                logger.info(message, args);
+            else
+                logger.debug(message, args);
         }
     }
 }
