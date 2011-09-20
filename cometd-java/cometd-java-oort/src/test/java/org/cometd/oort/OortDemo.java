@@ -28,7 +28,6 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -66,7 +65,6 @@ public class OortDemo
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         _server.getContainer().addEventListener(mbContainer);
         _server.addBean(mbContainer);
-        mbContainer.addBean(Log.getLog());
 
         QueuedThreadPool qtp = new QueuedThreadPool();
         qtp.setMinThreads(5);

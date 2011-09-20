@@ -16,6 +16,7 @@
 
 package org.cometd.client;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.ProtocolException;
@@ -55,7 +56,6 @@ import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -841,7 +841,9 @@ public class BayeuxClientTest extends ClientServerTest
             @Override
             public void onFailure(Throwable x, Message[] messages)
             {
-                Log.ignore(x);
+                // Suppress expected exceptions
+                if (!(x instanceof EOFException))
+                    super.onFailure(x, messages);
             }
         };
         client.setDebugEnabled(debugTests());

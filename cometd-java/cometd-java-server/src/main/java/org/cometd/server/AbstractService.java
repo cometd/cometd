@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractService
 {
-    private final Logger _logger = LoggerFactory.getLogger(getClass());
+    protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private final String _name;
     private final BayeuxServerImpl _bayeux;
     private final LocalSession _session;

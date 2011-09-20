@@ -27,7 +27,6 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.transport.LongPollingTransport;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -75,9 +74,9 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
                 connected.set(message.isSuccessful());
 
                 if (!wasConnected && connected.get())
-                    Log.info("BayeuxClient connected {}", message);
+                    System.err.printf("BayeuxClient connected %s%n", message);
                 else if (wasConnected && !connected.get())
-                    Log.info("BayeuxClient unconnected {}", message);
+                    System.err.printf("BayeuxClient unconnected %s%n", message);
             }
         });
         String channelName = "/test";
@@ -167,9 +166,9 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
                 connected.set(message.isSuccessful());
 
                 if (!wasConnected && connected.get())
-                    Log.info("BayeuxClient connected");
+                    System.err.println("BayeuxClient connected");
                 else if (wasConnected && !connected.get())
-                    Log.info("BayeuxClient unconnected");
+                    System.err.println("BayeuxClient unconnected");
             }
         });
         String channelName = "/test";
@@ -237,7 +236,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
         public void setNetworkDown(long time)
         {
             this.networkDown = time;
-            Log.info("Set network down");
+            System.err.println("Set network down");
         }
 
         @Override
@@ -262,7 +261,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
             if (networkDown > 0)
             {
                 networkDown = 0;
-                Log.info("Reset network down");
+                System.err.println("Reset network down");
             }
             return super.sendConnect();
         }
