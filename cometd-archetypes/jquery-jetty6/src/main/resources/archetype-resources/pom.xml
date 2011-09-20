@@ -70,6 +70,11 @@
             <artifactId>cometd-java-server</artifactId>
             <version>${cometdVersion}</version>
         </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4jVersion}</version>
+        </dependency>
     </dependencies>
 
 </project>
