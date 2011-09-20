@@ -16,6 +16,7 @@
 
 package org.cometd.client;
 
+import java.io.EOFException;
 import java.net.ConnectException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +56,7 @@ public class ServerRestartTest extends ClientServerTest
             public void onFailure(Throwable x, Message[] messages)
             {
                 // Suppress expected exception logging
-                if (!(x instanceof ConnectException))
+                if (!(x instanceof ConnectException) && !(x instanceof EOFException))
                     super.onFailure(x, messages);
             }
         };

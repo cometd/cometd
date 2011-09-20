@@ -23,7 +23,6 @@ import javax.servlet.ServletException;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>A specialized version of {@link CometdServlet} that can be configured with the init-parameter
@@ -75,17 +74,16 @@ public class AnnotationCometdServlet extends CometdServlet
 
     protected Object processService(ServerAnnotationProcessor processor, String serviceClassName) throws ServletException
     {
-        Logger logger = getBayeux().getLogger();
         try
         {
             Object service = newService(serviceClassName);
             processor.process(service);
-            logger.info("Processed annotated service {}", service);
+            _logger.info("Processed annotated service {}", service);
             return service;
         }
         catch (Exception x)
         {
-            logger.warn("Failed to create annotated service " + serviceClassName, x);
+            _logger.warn("Failed to create annotated service " + serviceClassName, x);
             throw new ServletException(x);
         }
     }
@@ -106,9 +104,8 @@ public class AnnotationCometdServlet extends CometdServlet
 
     protected void deprocessService(ServerAnnotationProcessor processor, Object service)
     {
-        Logger logger = getBayeux().getLogger();
         processor.deprocess(service);
-        logger.info("Deprocessed annotated service {}", service);
+        _logger.info("Deprocessed annotated service {}", service);
     }
 
     protected List<Object> getServices()

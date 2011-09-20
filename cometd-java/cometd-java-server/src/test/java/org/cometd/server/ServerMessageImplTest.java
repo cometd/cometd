@@ -25,7 +25,6 @@ import java.util.Map;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.common.JSONContext;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,7 +45,7 @@ public class ServerMessageImplTest
         public void starting(FrameworkMethod method)
         {
             super.starting(method);
-            Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
+            System.err.printf("Running %s.%s%n", method.getMethod().getDeclaringClass().getName(), method.getName());
         }
     };
 

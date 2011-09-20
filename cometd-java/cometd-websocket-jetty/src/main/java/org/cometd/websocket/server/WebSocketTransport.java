@@ -49,8 +49,6 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.transport.HttpTransport;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketFactory;
 
@@ -64,7 +62,6 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
     public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
 
-    private final Logger _logger = Log.getLogger(getClass().getName());
     private final WebSocketFactory _factory = new WebSocketFactory(this);
     private final ThreadLocal<WebSocketContext> _handshake = new ThreadLocal<WebSocketContext>();
     private String _protocol;
@@ -82,7 +79,6 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     public void init()
     {
         super.init();
-        _logger.setDebugEnabled(getBayeux().getLogger().isDebugEnabled());
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
         _messagesPerFrame = getOption(MESSAGES_PER_FRAME_OPTION, _messagesPerFrame);
         int bufferSize = getOption(BUFFER_SIZE_OPTION, _factory.getBufferSize());
@@ -111,7 +107,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             }
             catch (Exception x)
             {
-                _logger.ignore(x);
+                _logger.trace("", x);
             }
         }
 
@@ -167,7 +163,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
     protected void handleJSONParseException(WebSocket.Connection connection, String json, Throwable exception)
     {
-        _logger.debug("Error parsing JSON: " + json, exception);
+        _logger.warn("Error parsing JSON: " + json, exception);
     }
 
     protected void handleException(WebSocket.Connection connection, Throwable exception)
@@ -511,7 +507,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
                 try
                 {
-                    _logger.debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", session, timeout, metaConnectDelivery, reply, queue);
+                    _logger.debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", new Object[]{session, timeout, metaConnectDelivery, reply, queue});
                     send(_connection, queue);
                 }
                 finally
@@ -624,20 +620,20 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             }
             else
             {
-                ServletContext context=null;
+                ServletContext context = null;
                 try
                 {
                     HttpSession s = request.getSession(true);
                     context = s.getServletContext();
                     s.invalidate();
                 }
-                catch(IllegalStateException e)
+                catch (IllegalStateException x)
                 {
-                    _logger.ignore(e);
+                    _logger.trace("", x);
                 }
                 finally
                 {
-                    _context=context;
+                    _context = context;
                 }
             }
 

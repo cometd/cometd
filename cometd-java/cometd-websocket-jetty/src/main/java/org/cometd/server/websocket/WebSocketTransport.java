@@ -17,7 +17,6 @@
 package org.cometd.server.websocket;
 
 import org.cometd.server.BayeuxServerImpl;
-import org.eclipse.jetty.util.log.Log;
 
 /**
  * @deprecated use {@link org.cometd.websocket.server.WebSocketTransport} instead
@@ -28,6 +27,6 @@ public class WebSocketTransport extends org.cometd.websocket.server.WebSocketTra
     public WebSocketTransport(BayeuxServerImpl bayeux)
     {
         super(bayeux);
-        Log.warn("Deprecated {}, use {} instead", WebSocketTransport.class.getName(), org.cometd.websocket.server.WebSocketTransport.class.getName());
+        _logger.warn("Deprecated {}, use {} instead", getClass().getName(), org.cometd.websocket.server.WebSocketTransport.class.getName());
     }
 }

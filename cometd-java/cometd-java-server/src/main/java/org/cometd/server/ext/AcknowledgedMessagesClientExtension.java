@@ -26,8 +26,8 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerSession.Extension;
 import org.cometd.server.ServerSessionImpl;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Acknowledged Message Client extension.
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class AcknowledgedMessagesClientExtension implements Extension
 {
-    private final Logger _logger = Log.getLogger(getClass().getName());
+    private final Logger _logger = LoggerFactory.getLogger(getClass().getName());
     private final ServerSessionImpl _session;
     private final Object _lock;
     private final ArrayIdQueue<ServerMessage> _unackedQueue;
@@ -72,7 +72,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
                 synchronized(_lock)
                 {
                     Number ackValue = (Number)ext.get("ack");
-                    _logger.debug("Session {} received ack {}, lastAck {}", session, ackValue, _lastAck);
+                    _logger.debug("Session {} received ack {}, lastAck {}", new Object[]{session, ackValue, _lastAck});
                     if (ackValue != null)
                     {
                         long acked = ackValue.longValue();

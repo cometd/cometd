@@ -46,7 +46,7 @@ public class SetiTest extends OortTest
     {
         Seti seti = new Seti(oort);
         seti.start();
-        seti.getLogger().setDebugEnabled(Boolean.getBoolean("debugTests"));
+        seti.setDebugEnabled(Boolean.getBoolean("debugTests"));
         setis.add(seti);
         return seti;
     }

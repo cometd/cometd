@@ -29,7 +29,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.WebSocketClientFactory;
 import org.junit.After;
@@ -46,7 +45,7 @@ public abstract class ClientServerWebSocketTest
         public void starting(FrameworkMethod method)
         {
             super.starting(method);
-            Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
+            System.err.printf("Running %s.%s%n", method.getMethod().getDeclaringClass().getName(), method.getName());
         }
     };
     protected Connector connector;

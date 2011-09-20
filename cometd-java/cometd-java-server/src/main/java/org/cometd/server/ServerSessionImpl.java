@@ -43,16 +43,17 @@ import org.cometd.server.AbstractServerTransport.Scheduler;
 import org.cometd.server.transport.HttpTransport;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.util.thread.Timeout.Task;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServerSessionImpl implements ServerSession
 {
     private static final AtomicLong _idCount=new AtomicLong();
 
+    private static final Logger _logger = LoggerFactory.getLogger(ServerSession.class);
     private final BayeuxServerImpl _bayeux;
-    private final Logger _logger;
     private final String _id;
     private final List<ServerSessionListener> _listeners = new CopyOnWriteArrayList<ServerSessionListener>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
@@ -94,7 +95,6 @@ public class ServerSessionImpl implements ServerSession
     protected ServerSessionImpl(BayeuxServerImpl bayeux, LocalSessionImpl localSession, String idHint)
     {
         _bayeux=bayeux;
-        _logger=bayeux.getLogger();
         _localSession=localSession;
 
         StringBuilder id=new StringBuilder(30);

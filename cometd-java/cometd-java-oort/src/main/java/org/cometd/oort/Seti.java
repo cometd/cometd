@@ -33,8 +33,8 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The component that Searches for Extra Terrestrial Intelligence or,
@@ -66,18 +66,38 @@ public class Seti extends AbstractLifeCycle
     private final Oort _oort;
     private final String _setiId;
     private final LocalSession _session;
+    private boolean _debug;
 
     public Seti(Oort oort)
     {
-        _logger = Log.getLogger(getClass().getName() + "-" + oort.getURL());
+        _logger = LoggerFactory.getLogger(getClass().getName() + "-" + oort.getURL());
         _oort = oort;
         _setiId = oort.getURL().replace("://", "_").replace(":", "_").replace("/", "_");
         _session = oort.getBayeuxServer().newLocalSession("seti");
+        _debug = oort.isDebugEnabled();
     }
 
     protected Logger getLogger()
     {
         return _logger;
+    }
+
+    public boolean isDebugEnabled()
+    {
+        return _debug;
+    }
+
+    public void setDebugEnabled(boolean debug)
+    {
+        _debug = debug;
+    }
+
+    private void debug(String message, Object... args)
+    {
+        if (_debug)
+            _logger.info(message, args);
+        else
+            _logger.debug(message, args);
     }
 
     public Oort getOort()
@@ -178,10 +198,10 @@ public class Seti extends AbstractLifeCycle
         if (added)
         {
             session.addListener(location);
-            _logger.debug("Associated session {} to user {}", session, userId);
+            debug("Associated session {} to user {}", session, userId);
             if (!wasAssociated)
             {
-                _logger.debug("Broadcasting presence addition for user {}", userId);
+                debug("Broadcasting presence addition for user {}", userId);
                 // Let everyone in the cluster know that this session is here
                 _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, true), null);
             }
@@ -201,7 +221,7 @@ public class Seti extends AbstractLifeCycle
                 _uid2Location.put(userId, locations);
             }
             boolean result = locations.add(location);
-            _logger.debug("Associations {}", _uid2Location);
+            debug("Associations {}", _uid2Location);
             return result;
         }
     }
@@ -242,7 +262,7 @@ public class Seti extends AbstractLifeCycle
         LocalLocation location = new LocalLocation(userId, session);
         boolean removed = disassociate(userId, location);
         if (removed)
-            _logger.debug("Disassociated session {} from user {}", session, userId);
+            debug("Disassociated session {} from user {}", session, userId);
 
         // Seti is stopped before BayeuxServer, but it may happen that RemoveListeners
         // call Seti when BayeuxServer is stopping, and they will find that Seti is already stopped.
@@ -256,7 +276,7 @@ public class Seti extends AbstractLifeCycle
         // that the user is gone, while in reality it is still associated with the remaining association.
         if (_session.isConnected() && !isAssociated(userId))
         {
-            _logger.debug("Broadcasting presence removal for user {}", userId);
+            debug("Broadcasting presence removal for user {}", userId);
             // Let everyone in the cluster know that this session is not here anymore
             _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, false), null);
         }
@@ -276,7 +296,7 @@ public class Seti extends AbstractLifeCycle
                 if (locations.isEmpty())
                     _uid2Location.remove(userId);
             }
-            _logger.debug("Associations {}", _uid2Location);
+            debug("Associations {}", _uid2Location);
             return result;
         }
     }
@@ -315,7 +335,7 @@ public class Seti extends AbstractLifeCycle
                     copy.addAll(locations);
             }
 
-            _logger.debug("Sending message to locations {}", copy);
+            debug("Sending message to locations {}", copy);
             for (Location location : copy)
                 location.send(toUserId, toChannel, data);
         }
@@ -329,7 +349,7 @@ public class Seti extends AbstractLifeCycle
      */
     protected void receiveDirect(Message message)
     {
-        _logger.debug("Received direct message {}", message);
+        debug("Received direct message {}", message);
         receiveMessage(message);
     }
 
@@ -367,7 +387,7 @@ public class Seti extends AbstractLifeCycle
         if (_setiId.equals(setiId))
             return;
 
-        _logger.debug("Received presence message {}", message);
+        debug("Received presence message {}", message);
 
         String userId = (String)data.get(SetiPresence.USER_ID_FIELD);
         SetiLocation location = new SetiLocation(userId, "/seti/" + setiId);
@@ -412,7 +432,7 @@ public class Seti extends AbstractLifeCycle
             }
         }
 
-        _logger.debug("Received message {} for locations {}", message, copy);
+        debug("Received message {} for locations {}", message, copy);
         for (Location location : copy)
             location.receive(userId, channel, data);
     }

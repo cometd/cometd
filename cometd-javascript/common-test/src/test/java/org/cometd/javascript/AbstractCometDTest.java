@@ -28,7 +28,6 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.junit.After;
 import org.junit.Before;
@@ -46,7 +45,7 @@ public abstract class AbstractCometDTest
         public void starting(FrameworkMethod method)
         {
             super.starting(method);
-            Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
+            System.err.printf("Running %s.%s%n", method.getMethod().getDeclaringClass().getName(), method.getName());
         }
     };
     protected TestProvider provider;

@@ -28,7 +28,6 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatchman;
@@ -47,7 +46,7 @@ public class LongPollingTransportTest
         public void starting(FrameworkMethod method)
         {
             super.starting(method);
-            Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
+            System.err.printf("Running %s.%s%n", method.getMethod().getDeclaringClass().getName(), method.getName());
         }
     };
 

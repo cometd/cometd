@@ -29,16 +29,18 @@ import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ServerChannelImpl implements ServerChannel, ConfigurableServerChannel
+public class ServerChannelImpl implements ServerChannel
 {
+    private static final Logger _logger = LoggerFactory.getLogger(ServerChannel.class);
     private final BayeuxServerImpl _bayeux;
     private final ChannelId _id;
     private final AttributesMap _attributes = new AttributesMap();
@@ -135,7 +137,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         }
         catch (Exception x)
         {
-            _bayeux.getLogger().info("Exception while invoking listener " + listener, x);
+            _logger.info("Exception while invoking listener " + listener, x);
         }
     }
 
@@ -147,7 +149,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         }
         catch (Exception x)
         {
-            _bayeux.getLogger().info("Exception while invoking listener " + listener, x);
+            _logger.info("Exception while invoking listener " + listener, x);
         }
     }
 
@@ -189,7 +191,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         }
         catch (Exception x)
         {
-            _bayeux.getLogger().info("Exception while invoking listener " + listener, x);
+            _logger.info("Exception while invoking listener " + listener, x);
         }
     }
 
@@ -201,7 +203,7 @@ public class ServerChannelImpl implements ServerChannel, ConfigurableServerChann
         }
         catch (Exception x)
         {
-            _bayeux.getLogger().info("Exception while invoking listener " + listener, x);
+            _logger.info("Exception while invoking listener " + listener, x);
         }
     }
 

@@ -23,14 +23,15 @@ import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OortMulticastConfigurer
 {
     private static final int MTU = 1500;
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Oort oort;
-    private final Logger logger;
     private InetAddress bindAddress;
     private InetAddress groupAddress;
     private int groupPort = 5577;
@@ -43,7 +44,6 @@ public class OortMulticastConfigurer
     public OortMulticastConfigurer(Oort oort)
     {
         this.oort = oort;
-        this.logger = oort.getLogger();
     }
 
     public void setBindAddress(InetAddress bindAddress)
