@@ -16,6 +16,8 @@
 
 package org.cometd.server;
 
+import java.io.EOFException;
+
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
@@ -53,7 +55,17 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
         Assert.assertEquals(200, connect.getResponseStatus());
 
-        connect = newBayeuxExchange("" +
+        connect = new ContentExchange(true)
+        {
+            @Override
+            protected void onException(Throwable x)
+            {
+                // Suppress expected exceptions
+                if (!(x instanceof EOFException))
+                    super.onException(x);
+            }
+        };
+        configureBayeuxExchange(connect, "" +
                 "[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +

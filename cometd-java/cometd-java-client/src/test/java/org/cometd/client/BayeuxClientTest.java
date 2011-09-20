@@ -1040,7 +1040,7 @@ public class BayeuxClientTest extends ClientServerTest
             public void onFailure(Throwable x, Message[] messages)
             {
                 // Suppress expected exception logging
-                if (!(x instanceof UnknownHostException))
+                if (!(x instanceof UnknownHostException) && !(x instanceof EOFException))
                     super.onFailure(x, messages);
             }
         };
