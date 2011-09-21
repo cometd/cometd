@@ -31,8 +31,8 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Partial implementation of {@link ClientSession}.</p>
@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class AbstractClientSession implements ClientSession
 {
-    protected static final Logger logger = Log.getLogger(ClientSession.class);
+    protected static final Logger logger = LoggerFactory.getLogger(ClientSession.class);
     private static final AtomicLong _idGen = new AtomicLong(0);
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
     private final AttributesMap _attributes = new AttributesMap();

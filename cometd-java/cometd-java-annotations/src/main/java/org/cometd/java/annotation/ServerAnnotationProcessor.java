@@ -70,6 +70,7 @@ import org.cometd.bayeux.server.ServerSession;
  * MyService s = new MyService();
  * processor.process(s);
  * </pre>
+ *
  * @see ClientAnnotationProcessor
  */
 public class ServerAnnotationProcessor extends AnnotationProcessor
@@ -88,6 +89,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
      * Processes dependencies annotated with {@link Inject} and {@link Session}, lifecycle methods
      * annotated with {@link PostConstruct}, and callback methods annotated with {@link Listener}
      * and {@link Subscription}.
+     *
      * @param bean the annotated service instance
      * @return true if the bean contains at least one annotation that has been processed, false otherwise
      */
@@ -102,6 +104,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
     /**
      * Processes the methods annotated with {@link Configure}
+     *
      * @param bean the annotated service instance
      * @return true if at least one annotated configure has been processed, false otherwise
      */
@@ -132,21 +135,20 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         {
                             public void configureChannel(ConfigurableServerChannel channel)
                             {
-                                boolean flip=false;
+                                boolean flip = false;
                                 try
                                 {
-                                    logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
+                                    logger.debug("Configure channel {} with method {} on bean {}", new Object[]{channel, method, bean});
                                     if (!method.isAccessible())
                                     {
-                                        flip=true;
+                                        flip = true;
                                         method.setAccessible(true);
                                     }
-                                    method.invoke(bean,channel);
+                                    method.invoke(bean, channel);
                                 }
-                                catch(Exception e)
+                                catch (Exception x)
                                 {
-                                    logger.warn(e);
-                                    throw new RuntimeException(e);
+                                    throw new RuntimeException(x);
                                 }
                                 finally
                                 {
@@ -156,21 +158,21 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                             }
                         };
 
-                        boolean initialized = bayeuxServer.createIfAbsent(channel,init);
+                        boolean initialized = bayeuxServer.createIfAbsent(channel, init);
 
                         if (initialized)
                         {
-                            logger.debug("Channel {} already initialzed. Not called method {} on bean {}", channel, method, bean);
+                            logger.debug("Channel {} already initialized. Not called method {} on bean {}", new Object[]{channel, method, bean});
                         }
                         else
                         {
                             if (configure.configureIfExists())
                             {
-                                logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
+                                logger.debug("Configure channel {} with method {} on bean {}", new Object[]{channel, method, bean});
                                 init.configureChannel(bayeuxServer.getChannel(channel));
                             }
                             else if (configure.errorIfExists())
-                                throw new IllegalStateException("Channel already configured: "+channel);
+                                throw new IllegalStateException("Channel already configured: " + channel);
                         }
                     }
                 }
@@ -179,9 +181,9 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         return result;
     }
 
-
     /**
      * Processes the dependencies annotated with {@link Inject} and {@link Session}.
+     *
      * @param bean the annotated service instance
      * @return true if at least one annotated dependency has been processed, false otherwise
      */
@@ -203,6 +205,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
     /**
      * Processes lifecycle methods annotated with {@link PostConstruct}.
+     *
      * @param bean the annotated service instance
      * @return true if at least one lifecycle method has been invoked, false otherwise
      */
@@ -214,6 +217,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
     /**
      * Processes the callbacks annotated with {@link Listener} and {@link Subscription}.
+     *
      * @param bean the annotated service instance
      * @return true if at least one annotated callback has been processed, false otherwise
      */
@@ -237,6 +241,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
      * Performs the opposite processing done by {@link #process(Object)} on callbacks methods
      * annotated with {@link Listener} and {@link Subscription}, and on lifecycle methods annotated
      * with {@link PreDestroy}.
+     *
      * @param bean the annotated service instance
      * @return true if at least one deprocessing has been performed, false otherwise
      * @see #process(Object)
@@ -251,6 +256,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
     /**
      * Performs the opposite processing done by {@link #processCallbacks(Object)} on callback methods
      * annotated with {@link Listener} and {@link Subscription}.
+     *
      * @param bean the annotated service instance
      * @return true if the at least one callback has been deprocessed
      */
@@ -271,6 +277,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
     /**
      * Processes lifecycle methods annotated with {@link PreDestroy}.
+     *
      * @param bean the annotated service instance
      * @return true if at least one lifecycle method has been invoked, false otherwise
      */
@@ -310,13 +317,13 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         Object value = getField(bean, field);
                         if (value != null)
                         {
-                            logger.debug("Avoid injection of field {} on bean {}, it's already injected with {}", field, bean, value);
+                            logger.debug("Avoid injection of field {} on bean {}, it's already injected with {}", new Object[]{field, bean, value});
                             continue;
                         }
 
                         setField(bean, field, bayeuxServer);
                         result = true;
-                        logger.debug("Injected {} to field {} on bean {}", bayeuxServer, field, bean);
+                        logger.debug("Injected {} to field {} on bean {}", new Object[]{bayeuxServer, field, bean});
                     }
                 }
             }
@@ -337,14 +344,14 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                                 Object value = invokeMethod(bean, getter);
                                 if (value != null)
                                 {
-                                    logger.debug("Avoid injection of method {} on bean {}, it's already injected with {}", method, bean, value);
+                                    logger.debug("Avoid injection of method {} on bean {}, it's already injected with {}", new Object[]{method, bean, value});
                                     continue;
                                 }
                             }
 
                             invokeMethod(bean, method, bayeuxServer);
                             result = true;
-                            logger.debug("Injected {} to method {} on bean {}", bayeuxServer, method, bean);
+                            logger.debug("Injected {} to method {} on bean {}", new Object[]{bayeuxServer, method, bean});
                         }
                     }
                 }
@@ -375,7 +382,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                     {
                         setField(bean, field, value);
                         result = true;
-                        logger.debug("Injected {} to field {} on bean {}", value, field, bean);
+                        logger.debug("Injected {} to field {} on bean {}", new Object[]{value, field, bean});
                     }
                 }
             }
@@ -398,7 +405,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         {
                             invokeMethod(bean, method, value);
                             result = true;
-                            logger.debug("Injected {} to method {} on bean {}", value, method, bean);
+                            logger.debug("Injected {} to method {} on bean {}", new Object[]{value, method, bean});
                         }
                     }
                 }
@@ -435,7 +442,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         }
                         callbacks.add(listenerCallback);
                         result = true;
-                        logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
+                        logger.debug("Registered listener for channel {} to method {} on bean {}", new Object[]{channel, method, bean});
                     }
                 }
             }
@@ -489,7 +496,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         }
                         callbacks.add(subscriptionCallback);
                         result = true;
-                        logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
+                        logger.debug("Registered subscriber for channel {} to method {} on bean {}", new Object[]{channel, method, bean});
                     }
                 }
             }

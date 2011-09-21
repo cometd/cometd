@@ -44,13 +44,12 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.websocket.WebSocketClientFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Oort is the cluster manager that links one CometD server to a set of other CometD servers.</p>
@@ -91,15 +90,16 @@ public class Oort extends AggregateLifeCycle
     private final WebSocketClientFactory _wsFactory;
     private final LocalSession _oortSession;
     private String _secret;
-    private boolean _clientDebugEnabled;
+    private boolean _debug;
+    private boolean _clientDebug;
 
     public Oort(BayeuxServer bayeux, String url)
     {
         _bayeux = bayeux;
         _url = url;
 
-        _logger = Log.getLogger(getClass().getName() + "-" + _url);
-        _logger.setDebugEnabled(String.valueOf(BayeuxServerImpl.DEBUG_LOG_LEVEL).equals(bayeux.getOption(BayeuxServerImpl.LOG_LEVEL)));
+        _logger = LoggerFactory.getLogger(getClass().getName() + "-" + _url);
+        _debug = String.valueOf(BayeuxServerImpl.DEBUG_LOG_LEVEL).equals(bayeux.getOption(BayeuxServerImpl.LOG_LEVEL));
 
         _threadPool = new QueuedThreadPool();
         addBean(_threadPool);
@@ -108,7 +108,7 @@ public class Oort extends AggregateLifeCycle
         addBean(_httpClient);
         _wsFactory=new WebSocketClientFactory(_threadPool);
         addBean(_wsFactory);
-        
+
         _oortSession = bayeux.newLocalSession("oort");
         _secret = Long.toHexString(new SecureRandom().nextLong());
     }
@@ -178,14 +178,32 @@ public class Oort extends AggregateLifeCycle
         this._secret = secret;
     }
 
+    public boolean isDebugEnabled()
+    {
+        return _debug;
+    }
+
+    public void setDebugEnabled(boolean debug)
+    {
+        _debug = debug;
+    }
+
+    private void debug(String message, Object... args)
+    {
+        if (isDebugEnabled())
+            _logger.info(message, args);
+        else
+            _logger.debug(message, args);
+    }
+
     public boolean isClientDebugEnabled()
     {
-        return _clientDebugEnabled;
+        return _clientDebug;
     }
 
     public void setClientDebugEnabled(boolean clientDebugEnabled)
     {
-        _clientDebugEnabled = clientDebugEnabled;
+        _clientDebug = clientDebugEnabled;
         for (OortComet comet : _knownComets.values())
             comet.setDebugEnabled(clientDebugEnabled);
     }
@@ -220,7 +238,7 @@ public class Oort extends AggregateLifeCycle
         if (existing != null)
             return existing;
 
-        _logger.debug("Connecting to comet {}", cometURL);
+        debug("Connecting to comet {}", cometURL);
         String b64Secret = encodeSecret(getSecret());
         Message.Mutable fields = new HashMapMessage();
         Map<String, Object> ext = fields.getExt(true);
@@ -264,7 +282,7 @@ public class Oort extends AggregateLifeCycle
         OortComet comet = _knownComets.remove(cometURL);
         if (comet != null)
         {
-            _logger.debug("Disconnecting from comet {}", cometURL);
+            debug("Disconnecting from comet {}", cometURL);
             comet.disconnect();
         }
         return comet;
@@ -400,15 +418,15 @@ public class Oort extends AggregateLifeCycle
      */
     protected void incomingCometHandshake(String cometURL, String cometSecret, ServerSession session)
     {
-        _logger.debug("Incoming comet handshake from comet {} with {}", cometURL, session.getId());
+        debug("Incoming comet handshake from comet {} with {}", cometURL, session.getId());
         if (!_knownComets.containsKey(cometURL))
         {
-            _logger.debug("Comet {} is unknown, establishing connection", cometURL);
+            debug("Comet {} is unknown, establishing connection", cometURL);
             observeComet(cometURL);
         }
         else
         {
-            _logger.debug("Comet {} is already known", cometURL);
+            debug("Comet {} is already known", cometURL);
         }
 
         session.setAttribute(COMET_URL_ATTRIBUTE, cometURL);
@@ -477,7 +495,7 @@ public class Oort extends AggregateLifeCycle
         Set<String> comets = new HashSet<String>();
         for (Object o : array)
             comets.add(o.toString());
-        _logger.debug("Received comets {} from {}", comets, cometURL);
+        debug("Received comets {} from {}", comets, cometURL);
         cometsJoined(comets);
     }
 
@@ -505,12 +523,12 @@ public class Oort extends AggregateLifeCycle
     {
         return _threadPool;
     }
-    
+
     public WebSocketClientFactory getWebSocketClientFactory()
     {
         return _wsFactory;
     }
-    
+
     public HttpClient getHttpClient()
     {
         return _httpClient;
@@ -567,12 +585,11 @@ public class Oort extends AggregateLifeCycle
             // Prevent loops by not delivering a message from self or Oort session to remote Oort comets
             if (to.getId().equals(from.getId()) || isOort(from))
             {
-                _logger.debug("{} --| {} {}", from, to, message);
+                debug("{} --| {} {}", from, to, message);
                 return false;
             }
-            _logger.debug("{} --> {} {}", from, to, message);
+            debug("{} --> {} {}", from, to, message);
             return true;
         }
     }
-
 }

@@ -40,10 +40,13 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.server.ext.TimesyncExtension;
-import org.eclipse.jetty.util.log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CometdDemoServlet extends GenericServlet
 {
+    private static final Logger logger = LoggerFactory.getLogger(CometdDemoServlet.class);
+
     @Override
     public void init() throws ServletException
     {
@@ -83,8 +86,7 @@ public class CometdDemoServlet extends GenericServlet
             }
         });
 
-        if (bayeux.getLogger().isDebugEnabled())
-            System.err.println(bayeux.dump());
+        logger.debug(bayeux.dump());
     }
 
     @Override
@@ -110,7 +112,7 @@ public class CometdDemoServlet extends GenericServlet
         public void doEcho(ServerSession session, ServerMessage message)
         {
             Map<String,Object> data = message.getDataAsMap();
-            Log.info("ECHO from "+session+" "+data);
+            logger.info("ECHO from "+session+" "+data);
             session.deliver(_session, message.getChannel(), data, null);
         }
     }
@@ -121,20 +123,19 @@ public class CometdDemoServlet extends GenericServlet
         @Listener("/meta/subscribe")
         public void monitorSubscribe(ServerSession session, ServerMessage message)
         {
-            Log.info("Monitored Subscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
+            logger.info("Monitored Subscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
         }
 
         @Listener("/meta/unsubscribe")
         public void monitorUnsubscribe(ServerSession session, ServerMessage message)
         {
-            Log.info("Monitored Unsubscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
+            logger.info("Monitored Unsubscribe from "+session+" for "+message.get(Message.SUBSCRIPTION_FIELD));
         }
 
         @Listener("/meta/*")
         public void monitorMeta(ServerSession session, ServerMessage message)
         {
-            if (Log.isDebugEnabled())
-                Log.debug(message.toString());
+            logger.debug(message.toString());
         }
     }
 

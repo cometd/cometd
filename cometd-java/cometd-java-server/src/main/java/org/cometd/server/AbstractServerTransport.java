@@ -25,6 +25,8 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.AbstractTransport;
 import org.cometd.common.JSONContext;
 import org.eclipse.jetty.util.IO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The base class of all server transports.
@@ -43,6 +45,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     public static final String MAX_LAZY_OPTION = "maxLazyTimeout";
     public static final String META_CONNECT_DELIVERY_OPTION = "metaConnectDeliverOnly";
 
+    protected final Logger _logger = LoggerFactory.getLogger(getClass().getName());
     private final BayeuxServerImpl _bayeux;
     private long _interval = 0;
     private long _maxInterval = 10000;

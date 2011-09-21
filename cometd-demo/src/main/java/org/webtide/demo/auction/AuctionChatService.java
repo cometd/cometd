@@ -37,13 +37,10 @@ import org.cometd.oort.Seti;
 import org.cometd.oort.SetiServlet;
 import org.cometd.server.AbstractService;
 import org.cometd.server.authorizer.GrantAuthorizer;
-import org.eclipse.jetty.util.log.Log;
 
 public class AuctionChatService extends AbstractService
 {
-    /**
-     * A map(channel, map(userName, clientId))
-     */
+    // A map(channel, map(userName, clientId))
     private final ConcurrentMap<String, Set<String>> _members = new ConcurrentHashMap<String, Set<String>>();
     private Oort _oort;
     private Seti _seti;
@@ -96,7 +93,7 @@ public class AuctionChatService extends AbstractService
                 added |= members.add(user.toString());
             if (added)
             {
-                Log.info("Members: " + members);
+                _logger.info("Members: {}", members);
                 // Broadcast the members to all existing members
                 getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
             }
@@ -144,7 +141,7 @@ public class AuctionChatService extends AbstractService
                     }
                 });
 
-                Log.info("Members: " + members);
+                _logger.info("Members: {}", members);
                 // Broadcast the members to all existing members
                 getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
 
@@ -164,7 +161,7 @@ public class AuctionChatService extends AbstractService
                 String userName = (String)map.get("user");
                 members.remove(userName);
 
-                Log.info("Members: " + members);
+                _logger.info("Members: {}", members);
                 // Broadcast the members to all existing members
                 getBayeux().getChannel(channelName).publish(getServerSession(), members, messageId);
             }

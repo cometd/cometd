@@ -28,9 +28,10 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /* ------------------------------------------------------------ */
 /**
@@ -53,13 +54,12 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public abstract class AbstractService
 {
+    protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private final String _name;
     private final BayeuxServerImpl _bayeux;
     private final LocalSession _session;
-
     private ThreadPool _threadPool;
     private boolean _seeOwn=false;
-    private final Logger _logger;
 
     /* ------------------------------------------------------------ */
     /**
@@ -91,13 +91,12 @@ public abstract class AbstractService
      */
     public AbstractService(BayeuxServer bayeux, String name, int maxThreads)
     {
-        if (maxThreads > 0)
-            setThreadPool(new QueuedThreadPool(maxThreads));
         _name=name;
         _bayeux=(BayeuxServerImpl)bayeux;
         _session=_bayeux.newLocalSession(name);
         _session.handshake();
-        _logger=((BayeuxServerImpl)bayeux).getLogger();
+        if (maxThreads > 0)
+            setThreadPool(new QueuedThreadPool(maxThreads));
     }
 
     /* ------------------------------------------------------------ */
@@ -126,10 +125,10 @@ public abstract class AbstractService
 
     /* ------------------------------------------------------------ */
     /**
-     * Set the threadpool. If the {@link ThreadPool} is a {@link LifeCycle},
+     * Set the thread pool. If the {@link ThreadPool} is a {@link LifeCycle},
      * then it is started by this method.
      *
-     * @param pool
+     * @param pool The thread pool to set
      */
     public void setThreadPool(ThreadPool pool)
     {
@@ -197,7 +196,7 @@ public abstract class AbstractService
      */
     protected void addService(String channelId, String methodName)
     {
-        _logger.debug("Subscribing {}#{} to {}", _name, methodName, channelId);
+        _logger.debug("Subscribing {}#{} to {}", new Object[]{_name, methodName, channelId});
 
         Method method=null;
 
@@ -288,7 +287,7 @@ public abstract class AbstractService
     /* ------------------------------------------------------------ */
     private void invoke(final Method method, final ServerSession fromClient, final ServerMessage msg)
     {
-        _logger.debug("Invoking {}#{} from {} with {}", _name, method.getName(), fromClient, msg);
+        _logger.debug("Invoking {}#{} from {} with {}", new Object[]{_name, method.getName(), fromClient, msg});
 
         if (_threadPool == null)
             doInvoke(method,fromClient,msg);

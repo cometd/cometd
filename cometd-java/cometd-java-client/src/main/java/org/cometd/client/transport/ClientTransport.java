@@ -25,8 +25,8 @@ import org.cometd.bayeux.Message;
 import org.cometd.common.AbstractTransport;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class ClientTransport extends AbstractTransport
 {
@@ -35,7 +35,8 @@ public abstract class ClientTransport extends AbstractTransport
     public static final String MAX_NETWORK_DELAY_OPTION = "maxNetworkDelay";
     public static final String JSON_CONTEXT = "jsonContext";
 
-    protected final Logger _logger = Log.getLogger(getClass().getName());
+    protected final Logger logger = LoggerFactory.getLogger(getClass().getName());
+    private boolean debug;
     private JSONContext.Client jsonContext;
 
     protected ClientTransport(String name, Map<String, Object> options)
@@ -50,9 +51,22 @@ public abstract class ClientTransport extends AbstractTransport
             jsonContext = new JettyJSONContextClient();
     }
 
+    public boolean isDebugEnabled()
+    {
+        return debug;
+    }
+
     public void setDebugEnabled(boolean enabled)
     {
-        _logger.setDebugEnabled(enabled);
+        this.debug = enabled;
+    }
+
+    protected void debug(String message, Object... args)
+    {
+        if (isDebugEnabled())
+            logger.info(message, args);
+        else
+            logger.debug(message, args);
     }
 
     public abstract void abort();

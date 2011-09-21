@@ -16,7 +16,6 @@
 
 package org.cometd.oort;
 
-import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -83,7 +82,7 @@ public class OortComet extends BayeuxClient
                         }
                     });
 
-                    _oort.getLogger().info("Connected to comet {} with {}/{}", _cometURL, message.getClientId(),getTransport());
+                    _oort.getLogger().info("Connected to comet {} with {}/{}", new Object[]{_cometURL, message.getClientId(),getTransport()});
                 }
                 else
                 {
@@ -108,7 +107,7 @@ public class OortComet extends BayeuxClient
             {
                 public void onMessage(ClientSessionChannel channel, Message message)
                 {
-                    _oort.getLogger().debug("Republishing message {} from {}", message, _cometURL);
+                    debug("Republishing message {} from {}", message, _cometURL);
                     // BayeuxServer may sweep channels, so calling bayeux.getChannel(...)
                     // may return null, and therefore we use the client to send the message
                     _oort.getOortSession().getChannel(message.getChannel()).publish(message.getData());
@@ -118,11 +117,11 @@ public class OortComet extends BayeuxClient
             ClientSessionChannel.MessageListener existing = _subscriptions.putIfAbsent(channel, listener);
             if (existing == null)
             {
-                _oort.getLogger().debug("Subscribing to messages on {} from {}", channel, _cometURL);
+                debug("Subscribing to messages on {} from {}", channel, _cometURL);
                 getChannel(channel).subscribe(listener);
             }
         }
-        _oort.getLogger().debug("Subscriptions to messages on {} from {}", _subscriptions, _cometURL);
+        debug("Subscriptions to messages on {} from {}", _subscriptions, _cometURL);
     }
 
     protected void unsubscribe(String channel)
@@ -130,7 +129,7 @@ public class OortComet extends BayeuxClient
         ClientSessionChannel.MessageListener listener = _subscriptions.remove(channel);
         if (listener != null)
         {
-            _oort.getLogger().debug("Unsubscribing to messages on {} from {}", channel, _cometURL);
+            debug("Unsubscribing to messages on {} from {}", channel, _cometURL);
             getChannel(channel).unsubscribe(listener);
         }
     }
@@ -139,12 +138,6 @@ public class OortComet extends BayeuxClient
     {
         for (String channel : _oort.getObservedChannels())
             unsubscribe(channel);
-    }
-
-    @Override
-    public void onFailure(Throwable x, Message[] messages)
-    {
-        _oort.getLogger().debug("Failure, messages: " + Arrays.asList(messages), x);
     }
 
     @Override

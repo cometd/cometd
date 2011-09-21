@@ -8,7 +8,10 @@
             <defaultValue>${project.version}</defaultValue>
         </requiredProperty>
         <requiredProperty key="springVersion">
-            <defaultValue>3.0.5.RELEASE</defaultValue>
+            <defaultValue>${spring-version}</defaultValue>
+        </requiredProperty>
+        <requiredProperty key="slf4jVersion">
+            <defaultValue>${slf4j-version}</defaultValue>
         </requiredProperty>
     </requiredProperties>
 

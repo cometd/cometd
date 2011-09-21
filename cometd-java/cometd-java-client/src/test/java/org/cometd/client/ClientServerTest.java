@@ -27,7 +27,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.TestWatchman;
@@ -42,7 +41,7 @@ public class ClientServerTest
         public void starting(FrameworkMethod method)
         {
             super.starting(method);
-            Log.info("Running {}.{}", method.getMethod().getDeclaringClass().getName(), method.getName());
+            System.err.printf("Running %s.%s%n", method.getMethod().getDeclaringClass().getName(), method.getName());
         }
     };
     protected Connector connector;
@@ -91,7 +90,7 @@ public class ClientServerTest
 
     protected BayeuxClient newBayeuxClient()
     {
-        final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient));
         client.setDebugEnabled(debugTests());
         return client;
     }
