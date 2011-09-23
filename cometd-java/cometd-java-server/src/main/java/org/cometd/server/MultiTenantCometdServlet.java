@@ -8,12 +8,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class MultiTenantCometdServlet extends CometdServlet
 {
-    private final static Logger LOG = Log.getLogger(MultiTenantCometdServlet.class);
+    protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private final ConcurrentMap<String, BayeuxServerImpl> _bayeux= new ConcurrentHashMap<String, BayeuxServerImpl>();
     
     /**
@@ -48,7 +48,7 @@ public abstract class MultiTenantCometdServlet extends CometdServlet
                 BayeuxServerImpl b=_bayeux.putIfAbsent(tenantId,bayeux);
                 if (b==null)
                 {
-                    LOG.info("New tenant: "+tenantId);
+                    _logger.info("New tenant: "+tenantId);
                     customise(bayeux);
                 }
                 else
@@ -60,12 +60,18 @@ public abstract class MultiTenantCometdServlet extends CometdServlet
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            _logger.warn("",e);
             response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             return;
         }
         
         service(bayeux,request,response);
+    }
+
+    @Override
+    public BayeuxServerImpl getBayeux()
+    {
+        throw new UnsupportedOperationException("Multitenanted mode");
     }
 
     abstract protected void customise(BayeuxServerImpl bayeux);
@@ -75,7 +81,17 @@ public abstract class MultiTenantCometdServlet extends CometdServlet
     @Override
     public void destroy()
     {
-        // TODO Auto-generated method stub
+        for (BayeuxServerImpl bayeux : _bayeux.values())
+        {
+            try
+            {
+                bayeux.stop();
+            }
+            catch (Exception e)
+            {
+                _logger.warn("",e);
+            }
+        }
     }
     
 }

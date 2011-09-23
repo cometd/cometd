@@ -19,14 +19,21 @@ package org.cometd.examples;
 import javax.servlet.http.HttpServletRequest;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.examples.CometdDemoServlet.EchoRPC;
+import org.cometd.examples.CometdDemoServlet.Monitor;
 import org.cometd.java.annotation.AnnotationCometdServlet;
+import org.cometd.java.annotation.ServerAnnotationProcessor;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.cometd.server.MultiTenantCometdServlet;
+import org.cometd.server.authorizer.GrantAuthorizer;
+import org.cometd.server.ext.AcknowledgedMessagesExtension;
+import org.cometd.server.ext.TimesyncExtension;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -105,8 +112,26 @@ public class MultiTentantDemo
             @Override
             protected void customise(BayeuxServerImpl bayeux)
             {
-                // TODO Auto-generated method stub
+                bayeux.setSecurityPolicy(new DefaultSecurityPolicy());
+                bayeux.createIfAbsent("/**",new ServerChannel.Initializer()
+                {
+                    public void configureChannel(ConfigurableServerChannel channel)
+                    {
+                        channel.addAuthorizer(GrantAuthorizer.GRANT_NONE);
+                    }
+                });
+                bayeux.getChannel(ServerChannel.META_HANDSHAKE).addAuthorizer(GrantAuthorizer.GRANT_PUBLISH);
                 
+                
+                bayeux.addExtension(new TimesyncExtension());
+                bayeux.addExtension(new AcknowledgedMessagesExtension());
+                
+                ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
+                processor.process(new ChatService());
+                processor.process(new EchoRPC());
+                processor.process(new Monitor());
+                
+                // TODO find a way to deprocess services on stop/idle tenant
             }
 
             @Override
@@ -128,55 +153,9 @@ public class MultiTentantDemo
         comet.setInitParameter("transports","org.cometd.websocket.server.WebSocketTransport");
         comet.setInitOrder(2);
 
-        ServletHolder demo=context.addServlet(CometdDemoServlet.class, "/demo");
-        demo.setInitOrder(3);
 
         server.start();
         
-
-        comet.setInitParameter("services","org.cometd.examples.ChatService");
-
-        BayeuxServer bayeux = cometdServlet.getBayeux();
-        bayeux.setSecurityPolicy(new DefaultSecurityPolicy());
-
-        // Demo lazy messages
-        if (Boolean.getBoolean("LAZY"))
-        {
-            bayeux.addExtension(new BayeuxServer.Extension()
-            {
-                public boolean sendMeta(ServerSession to, Mutable message)
-                {
-                    return true;
-                }
-
-                public boolean send(ServerSession from, ServerSession to, Mutable message)
-                {
-                    return true;
-                }
-
-                public boolean rcvMeta(ServerSession from, Mutable message)
-                {
-                    return true;
-                }
-
-                public boolean rcv(ServerSession from, Mutable message)
-                {
-                    if (message.getChannel().startsWith("/chat/") && message.getData()!=null && message.getData().toString().indexOf("lazy")>=0)
-                        (message).setLazy(true);
-                    return true;
-                }
-            });
-        }
-
-        // Demo lazy messages
-        if (Boolean.getBoolean("LAZYCHAT"))
-        {
-            String channelName = "/chat/demo";
-            bayeux.createIfAbsent(channelName);
-            final ServerChannel chat_demo = bayeux.getChannel(channelName);
-            chat_demo.setLazy(true);
-            chat_demo.setPersistent(true);
-        }
 
     }
 }
