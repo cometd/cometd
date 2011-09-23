@@ -652,9 +652,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
      */
     public ServerMessage.Mutable handle(ServerSessionImpl session, ServerMessage.Mutable message)
     {
-        final boolean debugEnabled = _logger.isDebugEnabled();
-        if (debugEnabled)
-            debug(">  {} {}", message, session);
+        debug(">  {} {}", message, session);
 
         ServerMessage.Mutable reply = null;
         if (!extendRecv(session, message) || session != null && !session.extendRecv(message))
@@ -664,8 +662,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
         else
         {
-            if (debugEnabled)
-                debug(">> {}", message);
+            debug(">> {}", message);
 
             String channelName = message.getChannel();
 
@@ -738,8 +735,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
         // Here the reply may be null if this instance is stopped concurrently
 
-        if (debugEnabled)
-            debug("<< {}", reply);
+        debug("<< {}", reply);
         return reply;
     }
 
