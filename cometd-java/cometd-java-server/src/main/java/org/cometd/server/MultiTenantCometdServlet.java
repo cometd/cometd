@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class MultiTenantCometdServlet extends CometdServlet
+public abstract class MultiTenantCometdServlet extends CometdServlet
 {
     private final static Logger LOG = Log.getLogger(MultiTenantCometdServlet.class);
     private final ConcurrentMap<String, BayeuxServerImpl> _bayeux= new ConcurrentHashMap<String, BayeuxServerImpl>();
@@ -47,7 +47,10 @@ public class MultiTenantCometdServlet extends CometdServlet
                 bayeux.start();
                 BayeuxServerImpl b=_bayeux.putIfAbsent(tenantId,bayeux);
                 if (b==null)
+                {
                     LOG.info("New tenant: "+tenantId);
+                    customise(bayeux);
+                }
                 else
                 {
                     bayeux.stop();
@@ -65,10 +68,9 @@ public class MultiTenantCometdServlet extends CometdServlet
         service(bayeux,request,response);
     }
 
-    protected String getTenantId(HttpServletRequest request)
-    {
-        return request.getLocalAddr().toString().replace('/','_');
-    }
+    abstract protected void customise(BayeuxServerImpl bayeux);
+
+    abstract protected String getTenantId(HttpServletRequest request);
 
     @Override
     public void destroy()
