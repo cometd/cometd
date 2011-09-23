@@ -11,6 +11,18 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Multi Tenant Cometd Servlet
+ * <p>
+ * This servlet creates multiple instances of the {@link BayeuxServerImpl} based on tenant ID's that 
+ * are obtained by passing the request to the abstract method {@link #getTenantId(HttpServletRequest)}.  
+ * The implementation of this method may determine a tenant ID by cookies, headers, target IP address, port, session 
+ * or any other HTTP mechanism available.
+ * <p>
+ * The first time a new tenantID is seen, a new {@link BayeuxServerImpl} instance is created and is passed 
+ * to the abstract method {@link #customise(BayeuxServerImpl)} so that services and extensions may be added.
+ *
+ */
 public abstract class MultiTenantCometdServlet extends CometdServlet
 {
     protected final Logger _logger = LoggerFactory.getLogger(getClass());
