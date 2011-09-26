@@ -323,9 +323,16 @@ public class OortObserveCometTest extends OortTest
         Assert.assertNotNull(oortCometAB3);
         Assert.assertSame(oortCometAB, oortCometAB3);
 
-        // Now disconnect with the original URL
-        OortComet oortCometAB4 = oortA.deobserveComet(urlB);
-        Assert.assertNotNull(oortCometAB4);
+        // Try with yet another URL
+        String anotherURLB = urlB.replace("localhost", "[::1]");
+        OortComet oortCometAB4 = oortA.observeComet(anotherURLB);
         Assert.assertTrue(oortCometAB4.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        OortComet oortCometAB5 = oortA.getComet(anotherURLB);
+        Assert.assertSame(oortCometAB, oortCometAB5);
+
+        // Now disconnect with the original URL
+        OortComet oortCometAB6 = oortA.deobserveComet(urlB);
+        Assert.assertNotNull(oortCometAB6);
+        Assert.assertTrue(oortCometAB6.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
 }

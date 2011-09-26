@@ -446,7 +446,7 @@ public class Oort extends AggregateLifeCycle
      *
      * @param oortExt the remote Oort information
      * @param session the server session that represent the connection with the remote Oort comet
-     * @return true if a connection to the remote Oort is made, false otherwise
+     * @return false if a connection to the remote Oort has already been established, true otherwise
      */
     protected boolean incomingCometHandshake(Map<String, Object> oortExt, ServerSession session)
     {
@@ -531,13 +531,20 @@ public class Oort extends AggregateLifeCycle
                 else
                 {
                     boolean connectedBack = incomingCometHandshake(Collections.unmodifiableMap(associatedOortExt), to);
+                    // Add the extension information
                     Map<String, Object> ext = message.getExt(true);
                     Map<String, Object> oortExt = new HashMap<String, Object>(2);
                     ext.put(EXT_OORT_FIELD, oortExt);
                     oortExt.put(EXT_OORT_URL_FIELD, getURL());
                     oortExt.put(EXT_OORT_ID_FIELD, getId());
                     if (!connectedBack)
+                    {
+                        // Even if we did not connect back (because the connection already exist)
+                        // the presence of the extension information will inform the client
+                        // that the connection "succeeded" from the Oort point of view, but
+                        // we add the advice information to drop it because it already exists.
                         disconnect(message);
+                    }
                 }
             }
 
