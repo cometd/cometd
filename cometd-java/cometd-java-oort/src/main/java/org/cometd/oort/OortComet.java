@@ -16,6 +16,8 @@
 
 package org.cometd.oort;
 
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -38,58 +40,14 @@ public class OortComet extends BayeuxClient
     private final String _cometURL;
     private volatile boolean _subscriptionsAllowed;
 
-    public OortComet(Oort oort, String cometUrl)
+    public OortComet(Oort oort, String cometURL)
     {
-        super(cometUrl,WebSocketTransport.create(null,oort.getWebSocketClientFactory()),LongPollingTransport.create(null, oort.getHttpClient()));
+        super(cometURL,WebSocketTransport.create(null,oort.getWebSocketClientFactory()),LongPollingTransport.create(null, oort.getHttpClient()));
         _oort = oort;
-        _cometURL = cometUrl;
+        _cometURL = cometURL;
         setDebugEnabled(oort.isClientDebugEnabled());
-
         // Add listener for handshake response
-        getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
-        {
-            public void onMessage(ClientSessionChannel channel, Message message)
-            {
-                if (message.isSuccessful())
-                {
-                    batch(new Runnable()
-                    {
-                        public void run()
-                        {
-                            // Subscribe to cloud notifications
-                            getChannel(Oort.OORT_CLOUD_CHANNEL).subscribe(new ClientSessionChannel.MessageListener()
-                            {
-                                public void onMessage(ClientSessionChannel channel, Message message)
-                                {
-                                    if (message.isSuccessful())
-                                        _oort.joinComets(_cometURL, message);
-                                }
-                            });
-
-                            // It is possible that a call to Oort.observeChannel() (which triggers
-                            // the call to subscribe()) is performed concurrently with the handshake
-                            // of this OortComet with a remote comet.
-                            // For example, Seti calls Oort.observeChannel() on startup and this may
-                            // be called while the Oort cloud is connecting all the comets together.
-                            // In this case, below we will clear existing subscriptions, but we will
-                            // subscribe them again just afterwards, ensuring only one subscriber
-                            // (and not multiple ones) is subscribed.
-                            clearSubscriptions();
-                            _subscriptionsAllowed = true;
-                            subscribe(_oort.getObservedChannels());
-
-                            getChannel(Oort.OORT_CLOUD_CHANNEL).publish(_oort.getKnownComets().toArray());
-                        }
-                    });
-
-                    _oort.getLogger().info("Connected to comet {} with {}/{}", new Object[]{_cometURL, message.getClientId(),getTransport()});
-                }
-                else
-                {
-                    _oort.getLogger().warn("Failed to connect to comet {}, message {}", _cometURL, message);
-                }
-            }
-        });
+        getChannel(Channel.META_HANDSHAKE).addListener(new HandshakeListener());
     }
 
     protected void subscribe(Set<String> observedChannels)
@@ -144,5 +102,52 @@ public class OortComet extends BayeuxClient
     public String toString()
     {
         return _cometURL + "@" + getId();
+    }
+
+    private class HandshakeListener implements ClientSessionChannel.MessageListener
+    {
+        public void onMessage(ClientSessionChannel channel, Message message)
+        {
+            if (!message.isSuccessful())
+                return;
+
+            Map<String,Object> ext = message.getExt();
+            if (ext == null)
+                return;
+
+            Object oortExtObject = ext.get(Oort.EXT_OORT_FIELD);
+            if (!(oortExtObject instanceof Map))
+                return;
+
+            batch(new Runnable()
+            {
+                public void run()
+                {
+                    // Subscribe to cloud notifications
+                    getChannel(Oort.OORT_CLOUD_CHANNEL).subscribe(new ClientSessionChannel.MessageListener()
+                    {
+                        public void onMessage(ClientSessionChannel channel, Message message)
+                        {
+                            if (message.isSuccessful())
+                                _oort.joinComets(message);
+                        }
+                    });
+
+                    // It is possible that a call to Oort.observeChannel() (which triggers
+                    // the call to subscribe()) is performed concurrently with the handshake
+                    // of this OortComet with a remote comet.
+                    // For example, Seti calls Oort.observeChannel() on startup and this may
+                    // be called while the Oort cloud is connecting all the comets together.
+                    // In this case, below we will clear existing subscriptions, but we will
+                    // subscribe them again just afterwards, ensuring only one subscriber
+                    // (and not multiple ones) is subscribed.
+                    clearSubscriptions();
+                    _subscriptionsAllowed = true;
+                    subscribe(_oort.getObservedChannels());
+
+                    getChannel(Oort.OORT_CLOUD_CHANNEL).publish(new ArrayList<String>(_oort.getKnownComets()));
+                }
+            });
+        }
     }
 }
