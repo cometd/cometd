@@ -21,12 +21,17 @@ To run the demonstration with Maven:
 then point your browser at http://localhost:8080
 
 Alternately you can deploy the CometD demo war into
-any servlet 2.5 or 3.0 server (eg jetty, tomcat, glassfish)
+any servlet 2.5 or 3.0 server (e.g. jetty, tomcat, glassfish)
 with commands like
 
     $ cp cometd-demo/target/cometd-demo/target/cometd-demo-*.war  $MY_SERVER/webapps/cometd.war
     cd $MY_SERVER
     <command to run my server>
+
+
+REPORTING BUGS
+
+Bugs and requests for enhancements should be filed at http://bugs.cometd.org
 
 
 BUILDING COMETD
@@ -41,12 +46,12 @@ LOAD TESTING
 
 To run load testing, open two windows. In the server window run:
 
-  $ cd cometd-java/cometd-java-client
+  $ cd cometd-java/cometd-java-examples
   $ mvn -Pserver exec:exec
 
 In the client window (potentially on another machine), run
 
-  $ cd cometd-java/cometd-java-client
+  $ cd cometd-java/cometd-java-examples
   $ mvn -Pclient exec:exec
 
 Then follow instructions on the console to generate load.
