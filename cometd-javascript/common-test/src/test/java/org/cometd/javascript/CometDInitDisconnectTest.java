@@ -16,6 +16,13 @@
 
 package org.cometd.javascript;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -52,5 +59,66 @@ public class CometDInitDisconnectTest extends AbstractCometDTest
         // Make sure there are no attempts to reconnect
         latch.reset(1);
         Assert.assertFalse(latch.await(longPollingPeriod * 3));
+    }
+
+    @Test
+    public void testHandshakeDisconnect() throws Exception
+    {
+        final CountDownLatch removeLatch = new CountDownLatch(1);
+        bayeuxServer.addExtension(new BayeuxServer.Extension()
+        {
+            public boolean rcv(ServerSession from, ServerMessage.Mutable message)
+            {
+                return true;
+            }
+
+            public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
+            {
+                return true;
+            }
+
+            public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
+            {
+                return true;
+            }
+
+            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
+            {
+                if (Channel.META_HANDSHAKE.equals(message.getChannel()))
+                {
+                    to.addListener(new ServerSession.RemoveListener()
+                    {
+                        public void removed(ServerSession session, boolean timeout)
+                        {
+                            removeLatch.countDown();
+                        }
+                    });
+                }
+                return true;
+            }
+        });
+
+        // Note that doing:
+        //
+        // cometd.handshake();
+        // cometd.disconnect();
+        //
+        // will not work, since the disconnect will need to pass to the server
+        // a clientId, which is not known since the handshake has not returned yet
+
+        defineClass(Latch.class);
+        evaluateScript("var disconnectLatch = new Latch(1);");
+        Latch disconnectLatch = get("disconnectLatch");
+        evaluateScript("" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
+                "cometd.addListener('/meta/handshake', function(message)" +
+                "{" +
+                "    if (message.successful)" +
+                "        cometd.disconnect();" +
+                "});" +
+                "cometd.addListener('/meta/disconnect', disconnectLatch, 'countDown');" +
+                "cometd.handshake();");
+        Assert.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(disconnectLatch.await(5000));
     }
 }
