@@ -76,8 +76,11 @@ public abstract class JettyJSONContext<T extends Message.Mutable>
         }
     }
 
+    @SuppressWarnings("unchecked")
     private T[] adapt(Object object)
     {
+        if (object == null)
+            return null;
         if (object.getClass().isArray())
             return (T[])object;
         T[] result = newRootArray(1);

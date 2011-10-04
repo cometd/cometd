@@ -19,6 +19,8 @@ package org.cometd.server.transport;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -168,6 +170,8 @@ public abstract class LongPollingTransport extends HttpTransport
             _browserSweep.put(browserId, new AtomicInteger(0));
         }
     }
+
+
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -477,14 +481,34 @@ public abstract class LongPollingTransport extends HttpTransport
         return writer;
     }
 
+    protected ServerMessage.Mutable[] parseMessages(String[] requestParameters) throws IOException, ParseException
+    {
+        if (requestParameters == null || requestParameters.length == 0)
+            throw new IOException("Missing '" + MESSAGE_PARAM + "' request parameter");
+
+        if (requestParameters.length == 1)
+            return parseMessages(requestParameters[0]);
+
+        List<ServerMessage.Mutable> messages = new ArrayList<ServerMessage.Mutable>();
+        for (String batch : requestParameters)
+        {
+            if (batch == null)
+                continue;
+            messages.addAll(Arrays.asList(parseMessages(batch)));
+        }
+        return messages.toArray(new ServerMessage.Mutable[messages.size()]);
+    }
+
+    protected abstract ServerMessage.Mutable[] parseMessages(HttpServletRequest request) throws IOException, ParseException;
+
     /**
      * @return true if the transport always flushes at the end of a call to {@link #handle(HttpServletRequest, HttpServletResponse)}.
      */
-    abstract protected boolean isAlwaysFlushingAfterHandle();
+    protected abstract boolean isAlwaysFlushingAfterHandle();
 
-    abstract protected PrintWriter send(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerMessage message) throws IOException;
+    protected abstract PrintWriter send(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerMessage message) throws IOException;
 
-    abstract protected void complete(PrintWriter writer) throws IOException;
+    protected abstract void complete(PrintWriter writer) throws IOException;
 
     private class LongPollScheduler implements AbstractServerTransport.OneTimeScheduler, ContinuationListener
     {

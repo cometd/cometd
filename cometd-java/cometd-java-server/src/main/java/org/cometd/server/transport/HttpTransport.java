@@ -19,8 +19,6 @@ package org.cometd.server.transport;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.Principal;
-import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -33,66 +31,28 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.cometd.bayeux.server.BayeuxContext;
-import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 
 /**
- * HTTP Transport base class.
- *
- * Used for transports that use HTTP for a transport or to initiate a transport connection.
- *
+ * <p>HTTP ServerTransport base class, used by ServerTransports that use
+ * HTTP as transport or to initiate a transport connection.</p>
  */
 public abstract class HttpTransport extends AbstractServerTransport
 {
-    public static final String JSON_DEBUG_OPTION="jsonDebug";
-    public static final String MESSAGE_PARAM="message";
+    public static final String JSON_DEBUG_OPTION = "jsonDebug";
+    public static final String MESSAGE_PARAM = "message";
 
     private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<HttpServletRequest>();
-    private boolean _jsonDebug = false;
 
-    protected HttpTransport(BayeuxServerImpl bayeux,String name)
+    protected HttpTransport(BayeuxServerImpl bayeux, String name)
     {
-        super(bayeux,name);
-    }
-
-    @Override
-    protected void init()
-    {
-        super.init();
-        _jsonDebug = getOption(JSON_DEBUG_OPTION, _jsonDebug);
+        super(bayeux, name);
     }
 
     public abstract boolean accept(HttpServletRequest request);
 
     public abstract void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
-
-    protected ServerMessage.Mutable[] parseMessages(HttpServletRequest request)
-            throws IOException, ParseException
-    {
-        String content_type=request.getContentType();
-
-        // Get message batches either as JSON body or as message parameters
-        if (content_type!=null && !content_type.startsWith("application/x-www-form-urlencoded"))
-            return parseMessages(request.getReader(), _jsonDebug);
-
-        String[] batches=request.getParameterValues(MESSAGE_PARAM);
-
-        if (batches == null || batches.length == 0)
-            return null;
-
-        if (batches.length == 1)
-            return parseMessages(batches[0]);
-
-        List<ServerMessage.Mutable> messages=new ArrayList<ServerMessage.Mutable>();
-        for (String batch : batches)
-        {
-            if (batch == null)
-                continue;
-            messages.addAll(Arrays.asList(parseMessages(batch)));
-        }
-        return messages.toArray(new ServerMessage.Mutable[messages.size()]);
-    }
 
     public void setCurrentRequest(HttpServletRequest request)
     {
@@ -107,7 +67,7 @@ public abstract class HttpTransport extends AbstractServerTransport
     public InetSocketAddress getCurrentLocalAddress()
     {
         BayeuxContext context = getContext();
-        if (context!=null)
+        if (context != null)
             return context.getLocalAddress();
         return null;
     }
@@ -115,15 +75,15 @@ public abstract class HttpTransport extends AbstractServerTransport
     public InetSocketAddress getCurrentRemoteAddress()
     {
         BayeuxContext context = getContext();
-        if (context!=null)
+        if (context != null)
             return context.getRemoteAddress();
         return null;
     }
 
     public BayeuxContext getContext()
     {
-        HttpServletRequest request=getCurrentRequest();
-        if (request!=null)
+        HttpServletRequest request = getCurrentRequest();
+        if (request != null)
             return new HttpContext(request);
         return null;
     }
@@ -134,7 +94,7 @@ public abstract class HttpTransport extends AbstractServerTransport
 
         HttpContext(HttpServletRequest request)
         {
-            _request=request;
+            _request = request;
         }
 
         public Principal getUserPrincipal()
@@ -149,20 +109,20 @@ public abstract class HttpTransport extends AbstractServerTransport
 
         public InetSocketAddress getRemoteAddress()
         {
-            return new InetSocketAddress(_request.getRemoteHost(),_request.getRemotePort());
+            return new InetSocketAddress(_request.getRemoteHost(), _request.getRemotePort());
         }
 
         public InetSocketAddress getLocalAddress()
         {
-            return new InetSocketAddress(_request.getLocalName(),_request.getLocalPort());
+            return new InetSocketAddress(_request.getLocalName(), _request.getLocalPort());
         }
-
 
         public String getHeader(String name)
         {
             return _request.getHeader(name);
         }
 
+        @SuppressWarnings("unchecked")
         public List<String> getHeaderValues(String name)
         {
             return Collections.list((Enumeration<String>)_request.getHeaders(name));
@@ -195,7 +155,7 @@ public abstract class HttpTransport extends AbstractServerTransport
         public String getHttpSessionId()
         {
             HttpSession session = _request.getSession(false);
-            if (session!=null)
+            if (session != null)
                 return session.getId();
             return null;
         }
@@ -203,7 +163,7 @@ public abstract class HttpTransport extends AbstractServerTransport
         public Object getHttpSessionAttribute(String name)
         {
             HttpSession session = _request.getSession(false);
-            if (session!=null)
+            if (session != null)
                 return session.getAttribute(name);
             return null;
         }
@@ -211,8 +171,8 @@ public abstract class HttpTransport extends AbstractServerTransport
         public void setHttpSessionAttribute(String name, Object value)
         {
             HttpSession session = _request.getSession(false);
-            if (session!=null)
-                session.setAttribute(name,value);
+            if (session != null)
+                session.setAttribute(name, value);
             else
                 throw new IllegalStateException("!session");
         }
@@ -220,7 +180,7 @@ public abstract class HttpTransport extends AbstractServerTransport
         public void invalidateHttpSession()
         {
             HttpSession session = _request.getSession(false);
-            if (session!=null)
+            if (session != null)
                 session.invalidate();
         }
 
@@ -232,13 +192,13 @@ public abstract class HttpTransport extends AbstractServerTransport
         private ServletContext getServletContext()
         {
             HttpSession s = _request.getSession(false);
-            if (s!=null)
+            if (s != null)
             {
                 return s.getServletContext();
             }
             else
             {
-                s=_request.getSession(true);
+                s = _request.getSession(true);
                 ServletContext servletContext = s.getServletContext();
                 s.invalidate();
                 return servletContext;
