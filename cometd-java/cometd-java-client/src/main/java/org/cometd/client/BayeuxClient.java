@@ -362,9 +362,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 message.putAll(bayeuxClientState.handshakeFields);
             message.setChannel(Channel.META_HANDSHAKE);
             List<ClientTransport> transports = transportRegistry.negotiate(getAllowedTransports().toArray(), BAYEUX_VERSION);
-            String[] transportNames = new String[transports.size()];
-            for (int i = 0; i < transportNames.length; ++i)
-                transportNames[i] = transports.get(i).getName();
+            List<String> transportNames = new ArrayList<String>(transports.size());
+            for (ClientTransport transport : transports)
+                transportNames.add(transport.getName());
             message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, transportNames);
             message.put(Message.VERSION_FIELD, BayeuxClient.BAYEUX_VERSION);
 

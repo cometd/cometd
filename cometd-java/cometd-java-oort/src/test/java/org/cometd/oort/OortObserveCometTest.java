@@ -256,6 +256,9 @@ public class OortObserveCometTest extends OortTest
         Assert.assertSame(oortCometAB, cometAB);
         Assert.assertTrue(cometAB.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
+        // Allow disconnections to happen
+        Thread.sleep(1000);
+
         // A is now only connected to C
         Assert.assertEquals(1, oortA.getKnownComets().size());
         Assert.assertTrue(oortA.getKnownComets().contains(oortC.getURL()));
@@ -266,5 +269,70 @@ public class OortObserveCometTest extends OortTest
         Assert.assertEquals(2, oortC.getKnownComets().size());
         Assert.assertTrue(oortC.getKnownComets().contains(oortA.getURL()));
         Assert.assertTrue(oortC.getKnownComets().contains(oortB.getURL()));
+    }
+
+    @Test
+    public void testObserveSameCometWithDifferentURL() throws Exception
+    {
+        Server serverA = startServer(0);
+        Oort oortA = startOort(serverA);
+        String urlA = oortA.getURL();
+        String urlAA = urlA.replace("localhost", "127.0.0.1");
+
+        OortComet oortCometAB = oortA.observeComet(urlAA);
+
+        Assert.assertTrue(oortCometAB.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+    }
+
+    @Test
+    public void testObserveDifferentCometWithDifferentURL() throws Exception
+    {
+        Server serverA = startServer(0);
+        Oort oortA = startOort(serverA);
+        Server serverB = startServer(0);
+        Oort oortB = startOort(serverB);
+
+        String urlB = oortB.getURL();
+        String otherURLB = urlB.replace("localhost", "127.0.0.1");
+
+        OortComet oortCometAB = oortA.observeComet(otherURLB);
+        Assert.assertTrue(oortCometAB.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Wait a while for the links to establish
+        Thread.sleep(1000);
+
+        Assert.assertEquals(1, oortB.getKnownComets().size());
+
+        OortComet oortCometBA = oortB.getComet(oortB.getKnownComets().iterator().next());
+        Assert.assertNotNull(oortCometBA);
+        Assert.assertTrue(oortCometBA.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Only master URLs are known
+        Assert.assertFalse(oortA.getKnownComets().contains(otherURLB));
+        Assert.assertTrue(oortA.getKnownComets().contains(urlB));
+        // But comets can be known with alias URLs
+        OortComet oortCometAB1 = oortA.getComet(urlB);
+        Assert.assertNotNull(oortCometAB1);
+        OortComet oortCometAB2 = oortA.getComet(otherURLB);
+        Assert.assertNotNull(oortCometAB2);
+        Assert.assertSame(oortCometAB, oortCometAB1);
+        Assert.assertSame(oortCometAB1, oortCometAB2);
+
+        // Now try with the original URL
+        OortComet oortCometAB3 = oortA.observeComet(urlB);
+        Assert.assertNotNull(oortCometAB3);
+        Assert.assertSame(oortCometAB, oortCometAB3);
+
+        // Try with yet another URL
+        String anotherURLB = urlB.replace("localhost", "[::1]");
+        OortComet oortCometAB4 = oortA.observeComet(anotherURLB);
+        Assert.assertTrue(oortCometAB4.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        OortComet oortCometAB5 = oortA.getComet(anotherURLB);
+        Assert.assertSame(oortCometAB, oortCometAB5);
+
+        // Now disconnect with the original URL
+        OortComet oortCometAB6 = oortA.deobserveComet(urlB);
+        Assert.assertNotNull(oortCometAB6);
+        Assert.assertTrue(oortCometAB6.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
 }

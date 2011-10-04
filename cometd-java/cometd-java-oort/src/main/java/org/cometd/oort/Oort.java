@@ -20,17 +20,21 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
@@ -72,18 +76,21 @@ public class Oort extends AggregateLifeCycle
     public final static String OORT_ATTRIBUTE = Oort.class.getName();
     public static final String EXT_OORT_FIELD = "org.cometd.oort";
     public static final String EXT_OORT_URL_FIELD = "oortURL";
+    public static final String EXT_OORT_ID_FIELD = "oortId";
     public static final String EXT_OORT_SECRET_FIELD = "oortSecret";
     public static final String EXT_COMET_URL_FIELD = "cometURL";
     public static final String OORT_CLOUD_CHANNEL = "/oort/cloud";
     private static final String COMET_URL_ATTRIBUTE = EXT_OORT_FIELD + "." + EXT_COMET_URL_FIELD;
 
-    private final ConcurrentMap<String, OortComet> _knownComets = new ConcurrentHashMap<String, OortComet>();
-    private final Map<String, ServerSession> _incomingComets = new ConcurrentHashMap<String, ServerSession>();
+    private final ConcurrentMap<String, OortComet> _pendingComets = new ConcurrentHashMap<String, OortComet>();
+    private final ConcurrentMap<String, ClientCometInfo> _clientComets = new ConcurrentHashMap<String, ClientCometInfo>();
+    private final ConcurrentMap<String, ServerCometInfo> _serverComets = new ConcurrentHashMap<String, ServerCometInfo>();
     private final ConcurrentMap<String, Boolean> _channels = new ConcurrentHashMap<String, Boolean>();
     private final Extension _oortExtension = new OortExtension();
-    private ServerChannel.MessageListener _cloudListener = new CloudListener();
+    private final ServerChannel.MessageListener _cloudListener = new CloudListener();
     private final BayeuxServer _bayeux;
     private final String _url;
+    private final String _id;
     private final Logger _logger;
     private final ThreadPool _threadPool;
     private final HttpClient _httpClient;
@@ -97,6 +104,7 @@ public class Oort extends AggregateLifeCycle
     {
         _bayeux = bayeux;
         _url = url;
+        _id = UUID.randomUUID().toString();
 
         _logger = LoggerFactory.getLogger(getClass().getName() + "-" + _url);
         _debug = String.valueOf(BayeuxServerImpl.DEBUG_LOG_LEVEL).equals(bayeux.getOption(BayeuxServerImpl.LOG_LEVEL));
@@ -124,7 +132,6 @@ public class Oort extends AggregateLifeCycle
             public void configureChannel(ConfigurableServerChannel channel)
             {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
-                _cloudListener = new CloudListener();
                 channel.addListener(_cloudListener);
             }
         });
@@ -137,11 +144,15 @@ public class Oort extends AggregateLifeCycle
     {
         _oortSession.disconnect();
 
-        for (OortComet comet : _knownComets.values())
+        for (OortComet comet : _pendingComets.values())
             comet.disconnect(1000);
+        _pendingComets.clear();
 
-        _knownComets.clear();
-        _incomingComets.clear();
+        for (ClientCometInfo cometInfo : _clientComets.values())
+            cometInfo.comet.disconnect(1000);
+        _clientComets.clear();
+
+        _serverComets.clear();
         _channels.clear();
 
         ServerChannel oortCloudChannel = _bayeux.getChannel(OORT_CLOUD_CHANNEL);
@@ -166,6 +177,11 @@ public class Oort extends AggregateLifeCycle
     public String getURL()
     {
         return _url;
+    }
+
+    public String getId()
+    {
+        return _id;
     }
 
     public String getSecret()
@@ -204,8 +220,8 @@ public class Oort extends AggregateLifeCycle
     public void setClientDebugEnabled(boolean clientDebugEnabled)
     {
         _clientDebug = clientDebugEnabled;
-        for (OortComet comet : _knownComets.values())
-            comet.setDebugEnabled(clientDebugEnabled);
+        for (ClientCometInfo cometInfo : _clientComets.values())
+            cometInfo.comet.setDebugEnabled(clientDebugEnabled);
     }
 
     /**
@@ -233,18 +249,31 @@ public class Oort extends AggregateLifeCycle
         if (_url.equals(cometURL))
             return null;
 
-        OortComet comet = newOortComet(cometURL);
-        OortComet existing = _knownComets.putIfAbsent(cometURL, comet);
+        OortComet comet = getComet(cometURL);
+        if (comet != null)
+        {
+            debug("Comet {} is already connected", cometURL);
+            return comet;
+        }
+
+        comet = newOortComet(cometURL);
+        OortComet existing = _pendingComets.putIfAbsent(cometURL, comet);
         if (existing != null)
+        {
+            debug("Comet {} is already connecting", cometURL);
             return existing;
+        }
+
+        comet.getChannel(Channel.META_HANDSHAKE).addListener(new HandshakeListener(cometURL, comet));
 
         debug("Connecting to comet {}", cometURL);
         String b64Secret = encodeSecret(getSecret());
         Message.Mutable fields = new HashMapMessage();
         Map<String, Object> ext = fields.getExt(true);
-        Map<String, Object> oortExt = new HashMap<String, Object>(3);
+        Map<String, Object> oortExt = new HashMap<String, Object>(4);
         ext.put(EXT_OORT_FIELD, oortExt);
         oortExt.put(EXT_OORT_URL_FIELD, getURL());
+        oortExt.put(EXT_OORT_ID_FIELD, getId());
         oortExt.put(EXT_OORT_SECRET_FIELD, b64Secret);
         oortExt.put(EXT_COMET_URL_FIELD, cometURL);
         connectComet(comet, fields);
@@ -279,29 +308,28 @@ public class Oort extends AggregateLifeCycle
         if (_url.equals(cometURL))
             return null;
 
-        OortComet comet = _knownComets.remove(cometURL);
+        OortComet comet = _pendingComets.remove(cometURL);
         if (comet != null)
         {
-            debug("Disconnecting from comet {}", cometURL);
+            debug("Disconnecting pending comet {}", cometURL);
             comet.disconnect();
         }
-        return comet;
-    }
 
-    /**
-     * <p>Callback method invoked when a comet joins this Oort instance and communicates
-     * the other comets linked to it, so that this Oort instance can connect to those
-     * comets as well.</p>
-     *
-     * @param comets the Oort server URLs to connect to
-     */
-    protected void cometsJoined(Set<String> comets)
-    {
-        for (String comet : comets)
+        Iterator<ClientCometInfo> cometInfos = _clientComets.values().iterator();
+        while (cometInfos.hasNext())
         {
-            if (!_url.equals(comet) && !_knownComets.containsKey(comet))
-                observeComet(comet);
+            ClientCometInfo cometInfo = cometInfos.next();
+            if (cometInfo.matchesURL(cometURL))
+            {
+                debug("Disconnecting comet {}", cometURL);
+                comet = cometInfo.getOortComet();
+                comet.disconnect();
+                cometInfos.remove();
+                break;
+            }
         }
+
+        return comet;
     }
 
     /**
@@ -309,7 +337,10 @@ public class Oort extends AggregateLifeCycle
      */
     public Set<String> getKnownComets()
     {
-        return new HashSet<String>(_knownComets.keySet());
+        Set<String> result = new HashSet<String>();
+        for (ClientCometInfo cometInfo : _clientComets.values())
+            result.add(cometInfo.getURL());
+        return result;
     }
 
     /**
@@ -318,7 +349,12 @@ public class Oort extends AggregateLifeCycle
      */
     public OortComet getComet(String cometURL)
     {
-        return _knownComets.get(cometURL);
+        for (ClientCometInfo cometInfo : _clientComets.values())
+        {
+            if (cometInfo.matchesURL(cometURL))
+                return cometInfo.getOortComet();
+        }
+        return null;
     }
 
     /**
@@ -333,15 +369,14 @@ public class Oort extends AggregateLifeCycle
      */
     public void observeChannel(String channelName)
     {
-        ChannelId channelId = new ChannelId(channelName);
-        if (channelId.isMeta() || channelId.isService())
+        if (!ChannelId.isBroadcast(channelName))
             throw new IllegalArgumentException("Channel " + channelName + " cannot be observed because is not a broadcast channel");
 
         if (_channels.putIfAbsent(channelName, Boolean.TRUE) == null)
         {
             Set<String> observedChannels = getObservedChannels();
-            for (OortComet comet : _knownComets.values())
-                comet.subscribe(observedChannels);
+            for (ClientCometInfo cometInfo : _clientComets.values())
+                cometInfo.getOortComet().subscribe(observedChannels);
         }
     }
 
@@ -349,8 +384,8 @@ public class Oort extends AggregateLifeCycle
     {
         if (_channels.remove(channelId) != null)
         {
-            for (OortComet comet : _knownComets.values())
-                comet.unsubscribe(channelId);
+            for (ClientCometInfo cometInfo : _clientComets.values())
+                cometInfo.getOortComet().unsubscribe(channelId);
         }
     }
 
@@ -366,12 +401,9 @@ public class Oort extends AggregateLifeCycle
         if (id.equals(_oortSession.getId()))
             return true;
 
-        if (_incomingComets.containsKey(id))
-            return true;
-
-        for (OortComet oc : _knownComets.values())
+        for (ServerCometInfo cometInfo : _serverComets.values())
         {
-            if (id.equals(oc.getId()))
+            if (cometInfo.getServerSession().getId().equals(session.getId()))
                 return true;
         }
 
@@ -412,36 +444,41 @@ public class Oort extends AggregateLifeCycle
     /**
      * <p>Called to register the details of a successful handshake from another Oort comet.</p>
      *
-     * @param cometURL the remote Oort URL
-     * @param cometSecret the remote Oort secret
+     * @param oortExt the remote Oort information
      * @param session the server session that represent the connection with the remote Oort comet
+     * @return false if a connection to the remote Oort has already been established, true otherwise
      */
-    protected void incomingCometHandshake(String cometURL, String cometSecret, ServerSession session)
+    protected boolean incomingCometHandshake(Map<String, Object> oortExt, ServerSession session)
     {
-        debug("Incoming comet handshake from comet {} with {}", cometURL, session.getId());
-        if (!_knownComets.containsKey(cometURL))
+        String remoteOortURL = (String)oortExt.get(EXT_OORT_URL_FIELD);
+        debug("Incoming comet handshake from comet {} with {}", remoteOortURL, session.getId());
+
+        String remoteOortId = (String)oortExt.get(EXT_OORT_ID_FIELD);
+        ServerCometInfo serverCometInfo = new ServerCometInfo(remoteOortId, remoteOortURL, session);
+        ServerCometInfo existing = _serverComets.put(remoteOortId, serverCometInfo);
+        if (existing != null)
         {
-            debug("Comet {} is unknown, establishing connection", cometURL);
-            observeComet(cometURL);
-        }
-        else
-        {
-            debug("Comet {} is already known", cometURL);
+            debug("Comet {} is already known (as {})", remoteOortURL, existing.getURL());
+            return false;
         }
 
-        session.setAttribute(COMET_URL_ATTRIBUTE, cometURL);
-        _incomingComets.put(session.getId(), session);
+        debug("Comet {} is unknown, establishing connection", remoteOortURL);
+        observeComet(remoteOortURL);
+
+        session.setAttribute(COMET_URL_ATTRIBUTE, remoteOortURL);
 
         // Be notified when the remote comet stops
-        session.addListener(new OortCometDisconnectListener(cometURL));
+        session.addListener(new OortCometDisconnectListener(remoteOortURL, remoteOortId));
         // Prevent loops in sending/receiving messages
         session.addListener(new OortCometLoopListener());
+
+        return true;
     }
 
     /**
      * <p>Extension that detects incoming handshakes from other Oort servers.</p>
      *
-     * @see Oort#incomingCometHandshake(String, String, ServerSession)
+     * @see Oort#incomingCometHandshake(Map, ServerSession)
      */
     protected class OortExtension implements Extension
     {
@@ -463,40 +500,71 @@ public class Oort extends AggregateLifeCycle
         public boolean sendMeta(ServerSession to, Mutable message)
         {
             // Skip local sessions
-            if (to != null && Channel.META_HANDSHAKE.equals(message.getChannel()) && message.isSuccessful())
+            if (to == null)
+                return true;
+
+            if (!Channel.META_HANDSHAKE.equals(message.getChannel()))
+                return true;
+
+            // Process only successful responses
+            if (!message.isSuccessful())
+                return true;
+
+            Map<String, Object> associatedExt = message.getAssociated().getExt();
+            if (associatedExt == null)
+                return true;
+
+            Object associatedOortExtObject = associatedExt.get(EXT_OORT_FIELD);
+            if (associatedOortExtObject instanceof Map)
             {
-                Map<String, Object> ext = message.getAssociated().getExt();
-                if (ext != null)
+                @SuppressWarnings("unchecked")
+                Map<String, Object> associatedOortExt = (Map<String, Object>)associatedOortExtObject;
+                String remoteOortURL = (String)associatedOortExt.get(EXT_OORT_URL_FIELD);
+                String cometURL = (String)associatedOortExt.get(EXT_COMET_URL_FIELD);
+                String remoteOortId = (String)associatedOortExt.get(EXT_OORT_ID_FIELD);
+                if (_id.equals(remoteOortId))
                 {
-                    Object oortExtObject = ext.get(EXT_OORT_FIELD);
-                    if (oortExtObject instanceof Map)
+                    // Connecting to myself: disconnect
+                    _logger.warn("Detected self connect from {} to {}, disconnecting", remoteOortURL, cometURL);
+                    disconnect(message);
+                }
+                else
+                {
+                    boolean connectedBack = incomingCometHandshake(Collections.unmodifiableMap(associatedOortExt), to);
+                    // Add the extension information
+                    Map<String, Object> ext = message.getExt(true);
+                    Map<String, Object> oortExt = new HashMap<String, Object>(2);
+                    ext.put(EXT_OORT_FIELD, oortExt);
+                    oortExt.put(EXT_OORT_URL_FIELD, getURL());
+                    oortExt.put(EXT_OORT_ID_FIELD, getId());
+                    if (!connectedBack)
                     {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> oortExt = (Map<String, Object>)oortExtObject;
-                        String cometURL = (String)oortExt.get(EXT_COMET_URL_FIELD);
-                        if (getURL().equals(cometURL))
-                        {
-                            // Read incoming information
-                            String remoteOortURL = (String)oortExt.get(EXT_OORT_URL_FIELD);
-                            String remoteOortSecret = (String)oortExt.get(EXT_OORT_SECRET_FIELD);
-                            incomingCometHandshake(remoteOortURL, remoteOortSecret, to);
-                        }
+                        // Even if we did not connect back (because the connection already exist)
+                        // the presence of the extension information will inform the client
+                        // that the connection "succeeded" from the Oort point of view, but
+                        // we add the advice information to drop it because it already exists.
+                        disconnect(message);
                     }
                 }
             }
+
             return true;
+        }
+
+        private void disconnect(Mutable message)
+        {
+            message.setSuccessful(false);
+            Map<String, Object> advice = message.getAdvice(true);
+            advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
         }
     }
 
-    protected void joinComets(String cometURL, Message message)
+    protected void joinComets(Message message)
     {
         Object data = message.getData();
         Object[] array = data instanceof List ? ((List)data).toArray() : (Object[])data;
-        Set<String> comets = new HashSet<String>();
-        for (Object o : array)
-            comets.add(o.toString());
-        debug("Received comets {} from {}", comets, cometURL);
-        cometsJoined(comets);
+        for (Object element : array)
+            observeComet((String)element);
     }
 
     /**
@@ -508,13 +576,10 @@ public class Oort extends AggregateLifeCycle
      */
     protected class CloudListener implements ServerChannel.MessageListener
     {
-        public boolean onMessage(ServerSession from, ServerChannel channel, Mutable msg)
+        public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
         {
             if (!from.isLocalSession())
-            {
-                String cometURL = (String)from.getAttribute(COMET_URL_ATTRIBUTE);
-                joinComets(cometURL, msg);
-            }
+                joinComets(message);
             return true;
         }
     }
@@ -559,21 +624,32 @@ public class Oort extends AggregateLifeCycle
     private class OortCometDisconnectListener implements ServerSession.RemoveListener
     {
         private final String cometURL;
+        private final String remoteOortId;
 
-        public OortCometDisconnectListener(String cometURL)
+        public OortCometDisconnectListener(String cometURL, String remoteOortId)
         {
             this.cometURL = cometURL;
+            this.remoteOortId = remoteOortId;
         }
 
         public void removed(ServerSession session, boolean timeout)
         {
-            ServerSession removed = _incomingComets.remove(session.getId());
-            if (removed != null)
+            Iterator<ServerCometInfo> cometInfos = _serverComets.values().iterator();
+            while (cometInfos.hasNext())
             {
-                _logger.info("Disconnected from comet {} with session {}", cometURL, removed);
-                OortComet oortComet = _knownComets.remove(cometURL);
-                if (oortComet != null)
-                    oortComet.disconnect();
+                ServerCometInfo serverCometInfo = cometInfos.next();
+                if (serverCometInfo.getServerSession().getId().equals(session.getId()))
+                {
+                    _logger.info("Disconnected from comet {} with session {}", cometURL, session);
+                    assert remoteOortId.equals(serverCometInfo.getId());
+                    cometInfos.remove();
+
+                    ClientCometInfo clientCometInfo = _clientComets.remove(remoteOortId);
+                    if (clientCometInfo != null)
+                        clientCometInfo.getOortComet().disconnect();
+
+                    break;
+                }
             }
         }
     }
@@ -590,6 +666,125 @@ public class Oort extends AggregateLifeCycle
             }
             debug("{} --> {} {}", from, to, message);
             return true;
+        }
+    }
+
+    protected static abstract class CometInfo
+    {
+        private final String id;
+        private final String url;
+
+        protected CometInfo(String id, String url)
+        {
+            this.id = id;
+            this.url = url;
+        }
+
+        public String getId()
+        {
+            return id;
+        }
+
+        public String getURL()
+        {
+            return url;
+        }
+    }
+
+    protected static class ServerCometInfo extends CometInfo
+    {
+        private final ServerSession session;
+
+        protected ServerCometInfo(String id, String url, ServerSession session)
+        {
+            super(id, url);
+            this.session = session;
+        }
+
+        public ServerSession getServerSession()
+        {
+            return session;
+        }
+    }
+
+    protected static class ClientCometInfo extends CometInfo
+    {
+        private final OortComet comet;
+        private final Map<String, Boolean> urls = new ConcurrentHashMap<String, Boolean>();
+
+        protected ClientCometInfo(String id, String url, OortComet comet)
+        {
+            super(id, url);
+            this.comet = comet;
+        }
+
+        public OortComet getOortComet()
+        {
+            return comet;
+        }
+
+        public void addAliasURL(String url)
+        {
+            urls.put(url, Boolean.TRUE);
+        }
+
+        public boolean matchesURL(String url)
+        {
+            return getURL().equals(url) || urls.containsKey(url);
+        }
+    }
+
+    private class HandshakeListener implements ClientSessionChannel.MessageListener
+    {
+        private final String cometURL;
+        private final OortComet oortComet;
+
+        private HandshakeListener(String cometURL, OortComet oortComet)
+        {
+            this.cometURL = cometURL;
+            this.oortComet = oortComet;
+        }
+
+        public void onMessage(ClientSessionChannel channel, Message message)
+        {
+            OortComet comet = _pendingComets.remove(cometURL);
+            if (comet != null)
+            {
+                if (!message.isSuccessful())
+                {
+                    getLogger().warn("Failed to connect to comet {}, message {}", cometURL, message);
+                    Map<String, Object> advice = message.getAdvice();
+                    if (advice != null && Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)))
+                    {
+                        debug("Disconnecting pending comet {}", cometURL);
+                        comet.disconnect();
+                    }
+                }
+            }
+
+            Map<String,Object> ext = message.getExt();
+            if (ext == null)
+                return;
+
+            Object oortExtObject = ext.get(Oort.EXT_OORT_FIELD);
+            if (!(oortExtObject instanceof Map))
+                return;
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> oortExt = (Map<String, Object>)oortExtObject;
+            String url = (String)oortExt.get(Oort.EXT_OORT_URL_FIELD);
+            String id = (String)oortExt.get(Oort.EXT_OORT_ID_FIELD);
+
+            ClientCometInfo cometInfo = new ClientCometInfo(id, url, oortComet);
+            ClientCometInfo existing = _clientComets.putIfAbsent(id, cometInfo);
+            if (existing != null)
+                cometInfo = existing;
+
+            if (!cometURL.equals(url))
+                cometInfo.addAliasURL(cometURL);
+
+            if (message.isSuccessful())
+                getLogger().info("Connected to comet {} as {} with {}/{}", new Object[]{url, cometURL, message.getClientId(), oortComet.getTransport()});
         }
     }
 }
