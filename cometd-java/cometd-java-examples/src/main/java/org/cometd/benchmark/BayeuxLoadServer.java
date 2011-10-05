@@ -491,10 +491,9 @@ public class BayeuxLoadServer
                 long[] latencyBucketFrequencies = new long[20];
                 long minLatency = this.minLatency.get();
                 long latencyRange = maxLatency.get() - minLatency;
-                for (Iterator<Map.Entry<Long, AtomicLong>> entries = sortedLatencies.entrySet().iterator(); entries.hasNext(); )
+                for (Iterator<Map.Entry<Long, AtomicLong>> entries = sortedLatencies.entrySet().iterator(); entries.hasNext();)
                 {
                     Map.Entry<Long, AtomicLong> entry = entries.next();
-                    entries.remove();
                     long latency = entry.getKey();
                     Long bucketIndex = latencyRange == 0 ? 0 : (latency - minLatency) * latencyBucketFrequencies.length / latencyRange;
                     int index = bucketIndex.intValue() == latencyBucketFrequencies.length ? latencyBucketFrequencies.length - 1 : bucketIndex.intValue();
@@ -508,6 +507,7 @@ public class BayeuxLoadServer
                     if (latencyAt99thPercentile == 0 && requests > requestCount - requestCount / 100)
                         latencyAt99thPercentile = (previousLatency + latency) / 2;
                     previousLatency = latency;
+                    entries.remove();
                 }
 
                 System.err.println("Requests - Latency Distribution Curve (X axis: Frequency, Y axis: Latency):");

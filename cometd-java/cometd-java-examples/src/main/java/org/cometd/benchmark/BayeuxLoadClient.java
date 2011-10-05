@@ -536,7 +536,6 @@ public class BayeuxLoadClient
             for (Iterator<Map.Entry<Long, AtomicLong>> entries = sortedWallLatencies.entrySet().iterator(); entries.hasNext();)
             {
                 Map.Entry<Long, AtomicLong> entry = entries.next();
-                entries.remove();
                 long latency = entry.getKey();
                 Long bucketIndex = latencyRange == 0 ? 0 : (latency - minWallLatency) * latencyBucketFrequencies.length / latencyRange;
                 int index = bucketIndex.intValue() == latencyBucketFrequencies.length ? latencyBucketFrequencies.length - 1 : bucketIndex.intValue();
@@ -550,6 +549,7 @@ public class BayeuxLoadClient
                 if (latencyAt99thPercentile == 0 && messages > messageCount - messageCount / 100)
                     latencyAt99thPercentile = (previousLatency + latency) / 2;
                 previousLatency = latency;
+                entries.remove();
             }
 
             if (messages != messageCount)
