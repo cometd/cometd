@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.util.concurrent.TimeUnit;
 
+import org.cometd.client.BayeuxClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,7 +123,8 @@ public class OortMulticastConfigurer
         if (!oort.getKnownComets().contains(cometURL))
         {
             logger.debug("Received comet URL via multicast: {}", cometURL);
-            oort.observeComet(cometURL);
+            OortComet oortComet = oort.observeComet(cometURL);
+            oortComet.waitFor(1000, BayeuxClient.State.CONNECTED, BayeuxClient.State.DISCONNECTED);
         }
     }
 

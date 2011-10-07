@@ -53,7 +53,7 @@ public class OortStaticConfigServlet extends OortConfigServlet
                 if (comet.length() > 0)
                 {
                     OortComet oortComet = oort.observeComet(comet);
-                    oortComet.waitFor(1000, BayeuxClient.State.CONNECTED);
+                    oortComet.waitFor(1000, BayeuxClient.State.CONNECTED, BayeuxClient.State.DISCONNECTED);
                 }
             }
         }
