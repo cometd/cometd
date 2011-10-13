@@ -79,6 +79,7 @@ public class Oort extends AggregateLifeCycle
     public static final String EXT_OORT_ID_FIELD = "oortId";
     public static final String EXT_OORT_SECRET_FIELD = "oortSecret";
     public static final String EXT_COMET_URL_FIELD = "cometURL";
+    public static final String EXT_OORT_ALIAS_URL_FIELD = "oortAliasURL";
     public static final String OORT_CLOUD_CHANNEL = "/oort/cloud";
     private static final String COMET_URL_ATTRIBUTE = EXT_OORT_FIELD + "." + EXT_COMET_URL_FIELD;
 
@@ -233,6 +234,11 @@ public class Oort extends AggregateLifeCycle
      */
     public OortComet observeComet(String cometURL)
     {
+        return observeComet(cometURL, null);
+    }
+
+    protected OortComet observeComet(String cometURL, String cometAliasURL)
+    {
         try
         {
             URI uri = new URI(cometURL);
@@ -276,6 +282,8 @@ public class Oort extends AggregateLifeCycle
         oortExt.put(EXT_OORT_ID_FIELD, getId());
         oortExt.put(EXT_OORT_SECRET_FIELD, b64Secret);
         oortExt.put(EXT_COMET_URL_FIELD, cometURL);
+        if (cometAliasURL != null)
+            oortExt.put(EXT_OORT_ALIAS_URL_FIELD, cometAliasURL);
         connectComet(comet, fields);
         return comet;
     }
@@ -446,24 +454,21 @@ public class Oort extends AggregateLifeCycle
      *
      * @param oortExt the remote Oort information
      * @param session the server session that represent the connection with the remote Oort comet
-     * @return false if a connection to the remote Oort has already been established, true otherwise
+     * @return false if a connection from a remote Oort has already been established, true otherwise
      */
     protected boolean incomingCometHandshake(Map<String, Object> oortExt, ServerSession session)
     {
         String remoteOortURL = (String)oortExt.get(EXT_OORT_URL_FIELD);
-        debug("Incoming comet handshake from comet {} with {}", remoteOortURL, session.getId());
+        debug("Incoming comet handshake from comet {} with {}", remoteOortURL, session);
 
         String remoteOortId = (String)oortExt.get(EXT_OORT_ID_FIELD);
         ServerCometInfo serverCometInfo = new ServerCometInfo(remoteOortId, remoteOortURL, session);
-        ServerCometInfo existing = _serverComets.put(remoteOortId, serverCometInfo);
+        ServerCometInfo existing = _serverComets.putIfAbsent(remoteOortId, serverCometInfo);
         if (existing != null)
         {
-            debug("Comet {} is already known (as {})", remoteOortURL, existing.getURL());
+            debug("Comet {} is already known with {}", remoteOortURL, existing.getServerSession());
             return false;
         }
-
-        debug("Comet {} is unknown, establishing connection", remoteOortURL);
-        observeComet(remoteOortURL);
 
         session.setAttribute(COMET_URL_ATTRIBUTE, remoteOortURL);
 
@@ -530,19 +535,34 @@ public class Oort extends AggregateLifeCycle
                 }
                 else
                 {
-                    boolean connectedBack = incomingCometHandshake(Collections.unmodifiableMap(associatedOortExt), to);
-                    // Add the extension information
+                    // Add the extension information even in case we're then disconnecting.
+                    // The presence of the extension information will inform the client
+                    // that the connection "succeeded" from the Oort point of view, but
+                    // we add the advice information to drop it because if it already exists.
                     Map<String, Object> ext = message.getExt(true);
                     Map<String, Object> oortExt = new HashMap<String, Object>(2);
                     ext.put(EXT_OORT_FIELD, oortExt);
                     oortExt.put(EXT_OORT_URL_FIELD, getURL());
                     oortExt.put(EXT_OORT_ID_FIELD, getId());
-                    if (!connectedBack)
+
+                    boolean connectBack = incomingCometHandshake(Collections.unmodifiableMap(associatedOortExt), to);
+                    if (connectBack)
                     {
-                        // Even if we did not connect back (because the connection already exist)
-                        // the presence of the extension information will inform the client
-                        // that the connection "succeeded" from the Oort point of view, but
-                        // we add the advice information to drop it because it already exists.
+                        String cometAliasURL = (String)associatedOortExt.get(EXT_OORT_ALIAS_URL_FIELD);
+                        if (cometAliasURL != null && _pendingComets.containsKey(cometAliasURL))
+                        {
+                            // We are connecting to a comet that it is connecting back to us
+                            // so there is not need to connect back again (just to be disconnected)
+                            debug("Comet {} is pending with alias {}, avoiding to establish connection", remoteOortURL, cometAliasURL);
+                        }
+                        else
+                        {
+                            debug("Comet {} is unknown, establishing connection", remoteOortURL);
+                            observeComet(remoteOortURL, cometURL);
+                        }
+                    }
+                    else
+                    {
                         disconnect(message);
                     }
                 }
@@ -781,7 +801,10 @@ public class Oort extends AggregateLifeCycle
                 cometInfo = existing;
 
             if (!cometURL.equals(url))
+            {
                 cometInfo.addAliasURL(cometURL);
+                debug("Adding alias to {}: {}", url, cometURL);
+            }
 
             if (message.isSuccessful())
                 getLogger().info("Connected to comet {} as {} with {}/{}", new Object[]{url, cometURL, message.getClientId(), oortComet.getTransport()});
