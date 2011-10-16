@@ -148,8 +148,7 @@ public class ChannelId
      */
     public boolean isMeta()
     {
-        resolve();
-        return _segments.length > 0 && "meta".equals(_segments[0]);
+        return isMeta(_id);
     }
 
     /**
@@ -159,8 +158,7 @@ public class ChannelId
      */
     public boolean isService()
     {
-        resolve();
-        return _segments.length > 0 && "service".equals(_segments[0]);
+        return isService(_id);
     }
 
     /**
@@ -168,7 +166,7 @@ public class ChannelId
      */
     public boolean isBroadcast()
     {
-        return !isMeta() && !isService();
+        return isBroadcast(_id);
     }
 
     @Override
