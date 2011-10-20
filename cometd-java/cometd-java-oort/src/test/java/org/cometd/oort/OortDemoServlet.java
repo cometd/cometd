@@ -30,8 +30,9 @@ import org.cometd.server.ext.TimesyncExtension;
 
 public class OortDemoServlet implements Servlet
 {
-    ServletConfig _config;
-
+    private ServletConfig _config;
+    private ServerAnnotationProcessor _processor;
+    private OortChatService _service;
 
     public String getServletInfo()
     {
@@ -45,14 +46,17 @@ public class OortDemoServlet implements Servlet
 
     public void init(ServletConfig config) throws ServletException
     {
-        _config=config;
+        _config = config;
 
-        ServletContext context=config.getServletContext();
+        ServletContext context = config.getServletContext();
 
         BayeuxServer bayeux = (BayeuxServer)context.getAttribute(BayeuxServer.ATTRIBUTE);
+        Oort oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
+        Seti seti = (Seti)context.getAttribute(Seti.SETI_ATTRIBUTE);
 
-        ServerAnnotationProcessor processor = new ServerAnnotationProcessor(bayeux);
-        processor.process(new OortChatService(context));
+        _processor = new ServerAnnotationProcessor(bayeux, oort, seti);
+        _service = new OortChatService();
+        _processor.process(_service);
 
         bayeux.addExtension(new TimesyncExtension());
     }
@@ -64,6 +68,6 @@ public class OortDemoServlet implements Servlet
 
     public void destroy()
     {
+        _processor.deprocess(_service);
     }
-
 }

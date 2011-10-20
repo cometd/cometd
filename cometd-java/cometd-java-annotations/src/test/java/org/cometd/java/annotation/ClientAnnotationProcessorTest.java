@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.inject.Inject;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -45,6 +46,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class ClientAnnotationProcessorTest
@@ -351,5 +353,32 @@ public class ClientAnnotationProcessorTest
         messageLatch.set(new CountDownLatch(1));
         bayeuxClient.getChannel("/foo").publish(new HashMap());
         assertFalse(messageLatch.get().await(1000, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testInjectables() throws Exception
+    {
+        class I
+        {
+        }
+
+        class II extends I
+        {
+        }
+
+        @Service
+        class S
+        {
+            @Inject
+            private I i;
+        }
+
+        I i = new II();
+        S s = new S();
+        processor = new ClientAnnotationProcessor(bayeuxClient, i);
+        boolean processed = processor.process(s);
+        assertTrue(processed);
+
+        assertSame(i, s.i);
     }
 }

@@ -19,6 +19,7 @@ package org.cometd.java.annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -61,12 +62,18 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
     private final ConcurrentMap<Object, List<ListenerCallback>> listeners = new ConcurrentHashMap<Object, List<ListenerCallback>>();
     private final ConcurrentMap<Object, List<SubscriptionCallback>> subscribers = new ConcurrentHashMap<Object, List<SubscriptionCallback>>();
     private final ClientSession clientSession;
+    private final Object[] injectables;
 
     public ClientAnnotationProcessor(ClientSession clientSession)
     {
-        this.clientSession = clientSession;
+        this(clientSession, new Object[0]);
     }
 
+    public ClientAnnotationProcessor(ClientSession clientSession, Object... injectables)
+    {
+        this.clientSession = clientSession;
+        this.injectables = injectables;
+    }
     /**
      * Processes dependencies annotated with {@link Session}, and callbacks
      * annotated with {@link Listener} and {@link Subscription}.
@@ -155,13 +162,15 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
         if (serviceAnnotation == null)
             return false;
 
-        return processSession(bean, clientSession);
+        boolean result = processInjectables(bean, Arrays.asList(injectables));
+        result |= processSession(bean, clientSession);
+        return result;
     }
 
     private boolean processSession(Object bean, ClientSession clientSession)
     {
         boolean result = false;
-        for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
+        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
         {
             Field[] fields = c.getDeclaredFields();
             for (Field field : fields)
@@ -201,7 +210,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
     private boolean processListener(Object bean)
     {
         boolean result = false;
-        for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
+        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
         {
             Method[] methods = c.getDeclaredMethods();
             for (Method method : methods)
@@ -255,7 +264,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
     private boolean processSubscription(Object bean)
     {
         boolean result = false;
-        for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
+        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
         {
             Method[] methods = c.getDeclaredMethods();
             for (Method method : methods)
