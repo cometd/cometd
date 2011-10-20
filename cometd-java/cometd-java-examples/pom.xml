@@ -59,7 +59,7 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <configuration>
-                            <executable>java</executable>
+                            <executable>/home/simon/programs/jdk7/bin/java</executable>
                             <arguments>
                                 <argument>-showversion</argument>
                                 <argument>-Xmx2g</argument>
@@ -67,9 +67,7 @@
                                 <argument>-Xmn1g</argument>
                                 <argument>-XX:+PrintCommandLineFlags</argument>
                                 <argument>-XX:-UseSplitVerifier</argument>
-                                <argument>-verbose:gc</argument>
-                                <!--<argument>-XX:+PrintGCDetails</argument>-->
-                                <!--<argument>-XX:+PrintGCDateStamps</argument>-->
+                                <argument>-XX:+PrintGCDetails</argument>
                                 <argument>-XX:+UseParallelOldGC</argument>
                                 <argument>-XX:-UseAdaptiveSizePolicy</argument>
                                 <argument>-XX:+UseNUMA</argument>
@@ -106,7 +104,7 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <configuration>
-                            <executable>java</executable>
+                            <executable>/home/simon/programs/jdk7/bin/java</executable>
                             <arguments>
                                 <argument>-showversion</argument>
                                 <argument>-Xmx2g</argument>
@@ -114,9 +112,7 @@
                                 <argument>-Xmn1g</argument>
                                 <argument>-XX:+PrintCommandLineFlags</argument>
                                 <argument>-XX:-UseSplitVerifier</argument>
-                                <argument>-verbose:gc</argument>
-                                <!--<argument>-XX:+PrintGCDetails</argument>-->
-                                <!--<argument>-XX:+PrintGCDateStamps</argument>-->
+                                <argument>-XX:+PrintGCDetails</argument>
                                 <argument>-XX:+UseParallelOldGC</argument>
                                 <argument>-XX:-UseAdaptiveSizePolicy</argument>
                                 <argument>-XX:+UseNUMA</argument>
