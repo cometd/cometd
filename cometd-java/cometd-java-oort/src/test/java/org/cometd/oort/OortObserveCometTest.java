@@ -335,4 +335,49 @@ public class OortObserveCometTest extends OortTest
         Assert.assertNotNull(oortCometAB6);
         Assert.assertTrue(oortCometAB6.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
+
+    @Test
+    public void testSingleCometsJoinsTheCloud() throws Exception
+    {
+        Server serverA = startServer(0);
+        Oort oortA = startOort(serverA);
+        Server serverB = startServer(0);
+        Oort oortB = startOort(serverB);
+        Server serverC = startServer(0);
+        Oort oortC = startOort(serverC);
+        Server serverD = startServer(0);
+        Oort oortD = startOort(serverD);
+
+        // Make a "cloud" connecting A and B
+        OortComet oortCometAB = oortA.observeComet(oortB.getURL());
+        Assert.assertTrue(oortCometAB.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Wait a while for the links to establish
+        Thread.sleep(1000);
+
+        // Now C want to join the cloud, and connects to B
+        OortComet oortCometCB = oortC.observeComet(oortB.getURL());
+        Assert.assertTrue(oortCometCB.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Wait a while for the links to establish
+        Thread.sleep(1000);
+
+        // Make sure C is connected to B also
+        Assert.assertEquals(2, oortA.getKnownComets().size());
+        Assert.assertEquals(2, oortB.getKnownComets().size());
+        Assert.assertEquals(2, oortC.getKnownComets().size());
+
+        // Now also D want to join the cloud, and connects to B
+        OortComet oortCometDB = oortD.observeComet(oortB.getURL());
+        Assert.assertTrue(oortCometDB.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Wait a while for the links to establish
+        Thread.sleep(1000);
+
+        // Make sure C is connected to B also
+        Assert.assertEquals(3, oortA.getKnownComets().size());
+        Assert.assertEquals(3, oortB.getKnownComets().size());
+        Assert.assertEquals(3, oortC.getKnownComets().size());
+        Assert.assertEquals(3, oortD.getKnownComets().size());
+    }
 }
