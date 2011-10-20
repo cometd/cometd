@@ -199,7 +199,7 @@ org.cometd.WebSocketTransport = function()
         else
         {
             // Mangle the URL, changing the scheme from 'http' to 'ws'
-            var url = envelope.url.replace(/^http/, 'ws');
+            var url = _cometd.getURL().replace(/^http/, 'ws');
             this._debug('Transport', this.getType(), 'connecting to URL', url);
 
             _webSocket = new window.WebSocket(url);
