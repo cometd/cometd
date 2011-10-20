@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -216,5 +217,71 @@ class AnnotationProcessor
         }
 
         return true;
+    }
+
+    protected boolean processInjectables(Object bean, List<Object> injectables)
+    {
+        boolean result = false;
+        for (Object injectable : injectables)
+            result |= processInjectable(bean, injectable);
+        return result;
+    }
+
+    protected boolean processInjectable(Object bean, Object injectable)
+    {
+        boolean result = false;
+        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
+        {
+            Field[] fields = c.getDeclaredFields();
+            for (Field field : fields)
+            {
+                if (field.getAnnotation(Inject.class) != null)
+                {
+                    if (field.getType().isAssignableFrom(injectable.getClass()))
+                    {
+                        Object value = getField(bean, field);
+                        if (value != null)
+                        {
+                            logger.debug("Avoid injection of field {} on bean {}, it's already injected with {}", new Object[]{field, bean, value});
+                            continue;
+                        }
+
+                        setField(bean, field, injectable);
+                        result = true;
+                        logger.debug("Injected {} to field {} on bean {}", new Object[]{injectable, field, bean});
+                    }
+                }
+            }
+
+            Method[] methods = c.getDeclaredMethods();
+            for (Method method : methods)
+            {
+                if (method.getAnnotation(Inject.class) != null)
+                {
+                    Class<?>[] parameterTypes = method.getParameterTypes();
+                    if (parameterTypes.length == 1)
+                    {
+                        if (parameterTypes[0].isAssignableFrom(injectable.getClass()))
+                        {
+                            Method getter = findGetterMethod(c, method);
+                            if (getter != null)
+                            {
+                                Object value = invokeMethod(bean, getter);
+                                if (value != null)
+                                {
+                                    logger.debug("Avoid injection of method {} on bean {}, it's already injected with {}", new Object[]{method, bean, value});
+                                    continue;
+                                }
+                            }
+
+                            invokeMethod(bean, method, injectable);
+                            result = true;
+                            logger.debug("Injected {} to method {} on bean {}", new Object[]{injectable, method, bean});
+                        }
+                    }
+                }
+            }
+        }
+        return result;
     }
 }

@@ -19,6 +19,8 @@ package org.cometd.java.annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -79,10 +81,17 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
     private final ConcurrentMap<Object, List<ListenerCallback>> listeners = new ConcurrentHashMap<Object, List<ListenerCallback>>();
     private final ConcurrentMap<Object, List<SubscriptionCallback>> subscribers = new ConcurrentHashMap<Object, List<SubscriptionCallback>>();
     private final BayeuxServer bayeuxServer;
+    private final Object[] injectables;
 
     public ServerAnnotationProcessor(BayeuxServer bayeuxServer)
     {
+        this(bayeuxServer, new Object[0]);
+    }
+
+    public ServerAnnotationProcessor(BayeuxServer bayeuxServer, Object... injectables)
+    {
         this.bayeuxServer = bayeuxServer;
+        this.injectables = injectables;
     }
 
     /**
@@ -197,7 +206,9 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         if (serviceAnnotation == null)
             return false;
 
-        boolean result = processBayeux(bean);
+        List<Object> injectables = new ArrayList<Object>(Arrays.asList(this.injectables));
+        injectables.add(0, bayeuxServer);
+        boolean result = processInjectables(bean, injectables);
         LocalSession session = findOrCreateLocalSession(bean, serviceAnnotation.value());
         result |= processSession(bean, session);
         return result;
@@ -302,70 +313,12 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         return session;
     }
 
-    private boolean processBayeux(Object bean)
-    {
-        boolean result = false;
-        for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
-        {
-            Field[] fields = c.getDeclaredFields();
-            for (Field field : fields)
-            {
-                if (field.getAnnotation(Inject.class) != null)
-                {
-                    if (field.getType().isAssignableFrom(bayeuxServer.getClass()))
-                    {
-                        Object value = getField(bean, field);
-                        if (value != null)
-                        {
-                            logger.debug("Avoid injection of field {} on bean {}, it's already injected with {}", new Object[]{field, bean, value});
-                            continue;
-                        }
-
-                        setField(bean, field, bayeuxServer);
-                        result = true;
-                        logger.debug("Injected {} to field {} on bean {}", new Object[]{bayeuxServer, field, bean});
-                    }
-                }
-            }
-
-            Method[] methods = c.getDeclaredMethods();
-            for (Method method : methods)
-            {
-                if (method.getAnnotation(Inject.class) != null)
-                {
-                    Class<?>[] parameterTypes = method.getParameterTypes();
-                    if (parameterTypes.length == 1)
-                    {
-                        if (parameterTypes[0].isAssignableFrom(bayeuxServer.getClass()))
-                        {
-                            Method getter = findGetterMethod(c, method);
-                            if (getter != null)
-                            {
-                                Object value = invokeMethod(bean, getter);
-                                if (value != null)
-                                {
-                                    logger.debug("Avoid injection of method {} on bean {}, it's already injected with {}", new Object[]{method, bean, value});
-                                    continue;
-                                }
-                            }
-
-                            invokeMethod(bean, method, bayeuxServer);
-                            result = true;
-                            logger.debug("Injected {} to method {} on bean {}", new Object[]{bayeuxServer, method, bean});
-                        }
-                    }
-                }
-            }
-        }
-        return result;
-    }
-
     private boolean processSession(Object bean, LocalSession localSession)
     {
         ServerSession serverSession = localSession.getServerSession();
 
         boolean result = false;
-        for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
+        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
         {
             Field[] fields = c.getDeclaredFields();
             for (Field field : fields)
@@ -417,7 +370,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
     private boolean processListener(Object bean, LocalSession localSession)
     {
         boolean result = false;
-        for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
+        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
         {
             Method[] methods = c.getDeclaredMethods();
             for (Method method : methods)
@@ -472,7 +425,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
     private boolean processSubscription(Object bean, LocalSession localSession)
     {
         boolean result = false;
-        for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
+        for (Class<?> c = bean.getClass(); c != Object.class; c = c.getSuperclass())
         {
             Method[] methods = c.getDeclaredMethods();
             for (Method method : methods)

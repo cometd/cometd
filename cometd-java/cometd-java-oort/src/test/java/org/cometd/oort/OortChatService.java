@@ -27,8 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
-import javax.servlet.ServletContext;
 
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -51,24 +52,25 @@ public class OortChatService
     private final ConcurrentMap<String, Set<String>> _members = new ConcurrentHashMap<String, Set<String>>();
     @Inject
     private BayeuxServer _bayeux;
+    @Inject
+    private Oort _oort;
+    @Inject
+    private Seti _seti;
     @Session
     private ServerSession _session;
-    private Oort _oort;
-    private Seti _seti;
 
-    OortChatService(ServletContext context)
+    @PostConstruct
+    private void init()
     {
-        _oort = (Oort)context.getAttribute(Oort.OORT_ATTRIBUTE);
-        if (_oort == null)
-            throw new RuntimeException("Missing " + Oort.OORT_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
-                    "is an Oort servlet declared in web.xml ?");
-        _seti = (Seti)context.getAttribute(Seti.SETI_ATTRIBUTE);
-        if (_seti == null)
-            throw new RuntimeException("Missing " + Seti.SETI_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
-                    "is " + SetiServlet.class.getSimpleName() + " declared in web.xml ?");
-
         _oort.observeChannel("/chat/**");
         _oort.observeChannel("/members/**");
+    }
+
+    @PreDestroy
+    private void destroy()
+    {
+        _oort.deobserveChannel("/members/**");
+        _oort.deobserveChannel("/chat/**");
     }
 
     @SuppressWarnings("unused")
@@ -184,7 +186,7 @@ public class OortChatService
         @Override
         protected Object filterString(String string)
         {
-            if (string.indexOf("dang") >= 0)
+            if (string.contains("dang"))
                 throw new DataFilter.Abort();
             return string;
         }

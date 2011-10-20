@@ -37,7 +37,6 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.ServerChannelImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.junit.After;
 import org.junit.Before;
@@ -246,7 +245,7 @@ public class ServerAnnotationProcessorTest
         assertTrue(processed);
         ServerChannel channel = bayeuxServer.getChannel("/foo");
         assertNotNull(channel);
-        assertEquals(1, ((ServerChannelImpl)channel).getListeners().size());
+        assertEquals(1, channel.getListeners().size());
 
         // Fake a publish
         LocalSession remote = bayeuxServer.newLocalSession("remote");
@@ -779,7 +778,6 @@ public class ServerAnnotationProcessorTest
         assertTrue(destroyLatch.await(1000, TimeUnit.MILLISECONDS));
     }
 
-
     @Test
     public void testConfigureDefault() throws Exception
     {
@@ -794,7 +792,7 @@ public class ServerAnnotationProcessorTest
                 configured.add(channel.getId());
             }
 
-            @Configure(value = {"/blah","/halb"})
+            @Configure(value = {"/blah", "/halb"})
             private void configureBlah(ConfigurableServerChannel channel)
             {
                 configured.add(channel.getId());
@@ -812,16 +810,13 @@ public class ServerAnnotationProcessorTest
         S s2 = new S();
         try
         {
-            processed = processor.process(s);
-            assertFalse(true);
+            processor.process(s2);
+            fail();
         }
-        catch(IllegalStateException e)
+        catch (IllegalStateException expected)
         {
-            assertTrue(true);
         }
-
     }
-
 
     @Test
     public void testConfigureNoErrorIfExists() throws Exception
@@ -831,7 +826,7 @@ public class ServerAnnotationProcessorTest
         @Service
         class S
         {
-            @Configure(value = "/foo", errorIfExists=false)
+            @Configure(value = "/foo", errorIfExists = false)
             private void configureFooBar(ConfigurableServerChannel channel)
             {
                 configured.add(channel.getId());
@@ -845,9 +840,8 @@ public class ServerAnnotationProcessorTest
         processed = processor.process(s2);
         assertTrue(processed);
 
-        assertEquals(1,configured.size());
-        assertEquals("/foo",configured.get(0));
-
+        assertEquals(1, configured.size());
+        assertEquals("/foo", configured.get(0));
     }
 
     @Test
@@ -858,7 +852,7 @@ public class ServerAnnotationProcessorTest
         @Service
         class S
         {
-            @Configure(value = "/foo", configureIfExists=true)
+            @Configure(value = "/foo", configureIfExists = true)
             private void configureFooBar(ConfigurableServerChannel channel)
             {
                 configured.add(channel.getId());
@@ -872,10 +866,36 @@ public class ServerAnnotationProcessorTest
         processed = processor.process(s2);
         assertTrue(processed);
 
-        assertEquals(2,configured.size());
-        assertEquals("/foo",configured.get(0));
-        assertEquals("/foo",configured.get(1));
+        assertEquals(2, configured.size());
+        assertEquals("/foo", configured.get(0));
+        assertEquals("/foo", configured.get(1));
+    }
 
+    @Test
+    public void testInjectables() throws Exception
+    {
+        class I
+        {
+        }
+
+        class II extends I
+        {
+        }
+
+        @Service
+        class S
+        {
+            @Inject
+            private I i;
+        }
+
+        I i = new II();
+        S s = new S();
+        processor = new ServerAnnotationProcessor(bayeuxServer, i);
+        boolean processed = processor.process(s);
+        assertTrue(processed);
+
+        assertSame(i, s.i);
     }
 
     @Service
