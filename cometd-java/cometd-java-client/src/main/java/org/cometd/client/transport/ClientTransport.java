@@ -17,6 +17,7 @@
 package org.cometd.client.transport;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +86,7 @@ public abstract class ClientTransport extends AbstractTransport
 
     protected List<Message.Mutable> parseMessages(String content) throws ParseException
     {
-        return Arrays.asList(jsonContext.parse(content));
+        return new ArrayList<Message.Mutable>(Arrays.asList(jsonContext.parse(content)));
     }
 
     protected String generateJSON(Message.Mutable[] messages)

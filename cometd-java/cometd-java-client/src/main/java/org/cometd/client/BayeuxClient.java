@@ -1330,7 +1330,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         protected void send(TransportListener listener, Message.Mutable... messages)
         {
-            List<Message.Mutable> messageList = Arrays.asList(messages);
+            // Use ArrayList because Arrays.asList() does not support Iterator.remove()
+            List<Message.Mutable> messageList = new ArrayList<Message.Mutable>(Arrays.asList(messages));
             for (Iterator<Message.Mutable> iterator = messageList.iterator(); iterator.hasNext();)
             {
                 Message.Mutable message = iterator.next();
