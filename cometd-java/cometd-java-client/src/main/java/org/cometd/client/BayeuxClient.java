@@ -98,7 +98,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     public static final String MAX_BACKOFF_OPTION = "maxBackoff";
     public static final String BAYEUX_VERSION = "1.0";
 
-    private final Logger logger = LoggerFactory.getLogger(getClass().getName() + "@" + System.identityHashCode(this));
+    private final Logger logger = LoggerFactory.getLogger(getClass().getName() + "." + System.identityHashCode(this));
     private final TransportRegistry transportRegistry = new TransportRegistry();
     private final Map<String, Object> options = new ConcurrentHashMap<String, Object>();
     private final AtomicReference<BayeuxClientState> bayeuxClientState = new AtomicReference<BayeuxClientState>();

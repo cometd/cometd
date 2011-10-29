@@ -107,7 +107,7 @@ public class Oort extends AggregateLifeCycle
         _url = url;
         _id = UUID.randomUUID().toString();
 
-        _logger = LoggerFactory.getLogger(getClass().getName() + "-" + _url);
+        _logger = LoggerFactory.getLogger(getClass().getName() + "." + _url);
         _debug = String.valueOf(BayeuxServerImpl.DEBUG_LOG_LEVEL).equals(bayeux.getOption(BayeuxServerImpl.LOG_LEVEL));
 
         _threadPool = new QueuedThreadPool();

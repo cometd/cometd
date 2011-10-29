@@ -76,7 +76,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public static final int DEBUG_LOG_LEVEL = 3;
     public static final String JSON_CONTEXT = "jsonContext";
 
-    private final Logger _logger = LoggerFactory.getLogger(getClass().getName() + "@" + System.identityHashCode(this));
+    private final Logger _logger = LoggerFactory.getLogger(getClass().getName() + "." + System.identityHashCode(this));
     private final SecureRandom _random = new SecureRandom();
     private final List<BayeuxServerListener> _listeners = new CopyOnWriteArrayList<BayeuxServerListener>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
@@ -753,7 +753,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         if (_policy != null && !_policy.canSubscribe(this, session, channel, message))
         {
-            _logger.warn("{} denied Publish@{} by {}", new Object[]{session, channel, _policy});
+            _logger.warn("{} denied Subscribe@{} by {}", new Object[]{session, channel, _policy});
             return Authorizer.Result.deny("denied_by_security_policy");
         }
         return isOperationAuthorized(Authorizer.Operation.SUBSCRIBE, session, message, channel.getChannelId());
