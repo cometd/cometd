@@ -180,7 +180,6 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
-                    <tagBase>https://svn.cometd.org/tags</tagBase>
                     <goals>deploy</goals>
                     <preparationGoals>clean install</preparationGoals>
                     <mavenExecutorId>forked-path</mavenExecutorId>
