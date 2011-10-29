@@ -138,7 +138,7 @@ org.cometd.ReloadExtension = function(configuration)
                             _state.handshakeResponse = oldState.handshakeResponse;
                             _state.transportType = oldState.transportType;
                             _state.reloading = true;
-                            var response = _cometd._mixin(true, {}, _state.handshakeResponse);
+                            var response = _cometd._mixin(true, {ext: {reload: true}}, _state.handshakeResponse);
                             response.supportedConnectionTypes = [_state.transportType];
                             _cometd.receive(response);
                             _debug('Reload extension replayed handshake response', response);

@@ -31,6 +31,56 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     }
 
     @Test
+    public void testReloadedHandshakeContainsExtension() throws Exception
+    {
+        defineClass(Latch.class);
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
+                "cometd.addListener('/meta/connect', function(message) " +
+                "{ " +
+                "   if (message.successful) readyLatch.countDown(); " +
+                "});");
+        evaluateScript("cometd.handshake();");
+        Assert.assertTrue(readyLatch.await(5000));
+
+        // Wait that the long poll is established before reloading
+        Thread.sleep(longPollingPeriod / 2);
+
+        evaluateScript("cometd.reload();");
+
+        // Reload the page
+        destroyPage();
+        initPage();
+        initExtension();
+
+        defineClass(Latch.class);
+        evaluateScript("var readyLatch = new Latch(1);");
+        readyLatch = get("readyLatch");
+        evaluateScript("" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
+                "var ext = undefined;" +
+                "cometd.addListener('/meta/handshake', function(message)" +
+                "{" +
+                "   if (message.successful)" +
+                "      ext = message.ext;" +
+                "});" +
+                "cometd.addListener('/meta/connect', function(message) " +
+                "{ " +
+                "   if (message.successful) readyLatch.countDown(); " +
+                "});");
+        evaluateScript("cometd.handshake();");
+        Assert.assertTrue(readyLatch.await(5000));
+
+        evaluateScript("" +
+                "window.assert(ext !== undefined, 'ext must be present');" +
+                "window.assert(ext.reload === true, 'ext.reload must be true')");
+
+        evaluateScript("cometd.disconnect(true)");
+    }
+
+    @Test
     public void testReloadDoesNotExpire() throws Exception
     {
         defineClass(Latch.class);
@@ -43,7 +93,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
                 "   if (message.successful) readyLatch.countDown(); " +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(10000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         // Get the clientId
         String clientId = evaluateScript("cometd.getClientId();");
@@ -74,13 +124,15 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
                 "       expireLatch.countDown();" +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(10000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         String newClientId = evaluateScript("cometd.getClientId();");
         Assert.assertEquals(clientId, newClientId);
 
         // Make sure that reloading will not expire the client on the server
         Assert.assertFalse(expireLatch.await(expirationPeriod + longPollingPeriod));
+
+        evaluateScript("cometd.disconnect(true);");
     }
 
     @Test
@@ -96,7 +148,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
                 "   if (message.successful) readyLatch.countDown(); " +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(10000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         // Get the clientId
         String clientId = evaluateScript("cometd.getClientId();");
@@ -119,7 +171,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
                 "   if (message.successful) readyLatch.countDown(); " +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(10000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         String newClientId = evaluateScript("cometd.getClientId();");
         Assert.assertEquals(clientId, newClientId);
@@ -155,7 +207,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
                 "   if (message.successful) readyLatch.countDown(); " +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(10000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         // Get the clientId
         String clientId = evaluateScript("cometd.getClientId();");
@@ -180,7 +232,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
                 "   if (message.successful) readyLatch.countDown(); " +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(10000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         String newClientId = evaluateScript("cometd.getClientId();");
         Assert.assertEquals(clientId, newClientId);
@@ -202,7 +254,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         defineClass(Latch.class);
         evaluateApplication();
         Latch latch = (Latch)get("latch");
-        Assert.assertTrue(latch.await(10000));
+        Assert.assertTrue(latch.await(5000));
 
         // Calling reload() results in the cookie being written
         evaluateScript("cometd.reload();");
