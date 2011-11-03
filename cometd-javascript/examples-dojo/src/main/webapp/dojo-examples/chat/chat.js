@@ -77,10 +77,11 @@ var room = {
         dojox.cometd.ackEnabled = dojo.byId("ackEnabled").checked;
 
         dojox.cometd.websocketEnabled = true;
-        var cometdURL = location.protocol + "//" + location.host + config.contextPath + "/cometd";
+//        var cometdURL = location.protocol + "//" + location.host + config.contextPath + "/cometd";
+        var cometdURL = location.protocol + "//127.0.0.1:8080" + config.contextPath + "/cometd";
         dojox.cometd.init({
             url: cometdURL,
-            logLevel: "info"
+            logLevel: "debug"
         });
 
         room._username = name;

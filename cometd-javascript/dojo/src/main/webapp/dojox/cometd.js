@@ -40,6 +40,7 @@ dojox.Cometd = function(name)
                 contentType: 'application/json;charset=UTF-8',
                 headers: packet.headers,
                 postData: packet.body,
+                withCredentials: true,
                 handleAs: 'json',
                 load: packet.onSuccess,
                 error: function(error)
