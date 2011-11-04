@@ -498,53 +498,65 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /* ------------------------------------------------------------ */
-    public void setScheduler(AbstractServerTransport.Scheduler scheduler)
+    public void setScheduler(AbstractServerTransport.Scheduler newScheduler)
     {
-        synchronized(_queue)
+        if (newScheduler == null)
         {
-            if (scheduler == null)
+            Scheduler oldScheduler;
+            synchronized (_queue)
             {
-                if (_scheduler != null)
-                {
-                    _scheduler.cancel();
+                oldScheduler = _scheduler;
+                if (oldScheduler != null)
                     _scheduler = null;
-                }
             }
-            else
+            if (oldScheduler != null)
+                oldScheduler.cancel();
+        }
+        else
+        {
+            Scheduler oldScheduler;
+            boolean schedule = false;
+            synchronized (_queue)
             {
-                if (_scheduler != null && _scheduler != scheduler)
-                {
-                    _scheduler.cancel();
-                }
-
-                _scheduler = scheduler;
-
+                oldScheduler = _scheduler;
+                _scheduler = newScheduler;
                 if (_queue.size() > 0 && _batch == 0)
                 {
-                    _scheduler.schedule();
-                    if (_scheduler instanceof OneTimeScheduler)
+                    schedule = true;
+                    if (newScheduler instanceof OneTimeScheduler)
                         _scheduler = null;
                 }
             }
+            if (oldScheduler != null && oldScheduler != newScheduler)
+                oldScheduler.cancel();
+            if (schedule)
+                newScheduler.schedule();
         }
     }
 
     /* ------------------------------------------------------------ */
     public void flush()
     {
+        Scheduler scheduler;
         synchronized (_queue)
         {
             if (_lazyDispatch && _lazyTask != null)
                 _bayeux.cancelTimeout(_lazyTask);
 
-            Scheduler scheduler = _scheduler;
+            scheduler = _scheduler;
+
             if (scheduler != null)
             {
                 if (_scheduler instanceof OneTimeScheduler)
                     _scheduler = null;
-                scheduler.schedule();
-                return;
             }
+        }
+        if (scheduler != null)
+        {
+            scheduler.schedule();
+            // If there is a scheduler, then it's a remote session
+            // and we should not perform local delivery, so we return
+            return;
         }
 
         // do local delivery
@@ -578,15 +590,15 @@ public class ServerSessionImpl implements ServerSession
     /* ------------------------------------------------------------ */
     public void cancelSchedule()
     {
+        Scheduler scheduler;
         synchronized (_queue)
         {
-            Scheduler scheduler = _scheduler;
+            scheduler = _scheduler;
             if (scheduler != null)
-            {
                 _scheduler = null;
-                scheduler.cancel();
-            }
         }
+        if (scheduler != null)
+            scheduler.cancel();
     }
 
     /* ------------------------------------------------------------ */
