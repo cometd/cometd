@@ -273,18 +273,18 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return bayeuxClientState.type == State.DISCONNECTING;
     }
 
+    private boolean isDisconnected(BayeuxClientState bayeuxClientState)
+    {
+        return bayeuxClientState.type == State.DISCONNECTED;
+    }
+
     /**
      * @return whether this {@link BayeuxClient} is disconnecting or disconnected
      */
     public boolean isDisconnected()
     {
-        return isDisconnected(bayeuxClientState.get());
-    }
-
-    private boolean isDisconnected(BayeuxClientState bayeuxClientState)
-    {
-        return bayeuxClientState.type == State.DISCONNECTING ||
-                bayeuxClientState.type == State.DISCONNECTED;
+        BayeuxClientState bayeuxClientState = this.bayeuxClientState.get();
+        return isDisconnecting(bayeuxClientState) || isDisconnected(bayeuxClientState);
     }
 
     /**
@@ -543,6 +543,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
      */
     public boolean disconnect(long timeout)
     {
+        if (isDisconnected(bayeuxClientState.get()))
+            return true;
+
         final CountDownLatch latch = new CountDownLatch(1);
         ClientSessionChannel.MessageListener lastConnectListener = new ClientSessionChannel.MessageListener()
         {
