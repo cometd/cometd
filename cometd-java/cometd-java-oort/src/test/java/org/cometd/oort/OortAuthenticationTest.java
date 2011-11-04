@@ -55,6 +55,8 @@ public class OortAuthenticationTest extends OortTest
         authFields.getExt(true).put(TestSecurityPolicy.TOKEN_FIELD, "something");
         BayeuxClient client1 = startClient(oort1, authFields);
         Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        // Wait for long poll to be established
+        Thread.sleep(1000);
         Assert.assertTrue(client1.disconnect(5000));
 
         // An invalid client may not connect
