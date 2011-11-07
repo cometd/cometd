@@ -969,7 +969,7 @@ var window = this;
     window.WebSocket = function(url)
     {
         this._url = url;
-        this._ws = new WebSocketClient(cookies, threadModel, this, wsClientFactory);
+        this._ws = new WebSocketClient(cookies, threadModel, this, wsClientFactory, url);
     };
     window.WebSocket.CONNECTING = 0;
     window.WebSocket.OPEN = 1;
