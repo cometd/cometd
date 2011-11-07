@@ -12,7 +12,7 @@ org.cometd.WebSocketTransport = function()
     var _state = CLOSED;
     var _timeouts = {};
     var _envelopes = {};
-    var _webSocket;
+    var _webSocket = null;
     var _successCallback;
 
     _self.registered = function(type, cometd)
@@ -155,6 +155,13 @@ org.cometd.WebSocketTransport = function()
     _self.onClose = function()
     {
         this._debug('Transport', this.getType(), 'closed', _webSocket);
+
+        if (_webSocket === null)
+        {
+            // The close event arrived after the
+            // reset of the transport, just return
+            return;
+        }
 
         // Remember if we were able to connect
         // This close event could be due to server shutdown, and if it restarts we want to try websocket again

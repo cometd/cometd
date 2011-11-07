@@ -886,12 +886,12 @@ var window = this;
     // just to be reissued using another socket.
     // Therefore we use helper classes that are based on Jetty's HttpClient, which offers full control.
     window.XMLHttpRequest = function() {};
-    XMLHttpRequest.UNSENT = 0;
-    XMLHttpRequest.OPENED = 1;
-    XMLHttpRequest.HEADERS_RECEIVED = 2;
-    XMLHttpRequest.LOADING = 3;
-    XMLHttpRequest.DONE = 4;
-    XMLHttpRequest.prototype = function()
+    window.XMLHttpRequest.UNSENT = 0;
+    window.XMLHttpRequest.OPENED = 1;
+    window.XMLHttpRequest.HEADERS_RECEIVED = 2;
+    window.XMLHttpRequest.LOADING = 3;
+    window.XMLHttpRequest.DONE = 4;
+    window.XMLHttpRequest.prototype = function()
     {
         return {
             get readyState()
@@ -962,6 +962,45 @@ var window = this;
             set withCredentials(val)
             {
                 this._withCredentials = val;
+            }
+        };
+    }();
+
+    window.WebSocket = function(url)
+    {
+        this._url = url;
+        this._ws = new WebSocketClient(cookies, threadModel, this, wsClientFactory);
+    };
+    window.WebSocket.CONNECTING = 0;
+    window.WebSocket.OPEN = 1;
+    window.WebSocket.CLOSING = 2;
+    window.WebSocket.CLOSED = 3;
+    window.WebSocket.prototype = function()
+    {
+        return {
+            get url()
+            {
+                return this._url;
+            },
+            onopen: function(event)
+            {
+            },
+            onerror: function(event)
+            {
+            },
+            onclose: function(event)
+            {
+            },
+            onmessage: function(event)
+            {
+            },
+            send: function(data)
+            {
+                this._ws.send(data);
+            },
+            close: function(code, reason)
+            {
+                this._ws.close(code, reason);
             }
         };
     }();

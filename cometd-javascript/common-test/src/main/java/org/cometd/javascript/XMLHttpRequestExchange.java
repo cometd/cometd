@@ -131,7 +131,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         private final Logger logger = LoggerFactory.getLogger(getClass().getName());
         private final HttpCookieStore cookieStore;
         private final ThreadModel threads;
-        private volatile Scriptable thiz;
+        private final Scriptable thiz;
         private final boolean async;
         private volatile boolean aborted;
         private volatile ReadyState readyState = ReadyState.UNSENT;

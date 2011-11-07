@@ -16,6 +16,7 @@
 
 package org.cometd.javascript;
 
+import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Locale;
@@ -44,7 +45,8 @@ public class HttpCookieStore extends ScriptableObject
             long now = System.currentTimeMillis();
             for (Cookie cookie : cookies.values())
             {
-                if (cookie.expires != null && cookie.expires < now) continue;
+                if (cookie.expires != null && cookie.expires < now)
+                    continue;
                 if (buffer.length() > 0) buffer.append(";");
                 buffer.append(cookie.name).append("=").append(cookie.value);
             }
@@ -134,14 +136,29 @@ public class HttpCookieStore extends ScriptableObject
         }
     }
 
-    public void clear()
+    public Map<String, String> getAll(URI uri)
     {
-        allCookies.clear();
+        String cookieKey = uri.getHost() + ":" + uri.getPort() + uri.getPath();
+        Map<String, Cookie> cookies = allCookies.get(cookieKey);
+        Map<String, String> result = new HashMap<String, String>();
+        long now = System.currentTimeMillis();
+        for (Cookie cookie : cookies.values())
+        {
+            if (cookie.expires != null && cookie.expires < now)
+                continue;
+            result.put(cookie.name, cookie.value);
+        }
+        return result;
     }
 
     public void putAll(HttpCookieStore other)
     {
         allCookies.putAll(other.allCookies);
+    }
+
+    public void clear()
+    {
+        allCookies.clear();
     }
 
     private static class Cookie

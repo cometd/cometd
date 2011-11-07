@@ -33,6 +33,7 @@ public class DojoTestProvider implements TestProvider
         threadModel.evaluate(new URL(contextURL + "/org/cometd.js"));
         threadModel.evaluate(new URL(contextURL + "/dojox/cometd.js"));
         threadModel.evaluate("cometd", "var cometd = dojox.cometd;");
+        threadModel.evaluate("no_websocket", "cometd.unregisterTransport('websocket');");
     }
 
     public void provideMessageAcknowledgeExtension(ThreadModel threadModel, String contextURL) throws Exception

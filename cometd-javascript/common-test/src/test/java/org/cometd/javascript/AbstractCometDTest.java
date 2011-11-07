@@ -22,6 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
+import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -60,6 +61,7 @@ public abstract class AbstractCometDTest
     protected int expirationPeriod = 2500;
     private ThreadModel threadModel;
     private XMLHttpRequestClient xhrClient;
+    private WebSocketClientFactory wsClientFactory;
 
     @Before
     public void initCometDServer() throws Exception
@@ -86,6 +88,7 @@ public abstract class AbstractCometDTest
         CometdServlet cometdServlet = new CometdServlet();
         ServletHolder cometServletHolder = new ServletHolder(cometdServlet);
         cometServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
+        cometServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
         if (Boolean.getBoolean("debugTests"))
             cometServletHolder.setInitParameter("logLevel", "3");
         context.addServlet(cometServletHolder, cometServletPath + "/*");
@@ -162,6 +165,12 @@ public abstract class AbstractCometDTest
             jsContext.evaluateString(rootScope, "var xhrClient = new XMLHttpRequestClient(2);", "xhrClient", 1, null);
             xhrClient = (XMLHttpRequestClient)rootScope.get("xhrClient", rootScope);
             xhrClient.start();
+
+            ScriptableObject.defineClass(rootScope, WebSocketClientFactory.class);
+            ScriptableObject.defineClass(rootScope, WebSocketClient.class);
+            jsContext.evaluateString(rootScope, "var wsClientFactory = new WebSocketClientFactory();", "wsClientFactory", 1, null);
+            wsClientFactory = (WebSocketClientFactory)rootScope.get("wsClientFactory", rootScope);
+            wsClientFactory.start();
         }
         finally
         {
@@ -198,6 +207,7 @@ public abstract class AbstractCometDTest
     {
         threadModel.destroy();
         xhrClient.stop();
+        wsClientFactory.stop();
     }
 
     @SuppressWarnings("unchecked")
