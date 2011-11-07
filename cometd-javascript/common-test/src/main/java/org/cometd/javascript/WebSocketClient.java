@@ -44,7 +44,7 @@ public class WebSocketClient extends ScriptableObject implements WebSocket.OnTex
             org.eclipse.jetty.websocket.WebSocketClient wsClient = wsFactory.newWebSocketClient();
             URI uri = new URI(url);
             wsClient.getCookies().putAll(((HttpCookieStore)cookieStore).getAll(uri));
-            this.connection = (FrameConnection)wsClient.open(uri, this).get();
+            wsClient.open(uri, this);
         }
         catch (Exception x)
         {
@@ -69,6 +69,7 @@ public class WebSocketClient extends ScriptableObject implements WebSocket.OnTex
 
     public void onOpen(Connection connection)
     {
+        this.connection = (FrameConnection)connection;
         Object onOpen = ScriptableObject.getProperty(thiz, "onopen");
         if (onOpen instanceof Function)
             threads.execute(thiz, thiz, (Function)onOpen);
@@ -79,8 +80,8 @@ public class WebSocketClient extends ScriptableObject implements WebSocket.OnTex
         Object onMessage = ScriptableObject.getProperty(thiz, "onmessage");
         if (onMessage instanceof Function)
         {
-            // TODO: how to pass the event object ?
-            Object event = null;
+            // Use single quotes so they do not mess up with quotes in the data string
+            Object event = threads.evaluate("event", "({data:'" + data + "'})");
             threads.execute(thiz, thiz, (Function)onMessage, event);
         }
     }
