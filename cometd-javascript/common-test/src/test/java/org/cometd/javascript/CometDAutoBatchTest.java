@@ -16,7 +16,9 @@
 
 package org.cometd.javascript;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class CometDAutoBatchTest extends AbstractCometDTest
@@ -30,6 +32,8 @@ public class CometDAutoBatchTest extends AbstractCometDTest
         evaluateScript("cometd.addListener('/meta/connect', readyLatch, 'countDown');");
         evaluateScript("cometd.init({url: '" + cometdURL + "', autoBatch: true, logLevel: '" + getLogLevel() + "'});");
         Assert.assertTrue(readyLatch.await(1000));
+        // Autobatch is only used for request/response type transports
+        Assume.assumeThat((String)evaluateScript("cometd.getTransport().getType()"), CoreMatchers.equalTo("long-polling"));
 
         evaluateScript("" +
                 "var channel = '/autobatch';" +

@@ -16,7 +16,9 @@
 
 package org.cometd.javascript;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class CometDDisconnectSynchronousTest extends AbstractCometDTest
@@ -35,6 +37,7 @@ public class CometDDisconnectSynchronousTest extends AbstractCometDTest
                 "cometd.handshake();");
 
         Assert.assertTrue(readyLatch.await(1000));
+        Assume.assumeThat((String)evaluateScript("cometd.getTransport().getType()"), CoreMatchers.equalTo("long-polling"));
 
         evaluateScript("" +
                 "var disconnected = false;" +
