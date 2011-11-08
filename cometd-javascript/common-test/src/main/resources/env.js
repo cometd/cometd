@@ -173,7 +173,7 @@ var window = this;
     window.setTimeout = function(fn, delay)
     {
         return _scheduler.schedule(new Packages.java.lang.Runnable({
-            run: function() { threadModel.execute(window, window, fn); }
+            run: function() { threadModel.invoke(window, window, fn); }
         }), delay, Packages.java.util.concurrent.TimeUnit.MILLISECONDS);
     };
     window.clearTimeout = function(handle)
@@ -184,7 +184,7 @@ var window = this;
     window.setInterval = function(fn, period)
     {
         return _scheduler.scheduleWithFixedDelay(new Packages.java.lang.Runnable({
-            run: function() { threadModel.execute(window, window, fn); }
+            run: function() { threadModel.invoke(window, window, fn); }
         }), period, period, Packages.java.util.concurrent.TimeUnit.MILLISECONDS);
     };
     window.clearInterval = function(handle)
@@ -879,6 +879,11 @@ var window = this;
         return a;
     }
 
+    window.assert = function(condition, text)
+    {
+        if (!condition) throw 'ASSERTION FAILED' + (text ? ': ' + text : '');
+    };
+
     // Using an implementation of XMLHttpRequest that uses java.net.URL is asking for troubles
     // since socket connections are pooled but there is no control on how they're used, when
     // they are closed and how many of them are opened.
@@ -916,6 +921,7 @@ var window = this;
             },
             onreadystatechange: function()
             {
+                window.assert("onreadystatechange not assigned");
             },
             open: function(method, url, async, user, password)
             {
@@ -984,15 +990,19 @@ var window = this;
             },
             onopen: function(event)
             {
+                window.assert("onopen not assigned");
             },
             onerror: function(event)
             {
+                window.assert("onerror not assigned");
             },
             onclose: function(event)
             {
+                window.assert("onclose not assigned");
             },
             onmessage: function(event)
             {
+                window.assert("onmessage not assigned");
             },
             send: function(data)
             {
@@ -1004,10 +1014,5 @@ var window = this;
             }
         };
     }();
-
-    window.assert = function(condition, text)
-    {
-        if (!condition) throw 'ASSERTION FAILED' + (text ? ': ' + text : '');
-    }
 
 })();

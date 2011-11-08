@@ -26,7 +26,6 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.slf4j.Logger;
@@ -63,7 +62,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
     public void await() throws InterruptedException
     {
         exchange.waitForDone();
-        exchange.notifyReadyStateChange();
+        exchange.notifyReadyStateChange(false);
     }
 
     public void jsFunction_addRequestHeader(String name, String value)
@@ -152,7 +151,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
             responseStatusText = null;
             getRequestFields().clear();
             if (async)
-                notifyReadyStateChange();
+                notifyReadyStateChange(false);
         }
 
         public boolean isAsynchronous()
@@ -160,11 +159,17 @@ public class XMLHttpRequestExchange extends ScriptableObject
             return async;
         }
 
-        private void notifyReadyStateChange()
+        /**
+         * If this method is invoked in the same stack of a JavaScript call,
+         * then it must be asynchronous.
+         * The reason is that the JavaScript may modify the onreadystatechange
+         * function afterwards, and we would be notifying the wrong function.
+         *
+         * @param sync whether the call should be synchronous
+         */
+        private void notifyReadyStateChange(boolean sync)
         {
-            Object onReadyStateChange = ScriptableObject.getProperty(thiz, "onreadystatechange");
-            if (onReadyStateChange instanceof Function)
-                threads.execute(thiz, thiz, (Function)onReadyStateChange);
+            threads.invoke(sync, thiz, thiz, "onreadystatechange");
         }
 
         public void send(HttpClient httpClient) throws Exception
@@ -186,7 +191,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
             if (!async || readyState == ReadyState.HEADERS_RECEIVED || readyState == ReadyState.LOADING)
             {
                 readyState = ReadyState.DONE;
-                notifyReadyStateChange();
+                notifyReadyStateChange(false);
             }
             readyState = ReadyState.UNSENT;
         }
@@ -254,7 +259,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
                 if (async)
                 {
                     readyState = ReadyState.HEADERS_RECEIVED;
-                    notifyReadyStateChange();
+                    notifyReadyStateChange(true);
                 }
             }
         }
@@ -270,7 +275,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
                     if (readyState != ReadyState.LOADING)
                     {
                         readyState = ReadyState.LOADING;
-                        notifyReadyStateChange();
+                        notifyReadyStateChange(true);
                     }
                 }
             }
@@ -285,7 +290,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
                 responseText = getResponseContent();
                 readyState = ReadyState.DONE;
                 if (async)
-                    notifyReadyStateChange();
+                    notifyReadyStateChange(true);
             }
         }
 

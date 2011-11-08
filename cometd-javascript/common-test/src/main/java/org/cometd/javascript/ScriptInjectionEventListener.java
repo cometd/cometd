@@ -59,7 +59,7 @@ public class ScriptInjectionEventListener implements EventListener
                     String src = element.getAttribute("src");
                     if (src != null && src.length() > 0)
                     {
-                        threadModel.execute(thiz, thiz, function, domNodes.get(element));
+                        threadModel.invoke(true, thiz, thiz, function, domNodes.get(element));
                     }
                 }
             }

@@ -20,12 +20,14 @@ import java.io.IOException;
 import java.net.URI;
 
 import org.eclipse.jetty.websocket.WebSocket;
-import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebSocketClient extends ScriptableObject implements WebSocket.OnTextMessage
 {
+    private final Logger logger = LoggerFactory.getLogger(getClass().getName());
     private ThreadModel threads;
     private Scriptable thiz;
     private FrameConnection connection;
@@ -44,6 +46,7 @@ public class WebSocketClient extends ScriptableObject implements WebSocket.OnTex
             org.eclipse.jetty.websocket.WebSocketClient wsClient = wsFactory.newWebSocketClient();
             URI uri = new URI(url);
             wsClient.getCookies().putAll(((HttpCookieStore)cookieStore).getAll(uri));
+            log("Opening WebSocket connection to {}", uri);
             wsClient.open(uri, this);
         }
         catch (Exception x)
@@ -59,6 +62,7 @@ public class WebSocketClient extends ScriptableObject implements WebSocket.OnTex
 
     public void jsFunction_send(String data) throws IOException
     {
+        log("WebSocket sending data {}", data);
         connection.sendMessage(data);
     }
 
@@ -70,33 +74,35 @@ public class WebSocketClient extends ScriptableObject implements WebSocket.OnTex
     public void onOpen(Connection connection)
     {
         this.connection = (FrameConnection)connection;
-        Object onOpen = ScriptableObject.getProperty(thiz, "onopen");
-        if (onOpen instanceof Function)
-            threads.execute(thiz, thiz, (Function)onOpen);
+        log("WebSocket opened connection {}", connection);
+        threads.invoke(false, thiz, thiz, "onopen");
     }
 
     public void onMessage(String data)
     {
-        Object onMessage = ScriptableObject.getProperty(thiz, "onmessage");
-        if (onMessage instanceof Function)
-        {
-            // Use single quotes so they do not mess up with quotes in the data string
-            Object event = threads.evaluate("event", "({data:'" + data + "'})");
-            threads.execute(thiz, thiz, (Function)onMessage, event);
-        }
+        log("WebSocket message data {}", data);
+        // Use single quotes so they do not mess up with quotes in the data string
+        Object event = threads.evaluate("event", "({data:'" + data + "'})");
+        threads.invoke(false, thiz, thiz, "onmessage", event);
     }
 
     public void onClose(int closeCode, String message)
     {
-        Object onClose = ScriptableObject.getProperty(thiz, "onclose");
-        if (onClose instanceof Function)
-            threads.execute(thiz, thiz, (Function)onClose);
+        log("WebSocket closed with code {}/{}", closeCode, message);
+        threads.invoke(false, thiz, thiz, "onclose");
     }
 
     public void onError(Throwable x)
     {
-        Object onError = ScriptableObject.getProperty(thiz, "onerror");
-        if (onError instanceof Function)
-            threads.execute(thiz, thiz, (Function)onError);
+        log("WebSocket error {}", x);
+        threads.invoke(false, thiz, thiz, "onerror");
+    }
+
+    private void log(String message, Object... args)
+    {
+        if (Boolean.getBoolean("debugTests"))
+            logger.info(message, args);
+        else
+            logger.debug(message, args);
     }
 }

@@ -158,21 +158,45 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         return "script_" + scripts.incrementAndGet();
     }
 
-    public Object jsFunction_execute(Scriptable scope, Scriptable thiz, Function function)
+    // Invoked from env.js
+    public Object jsFunction_invoke(final Scriptable scope, final Scriptable thiz, final Function function)
     {
-        return execute(scope, thiz, function);
+        return invoke(true, scope, thiz, function);
     }
 
-    public Object execute(final Scriptable scope, final Scriptable thiz, final Function function, final Object... arguments)
+    public Object invoke(boolean sync, final Scriptable scope, final Scriptable thiz, final Function function, final Object... arguments)
     {
-        FutureTask<Object> future = new FutureTask<Object>(new Callable<Object>()
+        Callable<Object> invocation = new Callable<Object>()
         {
             public Object call()
             {
                 return function.call(context, scope, thiz, arguments);
             }
-        });
+        };
+        return invoke(true, invocation);
+    }
+
+    public Object invoke(boolean sync, final Scriptable scope, final Scriptable thiz, final String functionName, final Object... arguments)
+    {
+        Callable<Object> invocation = new Callable<Object>()
+        {
+            public Object call() throws Exception
+            {
+                Function function = (Function)ScriptableObject.getProperty(thiz, functionName);
+                return function.call(context, scope, thiz, arguments);
+            }
+        };
+        return invoke(sync, invocation);
+    }
+
+    private Object invoke(boolean sync, Callable<Object> invocation)
+    {
+        FutureTask<Object> future = new FutureTask<Object>(invocation);
         submit(future);
+
+        if (!sync)
+            return null;
+
         try
         {
             return future.get();

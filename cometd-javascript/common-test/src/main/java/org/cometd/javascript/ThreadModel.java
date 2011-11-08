@@ -33,7 +33,9 @@ public interface ThreadModel
 
     Object evaluate(String scriptName, String script);
 
-    Object execute(Scriptable scope, Scriptable thiz, Function function, Object... arguments);
+    Object invoke(boolean sync, Scriptable scope, Scriptable thiz, Function function, Object... arguments);
+
+    Object invoke(boolean sync, Scriptable scope, Scriptable thiz, String functionName, Object... arguments);
 
     void define(Class clazz) throws InvocationTargetException, IllegalAccessException, InstantiationException;
 
