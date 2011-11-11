@@ -387,22 +387,54 @@ public class SetiTest extends OortTest
         new SetiService(seti2);
 
         BayeuxClient client1 = startClient(oort1, null);
+        Assert.assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        final CountDownLatch presenceOnLatch = new CountDownLatch(1);
+        final CountDownLatch presenceOffLatch = new CountDownLatch(1);
+        Seti.PresenceListener listener = new Seti.PresenceListener()
+        {
+            public void presenceAdded(Event event)
+            {
+                presenceOnLatch.countDown();
+            }
+
+            public void presenceRemoved(Event event)
+            {
+                presenceOffLatch.countDown();
+            }
+        };
+        seti2.addPresenceListener(listener);
 
         LatchListener publishLatch = new LatchListener();
-        Map<String, Object> login1A = new HashMap<String, Object>();
+        Map<String, Object> login1 = new HashMap<String, Object>();
         String userId = "user1";
-        login1A.put("user", userId);
-        ClientSessionChannel loginChannel1A = client1.getChannel("/service/login");
-        loginChannel1A.addListener(publishLatch);
-        loginChannel1A.publish(login1A);
+        login1.put("user", userId);
+        ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
+        loginChannel1.addListener(publishLatch);
+        loginChannel1.publish(login1);
         Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
-        // Allow presence to broadcast
-        Thread.sleep(1000);
+        Assert.assertTrue(presenceOnLatch.await(5, TimeUnit.SECONDS));
 
         Assert.assertTrue(seti1.isAssociated(userId));
         Assert.assertTrue(seti1.isPresent(userId));
         Assert.assertTrue(seti2.isPresent(userId));
+
+        publishLatch.reset(1);
+        Map<String, Object> logout1 = new HashMap<String, Object>();
+        logout1.put("user", userId);
+        ClientSessionChannel logoutChannel1 = client1.getChannel("/service/logout");
+        logoutChannel1.addListener(publishLatch);
+        logoutChannel1.publish(logout1);
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
+
+        Assert.assertTrue(presenceOffLatch.await(5, TimeUnit.SECONDS));
+
+        Assert.assertFalse(seti1.isAssociated(userId));
+        Assert.assertFalse(seti1.isPresent(userId));
+        Assert.assertFalse(seti2.isPresent(userId));
+
+        seti2.removePresenceListener(listener);
     }
 
     private class SetiService extends AbstractService
