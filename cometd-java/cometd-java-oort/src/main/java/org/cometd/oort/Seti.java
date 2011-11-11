@@ -230,6 +230,7 @@ public class Seti extends AbstractLifeCycle
      * @param userId the user identifier to test for association
      * @return whether the given userId has been associated via {@link #associate(String, ServerSession)}
      * @see #associate(String, ServerSession)
+     * @see #isPresent(String)
      */
     public boolean isAssociated(String userId)
     {
@@ -244,6 +245,21 @@ public class Seti extends AbstractLifeCycle
                     return true;
             }
             return false;
+        }
+    }
+
+    /**
+     * @param userId the user identifier to test for presence
+     * @return whether the given userId is present on the cloud (and therefore has been associated
+     * either locally or remotely)
+     * @see #isAssociated(String)
+     */
+    public boolean isPresent(String userId)
+    {
+        synchronized (_uid2Location)
+        {
+            Set<Location> locations = _uid2Location.get(userId);
+            return locations != null;
         }
     }
 

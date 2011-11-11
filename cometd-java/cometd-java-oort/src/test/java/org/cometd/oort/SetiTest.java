@@ -369,6 +369,42 @@ public class SetiTest extends OortTest
         Assert.assertEquals(2, counter.get());
     }
 
+    @Test
+    public void testIsPresent() throws Exception
+    {
+        Server server1 = startServer(0);
+        Oort oort1 = startOort(server1);
+        Server server2 = startServer(0);
+        Oort oort2 = startOort(server2);
+
+        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
+        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        Seti seti1 = startSeti(oort1);
+        Seti seti2 = startSeti(oort2);
+
+        new SetiService(seti1);
+        new SetiService(seti2);
+
+        BayeuxClient client1 = startClient(oort1, null);
+
+        LatchListener publishLatch = new LatchListener();
+        Map<String, Object> login1A = new HashMap<String, Object>();
+        String userId = "user1";
+        login1A.put("user", userId);
+        ClientSessionChannel loginChannel1A = client1.getChannel("/service/login");
+        loginChannel1A.addListener(publishLatch);
+        loginChannel1A.publish(login1A);
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
+
+        // Allow presence to broadcast
+        Thread.sleep(1000);
+
+        Assert.assertTrue(seti1.isAssociated(userId));
+        Assert.assertTrue(seti1.isPresent(userId));
+        Assert.assertTrue(seti2.isPresent(userId));
+    }
+
     private class SetiService extends AbstractService
     {
         private final Seti seti;
