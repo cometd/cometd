@@ -1072,7 +1072,7 @@ org.cometd.Cometd = function(name)
      */
     this.receive = _receive;
 
-    _handleMessages = function _handleMessages(rcvdMessages)
+    _handleMessages = function(rcvdMessages)
     {
         _cometd._debug('Received', rcvdMessages);
 
@@ -1083,7 +1083,7 @@ org.cometd.Cometd = function(name)
         }
     };
 
-    _handleFailure = function _handleFailure(conduit, messages, reason, exception)
+    _handleFailure = function(conduit, messages, reason, exception)
     {
         _cometd._debug('handleFailure', conduit, messages, reason, exception);
 
@@ -1775,11 +1775,12 @@ org.cometd.Cometd = function(name)
 
     // WebSocket handling for Firefox, which deploys WebSocket
     // under the name of MozWebSocket in Firefox 6 and 7
-    if (!window.WebSocket)
+    org.cometd.WebSocket = window.WebSocket;
+    if (!org.cometd.WebSocket)
     {
-        window.WebSocket = window.MozWebSocket;
+        org.cometd.WebSocket = window.MozWebSocket;
     }
-    if (window.WebSocket)
+    if (org.cometd.WebSocket)
     {
         _cometd.registerTransport('websocket', new org.cometd.WebSocketTransport());
     }

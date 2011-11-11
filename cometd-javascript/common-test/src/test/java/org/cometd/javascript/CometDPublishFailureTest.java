@@ -16,18 +16,9 @@
 
 package org.cometd.javascript;
 
-import java.io.IOException;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
 import org.junit.Test;
@@ -38,14 +29,16 @@ public class CometDPublishFailureTest extends AbstractCometDTest
     protected void customizeContext(ServletContextHandler context) throws Exception
     {
         super.customizeContext(context);
-        PublishThrowingFilter filter = new PublishThrowingFilter();
-        FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
+//        PublishThrowingFilter filter = new PublishThrowingFilter();
+//        FilterHolder filterHolder = new FilterHolder(filter);
+//        context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
     }
 
     @Test
     public void testPublishFailures() throws Exception
     {
+        bayeuxServer.addExtension(new PublishThrowingExtension());
+
         defineClass(Latch.class);
 
         evaluateScript("var readyLatch = new Latch(1);");
@@ -84,32 +77,27 @@ public class CometDPublishFailureTest extends AbstractCometDTest
         Assert.assertEquals("disconnected", status);
     }
 
-    public static class PublishThrowingFilter implements Filter
+    public static class PublishThrowingExtension implements BayeuxServer.Extension
     {
-        private int messages;
-
-        public void init(FilterConfig filterConfig) throws ServletException
+        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
         {
+            // The publish will arrive here, just throw
+            throw new Error("thrown_by_test");
         }
 
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
-            doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
+            return true;
         }
 
-        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
+        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
         {
-            String uri = request.getRequestURI();
-            if (!uri.endsWith("/handshake") && !uri.endsWith("/connect"))
-                ++messages;
-            // The second non-handshake and non-connect message will be the publish, throw
-            if (messages == 2)
-                throw new IOException();
-            chain.doFilter(request, response);
+            return true;
         }
 
-        public void destroy()
+        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
         {
+            return true;
         }
     }
 }
