@@ -50,7 +50,7 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
 import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.websocket.server.WebSocketTransport;
-import org.eclipse.jetty.http.ssl.SslContextFactory;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
