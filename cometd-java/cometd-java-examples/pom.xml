@@ -59,7 +59,7 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <configuration>
-                            <executable>/home/simon/programs/jdk7/bin/java</executable>
+                            <executable>java</executable>
                             <arguments>
                                 <argument>-showversion</argument>
                                 <argument>-Xmx2g</argument>
@@ -104,7 +104,7 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <configuration>
-                            <executable>/home/simon/programs/jdk7/bin/java</executable>
+                            <executable>java</executable>
                             <arguments>
                                 <argument>-showversion</argument>
                                 <argument>-Xmx2g</argument>
