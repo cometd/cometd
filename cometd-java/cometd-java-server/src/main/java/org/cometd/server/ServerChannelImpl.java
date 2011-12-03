@@ -100,6 +100,7 @@ public class ServerChannelImpl implements ServerChannel
 
     public boolean subscribe(ServerSession session)
     {
+        System.err.println("Subscribe "+session);
         if (!session.isHandshook())
             return false;
 
@@ -115,6 +116,7 @@ public class ServerChannelImpl implements ServerChannel
 
     private boolean subscribe(ServerSessionImpl session)
     {
+        System.err.println("SUBSCRIBE "+session);
         resetSweeperPasses();
         if (_subscribers.add(session))
         {
@@ -327,6 +329,9 @@ public class ServerChannelImpl implements ServerChannel
 
         if (_subscribers.size() > 0)
             return;
+        
+        if (_authorizers.size() > 0)
+            return;
 
         if (isWild())
         {
@@ -407,7 +412,7 @@ public class ServerChannelImpl implements ServerChannel
         b.append(isLazy() ? " lazy" : "");
         b.append('\n');
 
-        int leaves = _children.size() + _subscribers.size() + _listeners.size();
+        int leaves = _children.size() + _subscribers.size() + _listeners.size()+_authorizers.size();
         int i = 0;
         for (ServerChannelImpl child : _children)
         {
@@ -426,6 +431,13 @@ public class ServerChannelImpl implements ServerChannel
             b.append(indent);
             b.append(" +-");
             b.append(child);
+            b.append('\n');
+        }
+        for (Authorizer auth: _authorizers)
+        {
+            b.append(indent);
+            b.append(" +-");
+            b.append(auth);
             b.append('\n');
         }
     }
