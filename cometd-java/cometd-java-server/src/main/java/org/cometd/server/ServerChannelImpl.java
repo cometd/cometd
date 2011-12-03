@@ -100,7 +100,6 @@ public class ServerChannelImpl implements ServerChannel
 
     public boolean subscribe(ServerSession session)
     {
-        System.err.println("Subscribe "+session);
         if (!session.isHandshook())
             return false;
 
@@ -116,7 +115,6 @@ public class ServerChannelImpl implements ServerChannel
 
     private boolean subscribe(ServerSessionImpl session)
     {
-        System.err.println("SUBSCRIBE "+session);
         resetSweeperPasses();
         if (_subscribers.add(session))
         {
