@@ -28,7 +28,7 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
  * <p>Objects implementing this interface are the server-side representation of remote Bayeux clients.</p>
  * <p>{@link ServerSession} contains the queue of messages to be delivered to the client; messages are
  * normally queued on a {@link ServerSession} by publishing them to a channel to which the session is
- * subscribed (via {@link ServerChannel#publish(Session, ServerMessage)}).</p>
+ * subscribed (via {@link ServerChannel#publish(Session, ServerMessage.Mutable)}.</p>
  * <p>The {@link #deliver(Session, Mutable)} and {@link #deliver(Session, String, Object, String)}
  * methods may be used to directly queue messages to a session without publishing them to all subscribers
  * of a channel.</p>
@@ -76,7 +76,7 @@ public interface ServerSession extends Session
 
     /**
      * <p>Delivers the given message to this session.</p>
-     * <p>This is different from {@link ServerChannel#publish(Session, ServerMessage)}
+     * <p>This is different from {@link ServerChannel#publish(Session, ServerMessage.Mutable)}
      * as the message is delivered only to this session and
      * not to all subscribers of the channel.</p>
      * <p>The message should still have a channel id specified, so that the ClientSession
@@ -136,7 +136,7 @@ public interface ServerSession extends Session
     {
         /**
          * <p>Callback invoked when a message is received.</p>
-         * <p>Implementors can decide to return false to signal that the message should not be
+         * <p>Implementers can decide to return false to signal that the message should not be
          * processed, meaning that other listeners will not be notified and that the message
          * will be discarded.</p>
          * @param to the session that received the message

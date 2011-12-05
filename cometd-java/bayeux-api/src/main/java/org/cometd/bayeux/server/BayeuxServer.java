@@ -95,7 +95,7 @@ public interface BayeuxServer extends Bayeux
      * to atomically initialize a channel. The initializer will be called before
      * any other thread can access the new channel instance.</p>
      * <p>The createIfAbsent method should be used when a channel needs to be
-     * intialized (e.g. by adding listeners) before any publish or subscribes
+     * initialized (e.g. by adding listeners) before any publish or subscribes
      * can occur on the channel, or before any other thread may concurrently
      * create the same channel.
      *
