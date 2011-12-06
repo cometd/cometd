@@ -39,6 +39,7 @@ public class OortObserveCometTest extends OortTest
         OortComet oortComet12 = oort1.observeComet(oort2.getURL());
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
 
+        // TODO Having the first comet connected does not mean the second is... so test can fail
         Assert.assertEquals(1, oort2.getKnownComets().size());
 
         OortComet oortComet21 = oort2.getComet(oort2.getKnownComets().iterator().next());
@@ -326,7 +327,7 @@ public class OortObserveCometTest extends OortTest
         // Try with yet another URL
         String anotherURLB = urlB.replace("localhost", "[::1]");
         OortComet oortCometAB4 = oortA.observeComet(anotherURLB);
-        Assert.assertTrue(oortCometAB4.waitFor(5000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(oortCometAB4.waitFor(500000, BayeuxClient.State.DISCONNECTED));
         OortComet oortCometAB5 = oortA.getComet(anotherURLB);
         Assert.assertSame(oortCometAB, oortCometAB5);
 
