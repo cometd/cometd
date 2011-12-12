@@ -174,8 +174,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _connection = null;
         if (connection != null && connection.isOpen())
         {
-            debug("Disconnecting websocket connection {}", connection);
-            connection.disconnect();
+            debug("Closing websocket connection {}", connection);
+            connection.close();
         }
     }
 
