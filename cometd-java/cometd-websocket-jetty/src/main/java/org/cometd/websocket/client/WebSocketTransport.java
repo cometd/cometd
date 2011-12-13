@@ -54,6 +54,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     public final static String NAME = "websocket";
     public final static String PROTOCOL_OPTION = "protocol";
     public final static String CONNECT_TIMEOUT_OPTION = "connectTimeout";
+    public final static String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public final static String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
     public final static String UNIQUE_MESSAGE_ID_GUARANTEED_OPTION = "uniqueMessageIdGuaranteed";
 
@@ -88,6 +89,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile String _protocol = "cometd";
     private volatile long _maxNetworkDelay = 15000L;
     private volatile long _connectTimeout = 30000L;
+    private volatile int _idleTimeout = 20000;
     private volatile int _maxMessageSize;
     private volatile boolean _uniqueMessageId = true;
     private boolean _aborted;
@@ -122,6 +124,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
         _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, _maxNetworkDelay);
         _connectTimeout = getOption(CONNECT_TIMEOUT_OPTION, _connectTimeout);
+        _idleTimeout = getOption(CONNECT_TIMEOUT_OPTION, _idleTimeout);
         _maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClientFactory.getBufferSize());
         _uniqueMessageId = getOption(UNIQUE_MESSAGE_ID_GUARANTEED_OPTION, _uniqueMessageId);
         if (_scheduler == null)
@@ -281,6 +284,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     {
         WebSocketClient result = _webSocketClientFactory.newWebSocketClient();
         result.setMaxTextMessageSize(_maxMessageSize);
+        result.setMaxIdleTime(_idleTimeout);
         return result;
     }
 
