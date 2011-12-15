@@ -73,15 +73,15 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
     protected ContentExchange newBayeuxExchange(String requestBody) throws UnsupportedEncodingException
     {
         ContentExchange result = new ContentExchange(true);
-        configureBayeuxExchange(result, requestBody);
+        configureBayeuxExchange(result, requestBody, "UTF-8");
         return result;
     }
 
-    protected void configureBayeuxExchange(ContentExchange exchange, String requestBody) throws UnsupportedEncodingException
+    protected void configureBayeuxExchange(ContentExchange exchange, String requestBody, String encoding) throws UnsupportedEncodingException
     {
         exchange.setURL(cometdURL);
         exchange.setMethod(HttpMethods.POST);
-        exchange.setRequestContentType("application/json;charset=UTF-8");
-        exchange.setRequestContent(new ByteArrayBuffer(requestBody, "UTF-8"));
+        exchange.setRequestContentType("application/json;charset=" + encoding);
+        exchange.setRequestContent(new ByteArrayBuffer(requestBody, encoding));
     }
 }
