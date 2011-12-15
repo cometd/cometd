@@ -89,7 +89,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile String _protocol = "cometd";
     private volatile long _maxNetworkDelay = 15000L;
     private volatile long _connectTimeout = 30000L;
-    private volatile int _idleTimeout = 20000;
+    private volatile int _idleTimeout = 60000;
     private volatile int _maxMessageSize;
     private volatile boolean _uniqueMessageId = true;
     private boolean _aborted;
@@ -124,7 +124,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
         _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, _maxNetworkDelay);
         _connectTimeout = getOption(CONNECT_TIMEOUT_OPTION, _connectTimeout);
-        _idleTimeout = getOption(CONNECT_TIMEOUT_OPTION, _idleTimeout);
+        _idleTimeout = getOption(IDLE_TIMEOUT_OPTION, _idleTimeout);
         _maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClientFactory.getBufferSize());
         _uniqueMessageId = getOption(UNIQUE_MESSAGE_ID_GUARANTEED_OPTION, _uniqueMessageId);
         if (_scheduler == null)

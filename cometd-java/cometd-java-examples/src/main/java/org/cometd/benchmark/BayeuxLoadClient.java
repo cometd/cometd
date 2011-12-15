@@ -422,7 +422,7 @@ public class BayeuxLoadClient
             {
                 Map<String, Object> options = new HashMap<String, Object>();
                 options.put(ClientTransport.JSON_CONTEXT, new JacksonJSONContextClient());
-                options.put(WebSocketTransport.IDLE_TIMEOUT_OPTION, 5000);
+                options.put(WebSocketTransport.IDLE_TIMEOUT_OPTION, 35000);
                 return new WebSocketTransport(options, webSocketClientFactory, scheduler);
             }
             default:
