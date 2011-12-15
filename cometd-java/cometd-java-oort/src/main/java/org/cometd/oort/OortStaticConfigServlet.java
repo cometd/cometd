@@ -53,6 +53,8 @@ public class OortStaticConfigServlet extends OortConfigServlet
                 if (comet.length() > 0)
                 {
                     OortComet oortComet = oort.observeComet(comet);
+                    if (oortComet == null)
+                        throw new IllegalArgumentException("Invalid value for " + OORT_CLOUD_PARAM);
                     oortComet.waitFor(1000, BayeuxClient.State.CONNECTED, BayeuxClient.State.DISCONNECTED);
                 }
             }

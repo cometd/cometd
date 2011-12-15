@@ -124,7 +124,8 @@ public class OortMulticastConfigurer
         {
             logger.debug("Received comet URL via multicast: {}", cometURL);
             OortComet oortComet = oort.observeComet(cometURL);
-            oortComet.waitFor(1000, BayeuxClient.State.CONNECTED, BayeuxClient.State.DISCONNECTED);
+            if (oortComet != null)
+                oortComet.waitFor(1000, BayeuxClient.State.CONNECTED, BayeuxClient.State.DISCONNECTED);
         }
     }
 

@@ -226,11 +226,12 @@ public class Oort extends AggregateLifeCycle
     }
 
     /**
-     * <p>Connects (if not already connected) and observes another CometD server
+     * <p>Connects (if not already connected) and observes another Oort instance
      * (identified by the given URL) via a {@link OortComet} instance.</p>
      *
-     * @param cometURL the CometD url to observe
-     * @return The {@link OortComet} instance associated to the CometD server identified by the URL
+     * @param cometURL the Oort URL to observe
+     * @return The {@link OortComet} instance associated to the Oort instance identified by the URL
+     *         or null if the given Oort URL represent this Oort instance
      */
     public OortComet observeComet(String cometURL)
     {
