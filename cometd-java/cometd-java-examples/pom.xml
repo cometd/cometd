@@ -123,14 +123,6 @@
                                 <classpath />
                                 <argument>org.cometd.benchmark.BayeuxLoadClient</argument>
                             </arguments>
-<!--
-                            <systemProperties>
-                                <systemProperty>
-                                    <key>org.eclipse.jetty.util.log.DEBUG</key>
-                                    <value>true</value>
-                                </systemProperty>
-                            </systemProperties>
--->
                         </configuration>
                     </plugin>
                 </plugins>
