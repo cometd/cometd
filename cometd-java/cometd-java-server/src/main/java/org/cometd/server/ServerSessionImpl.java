@@ -85,13 +85,11 @@ public class ServerSessionImpl implements ServerSession
 
     private Task _lazyTask;
 
-    /* ------------------------------------------------------------ */
     protected ServerSessionImpl(BayeuxServerImpl bayeux)
     {
         this(bayeux,null,null);
     }
 
-    /* ------------------------------------------------------------ */
     protected ServerSessionImpl(BayeuxServerImpl bayeux, LocalSessionImpl localSession, String idHint)
     {
         _bayeux=bayeux;
@@ -122,8 +120,8 @@ public class ServerSessionImpl implements ServerSession
             _intervalTimestamp=System.currentTimeMillis()+transport.getMaxInterval();
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get the userAgent.
+    /**
+     * Get the userAgent.
      * @return the userAgent
      */
     public String getUserAgent()
@@ -131,8 +129,8 @@ public class ServerSessionImpl implements ServerSession
         return _userAgent;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Set the userAgent.
+    /**
+     * Set the userAgent.
      * @param userAgent the userAgent to set
      */
     public void setUserAgent(String userAgent)
@@ -140,7 +138,6 @@ public class ServerSessionImpl implements ServerSession
         _userAgent = userAgent;
     }
 
-    /* ------------------------------------------------------------ */
     protected void sweep(long now)
     {
         boolean remove = false;
@@ -174,18 +171,11 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
-    protected List<Extension> getExtensions()
-    {
-        return Collections.unmodifiableList(_extensions);
-    }
-
     public Set<ServerChannel> getSubscriptions()
     {
         return Collections.<ServerChannel>unmodifiableSet(_subscribedTo.keySet());
     }
 
-    /* ------------------------------------------------------------ */
     public void addExtension(Extension extension)
     {
         _extensions.add(extension);
@@ -196,7 +186,11 @@ public class ServerSessionImpl implements ServerSession
         _extensions.remove(extension);
     }
 
-    /* ------------------------------------------------------------ */
+    public List<Extension> getExtensions()
+    {
+        return Collections.unmodifiableList(_extensions);
+    }
+
     public void batch(Runnable batch)
     {
         startBatch();
@@ -210,7 +204,6 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void deliver(Session from, Mutable message)
     {
         ServerSession session;
@@ -225,7 +218,6 @@ public class ServerSessionImpl implements ServerSession
         doDeliver(session, message);
     }
 
-    /* ------------------------------------------------------------ */
     public void deliver(Session from, String channelId, Object data, String id)
     {
         ServerMessage.Mutable message = _bayeux.newMessage();
@@ -235,7 +227,6 @@ public class ServerSessionImpl implements ServerSession
         deliver(from, message);
     }
 
-    /* ------------------------------------------------------------ */
     protected void doDeliver(ServerSession from, ServerMessage.Mutable mutable)
     {
         ServerMessage message = null;
@@ -312,13 +303,11 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected void handshake()
     {
         _handshook.set(true);
     }
 
-    /* ------------------------------------------------------------ */
     protected void connect()
     {
         _connected.set(true);
@@ -359,7 +348,6 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void disconnect()
     {
         boolean connected = _bayeux.removeServerSession(this, false);
@@ -374,7 +362,6 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public boolean endBatch()
     {
         synchronized (_queue)
@@ -388,19 +375,16 @@ public class ServerSessionImpl implements ServerSession
         return false;
     }
 
-    /* ------------------------------------------------------------ */
     public LocalSession getLocalSession()
     {
         return _localSession;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isLocalSession()
     {
         return _localSession != null;
     }
 
-    /* ------------------------------------------------------------ */
     public void startBatch()
     {
         synchronized (_queue)
@@ -409,31 +393,26 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void addListener(ServerSessionListener listener)
     {
         _listeners.add(listener);
     }
 
-    /* ------------------------------------------------------------ */
     public String getId()
     {
         return _id;
     }
 
-    /* ------------------------------------------------------------ */
     public Object getLock()
     {
         return _queue;
     }
 
-    /* ------------------------------------------------------------ */
     public Queue<ServerMessage> getQueue()
     {
         return _queue;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isQueueEmpty()
     {
         synchronized (_queue)
@@ -442,7 +421,6 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void replaceQueue(List<ServerMessage> queue)
     {
         synchronized (_queue)
@@ -459,7 +437,6 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public List<ServerMessage> takeQueue()
     {
         List<ServerMessage> copy = new ArrayList<ServerMessage>();
@@ -491,13 +468,11 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void removeListener(ServerSessionListener listener)
     {
         _listeners.remove(listener);
     }
 
-    /* ------------------------------------------------------------ */
     public void setScheduler(AbstractServerTransport.Scheduler newScheduler)
     {
         if (newScheduler == null)
@@ -534,7 +509,6 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void flush()
     {
         Scheduler scheduler;
@@ -572,7 +546,6 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void flushLazy()
     {
         synchronized (_queue)
@@ -587,7 +560,6 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void cancelSchedule()
     {
         Scheduler scheduler;
@@ -601,7 +573,6 @@ public class ServerSessionImpl implements ServerSession
             scheduler.cancel();
     }
 
-    /* ------------------------------------------------------------ */
     public void cancelIntervalTimeout()
     {
         long now = System.currentTimeMillis();
@@ -612,7 +583,6 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void startIntervalTimeout(long defaultInterval)
     {
         long interval = calculateInterval(defaultInterval);
@@ -624,19 +594,16 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public Object getAttribute(String name)
     {
         return _attributes.getAttribute(name);
     }
 
-    /* ------------------------------------------------------------ */
     public Set<String> getAttributeNames()
     {
         return _attributes.getAttributeNameSet();
     }
 
-    /* ------------------------------------------------------------ */
     public Object removeAttribute(String name)
     {
         Object old = getAttribute(name);
@@ -644,25 +611,21 @@ public class ServerSessionImpl implements ServerSession
         return old;
     }
 
-    /* ------------------------------------------------------------ */
     public void setAttribute(String name, Object value)
     {
         _attributes.setAttribute(name,value);
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isConnected()
     {
         return _connected.get();
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isHandshook()
     {
         return _handshook.get();
     }
 
-    /* ------------------------------------------------------------ */
     protected boolean extendRecv(ServerMessage.Mutable message)
     {
         if (message.isMeta())
@@ -706,7 +669,6 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected boolean extendSendMeta(ServerMessage.Mutable message)
     {
         if (!message.isMeta())
@@ -732,7 +694,6 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected ServerMessage extendSendMessage(ServerMessage message)
     {
         if (message.isMeta())
@@ -761,7 +722,6 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public Object getAdvice()
     {
         final ServerTransport transport = _bayeux.getCurrentTransport();
@@ -778,13 +738,11 @@ public class ServerSessionImpl implements ServerSession
         return advice;
     }
 
-    /* ------------------------------------------------------------ */
     public void reAdvise()
     {
         _advisedTransport = null;
     }
 
-    /* ------------------------------------------------------------ */
     public Object takeAdvice()
     {
         final ServerTransport transport = _bayeux.getCurrentTransport();
@@ -799,33 +757,28 @@ public class ServerSessionImpl implements ServerSession
         return null;
     }
 
-    /* ------------------------------------------------------------ */
     public long getTimeout()
     {
         return _timeout;
     }
 
-    /* ------------------------------------------------------------ */
     public long getInterval()
     {
         return _interval;
     }
 
-    /* ------------------------------------------------------------ */
     public void setTimeout(long timeoutMS)
     {
         _timeout = timeoutMS;
         _advisedTransport = null;
     }
 
-    /* ------------------------------------------------------------ */
     public void setInterval(long intervalMS)
     {
         _interval = intervalMS;
         _advisedTransport = null;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param timedOut whether the session has been timed out
      * @return True if the session was connected.
@@ -860,31 +813,26 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void setMetaConnectDeliveryOnly(boolean meta)
     {
         _metaConnectDelivery = meta;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isMetaConnectDeliveryOnly()
     {
         return _metaConnectDelivery;
     }
 
-    /* ------------------------------------------------------------ */
     protected void subscribedTo(ServerChannelImpl channel)
     {
         _subscribedTo.put(channel, Boolean.TRUE);
     }
 
-    /* ------------------------------------------------------------ */
     protected void unsubscribedFrom(ServerChannelImpl channel)
     {
         _subscribedTo.remove(channel);
     }
 
-    /* ------------------------------------------------------------ */
     protected void dump(StringBuilder b,String indent)
     {
         b.append(toString());
@@ -906,13 +854,11 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    /* ------------------------------------------------------------ */
     public String toDetailString()
     {
         return _id + ",lc=" + _lastConnect;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {

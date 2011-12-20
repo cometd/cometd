@@ -16,6 +16,7 @@
 
 package org.cometd.bayeux.server;
 
+import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 
@@ -48,6 +49,12 @@ public interface ServerSession extends Session
      * @see #addExtension(Extension)
      */
     public void removeExtension(Extension extension);
+
+    /**
+     * @return an immutable list of extensions present in this ServerSession instance
+     * @see #addExtension(Extension)
+     */
+    public List<Extension> getExtensions();
 
     /**
      * Adds the given listener to this session.
