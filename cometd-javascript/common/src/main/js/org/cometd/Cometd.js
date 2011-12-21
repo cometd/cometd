@@ -1271,6 +1271,11 @@ org.cometd.Cometd = function(name)
         return transport;
     };
 
+    this.unregisterTransports = function()
+    {
+        _transports.clear();
+    };
+
     this.findTransport = function(name)
     {
         return _transports.find(name);
@@ -1779,9 +1784,5 @@ org.cometd.Cometd = function(name)
     if (!org.cometd.WebSocket)
     {
         org.cometd.WebSocket = window.MozWebSocket;
-    }
-    if (org.cometd.WebSocket)
-    {
-        _cometd.registerTransport('websocket', new org.cometd.WebSocketTransport());
     }
 };

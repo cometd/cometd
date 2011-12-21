@@ -169,68 +169,32 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     }
 
     @Test
+    public void testReloadWithWebSocketTransport() throws Exception
+    {
+        testReloadWithTransport(cometdURL, "websocket");
+    }
+
+    @Test
     public void testReloadWithLongPollingTransport() throws Exception
     {
-        defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var readyLatch = new Latch(1);");
-        Latch readyLatch = get("readyLatch");
-        evaluateScript("" +
-                "cometd.addListener('/meta/connect', function(message) " +
-                "{ " +
-                "   if (message.successful) readyLatch.countDown(); " +
-                "});");
-        evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
-
-        // Get the clientId
-        String clientId = evaluateScript("cometd.getClientId();");
-
-        // Calling reload() results in the cookie being written
-        evaluateScript("cometd.reload();");
-
-        // Reload the page
-        destroyPage();
-        initPage();
-        initExtension();
-
-        defineClass(Latch.class);
-        evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var readyLatch = new Latch(1);");
-        readyLatch = get("readyLatch");
-        evaluateScript("" +
-                "cometd.addListener('/meta/connect', function(message) " +
-                "{" +
-                "   if (message.successful) readyLatch.countDown(); " +
-                "});");
-        evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(5000));
-
-        String newClientId = evaluateScript("cometd.getClientId();");
-        Assert.assertEquals(clientId, newClientId);
-
-        evaluateScript("cometd.disconnect(true);");
-
-        // Be sure the cookie has been removed on disconnect
-        Boolean noCookie = evaluateScript("org.cometd.COOKIE.get('org.cometd.reload') == null;");
-        Assert.assertTrue(noCookie);
+        testReloadWithTransport(cometdURL, "long-polling");
     }
 
     @Test
     public void testReloadWithCallbackPollingTransport() throws Exception
     {
-        defineClass(Latch.class);
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
+        testReloadWithTransport(url, "callback-polling");
+    }
+
+    private void testReloadWithTransport(String url, String transportName) throws Exception
+    {
+        defineClass(Latch.class);
+
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
-        // Leave only the callback-polling transport
-        evaluateScript("" +
-                "var types = cometd.getTransportTypes();" +
-                "for (var i = 0; i < types.length; ++i)" +
-                "{" +
-                "   if (types[i] !== 'callback-polling')" +
-                "       cometd.unregisterTransport(types[i]);" +
-                "}");
+        evaluateScript("cometd.unregisterTransports();");
+        evaluateScript("cometd.registerTransport('" + transportName + "', originalTransports['" + transportName + "']);");
 
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
@@ -255,7 +219,8 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
 
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
-        // Leave all the transports so that we can test if the previous transport is the one used on reload
+        // Leave the default transports so that we can test if the previous transport is the one used on reload
+        evaluateScript("cometd.registerTransport('" + transportName + "', originalTransports['" + transportName + "']);");
 
         evaluateScript("var readyLatch = new Latch(1);");
         readyLatch = get("readyLatch");
@@ -271,10 +236,10 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         Assert.assertEquals(clientId, newClientId);
 
         String transportType = (String)evaluateScript("cometd.getTransport().getType();");
-        Assert.assertEquals("callback-polling", transportType);
+        Assert.assertEquals(transportName, transportType);
 
         evaluateScript("cometd.disconnect();");
-        Thread.sleep(500); // Callback-polling transport does not support sync disconnect
+        Thread.sleep(500);
 
         // Be sure the cookie has been removed on disconnect
         Boolean noCookie = evaluateScript("org.cometd.COOKIE.get('org.cometd.reload') == null;");

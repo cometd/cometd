@@ -82,7 +82,7 @@ public class CometDPublishFailureTest extends AbstractCometDTest
         public boolean rcv(ServerSession from, ServerMessage.Mutable message)
         {
             // The publish will arrive here, just throw
-            throw new Error("thrown_by_test");
+            throw new Error("explicitly_thrown_by_test");
         }
 
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)

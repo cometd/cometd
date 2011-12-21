@@ -35,10 +35,6 @@ public class CometDTwoInstancesTest extends AbstractCometDTest
 
         evaluateScript("" +
                 "var cometd2 = new $.Cometd('jquery');" +
-                "var jsonpTransport = cometd2.unregisterTransport('callback-polling');" +
-                "" +
-                "/* Check that the other cometd object has not been influenced */" +
-                "window.assert(cometd.findTransport('callback-polling') != null);" +
                 "" +
                 "cometd.addListener('/meta/handshake', handshakeLatch, 'countDown');" +
                 "cometd2.addListener('/meta/handshake', handshakeLatch2, 'countDown');" +

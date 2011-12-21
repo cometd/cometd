@@ -19,7 +19,7 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDCallbackPollingTest extends AbstractCometDTest
+public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTransportTest
 {
     @Test
     public void testCallbackPolling() throws Exception
@@ -29,14 +29,6 @@ public class CometDCallbackPollingTest extends AbstractCometDTest
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
-        // Leave only the callback-polling transport
-        evaluateScript("" +
-                "var types = cometd.getTransportTypes();" +
-                "for (var i = 0; i < types.length; ++i)" +
-                "{" +
-                "   if (types[i] !== 'callback-polling')" +
-                "       cometd.unregisterTransport(types[i]);" +
-                "}");
 
         evaluateScript("" +
                 "var handshakeLatch = new Latch(1);" +
@@ -85,14 +77,6 @@ public class CometDCallbackPollingTest extends AbstractCometDTest
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
-        // Leave only the callback-polling transport
-        evaluateScript("" +
-                "var types = cometd.getTransportTypes();" +
-                "for (var i = 0; i < types.length; ++i)" +
-                "{" +
-                "   if (types[i] !== 'callback-polling')" +
-                "       cometd.unregisterTransport(types[i]);" +
-                "}");
 
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = get("connectLatch");
@@ -129,14 +113,6 @@ public class CometDCallbackPollingTest extends AbstractCometDTest
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
-        // Leave only the callback-polling transport
-        evaluateScript("" +
-                "var types = cometd.getTransportTypes();" +
-                "for (var i = 0; i < types.length; ++i)" +
-                "{" +
-                "   if (types[i] !== 'callback-polling')" +
-                "       cometd.unregisterTransport(types[i]);" +
-                "}");
 
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = get("connectLatch");
@@ -178,14 +154,6 @@ public class CometDCallbackPollingTest extends AbstractCometDTest
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
-        // Leave only the callback-polling transport
-        evaluateScript("" +
-                "var types = cometd.getTransportTypes();" +
-                "for (var i = 0; i < types.length; ++i)" +
-                "{" +
-                "   if (types[i] !== 'callback-polling')" +
-                "       cometd.unregisterTransport(types[i]);" +
-                "}");
 
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = get("connectLatch");
@@ -227,14 +195,6 @@ public class CometDCallbackPollingTest extends AbstractCometDTest
         // Make the CometD URL different to simulate the cross domain request
         String url = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({url: '" + url + "', logLevel: '" + getLogLevel() + "'});");
-        // Leave only the callback-polling transport
-        evaluateScript("" +
-                "var types = cometd.getTransportTypes();" +
-                "for (var i = 0; i < types.length; ++i)" +
-                "{" +
-                "   if (types[i] !== 'callback-polling')" +
-                "       cometd.unregisterTransport(types[i]);" +
-                "}");
 
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = get("connectLatch");

@@ -33,8 +33,18 @@ public class JQueryTestProvider implements TestProvider
         threadModel.evaluate(new URL(contextURL + "/org/cometd.js"));
         threadModel.evaluate(new URL(contextURL + "/jquery/jquery.cometd.js"));
         threadModel.evaluate("cometd", "var cometd = $.cometd;");
-        threadModel.evaluate("no_long_polling", "cometd.unregisterTransport('long-polling');");
-        threadModel.evaluate("enable_websocket", "cometd.websocketEnabled = true;");
+        threadModel.evaluate("original_transports", "" +
+                "var originalTransports = {};" +
+                "var transportNames = cometd.getTransportTypes();" +
+                "for (var i = 0; i < transportNames.length; ++i)" +
+                "{" +
+                "    var transportName = transportNames[i];" +
+                "    originalTransports[transportName] = cometd.findTransport(transportName);" +
+                "}" +
+                "");
+        threadModel.evaluate("only_websocket", "" +
+                "cometd.unregisterTransports();" +
+                "cometd.registerTransport('websocket', originalTransports['websocket']);");
     }
 
     public void provideMessageAcknowledgeExtension(ThreadModel threadModel, String contextURL) throws Exception

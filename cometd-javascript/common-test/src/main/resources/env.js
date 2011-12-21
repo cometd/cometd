@@ -921,7 +921,8 @@ var window = this;
             },
             onreadystatechange: function()
             {
-                window.assert("onreadystatechange not assigned");
+                // Dojo does not override this function (but uses a timer to poll state)
+                // so we do not throw if this function is called like we do with WebSocket below.
             },
             open: function(method, url, async, user, password)
             {
@@ -990,19 +991,19 @@ var window = this;
             },
             onopen: function(event)
             {
-                window.assert("onopen not assigned");
+                window.assert(false, "onopen not assigned");
             },
             onerror: function(event)
             {
-                window.assert("onerror not assigned");
+                window.assert(false, "onerror not assigned");
             },
             onclose: function(event)
             {
-                window.assert("onclose not assigned");
+                window.assert(false, "onclose not assigned");
             },
             onmessage: function(event)
             {
-                window.assert("onmessage not assigned");
+                window.assert(false, "onmessage not assigned");
             },
             send: function(data)
             {

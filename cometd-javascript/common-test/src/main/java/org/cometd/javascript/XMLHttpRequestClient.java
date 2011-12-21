@@ -49,7 +49,7 @@ public class XMLHttpRequestClient extends ScriptableObject
         httpClient.setMaxConnectionsPerAddress(maxConnections);
         httpClient.setIdleTimeout(300000);
         httpClient.setTimeout(300000);
-        httpClient.setConnectorType(HttpClient.CONNECTOR_SOCKET);
+//        httpClient.setConnectorType(HttpClient.CONNECTOR_SOCKET);
         httpClient.start();
     }
 

@@ -46,7 +46,11 @@ public abstract class AbstractCometDTest
         public void starting(FrameworkMethod method)
         {
             super.starting(method);
-            System.err.printf("Running %s.%s%n", method.getMethod().getDeclaringClass().getName(), method.getName());
+            String providerClass = getProviderClassName();
+            System.err.printf("Running %s.%s() [%s]%n",
+                    method.getMethod().getDeclaringClass().getName(),
+                    method.getName(),
+                    providerClass.substring(providerClass.lastIndexOf('.') + 1));
         }
     };
     protected TestProvider provider;
@@ -66,7 +70,7 @@ public abstract class AbstractCometDTest
     @Before
     public void initCometDServer() throws Exception
     {
-        String providerClass = System.getProperty("toolkitTestProvider", JQueryTestProvider.class.getName());
+        String providerClass = getProviderClassName();
         provider = (TestProvider)Thread.currentThread().getContextClassLoader().loadClass(providerClass).newInstance();
 
         cookies = new HttpCookieStore();
@@ -114,6 +118,11 @@ public abstract class AbstractCometDTest
         server.stop();
         server.join();
         cookies.clear();
+    }
+
+    private String getProviderClassName()
+    {
+        return System.getProperty("toolkitTestProvider", JQueryTestProvider.class.getName());
     }
 
     protected String getLogLevel()

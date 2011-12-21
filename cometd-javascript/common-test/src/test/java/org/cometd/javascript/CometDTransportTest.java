@@ -16,8 +16,6 @@
 
 package org.cometd.javascript;
 
-import java.util.Arrays;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -28,18 +26,8 @@ public class CometDTransportTest extends AbstractCometDTest
     {
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        Object[] transportTypes = (Object[])Utils.jsToJava(evaluateScript("cometd.getTransportTypes()"));
-        // The spec requires at least these 2 transports
-        Assert.assertTrue(Arrays.asList(transportTypes).contains("long-polling"));
-        Assert.assertTrue(Arrays.asList(transportTypes).contains("callback-polling"));
 
-        // Remove all transports
-        evaluateScript("" +
-                "var types = cometd.getTransportTypes();" +
-                "for (var i = 0; i < types.length; ++i)" +
-                "{" +
-                "   cometd.unregisterTransport(types[i]);" +
-                "};");
+        evaluateScript("cometd.unregisterTransports();");
 
         String localTransport =
                 "var readyLatch = new Latch(1);" +

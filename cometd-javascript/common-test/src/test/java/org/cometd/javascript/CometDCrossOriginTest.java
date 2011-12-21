@@ -50,7 +50,6 @@ public class CometDCrossOriginTest extends AbstractCometDTest
         evaluateScript("cometd.handshake();");
 
         Assert.assertTrue(connectLatch.await(1000));
-        Assert.assertEquals("long-polling", evaluateScript("cometd.getTransport().getType()"));
 
         evaluateScript("cometd.disconnect(true);");
     }

@@ -100,6 +100,12 @@ org.cometd.TransportRegistry = function()
         return null;
     };
 
+    this.clear = function()
+    {
+        _types = [];
+        _transports = {};
+    };
+
     this.reset = function()
     {
         for (var i = 0; i < _types.length; ++i)
