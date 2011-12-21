@@ -58,9 +58,7 @@ import org.eclipse.jetty.util.thread.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/* ------------------------------------------------------------ */
 /**
- *
  * Options to configure the server are: <dl>
  * <tt>tickIntervalMs</tt><td>The time in milliseconds between ticks to check for timeouts etc</td>
  * <tt>sweepIntervalMs</tt><td>The time in milliseconds between sweeps of channels to remove
@@ -93,7 +91,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private JSONContext.Server _jsonContext;
     private Timer _timer;
 
-    /* ------------------------------------------------------------ */
     public BayeuxServerImpl()
     {
         addTransport(new JSONTransport(this));
@@ -103,7 +100,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _handshakeAdvice.put(Message.INTERVAL_FIELD, 0L);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return The Logger used by this BayeuxServer instance
      */
@@ -120,7 +116,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             _logger.debug(message, args);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
@@ -182,7 +177,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected void doStop() throws Exception
     {
@@ -244,7 +238,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _options.put(JSON_CONTEXT, _jsonContext);
     }
 
-    /* ------------------------------------------------------------ */
     /** Initialize the default transports.
      * <p>This method creates  a {@link JSONTransport} and a {@link JSONPTransport}.
      * If no allowed transport have been set then adds all known transports as allowed transports.
@@ -259,19 +252,16 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         debug("Allowed Transports: {}", _allowedTransports);
     }
 
-    /* ------------------------------------------------------------ */
     public void startTimeout(Timeout.Task task, long interval)
     {
         _timeout.schedule(task, interval);
     }
 
-    /* ------------------------------------------------------------ */
     public void cancelTimeout(Timeout.Task task)
     {
         task.cancel();
     }
 
-    /* ------------------------------------------------------------ */
     public ChannelId newChannelId(String id)
     {
         ServerChannelImpl channel = _channels.get(id);
@@ -280,13 +270,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return new ChannelId(id);
     }
 
-    /* ------------------------------------------------------------ */
     public Map<String,Object> getOptions()
     {
         return _options;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.bayeux.Bayeux#getOption(java.lang.String)
      */
@@ -295,7 +283,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _options.get(qualifiedName);
     }
 
-    /* ------------------------------------------------------------ */
     /** Get an option value as a long
      * @param name The option name
      * @param dft The default value
@@ -311,7 +298,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return Long.parseLong(val.toString());
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.bayeux.Bayeux#getOptionNames()
      */
@@ -320,7 +306,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _options.keySet();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.bayeux.Bayeux#setOption(java.lang.String, java.lang.Object)
      */
@@ -334,38 +319,32 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _options.putAll(options);
     }
 
-    /* ------------------------------------------------------------ */
     public long randomLong()
     {
         return _random.nextLong();
     }
 
-    /* ------------------------------------------------------------ */
     public void setCurrentTransport(AbstractServerTransport transport)
     {
         _currentTransport.set(transport);
     }
 
-    /* ------------------------------------------------------------ */
     public ServerTransport getCurrentTransport()
     {
         return _currentTransport.get();
     }
 
-    /* ------------------------------------------------------------ */
     public BayeuxContext getContext()
     {
         ServerTransport transport=_currentTransport.get();
         return transport==null?null:transport.getContext();
     }
 
-    /* ------------------------------------------------------------ */
     public SecurityPolicy getSecurityPolicy()
     {
         return _policy;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean createIfAbsent(String channelName, Initializer... initializers)
     {
         return createChannelIfAbsent(channelName, initializers).isMarked();
@@ -462,13 +441,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
-    /* ------------------------------------------------------------ */
     public List<ServerSession> getSessions()
     {
         return Collections.unmodifiableList(new ArrayList<ServerSession>(_sessions.values()));
     }
 
-    /* ------------------------------------------------------------ */
     public ServerSession getSession(String clientId)
     {
         if (clientId==null)
@@ -476,7 +453,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _sessions.get(clientId);
     }
 
-    /* ------------------------------------------------------------ */
     protected void addServerSession(ServerSessionImpl session)
     {
         _sessions.put(session.getId(),session);
@@ -499,7 +475,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param session the session to remove
      * @param timedout whether the remove reason is server-side expiration
@@ -540,25 +515,21 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected ServerSessionImpl newServerSession()
     {
         return new ServerSessionImpl(this);
     }
 
-    /* ------------------------------------------------------------ */
     public LocalSession newLocalSession(String idHint)
     {
         return new LocalSessionImpl(this,idHint);
     }
 
-    /* ------------------------------------------------------------ */
     public ServerMessage.Mutable newMessage()
     {
         return new ServerMessageImpl();
     }
 
-    /* ------------------------------------------------------------ */
     public ServerMessage.Mutable newMessage(ServerMessage tocopy)
     {
         ServerMessage.Mutable mutable = newMessage();
@@ -567,25 +538,26 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return mutable;
     }
 
-    /* ------------------------------------------------------------ */
     public void setSecurityPolicy(SecurityPolicy securityPolicy)
     {
         _policy=securityPolicy;
     }
 
-    /* ------------------------------------------------------------ */
     public void addExtension(Extension extension)
     {
         _extensions.add(extension);
     }
 
-    /* ------------------------------------------------------------ */
     public void removeExtension(Extension extension)
     {
         _extensions.remove(extension);
     }
 
-    /* ------------------------------------------------------------ */
+    public List<Extension> getExtensions()
+    {
+        return Collections.unmodifiableList(_extensions);
+    }
+
     public void addListener(BayeuxServerListener listener)
     {
         if (listener == null)
@@ -593,7 +565,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _listeners.add(listener);
     }
 
-    /* ------------------------------------------------------------ */
     public ServerChannel getChannel(String channelId)
     {
         ServerChannelImpl channel = _channels.get(channelId);
@@ -602,7 +573,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return channel;
     }
 
-    /* ------------------------------------------------------------ */
     public List<ServerChannel> getChannels()
     {
         List<ServerChannel> result = new ArrayList<ServerChannel>();
@@ -614,7 +584,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return result;
     }
 
-    /* ------------------------------------------------------------ */
 
     /**
      * Scans all the channels and returns those identified by a {@link ChannelId channel id}
@@ -638,13 +607,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return children;
     }
 
-    /* ------------------------------------------------------------ */
     public void removeListener(BayeuxServerListener listener)
     {
         _listeners.remove(listener);
     }
 
-    /* ------------------------------------------------------------ */
     /** Extend and handle in incoming message.
      * @param session The session if known
      * @param message The message.
@@ -827,7 +794,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return result;
     }
 
-    /* ------------------------------------------------------------ */
     protected void doPublish(ServerSessionImpl from, ServerChannelImpl to, final ServerMessage.Mutable mutable)
     {
         // check the parent channels
@@ -942,7 +908,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
-    /* ------------------------------------------------------------ */
     public ServerMessage.Mutable extendReply(ServerSessionImpl from, ServerSessionImpl to, ServerMessage.Mutable reply)
     {
         if (!extendSend(from, to, reply))
@@ -975,7 +940,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return reply;
     }
 
-    /* ------------------------------------------------------------ */
     protected boolean extendRecv(ServerSession from, ServerMessage.Mutable message)
     {
         if (message.isMeta())
@@ -1083,7 +1047,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected boolean removeServerChannel(ServerChannelImpl channel)
     {
         if(_channels.remove(channel.getId(),channel))
@@ -1111,38 +1074,32 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected List<BayeuxServerListener> getListeners()
     {
         return Collections.unmodifiableList(_listeners);
     }
 
-    /* ------------------------------------------------------------ */
     public Set<String> getKnownTransportNames()
     {
         return _transports.keySet();
     }
 
-    /* ------------------------------------------------------------ */
     public ServerTransport getTransport(String transport)
     {
         return _transports.get(transport);
     }
 
-    /* ------------------------------------------------------------ */
     public void addTransport(ServerTransport transport)
     {
         debug("addTransport {} from {}",transport.getName(),transport.getClass());
         _transports.put(transport.getName(), transport);
     }
 
-    /* ------------------------------------------------------------ */
     public void setTransports(ServerTransport... transports)
     {
         setTransports(Arrays.asList(transports));
     }
 
-    /* ------------------------------------------------------------ */
     public void setTransports(List<ServerTransport> transports)
     {
         _transports.clear();
@@ -1150,19 +1107,16 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             addTransport(transport);
     }
 
-    /* ------------------------------------------------------------ */
     public List<String> getAllowedTransports()
     {
         return Collections.unmodifiableList(_allowedTransports);
     }
 
-    /* ------------------------------------------------------------ */
     public void setAllowedTransports(String... allowed)
     {
         setAllowedTransports(Arrays.asList(allowed));
     }
 
-    /* ------------------------------------------------------------ */
     public void setAllowedTransports(List<String> allowed)
     {
         debug("setAllowedTransport {} of {}",allowed,_transports);
@@ -1175,7 +1129,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         debug("allowedTransports ", _allowedTransports);
     }
 
-    /* ------------------------------------------------------------ */
     protected void unknownSession(Mutable reply)
     {
         error(reply, "402::Unknown client");
@@ -1183,14 +1136,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             reply.put(Message.ADVICE_FIELD, _handshakeAdvice);
     }
 
-    /* ------------------------------------------------------------ */
     protected void error(ServerMessage.Mutable reply, String error)
     {
         reply.put(Message.ERROR_FIELD, error);
         reply.setSuccessful(false);
     }
 
-    /* ------------------------------------------------------------ */
     protected ServerMessage.Mutable createReply(ServerMessage.Mutable message)
     {
         ServerMessage.Mutable reply=newMessage();
@@ -1204,7 +1155,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return reply;
     }
 
-    /* ------------------------------------------------------------ */
     public void sweep()
     {
         for (ServerChannelImpl channel : _channels.values())
@@ -1221,7 +1171,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             session.sweep(now);
     }
 
-    /* ------------------------------------------------------------ */
     public String dump()
     {
         StringBuilder b = new StringBuilder();
@@ -1250,8 +1199,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return b.toString();
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     abstract class HandlerListener implements ServerChannel.ServerChannelListener
     {
         protected boolean isSessionUnknown(ServerSession session)
@@ -1259,7 +1206,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             return session == null || getSession(session.getId()) == null;
         }
 
-        /* ------------------------------------------------------------ */
         protected List<String> toChannelList(Object channels)
         {
             if (channels instanceof String)

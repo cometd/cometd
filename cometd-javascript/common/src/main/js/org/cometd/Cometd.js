@@ -1471,7 +1471,7 @@ org.cometd.Cometd = function(name)
             scope = undefined;
         }
 
-        // Only send the message to the server if this clientId has not yet subscribed to the channel
+        // Only send the message to the server if this client has not yet subscribed to the channel
         var send = !_hasSubscriptions(channel);
 
         var subscription = _addListener(channel, scope, callback, false);
@@ -1512,7 +1512,7 @@ org.cometd.Cometd = function(name)
         this.removeListener(subscription);
 
         var channel = subscription[0];
-        // Only send the message to the server if this clientId unsubscribes the last subscription
+        // Only send the message to the server if this client unsubscribes the last subscription
         if (!_hasSubscriptions(channel))
         {
             var bayeuxMessage = {

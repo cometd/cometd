@@ -51,6 +51,8 @@ org.cometd.ReloadExtension = function(configuration)
     var _cometd;
     var _debug;
     var _state = null;
+    var _cookieName = 'org.cometd.reload';
+    var _cookiePath = '/';
     var _cookieMaxAge = 5;
     var _batch = false;
 
@@ -62,9 +64,9 @@ org.cometd.ReloadExtension = function(configuration)
 
             var cookie = org.cometd.JSON.toJSON(_state);
             _debug('Reload extension saving cookie value', cookie);
-            org.cometd.COOKIE.set('org.cometd.reload', cookie, {
+            org.cometd.COOKIE.set(_cookieName, cookie, {
                 'max-age': _cookieMaxAge,
-                path: '/',
+                path: _cookiePath,
                 expires: new Date(new Date().getTime() + _cookieMaxAge * 1000)
             });
         }
@@ -87,6 +89,14 @@ org.cometd.ReloadExtension = function(configuration)
             if (typeof config.cookieMaxAge === 'number')
             {
                 _cookieMaxAge = config.cookieMaxAge;
+            }
+            if (typeof config.cookieName === 'string')
+            {
+                _cookieName = config.cookieName;
+            }
+            if (typeof config.cookiePath === 'string')
+            {
+                _cookiePath = config.cookiePath;
             }
         }
     }
@@ -115,7 +125,7 @@ org.cometd.ReloadExtension = function(configuration)
             _state = {};
             _state.url = _cometd.getURL();
 
-            var cookie = org.cometd.COOKIE.get('org.cometd.reload');
+            var cookie = org.cometd.COOKIE.get(_cookieName);
             _debug('Reload extension found cookie value', cookie);
             // Is there a saved handshake response from a prior load ?
             if (cookie)
@@ -123,8 +133,8 @@ org.cometd.ReloadExtension = function(configuration)
                 try
                 {
                     // Remove the cookie, not needed anymore
-                    org.cometd.COOKIE.set('org.cometd.reload', '', {
-                        path: '/'
+                    org.cometd.COOKIE.set(_cookieName, '', {
+                        path: _cookiePath
                     });
 
                     var oldState = org.cometd.JSON.fromJSON(cookie);

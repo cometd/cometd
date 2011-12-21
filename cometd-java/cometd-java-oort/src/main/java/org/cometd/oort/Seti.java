@@ -18,10 +18,14 @@ package org.cometd.oort;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EventListener;
+import java.util.EventObject;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -62,6 +66,7 @@ public class Seti extends AbstractLifeCycle
     private static final String SETI_ALL_CHANNEL = "/seti/all";
 
     private final Map<String, Set<Location>> _uid2Location = new HashMap<String, Set<Location>>();
+    private final List<PresenceListener> listeners = new CopyOnWriteArrayList<PresenceListener>();
     private final Logger _logger;
     private final Oort _oort;
     private final String _setiId;
@@ -113,6 +118,8 @@ public class Seti extends AbstractLifeCycle
     @Override
     protected void doStart() throws Exception
     {
+        _listeners.clear();
+
         BayeuxServer bayeux = _oort.getBayeuxServer();
         bayeux.createIfAbsent("/seti/**", new ConfigurableServerChannel.Initializer()
         {
@@ -230,6 +237,7 @@ public class Seti extends AbstractLifeCycle
      * @param userId the user identifier to test for association
      * @return whether the given userId has been associated via {@link #associate(String, ServerSession)}
      * @see #associate(String, ServerSession)
+     * @see #isPresent(String)
      */
     public boolean isAssociated(String userId)
     {
@@ -244,6 +252,21 @@ public class Seti extends AbstractLifeCycle
                     return true;
             }
             return false;
+        }
+    }
+
+    /**
+     * @param userId the user identifier to test for presence
+     * @return whether the given userId is present on the cloud (and therefore has been associated
+     * either locally or remotely)
+     * @see #isAssociated(String)
+     */
+    public boolean isPresent(String userId)
+    {
+        synchronized (_uid2Location)
+        {
+            Set<Location> locations = _uid2Location.get(userId);
+            return locations != null;
         }
     }
 
@@ -382,20 +405,72 @@ public class Seti extends AbstractLifeCycle
      */
     protected void receivePresence(Message message)
     {
-        Map<String, Object> data = message.getDataAsMap();
-        String setiId = (String)data.get(SetiPresence.SETI_ID_FIELD);
+        Map<String, Object> presence = message.getDataAsMap();
+        String setiId = (String)presence.get(SetiPresence.SETI_ID_FIELD);
         if (_setiId.equals(setiId))
             return;
 
         debug("Received presence message {}", message);
 
-        String userId = (String)data.get(SetiPresence.USER_ID_FIELD);
+        String userId = (String)presence.get(SetiPresence.USER_ID_FIELD);
+        boolean present = (Boolean)presence.get(SetiPresence.PRESENCE_FIELD);
         SetiLocation location = new SetiLocation(userId, "/seti/" + setiId);
-        boolean presence = (Boolean)data.get(SetiPresence.PRESENCE_FIELD);
-        if (presence)
+        if (present)
+        {
             associate(userId, location);
+            notifyPresenceAdded(presence);
+        }
         else
+        {
             disassociate(userId, location);
+            notifyPresenceRemoved(presence);
+        }
+    }
+
+    public void addPresenceListener(PresenceListener listener)
+    {
+        listeners.add(listener);
+    }
+
+    public void removePresenceListener(PresenceListener listener)
+    {
+        listeners.remove(listener);
+    }
+
+    private void notifyPresenceAdded(Map<String, Object> presence)
+    {
+        String userId = (String)presence.get(SetiPresence.USER_ID_FIELD);
+        String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
+        PresenceListener.Event event = new PresenceListener.Event(this, userId, oortURL);
+        for (PresenceListener listener : listeners)
+        {
+            try
+            {
+                listener.presenceAdded(event);
+            }
+            catch (Exception x)
+            {
+                _logger.info("Exception while invoking listener " + listener, x);
+            }
+        }
+    }
+
+    private void notifyPresenceRemoved(Map<String, Object> presence)
+    {
+        String userId = (String)presence.get(SetiPresence.USER_ID_FIELD);
+        String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
+        PresenceListener.Event event = new PresenceListener.Event(this, userId, oortURL);
+        for (PresenceListener listener : listeners)
+        {
+            try
+            {
+                listener.presenceRemoved(event);
+            }
+            catch (Exception x)
+            {
+                _logger.info("Exception while invoking listener " + listener, x);
+            }
+        }
     }
 
     /**
@@ -577,15 +652,61 @@ public class Seti extends AbstractLifeCycle
     private class SetiPresence extends HashMap<String, Object>
     {
         private static final String USER_ID_FIELD = "userId";
+        private static final String OORT_URL_FIELD = "oortURL";
         private static final String SETI_ID_FIELD = "setiId";
         private static final String PRESENCE_FIELD = "presence";
 
-        private SetiPresence(String userId, boolean on)
+        private SetiPresence(String userId, boolean present)
         {
-            super(3);
+            super(4);
             put(USER_ID_FIELD, userId);
+            put(OORT_URL_FIELD, _oort.getURL());
             put(SETI_ID_FIELD, _setiId);
-            put(PRESENCE_FIELD, on);
+            put(PRESENCE_FIELD, present);
+        }
+    }
+
+    /**
+     * Listener interface that gets notified of remote Seti presence events.
+     */
+    public interface PresenceListener extends EventListener
+    {
+        /**
+         * Callback method invoked when a presence is added to a remote Seti
+         * @param event the presence event
+         */
+        public void presenceAdded(Event event);
+
+        /**
+         * Callback method invoked when a presence is removed from a remote Seti
+         * @param event the presence event
+         */
+        public void presenceRemoved(Event event);
+
+        /**
+         * Seti presence event object, delivered to {@link PresenceListener} methods.
+         */
+        public static class Event extends EventObject
+        {
+            private final String userId;
+            private final String url;
+
+            public Event(Seti source, String userId, String url)
+            {
+                super(source);
+                this.userId = userId;
+                this.url = url;
+            }
+
+            public String getUserId()
+            {
+                return userId;
+            }
+
+            public String getURL()
+            {
+                return url;
+            }
         }
     }
 }

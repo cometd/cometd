@@ -70,7 +70,7 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
-                "}]");
+                "}]", "UTF-8");
         connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
 

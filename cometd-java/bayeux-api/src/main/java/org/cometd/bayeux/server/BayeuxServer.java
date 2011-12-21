@@ -46,7 +46,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 public interface BayeuxServer extends Bayeux
 {
     /** ServletContext attribute name used to obtain the Bayeux object */
-    public static final String ATTRIBUTE ="org.cometd.bayeux";
+    public static final String ATTRIBUTE = "org.cometd.bayeux";
 
     /**
      * Adds the given extension to this Bayeux object.
@@ -61,6 +61,12 @@ public interface BayeuxServer extends Bayeux
      * @see #addExtension(Extension)
      */
     void removeExtension(Extension extension);
+
+    /**
+     * @return an immutable list of extensions present in this BayeuxServer instance
+     * @see #addExtension(Extension)
+     */
+    List<Extension> getExtensions();
 
     /**
      * Adds a listener to this Bayeux object.
@@ -95,7 +101,7 @@ public interface BayeuxServer extends Bayeux
      * to atomically initialize a channel. The initializer will be called before
      * any other thread can access the new channel instance.</p>
      * <p>The createIfAbsent method should be used when a channel needs to be
-     * intialized (e.g. by adding listeners) before any publish or subscribes
+     * initialized (e.g. by adding listeners) before any publish or subscribes
      * can occur on the channel, or before any other thread may concurrently
      * create the same channel.
      *

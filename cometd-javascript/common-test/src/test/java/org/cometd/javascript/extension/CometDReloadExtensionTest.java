@@ -31,6 +31,39 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     }
 
     @Test
+    public void testReloadWithConfiguration() throws Exception
+    {
+        defineClass(Latch.class);
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        String cookieName = "reload.test";
+        evaluateScript("" +
+                "cometd.unregisterExtension('reload');" +
+                "cometd.registerExtension('reload', new org.cometd.ReloadExtension({" +
+                "    cookieName: '" + cookieName + "'," +
+                "    cookiePath: '/test'," +
+                "    cookieMaxAge: 4" +
+                "}));" +
+                "" +
+                "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
+                "cometd.addListener('/meta/connect', function(message) " +
+                "{ " +
+                "   if (message.successful) readyLatch.countDown(); " +
+                "});");
+        evaluateScript("cometd.handshake();");
+        Assert.assertTrue(readyLatch.await(5000));
+
+        // Wait that the long poll is established before reloading
+        Thread.sleep(longPollingPeriod / 2);
+
+        evaluateScript("cometd.reload();");
+        String cookies = evaluateScript("window.document.cookie");
+        Assert.assertTrue(cookies.startsWith(cookieName + "="));
+
+        evaluateScript("cometd.disconnect(true)");
+    }
+
+    @Test
     public void testReloadedHandshakeContainsExtension() throws Exception
     {
         defineClass(Latch.class);

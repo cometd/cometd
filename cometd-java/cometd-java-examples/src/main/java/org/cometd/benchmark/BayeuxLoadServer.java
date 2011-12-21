@@ -50,7 +50,6 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
 import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.websocket.server.WebSocketTransport;
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -61,6 +60,7 @@ import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class BayeuxLoadServer
 {
@@ -138,7 +138,7 @@ public class BayeuxLoadServer
             if (!keyStoreFile.exists())
                 throw new FileNotFoundException(keyStoreFile.getAbsolutePath());
             SslContextFactory sslContextFactory = sslConnector.getSslContextFactory();
-            sslContextFactory.setKeyStore(keyStoreFile.getAbsolutePath());
+            sslContextFactory.setKeyStorePath(keyStoreFile.getAbsolutePath());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setKeyManagerPassword("keypwd");
 //            sslConnector.setUseDirectBuffers(true);

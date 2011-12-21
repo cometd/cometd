@@ -63,6 +63,9 @@ public class JSONTransport extends LongPollingTransport
     @Override
     protected ServerMessage.Mutable[] parseMessages(HttpServletRequest request) throws IOException, ParseException
     {
+        String charset = request.getCharacterEncoding();
+        if (charset == null)
+            request.setCharacterEncoding("UTF-8");
         String contentType = request.getContentType();
         if (contentType == null || contentType.startsWith("application/json"))
             return parseMessages(request.getReader(), _jsonDebug);
