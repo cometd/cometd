@@ -816,8 +816,8 @@ org.cometd.Cometd = function(name)
         switch (action)
         {
             case 'retry':
-                _increaseBackoff();
                 _delayedConnect();
+                _increaseBackoff();
                 break;
             case 'handshake':
                 // The current transport may be failed (e.g. network disconnection)
@@ -1779,7 +1779,7 @@ org.cometd.Cometd = function(name)
     };
 
     // WebSocket handling for Firefox, which deploys WebSocket
-    // under the name of MozWebSocket in Firefox 6 and 7
+    // under the name of MozWebSocket in Firefox 6, 7, 8 and 9
     org.cometd.WebSocket = window.WebSocket;
     if (!org.cometd.WebSocket)
     {
