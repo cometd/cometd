@@ -83,7 +83,7 @@ org.cometd.WebSocketTransport = function()
             }
         }
 
-        this._debug('Transport', this.getType(), 'waiting at most', delay, ' ms for messages', messageIds, 'maxNetworkDelay', maxDelay, ', timeouts:', _timeouts);
+        this._debug('Transport', this.getType(), 'waiting at most', delay, 'ms for messages', messageIds, 'maxNetworkDelay', maxDelay, ', timeouts:', _timeouts);
     }
 
     function _send(envelope, metaConnect)
