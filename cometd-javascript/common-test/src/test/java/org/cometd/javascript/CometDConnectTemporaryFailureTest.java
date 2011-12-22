@@ -16,36 +16,20 @@
 
 package org.cometd.javascript;
 
-import java.io.IOException;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDConnectTemporaryFailureTest extends AbstractCometDTest
 {
-    @Override
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
-        super.customizeContext(context);
-        ConnectThrowingFilter filter = new ConnectThrowingFilter();
-        FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
-    }
-
     @Test
     public void testConnectTemporaryFailure() throws Exception
     {
+        bayeuxServer.addExtension(new ConnectThrowingExtension());
+
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
@@ -94,31 +78,34 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTest
         evaluateScript("cometd.disconnect(true);");
     }
 
-    public static class ConnectThrowingFilter implements Filter
+    public static class ConnectThrowingExtension implements BayeuxServer.Extension
     {
         private int connects;
 
-        public void init(FilterConfig filterConfig) throws ServletException
+        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
         {
+            return true;
         }
 
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
-            doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
-        }
-
-        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
-            String uri = request.getRequestURI();
-            if (uri.endsWith("/connect"))
+            if (Channel.META_CONNECT.equals(message.getChannel()))
+            {
                 ++connects;
-            if (connects == 3)
-                throw new IOException();
-            chain.doFilter(request, response);
+                if (connects == 3)
+                    throw new Error("explicitly_thrown_by_test");
+            }
+            return true;
         }
 
-        public void destroy()
+        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
         {
+            return true;
+        }
+
+        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
+        {
+            return true;
         }
     }
 }

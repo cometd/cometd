@@ -16,47 +16,32 @@
 
 package org.cometd.javascript;
 
-import java.io.IOException;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class CometDConnectFailureTest extends AbstractCometDTest
 {
-    @Override
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
-        super.customizeContext(context);
-        ConnectThrowingFilter filter = new ConnectThrowingFilter();
-        FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
-    }
-
     @Test
     public void testConnectFailure() throws Exception
     {
+        bayeuxServer.addExtension(new ConnectThrowingExtension());
+
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
         Latch handshakeLatch = get("handshakeLatch");
-        evaluateScript("var failureLatch = new Latch(1);");
-        Latch failureLatch = get("failureLatch");
-        evaluateScript("var connectLatch = new Latch(1);");
+        evaluateScript("var connectLatch = new Latch(2);");
         Latch connectLatch = get("connectLatch");
         evaluateScript("cometd.addListener('/meta/handshake', handshakeLatch, handshakeLatch.countDown);");
-        evaluateScript("cometd.addListener('/meta/unsuccessful', failureLatch, failureLatch.countDown);");
-        evaluateScript("cometd.addListener('/meta/connect', connectLatch, connectLatch.countDown);");
+        evaluateScript("cometd.addListener('/meta/connect', function(message)" +
+                "{" +
+                "    if (message.successful === false)" +
+                "        connectLatch.countDown();" +
+                "});");
 
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
         evaluateScript("var backoffIncrement = cometd.getBackoffIncrement();");
@@ -66,31 +51,31 @@ public class CometDConnectFailureTest extends AbstractCometDTest
         Assert.assertTrue(backoffIncrement > 0);
 
         evaluateScript("cometd.handshake();");
+
+        // First connect after handshake will fail, will be retried immediately
+        // and fail again, then backoff kicks in
         Assert.assertTrue(handshakeLatch.await(1000));
         Assert.assertTrue(connectLatch.await(1000));
-        Assert.assertTrue(failureLatch.await(1000));
 
-        // There is a failure, the backoff will be increased from 0 to backoffIncrement
-        Thread.sleep(backoffIncrement / 2); // Waits for the backoff to happen
-        evaluateScript("var backoff = cometd.getBackoffPeriod();");
-        backoff = ((Number)get("backoff")).intValue();
-        Assert.assertEquals(backoffIncrement, backoff);
-
-        connectLatch.reset(1);
-        failureLatch.reset(1);
-        Assert.assertTrue(connectLatch.await(backoffIncrement));
-        Assert.assertTrue(failureLatch.await(backoffIncrement));
-
-        // Another failure, backoff will be increased to 2 * backoffIncrement
+        // The backoff period is always the backoff that will be waited on the *next* failure.
+        // The backoff period has been increased from 0 to 2 * backoffIncrement because
+        // there have been 2 failures already
         Thread.sleep(backoffIncrement / 2); // Waits for the backoff to happen
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
         backoff = ((Number)get("backoff")).intValue();
         Assert.assertEquals(2 * backoffIncrement, backoff);
 
         connectLatch.reset(1);
-        failureLatch.reset(1);
+        Assert.assertTrue(connectLatch.await(backoffIncrement));
+
+        // Another failure, backoff will be increased to 3 * backoffIncrement
+        Thread.sleep(backoffIncrement / 2); // Waits for the backoff to happen
+        evaluateScript("var backoff = cometd.getBackoffPeriod();");
+        backoff = ((Number)get("backoff")).intValue();
+        Assert.assertEquals(3 * backoffIncrement, backoff);
+
+        connectLatch.reset(1);
         Assert.assertTrue(connectLatch.await(2 * backoffIncrement));
-        Assert.assertTrue(failureLatch.await(2 * backoffIncrement));
 
         // Disconnect so that connect is not performed anymore
         evaluateScript("var disconnectLatch = new Latch(1);");
@@ -106,27 +91,28 @@ public class CometDConnectFailureTest extends AbstractCometDTest
         Assert.assertFalse(connectLatch.await(4 * backoffIncrement));
     }
 
-    public static class ConnectThrowingFilter implements Filter
+    public static class ConnectThrowingExtension implements BayeuxServer.Extension
     {
-        public void init(FilterConfig filterConfig) throws ServletException
+        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
         {
+            return true;
         }
 
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
-            doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
+            if (Channel.META_CONNECT.equals(message.getChannel()))
+                throw new Error("explicitly_thrown_by_test");
+            return true;
         }
 
-        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
+        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
         {
-            String uri = request.getRequestURI();
-            if (uri.endsWith("/connect"))
-                throw new IOException();
-            chain.doFilter(request, response);
+            return true;
         }
 
-        public void destroy()
+        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
         {
+            return true;
         }
     }
 }
