@@ -103,12 +103,13 @@ var window = this;
                         {
                             if (Object.hasOwnProperty.call(object, name))
                             {
+                                if (objectResult.length > 1)
+                                    objectResult += ',';
+                                objectResult += '"' + name + '":';
                                 var objectValue = _toJSON(object[name], ids);
                                 if (objectValue !== undefined)
                                 {
-                                    if (objectResult.length > 1)
-                                        objectResult += ',';
-                                    objectResult += '"' + name + '":' + objectValue;
+                                    objectResult += '' + objectValue;
                                 }
                             }
                         }
@@ -117,10 +118,10 @@ var window = this;
                     }
                     else
                     {
-                        return undefined;
+                        return '' + object;
                     }
                 case 'function':
-                    return undefined;
+                    return object.name ? object.name + '()' : 'anonymous()';
                 default:
                     throw 'Unknown object type ' + (typeof object);
             }
