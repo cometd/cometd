@@ -28,7 +28,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CometDURLPathTest extends AbstractCometDLongPollingTransportTest
+public class CometDURLPathTest extends AbstractCometDLongPollingTest
 {
     @Before
     public void init()

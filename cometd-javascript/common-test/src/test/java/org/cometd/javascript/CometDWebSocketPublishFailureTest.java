@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010 the original author or authors.
+ * Copyright (c) 2011 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +19,11 @@ package org.cometd.javascript;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDPublishFailureTest extends AbstractCometDTest
+public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTest
 {
-    @Override
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
-        super.customizeContext(context);
-//        PublishThrowingFilter filter = new PublishThrowingFilter();
-//        FilterHolder filterHolder = new FilterHolder(filter);
-//        context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
-    }
-
     @Test
     public void testPublishFailures() throws Exception
     {
@@ -57,13 +47,29 @@ public class CometDPublishFailureTest extends AbstractCometDTest
         Latch publishLatch = get("publishLatch");
         evaluateScript("var failureLatch = new Latch(1);");
         Latch failureLatch = get("failureLatch");
+        evaluateScript("var connectFailureLatch = new Latch(1);");
+        Latch connectFailureLatch = get("connectFailureLatch");
+        evaluateScript("var connectRestoredLatch = new Latch(1);");
+        Latch connectRestoredLatch = get("connectRestoredLatch");
         evaluateScript("cometd.addListener('/meta/publish', publishLatch, publishLatch.countDown);");
         evaluateScript("cometd.addListener('/meta/unsuccessful', failureLatch, failureLatch.countDown);");
+        evaluateScript("cometd.addListener('/meta/connect', function(message)" +
+                "{" +
+                "    if (message.successful === true)" +
+                "        connectRestoredLatch.countDown();" +
+                "    else if (message.successful === false)" +
+                "        connectFailureLatch.countDown();" +
+                "});");
         evaluateScript("cometd.publish('/echo', 'test');");
         Assert.assertTrue(publishLatch.await(1000));
         Assert.assertTrue(failureLatch.await(1000));
+        // WebSocket uses only one connection, therefore also the connect fails
+        Assert.assertTrue(connectFailureLatch.await(1000));
 
-        // Be sure there is no backoff
+        // Be sure there is a new connect issued
+        Assert.assertTrue(connectRestoredLatch.await(1000));
+
+        // Be sure the backoff has been reset
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
         int backoff = ((Number)get("backoff")).intValue();
         Assert.assertEquals(0, backoff);

@@ -19,7 +19,7 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDAutoBatchTest extends AbstractCometDLongPollingTransportTest
+public class CometDAutoBatchTest extends AbstractCometDLongPollingTest
 {
     @Test
     public void testAutoBatch() throws Exception

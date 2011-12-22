@@ -18,9 +18,9 @@ package org.cometd.javascript;
 
 /**
  * A base test class to be extended for tests that
- * can only pass using the callback-polling transport
+ * can only pass using the long-polling transport
  */
-public class AbstractCometDCallbackPollingTransportTest extends AbstractCometDTest
+public class AbstractCometDLongPollingTest extends AbstractCometDTest
 {
     @Override
     protected void initPage() throws Exception
@@ -28,6 +28,6 @@ public class AbstractCometDCallbackPollingTransportTest extends AbstractCometDTe
         super.initPage();
         evaluateScript("keep_only_long_polling_transport",
                 "cometd.unregisterTransports();" +
-                "cometd.registerTransport('callback-polling', originalTransports['callback-polling']);");
+                "cometd.registerTransport('long-polling', originalTransports['long-polling']);");
     }
 }

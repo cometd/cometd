@@ -19,7 +19,7 @@ package org.cometd.javascript;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTransportTest
+public class CometDCallbackPollingTest extends AbstractCometDCallbackPollingTest
 {
     @Test
     public void testCallbackPolling() throws Exception

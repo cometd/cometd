@@ -20,14 +20,14 @@ package org.cometd.javascript;
  * A base test class to be extended for tests that
  * can only pass using the long-polling transport
  */
-public class AbstractCometDLongPollingTransportTest extends AbstractCometDTest
+public class AbstractCometDWebSocketTest extends AbstractCometDTest
 {
     @Override
     protected void initPage() throws Exception
     {
         super.initPage();
-        evaluateScript("keep_only_long_polling_transport",
+        evaluateScript("keep_only_websocket_transport",
                 "cometd.unregisterTransports();" +
-                "cometd.registerTransport('long-polling', originalTransports['long-polling']);");
+                "cometd.registerTransport('websocket', originalTransports['websocket']);");
     }
 }
