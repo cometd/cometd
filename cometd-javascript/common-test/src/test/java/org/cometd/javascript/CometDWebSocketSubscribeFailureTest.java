@@ -16,42 +16,36 @@
 
 package org.cometd.javascript;
 
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTest
+public class CometDWebSocketSubscribeFailureTest extends AbstractCometDWebSocketTest
 {
     @Test
-    public void testPublishFailures() throws Exception
+    public void testSubscribeFailure() throws Exception
     {
-        bayeuxServer.addExtension(new PublishThrowingExtension());
+        bayeuxServer.addExtension(new SubscribeThrowingExtension());
 
         defineClass(Latch.class);
-
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
-        evaluateScript("cometd.addListener('/meta/connect', readyLatch, 'countDown');");
+        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(readyLatch.await(1000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = get("subscribeLatch");
-        evaluateScript("cometd.addListener('/meta/subscribe', subscribeLatch, subscribeLatch.countDown);");
-        evaluateScript("var subscription = cometd.subscribe('/echo', subscribeLatch, subscribeLatch.countDown);");
-        Assert.assertTrue(subscribeLatch.await(1000));
-
-        evaluateScript("var publishLatch = new Latch(1);");
-        Latch publishLatch = get("publishLatch");
         evaluateScript("var failureLatch = new Latch(1);");
         Latch failureLatch = get("failureLatch");
         evaluateScript("var connectFailureLatch = new Latch(1);");
         Latch connectFailureLatch = get("connectFailureLatch");
         evaluateScript("var connectRestoredLatch = new Latch(1);");
         Latch connectRestoredLatch = get("connectRestoredLatch");
-        evaluateScript("cometd.addListener('/meta/publish', publishLatch, publishLatch.countDown);");
+        evaluateScript("cometd.addListener('/meta/subscribe', subscribeLatch, subscribeLatch.countDown);");
         evaluateScript("cometd.addListener('/meta/unsuccessful', failureLatch, failureLatch.countDown);");
         evaluateScript("cometd.addListener('/meta/connect', function(message)" +
                 "{" +
@@ -60,8 +54,8 @@ public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTe
                 "    else if (message.successful === false)" +
                 "        connectFailureLatch.countDown();" +
                 "});");
-        evaluateScript("cometd.publish('/echo', 'test');");
-        Assert.assertTrue(publishLatch.await(1000));
+        evaluateScript("cometd.subscribe('/echo', subscribeLatch, subscribeLatch.countDown);");
+        Assert.assertTrue(subscribeLatch.await(1000));
         Assert.assertTrue(failureLatch.await(1000));
         // WebSocket uses only one connection, therefore also the connect fails
         Assert.assertTrue(connectFailureLatch.await(1000));
@@ -73,25 +67,20 @@ public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTe
         int backoff = ((Number)get("backoff")).intValue();
         Assert.assertEquals(0, backoff);
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
-        evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(1000));
-        String status = evaluateScript("cometd.getStatus();");
-        Assert.assertEquals("disconnected", status);
+        evaluateScript("cometd.disconnect(true);");
     }
 
-    public static class PublishThrowingExtension implements BayeuxServer.Extension
+    public static class SubscribeThrowingExtension implements BayeuxServer.Extension
     {
         public boolean rcv(ServerSession from, ServerMessage.Mutable message)
         {
-            // The publish will arrive here, just throw
-            throw new Error("explicitly_thrown_by_test");
+            return true;
         }
 
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
+            if (Channel.META_SUBSCRIBE.equals(message.getChannel()))
+                throw new Error("explicitly_thrown_by_test");
             return true;
         }
 

@@ -32,7 +32,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDUnsubscribeFailureTest extends AbstractCometDTest
+public class CometDLongPollingUnsubscribeFailureTest extends AbstractCometDLongPollingTest
 {
     @Override
     protected void customizeContext(ServletContextHandler context) throws Exception
