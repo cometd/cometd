@@ -949,7 +949,7 @@ var window = this;
             },
             abort: function()
             {
-                if (this._exchange) this._exchange.cancel();
+                if (this._exchange) this._exchange.abort();
             },
             getAllResponseHeaders: function()
             {

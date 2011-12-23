@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 public class XMLHttpRequestExchange extends ScriptableObject
 {
-    private CometdExchange exchange;
+    private CometDExchange exchange;
 
     public XMLHttpRequestExchange()
     {
@@ -41,7 +41,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
 
     public void jsConstructor(Object cookieStore, Object threadModel, Scriptable thiz, String method, String url, boolean async)
     {
-        exchange = new CometdExchange((HttpCookieStore)cookieStore, (ThreadModel)threadModel, thiz, method, url, async);
+        exchange = new CometDExchange((HttpCookieStore)cookieStore, (ThreadModel)threadModel, thiz, method, url, async);
     }
 
     public String getClassName()
@@ -100,7 +100,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         return exchange.getResponseStatusText();
     }
 
-    public void jsFunction_cancel()
+    public void jsFunction_abort()
     {
         exchange.cancel();
     }
@@ -120,7 +120,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         exchange.send(httpClient);
     }
 
-    public static class CometdExchange extends ContentExchange
+    public static class CometDExchange extends ContentExchange
     {
         public enum ReadyState
         {
@@ -137,7 +137,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         private volatile String responseText;
         private volatile String responseStatusText;
 
-        public CometdExchange(HttpCookieStore cookieStore, ThreadModel threads, Scriptable thiz, String method, String url, boolean async)
+        public CometDExchange(HttpCookieStore cookieStore, ThreadModel threads, Scriptable thiz, String method, String url, boolean async)
         {
             super(true);
             this.cookieStore = cookieStore;
@@ -177,14 +177,15 @@ public class XMLHttpRequestExchange extends ScriptableObject
             String cookies = cookieStore.jsFunction_get(getScheme().toString("UTF-8"), getAddress().toString(), "");
             if (cookies.length() > 0)
                 setRequestHeader(HttpHeaders.COOKIE, cookies);
+            log("Submitted {}", this);
             httpClient.send(this);
-            log("Exchange {} submitted", this);
         }
 
         @Override
         public void cancel()
         {
             super.cancel();
+            log("Aborted {}", this);
             aborted = true;
             responseText = null;
             getRequestFields().clear();
@@ -286,7 +287,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         {
             if (!aborted)
             {
-                log("Exchange {} completed", this);
+                log("Completed {}", this);
                 responseText = getResponseContent();
                 readyState = ReadyState.DONE;
                 if (async)
@@ -305,14 +306,14 @@ public class XMLHttpRequestExchange extends ScriptableObject
         protected void onRequestCommitted() throws IOException
         {
             super.onRequestCommitted();
-            log("Exchange {} committed", this);
+            log("Committed {}", this);
         }
 
         @Override
         protected void onRequestComplete() throws IOException
         {
             super.onRequestComplete();
-            log("Exchange {} sent", this);
+            log("Sent {}", this);
         }
 
         private void log(String message, Object... args)
