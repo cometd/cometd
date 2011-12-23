@@ -17,6 +17,7 @@
 package org.cometd.javascript;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -37,7 +38,7 @@ import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDCrossOriginReHandshakeTest extends AbstractCometDTest
+public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingTest
 {
     @Override
     protected void customizeContext(ServletContextHandler context) throws Exception
@@ -76,7 +77,7 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDTest
 
     private class ReHandshakeExtension implements BayeuxServer.Extension
     {
-        private int connects;
+        private final AtomicInteger connects = new AtomicInteger();
 
         public boolean rcv(ServerSession session, ServerMessage.Mutable message)
         {
@@ -97,7 +98,7 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDTest
         {
             if (Channel.META_CONNECT.equals(message.getChannel()))
             {
-                ++connects;
+                int connects = this.connects.incrementAndGet();
                 if (connects == 1)
                 {
                     // Fake the removal of the session due to timeout
@@ -110,7 +111,7 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDTest
 
     private class ConnectThrowingFilter implements Filter
     {
-        private int connects;
+        private final AtomicInteger connects = new AtomicInteger();
 
         public void init(FilterConfig filterConfig) throws ServletException
         {
@@ -126,7 +127,7 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDTest
             String uri = request.getRequestURI();
             if (uri.endsWith("/connect"))
             {
-                ++connects;
+                int connects = this.connects.incrementAndGet();
                 if (connects == 2)
                     throw new IOException();
             }

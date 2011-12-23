@@ -26,16 +26,14 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CometDHandshakeDynamicPropsTest extends AbstractCometDTest
+public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTest
 {
     private BayeuxFilter filter;
 
@@ -53,7 +51,8 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDTest
     {
         defineClass(Latch.class);
         StringBuilder script = new StringBuilder();
-        script.append("cometd.configure({url: '").append(cometdURL).append("', logLevel: '" + getLogLevel() + "'});");
+        script.append("cometd.configure({url: '").append(cometdURL);
+        script.append("', logLevel: '").append(getLogLevel()).append("'});");
         script.append("var outHandshake = undefined;");
         script.append("var outLatch = new Latch(1);");
         script.append("cometd.registerExtension('test', {");
@@ -143,11 +142,9 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDTest
                     }
                     // Remove the client, so that the CometD implementation will send
                     // "unknown client" and the JavaScript will re-handshake
-                    BayeuxServerImpl bayeux = (BayeuxServerImpl)request.getSession().getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-
-                    ServerSession session = bayeux.getSession(clientId);
+                    ServerSession session = bayeuxServer.getSession(clientId);
                     if (session != null)
-                        bayeux.removeServerSession(session, false);
+                        bayeuxServer.removeServerSession(session, false);
                 }
             }
             else
