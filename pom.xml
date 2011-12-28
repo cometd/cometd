@@ -201,7 +201,7 @@
 						<Bundle-Category>${bundle.category}</Bundle-Category>
 						<Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
 						<Bundle-Version>${project.version}</Bundle-Version>
-						<Import-Package>org.eclipse.jetty.*;version="[7.2,8)",*</Import-Package>
+						<Import-Package>org.eclipse.jetty.*;version="[7.2,9)",*</Import-Package>
 						<mode>development</mode>
 						<url>${project.url}</url>
 						<implementation-version>${project.version}</implementation-version>
