@@ -13,6 +13,7 @@ org.cometd.WebSocketTransport = function()
     var _timeouts = {};
     var _webSocket = null;
     var _opened = false;
+    var _connected = false;
     var _successCallback;
 
     function _websocketConnect()
@@ -81,6 +82,7 @@ org.cometd.WebSocketTransport = function()
         if (metaConnect)
         {
             delay += this.getAdvice().timeout;
+            _connected = true;
         }
 
         var messageIds = [];
@@ -107,6 +109,11 @@ org.cometd.WebSocketTransport = function()
                         }
                     }
                     envelope.onFailure(_webSocket, envelope.messages, 'timeout', errorMessage);
+
+                    if (metaConnect)
+                    {
+                        _connected = false;
+                    }
                 }, delay);
             }
         }
@@ -186,7 +193,11 @@ org.cometd.WebSocketTransport = function()
                 }
             }
 
-            if ('/meta/disconnect' === message.channel && message.successful)
+            if ('/meta/connect' === message.channel)
+            {
+                _connected = false;
+            }
+            if (_cometd.isDisconnected() && !_connected)
             {
                 close = true;
             }
@@ -246,6 +257,11 @@ org.cometd.WebSocketTransport = function()
         for (var key in _envelopes)
         {
             var envelope = _envelopes[key][0];
+            var metaConnect = _envelopes[key][1];
+            if (metaConnect)
+            {
+                _connected = false;
+            }
             envelope.onFailure(_webSocket, envelope.messages, 'closed ' + code + '/' + reason);
         }
         _envelopes = {};
