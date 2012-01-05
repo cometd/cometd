@@ -25,6 +25,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.mozilla.javascript.Context;
@@ -57,6 +58,7 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
     public void init() throws Exception
     {
         assert rootScope != null;
+        queue.clear();
         running = true;
         thread.start();
     }
@@ -64,6 +66,8 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
     public void destroy() throws Exception
     {
         running = false;
+        for (FutureTask<Object> task : queue)
+            task.cancel(false);
         thread.interrupt();
         thread.join();
     }
@@ -217,9 +221,16 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
     private void submit(FutureTask<Object> future)
     {
         if (Thread.currentThread() == thread)
+        {
             future.run();
+        }
         else
-            queue.offer(future);
+        {
+            if (running)
+                queue.offer(future);
+            else
+                throw new RejectedExecutionException();
+        }
     }
 
     public void define(final Class clazz) throws InvocationTargetException, IllegalAccessException, InstantiationException
