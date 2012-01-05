@@ -86,10 +86,12 @@ public class WebSocketClient extends ScriptableObject implements WebSocket.OnTex
         threads.invoke(false, thiz, thiz, "onmessage", event);
     }
 
-    public void onClose(int closeCode, String message)
+    public void onClose(int closeCode, String reason)
     {
-        log("WebSocket closed with code {}/{}", closeCode, message);
-        threads.invoke(false, thiz, thiz, "onclose");
+        log("WebSocket closed with code {}/{}", closeCode, reason);
+        // Use single quotes so they do not mess up with quotes in the reason string
+        Object event = threads.evaluate("event", "({code:" + closeCode +",reason:'" + reason + "'})");
+        threads.invoke(false, thiz, thiz, "onclose", event);
     }
 
     public void onError(Throwable x)
