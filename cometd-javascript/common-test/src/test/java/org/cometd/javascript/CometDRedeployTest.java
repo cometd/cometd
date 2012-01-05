@@ -35,6 +35,7 @@ public class CometDRedeployTest extends AbstractCometDTest
     public void testRedeploy() throws Exception
     {
         defineClass(Latch.class);
+
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
         evaluateScript("var handshakeLatch = new Latch(1);");
         Latch handshakeLatch = get("handshakeLatch");
@@ -72,6 +73,10 @@ public class CometDRedeployTest extends AbstractCometDTest
         Assert.assertTrue(handshakeLatch.await(backoffPeriod + 2 * backoffIncrement));
         Assert.assertTrue(connectLatch.await(1000));
 
-        evaluateScript("cometd.disconnect(true);");
+        evaluateScript("var disconnectLatch = new Latch(1);");
+        Latch disconnectLatch = get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        evaluateScript("cometd.disconnect();");
+        Assert.assertTrue(disconnectLatch.await(1000));
     }
 }
