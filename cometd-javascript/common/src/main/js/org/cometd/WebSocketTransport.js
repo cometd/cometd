@@ -12,6 +12,7 @@ org.cometd.WebSocketTransport = function()
     // Timeouts for messages that have been sent
     var _timeouts = {};
     var _webSocket = null;
+    var _opened = false;
     var _successCallback;
 
     function _websocketConnect()
@@ -24,20 +25,47 @@ org.cometd.WebSocketTransport = function()
         var self = this;
         webSocket.onopen = function()
         {
-            self.onOpen(webSocket);
+            self._debug('WebSocket opened', webSocket);
+            if (webSocket !== _webSocket)
+            {
+                // It's possible that the onopen callback is invoked
+                // with a delay so that we have already reconnected
+                self._debug('Ignoring open event, WebSocket', _webSocket);
+                return;
+            }
+            self.onOpen();
         };
-        webSocket.onclose = function()
+        webSocket.onclose = function(event)
         {
-            self.onClose();
+            var code = event ? event.code : 1000;
+            var reason = event ? event.reason : undefined;
+            self._debug('WebSocket closed', code, '/', reason, webSocket);
+            if (webSocket !== _webSocket)
+            {
+                // The onclose callback may be invoked when the server sends
+                // the close message reply, but after we have already reconnected
+                self._debug('Ignoring close event, WebSocket', _webSocket);
+                return;
+            }
+            self.onClose(code, reason);
         };
         webSocket.onerror = function()
         {
-            self.onClose();
+            webSocket.onclose({ code: 1002 });
         };
         webSocket.onmessage = function(message)
         {
+            self._debug('WebSocket message', message, webSocket);
+            if (webSocket !== _webSocket)
+            {
+                self._debug('Ignoring message event, WebSocket', _webSocket);
+                return;
+            }
             self.onMessage(message);
         };
+
+        _webSocket = webSocket;
+        this._debug('Transport', this.getType(), 'configured callbacks on', webSocket);
     }
 
     function _webSocketSend(envelope, metaConnect)
@@ -109,11 +137,11 @@ org.cometd.WebSocketTransport = function()
         }
     }
 
-    _self.onOpen = function(webSocket)
+    _self.onOpen = function()
     {
-        this._debug('WebSocket opened', webSocket);
+        this._debug('Transport', this.getType(), 'opened', _webSocket);
+        _opened = true;
         _webSocketSupported = true;
-        _webSocket = webSocket;
 
         this._debug('Sending pending messages', _envelopes);
         for (var key in _envelopes)
@@ -130,15 +158,9 @@ org.cometd.WebSocketTransport = function()
 
     _self.onMessage = function(wsMessage)
     {
-        this._debug('Transport', this.getType(), 'received websocket message', wsMessage);
+        this._debug('Transport', this.getType(), 'received websocket message', wsMessage, _webSocket);
 
-        if (_webSocket === null)
-        {
-            // Just in case a message arrived after we closed, for
-            // example, /meta/connect response after a disconnect
-            return;
-        }
-
+        var close = false;
         var messages = this.convertToMessages(wsMessage.data);
         var messageIds = [];
         for (var i = 0; i < messages.length; ++i)
@@ -166,7 +188,7 @@ org.cometd.WebSocketTransport = function()
 
             if ('/meta/disconnect' === message.channel && message.successful)
             {
-                _webSocket.close();
+                close = true;
             }
         }
 
@@ -200,18 +222,16 @@ org.cometd.WebSocketTransport = function()
         }
 
         _successCallback.call(this, messages);
+
+        if (close)
+        {
+            _webSocket.close(1000);
+        }
     };
 
-    _self.onClose = function()
+    _self.onClose = function(code, reason)
     {
-        if (_webSocket === null)
-        {
-            // Either we were never able to connect, or
-            // we have been already closed, just return
-            return;
-        }
-
-        this._debug('Transport', this.getType(), 'closed', _webSocket);
+        this._debug('Transport', this.getType(), 'closed', code, reason, _webSocket);
 
         // Remember if we were able to connect
         // This close event could be due to server shutdown, and if it restarts we want to try websocket again
@@ -220,16 +240,21 @@ org.cometd.WebSocketTransport = function()
         for (var id in _timeouts)
         {
             this.clearTimeout(_timeouts[id]);
-            delete _timeouts[id];
         }
+        _timeouts = {};
 
         for (var key in _envelopes)
         {
             var envelope = _envelopes[key][0];
-            envelope.onFailure(_webSocket, envelope.messages, 'closed');
-            delete _envelopes[key];
+            envelope.onFailure(_webSocket, envelope.messages, 'closed ' + code + '/' + reason);
         }
+        _envelopes = {};
 
+        if (_webSocket !== null && _opened)
+        {
+            _webSocket.close(1000);
+        }
+        _opened = false;
         _webSocket = null;
     };
 
@@ -242,7 +267,7 @@ org.cometd.WebSocketTransport = function()
     _self.accept = function(version, crossDomain, url)
     {
         // Using !! to return a boolean (and not the WebSocket object)
-        return _supportsWebSocket && !!window.WebSocket && _cometd.websocketEnabled === true;
+        return _supportsWebSocket && !!org.cometd.WebSocket && _cometd.websocketEnabled === true;
     };
 
     _self.send = function(envelope, metaConnect)
@@ -268,15 +293,16 @@ org.cometd.WebSocketTransport = function()
     _self.reset = function()
     {
         _super.reset();
-        if (_webSocket)
+        if (_webSocket !== null && _opened)
         {
-            _webSocket.close();
+            _webSocket.close(1000);
         }
         _supportsWebSocket = true;
         _webSocketSupported = false;
         _timeouts = {};
         _envelopes = {};
         _webSocket = null;
+        _opened = false;
         _successCallback = null;
     };
 
