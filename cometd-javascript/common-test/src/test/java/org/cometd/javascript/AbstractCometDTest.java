@@ -214,9 +214,9 @@ public abstract class AbstractCometDTest
 
     protected void destroyJavaScript() throws Exception
     {
-        threadModel.destroy();
-        xhrClient.stop();
         wsClientFactory.stop();
+        xhrClient.stop();
+        threadModel.destroy();
     }
 
     @SuppressWarnings("unchecked")
