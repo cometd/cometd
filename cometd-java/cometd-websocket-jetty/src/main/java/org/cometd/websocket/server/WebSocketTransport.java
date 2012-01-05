@@ -87,11 +87,28 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         _factory.setMaxTextMessageSize(maxMessageSize);
         _executor = newExecutor();
         _scheduler = newScheduledExecutor();
+        try
+        {
+            _factory.start();
+        }
+        catch (Exception x)
+        {
+            throw new RuntimeException(x);
+        }
     }
 
     @Override
     protected void destroy()
     {
+        try
+        {
+            _factory.stop();
+        }
+        catch (Exception x)
+        {
+            _logger.trace("", x);
+        }
+
         _scheduler.shutdown();
 
         Executor threadPool = _executor;
