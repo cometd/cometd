@@ -266,7 +266,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             _connection = connection;
         }
 
-        public void onClose(int code, String message)
+        public void onClose(int code, String reason)
         {
             final ServerSessionImpl session = _session;
             if (session != null)
@@ -278,7 +278,8 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 session.cancelIntervalTimeout();
                 cancelMetaConnectTask(session);
             }
-            WebSocketTransport.this.onClose(code, message);
+            _logger.debug("Closing {}/{}", code, reason);
+            WebSocketTransport.this.onClose(code, reason);
         }
 
         private boolean cancelMetaConnectTask(ServerSessionImpl session)
