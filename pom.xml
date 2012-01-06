@@ -8,9 +8,22 @@
     <name>CometD</name>
     <version>2.4.0-SNAPSHOT</version>
 
+    <repositories>
+        <repository>
+            <id>jetty.snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+    </repositories>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.6.0.RC3</jetty-version>
+        <jetty-version>7.6.0-SNAPSHOT</jetty-version>
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
         <slf4j-version>1.6.2</slf4j-version>
         <spring-version>3.0.6.RELEASE</spring-version>
@@ -18,7 +31,8 @@
 
     <url>http://cometd.org</url>
     <description>
-        The CometD project is a scalable HTTP-based event routing bus that uses the AJAX push technology pattern known as "Comet"
+        The CometD project is a scalable web messaging bus that uses WebSocket
+        and HTTP AJAX push technology patterns known as "Comet" techniques
     </description>
 
     <inceptionYear>2008</inceptionYear>
