@@ -95,24 +95,9 @@ org.cometd.WebSocketTransport = function()
                 var self = this;
                 _timeouts[message.id] = this.setTimeout(function()
                 {
-                    var errorMessage = 'Message ' + message.id + ' of transport ' + self.getType() + ' exceeded ' + delay + ' ms max network delay';
-                    self._debug(errorMessage);
-
-                    delete _timeouts[message.id];
-
-                    for (var key in _envelopes)
+                    if (_webSocket)
                     {
-                        if (_envelopes[key][0] === envelope)
-                        {
-                            delete _envelopes[key];
-                            break;
-                        }
-                    }
-                    envelope.onFailure(_webSocket, envelope.messages, 'timeout', errorMessage);
-
-                    if (metaConnect)
-                    {
-                        _connected = false;
+                        _webSocket.close(1000, 'Max network delay exceeded');
                     }
                 }, delay);
             }
@@ -129,7 +114,9 @@ org.cometd.WebSocketTransport = function()
             {
                 _websocketConnect.call(this);
             }
-            else
+            // We may have a non-null _webSocket, but not be open yet so
+            // to avoid out of order deliveries, we check if we are open
+            else if (_opened)
             {
                 _webSocketSend.call(this, envelope, metaConnect);
             }
@@ -197,7 +184,7 @@ org.cometd.WebSocketTransport = function()
             {
                 _connected = false;
             }
-            if (_cometd.isDisconnected() && !_connected)
+            if ('/meta/disconnect' === message.channel && !_connected)
             {
                 close = true;
             }
@@ -236,7 +223,7 @@ org.cometd.WebSocketTransport = function()
 
         if (close)
         {
-            _webSocket.close(1000);
+            _webSocket.close(1000, 'Disconnect');
         }
     };
 
@@ -268,7 +255,7 @@ org.cometd.WebSocketTransport = function()
 
         if (_webSocket !== null && _opened)
         {
-            _webSocket.close(1000);
+            _webSocket.close(1000, 'Close');
         }
         _opened = false;
         _webSocket = null;
@@ -311,7 +298,7 @@ org.cometd.WebSocketTransport = function()
         _super.reset();
         if (_webSocket !== null && _opened)
         {
-            _webSocket.close(1000);
+            _webSocket.close(1000, 'Reset');
         }
         _supportsWebSocket = true;
         _webSocketSupported = false;

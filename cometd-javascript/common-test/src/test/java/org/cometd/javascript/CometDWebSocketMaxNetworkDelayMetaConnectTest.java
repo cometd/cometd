@@ -27,7 +27,6 @@ import org.junit.Test;
 
 public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractCometDWebSocketTest
 {
-
     @Test
     public void testMaxNetworkDelay() throws Exception
     {
@@ -36,7 +35,7 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         bayeuxServer.addExtension(new DelayingExtension(longPollingPeriod + maxNetworkDelay + maxNetworkDelay / 2));
 
         defineClass(Latch.class);
-        evaluateScript("var latch = new Latch(4);");
+        evaluateScript("var latch = new Latch(6);");
         Latch latch = get("latch");
         evaluateScript("cometd.configure({" +
                        "url: '" + cometdURL + "', " +
@@ -51,7 +50,9 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
                 "    if (connects === 1 && message.successful ||" +
                 "        connects === 2 && !message.successful ||" +
                 "        connects === 3 && message.successful ||" +
-                "        connects === 4 && message.successful)" +
+                "        connects === 4 && !message.successful ||" +
+                "        connects === 5 && message.successful ||" +
+                "        connects === 6 && message.successful)" +
                 "        latch.countDown();" +
                 "    else if (!failure)" +
                 "        failure = 'Failure at connect #' + connects;" +
@@ -62,16 +63,20 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         // First connect returns immediately (time = 0)
         // Second connect is delayed, but client is not aware of this
         // MaxNetworkDelay elapses, second connect is failed on the client (time = longPollingPeriod + maxNetworkDelay)
-        // Client sends third connect, however it is not parsed until the previous one is waiting
+        //   + Connection is closed
+        // Client sends third connect and is replied by the server
+        // Fourth connect is sent and is held by the server
         // Delay elapses (time = longPollingPeriod + 1.5 * maxNetworkDelay)
         // Second connect is processed on server and held
-        // Third connect is processed on server
+        //   + Fourth connect is canceled and not replied
+        // MaxNetworkDelay elapses, fourth connect is failed on the client (time = 2 * longPollingPeriod + 2 * maxNetworkDelay)
+        //   + Connection is closed
+        // Client sends fifth connect and is replied by the server
+        // Sixth connect is sent and is held by the server
         //   + Second connect is canceled and not replied
-        //   + Third connect is replied immediately
-        // Fourth connect is sent
-        // Fourth connect returns (time = 2 * longPollingPeriod + 1.5 * maxNetworkDelay)
+        // Sixth connect is replied
 
-        Assert.assertTrue(latch.await(2 * longPollingPeriod + 3 * maxNetworkDelay));
+        Assert.assertTrue(latch.await(3 * longPollingPeriod + 3 * maxNetworkDelay));
         evaluateScript("window.assert(failure === undefined, failure);");
 
         evaluateScript("cometd.disconnect(true);");

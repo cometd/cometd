@@ -16,25 +16,16 @@
 
 package org.cometd.javascript;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mozilla.javascript.ScriptableObject;
@@ -43,18 +34,12 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest
 {
     private final long maxNetworkDelay = 2000;
 
-    @Override
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
-        super.customizeContext(context);
-        DelayingFilter filter = new DelayingFilter();
-        FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
-    }
-
     @Test
     public void testMaxNetworkDelay() throws Exception
     {
+        bayeuxServer.addExtension(new DelayingExtension());
+
+        defineClass(Latch.class);
         defineClass(Listener.class);
         evaluateScript("var publishListener = new Listener();");
         Listener publishListener = get("publishListener");
@@ -80,7 +65,14 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest
         Assert.assertTrue(publishListener.await(2 * maxNetworkDelay));
         Assert.assertTrue(failures.get().toString(), failures.get().isEmpty());
 
-        evaluateScript("cometd.disconnect(true);");
+        evaluateScript("var disconnectLatch = new Latch(1);");
+        Latch disconnectLatch = get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        evaluateScript("cometd.disconnect();");
+        Assert.assertTrue(disconnectLatch.await(1000));
+
+        // Avoid exceptions by sleeping a while
+        Thread.sleep(maxNetworkDelay);
     }
 
     public static class Listener extends ScriptableObject
@@ -113,37 +105,35 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest
         }
     }
 
-    private class DelayingFilter implements Filter
+    private class DelayingExtension implements BayeuxServer.Extension
     {
-        public void init(FilterConfig filterConfig) throws ServletException
+        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
         {
-        }
-
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
-            doFilter((HttpServletRequest)request, (HttpServletResponse)response, chain);
-        }
-
-        private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
-            String uri = request.getRequestURI();
-            if (!uri.endsWith("/handshake") && !uri.endsWith("/connect"))
+            // We hold the publish longer than the maxNetworkDelay
+            try
             {
-                // We hold the publish longer than the maxNetworkDelay
-                try
-                {
-                    Thread.sleep(2 * maxNetworkDelay);
-                }
-                catch (InterruptedException x)
-                {
-                    throw new IOException();
-                }
+                Thread.sleep(2 * maxNetworkDelay);
+                return true;
             }
-            chain.doFilter(request, response);
+            catch (InterruptedException x)
+            {
+                throw new RuntimeException(x);
+            }
         }
 
-        public void destroy()
+        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
+            return true;
+        }
+
+        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
+        {
+            return true;
+        }
+
+        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
+        {
+            return true;
         }
     }
 }
