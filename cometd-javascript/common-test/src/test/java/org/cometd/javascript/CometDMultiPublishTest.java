@@ -39,7 +39,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mozilla.javascript.ScriptableObject;
 
-public class CometDMultiPublishTest extends AbstractCometDTest
+public class CometDMultiPublishTest extends AbstractCometDLongPollingTest
 {
     @Override
     protected void customizeContext(ServletContextHandler context) throws Exception
