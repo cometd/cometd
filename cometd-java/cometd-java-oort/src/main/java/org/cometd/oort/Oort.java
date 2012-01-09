@@ -21,6 +21,8 @@ import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Collections;
+import java.util.EventListener;
+import java.util.EventObject;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -30,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -87,6 +90,7 @@ public class Oort extends AggregateLifeCycle
     private final ConcurrentMap<String, ClientCometInfo> _clientComets = new ConcurrentHashMap<String, ClientCometInfo>();
     private final ConcurrentMap<String, ServerCometInfo> _serverComets = new ConcurrentHashMap<String, ServerCometInfo>();
     private final ConcurrentMap<String, Boolean> _channels = new ConcurrentHashMap<String, Boolean>();
+    private final CopyOnWriteArrayList<CometListener> _cometListeners = new CopyOnWriteArrayList<CometListener>();
     private final Extension _oortExtension = new OortExtension();
     private final ServerChannel.MessageListener _cloudListener = new CloudListener();
     private final BayeuxServer _bayeux;
@@ -112,11 +116,11 @@ public class Oort extends AggregateLifeCycle
 
         _threadPool = new QueuedThreadPool();
         addBean(_threadPool);
+        _wsFactory=new WebSocketClientFactory(_threadPool);
+        addBean(_wsFactory);
         _httpClient = new HttpClient();
         _httpClient.setThreadPool(_threadPool);
         addBean(_httpClient);
-        _wsFactory=new WebSocketClientFactory(_threadPool);
-        addBean(_wsFactory);
 
         _oortSession = bayeux.newLocalSession("oort");
         _secret = Long.toHexString(new SecureRandom().nextLong());
@@ -367,6 +371,19 @@ public class Oort extends AggregateLifeCycle
     }
 
     /**
+     *
+     * @param cometURL the URL of a Oort comet
+     * @return the OortComet instance connecting or connected with the Oort comet with the given URL
+     */
+    protected OortComet findComet(String cometURL)
+    {
+        OortComet result = getComet(cometURL);
+        if (result == null)
+            result = _pendingComets.get(cometURL);
+        return result;
+    }
+
+    /**
      * <p>Observes the given channel, registering to receive messages from
      * the Oort comets connected to this Oort instance.</p>
      * <p>Once observed, all {@link OortComet} instances subscribe
@@ -482,6 +499,56 @@ public class Oort extends AggregateLifeCycle
     }
 
     /**
+     * Registers the given listener to be notified of comet events.
+     * @param listener the listener to add
+     */
+    public void addCometListener(CometListener listener)
+    {
+        _cometListeners.add(listener);
+    }
+
+    /**
+     * Deregisters the given listener from being notified of comet events.
+     * @param listener the listener to remove
+     */
+    public void removeCometListener(CometListener listener)
+    {
+        _cometListeners.remove(listener);
+    }
+
+    private void notifyCometJoined(String remoteURL)
+    {
+        CometListener.Event event = new CometListener.Event(this, remoteURL);
+        for (CometListener cometListener : _cometListeners)
+        {
+            try
+            {
+                cometListener.cometJoined(event);
+            }
+            catch (Exception x)
+            {
+                _logger.info("Exception while invoking listener " + cometListener, x);
+            }
+        }
+    }
+
+    private void notifyCometLeft(String remoteURL)
+    {
+        CometListener.Event event = new CometListener.Event(this, remoteURL);
+        for (CometListener cometListener : _cometListeners)
+        {
+            try
+            {
+                cometListener.cometLeft(event);
+            }
+            catch (Exception x)
+            {
+                _logger.info("Exception while invoking listener " + cometListener, x);
+            }
+        }
+    }
+
+    /**
      * <p>Extension that detects incoming handshakes from other Oort servers.</p>
      *
      * @see Oort#incomingCometHandshake(Map, ServerSession)
@@ -561,6 +628,9 @@ public class Oort extends AggregateLifeCycle
                             debug("Comet {} is unknown, establishing connection", remoteOortURL);
                             observeComet(remoteOortURL, cometURL);
                         }
+                        // Must notify after an eventual call to observeComet() so that
+                        // a pending comet is present and may be returned to the application
+                        notifyCometJoined(remoteOortURL);
                     }
                     else
                     {
@@ -639,6 +709,52 @@ public class Oort extends AggregateLifeCycle
     }
 
     /**
+     * <p>Listener interface that gets notified of comet events, that is when a new
+     * comet joins the cloud or when a comet leaves the cloud.</p>
+     * <p>If oortA and oortB form a cloud, when oortC joins to the cloud, both
+     * oortA and oortB receive one event of type "comet joined", signaling that oortC
+     * joined the cloud.</p>
+     * <p>If, later, oortB leaves the cloud, then both oortA and oortC receive one
+     * event of type "comet left" signaling that oortB left the cloud.</p>
+     */
+    public interface CometListener extends EventListener
+    {
+        /**
+         * Callback method invoked when a new comet joins the cloud
+         * @param event the comet event
+         */
+        public void cometJoined(Event event);
+
+        /**
+         * Callback method invoked when a comet leaves the cloud
+         * @param event the comet event
+         */
+        public void cometLeft(Event event);
+
+        /**
+         * Comet event object delivered to {@link CometListener} methods.
+         */
+        public static class Event extends EventObject
+        {
+            private final String cometURL;
+
+            public Event(Oort source, String cometURL)
+            {
+                super(source);
+                this.cometURL = cometURL;
+            }
+
+            /**
+             * @return the URL of the comet that generated the event
+             */
+            public String getCometURL()
+            {
+                return cometURL;
+            }
+        }
+    }
+
+    /**
      * <p>Listener that detect when a server session is removed (means that the remote
      * comet disconnected), and disconnects the OortComet associated.</p>
      */
@@ -668,6 +784,8 @@ public class Oort extends AggregateLifeCycle
                     ClientCometInfo clientCometInfo = _clientComets.remove(remoteOortId);
                     if (clientCometInfo != null)
                         clientCometInfo.getOortComet().disconnect();
+
+                    notifyCometLeft(serverCometInfo.getURL());
 
                     break;
                 }
@@ -768,7 +886,7 @@ public class Oort extends AggregateLifeCycle
 
         public void onMessage(ClientSessionChannel channel, Message message)
         {
-            OortComet comet = _pendingComets.remove(cometURL);
+            OortComet comet = _pendingComets.get(cometURL);
             if (comet != null)
             {
                 if (!message.isSuccessful())
@@ -787,31 +905,36 @@ public class Oort extends AggregateLifeCycle
             }
 
             Map<String,Object> ext = message.getExt();
-            if (ext == null)
-                return;
-
-            Object oortExtObject = ext.get(Oort.EXT_OORT_FIELD);
-            if (!(oortExtObject instanceof Map))
-                return;
-
-            @SuppressWarnings("unchecked")
-            Map<String, Object> oortExt = (Map<String, Object>)oortExtObject;
-            String url = (String)oortExt.get(Oort.EXT_OORT_URL_FIELD);
-            String id = (String)oortExt.get(Oort.EXT_OORT_ID_FIELD);
-
-            ClientCometInfo cometInfo = new ClientCometInfo(id, url, oortComet);
-            ClientCometInfo existing = _clientComets.putIfAbsent(id, cometInfo);
-            if (existing != null)
-                cometInfo = existing;
-
-            if (!cometURL.equals(url))
+            if (ext != null)
             {
-                cometInfo.addAliasURL(cometURL);
-                debug("Adding alias to {}: {}", url, cometURL);
+                Object oortExtObject = ext.get(Oort.EXT_OORT_FIELD);
+                if (oortExtObject instanceof Map)
+                {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> oortExt = (Map<String, Object>)oortExtObject;
+                    String url = (String)oortExt.get(Oort.EXT_OORT_URL_FIELD);
+                    String id = (String)oortExt.get(Oort.EXT_OORT_ID_FIELD);
+
+                    ClientCometInfo cometInfo = new ClientCometInfo(id, url, oortComet);
+                    ClientCometInfo existing = _clientComets.putIfAbsent(id, cometInfo);
+                    if (existing != null)
+                        cometInfo = existing;
+
+                    if (!cometURL.equals(url))
+                    {
+                        cometInfo.addAliasURL(cometURL);
+                        debug("Adding alias to {}: {}", url, cometURL);
+                    }
+
+                    if (message.isSuccessful())
+                        getLogger().info("Connected to comet {} as {} with {}/{}", new Object[]{url, cometURL, message.getClientId(), oortComet.getTransport()});
+                }
             }
 
-            if (message.isSuccessful())
-                getLogger().info("Connected to comet {} as {} with {}/{}", new Object[]{url, cometURL, message.getClientId(), oortComet.getTransport()});
+            // Remove the pending comet as last step, so that if there is a concurrent
+            // call to observeComet() we are sure that we always return either the
+            // pending OortComet, or the connected one from the _clientComets field
+            _pendingComets.remove(cometURL);
         }
     }
 }
