@@ -488,42 +488,4 @@ public class OortObserveCometTest extends OortTest
         Assert.assertEquals(3, oortC.getKnownComets().size());
         Assert.assertEquals(3, oortD.getKnownComets().size());
     }
-
-    private static class CometJoinedListener implements Oort.CometListener
-    {
-        private final CountDownLatch latch;
-
-        public CometJoinedListener(CountDownLatch latch)
-        {
-            this.latch = latch;
-        }
-
-        public void cometJoined(Event event)
-        {
-            latch.countDown();
-        }
-
-        public void cometLeft(Event event)
-        {
-        }
-    }
-
-    private static class CometLeftListener implements Oort.CometListener
-    {
-        private final CountDownLatch latch;
-
-        public CometLeftListener(CountDownLatch latch)
-        {
-            this.latch = latch;
-        }
-
-        public void cometJoined(Event event)
-        {
-        }
-
-        public void cometLeft(Event event)
-        {
-            latch.countDown();
-        }
-    }
 }

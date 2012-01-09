@@ -196,4 +196,43 @@ public abstract class OortTest
             return count.get();
         }
     }
+
+
+    protected static class CometJoinedListener implements Oort.CometListener
+    {
+        private final CountDownLatch latch;
+
+        public CometJoinedListener(CountDownLatch latch)
+        {
+            this.latch = latch;
+        }
+
+        public void cometJoined(Event event)
+        {
+            latch.countDown();
+        }
+
+        public void cometLeft(Event event)
+        {
+        }
+    }
+
+    protected static class CometLeftListener implements Oort.CometListener
+    {
+        private final CountDownLatch latch;
+
+        public CometLeftListener(CountDownLatch latch)
+        {
+            this.latch = latch;
+        }
+
+        public void cometJoined(Event event)
+        {
+        }
+
+        public void cometLeft(Event event)
+        {
+            latch.countDown();
+        }
+    }
 }

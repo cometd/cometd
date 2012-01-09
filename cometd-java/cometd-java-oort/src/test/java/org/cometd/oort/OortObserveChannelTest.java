@@ -16,6 +16,7 @@
 
 package org.cometd.oort;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
@@ -37,21 +38,23 @@ public class OortObserveChannelTest extends OortTest
         Server server3 = startServer(0);
         Oort oort3 = startOort(server3);
 
+        CountDownLatch latch = new CountDownLatch(6);
+        CometJoinedListener listener = new CometJoinedListener(latch);
+        oort1.addCometListener(listener);
+        oort2.addCometListener(listener);
+        oort3.addCometListener(listener);
         OortComet oortComet12 = oort1.observeComet(oort2.getURL());
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
         OortComet oortComet13 = oort1.observeComet(oort3.getURL());
         Assert.assertTrue(oortComet13.waitFor(5000, BayeuxClient.State.CONNECTED));
-
-        // Give some time to the connections to establish
-        Thread.sleep(1000);
-
-        OortComet oortComet21 = oort2.getComet(oort1.getURL());
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        OortComet oortComet21 = oort2.findComet(oort1.getURL());
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
-        OortComet oortComet31 = oort3.getComet(oort1.getURL());
+        OortComet oortComet31 = oort3.findComet(oort1.getURL());
         Assert.assertTrue(oortComet31.waitFor(5000, BayeuxClient.State.CONNECTED));
-        OortComet oortComet23 = oort2.getComet(oort3.getURL());
+        OortComet oortComet23 = oort2.findComet(oort3.getURL());
         Assert.assertTrue(oortComet23.waitFor(5000, BayeuxClient.State.CONNECTED));
-        OortComet oortComet32 = oort3.getComet(oort2.getURL());
+        OortComet oortComet32 = oort3.findComet(oort2.getURL());
         Assert.assertTrue(oortComet32.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         BayeuxClient client1 = startClient(oort1, null);
@@ -99,13 +102,14 @@ public class OortObserveChannelTest extends OortTest
         Server server2 = startServer(0);
         Oort oort2 = startOort(server2);
 
+        CountDownLatch latch = new CountDownLatch(2);
+        CometJoinedListener listener = new CometJoinedListener(latch);
+        oort1.addCometListener(listener);
+        oort2.addCometListener(listener);
         OortComet oortComet12 = oort1.observeComet(oort2.getURL());
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
-
-        // Give some time to the connections to establish
-        Thread.sleep(1000);
-
-        OortComet oortComet21 = oort2.getComet(oort1.getURL());
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        OortComet oortComet21 = oort2.findComet(oort1.getURL());
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         BayeuxClient client1 = startClient(oort1, null);
@@ -144,8 +148,15 @@ public class OortObserveChannelTest extends OortTest
         Server server2 = startServer(0);
         Oort oort2 = startOort(server2);
 
+        CountDownLatch latch = new CountDownLatch(2);
+        CometJoinedListener listener = new CometJoinedListener(latch);
+        oort1.addCometListener(listener);
+        oort2.addCometListener(listener);
         OortComet oortComet12 = oort1.observeComet(oort2.getURL());
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        OortComet oortComet21 = oort2.findComet(oort1.getURL());
+        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         BayeuxClient client1 = startClient(oort1, null);
         BayeuxClient client2 = startClient(oort2, null);
