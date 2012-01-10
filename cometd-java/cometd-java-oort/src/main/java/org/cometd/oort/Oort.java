@@ -97,9 +97,9 @@ public class Oort extends AggregateLifeCycle
     private final String _url;
     private final String _id;
     private final Logger _logger;
-    private final ThreadPool _threadPool;
-    private final HttpClient _httpClient;
-    private final WebSocketClientFactory _wsFactory;
+    private ThreadPool _threadPool;
+    private HttpClient _httpClient;
+    private WebSocketClientFactory _wsFactory;
     private final LocalSession _oortSession;
     private String _secret;
     private boolean _debug;
@@ -114,14 +114,6 @@ public class Oort extends AggregateLifeCycle
         _logger = LoggerFactory.getLogger(getClass().getName() + "." + _url);
         _debug = String.valueOf(BayeuxServerImpl.DEBUG_LOG_LEVEL).equals(bayeux.getOption(BayeuxServerImpl.LOG_LEVEL));
 
-        _threadPool = new QueuedThreadPool();
-        addBean(_threadPool);
-        _wsFactory=new WebSocketClientFactory(_threadPool);
-        addBean(_wsFactory);
-        _httpClient = new HttpClient();
-        _httpClient.setThreadPool(_threadPool);
-        addBean(_httpClient);
-
         _oortSession = bayeux.newLocalSession("oort");
         _secret = Long.toHexString(new SecureRandom().nextLong());
     }
@@ -129,6 +121,21 @@ public class Oort extends AggregateLifeCycle
     @Override
     protected void doStart() throws Exception
     {
+        if (_threadPool == null)
+            _threadPool = new QueuedThreadPool();
+        addBean(_threadPool);
+
+        if (_httpClient == null)
+        {
+            _httpClient = new HttpClient();
+            _httpClient.setThreadPool(_threadPool);
+        }
+        addBean(_httpClient);
+
+        if (_wsFactory == null)
+            _wsFactory = new WebSocketClientFactory(_threadPool);
+        addBean(_wsFactory);
+
         super.doStart();
 
         _bayeux.addExtension(_oortExtension);
@@ -675,6 +682,11 @@ public class Oort extends AggregateLifeCycle
         }
     }
 
+    public void setThreadPool(ThreadPool threadPool)
+    {
+        _threadPool = threadPool;
+    }
+
     public ThreadPool getThreadPool()
     {
         return _threadPool;
@@ -685,9 +697,19 @@ public class Oort extends AggregateLifeCycle
         return _wsFactory;
     }
 
+    public void setWebSocketClientFactory(WebSocketClientFactory wsFactory)
+    {
+        this._wsFactory = wsFactory;
+    }
+
     public HttpClient getHttpClient()
     {
         return _httpClient;
+    }
+
+    public void setHttpClient(HttpClient httpClient)
+    {
+        this._httpClient = httpClient;
     }
 
     protected Logger getLogger()

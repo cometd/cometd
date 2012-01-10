@@ -178,6 +178,7 @@ public class BayeuxLoadClient
         scheduler = Executors.newScheduledThreadPool(8);
 
         MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        mbContainer.start();
         mbContainer.addBean(this);
 
         threadPool = new MonitoringQueuedThreadPool(maxThreads);
@@ -403,6 +404,10 @@ public class BayeuxLoadClient
         webSocketClientFactory.stop();
 
         httpClient.stop();
+
+        threadPool.stop();
+
+        mbContainer.stop();
 
         scheduler.shutdown();
         scheduler.awaitTermination(1000, TimeUnit.MILLISECONDS);

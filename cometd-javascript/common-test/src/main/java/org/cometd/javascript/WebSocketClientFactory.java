@@ -23,6 +23,7 @@ import org.mozilla.javascript.ScriptableObject;
 public class WebSocketClientFactory extends ScriptableObject
 {
     private org.eclipse.jetty.websocket.WebSocketClientFactory factory;
+    private QueuedThreadPool threadPool;
 
     public WebSocketClientFactory()
     {
@@ -39,13 +40,16 @@ public class WebSocketClientFactory extends ScriptableObject
 
     public void start() throws Exception
     {
-        factory = new org.eclipse.jetty.websocket.WebSocketClientFactory(new QueuedThreadPool(), new ZeroMaskGen(), 8192);
+        threadPool = new QueuedThreadPool();
+        threadPool.start();
+        factory = new org.eclipse.jetty.websocket.WebSocketClientFactory(threadPool, new ZeroMaskGen());
         factory.start();
     }
 
     public void stop() throws Exception
     {
         factory.stop();
+        threadPool.stop();
     }
 
     public org.eclipse.jetty.websocket.WebSocketClient newWebSocketClient()
