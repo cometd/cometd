@@ -50,13 +50,16 @@ public abstract class ClientServerWebSocketTest
     };
     protected Connector connector;
     protected Server server;
+    protected String contextPath;
     protected ServletContextHandler context;
+    protected String cometdServletPath;
     protected HttpClient httpClient;
+    protected QueuedThreadPool wsThreadPool;
     protected WebSocketClientFactory wsFactory;
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
 
-    public void startServer(Map<String, String> initParams) throws Exception
+    public void runServer(Map<String, String> initParams) throws Exception
     {
         server = new Server();
 
@@ -64,7 +67,7 @@ public abstract class ClientServerWebSocketTest
         connector.setMaxIdleTime(30000);
         server.addConnector(connector);
 
-        String contextPath = "";
+        contextPath = "";
         context = new ServletContextHandler(server, contextPath, true, false);
 
         // CometD servlet
@@ -80,22 +83,31 @@ public abstract class ClientServerWebSocketTest
                 cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
         }
 
-        String cometdServletPath = "/cometd";
+        cometdServletPath = "/cometd";
         context.addServlet(cometdServletHolder, cometdServletPath + "/*");
 
+        httpClient = new HttpClient();
+
+        wsThreadPool = new QueuedThreadPool();
+        wsThreadPool.setName(wsThreadPool.getName() + "-client");
+        wsThreadPool.setMaxStopTimeMs(1000);
+
+        wsFactory = new WebSocketClientFactory(wsThreadPool);
+
+        startServer();
+    }
+
+    protected void startServer() throws Exception
+    {
         server.start();
         int port = connector.getLocalPort();
         cometdURL = "http://localhost:" + port + contextPath + cometdServletPath;
 
         bayeux = (BayeuxServerImpl)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
 
-        httpClient = new HttpClient();
         httpClient.start();
 
-        QueuedThreadPool wsPool = new QueuedThreadPool();
-        wsPool.setName(wsPool.getName() + "-client");
-        wsPool.setMaxStopTimeMs(1000);
-        wsFactory = new WebSocketClientFactory(wsPool);
+        wsThreadPool.start();
         wsFactory.start();
     }
 
@@ -117,6 +129,7 @@ public abstract class ClientServerWebSocketTest
     public void stopServer() throws Exception
     {
         wsFactory.stop();
+        wsThreadPool.stop();
 
         httpClient.stop();
 

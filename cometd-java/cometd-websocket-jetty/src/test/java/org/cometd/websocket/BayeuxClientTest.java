@@ -48,7 +48,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
     @Before
     public void setUp() throws Exception
     {
-        startServer(null);
+        runServer(null);
     }
 
     @Test
