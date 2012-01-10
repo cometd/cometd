@@ -398,7 +398,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             }
         }
 
-        debug("Deregistering {} for response {}", exchange, message);
+        debug("Deregistering {} for message {}", exchange, message);
 
         if (exchange != null)
             exchange.task.cancel(false);
