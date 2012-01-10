@@ -148,7 +148,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     public void abort()
     {
         _aborted = true;
-        disconnect();
+        disconnect("Aborted");
         reset();
     }
 
@@ -156,6 +156,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     public void reset()
     {
         super.reset();
+        disconnect("Reset");
         if (_shutdownScheduler)
         {
             _shutdownScheduler = false;
@@ -168,17 +169,17 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     public void terminate()
     {
         super.terminate();
-        disconnect();
+        disconnect("Terminated");
     }
 
-    private void disconnect()
+    protected void disconnect(String reason)
     {
         Connection connection = _connection;
         _connection = null;
         if (connection != null && connection.isOpen())
         {
             debug("Closing websocket connection {}", connection);
-            connection.close();
+            connection.close(1000, reason);
         }
     }
 
@@ -486,7 +487,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             Connection connection = _connection;
             _connection = null;
             debug("Closed websocket connection with code {} {}: {} ", closeCode, message, connection);
-            failMessages(new EOFException("Connection closed " + closeCode+" "+message));
+            failMessages(new EOFException("Connection closed " + closeCode + " " + message));
         }
 
         public void onMessage(String data)

@@ -885,7 +885,32 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
         Thread.sleep(1000);
 
-        disconnectBayeuxClient(client);
+        client.disconnect();
+
+        Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testClientDisconnectingSynchronouslyClosesTheConnection() throws Exception
+    {
+        final CountDownLatch closeLatch = new CountDownLatch(1);
+        org.cometd.websocket.server.WebSocketTransport transport = new org.cometd.websocket.server.WebSocketTransport(bayeux)
+        {
+            @Override
+            protected void onClose(int code, String message)
+            {
+                closeLatch.countDown();
+            }
+        };
+        bayeux.setTransports(transport);
+        transport.init();
+
+        BayeuxClient client = newBayeuxClient();
+        client.handshake();
+        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Thread.sleep(1000);
+
+        client.disconnect(1000);
 
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
