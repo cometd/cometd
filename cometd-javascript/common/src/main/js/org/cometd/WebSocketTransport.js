@@ -97,7 +97,7 @@ org.cometd.WebSocketTransport = function()
                 {
                     if (_webSocket)
                     {
-                        _webSocket.close(1000, 'Max network delay exceeded');
+                        _webSocket.close(1000, 'Timeout');
                     }
                 }, delay);
             }
