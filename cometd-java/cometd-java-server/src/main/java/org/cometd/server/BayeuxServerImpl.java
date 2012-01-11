@@ -116,6 +116,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             _logger.debug(message, args);
     }
 
+    int getLogLevel()
+    {
+        return _logLevel;
+    }
+
     @Override
     protected void doStart() throws Exception
     {

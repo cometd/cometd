@@ -224,6 +224,14 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     {
     }
 
+    protected void debug(String format, Object... args)
+    {
+        if (_bayeux.getLogLevel() >= BayeuxServerImpl.DEBUG_LOG_LEVEL)
+            _logger.info(format, args);
+        else
+            _logger.debug(format, args);
+    }
+
     public interface Scheduler
     {
         void cancel();

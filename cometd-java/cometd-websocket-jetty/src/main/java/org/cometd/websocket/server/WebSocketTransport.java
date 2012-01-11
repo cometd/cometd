@@ -237,7 +237,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
     protected void send(WebSocket.Connection connection, String data) throws IOException
     {
-        _logger.debug("Sending {}", data);
+        debug("Sending {}", data);
         connection.sendMessage(data);
     }
 
@@ -278,7 +278,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 session.cancelIntervalTimeout();
                 cancelMetaConnectTask(session);
             }
-            _logger.debug("Closing {}/{}", code, reason);
+            debug("Closing {}/{}", code, reason);
             WebSocketTransport.this.onClose(code, reason);
         }
 
@@ -303,7 +303,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             try
             {
                 ServerMessage.Mutable[] messages = parseMessages(data);
-                _logger.debug("Received messages {}", data);
+                debug("Received messages {}", data);
                 for (ServerMessage.Mutable message : messages)
                     onMessage(message);
             }
@@ -393,7 +393,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                                 if (session.isQueueEmpty())
                                 {
                                     if (cancelMetaConnectTask(session))
-                                        _logger.debug("Cancelled unresponded meta connect {}", _connectReply);
+                                        debug("Cancelled unresponded meta connect {}", _connectReply);
 
                                     _connectReply = reply;
 
@@ -494,7 +494,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     {
                         // We had a second meta connect arrived while we were expiring the first:
                         // just ignore to reply to the first connect as if we were able to cancel it
-                        _logger.debug("Flushing skipped replies that do not match: {} != {}", connectReply, expiredConnectReply);
+                        debug("Flushing skipped replies that do not match: {} != {}", connectReply, expiredConnectReply);
                         return;
                     }
 
@@ -504,7 +504,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                         {
                             // If we need to deliver only via meta connect, but we
                             // do not have one outstanding, wait until it arrives
-                            _logger.debug("Flushing skipped since metaConnectDelivery={}, metaConnectReply={}", metaConnectDelivery, connectReply);
+                            debug("Flushing skipped since metaConnectDelivery={}, metaConnectReply={}", metaConnectDelivery, connectReply);
                             return;
                         }
                     }
@@ -525,7 +525,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
                 try
                 {
-                    _logger.debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", new Object[]{session, timeout, metaConnectDelivery, reply, queue});
+                    debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", session, timeout, metaConnectDelivery, reply, queue);
                     send(_connection, queue);
                 }
                 finally
@@ -583,7 +583,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 long now = System.currentTimeMillis();
                 long delay = now - _connectExpiration;
                 if (delay > 5000) // TODO: make the max delay a parameter ?
-                    _logger.debug("/meta/connect timeout expired {} ms too late", delay);
+                    debug("/meta/connect timeout expired {} ms too late", delay);
 
                 // Send the meta connect response after timeout.
                 // We *must* execute the next schedule() otherwise
