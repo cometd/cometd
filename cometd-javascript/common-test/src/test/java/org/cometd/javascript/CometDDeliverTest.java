@@ -81,6 +81,7 @@ public class CometDDeliverTest extends AbstractCometDTest
             Boolean deliver = (Boolean) data.get("deliver");
             if (deliver)
             {
+                data.put("echo", true);
                 remote.deliver(getServerSession(), channel, data, messageId);
             }
         }
