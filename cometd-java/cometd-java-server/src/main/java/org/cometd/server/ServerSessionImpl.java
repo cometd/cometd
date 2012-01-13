@@ -854,15 +854,10 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    public String toDetailString()
-    {
-        return _id + ",lc=" + _lastConnect;
-    }
-
     @Override
     public String toString()
     {
-        return _id;
+        return String.format("%s - last connect %d ms ago", _id, _lastConnect);
     }
 
     public long calculateTimeout(long defaultTimeout)
