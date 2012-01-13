@@ -566,6 +566,9 @@ public abstract class LongPollingTransport extends HttpTransport
 
         public ServerMessage.Mutable getReply()
         {
+            Map<String, Object> advice = _session.takeAdvice();
+            if (advice != null)
+                _reply.put(Message.ADVICE_FIELD, advice);
             return _reply;
         }
 

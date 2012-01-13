@@ -594,6 +594,16 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
+    protected long getMaxInterval()
+    {
+        return _maxInterval;
+    }
+
+    long getIntervalTimestamp()
+    {
+        return _intervalTimestamp;
+    }
+
     public Object getAttribute(String name)
     {
         return _attributes.getAttribute(name);
@@ -722,35 +732,32 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    public Object getAdvice()
-    {
-        final ServerTransport transport = _bayeux.getCurrentTransport();
-        if (transport == null)
-            return null;
-
-        long timeout = getTimeout() < 0 ? transport.getTimeout() : getTimeout();
-        long interval = getInterval() < 0 ? transport.getInterval() : getInterval();
-
-        Map<String, Object> advice = new HashMap<String, Object>(3);
-        advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
-        advice.put(Message.INTERVAL_FIELD, interval);
-        advice.put(Message.TIMEOUT_FIELD, timeout);
-        return advice;
-    }
-
     public void reAdvise()
     {
         _advisedTransport = null;
     }
 
-    public Object takeAdvice()
+    public Map<String, Object> takeAdvice()
     {
         final ServerTransport transport = _bayeux.getCurrentTransport();
 
         if (transport != null && transport != _advisedTransport)
         {
             _advisedTransport = transport;
-            return getAdvice();
+
+            // The timeout is calculated based on the values of the session/transport
+            // because we want to send to the client the *next* timeout
+            long timeout = getTimeout() < 0 ? transport.getTimeout() : getTimeout();
+
+            // The interval is calculated using also the transient value
+            // because we want to send to the client the *current* interval
+            long interval = calculateInterval(transport.getInterval());
+
+            Map<String, Object> advice = new HashMap<String, Object>(3);
+            advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
+            advice.put(Message.INTERVAL_FIELD, interval);
+            advice.put(Message.TIMEOUT_FIELD, timeout);
+            return advice;
         }
 
         // advice has not changed, so return null.
@@ -884,6 +891,10 @@ public class ServerSessionImpl implements ServerSession
 
     /**
      * Updates the transient timeout with the given value.
+     * The transient timeout is the one sent by the client, that should
+     * temporarily override the session/transport timeout, for example
+     * when the client sends {timeout:0}
+     *
      * @param timeout the value to update the timeout to
      * @see #updateTransientInterval(long)
      */
@@ -893,7 +904,11 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /**
-     * Updates the transient timeout with the given value.
+     * Updates the transient interval with the given value.
+     * The transient interval is the one sent by the client, that should
+     * temporarily override the session/transport interval, for example
+     * when the client sends {timeout:0,interval:60000}
+     *
      * @param interval the value to update the interval to
      * @see #updateTransientTimeout(long)
      */

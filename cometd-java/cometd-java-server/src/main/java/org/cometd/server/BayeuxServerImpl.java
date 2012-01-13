@@ -1304,7 +1304,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
 
             // Send advice
-            Object adviceOut = session.takeAdvice();
+            Map<String, Object> adviceOut = session.takeAdvice();
             if (adviceOut!=null)
                 reply.put(Message.ADVICE_FIELD,adviceOut);
 
