@@ -16,8 +16,10 @@
 
 package org.cometd.client;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.junit.Assert;
@@ -32,14 +34,13 @@ public class ChannelReleaseTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        client.waitFor(1000, BayeuxClient.State.CONNECTED);
+        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
         TimeUnit.MILLISECONDS.sleep(500);
 
         String channelName = "/foo";
         ClientSessionChannel channel = client.getChannel(channelName);
-        channel.publish("");
         boolean released = channel.release();
 
         Assert.assertTrue(released);
@@ -58,7 +59,7 @@ public class ChannelReleaseTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        client.waitFor(1000, BayeuxClient.State.CONNECTED);
+        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
         TimeUnit.MILLISECONDS.sleep(500);
@@ -68,7 +69,6 @@ public class ChannelReleaseTest extends ClientServerTest
         channel.addListener(new ClientSessionChannel.ClientSessionChannelListener()
         {
         });
-        channel.publish("");
         boolean released = channel.release();
 
         Assert.assertFalse(released);
@@ -87,20 +87,29 @@ public class ChannelReleaseTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        client.waitFor(1000, BayeuxClient.State.CONNECTED);
+        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
         TimeUnit.MILLISECONDS.sleep(500);
 
+        final CountDownLatch latch = new CountDownLatch(1);
         String channelName = "/foo";
-        ClientSessionChannel channel = client.getChannel(channelName);
-        channel.subscribe(new ClientSessionChannel.MessageListener()
+        final ClientSessionChannel channel = client.getChannel(channelName);
+        client.batch(new Runnable()
         {
-            public void onMessage(ClientSessionChannel channel, Message message)
+            public void run()
             {
+                channel.subscribe(new ClientSessionChannel.MessageListener()
+                {
+                    public void onMessage(ClientSessionChannel channel, Message message)
+                    {
+                        latch.countDown();
+                    }
+                });
+                channel.publish("");
             }
         });
-        channel.publish("");
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         boolean released = channel.release();
 
         Assert.assertFalse(released);
@@ -119,7 +128,7 @@ public class ChannelReleaseTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        client.waitFor(1000, BayeuxClient.State.CONNECTED);
+        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
         TimeUnit.MILLISECONDS.sleep(500);
@@ -130,7 +139,6 @@ public class ChannelReleaseTest extends ClientServerTest
         {
         };
         channel.addListener(listener);
-        channel.publish("");
         boolean released = channel.release();
 
         Assert.assertFalse(released);
@@ -151,26 +159,44 @@ public class ChannelReleaseTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        client.waitFor(1000, BayeuxClient.State.CONNECTED);
+        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
         TimeUnit.MILLISECONDS.sleep(500);
 
+        final CountDownLatch latch = new CountDownLatch(1);
         String channelName = "/foo";
-        ClientSessionChannel channel = client.getChannel(channelName);
-        ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener()
+        final ClientSessionChannel channel = client.getChannel(channelName);
+        final ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
+                latch.countDown();
             }
         };
-        channel.subscribe(listener);
-        channel.publish("");
+        client.batch(new Runnable()
+        {
+            public void run()
+            {
+                channel.subscribe(listener);
+                channel.publish("");
+            }
+        });
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         boolean released = channel.release();
 
         Assert.assertFalse(released);
 
+        final CountDownLatch unsubscribe = new CountDownLatch(1);
+        client.getChannel(Channel.META_UNSUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                unsubscribe.countDown();
+            }
+        });
         channel.unsubscribe(listener);
+        Assert.assertTrue(unsubscribe.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(channel.getSubscribers().isEmpty());
         released = channel.release();
 

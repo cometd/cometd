@@ -97,7 +97,7 @@ public class ClientServerTest
 
     protected void disconnectBayeuxClient(BayeuxClient client)
     {
-        client.disconnect(5000);
+        client.disconnect(1000);
     }
 
     @After
