@@ -49,14 +49,15 @@ public interface BayeuxServer extends Bayeux
     public static final String ATTRIBUTE = "org.cometd.bayeux";
 
     /**
-     * Adds the given extension to this Bayeux object.
+     * <p>Adds the given extension to this Bayeux object.</p>
+     *
      * @param extension the extension to add
      * @see #removeExtension(Extension)
      */
     void addExtension(Extension extension);
 
     /**
-     * Removes the given extension from this Bayeux object
+     * <p>Removes the given extension from this Bayeux object.</p>
      * @param extension the extension to remove
      * @see #addExtension(Extension)
      */
@@ -69,14 +70,16 @@ public interface BayeuxServer extends Bayeux
     List<Extension> getExtensions();
 
     /**
-     * Adds a listener to this Bayeux object.
+     * <p>Adds a listener to this Bayeux object.</p>
+     *
      * @param listener the listener to add
      * @see #removeListener(BayeuxServerListener)
      */
     void addListener(BayeuxServerListener listener);
 
     /**
-     * Removes a listener from this Bayeux object.
+     * <p>Removes a listener from this Bayeux object.</p>
+     *
      * @param listener the listener to remove
      * @see #addListener(BayeuxServerListener)
      */
@@ -103,7 +106,7 @@ public interface BayeuxServer extends Bayeux
      * <p>The createIfAbsent method should be used when a channel needs to be
      * initialized (e.g. by adding listeners) before any publish or subscribes
      * can occur on the channel, or before any other thread may concurrently
-     * create the same channel.
+     * create the same channel.</p>
      *
      * @param channelId the channel identifier
      * @param initializers the initializers invoked to configure the channel
@@ -163,7 +166,7 @@ public interface BayeuxServer extends Bayeux
     public BayeuxContext getContext();
 
     /**
-     * Common base interface for all server-side Bayeux listeners
+     * <p>Common base interface for all server-side Bayeux listeners.</p>
      */
     interface BayeuxServerListener extends BayeuxListener
     {
@@ -184,13 +187,15 @@ public interface BayeuxServer extends Bayeux
     public interface ChannelListener extends BayeuxServerListener, ConfigurableServerChannel.Initializer
     {
         /**
-         * Callback invoked when a {@link ServerChannel} has been added to a {@link BayeuxServer} object.
+         * <p>Callback invoked when a {@link ServerChannel} has been added to a {@link BayeuxServer} object.</p>
+         *
          * @param channel the channel that has been added
          */
         public void channelAdded(ServerChannel channel);
 
         /**
-         * Callback invoked when a {@link ServerChannel} has been removed from a {@link BayeuxServer} object.
+         * <p>Callback invoked when a {@link ServerChannel} has been removed from a {@link BayeuxServer} object.</p>
+         *
          * @param channelId the channel identifier of the channel that has been removed.
          */
         public void channelRemoved(String channelId);
@@ -204,13 +209,15 @@ public interface BayeuxServer extends Bayeux
     public interface SessionListener extends BayeuxServerListener
     {
         /**
-         * Callback invoked when a {@link ServerSession} has been added to a {@link BayeuxServer} object.
+         * <p>Callback invoked when a {@link ServerSession} has been added to a {@link BayeuxServer} object.</p>
+         *
          * @param session the session that has been added
          */
         public void sessionAdded(ServerSession session);
 
         /**
-         * Callback invoked when a {@link ServerSession} has been removed from a {@link BayeuxServer} object.
+         * <p>Callback invoked when a {@link ServerSession} has been removed from a {@link BayeuxServer} object.</p>
+         *
          * @param session the session that has been removed
          * @param timedout whether the session has been removed for a timeout or not
          */
@@ -228,14 +235,16 @@ public interface BayeuxServer extends Bayeux
     public interface SubscriptionListener extends BayeuxServerListener
     {
         /**
-         * Callback invoked when a {@link ServerSession} subscribes to a {@link ServerChannel}.
+         * <p>Callback invoked when a {@link ServerSession} subscribes to a {@link ServerChannel}.</p>
+         *
          * @param session the session that subscribes
          * @param channel the channel to subscribe to
          */
         public void subscribed(ServerSession session, ServerChannel channel);
 
         /**
-         * Callback invoked when a {@link ServerSession} unsubscribes from a {@link ServerChannel}.
+         * <p>Callback invoked when a {@link ServerSession} unsubscribes from a {@link ServerChannel}.</p>
+         *
          * @param session the session that unsubscribes
          * @param channel the channel to unsubscribe from
          */
@@ -256,7 +265,8 @@ public interface BayeuxServer extends Bayeux
     public interface Extension
     {
         /**
-         * Callback method invoked every time a normal message is incoming.
+         * <p>Callback method invoked every time a normal message is incoming.</p>
+         *
          * @param from the session that sent the message
          * @param message the incoming message
          * @return true if message processing should continue, false if it should stop
@@ -264,7 +274,8 @@ public interface BayeuxServer extends Bayeux
         boolean rcv(ServerSession from, ServerMessage.Mutable message);
 
         /**
-         * Callback method invoked every time a meta message is incoming.
+         * <p>Callback method invoked every time a meta message is incoming.</p>
+         *
          * @param from the session that sent the message
          * @param message the incoming meta message
          * @return true if message processing should continue, false if it should stop
@@ -272,7 +283,8 @@ public interface BayeuxServer extends Bayeux
         boolean rcvMeta(ServerSession from, ServerMessage.Mutable message);
 
         /**
-         * Callback method invoked every time a normal message is outgoing.
+         * <p>Callback method invoked every time a normal message is outgoing.</p>
+         *
          * @param from the session that sent the message or null
          * @param to the session the message is sent to, or null for a publish.
          * @param message the outgoing message
@@ -281,7 +293,8 @@ public interface BayeuxServer extends Bayeux
         boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message);
 
         /**
-         * Callback method invoked every time a meta message is outgoing.
+         * <p>Callback method invoked every time a meta message is outgoing.</p>
+         *
          * @param to the session the message is sent to, or null for a publish.
          * @param message the outgoing meta message
          * @return true if message processing should continue, false if it should stop
