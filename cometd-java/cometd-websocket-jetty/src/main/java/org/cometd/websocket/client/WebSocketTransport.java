@@ -92,7 +92,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile int _idleTimeout = 60000;
     private volatile int _maxMessageSize;
     private volatile boolean _uniqueMessageId = true;
-    private boolean _aborted;
+    private volatile boolean _connected;
+    private volatile boolean _aborted;
     private volatile boolean _webSocketSupported = true;
     private volatile WebSocket.Connection _connection;
     private volatile TransportListener _listener;
@@ -156,7 +157,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     public void reset()
     {
         super.reset();
-        disconnect("Reset");
         if (_shutdownScheduler)
         {
             _shutdownScheduler = false;
@@ -191,14 +191,14 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         try
         {
-            String content = generateJSON(messages);
-
             Connection connection = connect(listener, messages);
             if (connection == null)
                 return;
 
             for (Message.Mutable message : messages)
                 registerMessage(message, listener);
+
+            String content = generateJSON(messages);
 
             debug("Sending messages {}", content);
             // The onSending() callback must be invoked before the actual send
@@ -312,6 +312,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                 else if (timeout != null)
                     maxNetworkDelay += Integer.parseInt(timeout.toString());
             }
+            _connected = true;
         }
 
         // Schedule a task to expire if the maxNetworkDelay elapses
@@ -371,6 +372,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         if (_uniqueMessageId || message.isMeta())
         {
             exchange = _metaExchanges.remove(message.getId());
+            if (Channel.META_CONNECT.equals(message.getChannel()))
+                _connected = false;
         }
         else
         {
@@ -447,14 +450,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     {
         for (Mutable message : messages)
         {
-            if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful())
-            {
-                // Remember the advice so that we can properly calculate the max network delay
-                Map<String, Object> advice = message.getAdvice();
-                if (advice != null && advice.get(Message.TIMEOUT_FIELD) != null)
-                    _advice = advice;
-            }
-
             if (isReply(message))
             {
                 WebSocketExchange exchange = deregisterMessage(message);
@@ -467,6 +462,22 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                     // If the exchange is missing, then the message has expired, and we do not notify
                     debug("Could not find request for reply {}", message);
                 }
+
+                boolean reconnect = true;
+                if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful())
+                {
+                    // Remember the advice so that we can properly calculate the max network delay
+                    Map<String, Object> advice = message.getAdvice();
+                    if (advice != null)
+                    {
+                        reconnect = !Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD));
+                        if (advice.get(Message.TIMEOUT_FIELD) != null)
+                            _advice = advice;
+                    }
+                }
+
+                if (!reconnect || Channel.META_DISCONNECT.equals(message.getChannel()) && !_connected)
+                    disconnect("Disconnect");
             }
             else
             {
