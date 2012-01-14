@@ -8,7 +8,7 @@
     <name>CometD</name>
     <version>2.4.0-SNAPSHOT</version>
 
-    <!-- TODO: remove when using a released Jetty version -->
+<!--
     <repositories>
         <repository>
             <id>jetty.snapshots</id>
@@ -33,10 +33,11 @@
             </releases>
         </pluginRepository>
     </pluginRepositories>
+-->
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.6.0-SNAPSHOT</jetty-version>
+        <jetty-version>7.6.0.RC4</jetty-version>
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
         <slf4j-version>1.6.2</slf4j-version>
         <spring-version>3.0.6.RELEASE</spring-version>
