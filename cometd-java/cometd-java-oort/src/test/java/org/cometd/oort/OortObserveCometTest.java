@@ -45,7 +45,7 @@ public class OortObserveCometTest extends OortTest
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        OortComet oortComet21 = oort2.findComet(oort2.getKnownComets().iterator().next());
+        OortComet oortComet21 = oort2.findComet(oort1.getURL());
         Assert.assertNotNull(oortComet21);
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
@@ -79,14 +79,14 @@ public class OortObserveCometTest extends OortTest
 
         // Be sure all the links have established
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        OortComet oortCometCA = oortC.findComet(oortA.getURL());
-        Assert.assertTrue(oortCometCA.waitFor(5000, BayeuxClient.State.CONNECTED));
         OortComet oortCometBA = oortB.findComet(oortA.getURL());
         Assert.assertTrue(oortCometBA.waitFor(5000, BayeuxClient.State.CONNECTED));
-        OortComet oortCometBC = oortB.findComet(oortC.getURL());
-        Assert.assertTrue(oortCometBC.waitFor(5000, BayeuxClient.State.CONNECTED));
+        OortComet oortCometCA = oortC.findComet(oortA.getURL());
+        Assert.assertTrue(oortCometCA.waitFor(5000, BayeuxClient.State.CONNECTED));
         OortComet oortCometCB = oortC.findComet(oortB.getURL());
         Assert.assertTrue(oortCometCB.waitFor(5000, BayeuxClient.State.CONNECTED));
+        OortComet oortCometBC = oortB.findComet(oortC.getURL());
+        Assert.assertTrue(oortCometBC.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         Assert.assertEquals(2, oortA.getKnownComets().size());
         Assert.assertEquals(2, oortB.getKnownComets().size());
