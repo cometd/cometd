@@ -44,7 +44,7 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
         TestService service = new TestService(bayeux, latch);
         service.addService(channelName, "handle");
 
-        JettyJSONContextServer jsonContext = (JettyJSONContextServer)bayeux.getOption(BayeuxServerImpl.JSON_CONTEXT);
+        TestJettyJSONContextServer jsonContext = (TestJettyJSONContextServer)bayeux.getOption(BayeuxServerImpl.JSON_CONTEXT);
         jsonContext.getJSON().addConvertor(Holder.class, new HolderConvertor());
 
         ContentExchange handshake = newBayeuxExchange("[{" +
@@ -87,6 +87,7 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
         public void toJSON(Object obj, JSON.Output out)
         {
             Holder holder = (Holder)obj;
+            out.addClass(Holder.class);
             out.add("field", holder.field);
         }
 
