@@ -36,7 +36,7 @@ public abstract class JettyJSONContext<T extends Message.Mutable>
     {
     }
 
-    protected JSON getJSON()
+    public JSON getJSON()
     {
         return _jsonParser;
     }

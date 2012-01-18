@@ -35,7 +35,7 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
         rootArrayType = objectMapper.constructType(rootArrayClass());
     }
 
-    protected ObjectMapper getObjectMapper()
+    public ObjectMapper getObjectMapper()
     {
         return objectMapper;
     }
