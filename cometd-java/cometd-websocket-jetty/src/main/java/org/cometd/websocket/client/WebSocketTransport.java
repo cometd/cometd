@@ -455,17 +455,9 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         {
             if (isReply(message))
             {
-                WebSocketExchange exchange = deregisterMessage(message);
-                if (exchange != null)
-                {
-                    exchange.listener.onMessages(Collections.singletonList(message));
-                }
-                else
-                {
-                    // If the exchange is missing, then the message has expired, and we do not notify
-                    debug("Could not find request for reply {}", message);
-                }
-
+                // Remembering the advice must be done before we notify listeners
+                // otherwise we risk that listeners send a connect message that does
+                // not take into account the timeout to calculate the maxNetworkDelay
                 if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful())
                 {
                     Map<String, Object> advice = message.getAdvice();
@@ -475,6 +467,17 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                         if (advice.get(Message.TIMEOUT_FIELD) != null)
                             _advice = advice;
                     }
+                }
+
+                WebSocketExchange exchange = deregisterMessage(message);
+                if (exchange != null)
+                {
+                    exchange.listener.onMessages(Collections.singletonList(message));
+                }
+                else
+                {
+                    // If the exchange is missing, then the message has expired, and we do not notify
+                    debug("Could not find request for reply {}", message);
                 }
 
                 if (_disconnected && !_connected)
