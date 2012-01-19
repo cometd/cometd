@@ -93,6 +93,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile int _maxMessageSize;
     private volatile boolean _uniqueMessageId = true;
     private volatile boolean _connected;
+    private volatile boolean _disconnected;
     private volatile boolean _aborted;
     private volatile boolean _webSocketSupported = true;
     private volatile WebSocket.Connection _connection;
@@ -374,6 +375,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             exchange = _metaExchanges.remove(message.getId());
             if (Channel.META_CONNECT.equals(message.getChannel()))
                 _connected = false;
+            else if (Channel.META_DISCONNECT.equals(message.getChannel()))
+                _disconnected = true;
         }
         else
         {
@@ -463,20 +466,18 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                     debug("Could not find request for reply {}", message);
                 }
 
-                boolean reconnect = true;
                 if (Channel.META_CONNECT.equals(message.getChannel()) && message.isSuccessful())
                 {
-                    // Remember the advice so that we can properly calculate the max network delay
                     Map<String, Object> advice = message.getAdvice();
                     if (advice != null)
                     {
-                        reconnect = !Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD));
+                        // Remember the advice so that we can properly calculate the max network delay
                         if (advice.get(Message.TIMEOUT_FIELD) != null)
                             _advice = advice;
                     }
                 }
 
-                if (!reconnect || Channel.META_DISCONNECT.equals(message.getChannel()) && !_connected)
+                if (_disconnected && !_connected)
                     disconnect("Disconnect");
             }
             else
