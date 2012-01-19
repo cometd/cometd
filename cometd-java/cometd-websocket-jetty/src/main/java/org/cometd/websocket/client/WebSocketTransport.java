@@ -211,6 +211,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         catch (Exception x)
         {
             complete(messages);
+            disconnect("Exception");
             listener.onException(x, messages);
         }
     }
@@ -515,7 +516,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             }
             catch (ParseException x)
             {
-                _listener.onException(x, new Message[0]);
+                failMessages(x);
+                disconnect("Exception");
             }
         }
     }
