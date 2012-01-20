@@ -275,7 +275,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 // because the connection may have been closed for a reload, so
                 // just null out the current session to have it retrieved again
                 _session = null;
-                session.cancelIntervalTimeout();
+                session.startIntervalTimeout(getInterval());
                 cancelMetaConnectTask(session);
             }
             debug("Closing {}/{}", code, reason);

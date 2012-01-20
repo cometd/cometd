@@ -914,4 +914,47 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
+
+    @Test
+    public void testWhenClientAbortsServerSessionIsSwept() throws Exception
+    {
+        stopServer();
+
+        Map<String, String> options = new HashMap<String, String>();
+        long maxInterval = 1000;
+        options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
+        runServer(options);
+
+        WebSocketTransport transport = WebSocketTransport.create(null, wsFactory);
+        transport.setDebugEnabled(debugTests());
+        BayeuxClient client = new BayeuxClient(cometdURL, transport)
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                if (!(x instanceof EOFException))
+                    super.onFailure(x, messages);
+            }
+        };
+        client.setDebugEnabled(debugTests());
+        client.handshake();
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        // Allow long poll to establish
+        TimeUnit.MILLISECONDS.sleep(500);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        ServerSession session = bayeux.getSession(client.getId());
+        session.addListener(new ServerSession.RemoveListener()
+        {
+            public void removed(ServerSession session, boolean timeout)
+            {
+                latch.countDown();
+            }
+        });
+
+        client.abort();
+
+        Assert.assertTrue(latch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
+    }
 }
