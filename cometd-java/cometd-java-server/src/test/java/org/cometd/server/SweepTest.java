@@ -19,9 +19,11 @@ package org.cometd.server;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
+import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerTransport;
 import org.junit.Test;
 
-public class SweepPerformanceTest
+public class SweepTest
 {
     @Test
     public void testChannelsSweepPerformance()
@@ -104,5 +106,34 @@ public class SweepPerformanceTest
         int microsPerSweepPerChannel = 100;
         final int expectedMicros = count * microsPerSweepPerChannel;
         Assert.assertTrue("elapsed micros " + elapsedMicros + ", expecting < " + expectedMicros, elapsedMicros < expectedMicros);
+    }
+
+    @Test
+    public void testLocalSessionIsNotSwept() throws Exception
+    {
+        BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
+        bayeuxServer.setOption("sweepIntervalMs", -1);
+        long maxInterval = 1000;
+        bayeuxServer.setOption("maxInterval", maxInterval);
+        bayeuxServer.setOption("maxServerInterval", maxInterval);
+        bayeuxServer.start();
+        ServerTransport serverTransport = bayeuxServer.getTransport("long-polling");
+        bayeuxServer.setCurrentTransport((AbstractServerTransport)serverTransport);
+
+        // LocalSessions do not perform heartbeat so we should not sweep them until disconnected
+        LocalSession localSession = bayeuxServer.newLocalSession("test_sweep");
+        localSession.handshake();
+
+        bayeuxServer.sweep();
+
+        Assert.assertNotNull(bayeuxServer.getSession(localSession.getId()));
+
+        TimeUnit.MILLISECONDS.sleep(maxInterval * 2);
+
+        bayeuxServer.sweep();
+
+        Assert.assertNotNull(bayeuxServer.getSession(localSession.getId()));
+
+        localSession.disconnect();
     }
 }

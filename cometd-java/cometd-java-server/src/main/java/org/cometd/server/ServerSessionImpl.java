@@ -50,14 +50,14 @@ import org.slf4j.LoggerFactory;
 
 public class ServerSessionImpl implements ServerSession
 {
-    private static final AtomicLong _idCount=new AtomicLong();
+    private static final AtomicLong _idCount = new AtomicLong();
 
     private static final Logger _logger = LoggerFactory.getLogger(ServerSession.class);
     private final BayeuxServerImpl _bayeux;
     private final String _id;
     private final List<ServerSessionListener> _listeners = new CopyOnWriteArrayList<ServerSessionListener>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
-    private final ArrayQueue<ServerMessage> _queue=new ArrayQueue<ServerMessage>(8,16,this);
+    private final ArrayQueue<ServerMessage> _queue = new ArrayQueue<ServerMessage>(8, 16, this);
     private final LocalSessionImpl _localSession;
     private final AttributesMap _attributes = new AttributesMap();
     private final AtomicBoolean _connected = new AtomicBoolean();
@@ -67,62 +67,60 @@ public class ServerSessionImpl implements ServerSession
     private AbstractServerTransport.Scheduler _scheduler;
     private ServerTransport _advisedTransport;
 
-    private int _maxQueue=-1;
-    private long _transientTimeout=-1;
-    private long _transientInterval=-1;
-    private long _timeout=-1;
-    private long _interval=-1;
-    private long _maxInterval=-1;
-    private long _maxLazy=-1;
-    private long _maxConnectDelay=-1;
+    private int _maxQueue = -1;
+    private long _transientTimeout = -1;
+    private long _transientInterval = -1;
+    private long _timeout = -1;
+    private long _interval = -1;
+    private long _maxInterval = -1;
+    private long _maxLazy = -1;
+    private long _maxServerInterval = -1;
     private boolean _metaConnectDelivery;
     private int _batch;
     private String _userAgent;
-    private long _connectTimestamp=-1;
+    private long _connectTimestamp = -1;
     private long _intervalTimestamp;
     private long _lastConnect;
     private volatile boolean _lazyDispatch;
-
     private Task _lazyTask;
 
     protected ServerSessionImpl(BayeuxServerImpl bayeux)
     {
-        this(bayeux,null,null);
+        this(bayeux, null, null);
     }
 
     protected ServerSessionImpl(BayeuxServerImpl bayeux, LocalSessionImpl localSession, String idHint)
     {
-        _bayeux=bayeux;
-        _localSession=localSession;
+        _bayeux = bayeux;
+        _localSession = localSession;
 
-        StringBuilder id=new StringBuilder(30);
-        int len=20;
-        if (idHint!=null)
+        StringBuilder id = new StringBuilder(30);
+        int len = 20;
+        if (idHint != null)
         {
-            len+=idHint.length()+1;
+            len += idHint.length() + 1;
             id.append(idHint);
             id.append('_');
         }
-        int index=id.length();
+        int index = id.length();
 
-        while (id.length()<len)
+        while (id.length() < len)
         {
-            long random=_bayeux.randomLong();
-            id.append(Long.toString(random<0?-random:random,36));
+            long random = _bayeux.randomLong();
+            id.append(Long.toString(random < 0 ? -random : random, 36));
         }
 
-        id.insert(index,Long.toString(_idCount.incrementAndGet(),36));
+        id.insert(index, Long.toString(_idCount.incrementAndGet(), 36));
 
-        _id=id.toString();
+        _id = id.toString();
 
-        HttpTransport transport=(HttpTransport)_bayeux.getCurrentTransport();
-        if (transport!=null)
-            _intervalTimestamp=System.currentTimeMillis()+transport.getMaxInterval();
+        HttpTransport transport = (HttpTransport)_bayeux.getCurrentTransport();
+        if (transport != null)
+            _intervalTimestamp = System.currentTimeMillis() + transport.getMaxInterval();
     }
 
     /**
-     * Get the userAgent.
-     * @return the userAgent
+     * @return the remote user agent
      */
     public String getUserAgent()
     {
@@ -130,8 +128,7 @@ public class ServerSessionImpl implements ServerSession
     }
 
     /**
-     * Set the userAgent.
-     * @param userAgent the userAgent to set
+     * @param userAgent the remote user agent
      */
     public void setUserAgent(String userAgent)
     {
@@ -140,13 +137,16 @@ public class ServerSessionImpl implements ServerSession
 
     protected void sweep(long now)
     {
+        if (isLocalSession())
+            return;
+
         boolean remove = false;
         Scheduler scheduler = null;
         synchronized (_queue)
         {
             if (_intervalTimestamp == 0)
             {
-                if (_maxConnectDelay > 0 && now > _connectTimestamp + _maxConnectDelay)
+                if (_maxServerInterval > 0 && now > _connectTimestamp + _maxServerInterval)
                 {
                     _logger.info("Emergency sweeping session {}", this);
                     remove = true;
@@ -265,7 +265,7 @@ public class ServerSessionImpl implements ServerSession
         synchronized (_queue)
         {
             _queue.add(message);
-            wakeup = _batch==0;
+            wakeup = _batch == 0;
         }
 
         if (wakeup)
@@ -306,46 +306,39 @@ public class ServerSessionImpl implements ServerSession
     protected void handshake()
     {
         _handshook.set(true);
+
+        HttpTransport transport = (HttpTransport)_bayeux.getCurrentTransport();
+        if (transport != null)
+        {
+            _maxQueue = transport.getOption("maxQueue", -1);
+            _maxInterval = _interval >= 0 ? _interval + transport.getMaxInterval() : transport.getMaxInterval();
+            _maxServerInterval = transport.getOption("maxServerInterval", 10 * _maxInterval);
+            _maxLazy = transport.getMaxLazyTimeout();
+            if (_maxLazy > 0)
+            {
+                _lazyTask = new Timeout.Task()
+                {
+                    @Override
+                    public void expired()
+                    {
+                        _lazyDispatch = false;
+                        flush();
+                    }
+
+                    @Override
+                    public String toString()
+                    {
+                        return "LazyTask@" + getId();
+                    }
+                };
+            }
+        }
     }
 
     protected void connect()
     {
         _connected.set(true);
-
-        synchronized (_queue)
-        {
-            if (_connectTimestamp == -1)
-            {
-                HttpTransport transport = (HttpTransport)_bayeux.getCurrentTransport();
-                if (transport != null)
-                {
-                    _maxQueue = transport.getOption("maxQueue", -1);
-                    _maxInterval = _interval >= 0 ? (_interval + transport.getMaxInterval() - transport.getInterval()) : transport.getMaxInterval();
-                    _maxLazy = transport.getMaxLazyTimeout();
-                    _maxConnectDelay = transport.getOption("maxConnectDelay", 16 * 60 * 1000L);
-
-                    if (_maxLazy > 0)
-                    {
-                        _lazyTask = new Timeout.Task()
-                        {
-                            @Override
-                            public void expired()
-                            {
-                                _lazyDispatch = false;
-                                flush();
-                            }
-
-                            @Override
-                            public String toString()
-                            {
-                                return "LazyTask@" + getId();
-                            }
-                        };
-                    }
-                }
-            }
-            cancelIntervalTimeout();
-        }
+        cancelIntervalTimeout();
     }
 
     public void disconnect()
@@ -623,7 +616,7 @@ public class ServerSessionImpl implements ServerSession
 
     public void setAttribute(String name, Object value)
     {
-        _attributes.setAttribute(name,value);
+        _attributes.setAttribute(name, value);
     }
 
     public boolean isConnected()
@@ -840,7 +833,7 @@ public class ServerSessionImpl implements ServerSession
         _subscribedTo.remove(channel);
     }
 
-    protected void dump(StringBuilder b,String indent)
+    protected void dump(StringBuilder b, String indent)
     {
         b.append(toString());
         b.append('\n');

@@ -80,7 +80,6 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         bayeux.setTransports(transport);
         long maxInterval = 5000L;
         transport.setMaxInterval(maxInterval);
-        transport.setOption("maxConnectDelay", maxInterval);
 
         ContentExchange handshake = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/handshake\"," +
