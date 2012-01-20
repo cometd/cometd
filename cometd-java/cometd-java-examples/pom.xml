@@ -71,6 +71,7 @@
                                 <argument>-XX:+UseParallelOldGC</argument>
                                 <argument>-XX:-UseAdaptiveSizePolicy</argument>
                                 <argument>-XX:+UseNUMA</argument>
+                                <argument>-XX:+AggressiveOpts</argument>
                                 <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->
                                 <!--<argument>-XX:+UnlockExperimentalVMOptions</argument>-->
                                 <!--<argument>-XX:+UseG1GC</argument>-->
@@ -116,6 +117,7 @@
                                 <argument>-XX:+UseParallelOldGC</argument>
                                 <argument>-XX:-UseAdaptiveSizePolicy</argument>
                                 <argument>-XX:+UseNUMA</argument>
+                                <argument>-XX:+AggressiveOpts</argument>
                                 <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->
                                 <!--<argument>-XX:+UnlockExperimentalVMOptions</argument>-->
                                 <!--<argument>-XX:+UseG1GC</argument>-->
