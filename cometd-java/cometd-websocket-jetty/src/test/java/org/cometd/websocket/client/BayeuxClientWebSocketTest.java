@@ -193,22 +193,10 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
     @Test
     public void testAbortThenRestart() throws Exception
     {
-        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(2));
         WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsFactory);
         webSocketTransport.setDebugEnabled(debugTests());
         BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport)
         {
-            @Override
-            public void onSending(Message[] messages)
-            {
-                // Need to be sure that the second connect is sent otherwise
-                // the abort and rehandshake may happen before the second
-                // connect and the test will fail.
-                super.onSending(messages);
-                if (messages.length == 1 && Channel.META_CONNECT.equals(messages[0].getChannel()))
-                    connectLatch.get().countDown();
-            }
-
             @Override
             public void onFailure(Throwable x, Message[] messages)
             {
@@ -219,16 +207,25 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         client.setDebugEnabled(debugTests());
         client.handshake();
 
-        // Wait for connect
-        Assert.assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        // Need to be sure that the second connect is sent otherwise
+        // the abort and rehandshake may happen before the second
+        // connect and the test will fail.
+        TimeUnit.MILLISECONDS.sleep(1000);
 
         client.abort();
         Assert.assertFalse(client.isConnected());
 
         // Restart
-        connectLatch.set(new CountDownLatch(2));
+        final CountDownLatch connectLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                connectLatch.countDown();
+            }
+        });
         client.handshake();
-        Assert.assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
         Assert.assertTrue(client.isConnected());
 
         disconnectBayeuxClient(client);
@@ -573,9 +570,18 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                     client.disconnect();
             }
         });
+        final CountDownLatch disconnectLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_DISCONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                disconnectLatch.countDown();
+            }
+        });
         client.handshake();
 
         Assert.assertTrue(connectLatch.await(timeout + timeout / 2, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -941,7 +947,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Allow long poll to establish
-        TimeUnit.MILLISECONDS.sleep(500);
+        TimeUnit.MILLISECONDS.sleep(1000);
 
         final CountDownLatch latch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(client.getId());
