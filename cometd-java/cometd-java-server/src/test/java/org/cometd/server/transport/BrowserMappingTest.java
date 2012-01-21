@@ -70,7 +70,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
         Assert.assertEquals(200, connect1.getResponseStatus());
 
-        long begin = System.nanoTime();
+        long begin = System.currentTimeMillis();
         ContentExchange connect2 = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
@@ -80,7 +80,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         httpClient.send(connect2);
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
         Assert.assertEquals(200, connect2.getResponseStatus());
-        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
+        long elapsed = System.currentTimeMillis() - begin;
         Assert.assertTrue("" + elapsed, elapsed >= timeout);
     }
 
@@ -155,7 +155,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
         Assert.assertEquals(200, connect1.getResponseStatus());
 
-        long begin = System.nanoTime();
+        long begin = System.currentTimeMillis();
         ContentExchange connect2 = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
@@ -164,7 +164,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         httpClient.send(connect2);
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
         Assert.assertEquals(200, connect2.getResponseStatus());
-        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
+        long elapsed = System.currentTimeMillis() - begin;
         Assert.assertTrue("" + elapsed, elapsed >= timeout);
     }
 
@@ -196,7 +196,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
         Assert.assertEquals(200, connect1.getResponseStatus());
 
-        long begin = System.nanoTime();
+        long begin = System.currentTimeMillis();
         ContentExchange connect2 = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
@@ -207,7 +207,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         httpClient.send(connect2);
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
         Assert.assertEquals(200, connect2.getResponseStatus());
-        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
+        long elapsed = System.currentTimeMillis() - begin;
         Assert.assertTrue("" + elapsed, elapsed >= timeout);
     }
 }
