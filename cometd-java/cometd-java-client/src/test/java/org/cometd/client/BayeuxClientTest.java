@@ -673,6 +673,42 @@ public class BayeuxClientTest extends ClientServerTest
     }
 
     @Test
+    public void testAbortNotifiesListeners() throws Exception
+    {
+        BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                if (x.getClass() != IOException.class)
+                    super.onFailure(x, messages);
+            }
+        };
+        client.setDebugEnabled(debugTests());
+
+        final CountDownLatch connectLatch = new CountDownLatch(2);
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (connectLatch.getCount() > 1 && message.isSuccessful() ||
+                        connectLatch.getCount() == 1 && !message.isSuccessful())
+                connectLatch.countDown();
+            }
+        });
+
+        client.handshake();
+        Assert.assertTrue(client.waitFor(1000, State.CONNECTED));
+
+        // Wait for connect
+        TimeUnit.MILLISECONDS.sleep(500);
+
+        client.abort();
+
+        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
     public void testAbortThenRestart() throws Exception
     {
         final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(2));
@@ -745,6 +781,13 @@ public class BayeuxClientTest extends ClientServerTest
                     publishLatch.countDown();
                 return result;
             }
+
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                if (x.getClass() != IOException.class)
+                    super.onFailure(x, messages);
+            }
         };
         client.setDebugEnabled(debugTests());
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
@@ -799,6 +842,13 @@ public class BayeuxClientTest extends ClientServerTest
                 abort();
                 publishLatch.get().countDown();
                 return super.sendMessages(messages);
+            }
+
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                if (x.getClass() != IOException.class)
+                    super.onFailure(x, messages);
             }
         };
         client.setDebugEnabled(debugTests());
