@@ -16,6 +16,7 @@
 
 package org.cometd.client;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -27,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.client.transport.LongPollingTransport;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -132,13 +134,23 @@ public class MultipleClientSessionsTest extends ClientServerTest
         init.setAccessible(true);
         init.invoke(transport);
 
-        BayeuxClient client1 = newBayeuxClient();
+        BayeuxClient client1 = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                if (x.getClass() != IOException.class)
+                    super.onFailure(x, messages);
+            }
+        };
+        client1.setDebugEnabled(debugTests());
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<Message>();
         client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                connects1.offer(message);
+                if (message.isSuccessful())
+                    connects1.offer(message);
             }
         });
         client1.handshake();
@@ -265,13 +277,23 @@ public class MultipleClientSessionsTest extends ClientServerTest
         init.setAccessible(true);
         init.invoke(transport);
 
-        BayeuxClient client1 = newBayeuxClient();
+        BayeuxClient client1 = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                if (x.getClass() != IOException.class)
+                    super.onFailure(x, messages);
+            }
+        };
+        client1.setDebugEnabled(debugTests());
         final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<Message>();
         client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                connects1.offer(message);
+                if (message.isSuccessful())
+                    connects1.offer(message);
             }
         });
         client1.handshake();

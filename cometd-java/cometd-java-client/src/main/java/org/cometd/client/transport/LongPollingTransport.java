@@ -31,7 +31,6 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -69,7 +68,7 @@ public class LongPollingTransport extends HttpClientTransport
     }
 
     private final HttpClient _httpClient;
-    private final List<HttpExchange> _exchanges = new ArrayList<HttpExchange>();
+    private final List<TransportExchange> _exchanges = new ArrayList<TransportExchange>();
     private volatile boolean _aborted;
     private volatile long _maxNetworkDelay;
     private volatile boolean _appendMessageType;
@@ -105,11 +104,17 @@ public class LongPollingTransport extends HttpClientTransport
     @Override
     public void abort()
     {
+        List<TransportExchange> exchanges = new ArrayList<TransportExchange>();
         synchronized (this)
         {
             _aborted = true;
-            for (HttpExchange exchange : _exchanges)
-                exchange.cancel();
+            exchanges.addAll(_exchanges);
+            _exchanges.clear();
+        }
+        for (TransportExchange exchange : exchanges)
+        {
+            exchange.cancel();
+            exchange._listener.onException(new IOException("Aborted"), exchange._messages);
         }
     }
 
@@ -278,7 +283,10 @@ public class LongPollingTransport extends HttpClientTransport
         @Override
         protected void onResponseComplete() throws IOException
         {
-            complete();
+            boolean completed = complete();
+            if (!completed)
+                return;
+
             if (getResponseStatus() == 200)
             {
                 String content = getResponseContent();
@@ -316,29 +324,29 @@ public class LongPollingTransport extends HttpClientTransport
         @Override
         protected void onConnectionFailed(Throwable x)
         {
-            complete();
-            _listener.onConnectException(x, _messages);
+            if (complete())
+                _listener.onConnectException(x, _messages);
         }
 
         @Override
         protected void onException(Throwable x)
         {
-            complete();
-            _listener.onException(x, _messages);
+            if (complete())
+                _listener.onException(x, _messages);
         }
 
         @Override
         protected void onExpire()
         {
-            complete();
-            _listener.onExpire(_messages);
+            if (complete())
+                _listener.onExpire(_messages);
         }
 
-        private void complete()
+        private boolean complete()
         {
             synchronized (LongPollingTransport.this)
             {
-                _exchanges.remove(this);
+                return _exchanges.remove(this);
             }
         }
     }

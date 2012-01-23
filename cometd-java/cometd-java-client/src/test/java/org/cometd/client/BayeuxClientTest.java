@@ -688,6 +688,13 @@ public class BayeuxClientTest extends ClientServerTest
                 if (messages.length == 1 && Channel.META_CONNECT.equals(messages[0].getChannel()))
                     connectLatch.get().countDown();
             }
+
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                if (x.getClass() != IOException.class)
+                    super.onFailure(x, messages);
+            }
         };
         client.setDebugEnabled(debugTests());
         client.handshake();
