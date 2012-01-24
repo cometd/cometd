@@ -54,8 +54,8 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTest
                 "});");
 
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(handshakeLatch.await(1000));
-        Assert.assertTrue(connectLatch.await(1000));
+        Assert.assertTrue(handshakeLatch.await(5000));
+        Assert.assertTrue(connectLatch.await(5000));
         Assert.assertEquals(1L, failureLatch.jsGet_count());
 
         handshakeLatch.reset(1);
@@ -71,7 +71,7 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTest
 
         failureLatch.reset(1);
         // Reconnection will trigger /meta/connect
-        Assert.assertTrue(connectLatch.await(1000));
+        Assert.assertTrue(connectLatch.await(5000));
         Assert.assertEquals(1L, handshakeLatch.jsGet_count());
         Assert.assertEquals(1L, failureLatch.jsGet_count());
 

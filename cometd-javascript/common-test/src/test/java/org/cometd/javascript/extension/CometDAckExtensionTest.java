@@ -63,7 +63,7 @@ public class CometDAckExtensionTest extends AbstractCometDTest
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
 
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         Boolean clientSupportsAck = get("clientSupportsAck");
         Assert.assertTrue(clientSupportsAck);
@@ -104,7 +104,7 @@ public class CometDAckExtensionTest extends AbstractCometDTest
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
 
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         Number inAckId = get("inAckId");
         // The server should have returned a non-negative value during the first connect call
@@ -112,11 +112,18 @@ public class CometDAckExtensionTest extends AbstractCometDTest
 
         // Subscribe to receive server events
         evaluateScript("var msgCount = 0;");
-        evaluateScript("cometd.subscribe('/echo', function(message) { ++msgCount; });");
-        Thread.sleep(500); // Wait for the subscription TODO: make it deterministic
+        evaluateScript("var subscribeLatch = new Latch(1);");
+        Latch subscribeLatch = get("subscribeLatch");
+        evaluateScript("var publishLatch = new Latch(1);");
+        Latch publishLatch = get("publishLatch");
+        evaluateScript("cometd.addListener('/meta/subscribe', subscribeLatch, 'countDown');");
+        evaluateScript("cometd.subscribe('/echo', function(message) { ++msgCount; publishLatch.countDown(); });");
+        Assert.assertTrue(subscribeLatch.await(5000));
+
         // The server receives an event and sends it to the client via the long poll
         ackService.emit("test acknowledgement");
-        Thread.sleep(500); // Wait for server-side event to arrive via long poll TODO: make it deterministic
+        Assert.assertTrue(publishLatch.await(5000));
+
         inAckId = get("inAckId");
         Number outAckId = get("outAckId");
         Assert.assertTrue(inAckId.intValue() >= outAckId.intValue());

@@ -116,7 +116,7 @@ public class MessageFlowControlTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll to establish
         Thread.sleep(1000);

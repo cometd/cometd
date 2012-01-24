@@ -75,7 +75,7 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest
         httpClient.send(connect);
 
         // Wait for the connect to arrive to the server
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // Shutdown the server
         server.stop();

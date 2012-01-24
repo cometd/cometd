@@ -45,13 +45,13 @@ public class PublishDoesNotLeakClientIdTest extends ClientServerTest
         client1.handshake();
         try
         {
-            assertTrue(client1.waitFor(1000, BayeuxClient.State.CONNECTED));
+            assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
 
             BayeuxClient client2 = newBayeuxClient();
             client2.handshake();
             try
             {
-                assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
+                assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
                 assertFalse(client1.getId().equals(client2.getId()));
 
@@ -74,11 +74,11 @@ public class PublishDoesNotLeakClientIdTest extends ClientServerTest
                         latch.countDown();
                     }
                 });
-                assertTrue(subscribe.await(1000, TimeUnit.MILLISECONDS));
+                assertTrue(subscribe.await(5, TimeUnit.SECONDS));
 
                 client2.getChannel(channel).publish(client2.newMessage());
 
-                assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+                assertTrue(latch.await(5, TimeUnit.SECONDS));
                 assertNull(messageRef.get().getClientId());
             }
             finally

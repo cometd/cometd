@@ -35,7 +35,7 @@ public class CometDWebSocketSubscribeFailureTest extends AbstractCometDWebSocket
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = get("subscribeLatch");
@@ -55,12 +55,12 @@ public class CometDWebSocketSubscribeFailureTest extends AbstractCometDWebSocket
                 "        connectFailureLatch.countDown();" +
                 "});");
         evaluateScript("cometd.subscribe('/echo', subscribeLatch, subscribeLatch.countDown);");
-        Assert.assertTrue(subscribeLatch.await(1000));
-        Assert.assertTrue(failureLatch.await(1000));
+        Assert.assertTrue(subscribeLatch.await(5000));
+        Assert.assertTrue(failureLatch.await(5000));
         // WebSocket uses only one connection, therefore also the connect fails
-        Assert.assertTrue(connectFailureLatch.await(1000));
+        Assert.assertTrue(connectFailureLatch.await(5000));
         // Be sure there is a new connect issued
-        Assert.assertTrue(connectRestoredLatch.await(1000));
+        Assert.assertTrue(connectRestoredLatch.await(5000));
 
         // Be sure the backoff has been reset
         evaluateScript("var backoff = cometd.getBackoffPeriod();");

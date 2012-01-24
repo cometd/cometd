@@ -39,7 +39,7 @@ public class CometDInitDisconnectTest extends AbstractCometDTest
                         // Expect 2 messages: handshake and connect
                         "cometd.handshake();";
         evaluateScript(script);
-        Assert.assertTrue(latch.await(1000));
+        Assert.assertTrue(latch.await(5000));
 
         // Wait for the long poll to happen, so that we're sure
         // the disconnect is sent after the long poll
@@ -51,7 +51,7 @@ public class CometDInitDisconnectTest extends AbstractCometDTest
         // Expect disconnect and connect
         latch.reset(2);
         evaluateScript("cometd.disconnect(true);");
-        Assert.assertTrue(latch.await(1000));
+        Assert.assertTrue(latch.await(5000));
 
         status = evaluateScript("cometd.getStatus();");
         Assert.assertEquals("disconnected", status);

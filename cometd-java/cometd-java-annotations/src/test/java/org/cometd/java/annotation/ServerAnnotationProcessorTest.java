@@ -437,7 +437,7 @@ public class ServerAnnotationProcessorTest
         remote.handshake();
         remote.getChannel("/foo").publish(new HashSet());
 
-        assertTrue(messageLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -467,7 +467,7 @@ public class ServerAnnotationProcessorTest
         message.setData(new HashMap());
         bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
 
-        assertTrue(messageLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -645,10 +645,10 @@ public class ServerAnnotationProcessorTest
         S s = new S();
 
         processor.process(s);
-        assertTrue(initLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(initLatch.await(5, TimeUnit.SECONDS));
 
         processor.deprocess(s);
-        assertTrue(destroyLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(destroyLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -679,10 +679,10 @@ public class ServerAnnotationProcessorTest
         SS ss = new SS();
 
         processor.process(ss);
-        assertTrue(initLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(initLatch.await(5, TimeUnit.SECONDS));
 
         processor.deprocess(ss);
-        assertTrue(destroyLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(destroyLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -722,10 +722,10 @@ public class ServerAnnotationProcessorTest
         SS ss = new SS();
 
         processor.process(ss);
-        assertTrue(initLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(initLatch.await(5, TimeUnit.SECONDS));
 
         processor.deprocess(ss);
-        assertTrue(destroyLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(destroyLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -772,10 +772,10 @@ public class ServerAnnotationProcessorTest
         SS ss = new SS();
 
         processor.process(ss);
-        assertTrue(initLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(initLatch.await(5, TimeUnit.SECONDS));
 
         processor.deprocess(ss);
-        assertTrue(destroyLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(destroyLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test

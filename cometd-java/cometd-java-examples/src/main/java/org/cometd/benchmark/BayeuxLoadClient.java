@@ -241,7 +241,7 @@ public class BayeuxLoadClient
                     // Give some time to the server to accept connections and
                     // reply to handshakes, connects and subscribes
                     if (i % 10 == 0)
-                        TimeUnit.MILLISECONDS.sleep(50);
+                        Thread.sleep(50);
                 }
             }
             else if (currentClients > clients)
@@ -259,7 +259,7 @@ public class BayeuxLoadClient
             int currentSize = bayeuxClients.size();
             while (currentSize != clients)
             {
-                TimeUnit.MILLISECONDS.sleep(250);
+                Thread.sleep(250);
                 System.err.printf("Waiting for clients %d/%d%n", currentSize, clients);
                 if (lastSize == currentSize)
                 {
@@ -482,7 +482,7 @@ public class BayeuxLoadClient
         while (arrived < expected)
         {
             System.err.printf("Waiting for messages to arrive %d/%d%n", arrived, expected);
-            TimeUnit.MILLISECONDS.sleep(500);
+            Thread.sleep(500);
             if (lastArrived == arrived)
             {
                 --retries;

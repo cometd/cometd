@@ -211,12 +211,12 @@ public class ClientAnnotationProcessorTest
         assertTrue(processed);
 
         bayeuxClient.handshake();
-        assertTrue(handshakeLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
         Message handshake = handshakeRef.get();
         assertNotNull(handshake);
         assertTrue(handshake.isSuccessful());
 
-        assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
         Message connect = connectRef.get();
         assertNotNull(connect);
         assertTrue(connect.isSuccessful());
@@ -259,11 +259,11 @@ public class ClientAnnotationProcessorTest
         });
 
         bayeuxClient.handshake();
-        assertTrue(bayeuxClient.waitFor(1000, BayeuxClient.State.CONNECTED));
-        assertTrue(subscribeLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(bayeuxClient.waitFor(5000, BayeuxClient.State.CONNECTED));
+        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         bayeuxClient.getChannel("/foo").publish(new HashMap());
-        assertTrue(messageLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
         bayeuxClient.getChannel(Channel.META_UNSUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
@@ -275,12 +275,12 @@ public class ClientAnnotationProcessorTest
         });
 
         processor.deprocessCallbacks(s);
-        assertTrue(unsubscribeLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
 
         messageLatch.set(new CountDownLatch(1));
 
         bayeuxClient.getChannel("/foo").publish(new HashMap());
-        assertFalse(messageLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(messageLatch.get().await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -339,20 +339,20 @@ public class ClientAnnotationProcessorTest
         });
 
         bayeuxClient.handshake();
-        assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
         assertTrue(s.connected);
-        assertTrue(subscribeLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         messageLatch.set(new CountDownLatch(1));
         bayeuxClient.getChannel("/foo").publish(new HashMap());
-        assertTrue(messageLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         processor.deprocess(s);
         assertFalse(s.initialized);
 
         messageLatch.set(new CountDownLatch(1));
         bayeuxClient.getChannel("/foo").publish(new HashMap());
-        assertFalse(messageLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(messageLatch.get().await(5, TimeUnit.SECONDS));
     }
 
     @Test

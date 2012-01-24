@@ -61,8 +61,8 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest
                 "});" +
                 "cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
-        Assert.assertTrue(handshakeLatch.await(1000));
-        Assert.assertTrue(subscribeLatch.await(1000));
+        Assert.assertTrue(handshakeLatch.await(5000));
+        Assert.assertTrue(subscribeLatch.await(5000));
 
         evaluateScript("cometd.disconnect(true);");
     }
@@ -94,8 +94,8 @@ public class CometDMessagesAfterFailedHandshakeTest extends AbstractCometDTest
                 "});" +
                 "cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
 
-        Assert.assertTrue(handshakeLatch.await(1000));
-        Assert.assertTrue(publishLatch.await(1000));
+        Assert.assertTrue(handshakeLatch.await(5000));
+        Assert.assertTrue(publishLatch.await(5000));
 
         evaluateScript("cometd.disconnect(true);");
     }

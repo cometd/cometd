@@ -36,7 +36,7 @@ public class CometDDisconnectSynchronousTest extends AbstractCometDTest
                 "" +
                 "cometd.handshake();");
 
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
         Assume.assumeThat((String)evaluateScript("cometd.getTransport().getType()"), CoreMatchers.equalTo("long-polling"));
 
         evaluateScript("" +

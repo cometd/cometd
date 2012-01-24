@@ -56,8 +56,8 @@ public class CometDEmptyResponseTest extends AbstractCometDLongPollingTest
         evaluateScript("cometd.addListener('/meta/unsuccessful', failureLatch, 'countDown');");
 
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(handshakeLatch.await(1000));
-        Assert.assertTrue(failureLatch.await(1000));
+        Assert.assertTrue(handshakeLatch.await(5000));
+        Assert.assertTrue(failureLatch.await(5000));
 
         evaluateScript("cometd.disconnect(true);");
     }

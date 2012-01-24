@@ -51,7 +51,7 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = get("subscribeLatch");
@@ -62,8 +62,8 @@ public class CometDLongPollingSubscribeFailureTest extends AbstractCometDLongPol
         evaluateScript(script);
 
         evaluateScript("cometd.subscribe('/echo', subscribeLatch, subscribeLatch.countDown);");
-        Assert.assertTrue(subscribeLatch.await(1000));
-        Assert.assertTrue(failureLatch.await(1000));
+        Assert.assertTrue(subscribeLatch.await(5000));
+        Assert.assertTrue(failureLatch.await(5000));
 
         // Be sure there is no backoff
         evaluateScript("var backoff = cometd.getBackoffPeriod();");

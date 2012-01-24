@@ -62,7 +62,7 @@ public class CometDTimeSyncExtensionTest extends AbstractCometDTest
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         // Both client and server should support timesync
         Object outTimeSync = get("outTimeSync");

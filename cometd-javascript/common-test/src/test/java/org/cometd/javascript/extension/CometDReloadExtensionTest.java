@@ -239,7 +239,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         Assert.assertEquals(transportName, transportType);
 
         evaluateScript("cometd.disconnect();");
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // Be sure the cookie has been removed on disconnect
         Boolean noCookie = evaluateScript("org.cometd.COOKIE.get('org.cometd.reload') == null;");

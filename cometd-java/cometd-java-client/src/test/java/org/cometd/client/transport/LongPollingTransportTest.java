@@ -246,7 +246,7 @@ public class LongPollingTransportTest
                 }
             });
 
-            assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
         finally
         {

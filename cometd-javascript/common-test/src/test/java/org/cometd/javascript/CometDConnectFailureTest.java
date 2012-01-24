@@ -54,8 +54,8 @@ public class CometDConnectFailureTest extends AbstractCometDTest
 
         // First connect after handshake will fail, will be retried immediately
         // and fail again, then backoff kicks in
-        Assert.assertTrue(handshakeLatch.await(1000));
-        Assert.assertTrue(connectLatch.await(1000));
+        Assert.assertTrue(handshakeLatch.await(5000));
+        Assert.assertTrue(connectLatch.await(5000));
 
         // The backoff period is always the backoff that will be waited on the *next* failure.
         // The backoff period has been increased from 0 to 2 * backoffIncrement because
@@ -82,7 +82,7 @@ public class CometDConnectFailureTest extends AbstractCometDTest
         Latch disconnectLatch = get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(1000));
+        Assert.assertTrue(disconnectLatch.await(5000));
         String status = evaluateScript("cometd.getStatus();");
         Assert.assertEquals("disconnected", status);
 

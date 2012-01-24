@@ -48,7 +48,7 @@ public class HighRateServerEventsTest extends ClientServerTest
 
         final BayeuxClient client = newBayeuxClient();
         client.handshake();
-        client.waitFor(1000, BayeuxClient.State.CONNECTED);
+        client.waitFor(5000, BayeuxClient.State.CONNECTED);
 
         final AtomicReference<Exception> failure = new AtomicReference<Exception>();
         final AtomicInteger messages = new AtomicInteger();

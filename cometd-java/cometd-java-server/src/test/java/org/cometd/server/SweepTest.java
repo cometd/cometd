@@ -128,7 +128,7 @@ public class SweepTest
 
         Assert.assertNotNull(bayeuxServer.getSession(localSession.getId()));
 
-        TimeUnit.MILLISECONDS.sleep(maxInterval * 2);
+        Thread.sleep(maxInterval * 2);
 
         bayeuxServer.sweep();
 

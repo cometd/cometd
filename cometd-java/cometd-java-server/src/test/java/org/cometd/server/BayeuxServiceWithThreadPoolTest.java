@@ -67,7 +67,7 @@ public class BayeuxServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
         Assert.assertEquals(200, publish.getResponseStatus());
 
-        Assert.assertTrue(service.await(1000));
+        Assert.assertTrue(service.await(5000));
 
         Message message = service.getMessage();
         Assert.assertNotNull(message);

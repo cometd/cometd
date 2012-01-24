@@ -78,12 +78,12 @@ public class MultipleClientSessionsTest extends ClientServerTest
         client1.handshake();
         try
         {
-            assertTrue(client1.waitFor(1000, BayeuxClient.State.CONNECTED));
+            assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
             String cookie = client1.getCookie("BAYEUX_BROWSER");
             assertNotNull(cookie);
 
             // Give some time to the first client to establish the long poll before the second client
-            Thread.sleep(500);
+            Thread.sleep(1000);
 
             BayeuxClient client2 = newBayeuxClient();
             final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<Message>();
@@ -99,7 +99,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
             });
             client2.handshake();
 
-            assertTrue(latch2.await(1000, TimeUnit.MILLISECONDS));
+            assertTrue(latch2.await(5, TimeUnit.SECONDS));
             assertEquals(1, connects2.size());
             Message connect2 = connects2.peek();
             Map<String, Object> advice2 = connect2.getAdvice();
@@ -108,7 +108,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
             assertFalse(connect2.isSuccessful());
 
             // Give some time to the second client to process the disconnect
-            Thread.sleep(500);
+            Thread.sleep(1000);
             assertFalse(client2.isConnected());
 
             assertTrue(latch1.await(timeout, TimeUnit.MILLISECONDS));
@@ -154,12 +154,12 @@ public class MultipleClientSessionsTest extends ClientServerTest
             }
         });
         client1.handshake();
-        assertTrue(client1.waitFor(1000, BayeuxClient.State.CONNECTED));
+        assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
         String cookie = client1.getCookie("BAYEUX_BROWSER");
         assertNotNull(cookie);
 
         // Give some time to the first client to establish the long poll before the second client
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         BayeuxClient client2 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<Message>();
@@ -172,9 +172,9 @@ public class MultipleClientSessionsTest extends ClientServerTest
             }
         });
         client2.handshake();
-        assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
+        assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         BayeuxClient client3 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<Message>();
@@ -187,7 +187,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
             }
         });
         client3.handshake();
-        assertTrue(client3.waitFor(1000, BayeuxClient.State.CONNECTED));
+        assertTrue(client3.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Sleep for a while
         Thread.sleep(2 * multiSessionInterval);
@@ -297,12 +297,12 @@ public class MultipleClientSessionsTest extends ClientServerTest
             }
         });
         client1.handshake();
-        assertTrue(client1.waitFor(1000, BayeuxClient.State.CONNECTED));
+        assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
         String cookie = client1.getCookie("BAYEUX_BROWSER");
         assertNotNull(cookie);
 
         // Give some time to the first client to establish the long poll before the second client
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         BayeuxClient client2 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<Message>();
@@ -315,9 +315,9 @@ public class MultipleClientSessionsTest extends ClientServerTest
             }
         });
         client2.handshake();
-        assertTrue(client2.waitFor(1000, BayeuxClient.State.CONNECTED));
+        assertTrue(client2.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         BayeuxClient client3 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<Message>();
@@ -330,7 +330,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
             }
         });
         client3.handshake();
-        assertTrue(client3.waitFor(1000, BayeuxClient.State.CONNECTED));
+        assertTrue(client3.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Sleep for a while
         Thread.sleep(2 * multiSessionInterval);

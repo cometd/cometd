@@ -91,7 +91,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
         });
 
         client.handshake();
-        assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         // Wait for a second connect to be issued
         Thread.sleep(1000);
@@ -102,7 +102,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
         // Publish, it must succeed
         publishLatch.set(new CountDownLatch(1));
         channel.publish(new HashMap());
-        assertTrue(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
 
         // Wait for the connect to return
         // We already slept a bit before, so we are sure that the connect returned
@@ -115,7 +115,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
         // Another publish, it must fail
         publishLatch.set(new CountDownLatch(1));
         channel.publish(new HashMap());
-        assertTrue(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
 
         // Sleep to allow the next connect to be issued
         Thread.sleep(networkDown);
@@ -127,7 +127,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
         // We should be able to publish now
         publishLatch.set(new CountDownLatch(1));
         channel.publish(new HashMap());
-        assertFalse(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(publishLatch.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -182,7 +182,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
             }
         });
         client.handshake();
-        assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         // Wait for a second connect to be issued
         Thread.sleep(1000);
@@ -194,7 +194,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
         // Publish, it must succeed
         publishLatch.set(new CountDownLatch(1));
         channel.publish(new HashMap());
-        assertTrue(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
 
         // Wait for the connect to return
         // We already slept a bit before, so we are sure that the connect returned
@@ -207,19 +207,19 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
         // Another publish, it must fail
         publishLatch.set(new CountDownLatch(1));
         channel.publish(new HashMap());
-        assertTrue(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
 
         // Sleep to allow the next connect to be issued
         Thread.sleep(networkDown);
 
         // Now another connect has been sent (delayed by 'networkDown' ms)
         // but the server expired the client, so we handshake again
-        assertTrue(handshakeLatch.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
 
         // We should be able to publish now
         publishLatch.set(new CountDownLatch(1));
         channel.publish(new HashMap());
-        assertFalse(publishLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(publishLatch.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

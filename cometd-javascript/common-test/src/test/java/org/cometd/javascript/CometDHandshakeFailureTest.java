@@ -50,8 +50,8 @@ public class CometDHandshakeFailureTest extends AbstractCometDTest
         Assert.assertTrue(backoffIncrement > 0);
 
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(handshakeLatch.await(1000));
-        Assert.assertTrue(failureLatch.await(1000));
+        Assert.assertTrue(handshakeLatch.await(5000));
+        Assert.assertTrue(failureLatch.await(5000));
 
         // There is a failure, the backoff will be increased from 0 to backoffIncrement
         Thread.sleep(backoffIncrement / 2); // Waits for the backoff to happen
@@ -81,8 +81,8 @@ public class CometDHandshakeFailureTest extends AbstractCometDTest
         failureLatch.reset(1);
         evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(1000));
-        Assert.assertTrue(failureLatch.await(1000));
+        Assert.assertTrue(disconnectLatch.await(5000));
+        Assert.assertTrue(failureLatch.await(5000));
         String status = evaluateScript("cometd.getStatus();");
         Assert.assertEquals("disconnected", status);
 

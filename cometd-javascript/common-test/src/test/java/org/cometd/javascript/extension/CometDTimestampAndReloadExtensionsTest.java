@@ -36,7 +36,7 @@ public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTest
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', readyLatch, 'countDown');");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         // Get the clientId
         String clientId = evaluateScript("cometd.getClientId();");
@@ -62,7 +62,7 @@ public class CometDTimestampAndReloadExtensionsTest extends AbstractCometDTest
                 "   if (message.successful) readyLatch.countDown(); " +
                 "});");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         String newClientId = evaluateScript("cometd.getClientId();");
         Assert.assertEquals(clientId, newClientId);

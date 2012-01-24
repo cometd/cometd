@@ -34,10 +34,10 @@ public class ChannelReleaseTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
-        TimeUnit.MILLISECONDS.sleep(500);
+        Thread.sleep(1000);
 
         String channelName = "/foo";
         ClientSessionChannel channel = client.getChannel(channelName);
@@ -59,10 +59,10 @@ public class ChannelReleaseTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
-        TimeUnit.MILLISECONDS.sleep(500);
+        Thread.sleep(1000);
 
         String channelName = "/foo";
         ClientSessionChannel channel = client.getChannel(channelName);
@@ -87,10 +87,10 @@ public class ChannelReleaseTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
-        TimeUnit.MILLISECONDS.sleep(500);
+        Thread.sleep(1000);
 
         final CountDownLatch latch = new CountDownLatch(1);
         String channelName = "/foo";
@@ -128,10 +128,10 @@ public class ChannelReleaseTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
-        TimeUnit.MILLISECONDS.sleep(500);
+        Thread.sleep(1000);
 
         String channelName = "/foo";
         ClientSessionChannel channel = client.getChannel(channelName);
@@ -159,10 +159,10 @@ public class ChannelReleaseTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
-        TimeUnit.MILLISECONDS.sleep(500);
+        Thread.sleep(1000);
 
         final CountDownLatch latch = new CountDownLatch(1);
         String channelName = "/foo";
@@ -212,10 +212,10 @@ public class ChannelReleaseTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        client.waitFor(1000, BayeuxClient.State.CONNECTED);
+        client.waitFor(5000, BayeuxClient.State.CONNECTED);
 
         // Wait for the long poll
-        TimeUnit.MILLISECONDS.sleep(500);
+        Thread.sleep(1000);
 
         String channelName = "/foo";
         ClientSessionChannel channel = client.getChannel(channelName);

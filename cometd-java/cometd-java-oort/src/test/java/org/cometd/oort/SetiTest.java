@@ -217,7 +217,7 @@ public class SetiTest extends OortTest
             }
         };
         client2.handshake();
-        Assert.assertTrue(client2.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(client2.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
         // Wait for the server to expire client2 and for Seti to disassociate it
         final CountDownLatch latch = new CountDownLatch(1);

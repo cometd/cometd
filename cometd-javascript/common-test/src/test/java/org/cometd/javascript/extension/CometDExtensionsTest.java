@@ -43,10 +43,10 @@ public class CometDExtensionsTest extends AbstractCometDTest
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         // Wait for the long poll to be established
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         Number inCount = get("inCount");
         Number outCount = get("outCount");
@@ -62,7 +62,7 @@ public class CometDExtensionsTest extends AbstractCometDTest
         Latch publishLatch = get("publishLatch");
         evaluateScript("cometd.addListener('/meta/publish', function(message) { publishLatch.countDown(); });");
         evaluateScript("cometd.publish('/echo', 'ping');");
-        Assert.assertTrue(publishLatch.await(1000));
+        Assert.assertTrue(publishLatch.await(5000));
 
         inCount = get("inCount");
         outCount = get("outCount");
@@ -91,11 +91,11 @@ public class CometDExtensionsTest extends AbstractCometDTest
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         // Wait for the long poll to be established
         // Cannot rely on latches for this, since we need to intercept the connect2
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         Assert.assertEquals(3, listener.getOutgoingMessageCount()); // handshake, connect1, connect2
         Assert.assertEquals(2, listener.getIncomingMessageCount()); // handshake, connect1
@@ -107,7 +107,7 @@ public class CometDExtensionsTest extends AbstractCometDTest
         evaluateScript("var messageLatch = new Latch(1);");
         Latch messageLatch = get("messageLatch");
         evaluateScript("var subscription = cometd.subscribe('/echo', messageLatch, 'countDown');");
-        Assert.assertTrue(subscribeLatch.await(1000));
+        Assert.assertTrue(subscribeLatch.await(5000));
         Assert.assertEquals(1, listener.getOutgoingMessageCount()); // subscribe
         Assert.assertEquals(1, listener.getIncomingMessageCount()); // subscribe
 
@@ -116,8 +116,8 @@ public class CometDExtensionsTest extends AbstractCometDTest
         Latch publishLatch = get("publishLatch");
         evaluateScript("cometd.addListener('/meta/publish', publishLatch, 'countDown');");
         evaluateScript("cometd.publish('/echo', 'test');");
-        Assert.assertTrue(publishLatch.await(1000));
-        Assert.assertTrue(messageLatch.await(1000));
+        Assert.assertTrue(publishLatch.await(5000));
+        Assert.assertTrue(messageLatch.await(5000));
         Assert.assertEquals(1, listener.getOutgoingMessageCount()); // publish
         Assert.assertEquals(2, listener.getIncomingMessageCount()); // publish, message
 
@@ -126,17 +126,17 @@ public class CometDExtensionsTest extends AbstractCometDTest
         Latch unsubscribeLatch = get("unsubscribeLatch");
         evaluateScript("cometd.addListener('/meta/unsubscribe', unsubscribeLatch, 'countDown');");
         evaluateScript("cometd.unsubscribe(subscription);");
-        Assert.assertTrue(unsubscribeLatch.await(1000));
+        Assert.assertTrue(unsubscribeLatch.await(5000));
         Assert.assertEquals(1, listener.getOutgoingMessageCount()); // unsubscribe
         Assert.assertEquals(1, listener.getIncomingMessageCount()); // unsubscribe
 
         readyLatch.reset(1);
         listener.reset();
         evaluateScript("cometd.disconnect(true);");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         // Wait for the connect to return
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         Assert.assertEquals(1, listener.getOutgoingMessageCount()); // disconnect
         Assert.assertEquals(2, listener.getIncomingMessageCount()); // connect2, disconnect
@@ -174,13 +174,13 @@ public class CometDExtensionsTest extends AbstractCometDTest
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         Assert.assertTrue((Boolean)get("ok"));
 
         evaluateScript("cometd.disconnect(true);");
         // Wait for the connect to return
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         evaluateScript("cometd.unregisterExtension('ext1');");
         evaluateScript("cometd.unregisterExtension('ext2');");
@@ -204,7 +204,7 @@ public class CometDExtensionsTest extends AbstractCometDTest
                        "});");
         readyLatch.reset(1);
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         Assert.assertTrue((Boolean)get("ok"));
 

@@ -114,7 +114,7 @@ public class CometDTransportTest extends AbstractCometDTest
 
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         Assert.assertEquals(3, ((Number)evaluateScript("localTransport.getSends();")).intValue());
         Assert.assertEquals("connected", evaluateScript("cometd.getStatus();"));
@@ -122,7 +122,7 @@ public class CometDTransportTest extends AbstractCometDTest
         readyLatch.reset(1);
         evaluateScript("cometd.addListener('/meta/disconnect', readyLatch, 'countDown');");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         Assert.assertEquals(4, ((Number)evaluateScript("localTransport.getSends();")).intValue());
         Assert.assertEquals("disconnected", evaluateScript("cometd.getStatus();"));

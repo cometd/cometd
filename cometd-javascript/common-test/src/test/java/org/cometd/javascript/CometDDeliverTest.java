@@ -44,24 +44,24 @@ public class CometDDeliverTest extends AbstractCometDTest
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var latch = new Latch(1);");
         Latch latch = get("latch");
         evaluateScript("var listener = cometd.addListener('/meta/publish', function(message) { latch.countDown(); });");
         evaluateScript("cometd.publish('/service/deliver', { deliver: false });");
-        Assert.assertTrue(latch.await(1000));
-        Assert.assertFalse(pushLatch.await(1000));
+        Assert.assertTrue(latch.await(5000));
+        Assert.assertFalse(pushLatch.await(5000));
         evaluateScript("cometd.removeListener(listener);");
         evaluateScript("window.assert(_data === undefined);");
 
         latch.reset(1);
         evaluateScript("listener = cometd.addListener('/meta/publish', function(message) { latch.countDown(); });");
         evaluateScript("cometd.publish('/service/deliver', { deliver: true });");
-        Assert.assertTrue(latch.await(1000));
+        Assert.assertTrue(latch.await(5000));
         evaluateScript("cometd.removeListener(listener);");
         // Wait for the listener to be notified from the server
-        Assert.assertTrue(pushLatch.await(1000));
+        Assert.assertTrue(pushLatch.await(5000));
         evaluateScript("window.assert(_data !== undefined);");
 
         evaluateScript("cometd.disconnect(true);");

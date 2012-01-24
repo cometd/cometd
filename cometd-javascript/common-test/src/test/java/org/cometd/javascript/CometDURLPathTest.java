@@ -47,7 +47,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "/', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(connectLatch.await(1000));
+        Assert.assertTrue(connectLatch.await(5000));
 
         evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
         evaluateScript("window.assert(handshake.ext !== undefined, 'handshake without ext');");
@@ -64,7 +64,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
         evaluateScript("var disconnect = undefined;");
         evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(1000));
+        Assert.assertTrue(disconnectLatch.await(5000));
 
         evaluateScript("window.assert(disconnect !== undefined, 'disconnect is undefined');");
         evaluateScript("window.assert(disconnect.ext !== undefined, 'disconnect without ext');");
@@ -83,7 +83,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "/target.cometd', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(connectLatch.await(1000));
+        Assert.assertTrue(connectLatch.await(5000));
 
         evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
         evaluateScript("window.assert(handshake.ext !== undefined, 'handshake without ext');");
@@ -100,7 +100,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
         evaluateScript("var disconnect = undefined;");
         evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(1000));
+        Assert.assertTrue(disconnectLatch.await(5000));
 
         evaluateScript("window.assert(disconnect !== undefined, 'disconnect is undefined');");
         evaluateScript("window.assert(disconnect.ext !== undefined, 'disconnect without ext');");
@@ -119,7 +119,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "/?param=1', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(connectLatch.await(1000));
+        Assert.assertTrue(connectLatch.await(5000));
 
         evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
         evaluateScript("window.assert(handshake.ext !== undefined, 'handshake without ext');");
@@ -136,7 +136,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
         evaluateScript("var disconnect = undefined;");
         evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(1000));
+        Assert.assertTrue(disconnectLatch.await(5000));
 
         evaluateScript("window.assert(disconnect !== undefined, 'disconnect is undefined');");
         evaluateScript("window.assert(disconnect.ext !== undefined, 'disconnect without ext');");
@@ -155,7 +155,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
         evaluateScript("cometd.addListener('/meta/handshake', function(message) { handshake = message; });");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { connect = message; connectLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "/', logLevel: '" + getLogLevel() + "', appendMessageTypeToURL: false})");
-        Assert.assertTrue(connectLatch.await(1000));
+        Assert.assertTrue(connectLatch.await(5000));
 
         evaluateScript("window.assert(handshake !== undefined, 'handshake is undefined');");
         evaluateScript("window.assert(handshake.ext !== undefined, 'handshake without ext');");
@@ -172,7 +172,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
         evaluateScript("var disconnect = undefined;");
         evaluateScript("cometd.addListener('/meta/disconnect', function(message) { disconnect = message; disconnectLatch.countDown(); });");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(1000));
+        Assert.assertTrue(disconnectLatch.await(5000));
 
         evaluateScript("window.assert(disconnect !== undefined, 'disconnect is undefined');");
         evaluateScript("window.assert(disconnect.ext !== undefined, 'disconnect without ext');");

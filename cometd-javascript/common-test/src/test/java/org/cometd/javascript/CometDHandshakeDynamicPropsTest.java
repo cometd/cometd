@@ -79,7 +79,7 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
         script.append("cometd.handshake(handshakeProps)");
         evaluateScript(script.toString());
         script.setLength(0);
-        Assert.assertTrue(outLatch.await(1000));
+        Assert.assertTrue(outLatch.await(5000));
 
         evaluateScript("window.assert(outHandshake !== undefined, 'handshake is undefined');");
         evaluateScript("window.assert(outHandshake.ext !== undefined, 'handshake without ext');");
@@ -87,7 +87,7 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
         Assert.assertEquals(1, token);
 
         Latch inLatch = get("inLatch");
-        Assert.assertTrue(inLatch.await(1000));
+        Assert.assertTrue(inLatch.await(5000));
 
         String clientId = evaluateScript("inHandshake.clientId");
         evaluateScript("outHandshake = undefined;");
@@ -99,7 +99,7 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
         filter.setClientId(clientId);
 
         // Wait for the re-handshake
-        Assert.assertTrue(outLatch.await(1000));
+        Assert.assertTrue(outLatch.await(5000));
 
         evaluateScript("window.assert(outHandshake !== undefined, 'handshake is undefined');");
         evaluateScript("window.assert(outHandshake.ext !== undefined, 'handshake without ext');");

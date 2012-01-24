@@ -65,9 +65,9 @@ public class CometDWebSocketUnsubscribeFailureTest extends AbstractCometDWebSock
         Assert.assertTrue(unsubscribeLatch.await(10000));
         Assert.assertTrue(failureLatch.await(10000));
         // WebSocket uses only one connection, therefore also the connect fails
-        Assert.assertTrue(connectFailureLatch.await(1000));
+        Assert.assertTrue(connectFailureLatch.await(5000));
         // Be sure there is a new connect issued
-        Assert.assertTrue(connectRestoredLatch.await(1000));
+        Assert.assertTrue(connectRestoredLatch.await(5000));
 
         // Be sure the backoff has been reset
         evaluateScript("var backoff = cometd.getBackoffPeriod();");

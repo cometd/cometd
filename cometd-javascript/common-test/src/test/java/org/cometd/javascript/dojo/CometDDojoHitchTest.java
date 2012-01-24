@@ -32,7 +32,7 @@ public class CometDDojoHitchTest extends AbstractCometDTest
         Latch handshakeLatch = get("handshakeLatch");
         evaluateScript("cometd.addListener('/meta/handshake', handshakeLatch, 'countDown');");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(handshakeLatch.await(1000));
+        Assert.assertTrue(handshakeLatch.await(5000));
 
         evaluateScript("var latch1 = new Latch(1);");
         Latch latch1 = get("latch1");
@@ -41,8 +41,8 @@ public class CometDDojoHitchTest extends AbstractCometDTest
         Latch latch2 = get("latch2");
         evaluateScript("cometd.subscribe('/test', dojo.hitch(latch2, 'countDown'));");
         evaluateScript("cometd.publish('/test', {});");
-        Assert.assertTrue(latch1.await(1000));
-        Assert.assertTrue(latch2.await(1000));
+        Assert.assertTrue(latch1.await(5000));
+        Assert.assertTrue(latch2.await(5000));
 
         evaluateScript("cometd.disconnect(true);");
     }

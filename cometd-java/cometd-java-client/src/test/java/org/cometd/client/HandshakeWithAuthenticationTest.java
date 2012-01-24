@@ -17,18 +17,17 @@
 package org.cometd.client;
 
 import java.util.Collections;
-import java.util.concurrent.TimeUnit;
 
 import org.cometd.client.transport.LongPollingTransport;
 import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.util.security.Constraint;
-import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.security.Credential;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -84,10 +83,10 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest
 
         client.handshake();
 
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Allow long poll to establish
-        TimeUnit.SECONDS.sleep(1);
+        Thread.sleep(1000);
 
         disconnectBayeuxClient(client);
     }

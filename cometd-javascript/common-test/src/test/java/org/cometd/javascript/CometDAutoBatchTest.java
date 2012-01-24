@@ -29,7 +29,7 @@ public class CometDAutoBatchTest extends AbstractCometDLongPollingTest
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', readyLatch, 'countDown');");
         evaluateScript("cometd.init({url: '" + cometdURL + "', autoBatch: true, logLevel: '" + getLogLevel() + "'});");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("" +
                 "var channel = '/autobatch';" +
@@ -53,7 +53,7 @@ public class CometDAutoBatchTest extends AbstractCometDLongPollingTest
                 "{" +
                 "   readyLatch.countDown();" +
                 "});");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         // Publish multiple times without batching explicitly
         // so the autobatch can trigger in
@@ -62,7 +62,7 @@ public class CometDAutoBatchTest extends AbstractCometDLongPollingTest
         evaluateScript("" +
                 "for (var i = 0; i < " + count + "; ++i)" +
                 "   cometd.publish(channel, {id: i});");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("autobatch_assertion", "window.assert([1,4] == autobatch.join(), autobatch);");
 

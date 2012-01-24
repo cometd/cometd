@@ -52,7 +52,8 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest
 
         evaluateScript("cometd.handshake();");
 
-        Thread.sleep(500); // Allow long poll to establish
+        // Allow long poll to establish
+        Thread.sleep(1000);
 
         AtomicReference<List<Throwable>> failures = new AtomicReference<List<Throwable>>(new ArrayList<Throwable>());
         publishListener.expect(failures, 1);
@@ -69,7 +70,7 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest
         Latch disconnectLatch = get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(1000));
+        Assert.assertTrue(disconnectLatch.await(5000));
 
         // Avoid exceptions by sleeping a while
         Thread.sleep(maxNetworkDelay);

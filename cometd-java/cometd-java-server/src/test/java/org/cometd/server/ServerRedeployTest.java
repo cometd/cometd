@@ -64,7 +64,7 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest
         httpClient.send(connect);
 
         // Wait for the connect to arrive to the server
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // Stop the context; this is the first half of a redeploy
         context.stop();

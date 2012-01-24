@@ -78,7 +78,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
         ClientSessionChannel testChannel = client.getChannel(testChannelName);
@@ -138,7 +138,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
@@ -217,7 +217,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
         ClientSessionChannel testChannel = client.getChannel(testChannelName);

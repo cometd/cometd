@@ -41,14 +41,14 @@ public class CometDTwoInstancesTest extends AbstractCometDTest
                 "" +
                 "cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "");
-        Assert.assertTrue(handshakeLatch.await(1000));
-        Assert.assertFalse(handshakeLatch2.await(1000));
+        Assert.assertTrue(handshakeLatch.await(5000));
+        Assert.assertFalse(handshakeLatch2.await(5000));
 
         String cometdURL2 = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("" +
                 "cometd2.init({url: '" + cometdURL2 + "', logLevel: '" + getLogLevel() + "'});" +
                 "");
-        Assert.assertTrue(handshakeLatch2.await(1000));
+        Assert.assertTrue(handshakeLatch2.await(5000));
 
         String channelName = "/test";
 
@@ -66,15 +66,15 @@ public class CometDTwoInstancesTest extends AbstractCometDTest
                 "cometd.subscribe('" + channelName + "', publishLatch, 'countDown');" +
                 "cometd2.subscribe('" + channelName + "', publishLatch2, 'countDown');" +
                 "");
-        Assert.assertTrue(subscribeLatch.await(1000));
-        Assert.assertTrue(subscribeLatch2.await(1000));
+        Assert.assertTrue(subscribeLatch.await(5000));
+        Assert.assertTrue(subscribeLatch2.await(5000));
 
         evaluateScript("" +
                 "cometd.publish('" + channelName + "', {});" +
                 "cometd2.publish('" + channelName + "', {});" +
                 "");
-        Assert.assertTrue(publishLatch.await(1000));
-        Assert.assertTrue(publishLatch2.await(1000));
+        Assert.assertTrue(publishLatch.await(5000));
+        Assert.assertTrue(publishLatch2.await(5000));
 
         evaluateScript("" +
                 "cometd.disconnect(true);" +

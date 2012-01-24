@@ -48,9 +48,9 @@ public class CometDExtensionExceptionCallbackTest extends AbstractCometDTest
                 "};" +
                 "" +
                 "cometd.handshake();");
-        Assert.assertTrue(latch.await(1000));
+        Assert.assertTrue(latch.await(5000));
 
-        Assert.assertTrue(connectLatch.await(1000));
+        Assert.assertTrue(connectLatch.await(5000));
 
         evaluateScript("cometd.disconnect(true);");
     }
@@ -80,9 +80,9 @@ public class CometDExtensionExceptionCallbackTest extends AbstractCometDTest
                 "};" +
                 "" +
                 "cometd.handshake();");
-        Assert.assertTrue(latch.await(1000));
+        Assert.assertTrue(latch.await(5000));
 
-        Assert.assertTrue(connectLatch.await(1000));
+        Assert.assertTrue(connectLatch.await(5000));
 
         evaluateScript("cometd.disconnect(true);");
     }

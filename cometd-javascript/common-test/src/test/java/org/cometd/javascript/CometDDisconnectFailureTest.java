@@ -55,14 +55,14 @@ public class CometDDisconnectFailureTest extends AbstractCometDTest
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
 
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(1000));
+        Assert.assertTrue(disconnectLatch.await(5000));
 
         // The test ends here, as we cannot get any information about the fact that
         // the long poll call returned (which we would have liked to, confirming that

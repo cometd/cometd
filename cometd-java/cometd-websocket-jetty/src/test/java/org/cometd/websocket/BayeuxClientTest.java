@@ -92,7 +92,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
             }
         });
 
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         Assert.assertEquals(channelName, messages.poll(1, TimeUnit.SECONDS));
         Assert.assertEquals("hello", messages.poll(1, TimeUnit.SECONDS));
@@ -125,13 +125,13 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
                 }
             });
             client.handshake();
-            Assert.assertTrue(latch.get().await(1000, TimeUnit.MILLISECONDS));
+            Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
 
             // Be sure it does not retry
             latch.set(new CountDownLatch(1));
             Assert.assertFalse(latch.get().await(client.getBackoffIncrement() * 2, TimeUnit.MILLISECONDS));
 
-            Assert.assertTrue(client.waitFor(1000, State.DISCONNECTED));
+            Assert.assertTrue(client.waitFor(5000, State.DISCONNECTED));
         }
         finally
         {
@@ -194,7 +194,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
             });
 
             clients[i].handshake();
-            client.waitFor(1000, State.CONNECTED);
+            client.waitFor(5000, State.CONNECTED);
         }
 
         Assert.assertEquals(clients.length, connections.get());
@@ -255,7 +255,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(10000, State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, State.CONNECTED));
 
         String data = "Hello World";
         client.getChannel(channelName).publish(data);
@@ -363,7 +363,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
             fields.getExt(true).put("authentication", authentication);
             client.handshake(fields);
 
-            Assert.assertTrue(client.waitFor(1000, State.CONNECTED));
+            Assert.assertTrue(client.waitFor(5000, State.CONNECTED));
 
             Assert.assertEquals(client.getId(), sessionId.get());
 

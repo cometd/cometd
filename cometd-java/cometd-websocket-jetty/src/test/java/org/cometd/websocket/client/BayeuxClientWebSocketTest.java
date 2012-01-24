@@ -133,7 +133,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         client.handshake();
 
         Assert.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
 
     @Test
@@ -210,7 +210,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         // Need to be sure that the second connect is sent otherwise
         // the abort and rehandshake may happen before the second
         // connect and the test will fail.
-        TimeUnit.MILLISECONDS.sleep(1000);
+        Thread.sleep(1000);
 
         client.abort();
         Assert.assertFalse(client.isConnected());
@@ -225,7 +225,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
             }
         });
         client.handshake();
-        Assert.assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(client.isConnected());
 
         disconnectBayeuxClient(client);
@@ -653,20 +653,20 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         int port = connector.getLocalPort();
         connector.stop();
-        TimeUnit.SECONDS.sleep(1);
+        Thread.sleep(1000);
         Assert.assertTrue(connector.isStopped());
-        Assert.assertTrue(client.waitFor(10000, BayeuxClient.State.UNCONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.UNCONNECTED));
 
         // Send messages while client is offline
         for (int i = count; i < 2 * count; ++i)
             chatChannel.publish(null, "hello_" + i, null);
 
-        TimeUnit.SECONDS.sleep(1);
+        Thread.sleep(1000);
         Assert.assertEquals(0, messages.size());
 
         connector.setPort(port);
         connector.start();
-        Assert.assertTrue(client.waitFor(10000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Check that the offline messages are received
         for (int i = count; i < 2 * count; ++i)
@@ -888,7 +888,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         Thread.sleep(1000);
 
         client.disconnect();
@@ -913,7 +913,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         Thread.sleep(1000);
 
         client.disconnect(1000);
@@ -947,7 +947,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Allow long poll to establish
-        TimeUnit.MILLISECONDS.sleep(1000);
+        Thread.sleep(1000);
 
         final CountDownLatch latch = new CountDownLatch(1);
         ServerSession session = bayeux.getSession(client.getId());

@@ -71,10 +71,10 @@ public class JacksonContextTest extends ClientServerTest
         client.setDebugEnabled(debugTests());
 
         client.handshake();
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Wait for the long poll
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         final String channelName = "/test_jackson";
         final CountDownLatch localLatch = new CountDownLatch(2);

@@ -79,10 +79,10 @@ public class BayeuxClientTest extends ClientServerTest
         BayeuxClient client = newBayeuxClient();
         client.handshake();
 
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Allow long poll to establish
-        TimeUnit.SECONDS.sleep(1);
+        Thread.sleep(1000);
 
         disconnectBayeuxClient(client);
     }
@@ -128,7 +128,7 @@ public class BayeuxClientTest extends ClientServerTest
             }
         });
 
-        Assert.assertTrue(client.waitFor(1000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         Assert.assertEquals(channelName, messages.poll(1, TimeUnit.SECONDS));
         Assert.assertEquals("hello", messages.poll(1, TimeUnit.SECONDS));
@@ -170,7 +170,7 @@ public class BayeuxClientTest extends ClientServerTest
             }
         });
         client.handshake();
-        Assert.assertTrue(latch.get().await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
 
         // Be sure it backoffs and retries
         latch.set(new CountDownLatch(1));
@@ -217,7 +217,7 @@ public class BayeuxClientTest extends ClientServerTest
             }
         });
         client.handshake();
-        Assert.assertTrue(latch.get().await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
 
         // Be sure it backoffs and retries
         latch.set(new CountDownLatch(1));
@@ -252,7 +252,7 @@ public class BayeuxClientTest extends ClientServerTest
             }
         });
         client.handshake();
-        Assert.assertTrue(latch.get().await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
 
         // Be sure it does not retry
         latch.set(new CountDownLatch(1));
@@ -297,14 +297,14 @@ public class BayeuxClientTest extends ClientServerTest
             }
         });
         client.handshake();
-        Assert.assertTrue(handshakeLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
 
         Assert.assertFalse(handshake.get().isSuccessful());
         Assert.assertTrue(handshake.get().containsKey(Message.ERROR_FIELD));
         Assert.assertEquals(BayeuxClient.State.DISCONNECTED, client.getState());
 
         // Be sure the connect is not tried
-        Assert.assertFalse(connectLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertFalse(connectLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -433,7 +433,7 @@ public class BayeuxClientTest extends ClientServerTest
             }
         });
         client.handshake();
-        Assert.assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
 
         // It should backoff and retry
         // Wait for 2 attempts, which will happen at +1s and +3s (doubled for safety)
@@ -495,7 +495,7 @@ public class BayeuxClientTest extends ClientServerTest
             });
 
             clients[i].handshake();
-            client.waitFor(1000, State.CONNECTED);
+            client.waitFor(5000, State.CONNECTED);
         }
 
         Assert.assertEquals(clients.length, connections.get());
@@ -556,7 +556,7 @@ public class BayeuxClientTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(10000, State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, State.CONNECTED));
 
         String data = "Hello World";
         client.getChannel(channelName).publish(data);
@@ -698,10 +698,10 @@ public class BayeuxClientTest extends ClientServerTest
         });
 
         client.handshake();
-        Assert.assertTrue(client.waitFor(1000, State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, State.CONNECTED));
 
         // Wait for connect
-        TimeUnit.MILLISECONDS.sleep(500);
+        Thread.sleep(1000);
 
         client.abort();
 
@@ -736,7 +736,7 @@ public class BayeuxClientTest extends ClientServerTest
         client.handshake();
 
         // Wait for connect
-        Assert.assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
 
         client.abort();
         Assert.assertFalse(client.isConnected());
@@ -744,7 +744,7 @@ public class BayeuxClientTest extends ClientServerTest
         // Restart
         connectLatch.set(new CountDownLatch(2));
         client.handshake();
-        Assert.assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
         Assert.assertTrue(client.isConnected());
 
         disconnectBayeuxClient(client);
@@ -809,20 +809,20 @@ public class BayeuxClientTest extends ClientServerTest
         client.handshake();
 
         // Wait for connect
-        Assert.assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
 
         client.getChannel(channelName).publish(new HashMap<String, Object>());
-        Assert.assertTrue(failureLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
 
         // Publish must not be sent
-        Assert.assertFalse(publishLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertFalse(publishLatch.await(5, TimeUnit.SECONDS));
         Assert.assertFalse(client.isConnected());
 
         connectLatch.set(new CountDownLatch(1));
         client.handshake();
-        Assert.assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
         // Check that publish has not been queued and is not sent on restart
-        Assert.assertFalse(publishLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertFalse(publishLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -863,7 +863,7 @@ public class BayeuxClientTest extends ClientServerTest
         client.handshake();
 
         // Wait for connect
-        Assert.assertTrue(connectLatch.get().await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
 
         ClientSessionChannel channel = client.getChannel(channelName);
         final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
@@ -989,7 +989,7 @@ public class BayeuxClientTest extends ClientServerTest
         fields.getExt(true).put("authentication", authentication);
         client.handshake(fields);
 
-        Assert.assertTrue(client.waitFor(1000, State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, State.CONNECTED));
 
         Assert.assertEquals(client.getId(), sessionId.get());
 
@@ -1010,9 +1010,9 @@ public class BayeuxClientTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
         client.handshake();
-        Assert.assertTrue(client.waitFor(1000, State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, State.CONNECTED));
         // Allow long poll to establish
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
@@ -1172,11 +1172,11 @@ public class BayeuxClientTest extends ClientServerTest
         }
         Assert.assertTrue(disconnect);
         Assert.assertTrue(connect);
-        Assert.assertTrue(client.waitFor(10000, BayeuxClient.State.DISCONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
 
         // Rehandshake
         client.handshake();
-        Assert.assertTrue(client.waitFor(10000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         results.clear();
         // Subscribe again
@@ -1198,13 +1198,13 @@ public class BayeuxClientTest extends ClientServerTest
         int port = connector.getLocalPort();
         server.stop();
         server.join();
-        Assert.assertTrue(client.waitFor(10000, BayeuxClient.State.UNCONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.UNCONNECTED));
         connector.setPort(port);
         server.start();
 
         bayeux = (BayeuxServerImpl)context.getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
 
-        Assert.assertTrue(client.waitFor(10000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
         results.clear();
 
         // Subscribe again

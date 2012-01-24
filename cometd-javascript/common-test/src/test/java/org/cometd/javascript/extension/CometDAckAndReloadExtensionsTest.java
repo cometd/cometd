@@ -46,7 +46,7 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         // Send a message so that the ack counter is initialized
         evaluateScript("var latch = new Latch(1);");
@@ -54,10 +54,10 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest
         evaluateScript("" +
                 "cometd.subscribe('/test', function(message) { latch.countDown(); });" +
                 "cometd.publish('/test', 'message1');");
-        Assert.assertTrue(latch.await(1000));
+        Assert.assertTrue(latch.await(5000));
 
         // Wait to allow the long poll to go to the server and tell it the ack id
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // Calling reload() results in the cookie being written
         evaluateScript("cometd.reload();");
@@ -87,10 +87,10 @@ public class CometDAckAndReloadExtensionsTest extends AbstractCometDTest
                 "   });" +
                 "});" +
                 "cometd.handshake();");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         ackService.emit("message3");
-        Assert.assertTrue(latch.await(1000));
+        Assert.assertTrue(latch.await(5000));
 
         evaluateScript("window.assert(testMessage.length === 2, 'testMessage.length');");
         evaluateScript("window.assert(testMessage[0].data == 'message2', 'message2');");

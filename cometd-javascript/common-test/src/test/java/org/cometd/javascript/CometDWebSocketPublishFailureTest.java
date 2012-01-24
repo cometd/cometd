@@ -35,13 +35,13 @@ public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTe
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', readyLatch, 'countDown');");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(1000));
+        Assert.assertTrue(readyLatch.await(5000));
 
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = get("subscribeLatch");
         evaluateScript("cometd.addListener('/meta/subscribe', subscribeLatch, subscribeLatch.countDown);");
         evaluateScript("var subscription = cometd.subscribe('/echo', subscribeLatch, subscribeLatch.countDown);");
-        Assert.assertTrue(subscribeLatch.await(1000));
+        Assert.assertTrue(subscribeLatch.await(5000));
 
         evaluateScript("var publishLatch = new Latch(1);");
         Latch publishLatch = get("publishLatch");
@@ -61,12 +61,12 @@ public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTe
                 "        connectFailureLatch.countDown();" +
                 "});");
         evaluateScript("cometd.publish('/echo', 'test');");
-        Assert.assertTrue(publishLatch.await(1000));
-        Assert.assertTrue(failureLatch.await(1000));
+        Assert.assertTrue(publishLatch.await(5000));
+        Assert.assertTrue(failureLatch.await(5000));
         // WebSocket uses only one connection, therefore also the connect fails
-        Assert.assertTrue(connectFailureLatch.await(1000));
+        Assert.assertTrue(connectFailureLatch.await(5000));
         // Be sure there is a new connect issued
-        Assert.assertTrue(connectRestoredLatch.await(1000));
+        Assert.assertTrue(connectRestoredLatch.await(5000));
 
         // Be sure the backoff has been reset
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
@@ -77,7 +77,7 @@ public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTe
         Latch disconnectLatch = get("disconnectLatch");
         evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(1000));
+        Assert.assertTrue(disconnectLatch.await(5000));
         String status = evaluateScript("cometd.getStatus();");
         Assert.assertEquals("disconnected", status);
     }

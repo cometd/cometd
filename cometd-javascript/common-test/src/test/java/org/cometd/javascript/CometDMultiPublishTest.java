@@ -66,7 +66,7 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest
         evaluateScript("var latch = new Latch(1);");
         Latch latch = get("latch");
         evaluateScript("cometd.subscribe('/echo', latch, latch.countDown);");
-        Assert.assertTrue(subscribeLatch.await(1000));
+        Assert.assertTrue(subscribeLatch.await(5000));
 
         defineClass(Handler.class);
         evaluateScript("var handler = new Handler();");

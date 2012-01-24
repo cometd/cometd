@@ -81,7 +81,7 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                                                   "\"supportedConnectionTypes\": [\"long-polling\"]" +
                                                   "}]");
         httpClient.send(handshake);
-        Assert.assertTrue(handshakeLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
         Assert.assertEquals(200, handshake.getResponseStatus());
 
@@ -95,7 +95,7 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                                                  "}]");
         connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
         httpClient.send(connect);
-        Assert.assertTrue(connectLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
         Assert.assertEquals(200, connect.getResponseStatus());
 
@@ -106,7 +106,7 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                                                    "\"subscription\": \"" + channel + "\"" +
                                                    "}]");
         httpClient.send(subscribe);
-        Assert.assertTrue(subscribeLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
         Assert.assertEquals(200, subscribe.getResponseStatus());
 
@@ -116,7 +116,7 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                                                      "\"subscription\": \"" + channel + "\"" +
                                                      "}]");
         httpClient.send(unsubscribe);
-        Assert.assertTrue(unsubscribeLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, unsubscribe.waitForDone());
         Assert.assertEquals(200, unsubscribe.getResponseStatus());
 
@@ -125,7 +125,7 @@ public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                                                     "\"clientId\": \"" + clientId + "\"" +
                                                     "}]");
         httpClient.send(disconnect);
-        Assert.assertTrue(disconnectLatch.await(1000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
         Assert.assertEquals(200, disconnect.getResponseStatus());
     }

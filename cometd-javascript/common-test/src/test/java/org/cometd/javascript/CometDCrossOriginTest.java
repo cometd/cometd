@@ -49,7 +49,7 @@ public class CometDCrossOriginTest extends AbstractCometDTest
         evaluateScript("cometd.addListener('/meta/connect', function(message) { if (message.successful) connectLatch.countDown(); });");
         evaluateScript("cometd.handshake();");
 
-        Assert.assertTrue(connectLatch.await(1000));
+        Assert.assertTrue(connectLatch.await(5000));
 
         evaluateScript("cometd.disconnect(true);");
     }

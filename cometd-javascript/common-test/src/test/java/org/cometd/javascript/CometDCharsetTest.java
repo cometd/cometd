@@ -46,7 +46,7 @@ public class CometDCharsetTest extends AbstractCometDTest
                 "hiragana: '" + hiragana + "'," +
                 "chinese: '" + chinese + "'" +
                 "});");
-        assertTrue(latch.await(1000));
+        assertTrue(latch.await(5000));
         evaluateScript("window.assert(data !== undefined, 'data is undefined');");
         evaluateScript("window.assert(data.cyrillic === '" + cyrillic + "', 'bad cyrillic');");
         evaluateScript("window.assert(data.greek === '" + greek + "', 'bad greek');");

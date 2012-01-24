@@ -61,7 +61,7 @@ public class CometDPublishHeldUntilHandshookTest extends AbstractCometDTest
         Latch latch = (Latch)get("latch");
         evaluateScript("cometd.handshake();");
 
-        Assert.assertTrue(latch.await(1000));
+        Assert.assertTrue(latch.await(5000));
 
         Object jsChannels = get("savedChannels");
         Object[] channels = (Object[])Utils.jsToJava(jsChannels);

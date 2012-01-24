@@ -21,7 +21,6 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
-import java.util.concurrent.TimeUnit;
 
 import org.cometd.client.BayeuxClient;
 import org.slf4j.Logger;
@@ -193,7 +192,7 @@ public class OortMulticastConfigurer
                     DatagramPacket packet = new DatagramPacket(cometURLBytes, 0, cometURLBytes.length, groupAddress, groupPort);
                     socket.send(packet);
 
-                    TimeUnit.MILLISECONDS.sleep(advertiseInterval);
+                    Thread.sleep(advertiseInterval);
                 }
             }
             catch (IOException x)

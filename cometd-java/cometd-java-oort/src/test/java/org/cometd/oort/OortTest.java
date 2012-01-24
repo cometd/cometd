@@ -104,7 +104,7 @@ public abstract class OortTest
         BayeuxClient client = new BayeuxClient(oort.getURL(), new LongPollingTransport(null, oort.getHttpClient()));
         client.setDebugEnabled(Boolean.getBoolean("debugTests"));
         client.handshake(handshakeFields);
-        client.waitFor(1000, BayeuxClient.State.CONNECTED);
+        client.waitFor(5000, BayeuxClient.State.CONNECTED);
         clients.add(client);
         return client;
     }

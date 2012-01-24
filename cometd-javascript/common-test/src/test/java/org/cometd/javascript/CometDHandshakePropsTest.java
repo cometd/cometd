@@ -47,14 +47,14 @@ public class CometDHandshakePropsTest extends AbstractCometDTest
 
         // Start without the token; this makes the handshake fail
         evaluateScript("cometd.handshake({})");
-        Assert.assertTrue(handshakeLatch.await(1000));
+        Assert.assertTrue(handshakeLatch.await(5000));
         // A failed handshake arrives with an advice to not reconnect
         Assert.assertEquals("disconnected", evaluateScript("cometd.getStatus()"));
 
         // We are already initialized, handshake again with a token
         handshakeLatch.reset(1);
         evaluateScript("cometd.handshake({ext: {token: 'test'}})");
-        Assert.assertTrue(handshakeLatch.await(1000));
+        Assert.assertTrue(handshakeLatch.await(5000));
 
         // Wait for the long poll to happen, so that we're sure
         // the disconnect is sent after the long poll
@@ -63,7 +63,7 @@ public class CometDHandshakePropsTest extends AbstractCometDTest
         Assert.assertEquals("connected", evaluateScript("cometd.getStatus();"));
 
         evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(1000));
+        Assert.assertTrue(disconnectLatch.await(5000));
 
         Assert.assertEquals("disconnected", evaluateScript("cometd.getStatus();"));
     }
