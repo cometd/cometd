@@ -857,7 +857,7 @@ var window = this;
 
     // Fake document object
     window.document = new DOMDocument(new Packages.java.io.ByteArrayInputStream(
-            (new Packages.java.lang.String("<html><head><title></title></head><body></body></html>")).getBytes("UTF8")));
+            (new Packages.java.lang.String("<html><head><title></title><script></script></head><body></body></html>")).getBytes("UTF8")));
 
 
     // Helper method for extending one object with another
@@ -879,6 +879,9 @@ var window = this;
         }
         return a;
     }
+
+    window.screen = {};
+    window.innerWidth = 0;
 
     window.assert = function(condition, text)
     {
