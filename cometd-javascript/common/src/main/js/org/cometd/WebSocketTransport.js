@@ -270,7 +270,7 @@ org.cometd.WebSocketTransport = function()
     _self.accept = function(version, crossDomain, url)
     {
         // Using !! to return a boolean (and not the WebSocket object)
-        return _supportsWebSocket && !!org.cometd.WebSocket && _cometd.websocketEnabled === true;
+        return _supportsWebSocket && !!org.cometd.WebSocket && _cometd.websocketEnabled !== false;
     };
 
     _self.send = function(envelope, metaConnect)
