@@ -43,7 +43,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class MultipleClientSessionsTest extends ClientServerTest
 {
-    private final long timeout = 5000L;
+    private final long timeout = 7000L;
 
     @Before
     public void init() throws Exception
@@ -76,55 +76,51 @@ public class MultipleClientSessionsTest extends ClientServerTest
             }
         });
         client1.handshake();
-        try
+
+        assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
+        String cookie = client1.getCookie("BAYEUX_BROWSER");
+        assertNotNull(cookie);
+
+        // Give some time to the first client to establish the long poll before the second client
+        Thread.sleep(1000);
+
+        BayeuxClient client2 = newBayeuxClient();
+        final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<Message>();
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        client2.setCookie("BAYEUX_BROWSER", cookie);
+        client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
-            assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
-            String cookie = client1.getCookie("BAYEUX_BROWSER");
-            assertNotNull(cookie);
-
-            // Give some time to the first client to establish the long poll before the second client
-            Thread.sleep(1000);
-
-            BayeuxClient client2 = newBayeuxClient();
-            final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<Message>();
-            final CountDownLatch latch2 = new CountDownLatch(1);
-            client2.setCookie("BAYEUX_BROWSER", cookie);
-            client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+            public void onMessage(ClientSessionChannel channel, Message message)
             {
-                public void onMessage(ClientSessionChannel channel, Message message)
-                {
-                    connects2.offer(message);
-                    latch2.countDown();
-                }
-            });
-            client2.handshake();
+                connects2.offer(message);
+                latch2.countDown();
+            }
+        });
+        client2.handshake();
 
-            assertTrue(latch2.await(5, TimeUnit.SECONDS));
-            assertEquals(1, connects2.size());
-            Message connect2 = connects2.peek();
-            Map<String, Object> advice2 = connect2.getAdvice();
-            assertEquals(Message.RECONNECT_NONE_VALUE, advice2.get(Message.RECONNECT_FIELD));
-            assertSame(Boolean.TRUE, advice2.get("multiple-clients"));
-            assertFalse(connect2.isSuccessful());
+        assertTrue(latch2.await(5, TimeUnit.SECONDS));
+        assertEquals(1, connects2.size());
+        Message connect2 = connects2.peek();
+        Map<String, Object> advice2 = connect2.getAdvice();
+        assertEquals(Message.RECONNECT_NONE_VALUE, advice2.get(Message.RECONNECT_FIELD));
+        assertSame(Boolean.TRUE, advice2.get("multiple-clients"));
+        assertFalse(connect2.isSuccessful());
 
-            // Give some time to the second client to process the disconnect
-            Thread.sleep(1000);
-            assertFalse(client2.isConnected());
+        // Give some time to the second client to process the disconnect
+        Thread.sleep(1000);
+        assertFalse(client2.isConnected());
 
-            assertTrue(latch1.await(timeout, TimeUnit.MILLISECONDS));
-            assertEquals(2, connects1.size());
-            assertTrue(client1.isConnected());
-        }
-        finally
-        {
-            disconnectBayeuxClient(client1);
-        }
+        assertTrue(latch1.await(timeout, TimeUnit.MILLISECONDS));
+        assertEquals(2, connects1.size());
+        assertTrue(client1.isConnected());
+
+        disconnectBayeuxClient(client1);
     }
 
     @Test
     public void testMultipleClientSession_WithOneMaxSessionPerBrowser_WithMultiSessionInterval() throws Exception
     {
-        long multiSessionInterval = timeout / 5;
+        long multiSessionInterval = 1500;
 
         org.cometd.server.transport.LongPollingTransport transport = (org.cometd.server.transport.LongPollingTransport)bayeux.getTransport("long-polling");
         transport.setOption(org.cometd.server.transport.LongPollingTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 1);
@@ -267,7 +263,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
     @Test
     public void testMultipleClientSession_WithTwoMaxSessionPerBrowser_WithMultiSessionInterval() throws Exception
     {
-        long multiSessionInterval = timeout / 5;
+        long multiSessionInterval = 1500;
 
         org.cometd.server.transport.LongPollingTransport transport = (org.cometd.server.transport.LongPollingTransport)bayeux.getTransport("long-polling");
         transport.setOption(org.cometd.server.transport.LongPollingTransport.MAX_SESSIONS_PER_BROWSER_OPTION, 2);
