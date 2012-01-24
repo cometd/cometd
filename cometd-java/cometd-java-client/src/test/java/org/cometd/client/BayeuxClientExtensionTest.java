@@ -102,7 +102,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest
             {
             }
         });
-        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         Assert.assertEquals(0, extension.rcvs.size());
         Assert.assertEquals(1, extension.rcvMetas.size());
@@ -144,7 +144,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest
                 channel.unsubscribe(listener);
             }
         });
-        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         Assert.assertEquals(0, extension.rcvs.size());
         Assert.assertEquals(1, extension.rcvMetas.size());
@@ -253,7 +253,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest
 
         client.getChannel(channelName).publish(new HashMap());
 
-        Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

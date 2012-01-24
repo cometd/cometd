@@ -74,6 +74,6 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
         Assert.assertEquals(200, disconnect.getResponseStatus());
 
-        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

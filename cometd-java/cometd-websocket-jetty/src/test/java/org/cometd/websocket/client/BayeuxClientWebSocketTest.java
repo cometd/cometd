@@ -333,7 +333,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is not responded
-        Assert.assertFalse(connectLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(connectLatch.get().await(5, TimeUnit.SECONDS));
 
         // Test publish triggered by a message sent by the client
         // There will be a response pending so the case is different
@@ -359,7 +359,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is not responded
-        Assert.assertFalse(connectLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(connectLatch.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -415,7 +415,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is responded
-        Assert.assertTrue(connectLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
 
         // Test publish triggered by a message sent by the client
         // There will be a response pending so the case is different
@@ -442,7 +442,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is responded
-        Assert.assertTrue(connectLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -519,7 +519,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is responded
-        Assert.assertTrue(connectLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
 
         // Test publish triggered by a message sent by the client
         // There will be a response pending so the case is different

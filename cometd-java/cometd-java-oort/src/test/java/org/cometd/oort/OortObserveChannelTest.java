@@ -85,7 +85,7 @@ public class OortObserveChannelTest extends OortTest
         // Sending a message to Oort2, must be received by client1 but not by client3
         client2.getChannel(channelName).publish(new HashMapMessage());
         Assert.assertTrue(messageLatch1.await(5, TimeUnit.SECONDS));
-        Assert.assertFalse(messageLatch3.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(messageLatch3.await(5, TimeUnit.SECONDS));
 
         // Sending a message to Oort3, must be received by client1 and by client3
         messageLatch1.reset(1);
@@ -173,7 +173,7 @@ public class OortObserveChannelTest extends OortTest
         client1.getChannel(Channel.META_SUBSCRIBE).addListener(subscribeLatch1);
         LatchListener messageLatch1 = new LatchListener(1);
         client1.getChannel(channelName).subscribe(messageLatch1);
-        Assert.assertTrue(subscribeLatch1.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(subscribeLatch1.await(5, TimeUnit.SECONDS));
 
         // Sending a message to Oort2, must be received by client1
         client2.getChannel(channelName).publish(new HashMapMessage());
@@ -188,6 +188,6 @@ public class OortObserveChannelTest extends OortTest
         // Resend, the message must not be received
         messageLatch1.reset(1);
         client2.getChannel(channelName).publish(new HashMapMessage());
-        Assert.assertFalse(messageLatch1.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(messageLatch1.await(5, TimeUnit.SECONDS));
     }
 }

@@ -198,7 +198,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         disconnectLatch.countDown();
 
         // The connect must not be suspended
-        Assert.assertFalse(suspendLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(suspendLatch.await(5, TimeUnit.SECONDS));
 
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
         Assert.assertEquals(200, connect2.getResponseStatus());

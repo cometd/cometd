@@ -91,7 +91,7 @@ public class SetiTest extends OortTest
         ClientSessionChannel loginChannel1 = client1.getChannel(loginChannelName);
         loginChannel1.addListener(publishLatch);
         loginChannel1.publish(login1);
-        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         publishLatch.reset(1);
         Map<String, Object> login2 = new HashMap<String, Object>();
@@ -99,7 +99,7 @@ public class SetiTest extends OortTest
         ClientSessionChannel loginChannel2 = client2.getChannel(loginChannelName);
         loginChannel2.addListener(publishLatch);
         loginChannel2.publish(login2);
-        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         // Wait for the associations to be broadcasted
         Thread.sleep(1000);
@@ -117,7 +117,7 @@ public class SetiTest extends OortTest
         data1.put("peer", "user2");
         client1.getChannel(channel).publish(data1);
 
-        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -172,7 +172,7 @@ public class SetiTest extends OortTest
         client1.getChannel(channel).publish(data1);
 
         // User2 has been disassociated, must not receive the message
-        Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -272,7 +272,7 @@ public class SetiTest extends OortTest
         ClientSessionChannel loginChannel1A = client1A.getChannel("/service/login");
         loginChannel1A.addListener(publishLatch);
         loginChannel1A.publish(login1A);
-        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         // Login the same user to the same server with a different client
         publishLatch.reset(1);
@@ -281,7 +281,7 @@ public class SetiTest extends OortTest
         ClientSessionChannel loginChannel1B = client1B.getChannel("/service/login");
         loginChannel1B.addListener(publishLatch);
         loginChannel1B.publish(login1B);
-        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         // Login the same user to another server with a different client
         publishLatch.reset(1);
@@ -290,7 +290,7 @@ public class SetiTest extends OortTest
         ClientSessionChannel loginChannel1C = client1C.getChannel("/service/login");
         loginChannel1C.addListener(publishLatch);
         loginChannel1C.publish(login1C);
-        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         publishLatch.reset(1);
         Map<String, Object> login2 = new HashMap<String, Object>();
@@ -298,7 +298,7 @@ public class SetiTest extends OortTest
         ClientSessionChannel loginChannel2 = client3.getChannel("/service/login");
         loginChannel2.addListener(publishLatch);
         loginChannel2.publish(login2);
-        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         // Wait for the associations to be broadcasted
         Thread.sleep(1000);
@@ -335,7 +335,7 @@ public class SetiTest extends OortTest
         data.put("peer", "user1");
         client3.getChannel(channel).publish(data);
 
-        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         // Wait a bit more to collect other messages that may be delivered wrongly
         Thread.sleep(1000);
@@ -350,7 +350,7 @@ public class SetiTest extends OortTest
         ClientSessionChannel logoutChannel1A = client1A.getChannel("/service/logout");
         logoutChannel1A.addListener(publishLatch);
         logoutChannel1A.publish(logout);
-        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         // Wait for the presence to broadcast
         Thread.sleep(1000);
@@ -360,7 +360,7 @@ public class SetiTest extends OortTest
         latch.reset(2);
         client3.getChannel(channel).publish(data);
 
-        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         // Wait a bit more to collect other messages that may be delivered wrongly
         Thread.sleep(1000);

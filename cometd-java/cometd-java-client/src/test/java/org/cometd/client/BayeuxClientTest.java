@@ -1034,7 +1034,7 @@ public class BayeuxClientTest extends ClientServerTest
             }
         });
 
-        Assert.assertTrue(subscribeLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Register a listener to a service channel, to be sure that
         // they are not broadcasted due to the subscription to /**
@@ -1062,10 +1062,10 @@ public class BayeuxClientTest extends ClientServerTest
         });
 
         client.getChannel("/foo").publish(new HashMap<String, Object>());
-        Assert.assertTrue(publishLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         client.getChannel("/service/foo").publish(new HashMap<String, Object>());
-        Assert.assertFalse(serviceLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(serviceLatch.await(5, TimeUnit.SECONDS));
 
         Assert.assertFalse(metaLatch.await(timeout + timeout / 2, TimeUnit.MILLISECONDS));
 

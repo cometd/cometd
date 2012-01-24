@@ -66,7 +66,7 @@ public class ServerRestartTest extends ClientServerTest
         client.handshake();
 
         // Be sure the second connect has been sent to the server
-        assertTrue(sendLatch.get().await(1, TimeUnit.SECONDS));
+        assertTrue(sendLatch.get().await(5, TimeUnit.SECONDS));
 
         // Wait a little more
         Thread.sleep(1000);
@@ -102,8 +102,8 @@ public class ServerRestartTest extends ClientServerTest
         server.start();
 
         assertTrue(handshakeLatch.await(5 * backoffIncrement, TimeUnit.MILLISECONDS));
-        assertTrue(connectLatch.await(1, TimeUnit.SECONDS));
-        assertTrue(sendLatch.get().await(1, TimeUnit.SECONDS));
+        assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(sendLatch.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

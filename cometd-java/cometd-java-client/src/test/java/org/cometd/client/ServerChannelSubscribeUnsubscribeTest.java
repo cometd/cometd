@@ -92,30 +92,30 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         });
         testChannel.publish(new HashMap<String, Object>());
         client.endBatch();
-        Assert.assertTrue(messageLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         // Tell the server to unsubscribe the session
         Map<String, Object> unsubscribe = new HashMap<String, Object>();
         unsubscribe.put(actionField, unsubscribeAction);
         ClientSessionChannel systemChannel = client.getChannel(systemChannelName);
         systemChannel.publish(unsubscribe);
-        Assert.assertTrue(unsubscribeLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Publish, must not receive it
         messageLatch.set(new CountDownLatch(1));
         testChannel.publish(new HashMap<String, Object>());
-        Assert.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         // Tell the server to resubscribe the session
         Map<String, Object> resubscribe = new HashMap<String, Object>();
         resubscribe.put(actionField, subscribeAction);
         systemChannel.publish(resubscribe);
-        Assert.assertTrue(resubscribeLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(resubscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Publish, must receive it
         messageLatch.set(new CountDownLatch(1));
         testChannel.publish(new HashMap<String, Object>());
-        Assert.assertTrue(messageLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -158,11 +158,11 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
                 messageLatch.get().countDown();
             }
         });
-        Assert.assertTrue(subscribeLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Publish, must receive it
         testChannel.publish(new HashMap<String, Object>());
-        Assert.assertTrue(messageLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         // Tell the server to unsubscribe the session
         Assert.assertTrue(bayeux.getChannel(testChannelName).unsubscribe(bayeux.getSession(client.getId())));
@@ -170,7 +170,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         // Publish, must receive it (service channels are always invoked)
         messageLatch.set(new CountDownLatch(1));
         testChannel.publish(new HashMap<String, Object>());
-        Assert.assertTrue(messageLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         // Tell the server to resubscribe the session
         Assert.assertTrue(bayeux.getChannel(testChannelName).subscribe(bayeux.getSession(client.getId())));
@@ -178,7 +178,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         // Publish, must receive it
         messageLatch.set(new CountDownLatch(1));
         testChannel.publish(new HashMap<String, Object>());
-        Assert.assertTrue(messageLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -231,19 +231,19 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         });
         testChannel.publish(new HashMap<String, Object>());
         client.endBatch();
-        Assert.assertTrue(messageLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         // Tell the server to unsubscribe the session
         Map<String, Object> unsubscribe = new HashMap<String, Object>();
         unsubscribe.put(actionField, unsubscribeAction);
         ClientSessionChannel systemChannel = client.getChannel(systemChannelName);
         systemChannel.publish(unsubscribe);
-        Assert.assertTrue(unsubscribeLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
 
         // Publish, must not receive it
         messageLatch.set(new CountDownLatch(1));
         testChannel.publish(new HashMap<String, Object>());
-        Assert.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
+        Assert.assertFalse(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         // Disconnect
         Assert.assertTrue(client.disconnect(1000));

@@ -138,7 +138,7 @@ public class MessageFlowControlTest extends ClientServerTest
                 messages.offer(message);
             }
         });
-        Assert.assertTrue(subscribed.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(subscribed.await(5, TimeUnit.SECONDS));
 
         // Publishing a message result in the long poll being woken up, which in turn will
         // drain the queue. There is a race between the publish of messages below and the
@@ -151,7 +151,7 @@ public class MessageFlowControlTest extends ClientServerTest
             bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>(), "msg_" +i);
         // Wait for all the message to be processed on server side,
         // to avoids a race to access variable keptMessages
-        Assert.assertTrue(queuedMessages.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(queuedMessages.await(5, TimeUnit.SECONDS));
 
         if (lazyChannel)
             Thread.sleep(maxLazyTimeout);
