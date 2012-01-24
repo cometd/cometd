@@ -18,6 +18,7 @@ package org.cometd.javascript.extension;
 
 import org.cometd.javascript.AbstractCometDTest;
 import org.cometd.javascript.Latch;
+import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,6 +67,8 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
     @Test
     public void testReloadedHandshakeContainsExtension() throws Exception
     {
+        bayeuxServer.addExtension(new AcknowledgedMessagesExtension());
+
         defineClass(Latch.class);
         evaluateScript("var readyLatch = new Latch(1);");
         Latch readyLatch = get("readyLatch");
@@ -108,7 +111,8 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
 
         evaluateScript("" +
                 "window.assert(ext !== undefined, 'ext must be present');" +
-                "window.assert(ext.reload === true, 'ext.reload must be true')");
+                "window.assert(ext.reload === true, 'ext.reload must be true');" +
+                "window.assert(ext.ack === true, 'ext.ack must be true');");
 
         evaluateScript("cometd.disconnect(true)");
     }

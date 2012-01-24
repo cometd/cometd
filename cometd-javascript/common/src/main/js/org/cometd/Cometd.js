@@ -81,6 +81,7 @@ org.cometd.Cometd = function(name)
             for (var propName in object)
             {
                 var prop = object[propName];
+                var targ = result[propName];
 
                 // Avoid infinite loops
                 if (prop === target)
@@ -97,11 +98,12 @@ org.cometd.Cometd = function(name)
                 {
                     if (prop instanceof Array)
                     {
-                        result[propName] = this._mixin(deep, [], prop);
+                        result[propName] = this._mixin(deep, targ instanceof Array ? targ : [], prop);
                     }
                     else
                     {
-                        result[propName] = this._mixin(deep, {}, prop);
+                        var source = typeof targ === 'object' && !(targ instanceof Array) ? targ : {};
+                        result[propName] = this._mixin(deep, source, prop);
                     }
                 }
                 else
