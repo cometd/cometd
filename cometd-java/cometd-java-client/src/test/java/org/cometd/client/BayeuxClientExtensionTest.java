@@ -253,7 +253,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest
 
         client.getChannel(channelName).publish(new HashMap());
 
-        Assert.assertFalse(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

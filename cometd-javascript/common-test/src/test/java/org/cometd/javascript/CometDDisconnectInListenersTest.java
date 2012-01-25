@@ -50,7 +50,7 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTest
                 "");
 
         // Connect must not be called
-        Assert.assertFalse(connectLatch.await(5000));
+        Assert.assertFalse(connectLatch.await(1000));
 
         Assert.assertTrue(disconnectLatch.await(5000));
     }
@@ -82,7 +82,7 @@ public class CometDDisconnectInListenersTest extends AbstractCometDTest
                 "");
 
         // Connect must be called only once
-        Assert.assertFalse(connectLatch.await(5000));
+        Assert.assertFalse(connectLatch.await(1000));
         Assert.assertEquals(1L, connectLatch.jsGet_count());
 
         Assert.assertTrue(disconnectLatch.await(5000));

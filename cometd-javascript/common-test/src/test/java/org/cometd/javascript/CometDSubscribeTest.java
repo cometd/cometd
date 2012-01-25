@@ -45,7 +45,7 @@ public class CometDSubscribeTest extends AbstractCometDTest
         subscribeLatch.reset(2);
         evaluateScript("var subscription1 = cometd.subscribe('/foo', function(message) {});");
         evaluateScript("var subscription2 = cometd.subscribe('/foo', function(message) {});");
-        Assert.assertFalse(subscribeLatch.await(5000));
+        Assert.assertFalse(subscribeLatch.await(1000));
 
         // No message if there are subscriptions
         unsubscribeLatch.reset(0);

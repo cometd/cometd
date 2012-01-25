@@ -193,7 +193,7 @@ public class SetiTest extends OortTest
         client1.getChannel(channel).publish(data1);
 
         // User2 has been disassociated, must not receive the message
-        Assert.assertFalse(messageLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
     }
 
     @Test

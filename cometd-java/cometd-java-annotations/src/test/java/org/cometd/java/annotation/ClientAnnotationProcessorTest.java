@@ -280,7 +280,7 @@ public class ClientAnnotationProcessorTest
         messageLatch.set(new CountDownLatch(1));
 
         bayeuxClient.getChannel("/foo").publish(new HashMap());
-        assertFalse(messageLatch.get().await(5, TimeUnit.SECONDS));
+        assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
     }
 
     @Test
@@ -352,7 +352,7 @@ public class ClientAnnotationProcessorTest
 
         messageLatch.set(new CountDownLatch(1));
         bayeuxClient.getChannel("/foo").publish(new HashMap());
-        assertFalse(messageLatch.get().await(5, TimeUnit.SECONDS));
+        assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
     }
 
     @Test

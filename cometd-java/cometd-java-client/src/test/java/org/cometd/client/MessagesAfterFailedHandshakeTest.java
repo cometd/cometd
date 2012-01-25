@@ -90,7 +90,7 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest
 
         assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(serverLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(serverLatch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -137,7 +137,7 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest
 
         assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(serverLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(serverLatch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

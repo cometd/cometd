@@ -42,7 +42,7 @@ public class CometDTwoInstancesTest extends AbstractCometDTest
                 "cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "");
         Assert.assertTrue(handshakeLatch.await(5000));
-        Assert.assertFalse(handshakeLatch2.await(5000));
+        Assert.assertFalse(handshakeLatch2.await(1000));
 
         String cometdURL2 = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("" +

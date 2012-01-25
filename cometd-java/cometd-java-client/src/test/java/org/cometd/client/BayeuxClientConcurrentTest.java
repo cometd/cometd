@@ -175,7 +175,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
         // Publish will fail
         channel.publish(new HashMap());
         assertTrue(failLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(publishLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(publishLatch.await(1, TimeUnit.SECONDS));
 
         assertTrue(client.waitFor(5000, BayeuxClient.State.DISCONNECTED));
     }
@@ -312,7 +312,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
                 try
                 {
                     // Be sure messages are not sent (we're still batching)
-                    assertFalse(sendLatch.await(5, TimeUnit.SECONDS));
+                    assertFalse(sendLatch.await(1, TimeUnit.SECONDS));
                 }
                 catch (InterruptedException x)
                 {

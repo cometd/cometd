@@ -51,7 +51,7 @@ public class CometDDeliverTest extends AbstractCometDTest
         evaluateScript("var listener = cometd.addListener('/meta/publish', function(message) { latch.countDown(); });");
         evaluateScript("cometd.publish('/service/deliver', { deliver: false });");
         Assert.assertTrue(latch.await(5000));
-        Assert.assertFalse(pushLatch.await(5000));
+        Assert.assertFalse(pushLatch.await(1000));
         evaluateScript("cometd.removeListener(listener);");
         evaluateScript("window.assert(_data === undefined);");
 

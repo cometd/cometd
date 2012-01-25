@@ -104,7 +104,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         // Publish, must not receive it
         messageLatch.set(new CountDownLatch(1));
         testChannel.publish(new HashMap<String, Object>());
-        Assert.assertFalse(messageLatch.get().await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
 
         // Tell the server to resubscribe the session
         Map<String, Object> resubscribe = new HashMap<String, Object>();
@@ -243,7 +243,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         // Publish, must not receive it
         messageLatch.set(new CountDownLatch(1));
         testChannel.publish(new HashMap<String, Object>());
-        Assert.assertFalse(messageLatch.get().await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
 
         // Disconnect
         Assert.assertTrue(client.disconnect(1000));

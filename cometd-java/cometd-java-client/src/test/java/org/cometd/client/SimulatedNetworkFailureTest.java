@@ -127,7 +127,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
         // We should be able to publish now
         publishLatch.set(new CountDownLatch(1));
         channel.publish(new HashMap());
-        assertFalse(publishLatch.get().await(5, TimeUnit.SECONDS));
+        assertFalse(publishLatch.get().await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -219,7 +219,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
         // We should be able to publish now
         publishLatch.set(new CountDownLatch(1));
         channel.publish(new HashMap());
-        assertFalse(publishLatch.get().await(5, TimeUnit.SECONDS));
+        assertFalse(publishLatch.get().await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

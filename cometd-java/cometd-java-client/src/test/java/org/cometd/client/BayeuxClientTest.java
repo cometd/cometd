@@ -304,7 +304,7 @@ public class BayeuxClientTest extends ClientServerTest
         Assert.assertEquals(BayeuxClient.State.DISCONNECTED, client.getState());
 
         // Be sure the connect is not tried
-        Assert.assertFalse(connectLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(connectLatch.await(1, TimeUnit.SECONDS));
     }
 
     @Test
@@ -815,14 +815,14 @@ public class BayeuxClientTest extends ClientServerTest
         Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
 
         // Publish must not be sent
-        Assert.assertFalse(publishLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(publishLatch.await(1, TimeUnit.SECONDS));
         Assert.assertFalse(client.isConnected());
 
         connectLatch.set(new CountDownLatch(1));
         client.handshake();
         Assert.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
         // Check that publish has not been queued and is not sent on restart
-        Assert.assertFalse(publishLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(publishLatch.await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -881,7 +881,7 @@ public class BayeuxClientTest extends ClientServerTest
         Assert.assertFalse(client.isConnected());
 
         // Message must not be received
-        Assert.assertFalse(messageLatch.get().await(10, TimeUnit.SECONDS));
+        Assert.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
 
         connectLatch.set(new CountDownLatch(1));
         client.handshake();
@@ -1065,7 +1065,7 @@ public class BayeuxClientTest extends ClientServerTest
         Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         client.getChannel("/service/foo").publish(new HashMap<String, Object>());
-        Assert.assertFalse(serviceLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(serviceLatch.await(1, TimeUnit.SECONDS));
 
         Assert.assertFalse(metaLatch.await(timeout + timeout / 2, TimeUnit.MILLISECONDS));
 
