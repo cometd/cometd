@@ -18,6 +18,8 @@ package org.cometd.oort;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -44,10 +46,13 @@ public class OortAuthenticationTest extends OortTest
         oort2.setSecret(oort1.getSecret());
         oort2.getBayeuxServer().setSecurityPolicy(new TestSecurityPolicy(oort2));
 
+        CountDownLatch latch = new CountDownLatch(1);
+        oort2.addCometListener(new CometJoinedListener(latch));
+
         OortComet oortComet12 = oort1.observeComet(oort2.getURL());
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
-
-        OortComet oortComet21 = oort2.observeComet(oort1.getURL());
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        OortComet oortComet21 = oort2.findComet(oort1.getURL());
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
 
         // Test that a valid remote client can connect

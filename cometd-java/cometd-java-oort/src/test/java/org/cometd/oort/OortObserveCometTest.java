@@ -38,7 +38,7 @@ public class OortObserveCometTest extends OortTest
         Server server2 = startServer(0);
         Oort oort2 = startOort(server2);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         oort2.addCometListener(new CometJoinedListener(latch));
 
         OortComet oortComet12 = oort1.observeComet(oort2.getURL());
