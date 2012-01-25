@@ -74,7 +74,7 @@ public class CometDTimeSyncExtensionTest extends AbstractCometDTest
         evaluateScript("var networkLag = timesync.getNetworkLag();");
         evaluateScript("var timeOffset = timesync.getTimeOffset();");
         int networkLag = ((Number)get("networkLag")).intValue();
-        Assert.assertTrue(networkLag > 0);
+        Assert.assertTrue(String.valueOf(networkLag), networkLag >= 0);
 
         evaluateScript("cometd.disconnect(true);");
     }

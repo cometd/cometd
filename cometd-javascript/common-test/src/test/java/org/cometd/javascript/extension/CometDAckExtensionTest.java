@@ -43,8 +43,6 @@ public class CometDAckExtensionTest extends AbstractCometDTest
         defineClass(Latch.class);
         evaluateScript("var cometd = cometd;");
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("var ackExt = new org.cometd.AckExtension();");
-        evaluateScript("cometd.registerExtension('myack', ackExt);");
 
         // Check that during handshake the ack extension capability is sent to server
         evaluateScript("var clientSupportsAck = false;");
@@ -77,7 +75,6 @@ public class CometDAckExtensionTest extends AbstractCometDTest
     {
         defineClass(Latch.class);
         evaluateScript("cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});");
-        evaluateScript("cometd.registerExtension('ack', new org.cometd.AckExtension());");
 
         evaluateScript("var inAckId = undefined;");
         evaluateScript("var outAckId = undefined;");
