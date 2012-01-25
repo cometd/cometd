@@ -197,7 +197,6 @@ public abstract class OortTest
         }
     }
 
-
     protected static class CometJoinedListener implements Oort.CometListener
     {
         private final CountDownLatch latch;
