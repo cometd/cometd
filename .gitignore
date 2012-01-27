@@ -8,3 +8,7 @@ overlays/
 *.swp
 *.diff
 *.patch
+*.iml
+*.ipr
+*.prj
+.idea
