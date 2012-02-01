@@ -81,7 +81,7 @@ public class ServerSessionImpl implements ServerSession
     private long _connectTimestamp = -1;
     private long _intervalTimestamp;
     private long _lastConnect;
-    private volatile boolean _lazyDispatch;
+    private boolean _lazyDispatch;
     private Task _lazyTask;
 
     protected ServerSessionImpl(BayeuxServerImpl bayeux)
@@ -321,7 +321,6 @@ public class ServerSessionImpl implements ServerSession
                     @Override
                     public void expired()
                     {
-                        _lazyDispatch = false;
                         flush();
                     }
 
@@ -507,8 +506,12 @@ public class ServerSessionImpl implements ServerSession
         Scheduler scheduler;
         synchronized (_queue)
         {
-            if (_lazyDispatch && _lazyTask != null)
-                _bayeux.cancelTimeout(_lazyTask);
+            if (_lazyDispatch)
+            {
+                _lazyDispatch = false;
+                if (_lazyTask != null)
+                    _bayeux.cancelTimeout(_lazyTask);
+            }
 
             scheduler = _scheduler;
 
@@ -543,9 +546,11 @@ public class ServerSessionImpl implements ServerSession
     {
         synchronized (_queue)
         {
-            if (_maxLazy == 0)
+            if (_maxLazy <= 0)
+            {
                 flush();
-            else if (_maxLazy > 0 && !_lazyDispatch)
+            }
+            else if (!_lazyDispatch)
             {
                 _lazyDispatch = true;
                 _bayeux.startTimeout(_lazyTask, _connectTimestamp % _maxLazy);
