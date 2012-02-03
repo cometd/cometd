@@ -594,7 +594,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         }
     }
 
-    private class WebSocketContext implements BayeuxContext
+    protected class WebSocketContext implements BayeuxContext
     {
         private final Principal _principal;
         private final InetSocketAddress _local;
@@ -608,7 +608,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         private final String _url;
 
         @SuppressWarnings("unchecked")
-        WebSocketContext(HttpServletRequest request)
+        public WebSocketContext(HttpServletRequest request)
         {
             _local = new InetSocketAddress(request.getLocalAddr(), request.getLocalPort());
             _remote = new InetSocketAddress(request.getRemoteAddr(), request.getRemotePort());
