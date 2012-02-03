@@ -168,12 +168,7 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
                     <archive>
-                        <manifestEntries>
-                            <mode>development</mode>
-                            <url>${project.url}</url>
-                            <implementation-version>${project.version}</implementation-version>
-                            <package>org.cometd</package>
-                        </manifestEntries>
+						<manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
                     </archive>
                 </configuration>
             </plugin>
@@ -186,6 +181,64 @@
                     <mavenExecutorId>forked-path</mavenExecutorId>
                 </configuration>
             </plugin>
+            <plugin>
+            	<groupId>org.apache.felix</groupId>
+            	<artifactId>maven-bundle-plugin</artifactId>
+            	<version>2.3.5</version>
+				<extensions>true</extensions>
+				<configuration>
+					<archive>
+						<addMavenDescriptor>true</addMavenDescriptor>
+					</archive>
+					<supportedProjectTypes>
+						<supportedProjectType>jar</supportedProjectType>
+						<supportedProjectType>war</supportedProjectType>
+					</supportedProjectTypes>
+					<instructions>
+						<Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
+						<Bundle-ContactAddress>${project.organization.url}</Bundle-ContactAddress>
+						<Bundle-Description>${project.description}</Bundle-Description>
+						<Bundle-DocURL>${bundle.doc.url}</Bundle-DocURL>
+						<Bundle-Category>${bundle.category}</Bundle-Category>
+						<Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+						<Bundle-Version>${project.version}</Bundle-Version>
+						<Import-Package>org.eclipse.jetty.*;version="[7.2,9)",*</Import-Package>
+						<mode>development</mode>
+						<url>${project.url}</url>
+						<implementation-version>${project.version}</implementation-version>
+						<package>org.cometd</package>
+					</instructions>
+				</configuration>
+				<executions>
+					<execution>
+						<id>bundle</id>
+						<goals>
+							<goal>manifest</goal>
+						</goals>
+						<phase>process-classes</phase>
+						<inherited>true</inherited>
+					</execution>
+				</executions>
+            </plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>2.3.1</version>
+					<configuration>
+					</configuration>
+				</plugin>				
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-war-plugin</artifactId>
+					<version>2.1.1</version>
+					<configuration>
+						<archive>
+							<manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+						</archive>
+					</configuration>
+				</plugin>
+
+            
         </plugins>
         <pluginManagement>
             <plugins>
