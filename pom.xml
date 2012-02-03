@@ -168,12 +168,15 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
                     <archive>
-                        <manifestEntries>
-                            <mode>development</mode>
-                            <url>${project.url}</url>
-                            <implementation-version>${project.version}</implementation-version>
-                            <package>org.cometd</package>
-                        </manifestEntries>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
                     </archive>
                 </configuration>
             </plugin>
@@ -185,6 +188,42 @@
                     <preparationGoals>clean install</preparationGoals>
                     <mavenExecutorId>forked-path</mavenExecutorId>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <archive>
+                        <addMavenDescriptor>true</addMavenDescriptor>
+                    </archive>
+                    <supportedProjectTypes>
+                        <supportedProjectType>jar</supportedProjectType>
+                        <supportedProjectType>war</supportedProjectType>
+                    </supportedProjectTypes>
+                    <instructions>
+                        <Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
+                        <Bundle-ContactAddress>${project.url}</Bundle-ContactAddress>
+                        <Bundle-Description>${project.description}</Bundle-Description>
+                        <Bundle-DocURL>http://docs.cometd.org</Bundle-DocURL>
+                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+                        <Bundle-Version>${project.version}</Bundle-Version>
+                        <Import-Package>org.eclipse.jetty.*;version="[7.6,9)",*</Import-Package>
+                        <mode>development</mode>
+                        <url>${project.url}</url>
+                        <implementation-version>${project.version}</implementation-version>
+                        <package>org.cometd</package>
+                    </instructions>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>bundle</id>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                        <inherited>true</inherited>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
         <pluginManagement>
@@ -294,6 +333,11 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>findbugs-maven-plugin</artifactId>
                     <version>2.3.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>2.3.5</version>
                 </plugin>
                 <plugin>
                     <groupId>org.mortbay.jetty</groupId>
