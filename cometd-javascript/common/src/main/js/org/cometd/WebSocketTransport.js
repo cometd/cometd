@@ -27,8 +27,10 @@ org.cometd.WebSocketTransport = function()
 
         if(conTimout > 0) {
             setTimeout(function() {
-                self._debug('WebSocket connection timeout after', conTimout, 'ms');
-                self.onClose(1002);
+                if(!_webSocketSupported) {
+                    self._debug('WebSocket connection timeout after', conTimout, 'ms');
+                    self.onClose(1002);
+                }
             }, conTimout);
         }
 
