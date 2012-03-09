@@ -1,5 +1,6 @@
-Welcome to the CometD project, a scalable comet (server push) implementation for the web.
+## The CometD Project ##
 
+Welcome to the CometD project, a scalable comet (server push) implementation for the web.
 
 DIRECTORY LAYOUT
 
