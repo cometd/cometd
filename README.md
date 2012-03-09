@@ -5,10 +5,10 @@ Welcome to the [CometD](http://cometd.org) Project, a scalable comet (server pus
 
 ### DIRECTORY LAYOUT ###
 
-cometd-archetypes - The Maven2 archetypes for quick application development
-cometd-demo       - Demo of the Java server and of the Dojo/jQuery clients
-cometd-java       - The Java server and java client libraries
-cometd-javascript - The JavaScript (Dojo/jQuery) client libraries
+    cometd-archetypes - The Maven2 archetypes for quick application development
+    cometd-demo       - Demo of the Java server and of the Dojo/jQuery clients
+    cometd-java       - The Java server and java client libraries
+    cometd-javascript - The JavaScript (Dojo/jQuery) client libraries
 
 
 ### RUNNING THE COMETD DEMO ###
