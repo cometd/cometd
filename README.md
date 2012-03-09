@@ -32,7 +32,7 @@ with commands like:
 
 ### REPORTING BUGS ###
 
-Bugs and requests for enhancements should be filed at [http://bugs.cometd.org](http://bugs.cometd.org)
+Bugs and requests for enhancements should be filed at http://bugs.cometd.org
 
 
 ### BUILDING COMETD ###
