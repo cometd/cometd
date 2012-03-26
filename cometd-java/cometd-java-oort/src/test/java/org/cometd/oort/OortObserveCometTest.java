@@ -22,8 +22,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
+import org.cometd.client.ext.AckExtension;
+import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.eclipse.jetty.server.Server;
 import org.junit.Assert;
 import org.junit.Test;
@@ -487,5 +490,59 @@ public class OortObserveCometTest extends OortTest
         Assert.assertEquals(3, oortB.getKnownComets().size());
         Assert.assertEquals(3, oortC.getKnownComets().size());
         Assert.assertEquals(3, oortD.getKnownComets().size());
+    }
+
+    @Test
+    public void testAckExtensionConfiguration() throws Exception
+    {
+        Server serverA = startServer(0);
+        Oort oortA = startOort(serverA);
+        stopOort(oortA);
+        oortA.setAckExtensionEnabled(true);
+        oortA.start();
+
+        BayeuxServer bayeuxServerA = oortA.getBayeuxServer();
+        int ackExtensions = 0;
+        for (BayeuxServer.Extension extension : bayeuxServerA.getExtensions())
+            if (extension instanceof AcknowledgedMessagesExtension)
+                ++ackExtensions;
+        Assert.assertEquals(1, ackExtensions);
+
+        Server serverB = startServer(0);
+        BayeuxServer bayeuxServerB = (BayeuxServer)serverB.getAttribute(BayeuxServer.ATTRIBUTE);
+        bayeuxServerB.addExtension(new AcknowledgedMessagesExtension());
+        Oort oortB = startOort(serverB);
+        stopOort(oortB);
+        oortB.setAckExtensionEnabled(true);
+        oortB.start();
+
+        ackExtensions = 0;
+        for (BayeuxServer.Extension extension : bayeuxServerB.getExtensions())
+            if (extension instanceof AcknowledgedMessagesExtension)
+                ++ackExtensions;
+        Assert.assertEquals(1, ackExtensions);
+
+        CountDownLatch latch1 = new CountDownLatch(2);
+        CometJoinedListener listener1 = new CometJoinedListener(latch1);
+        oortA.addCometListener(listener1);
+        oortB.addCometListener(listener1);
+
+        OortComet oortCometAB = oortA.observeComet(oortB.getURL());
+        Assert.assertTrue(oortCometAB.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
+        OortComet oortCometBA = oortB.findComet(oortA.getURL());
+        Assert.assertTrue(oortCometBA.waitFor(5000, BayeuxClient.State.CONNECTED));
+
+        ackExtensions = 0;
+        for (ClientSession.Extension extension : oortCometAB.getExtensions())
+            if (extension instanceof AckExtension)
+                ++ackExtensions;
+        Assert.assertEquals(1, ackExtensions);
+
+        ackExtensions = 0;
+        for (ClientSession.Extension extension : oortCometBA.getExtensions())
+            if (extension instanceof AckExtension)
+                ++ackExtensions;
+        Assert.assertEquals(1, ackExtensions);
     }
 }

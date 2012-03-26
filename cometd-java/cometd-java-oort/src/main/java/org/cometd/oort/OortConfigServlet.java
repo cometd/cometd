@@ -47,10 +47,11 @@ import org.cometd.bayeux.server.BayeuxServer;
  */
 public abstract class OortConfigServlet implements Servlet
 {
-    public final static String OORT_URL_PARAM = "oort.url";
-    public final static String OORT_SECRET_PARAM = "oort.secret";
-    public final static String OORT_CHANNELS_PARAM = "oort.channels";
-    public final static String OORT_CLIENT_DEBUG_PARAM = "clientDebug";
+    public static final String OORT_URL_PARAM = "oort.url";
+    public static final String OORT_SECRET_PARAM = "oort.secret";
+    public static final String OORT_CHANNELS_PARAM = "oort.channels";
+    public static final String OORT_CLIENT_DEBUG_PARAM = "clientDebug";
+    public static final String OORT_ENABLE_ACK_EXTENSION_PARAM = "enableAckExtension";
 
     private ServletConfig _config;
 
@@ -86,6 +87,9 @@ public abstract class OortConfigServlet implements Servlet
             String secret = _config.getInitParameter(OORT_SECRET_PARAM);
             if (secret != null)
                 oort.setSecret(secret);
+
+            boolean enableAckExtension = Boolean.parseBoolean(_config.getInitParameter(OORT_ENABLE_ACK_EXTENSION_PARAM));
+            oort.setAckExtensionEnabled(enableAckExtension);
 
             oort.start();
             _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE, oort);
