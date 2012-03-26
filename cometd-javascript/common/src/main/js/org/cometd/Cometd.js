@@ -42,6 +42,7 @@ org.cometd.Cometd = function(name)
     var _reestablish = false;
     var _connected = false;
     var _config = {
+        connectTimeout: -1,
         maxConnections: 2,
         backoffIncrement: 1000,
         maxBackoff: 60000,
