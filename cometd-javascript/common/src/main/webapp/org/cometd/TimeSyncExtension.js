@@ -14,9 +14,20 @@
  * limitations under the License.
  */
 
-if (typeof dojo != "undefined")
+if (typeof dojo !== 'undefined' && !dojo.isAsync)
 {
     dojo.provide("org.cometd.TimeSyncExtension");
+}
+else
+{
+	this.org = this.org || {};
+	org.cometd = org.cometd || {};
+
+	if (typeof define === "function" && define.amd) {
+		define(function () {
+			return org.cometd.TimeSyncExtension;
+		});
+	}
 }
 
 /**
