@@ -972,9 +972,10 @@ public class Oort extends AggregateLifeCycle
                     {
                         debug("Disconnecting pending comet {}", cometURL);
                         comet.disconnect();
-                        // Fall through: if it was an alias URL the message will
-                        // have the extension and we can map it, otherwise there
-                        // will be no extension and we return
+                        // Fall through to process an eventual extension:
+                        // if it was an alias URL the message will have
+                        // the extension and we can map it, otherwise
+                        // there will be no extension and we return
                     }
                 }
             }
@@ -1009,7 +1010,8 @@ public class Oort extends AggregateLifeCycle
             // Remove the pending comet as last step, so that if there is a concurrent
             // call to observeComet() we are sure that we always return either the
             // pending OortComet, or the connected one from the _clientComets field
-            _pendingComets.remove(cometURL);
+            if (message.isSuccessful() || comet != null && comet.isDisconnected())
+                _pendingComets.remove(cometURL);
         }
     }
 }
