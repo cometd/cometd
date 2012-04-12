@@ -8,9 +8,35 @@
     <name>CometD</name>
     <version>2.4.1-SNAPSHOT</version>
 
+    <!-- TODO: remove when using a released Jetty version -->
+    <repositories>
+        <repository>
+            <id>jetty.snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>jetty.plugin.snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </pluginRepository>
+    </pluginRepositories>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.6.2.v20120308</jetty-version>
+        <jetty-version>7.6.3-SNAPSHOT</jetty-version>
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
         <slf4j-version>1.6.4</slf4j-version>
         <spring-version>3.1.0.RELEASE</spring-version>
