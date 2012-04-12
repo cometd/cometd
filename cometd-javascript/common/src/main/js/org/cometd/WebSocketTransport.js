@@ -25,14 +25,14 @@ org.cometd.WebSocketTransport = function()
         var self = this;
 
         var connectTimeout = _cometd.getConfiguration().connectTimeout;
-//        if (connectTimeout > 0)
-//        {
-//            this.setTimeout(function()
-//            {
-//                self._debug('Transport', self.getType(), 'timed out while connecting to URL', url, ':', connectTimeout, 'ms');
-//                self.onClose(1002, 'Connect Timeout');
-//            }, connectTimeout);
-//        }
+        if (connectTimeout > 0)
+        {
+            this.setTimeout(function()
+            {
+                self._debug('Transport', self.getType(), 'timed out while connecting to URL', url, ':', connectTimeout, 'ms');
+                self.onClose(1002, 'Connect Timeout');
+            }, connectTimeout);
+        }
 
         var webSocket = new org.cometd.WebSocket(url);
         webSocket.onopen = function()
