@@ -16,20 +16,32 @@
 
 package org.cometd.client;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.JsonProcessingException;
+import org.codehaus.jackson.Version;
+import org.codehaus.jackson.map.DeserializationContext;
+import org.codehaus.jackson.map.JsonSerializer;
+import org.codehaus.jackson.map.SerializerProvider;
+import org.codehaus.jackson.map.deser.std.UntypedObjectDeserializer;
+import org.codehaus.jackson.map.module.SimpleModule;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.common.JSONContext;
+import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.server.JettyJSONContextServer;
+import org.cometd.server.transport.HttpTransport;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,6 +53,24 @@ public class CustomSerializationTest extends ClientServerTest
     {
         Map<String, String> serverOptions = new HashMap<String, String>();
         serverOptions.put(BayeuxServerImpl.JSON_CONTEXT, TestJettyJSONContextServer.class.getName());
+        Map<String, Object> clientOptions = new HashMap<String, Object>();
+        clientOptions.put(ClientTransport.JSON_CONTEXT, new TestJettyJSONContextClient());
+        testCustomSerialization(serverOptions, clientOptions);
+    }
+
+    @Test
+    public void testJacksonCustomSerialization() throws Exception
+    {
+        Map<String, String> serverOptions = new HashMap<String, String>();
+        serverOptions.put(BayeuxServerImpl.JSON_CONTEXT, TestJacksonJSONContextServer.class.getName());
+        serverOptions.put(HttpTransport.JSON_DEBUG_OPTION, "true");
+        Map<String, Object> clientOptions = new HashMap<String, Object>();
+        clientOptions.put(ClientTransport.JSON_CONTEXT, new TestJacksonJSONContextClient());
+        testCustomSerialization(serverOptions, clientOptions);
+    }
+
+    private void testCustomSerialization(Map<String, String> serverOptions, Map<String, Object> clientOptions) throws Exception
+    {
         startServer(serverOptions);
 
         String channelName = "/foo";
@@ -59,9 +89,6 @@ public class CustomSerializationTest extends ClientServerTest
             }
         });
 
-        Map<String, Object> clientOptions = new HashMap<String, Object>();
-        JSONContext.Client customJSONContext = new TestJettyJSONContextClient();
-        clientOptions.put(ClientTransport.JSON_CONTEXT, customJSONContext);
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientOptions, httpClient));
         client.setDebugEnabled(debugTests());
 
@@ -92,6 +119,28 @@ public class CustomSerializationTest extends ClientServerTest
         }
     }
 
+    public static class TestJacksonJSONContextServer extends JacksonJSONContextServer
+    {
+        public TestJacksonJSONContextServer()
+        {
+            SimpleModule module = new SimpleModule("test", Version.unknownVersion());
+            module.addSerializer(Data.class, new DataSerializer());
+            module.addDeserializer(Object.class, new DataDeserializer());
+            getObjectMapper().registerModule(module);
+        }
+    }
+
+    public static class TestJacksonJSONContextClient extends JacksonJSONContextClient
+    {
+        public TestJacksonJSONContextClient()
+        {
+            SimpleModule module = new SimpleModule("test", Version.unknownVersion());
+            module.addSerializer(Data.class, new DataSerializer());
+            module.addDeserializer(Object.class, new DataDeserializer());
+            getObjectMapper().registerModule(module);
+        }
+    }
+
     private static class Data
     {
         private String content;
@@ -115,6 +164,34 @@ public class CustomSerializationTest extends ClientServerTest
         {
             String content = (String)map.get("content");
             return new Data(content);
+        }
+    }
+
+    private static class DataSerializer extends JsonSerializer<Data>
+    {
+        @Override
+        public void serialize(Data data, JsonGenerator jsonGenerator, SerializerProvider provider) throws IOException, JsonProcessingException
+        {
+            jsonGenerator.writeStartObject();
+            jsonGenerator.writeStringField("class", Data.class.getName());
+            jsonGenerator.writeStringField("content", data.content);
+            jsonGenerator.writeEndObject();
+        }
+    }
+
+    private static class DataDeserializer extends UntypedObjectDeserializer
+    {
+        @Override
+        public Object deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException, JsonProcessingException
+        {
+            Object object = super.deserialize(jsonParser, context);
+            if (object instanceof Map)
+            {
+                Map<String, Object> map = (Map<String, Object>)object;
+                if (Data.class.getName().equals(map.get("class")))
+                    return new Data((String)map.get("content"));
+            }
+            return object;
         }
     }
 }
