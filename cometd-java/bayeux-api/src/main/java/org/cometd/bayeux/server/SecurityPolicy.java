@@ -26,7 +26,7 @@ package org.cometd.bayeux.server;
  * authentication credentials, or may deny clients to publish on reserved channels and so on;
  * all these activities are controlled by the {@link SecurityPolicy} implementation installed
  * on the {@link BayeuxServer}.
- * @see BayeuxServer#addAuthorizer(Authorizer)
+ * @see ServerChannel#addAuthorizer(Authorizer)
  */
 public interface SecurityPolicy
 {
