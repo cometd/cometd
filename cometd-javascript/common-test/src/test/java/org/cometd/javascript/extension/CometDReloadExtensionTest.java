@@ -269,7 +269,7 @@ public class CometDReloadExtensionTest extends AbstractCometDTest
         defineClass(Latch.class);
         evaluateApplication();
         latch = (Latch)get("latch");
-        Assert.assertTrue(latch.await(10000));
+        Assert.assertTrue(latch.await(5000));
 
         // Check that handshake was faked
         evaluateScript("window.assert(extHandshake === null, 'extHandshake');");

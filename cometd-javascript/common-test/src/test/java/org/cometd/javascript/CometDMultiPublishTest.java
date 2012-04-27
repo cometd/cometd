@@ -92,7 +92,7 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest
         Assert.assertTrue(latch.await(5000));
         Assert.assertTrue(handler.await(5000));
         Assert.assertTrue(failures.get().toString(), failures.get().isEmpty());
-        Assert.assertTrue(disconnect.await(10000));
+        Assert.assertTrue(disconnect.await(5000));
     }
 
     public static class Handler extends ScriptableObject

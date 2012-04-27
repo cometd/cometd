@@ -52,13 +52,16 @@ public class CometDLongPollingUnsubscribeFailureTest extends AbstractCometDLongP
         Latch readyLatch = get("readyLatch");
         evaluateScript("cometd.addListener('/meta/connect', readyLatch, 'countDown');");
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
-        Assert.assertTrue(readyLatch.await(10000));
+        Assert.assertTrue(readyLatch.await(5000));
+
+        // Wait for the long poll to establish
+        Thread.sleep(1000);
 
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = get("subscribeLatch");
         evaluateScript("cometd.addListener('/meta/subscribe', subscribeLatch, subscribeLatch.countDown);");
         evaluateScript("var subscription = cometd.subscribe('/echo', subscribeLatch, subscribeLatch.countDown);");
-        Assert.assertTrue(subscribeLatch.await(10000));
+        Assert.assertTrue(subscribeLatch.await(5000));
 
         evaluateScript("var unsubscribeLatch = new Latch(1);");
         Latch unsubscribeLatch = get("unsubscribeLatch");
@@ -67,8 +70,8 @@ public class CometDLongPollingUnsubscribeFailureTest extends AbstractCometDLongP
         evaluateScript("cometd.addListener('/meta/unsubscribe', unsubscribeLatch, unsubscribeLatch.countDown);");
         evaluateScript("cometd.addListener('/meta/unsuccessful', failureLatch, failureLatch.countDown);");
         evaluateScript("cometd.unsubscribe(subscription);");
-        Assert.assertTrue(unsubscribeLatch.await(10000));
-        Assert.assertTrue(failureLatch.await(10000));
+        Assert.assertTrue(unsubscribeLatch.await(5000));
+        Assert.assertTrue(failureLatch.await(5000));
 
         // Be sure there is no backoff
         evaluateScript("var backoff = cometd.getBackoffPeriod();");
