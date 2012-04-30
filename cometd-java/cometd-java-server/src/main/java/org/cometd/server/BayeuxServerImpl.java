@@ -1104,6 +1104,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             addTransport(transport);
     }
 
+    public List<ServerTransport> getTransports()
+    {
+        return new ArrayList<ServerTransport>(_transports.values());
+    }
+
     public List<String> getAllowedTransports()
     {
         return Collections.unmodifiableList(_allowedTransports);
