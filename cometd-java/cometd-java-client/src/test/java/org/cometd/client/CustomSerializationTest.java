@@ -25,12 +25,13 @@ import java.util.concurrent.TimeUnit;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.Version;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.annotate.JsonTypeInfo;
 import org.codehaus.jackson.map.DeserializationContext;
 import org.codehaus.jackson.map.JsonSerializer;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializerProvider;
 import org.codehaus.jackson.map.deser.std.UntypedObjectDeserializer;
-import org.codehaus.jackson.map.module.SimpleModule;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
@@ -73,19 +74,31 @@ public class CustomSerializationTest extends ClientServerTest
     {
         startServer(serverOptions);
 
-        String channelName = "/foo";
+        String dataChannelName = "/data";
+        String extraChannelName = "/extra";
         final String content = "random";
-        final CountDownLatch dataLatch = new CountDownLatch(1);
+        final CountDownLatch latch = new CountDownLatch(1);
 
         LocalSession service = bayeux.newLocalSession("custom_serialization");
         service.handshake();
-        service.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
+        service.getChannel(dataChannelName).subscribe(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
                 Data data = (Data)message.getData();
                 Assert.assertEquals(content, data.content);
-                dataLatch.countDown();
+                System.out.println("data = " + data);
+                latch.countDown();
+            }
+        });
+        service.getChannel(extraChannelName).subscribe(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                Extra extra = (Extra)message.getData();
+                Assert.assertEquals(content, extra.content);
+                System.out.println("extra = " + extra);
+                latch.countDown();
             }
         });
 
@@ -97,8 +110,9 @@ public class CustomSerializationTest extends ClientServerTest
         // Wait for the connect to establish
         Thread.sleep(1000);
 
-        client.getChannel(channelName).publish(new Data(content));
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+//        client.getChannel(dataChannelName).publish(new Data(content));
+        client.getChannel(extraChannelName).publish(new Extra(content));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }
@@ -123,10 +137,14 @@ public class CustomSerializationTest extends ClientServerTest
     {
         public TestJacksonJSONContextServer()
         {
-            SimpleModule module = new SimpleModule("test", Version.unknownVersion());
-            module.addSerializer(Data.class, new DataSerializer());
-            module.addDeserializer(Object.class, new DataDeserializer());
-            getObjectMapper().registerModule(module);
+            // Configuration needed to work with Data
+//            SimpleModule module = new SimpleModule("test", Version.unknownVersion());
+//            module.addSerializer(Data.class, new DataSerializer());
+//            module.addDeserializer(Object.class, new DataDeserializer());
+//            getObjectMapper().registerModule(module);
+
+            // Configuration needed to work with Extra
+            getObjectMapper().enableDefaultTyping(ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
 
@@ -134,10 +152,14 @@ public class CustomSerializationTest extends ClientServerTest
     {
         public TestJacksonJSONContextClient()
         {
-            SimpleModule module = new SimpleModule("test", Version.unknownVersion());
-            module.addSerializer(Data.class, new DataSerializer());
-            module.addDeserializer(Object.class, new DataDeserializer());
-            getObjectMapper().registerModule(module);
+            // Configuration needed to work with Data
+//            SimpleModule module = new SimpleModule("test", Version.unknownVersion());
+//            module.addSerializer(Data.class, new DataSerializer());
+//            module.addDeserializer(Object.class, new DataDeserializer());
+//            getObjectMapper().registerModule(module);
+
+            // Configuration needed to work with Extra
+            getObjectMapper().enableDefaultTyping(ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
 
@@ -145,7 +167,23 @@ public class CustomSerializationTest extends ClientServerTest
     {
         private String content;
 
-        public Data(String content)
+        private Data(String content)
+        {
+            this.content = content;
+        }
+    }
+
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.WRAPPER_OBJECT)
+    private static class Extra
+    {
+        @JsonProperty
+        private String content;
+
+        private Extra()
+        {
+        }
+
+        private Extra(String content)
         {
             this.content = content;
         }
