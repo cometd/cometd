@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-if (typeof dojo != 'undefined')
-{
-    dojo.provide('org.cometd.ReloadExtension');
-}
-
 if (!org.cometd.COOKIE)
 {
     org.cometd.COOKIE = {};
@@ -222,3 +217,11 @@ org.cometd.ReloadExtension = function(configuration)
 
     _configure(configuration);
 };
+
+if (typeof define === 'function' && define.amd)
+{
+    define(function()
+    {
+        return org.cometd.ReloadExtension;
+    });
+}

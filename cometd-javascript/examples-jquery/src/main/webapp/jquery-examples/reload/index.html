@@ -1,72 +1,16 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html>
 <html>
 <head>
     <title>CometD reload demo</title>
-    <script type="text/javascript" src="../../org/cometd.js"></script>
-    <script type="text/javascript" src="../../org/cometd/ReloadExtension.js"></script>
-    <script type="text/javascript" src="../../jquery/jquery-1.7.1.js"></script>
-    <script type="text/javascript" src="../../jquery/json2.js"></script>
-    <script type="text/javascript" src="../../jquery/jquery.cookie.js"></script>
-    <script type="text/javascript" src="../../jquery/jquery.cometd.js"></script>
-    <script type="text/javascript" src="../../jquery/jquery.cometd-reload.js"></script>
-
-
-    <script type="text/javascript">
-    (function($)
-    {
-      $(document).ready(function()
-      {
-        $.cometd.getExtension('reload').configure({cookieMaxAge:10});
-
-        /* handshake listener to report client IDs */
-        $.cometd.addListener("/meta/handshake", function(message)
-        {
-            if (message.successful)
-            {
-                $('#previous').html(org.cometd.COOKIE.get('demoLastCometdID'));
-                $('#current').html(message.clientId);
-                org.cometd.COOKIE.set('demoLastCometdID', message.clientId, {
-                    'max-age': 300,
-                    path : '/',
-                    expires: new Date(new Date().getTime() + 300 * 1000)
-                });
-            }
-            else
-            {
-                $('#previous').html('Handshake Failed');
-                $('#current').html('Handshake Failed');
-            }
-        });
-
-        /* connect listener to report advice */
-        $.cometd.addListener("/meta/connect", function(message)
-        {
-            if (message.advice)
-            {
-                $('#advice').html(org.cometd.JSON.toJSON(message.advice));
-            }
-        });
-
-        /* Initialize CometD */
-        var cometURL = new String(document.location).replace(/\/jquery-examples\/.*$/, '') + "/cometd";
-        $.cometd.init({ url: cometURL, logLevel: "info" });
-
-        /* Setup reload extension */
-        $(window).unload(function()
-        {
-            $.cometd.reload({cookieMaxAge:8});
-        });
-
-      });
-
-     })(jQuery);
-
-    </script>
+    <script data-main="application"  src="require.js"></script>
 </head>
 <body>
 
 <h1>Reload test</h1>
-<a href="../..">Main Demo index</a><br/>
+
+<a href="../..">Main Demo index</a>
+
+<br/>
 
 <p>
     This test shows how a page can be loaded and resume a CometD connection with the same
@@ -74,25 +18,35 @@
     reestablish an entire CometD session on the server (the client still needs to resubscribe
     so that it can define local callbacks in the newly loaded page).
 </p>
-<p>
-    <blockquote>
+
+<blockquote>
     <a href=".">RELOAD</a>, <a href="../../dojo-examples/reload/">DOJO</a>
-    </blockquote>
-</p>
+</blockquote>
+
 <p>
-      The ID's below should be the same after this page is reloaded: <blockquote>
-    <table border='0'>
-      <tr>
-        <td>Previous ID:</td><td><span id='previous'></span></td>
-      </tr>
-      <tr>
-        <td>Current ID:</td><td><span id='current'></span></td>
-      </tr>
-      <tr>
-        <td>Advice:</td><td><pre id='advice'></pre></td>
-      </tr>
+    The ID's below should be the same after this page is reloaded:
+</p>
+
+<blockquote>
+    <table>
+        <tr>
+            <td>Previous ID:</td>
+            <td><span id='previous'></span></td>
+        </tr>
+        <tr>
+            <td>Current ID:</td>
+            <td><span id='current'></span></td>
+        </tr>
+        <tr>
+            <td>Advice:</td>
+            <td>
+                <pre id='advice'></pre>
+            </td>
+        </tr>
     </table>
-    </blockquote>
+</blockquote>
+
+<p>
     A full fledged reload example is available in the jQuery chat example.
 </p>
 

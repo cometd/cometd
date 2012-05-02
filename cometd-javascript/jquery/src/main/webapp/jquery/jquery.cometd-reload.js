@@ -16,13 +16,29 @@
 
 (function($)
 {
-    // Remap cometd COOKIE functions to jquery cookie functions
-    // Avoid to set to undefined if the jquery cookie plugin is not present
-    if ($.cookie)
+    function bind(org_cometd, cookie, ReloadExtension, cometd)
     {
-        org.cometd.COOKIE.set = $.cookie;
-        org.cometd.COOKIE.get = $.cookie;
+        // Remap cometd COOKIE functions to jquery cookie functions
+        // Avoid to set to undefined if the jquery cookie plugin is not present
+        if (cookie)
+        {
+            org_cometd.COOKIE.set = cookie;
+            org_cometd.COOKIE.get = cookie;
+        }
+
+        var result = new ReloadExtension();
+        cometd.registerExtension('reload', result);
+
+        return result;
     }
 
-    $.cometd.registerExtension('reload', new org.cometd.ReloadExtension());
+    if (typeof define === 'function' && define.amd)
+    {
+        define(['cometd', 'jquery.cookie', 'cometd-reload', 'jquery.cometd'], bind);
+    }
+    else
+    {
+        bind(org.cometd, $.cookie, org.cometd.ReloadExtension, $.cometd);
+    }
+
 })(jQuery);

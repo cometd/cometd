@@ -44,4 +44,13 @@
         }
         return null;
     };
+
+    if (typeof define === 'function' && define.amd)
+    {
+        define(['jquery'], function($)
+        {
+            return $.cookie;
+        });
+    }
+
 })(jQuery);

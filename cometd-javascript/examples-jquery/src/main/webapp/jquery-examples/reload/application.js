@@ -1,0 +1,63 @@
+require({
+    paths: {
+        jquery: '../../jquery/jquery-1.7.1',
+        json: '../../jquery/json2',
+        cometd: '../../org/cometd',
+        'cometd-reload': '../../org/cometd/ReloadExtension',
+        'jquery.cometd': '../../jquery/jquery.cometd',
+        'jquery.cookie': '../../jquery/jquery.cookie',
+        'jquery.cometd-reload': '../../jquery/jquery.cometd-reload'
+    }
+},
+['jquery', 'json', 'jquery.cometd', 'jquery.cometd-reload'],
+function($, undefined, cometd)
+{
+    $(document).ready(function()
+    {
+      cometd.getExtension('reload').configure({cookieMaxAge:10});
+
+      /* handshake listener to report client IDs */
+      cometd.addListener('/meta/handshake', function(message)
+      {
+          if (message.successful)
+          {
+              $('#previous').html(org.cometd.COOKIE.get('demoLastCometdID'));
+              $('#current').html(message.clientId);
+              org.cometd.COOKIE.set('demoLastCometdID', message.clientId, {
+                  'max-age': 300,
+                  path : '/',
+                  expires: new Date(new Date().getTime() + 300 * 1000)
+              });
+          }
+          else
+          {
+              $('#previous').html('Handshake Failed');
+              $('#current').html('Handshake Failed');
+          }
+      });
+
+      /* connect listener to report advice */
+      cometd.addListener('/meta/connect', function(message)
+      {
+          if (message.advice)
+          {
+              $('#advice').html(org.cometd.JSON.toJSON(message.advice));
+          }
+      });
+
+      /* Initialize CometD */
+      var cometURL = new String(document.location).replace(/\/jquery-examples\/.*$/, '') + '/cometd';
+      cometd.init({
+          url: cometURL,
+          logLevel: 'debug'
+      });
+
+      /* Setup reload extension */
+      $(window).unload(function()
+      {
+          cometd.reload({
+              cookieMaxAge: 8
+          });
+      });
+    });
+});
