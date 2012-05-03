@@ -1,19 +1,5 @@
-require({
-/*
-    aliases: [
-        ['cometd', '../../org/cometd.js'],
-        ['cometd-reload', '../../org/cometd/ReloadExtension.js']
-    ]
-*/
-/*
-    packages: [{
-        name: 'org',
-        location: '../../org'
-    }]
-*/
-},
-['dojox/cometd', 'dojo/dom', 'dojo/_base/unload', 'dojox/cometd/reload'],
-function(cometd, dom, unload)
+require(['dojox/cometd', 'dojo/dom', 'dojo/_base/unload', 'dojox/cometd/reload'],
+        function(cometd, dom, unload)
 {
     /* handshake listener to report client IDs */
     cometd.addListener("/meta/handshake", function (message)
