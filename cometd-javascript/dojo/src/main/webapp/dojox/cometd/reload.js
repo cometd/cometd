@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-dojo.provide("dojox.cometd.reload");
-dojo.require("dojox.cometd");
+define(['org/cometd', 'dojo/cookie', 'org/cometd/ReloadExtension', 'dojox/cometd'],
+        function(org_cometd, cookie, ReloadExtension, cometd)
+{
+    // Remap cometd COOKIE functions to dojo cookie functions
+    org_cometd.COOKIE.set = cookie;
+    org_cometd.COOKIE.get = cookie;
 
-dojo.require("dojo.cookie");
-dojo.require("org.cometd.ReloadExtension");
+    var result = new ReloadExtension();
+    cometd.registerExtension('reload', result);
 
-// Remap cometd COOKIE functions to dojo cookie functions
-org.cometd.COOKIE.set = dojo.cookie;
-org.cometd.COOKIE.get = dojo.cookie;
-
-dojox.cometd.registerExtension('reload', new org.cometd.ReloadExtension());
-
-
+    return result;
+});
