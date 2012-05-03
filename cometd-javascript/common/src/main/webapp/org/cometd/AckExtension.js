@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-if (typeof dojo!="undefined")
-{
-    dojo.provide("org.cometd.AckExtension");
-}
-
 /**
  * This client-side extension enables the client to acknowledge to the server
  * the messages that the client has received.
@@ -100,3 +95,11 @@ org.cometd.AckExtension = function()
         return message;
     };
 };
+
+if (typeof define === 'function' && define.amd)
+{
+    define(function()
+    {
+        return org.cometd.AckExtension;
+    });
+}

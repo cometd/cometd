@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-if (typeof dojo != "undefined")
-{
-    dojo.provide("org.cometd.TimeStampExtension");
-}
-
 /**
  * The timestamp extension adds the optional timestamp field to all outgoing messages.
  */
@@ -30,3 +25,11 @@ org.cometd.TimeStampExtension = function()
         return message;
     };
 };
+
+if (typeof define === 'function' && define.amd)
+{
+    define(function()
+    {
+        return org.cometd.TimeStampExtension;
+    });
+}

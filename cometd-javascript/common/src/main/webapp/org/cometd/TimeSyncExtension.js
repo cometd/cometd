@@ -14,13 +14,7 @@
  * limitations under the License.
  */
 
-if (typeof dojo != "undefined")
-{
-    dojo.provide("org.cometd.TimeSyncExtension");
-}
-
 /**
- *
  * With each handshake or connect, the extension sends timestamps within the
  * ext field like: <code>{ext:{timesync:{tc:12345567890,l:23,o:4567},...},...}</code>
  * where:<ul>
@@ -59,7 +53,6 @@ if (typeof dojo != "undefined")
  *
  * @param configuration
  */
-
 org.cometd.TimeSyncExtension = function(configuration)
 {
     var _cometd;
@@ -206,3 +199,11 @@ org.cometd.TimeSyncExtension = function(configuration)
         return org.cometd.Utils.setTimeout(_cometd, callback, interval);
     };
 };
+
+if (typeof define === 'function' && define.amd)
+{
+    define(function()
+    {
+        return org.cometd.TimeSyncExtension;
+    });
+}
