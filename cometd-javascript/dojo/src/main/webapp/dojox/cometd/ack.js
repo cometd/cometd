@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-dojo.provide("dojox.cometd.ack");
-dojo.require("dojox.cometd");
-
-dojo.require("org.cometd.AckExtension");
-
-dojox.cometd.registerExtension('ack', new org.cometd.AckExtension());
+define(['org/cometd/AckExtension', 'dojox/cometd'],
+        function(AckExtension, cometd)
+{
+    var result = new AckExtension();
+    cometd.registerExtension('ack', result);
+    return result;
+});

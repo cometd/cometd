@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-dojo.provide("dojox.cometd.timesync");
-dojo.require("dojox.cometd");
-dojo.require("org.cometd.TimeSyncExtension");
-
-dojox.cometd.timesync=new org.cometd.TimeSyncExtension();
-dojox.cometd.registerExtension('timesync', dojox.cometd.timesync);
+define(['org/cometd/TimeStampExtension', 'dojox/cometd'],
+        function(TimeSyncExtension, cometd)
+{
+    var result = new TimeSyncExtension();
+    cometd.registerExtension('timesync', result);
+    return result;
+});

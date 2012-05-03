@@ -18,7 +18,7 @@
 // TODO: seems not, because we use tlmSiblingOfDojo: true and we achieve the same effect
 
 define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/io/script', 'dojo/topic'],
-        function bind(org_cometd, JSON, dojox, dojoXHR, dojoSCRIPT, topic)
+        function(org_cometd, JSON, dojox, dojoXHR, dojoSCRIPT, topic)
 {
     // Remap cometd JSON functions to dojo JSON functions
     org_cometd.JSON.toJSON = JSON.stringify;

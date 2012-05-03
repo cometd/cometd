@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-dojo.provide("dojox.cometd.timestamp");
-dojo.require("dojox.cometd");
-dojo.require("org.cometd.TimeStampExtension");
-
-dojox.cometd.registerExtension('timestamp', new org.cometd.TimeStampExtension());
+define(['org/cometd/TimeStampExtension', 'dojox/cometd'],
+        function(TimeStampExtension, cometd)
+{
+    var result = new TimeStampExtension();
+    cometd.registerExtension('timestamp', result);
+    return result;
+});

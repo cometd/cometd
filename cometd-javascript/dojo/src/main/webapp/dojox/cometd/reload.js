@@ -23,6 +23,5 @@ define(['org/cometd', 'dojo/cookie', 'org/cometd/ReloadExtension', 'dojox/cometd
 
     var result = new ReloadExtension();
     cometd.registerExtension('reload', result);
-
     return result;
 });
