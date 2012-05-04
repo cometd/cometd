@@ -2,8 +2,7 @@ require({
     paths: {
         jquery: '../../jquery/jquery-1.7.1',
         json: '../../jquery/json2',
-        cometd: '../../org/cometd',
-        'cometd-reload': '../../org/cometd/ReloadExtension',
+        org: '../../org',
         'jquery.cometd': '../../jquery/jquery.cometd',
         'jquery.cookie': '../../jquery/jquery.cookie',
         'jquery.cometd-reload': '../../jquery/jquery.cometd-reload'

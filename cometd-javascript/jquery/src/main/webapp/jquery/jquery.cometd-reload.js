@@ -34,7 +34,7 @@
 
     if (typeof define === 'function' && define.amd)
     {
-        define(['cometd', 'jquery.cookie', 'cometd-reload', 'jquery.cometd'], bind);
+        define(['org/cometd', 'jquery.cookie', 'org/cometd/ReloadExtension', 'jquery.cometd'], bind);
     }
     else
     {

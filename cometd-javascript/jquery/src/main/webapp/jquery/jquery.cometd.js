@@ -130,7 +130,7 @@
 
     if (typeof define === 'function' && define.amd)
     {
-        define(['jquery', 'cometd'], bind);
+        define(['jquery', 'org/cometd'], bind);
     }
     else
     {
