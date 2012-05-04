@@ -17,6 +17,10 @@
 // TODO: is this still needed ? => dojo.registerModulePath('org','../org');
 // TODO: seems not, because we use tlmSiblingOfDojo: true and we achieve the same effect
 
+require({
+    packages: [{name: 'org', location: '../org'}]
+});
+
 define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/io/script', 'dojo/topic'],
         function(org_cometd, JSON, dojox, dojoXHR, dojoSCRIPT, topic)
 {
