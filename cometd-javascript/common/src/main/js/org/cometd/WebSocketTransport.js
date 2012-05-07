@@ -18,23 +18,23 @@ org.cometd.WebSocketTransport = function()
 
     function _websocketConnect()
     {
-        var // Mangle the URL, changing the scheme from 'http' to 'ws'
-            url = _cometd.getURL().replace(/^http/, 'ws'),
-            conTimout = _cometd.getConfiguration().connectTimeout,
-            self = this,
-            webSocket;
-        this._debug('Transport', this.getType(), 'connecting to URL', url, '(timeout: ', conTimout, 'ms)');
+        // Mangle the URL, changing the scheme from 'http' to 'ws'
+        var url = _cometd.getURL().replace(/^http/, 'ws');
+        this._debug('Transport', this.getType(), 'connecting to URL', url);
 
-        if(conTimout > 0) {
-            setTimeout(function() {
-                if(!_webSocketSupported) {
-                    self._debug('WebSocket connection timeout after', conTimout, 'ms');
-                    self.onClose(1002);
-                }
-            }, conTimout);
+        var self = this;
+
+        var connectTimeout = _cometd.getConfiguration().connectTimeout;
+        if (connectTimeout > 0)
+        {
+            this.setTimeout(function()
+            {
+                self._debug('Transport', self.getType(), 'timed out while connecting to URL', url, ':', connectTimeout, 'ms');
+                self.onClose(1002, 'Connect Timeout');
+            }, connectTimeout);
         }
 
-        webSocket = new org.cometd.WebSocket(url);
+        var webSocket = new org.cometd.WebSocket(url);
         webSocket.onopen = function()
         {
             self._debug('WebSocket opened', webSocket);

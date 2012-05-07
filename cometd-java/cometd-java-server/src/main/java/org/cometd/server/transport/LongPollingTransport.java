@@ -447,11 +447,12 @@ public abstract class LongPollingTransport extends HttpTransport
     protected void sweep()
     {
         long now = System.currentTimeMillis();
-        if (0 < _lastSweep && _lastSweep < now)
+        long elapsed = now - _lastSweep;
+        if (_lastSweep > 0 && elapsed > 0)
         {
             // Calculate the maximum sweeps that a browser ID can be 0 as the
             // maximum interval time divided by the sweep period, doubled for safety
-            int maxSweeps = (int)(2 * getMaxInterval() / (now - _lastSweep));
+            int maxSweeps = (int)(2 * getMaxInterval() / elapsed);
 
             for (Map.Entry<String, AtomicInteger> entry : _browserSweep.entrySet())
             {

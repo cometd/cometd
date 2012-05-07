@@ -241,4 +241,17 @@ public abstract class AbstractCometDTest
     {
         return (T) threadModel.get(name);
     }
+
+    protected void sleep(long time)
+    {
+        try
+        {
+            Thread.sleep(time);
+        }
+        catch (InterruptedException x)
+        {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(x);
+        }
+    }
 }

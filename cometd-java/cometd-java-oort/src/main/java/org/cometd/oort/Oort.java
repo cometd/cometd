@@ -37,6 +37,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.BayeuxServer.Extension;
@@ -46,12 +47,15 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.client.ext.AckExtension;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.authorizer.GrantAuthorizer;
+import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.websocket.WebSocketClientFactory;
@@ -104,6 +108,7 @@ public class Oort extends AggregateLifeCycle
     private String _secret;
     private boolean _debug;
     private boolean _clientDebug;
+    private boolean _ackExtensionEnabled;
 
     public Oort(BayeuxServer bayeux, String url)
     {
@@ -124,6 +129,10 @@ public class Oort extends AggregateLifeCycle
         if (_threadPool == null)
             _threadPool = new QueuedThreadPool();
         addBean(_threadPool);
+        // Start the pool to avoid that HttpClient
+        // and WebSocketClientFactory try to manage it
+        if (_threadPool instanceof LifeCycle)
+            ((LifeCycle)_threadPool).start();
 
         if (_httpClient == null)
         {
@@ -137,6 +146,21 @@ public class Oort extends AggregateLifeCycle
         addBean(_wsFactory);
 
         super.doStart();
+
+        if (isAckExtensionEnabled())
+        {
+            boolean present = false;
+            for (Extension extension : _bayeux.getExtensions())
+            {
+                if (extension instanceof AcknowledgedMessagesExtension)
+                {
+                    present = true;
+                    break;
+                }
+            }
+            if (!present)
+                _bayeux.addExtension(new AcknowledgedMessagesExtension());
+        }
 
         _bayeux.addExtension(_oortExtension);
         _bayeux.createIfAbsent(OORT_CLOUD_CHANNEL, new ConfigurableServerChannel.Initializer()
@@ -236,6 +260,16 @@ public class Oort extends AggregateLifeCycle
             cometInfo.comet.setDebugEnabled(clientDebugEnabled);
     }
 
+    public boolean isAckExtensionEnabled()
+    {
+        return _ackExtensionEnabled;
+    }
+
+    public void setAckExtensionEnabled(boolean value)
+    {
+        _ackExtensionEnabled = value;
+    }
+
     /**
      * <p>Connects (if not already connected) and observes another Oort instance
      * (identified by the given URL) via a {@link OortComet} instance.</p>
@@ -275,6 +309,7 @@ public class Oort extends AggregateLifeCycle
         }
 
         comet = newOortComet(cometURL);
+        configureOortComet(comet);
         OortComet existing = _pendingComets.putIfAbsent(cometURL, comet);
         if (existing != null)
         {
@@ -303,6 +338,24 @@ public class Oort extends AggregateLifeCycle
     protected OortComet newOortComet(String cometURL)
     {
         return new OortComet(this, cometURL);
+    }
+
+    protected void configureOortComet(OortComet oortComet)
+    {
+        if (isAckExtensionEnabled())
+        {
+            boolean present = false;
+            for (ClientSession.Extension extension : oortComet.getExtensions())
+            {
+                if (extension instanceof AckExtension)
+                {
+                    present = true;
+                    break;
+                }
+            }
+            if (!present)
+                oortComet.addExtension(new AckExtension());
+        }
     }
 
     protected String encodeSecret(String secret)
@@ -919,9 +972,10 @@ public class Oort extends AggregateLifeCycle
                     {
                         debug("Disconnecting pending comet {}", cometURL);
                         comet.disconnect();
-                        // Fall through: if it was an alias URL the message will
-                        // have the extension and we can map it, otherwise there
-                        // will be no extension and we return
+                        // Fall through to process an eventual extension:
+                        // if it was an alias URL the message will have
+                        // the extension and we can map it, otherwise
+                        // there will be no extension and we return
                     }
                 }
             }
@@ -956,7 +1010,8 @@ public class Oort extends AggregateLifeCycle
             // Remove the pending comet as last step, so that if there is a concurrent
             // call to observeComet() we are sure that we always return either the
             // pending OortComet, or the connected one from the _clientComets field
-            _pendingComets.remove(cometURL);
+            if (message.isSuccessful() || comet != null && comet.isDisconnected())
+                _pendingComets.remove(cometURL);
         }
     }
 }

@@ -18,7 +18,7 @@ package org.cometd.javascript;
 
 /**
  * A base test class to be extended for tests that
- * can only pass using the long-polling transport
+ * can only pass using the websocket transport
  */
 public class AbstractCometDWebSocketTest extends AbstractCometDTest
 {

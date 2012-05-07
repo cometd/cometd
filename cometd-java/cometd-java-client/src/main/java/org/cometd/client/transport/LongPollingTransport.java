@@ -22,7 +22,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -252,7 +254,9 @@ public class LongPollingTransport extends HttpClientTransport
                         {
                             try
                             {
-                                Date date = new SimpleDateFormat("EEE, dd-MMM-yy HH:mm:ss 'GMT'").parse(tokenizer.nextToken());
+                                SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd-MMM-yy HH:mm:ss 'GMT'", Locale.US);
+                                dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                                Date date = dateFormat.parse(tokenizer.nextToken());
                                 Long maxAgeValue = TimeUnit.MILLISECONDS.toSeconds(date.getTime() - System.currentTimeMillis());
                                 maxAge = maxAgeValue > 0 ? maxAgeValue.intValue() : 0;
                             }

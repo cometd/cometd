@@ -626,10 +626,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         debug(">  {} {}", message, session);
 
-        ServerMessage.Mutable reply = null;
+        Mutable reply = createReply(message);
         if (!extendRecv(session, message) || session != null && !session.extendRecv(message))
         {
-            reply = createReply(message);
             error(reply, "404::message deleted");
         }
         else
@@ -641,7 +640,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             ServerChannel channel;
             if (channelName == null)
             {
-                reply = createReply(message);
                 error(reply, "400::channel missing");
             }
             else
@@ -652,7 +650,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     Authorizer.Result creationResult = isCreationAuthorized(session, message, channelName);
                     if (creationResult instanceof Authorizer.Result.Denied)
                     {
-                        reply = createReply(message);
                         String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
                         error(reply, "403:" + denyReason + ":create denied");
                     }
@@ -668,20 +665,17 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                     {
                         if (session == null && !Channel.META_HANDSHAKE.equals(channelName))
                         {
-                            reply = createReply(message);
                             unknownSession(reply);
                         }
                         else
                         {
                             doPublish(session, (ServerChannelImpl)channel, message);
-                            reply = message.getAssociated();
                         }
                     }
                     else
                     {
                         if (session == null)
                         {
-                            reply = createReply(message);
                             unknownSession(reply);
                         }
                         else
@@ -689,14 +683,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                             Authorizer.Result publishResult = isPublishAuthorized(channel, session, message);
                             if (publishResult instanceof Authorizer.Result.Denied)
                             {
-                                reply = createReply(message);
                                 String denyReason = ((Authorizer.Result.Denied)publishResult).getReason();
                                 error(reply, "403:" + denyReason + ":publish denied");
                             }
                             else
                             {
                                 channel.publish(session, message);
-                                reply = createReply(message);
                                 reply.setSuccessful(true);
                             }
                         }
@@ -1244,14 +1236,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         @Override
         public void onMessage(ServerSessionImpl session, final Mutable message)
         {
-            if (session==null)
+            if (session == null)
                 session = newServerSession();
 
-            ServerMessage.Mutable reply=createReply(message);
-
-            if (_policy != null && !_policy.canHandshake(BayeuxServerImpl.this,session,message))
+            ServerMessage.Mutable reply = message.getAssociated();
+            if (_policy != null && !_policy.canHandshake(BayeuxServerImpl.this, session, message))
             {
-                error(reply,"403::Handshake denied");
+                error(reply, "403::Handshake denied");
                 // The user's SecurityPolicy may have customized the response's advice
                 Map<String, Object> advice = reply.getAdvice(true);
                 if (!advice.containsKey(Message.RECONNECT_FIELD))
@@ -1263,10 +1254,10 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             addServerSession(session);
 
             reply.setSuccessful(true);
-            reply.put(Message.CLIENT_ID_FIELD,session.getId());
-            reply.put(Message.VERSION_FIELD,"1.0");
-            reply.put(Message.MIN_VERSION_FIELD,"1.0");
-            reply.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD,getAllowedTransports());
+            reply.put(Message.CLIENT_ID_FIELD, session.getId());
+            reply.put(Message.VERSION_FIELD, "1.0");
+            reply.put(Message.MIN_VERSION_FIELD, "1.0");
+            reply.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, getAllowedTransports());
         }
     }
 
@@ -1275,7 +1266,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         @Override
         public void onMessage(final ServerSessionImpl session, final Mutable message)
         {
-            ServerMessage.Mutable reply=createReply(message);
+            ServerMessage.Mutable reply = message.getAssociated();
 
             if (isSessionUnknown(session))
             {
@@ -1286,13 +1277,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             session.connect();
 
             // Handle incoming advice
-            Map<String,Object> adviceIn=message.getAdvice();
+            Map<String, Object> adviceIn = message.getAdvice();
             if (adviceIn != null)
             {
-                Number timeout=(Number)adviceIn.get("timeout");
-                session.updateTransientTimeout(timeout==null?-1L:timeout.longValue());
-                Number interval=(Number)adviceIn.get("interval");
-                session.updateTransientInterval(interval==null?-1L:interval.longValue());
+                Number timeout = (Number)adviceIn.get("timeout");
+                session.updateTransientTimeout(timeout == null ? -1L : timeout.longValue());
+                Number interval = (Number)adviceIn.get("interval");
+                session.updateTransientInterval(interval == null ? -1L : interval.longValue());
                 // Force the server to send the advice, as the client may
                 // have forgotten it (for example because of a reload)
                 session.reAdvise();
@@ -1305,8 +1296,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             // Send advice
             Map<String, Object> adviceOut = session.takeAdvice();
-            if (adviceOut!=null)
-                reply.put(Message.ADVICE_FIELD,adviceOut);
+            if (adviceOut != null)
+                reply.put(Message.ADVICE_FIELD, adviceOut);
 
             reply.setSuccessful(true);
         }
@@ -1316,7 +1307,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         public void onMessage(final ServerSessionImpl from, final Mutable message)
         {
-            ServerMessage.Mutable reply = createReply(message);
+            ServerMessage.Mutable reply = message.getAssociated();
             if (isSessionUnknown(from))
             {
                 unknownSession(reply);
@@ -1399,7 +1390,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         public void onMessage(final ServerSessionImpl from, final Mutable message)
         {
-            ServerMessage.Mutable reply = createReply(message);
+            ServerMessage.Mutable reply = message.getAssociated();
             if (isSessionUnknown(from))
             {
                 unknownSession(reply);
@@ -1450,14 +1441,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         public void onMessage(final ServerSessionImpl session, final Mutable message)
         {
-            ServerMessage.Mutable reply=createReply(message);
+            ServerMessage.Mutable reply = message.getAssociated();
             if (isSessionUnknown(session))
             {
                 unknownSession(reply);
                 return;
             }
 
-            removeServerSession(session,false);
+            removeServerSession(session, false);
             session.flush();
 
             reply.setSuccessful(true);

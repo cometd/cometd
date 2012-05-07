@@ -1,74 +1,47 @@
-/**
- * Dual licensed under the Apache License 2.0 and the MIT license.
- */
-(function($)
-{
-    var _defaultConfig = {
-        'max-age' : 30 * 60,
-        path : '/'
-    };
+/*!
+* jQuery Cookie Plugin
+* https://github.com/carhartl/jquery-cookie
+*
+* Copyright 2011, Klaus Hartl
+* Dual licensed under the MIT or GPL Version 2 licenses.
+* http://www.opensource.org/licenses/mit-license.php
+* http://www.opensource.org/licenses/GPL-2.0
+*/
+(function($) {
+    $.cookie = function(key, value, options) {
 
-    function _set(key, value, options)
-    {
-        var o = $.extend({}, _defaultConfig, options);
-        if (value === null || value === undefined)
-        {
-            value = '';
-            o['max-age'] = 0;
-            o.expires = new Date(new Date().getTime() - 1000);
-        }
+        // key and at least value given, set cookie...
+        if (arguments.length > 1 && (!/Object/.test(Object.prototype.toString.call(value)) || value === null || value === undefined)) {
+            options = $.extend({}, options);
 
-        // Create the cookie string
-        var result = key + '=' + encodeURIComponent(value);
-        if (o.expires && o.expires.toUTCString)
-        {
-            result += '; expires=' + o.expires.toUTCString();
-        }
-        if (o['max-age'] && typeof o['max-age'] === 'number')
-        {
-            result += '; max-age=' + o['max-age'];
-        }
-        if (o.path)
-        {
-            result += '; path=' + (o.path);
-        }
-        if (o.domain)
-        {
-            result += '; domain=' + (o.domain);
-        }
-        if (o.secure)
-        {
-            result +='; secure';
-        }
-
-        document.cookie = result;
-    }
-
-    function _get(key)
-    {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; ++i)
-        {
-            var cookie = $.trim(cookies[i]);
-            if (cookie.substring(0, key.length + 1) == (key + '='))
-            {
-                return decodeURIComponent(cookie.substring(key.length + 1));
+            if (value === null || value === undefined) {
+                options.expires = -1;
             }
+
+            if (typeof options.expires === 'number') {
+                var days = options.expires, t = options.expires = new Date();
+                t.setDate(t.getDate() + days);
+            }
+
+            value = String(value);
+
+            return (document.cookie = [
+                encodeURIComponent(key), '=', options.raw ? value : encodeURIComponent(value),
+                options.expires ? '; expires=' + options.expires.toUTCString() : '', // use expires attribute, max-age is not supported by IE
+                options.path    ? '; path=' + options.path : '',
+                options.domain  ? '; domain=' + options.domain : '',
+                options.secure  ? '; secure' : ''
+            ].join(''));
+        }
+
+        // key and possibly options given, get cookie...
+        options = value || {};
+        var decode = options.raw ? function(s) { return s; } : decodeURIComponent;
+
+        var pairs = document.cookie.split('; ');
+        for (var i = 0, pair; pair = pairs[i] && pairs[i].split('='); i++) {
+            if (decode(pair[0]) === key) return decode(pair[1] || ''); // IE saves cookies with empty string as "c; ", e.g. without "=" as opposed to EOMB, thus pair[1] may be undefined
         }
         return null;
-    }
-
-    $.cookie = function(key, value, options)
-    {
-        if (arguments.length > 1)
-        {
-            _set(key, value, options);
-            return undefined;
-        }
-        else
-        {
-            return _get(key);
-        }
     };
-
 })(jQuery);

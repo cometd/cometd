@@ -99,7 +99,11 @@ public class CometdDemo
 
                         Resource.newResource("../../cometd-javascript/dojo/src/main/webapp/"),
                         Resource.newResource("../../cometd-javascript/examples-dojo/src/main/webapp/"),
-                        Resource.newResource("../../cometd-javascript/dojo/target/war/work/org.dojotoolkit/dojo-war/")
+
+                        // access unpacked toolkits
+                        Resource.newResource("../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-dojo/"),
+                        Resource.newResource("../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-jquery/")
+                        
                 }));
 
 
@@ -116,6 +120,7 @@ public class CometdDemo
         comet.setInitParameter("multiFrameInterval","5000");
         comet.setInitParameter("logLevel","1");
         comet.setInitParameter("services","org.cometd.examples.ChatService");
+        // comet.setInitParameter("maxSessionsPerBrowser","4");
         comet.setInitParameter("transports","org.cometd.websocket.server.WebSocketTransport");
         comet.setInitOrder(2);
 

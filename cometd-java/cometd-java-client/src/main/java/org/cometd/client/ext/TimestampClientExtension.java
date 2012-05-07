@@ -19,6 +19,7 @@ package org.cometd.client.ext;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
@@ -49,6 +50,8 @@ public class TimestampClientExtension implements ClientSession.Extension
 
     private void addTimestamp(Message.Mutable message)
     {
-        message.put(Message.TIMESTAMP_FIELD, new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US).format(new Date()));
+        SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
+        dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+        message.put(Message.TIMESTAMP_FIELD, dateFormat.format(new Date()));
     }
 }

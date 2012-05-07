@@ -66,6 +66,11 @@ public abstract class AbstractClientSession implements ClientSession
         _extensions.remove(extension);
     }
 
+    public List<Extension> getExtensions()
+    {
+        return Collections.unmodifiableList(_extensions);
+    }
+
     protected boolean extendSend(Message.Mutable message)
     {
         if (message.isMeta())

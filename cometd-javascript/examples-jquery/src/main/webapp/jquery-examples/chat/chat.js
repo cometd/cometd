@@ -76,7 +76,7 @@
 
             $.cometd.configure({
                 url: cometdURL,
-                logLevel: 'debug'
+                logLevel: 'info'
             });
             $.cometd.handshake();
 

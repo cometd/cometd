@@ -21,6 +21,7 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import org.mozilla.javascript.ScriptableObject;
@@ -80,7 +81,11 @@ public class HttpCookieStore extends ScriptableObject
                     if ("expires".equalsIgnoreCase(key))
                     {
                         if (cookie.expires == null)
-                            cookie.expires = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US).parse(val).getTime();
+                        {
+                            SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
+                            dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                            cookie.expires = dateFormat.parse(val).getTime();
+                        }
                     }
                     else if ("max-age".equalsIgnoreCase(key))
                     {

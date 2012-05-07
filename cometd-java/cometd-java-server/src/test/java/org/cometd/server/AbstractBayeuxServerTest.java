@@ -19,6 +19,7 @@ package org.cometd.server;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -43,6 +44,7 @@ public abstract class AbstractBayeuxServerTest
         }
     };
     protected Server server;
+    protected Connector connector;
     protected int port;
     protected ServletContextHandler context;
     protected CometdServlet cometdServlet;
@@ -54,7 +56,7 @@ public abstract class AbstractBayeuxServerTest
     public void startServer() throws Exception
     {
         server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector();
+        connector = new SelectChannelConnector();
         server.addConnector(connector);
 
         HandlerCollection handlers = new HandlerCollection();

@@ -37,6 +37,9 @@ public class CometDWebSocketSubscribeFailureTest extends AbstractCometDWebSocket
         evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
         Assert.assertTrue(readyLatch.await(5000));
 
+        // Wait a while for the connect to establish
+        Thread.sleep(1000);
+
         evaluateScript("var subscribeLatch = new Latch(1);");
         Latch subscribeLatch = get("subscribeLatch");
         evaluateScript("var failureLatch = new Latch(1);");

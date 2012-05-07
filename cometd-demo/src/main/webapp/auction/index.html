@@ -8,9 +8,9 @@
   <META HTTP-EQUIV="Content-Script-Type" CONTENT="text/javascript">
   <title>CometD Oort Auction</title>
   <link rel="stylesheet" type="text/css" href="css/styles.css" />
-  
+
   <script type="text/javascript" src="../dojo/dojo.js"></script>
-  
+
   <!-- These scripts should all be ported to dojo -->
   <script type='text/javascript' src='js/prototype.js'></script>
   <script type="text/javascript" src='js/scriptaculous.js'></script>
@@ -21,17 +21,17 @@
   <script type="text/javascript" src='js/dragdrop.js'></script>
   <script type='text/javascript' src='js/editinplace.js'></script>
   <script type='text/javascript' src='js/dwr-util.js'></script>
-  
+
   <script type="text/javascript">
     dojo.require('dojox.cometd');
     dojo.require("dojox.cometd.timesync");
     dojo.require("dojox.cometd.ack");
-    
+
     dojo.addOnLoad(function()
     {
         var cometURL = (new String(document.location).replace(/\/auction\/.*$/, '')) + "/cometd";
-        dojox.cometd.init({ url: cometURL, logLevel: "info" });  
-	
+        dojox.cometd.init({ url: cometURL, logLevel: "info" });
+
         var tick=function()
         {
             var now=dojox.cometd.timesync.getServerDate();
@@ -43,7 +43,7 @@
         };
         setTimeout(tick,1000);
     });
-    dojo.addOnUnload(dojox.cometd, "disconnect");  
+    dojo.addOnUnload(dojox.cometd, "disconnect");
   </script>
 
   <script type='text/javascript' src='js/demo.js'></script>
@@ -63,7 +63,7 @@
         <tr>
             <td colspan="2">
                 <p align="justify">This auction application is a demonstration of an
-                    some of the features of <a href="http://www.cometd.org/">Cometd Oort</a>. The site uses
+                    some of the features of <a href="http://www.cometd.org/">CometD Oort</a>. The site uses
                     cometd to dynamically distribute auction bids and chat about items. The Oort cloud mechanism
                     is used to distribute these events in a cluster (you must set the oort.cloud init parameter of
                     the Oort servlet in web.xml so that other nodes are discovered).

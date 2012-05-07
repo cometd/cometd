@@ -134,7 +134,9 @@ org.cometd.ReloadExtension = function(configuration)
                 {
                     // Remove the cookie, not needed anymore
                     org.cometd.COOKIE.set(_cookieName, '', {
-                        path: _cookiePath
+                        'max-age': -1,
+                        path: _cookiePath,
+                        expires: -1
                     });
 
                     var oldState = org.cometd.JSON.fromJSON(cookie);
