@@ -22,15 +22,19 @@ org.cometd.WebSocketTransport = function()
         var url = _cometd.getURL().replace(/^http/, 'ws');
         this._debug('Transport', this.getType(), 'connecting to URL', url);
 
-        var self = this;
+        var self = this, timer;
 
         var connectTimeout = _cometd.getConfiguration().connectTimeout;
         if (connectTimeout > 0)
         {
-            this.setTimeout(function()
+            timer = this.setTimeout(function()
             {
-                self._debug('Transport', self.getType(), 'timed out while connecting to URL', url, ':', connectTimeout, 'ms');
-                self.onClose(1002, 'Connect Timeout');
+                timer = null;
+                if(!_opened)
+                {
+                    self._debug('Transport', self.getType(), 'timed out while connecting to URL', url, ':', connectTimeout, 'ms');
+                    self.onClose(1002, 'Connect Timeout');
+                }
             }, connectTimeout);
         }
 
@@ -38,6 +42,11 @@ org.cometd.WebSocketTransport = function()
         webSocket.onopen = function()
         {
             self._debug('WebSocket opened', webSocket);
+            if(timer)
+            {
+                self.clearTimeout(timer);
+                timer = null;
+            }
             if (webSocket !== _webSocket)
             {
                 // It's possible that the onopen callback is invoked
