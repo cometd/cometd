@@ -33,23 +33,23 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.rules.TestWatchman;
-import org.junit.runners.model.FrameworkMethod;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.mozilla.javascript.ScriptableObject;
 
 public abstract class AbstractCometDTest
 {
     @Rule
-    public final TestWatchman testName = new TestWatchman()
+    public final TestWatcher testName = new TestWatcher()
     {
         @Override
-        public void starting(FrameworkMethod method)
+        public void starting(Description description)
         {
-            super.starting(method);
+            super.starting(description);
             String providerClass = getProviderClassName();
             System.err.printf("Running %s.%s() [%s]%n",
-                    method.getMethod().getDeclaringClass().getName(),
-                    method.getName(),
+                    description.getClassName(),
+                    description.getMethodName(),
                     providerClass.substring(providerClass.lastIndexOf('.') + 1));
         }
     };
@@ -63,7 +63,7 @@ public abstract class AbstractCometDTest
     protected String cometdURL;
     protected BayeuxServerImpl bayeuxServer;
     protected int expirationPeriod = 2500;
-    private ThreadModel threadModel;
+    protected ThreadModel threadModel;
     private XMLHttpRequestClient xhrClient;
     private WebSocketClientFactory wsClientFactory;
 
@@ -147,6 +147,11 @@ public abstract class AbstractCometDTest
     protected void initPage() throws Exception
     {
         initJavaScript();
+        initCometD();
+    }
+
+    protected void initCometD() throws Exception
+    {
         provider.provideCometD(threadModel, contextURL);
     }
 
