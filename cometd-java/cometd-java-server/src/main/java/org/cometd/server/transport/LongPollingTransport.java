@@ -435,7 +435,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
     protected void handleJSONParseException(HttpServletRequest request, HttpServletResponse response, String json, Throwable exception) throws ServletException, IOException
     {
-        _logger.debug("Error parsing JSON: " + json, exception);
+        _logger.warn("Error parsing JSON: " + json, exception);
         response.sendError(HttpServletResponse.SC_BAD_REQUEST);
     }
 
