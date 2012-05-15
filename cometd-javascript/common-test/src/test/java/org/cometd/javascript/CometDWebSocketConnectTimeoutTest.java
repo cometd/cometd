@@ -28,7 +28,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -36,18 +35,15 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
 {
     private final long timeout = 1000;
 
-    @Override
-    protected void customizeContext(ServletContextHandler context) throws Exception
-    {
-        super.customizeContext(context);
-        TimeoutFilter filter = new TimeoutFilter();
-        FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
-    }
-
     @Test
     public void testConnectTimeout() throws Exception
     {
+        context.stop();
+        TimeoutFilter filter = new TimeoutFilter();
+        FilterHolder filterHolder = new FilterHolder(filter);
+        context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
+        context.start();
+
         defineClass(Latch.class);
 
         evaluateScript("var wsLatch = new Latch(1);");
@@ -73,11 +69,54 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
                 "   {" +
                 "       lpLatch.countDown();" +
                 "   }" +
-                "})");
+                "});");
 
         evaluateScript("cometd.handshake()");
         Assert.assertTrue(wsLatch.await(2 * timeout));
         Assert.assertTrue(lpLatch.await(2 * timeout));
+
+        evaluateScript("var disconnectLatch = new Latch(1);");
+        Latch disconnectLatch = get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        evaluateScript("cometd.disconnect();");
+        Assert.assertTrue(disconnectLatch.await(5000));
+    }
+
+    @Test
+    public void testConnectTimeoutIsCanceledOnSuccessfulConnect() throws Exception
+    {
+        defineClass(Latch.class);
+
+        evaluateScript("var handshakeLatch = new Latch(1);");
+        Latch handshakeLatch = get("handshakeLatch");
+        evaluateScript("var connectLatch = new Latch(1);");
+        Latch connectLatch = get("connectLatch");
+
+        evaluateScript("cometd.configure({" +
+                       "url: '" + cometdURL + "', " +
+                       "connectTimeout: " + timeout + ", " +
+                       "logLevel: '" + getLogLevel() + "'" +
+                       "});");
+        evaluateScript("cometd.addListener('/meta/handshake', function(message)" +
+                "{" +
+                "   if (cometd.getTransport().getType() === 'websocket' && message.successful)" +
+                "   {" +
+                "       handshakeLatch.countDown();" +
+                "   }" +
+                "});");
+        evaluateScript("cometd.addListener('/meta/connect', function(message)" +
+                "{" +
+                "   if (!message.successful)" +
+                "   {" +
+                "       connectLatch.countDown();" +
+                "   }" +
+                "});");
+
+        evaluateScript("cometd.handshake()");
+        Assert.assertTrue(handshakeLatch.await(2 * timeout));
+
+        // Wait to be sure we're not disconnected
+        Assert.assertFalse(connectLatch.await(2 * timeout));
 
         evaluateScript("var disconnectLatch = new Latch(1);");
         Latch disconnectLatch = get("disconnectLatch");
