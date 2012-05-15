@@ -56,6 +56,7 @@ public abstract class AbstractCometDTest
     protected TestProvider provider;
     private HttpCookieStore cookies;
     private Server server;
+    protected ServletContextHandler context;
     protected int longPollingPeriod = 5000;
     protected String cometServletPath = "/cometd";
     protected int port;
@@ -83,7 +84,7 @@ public abstract class AbstractCometDTest
         server.setHandler(handlers);
 
         String contextPath = "/cometd";
-        ServletContextHandler context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
+        context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
 
         // Setup default servlet to serve static files
         context.addServlet(DefaultServlet.class, "/");
@@ -137,11 +138,11 @@ public abstract class AbstractCometDTest
         File mainResourcesDirectory = new File(baseDirectory, "src/main/resources");
         File testResourcesDirectory = new File(baseDirectory, "src/test/resources");
         context.setBaseResource(new ResourceCollection(new String[]
-        {
-            overlaidScriptDirectory.getCanonicalPath(),
-            mainResourcesDirectory.getCanonicalPath(),
-            testResourcesDirectory.getCanonicalPath()
-        }));
+                {
+                        overlaidScriptDirectory.getCanonicalPath(),
+                        mainResourcesDirectory.getCanonicalPath(),
+                        testResourcesDirectory.getCanonicalPath()
+                }));
     }
 
     protected void initPage() throws Exception
