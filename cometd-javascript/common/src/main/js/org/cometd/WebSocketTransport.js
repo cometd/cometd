@@ -23,14 +23,19 @@ org.cometd.WebSocketTransport = function()
         this._debug('Transport', this.getType(), 'connecting to URL', url);
 
         var self = this;
+        var connectTimer = null;
 
         var connectTimeout = _cometd.getConfiguration().connectTimeout;
         if (connectTimeout > 0)
         {
-            this.setTimeout(function()
+            connectTimer = this.setTimeout(function()
             {
-                self._debug('Transport', self.getType(), 'timed out while connecting to URL', url, ':', connectTimeout, 'ms');
-                self.onClose(1002, 'Connect Timeout');
+                connectTimer = null;
+                if (!_opened)
+                {
+                    self._debug('Transport', self.getType(), 'timed out while connecting to URL', url, ':', connectTimeout, 'ms');
+                    self.onClose(1002, 'Connect Timeout');
+                }
             }, connectTimeout);
         }
 
@@ -38,6 +43,11 @@ org.cometd.WebSocketTransport = function()
         webSocket.onopen = function()
         {
             self._debug('WebSocket opened', webSocket);
+            if (connectTimer)
+            {
+                self.clearTimeout(connectTimer);
+                connectTimer = null;
+            }
             if (webSocket !== _webSocket)
             {
                 // It's possible that the onopen callback is invoked
@@ -52,6 +62,11 @@ org.cometd.WebSocketTransport = function()
             var code = event ? event.code : 1000;
             var reason = event ? event.reason : undefined;
             self._debug('WebSocket closed', code, '/', reason, webSocket);
+            if (connectTimer)
+            {
+                self.clearTimeout(connectTimer);
+                connectTimer = null;
+            }
             if (webSocket !== _webSocket)
             {
                 // The onclose callback may be invoked when the server sends
