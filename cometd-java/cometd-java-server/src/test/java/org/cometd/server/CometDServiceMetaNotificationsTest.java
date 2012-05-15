@@ -28,7 +28,7 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class BayeuxServiceMetaNotificationsTest extends AbstractBayeuxClientServerTest
+public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServerTest
 {
     @Test
     public void testMetaNotifications() throws Exception

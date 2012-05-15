@@ -17,10 +17,11 @@
 package org.cometd.server;
 
 import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.cometd.bayeux.Bayeux;
-import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Session;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
@@ -33,102 +34,106 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/* ------------------------------------------------------------ */
 /**
- * Abstract Bayeux Service
- * <p>
- * This class provides convenience methods to assist with the
- * creation of a Bayeux Services typically used to provide the
- * behaviour associated with a service channel (see {@link Channel#isService()}).
- * Specifically it provides: <ul>
- * <li>Mapping of channel subscriptions to method invocation on the derived service
- * class.
- * <li>Optional use of a thread pool used for method invocation if handling can take
- * considerable time and it is desired not to hold up the delivering thread
- * (typically a HTTP request handling thread).
+ * <p>{@link AbstractService} provides convenience methods to assist with the
+ * creation of a CometD services.</p>
+ * <p>A CometD service runs application code whenever a message is received on
+ * a particular channel.</p>
+ * <p>Specifically it provides:</p>
+ * <ul>
+ * <li>Mapping of channel subscriptions to method invocation on the derived
+ * service class.</li>
+ * <li>Optional use of a thread pool used for method invocation if handling
+ * can take considerable time and it is desired not to hold up the delivering
+ * thread (typically a HTTP request handling thread).</li>
  * <li>The objects returned from method invocation are delivered back to the
- * calling client in a private message.
+ * calling client in a private message.</li>
  * </ul>
+ * <p>Subclasses should call {@link #addService(String, String)} in order to
+ * map channel subscriptions to method invocations, usually in the subclass
+ * constructor.</p>
+ * <p>Each CometD service has an associated {@link LocalSession} that can be
+ * used as the source for messages published via
+ * {@link ServerChannel#publish(Session, Mutable)} or
+ * {@link ServerSession#deliver(Session, Mutable)}.</p>
  *
- * @see {@link BayeuxServer#getSession(String)} as an alternative to AbstractService.
+ * @see {@link BayeuxServer#newLocalSession(String)} as an alternative to {@link AbstractService}.
  */
 public abstract class AbstractService
 {
     protected final Logger _logger = LoggerFactory.getLogger(getClass());
+    private final Map<String, Invoker> invokers = new ConcurrentHashMap<String, Invoker>();
     private final String _name;
     private final BayeuxServerImpl _bayeux;
     private final LocalSession _session;
     private ThreadPool _threadPool;
-    private boolean _seeOwn=false;
+    private boolean _seeOwn = false;
 
-    /* ------------------------------------------------------------ */
     /**
-     * Instantiate the service. Typically the derived constructor will call @
-     * #subscribe(String, String)} to map subscriptions to methods.
+     * <p>Instantiates a CometD service with the given name.</p>
      *
-     * @param bayeux
-     *            The bayeux instance.
-     * @param name
-     *            The name of the service (used as client ID prefix).
+     * @param bayeux The BayeuxServer instance.
+     * @param name   The name of the service (used as client ID prefix).
      */
     public AbstractService(BayeuxServer bayeux, String name)
     {
-        this(bayeux,name,0);
+        this(bayeux, name, 0);
     }
 
-
-    /* ------------------------------------------------------------ */
     /**
-     * Instantiate the service. Typically the derived constructor will call @
-     * #subscribe(String, String)} to map subscriptions to methods.
+     * <p>Instantiate a CometD service with the given name and max number of pooled threads.</p>
      *
-     * @param bayeux
-     *            The bayeux instance.
-     * @param name
-     *            The name of the service (used as client ID prefix).
-     * @param maxThreads
-     *            The size of a ThreadPool to create to handle messages.
+     * @param bayeux     The BayeuxServer instance.
+     * @param name       The name of the service (used as client ID prefix).
+     * @param maxThreads The max size of a ThreadPool to create to handle messages.
      */
     public AbstractService(BayeuxServer bayeux, String name, int maxThreads)
     {
-        _name=name;
-        _bayeux=(BayeuxServerImpl)bayeux;
-        _session=_bayeux.newLocalSession(name);
+        _name = name;
+        _bayeux = (BayeuxServerImpl)bayeux;
+        _session = _bayeux.newLocalSession(name);
         _session.handshake();
         if (maxThreads > 0)
             setThreadPool(new QueuedThreadPool(maxThreads));
     }
 
-    /* ------------------------------------------------------------ */
     public BayeuxServer getBayeux()
     {
         return _bayeux;
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * @return The {@link LocalSession} associated with this CometD service
+     */
     public LocalSession getLocalSession()
     {
         return _session;
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * @return The {@link ServerSession} of the {@link LocalSession} associated
+     *         with this CometD service
+     */
     public ServerSession getServerSession()
     {
         return _session.getServerSession();
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * @return The thread pool associated with this CometD service, or null
+     * @see #AbstractService(BayeuxServer, String, int)
+     */
     public ThreadPool getThreadPool()
     {
         return _threadPool;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Set the thread pool. If the {@link ThreadPool} is a {@link LifeCycle},
-     * then it is started by this method.
+     * <p>Sets the thread pool associated to this CometD service.</p>
+     * <p>If the {@link ThreadPool} is a {@link LifeCycle} instance,
+     * and it is not already started, then it will started.</p>
      *
-     * @param pool The thread pool to set
+     * @param pool The ThreadPool
      */
     public void setThreadPool(ThreadPool pool)
     {
@@ -138,162 +143,186 @@ public abstract class AbstractService
                 if (!((LifeCycle)pool).isStarted())
                     ((LifeCycle)pool).start();
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             throw new IllegalStateException(e);
         }
-        _threadPool=pool;
+        _threadPool = pool;
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * @return whether this CometD service receives messages published by itself
+     *         on channels it is subscribed to (defaults to false).
+     * @see #setSeeOwnPublishes(boolean)
+     */
     public boolean isSeeOwnPublishes()
     {
         return _seeOwn;
     }
 
-    /* ------------------------------------------------------------ */
-    public void setSeeOwnPublishes(boolean own)
+    /**
+     * @param seeOwnPublishes whether this CometD service receives messages published by itself
+     *                        on channels it is subscribed to (defaults to false).
+     * @see #isSeeOwnPublishes()
+     */
+    public void setSeeOwnPublishes(boolean seeOwnPublishes)
     {
-        _seeOwn=own;
+        _seeOwn = seeOwnPublishes;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Add a service.
-     * <p>Listen to a channel and map a method to handle
-     * received messages. The method must have a unique name and one of the
-     * following signatures:
+     * <p>Maps the method of a subclass with the given name to a
+     * {@link ServerChannel.MessageListener} on the given channel, so that the method
+     * is invoked for each message received on the channel.</p>
+     * <p>The channel name may be a {@link ServerChannel#isWild() wildcard channel name}.</p>
+     * <p>The method must have a unique name and one of the following signatures:</p>
      * <ul>
-     * <li><code>myMethod(ServerSession from,Object data)</code></li>
-     * <li><code>myMethod(ServerSession from,Object data,String|Object id)</code></li>
-     * <li><code>myMethod(ServerSession from,String channel,Object data,String|Object id)</code>
-     * </li>
-     * </li>
+     * <li><code>myMethod(ServerSession from, Object data)</code></li>
+     * <li><code>myMethod(ServerSession from, Object data, String messageId)</code></li>
+     * <li><code>myMethod(ServerSession from, String channel, Object data, String messageId)</code></li>
+     * </ul>
+     * <p>The <code>data</code> parameter can be a specific type if the type of
+     * the data object published by the client is known by the server.
+     * If it is not known will be Map&lt;String, Object&gt;.</p>
+     * <p>If the type of the data parameter is {@link Message} (or a subinterface
+     * such as {@link ServerMessage.Mutable} then the message object itself is
+     * passed rather than just the message's data.</p>
+     * <p>Typically a service will be used to a channel in the <code>/service/**</code>
+     * space which is not a broadcast channel.</p>
+     * <p>Any object returned by a mapped method is delivered back to the
+     * client that sent the message and not broadcasted. If the method returns void or null,
+     * then no response is sent.</p>
+     * <p>A mapped method may also call {@link #send(ServerSession, String, Object, String)}
+     * to deliver message(s) to specific clients and/or channels.</p>
+     * <p>A mapped method may also publish to different channels via
+     * {@link ServerChannel#publish(Session, Mutable)}.</p>
      *
-     * The data parameter can be typed if the type of the data object published
-     * by the client is known (typically Map<String,Object>). If the type of the
-     * data parameter is {@link Message} then the message object itself is
-     * passed rather than just the data.
-     * <p>
-     * Typically a service will be used to a channel in the "/service/**"
-     * space which is not a broadcast channel. Messages published to these
-     * channels are only delivered to server side clients like this service.
-     * <p>
-     * Any object returned by a mapped subscription method is delivered to the
-     * calling client and not broadcast. If the method returns void or null,
-     * then no response is sent. A mapped subscription method may also call
-     * {@link #send(ServerSession, String, Object, String)} to deliver a response
-     * message(s) to different clients and/or channels. It may also publish
-     * methods via the normal {@link Bayeux} API.
-     * <p>
-     *
-     *
-     * @param channelId
-     *            The channel to subscribe to
-     * @param methodName
-     *            The name of the method on this object to call when messages
-     *            are received.
+     * @param channelName The channel to listen to
+     * @param methodName  The name of the method on this subclass to call when messages
+     *                    are received on the channel
+     * @see #removeService(String, String)
      */
-    protected void addService(String channelId, String methodName)
+    protected void addService(String channelName, String methodName)
     {
-        _logger.debug("Subscribing {}#{} to {}", new Object[]{_name, methodName, channelId});
+        _logger.debug("Mapping {}#{} to {}", new Object[]{_name, methodName, channelName});
 
-        Method method=null;
+        Method method = null;
 
-        Class<?> c=this.getClass();
-        while(c != null && c != Object.class)
+        Class<?> c = this.getClass();
+        while (c != null && c != Object.class)
         {
-            Method[] methods=c.getDeclaredMethods();
-            for (int i=methods.length; i-- > 0;)
+            Method[] methods = c.getDeclaredMethods();
+            for (int i = methods.length; i-- > 0; )
             {
                 if (methodName.equals(methods[i].getName()))
                 {
                     if (method != null)
                         throw new IllegalArgumentException("Multiple methods called '" + methodName + "'");
-                    method=methods[i];
+                    method = methods[i];
                 }
             }
-            c=c.getSuperclass();
+            c = c.getSuperclass();
         }
 
         if (method == null)
             throw new NoSuchMethodError(methodName);
-        int params=method.getParameterTypes().length;
+        int params = method.getParameterTypes().length;
         if (params < 2 || params > 4)
             throw new IllegalArgumentException("Method '" + methodName + "' does not have 2, 3 or 4 parameters");
         if (!ServerSession.class.isAssignableFrom(method.getParameterTypes()[0]))
             throw new IllegalArgumentException("Method '" + methodName + "' does not have Session as first parameter");
 
-        _bayeux.createIfAbsent(channelId);
-        ServerChannel channel=_bayeux.getChannel(channelId);
-
-        final Method invoke=method;
-        channel.addListener(new ServerChannel.MessageListener()
-        {
-            public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
-            {
-                if (_seeOwn || from != getServerSession())
-                    invoke(invoke,from,message);
-
-                return true;
-            }
-        });
-
+        _bayeux.createIfAbsent(channelName);
+        ServerChannel channel = _bayeux.getChannel(channelName);
+        Invoker invoker = new Invoker(channelName, method);
+        invokers.put(methodName, invoker);
+        channel.addListener(invoker);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Send data to a individual client. The data passed is sent to the client
+     * <p>Unmaps the method with the given name that has been mapped to the given channel.</p>
+     *
+     * @param channelName The channel name
+     * @param methodName  The name of the method to unmap
+     * @see #addService(String, String)
+     * @see #removeService(String)
+     */
+    protected void removeService(String channelName, String methodName)
+    {
+        ServerChannel channel = _bayeux.getChannel(channelName);
+        if (channel != null)
+        {
+            Invoker invoker = invokers.remove(methodName);
+            channel.removeListener(invoker);
+        }
+    }
+
+    /**
+     * <p>Unmaps all the methods that have been mapped to the given channel.</p>
+     *
+     * @param channelName The channel name
+     * @see #addService(String, String)
+     * @see #removeService(String, String)
+     */
+    protected void removeService(String channelName)
+    {
+        ServerChannel channel = _bayeux.getChannel(channelName);
+        if (channel != null)
+        {
+            for (Invoker invoker : invokers.values())
+            {
+                if (invoker.channelName.equals(channelName))
+                    channel.removeListener(invoker);
+            }
+        }
+    }
+
+    /**
+     * <p>Sends data to an individual remote client.</p>
+     * <p>The data passed is sent to the client
      * as the "data" member of a message with the given channel and id. The
      * message is not published on the channel and is thus not broadcast to all
-     * channel subscribers. However to the target client, the message appears as
-     * if it was broadcast.
-     * <p>
-     * Typically this method is only required if a service method sends
-     * response(s) to channels other than the subscribed channel. If the
-     * response is to be sent to the subscribed channel, then the data can
-     * simply be returned from the subscription method.
+     * channel subscribers, but instead delivered directly to the target client.</p>
+     * <p>Typically this method is only required if a service method sends
+     * response(s) to clients other than the sender, or on different channels.
+     * If the response is to be sent to the sender on the same channel,
+     * then the data can simply be the return value of the method.</p>
      *
-     * @param toClient
-     *            The target client
-     * @param onChannel
-     *            The channel the message is for
-     * @param data
-     *            The data of the message
-     * @param id
-     *            The id of the message (or null for a random id).
+     * @param toClient  The target client
+     * @param onChannel The channel of the message
+     * @param data      The data of the message
+     * @param id        The id of the message (or null for a random id).
      */
     protected void send(ServerSession toClient, String onChannel, Object data, String id)
     {
-        toClient.deliver(_session.getServerSession(),onChannel,data,id);
+        toClient.deliver(_session.getServerSession(), onChannel, data, id);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Handle Exception. This method is called when a mapped subscription method
-     * throws and exception while handling a message.
+     * <p>Handles exceptions during the invocation of a mapped method.</p>
+     * <p>This method is called when a mapped method throws and exception while handling a message.</p>
      *
-     * @param method the name of the method invoked that threw an exception
+     * @param method     the name of the method invoked that threw an exception
      * @param fromClient the remote session that sent the message
-     * @param toClient the local session associated to this service
-     * @param msg the message sent by the remote session
-     * @param x the exception thrown
+     * @param toClient   the local session associated to this service
+     * @param msg        the message sent by the remote session
+     * @param x          the exception thrown
      */
     protected void exception(String method, ServerSession fromClient, LocalSession toClient, ServerMessage msg, Throwable x)
     {
         _logger.info("Exception while invoking " + _name + "#" + method + " from " + fromClient + " with " + msg, x);
     }
 
-    /* ------------------------------------------------------------ */
     private void invoke(final Method method, final ServerSession fromClient, final ServerMessage msg)
     {
         _logger.debug("Invoking {}#{} from {} with {}", new Object[]{_name, method.getName(), fromClient, msg});
 
-        if (_threadPool == null)
-            doInvoke(method,fromClient,msg);
+        ThreadPool threadPool = getThreadPool();
+        if (threadPool == null)
+            doInvoke(method, fromClient, msg);
         else
         {
-            _threadPool.dispatch(new Runnable()
+            threadPool.dispatch(new Runnable()
             {
                 public void run()
                 {
@@ -303,7 +332,6 @@ public abstract class AbstractService
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected void doInvoke(Method method, ServerSession fromClient, ServerMessage msg)
     {
         String channel = msg.getChannel();
@@ -354,6 +382,25 @@ public abstract class AbstractService
             {
                 exception(method.toString(), fromClient, _session, msg, e);
             }
+        }
+    }
+
+    private class Invoker implements ServerChannel.MessageListener
+    {
+        private final String channelName;
+        private final Method method;
+
+        public Invoker(String channelName, Method method)
+        {
+            this.channelName = channelName;
+            this.method = method;
+        }
+
+        public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
+        {
+            if (isSeeOwnPublishes() || from != getServerSession())
+                invoke(method, from, message);
+            return true;
         }
     }
 }
