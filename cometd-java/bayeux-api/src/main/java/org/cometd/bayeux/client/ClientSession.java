@@ -16,6 +16,7 @@
 
 package org.cometd.bayeux.client;
 
+import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
@@ -42,6 +43,12 @@ public interface ClientSession extends Session
      * @see #addExtension(Extension)
      */
     void removeExtension(Extension extension);
+
+    /**
+     * @return an immutable list of extensions present in this ClientSession instance
+     * @see #addExtension(Extension)
+     */
+    List<Extension> getExtensions();
 
     /**
      * <p>Equivalent to {@link #handshake(Map) handshake(null)}.</p>
