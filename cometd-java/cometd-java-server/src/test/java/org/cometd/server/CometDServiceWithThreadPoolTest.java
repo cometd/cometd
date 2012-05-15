@@ -28,7 +28,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class BayeuxServiceWithThreadPoolTest extends AbstractBayeuxClientServerTest
+public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerTest
 {
     @Test
     public void testBayeuxServiceWithThreadPool() throws Exception
