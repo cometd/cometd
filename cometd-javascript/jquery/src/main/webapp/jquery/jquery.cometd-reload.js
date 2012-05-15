@@ -28,7 +28,6 @@
 
         var result = new ReloadExtension();
         cometd.registerExtension('reload', result);
-
         return result;
     }
 
@@ -40,5 +39,4 @@
     {
         bind(org.cometd, $.cookie, org.cometd.ReloadExtension, $.cometd);
     }
-
 })(jQuery);

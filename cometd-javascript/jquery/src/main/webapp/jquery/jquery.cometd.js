@@ -136,5 +136,4 @@
     {
         bind($, org.cometd);
     }
-
 })(jQuery);
