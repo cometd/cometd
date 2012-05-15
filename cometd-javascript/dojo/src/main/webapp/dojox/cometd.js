@@ -14,13 +14,6 @@
  * limitations under the License.
  */
 
-// TODO: is this still needed ? => dojo.registerModulePath('org','../org');
-// TODO: seems not, because we use tlmSiblingOfDojo: true and we achieve the same effect
-
-require({
-    packages: [{name: 'org', location: '../org'}]
-});
-
 define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/io/script', 'dojo/topic'],
         function(org_cometd, JSON, dojox, dojoXHR, dojoSCRIPT, topic)
 {
@@ -39,7 +32,7 @@ define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/io/script', 
 
             that.xhrSend = function(packet)
             {
-                var deferred = dojoXHR.rawXhrPost({
+                var deferred = dojoXHR.post({
                     url: packet.url,
                     sync: packet.sync === true,
                     contentType: 'application/json;charset=UTF-8',

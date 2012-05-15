@@ -287,7 +287,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         {
             if (!aborted)
             {
-                log("Completed {}", this);
+                log("Completed ({}) {}", getResponseStatus(), this);
                 responseText = getResponseContent();
                 readyState = ReadyState.DONE;
                 if (async)

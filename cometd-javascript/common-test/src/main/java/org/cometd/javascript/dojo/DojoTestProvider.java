@@ -23,16 +23,18 @@ import org.cometd.javascript.ThreadModel;
 
 public class DojoTestProvider implements TestProvider
 {
-    public void provideCometD(ThreadModel threadModel, String contextURL) throws Exception
+    public void provideCometD(ThreadModel threadModel, String fullContextURL) throws Exception
     {
         // Order of the script evaluation is important, as they depend one from the other
-        threadModel.evaluate(new URL(contextURL + "/env.js"));
-        threadModel.evaluate("window_location", "window.location = '" + contextURL + "'");
-        threadModel.evaluate(new URL(contextURL + "/dojo/dojo.js.uncompressed.js"));
-        threadModel.evaluate(new URL(contextURL + "/dojo/io/script.js"));
-        threadModel.evaluate(new URL(contextURL + "/org/cometd.js"));
-        threadModel.evaluate(new URL(contextURL + "/dojox/cometd.js"));
-        threadModel.evaluate("cometd", "var cometd = dojox.cometd;");
+        threadModel.evaluate(new URL(fullContextURL + "/env.js"));
+        threadModel.evaluate("window_location", "window.location = '" + fullContextURL + "'");
+        String dojoBaseURL = "/dojo";
+        threadModel.evaluate(new URL(fullContextURL + dojoBaseURL + "/dojo.js.uncompressed.js"));
+        threadModel.evaluate("cometd", "var cometd;" +
+                "require({" +
+                "    packages: [{name: 'org', location: '../org'}]," +
+                "    baseUrl: '" + dojoBaseURL + "'" +
+                "}, ['dojox/cometd'], function(c) { cometd = c; });");
         threadModel.evaluate("original_transports", "" +
                 "var originalTransports = {};" +
                 "var transportNames = cometd.getTransportTypes();" +
@@ -49,28 +51,21 @@ public class DojoTestProvider implements TestProvider
 
     public void provideMessageAcknowledgeExtension(ThreadModel threadModel, String contextURL) throws Exception
     {
-        threadModel.evaluate(new URL(contextURL + "/org/cometd/AckExtension.js"));
-        threadModel.evaluate(new URL(contextURL + "/dojox/cometd/ack.js"));
+        threadModel.evaluate("ack extension", "require(['dojox/cometd/ack']);");
     }
 
     public void provideReloadExtension(ThreadModel threadModel, String contextURL) throws Exception
     {
-        // dojo.regexp is required by dojo.cookie
-        threadModel.evaluate(new URL(contextURL + "/dojo/regexp.js"));
-        threadModel.evaluate(new URL(contextURL + "/dojo/cookie.js"));
-        threadModel.evaluate(new URL(contextURL + "/org/cometd/ReloadExtension.js"));
-        threadModel.evaluate(new URL(contextURL + "/dojox/cometd/reload.js"));
+        threadModel.evaluate("reload extension", "require(['dojox/cometd/reload']);");
     }
 
     public void provideTimestampExtension(ThreadModel threadModel, String contextURL) throws Exception
     {
-        threadModel.evaluate(new URL(contextURL + "/org/cometd/TimeStampExtension.js"));
-        threadModel.evaluate(new URL(contextURL + "/dojox/cometd/timestamp.js"));
+        threadModel.evaluate("timestamp extension", "require(['dojox/cometd/timestamp']);");
     }
 
     public void provideTimesyncExtension(ThreadModel threadModel, String contextURL) throws Exception
     {
-        threadModel.evaluate(new URL(contextURL + "/org/cometd/TimeSyncExtension.js"));
-        threadModel.evaluate(new URL(contextURL + "/dojox/cometd/timesync.js"));
+        threadModel.evaluate("timesync extension", "require(['dojox/cometd/timesync']);");
     }
 }
