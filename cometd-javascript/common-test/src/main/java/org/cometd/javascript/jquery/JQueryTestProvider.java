@@ -26,10 +26,10 @@ public class JQueryTestProvider implements TestProvider
     public void provideCometD(ThreadModel threadModel, String contextURL) throws Exception
     {
         // Order of the script evaluation is important, as they depend one from the other
+        threadModel.evaluate(new URL(contextURL + "/json2.js"));
         threadModel.evaluate(new URL(contextURL + "/env.js"));
         threadModel.evaluate("window_location", "window.location = '" + contextURL + "'");
         threadModel.evaluate(new URL(contextURL + "/jquery/jquery-1.7.1.js"));
-        threadModel.evaluate(new URL(contextURL + "/jquery/json2.js"));
         threadModel.evaluate(new URL(contextURL + "/org/cometd.js"));
         threadModel.evaluate(new URL(contextURL + "/jquery/jquery.cometd.js"));
         threadModel.evaluate("cometd", "var cometd = $.cometd;");
