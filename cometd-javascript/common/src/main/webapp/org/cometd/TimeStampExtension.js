@@ -14,22 +14,29 @@
  * limitations under the License.
  */
 
-/**
- * The timestamp extension adds the optional timestamp field to all outgoing messages.
- */
-org.cometd.TimeStampExtension = function()
+(function()
 {
-    this.outgoing = function(message)
+    function bind(org_cometd)
     {
-        message.timestamp = new Date().toUTCString();
-        return message;
-    };
-};
+        /**
+         * The timestamp extension adds the optional timestamp field to all outgoing messages.
+         */
+        return org_cometd.TimeStampExtension = function()
+        {
+            this.outgoing = function(message)
+            {
+                message.timestamp = new Date().toUTCString();
+                return message;
+            };
+        };
+    }
 
-if (typeof define === 'function' && define.amd)
-{
-    define(function()
+    if (typeof define === 'function' && define.amd)
     {
-        return org.cometd.TimeStampExtension;
-    });
-}
+        define(['org/cometd'], bind);
+    }
+    else
+    {
+        bind(org.cometd);
+    }
+}());
