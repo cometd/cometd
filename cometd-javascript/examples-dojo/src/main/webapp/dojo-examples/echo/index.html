@@ -4,6 +4,7 @@
     <title>Comet echo RPC</title>
     <script type="text/javascript" src="../../dojo/dojo.js"></script>
     <script type="text/javascript">
+        dojo.registerModulePath("org", "../org");
         dojo.require("dojox.cometd");
         dojo.require("dojox.cometd.timestamp");
         $ = dojo.byId;
@@ -88,7 +89,7 @@
 </p>
 
 <div>
-    Echo: <input id="phrase" type="text"></input>
+    <label for="phrase">Echo: </label><input id="phrase" type="text" />
     <input id="sendB" class="button" type="submit" name="join" value="Send"/>
 </div>
 <pre id="responses"></pre>
