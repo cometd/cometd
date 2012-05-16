@@ -1,15 +1,12 @@
 require({
+    baseUrl: '../../jquery',
     paths: {
-        jquery: '../../jquery/jquery-1.7.1',
-        json: '../../jquery/json2',
-        org: '../../org',
-        'jquery.cometd': '../../jquery/jquery.cometd',
-        'jquery.cookie': '../../jquery/jquery.cookie',
-        'jquery.cometd-reload': '../../jquery/jquery.cometd-reload'
+        jquery: 'jquery-1.7.1',
+        org: '../org'
     }
 },
-['jquery', 'json', 'jquery.cometd', 'jquery.cometd-reload'],
-function($, undefined, cometd)
+['jquery', 'jquery.cometd', 'jquery.cometd-reload'],
+function($, cometd)
 {
     $(document).ready(function()
     {
