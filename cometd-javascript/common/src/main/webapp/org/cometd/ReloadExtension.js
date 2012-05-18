@@ -60,7 +60,7 @@
                 if (_state && _state.handshakeResponse !== null)
                 {
                     _configure(config);
-
+                    _state.cookiePath = _cookiePath;
                     var cookie = org_cometd.JSON.toJSON(_state);
                     _debug('Reload extension saving cookie value', cookie);
                     org_cometd.COOKIE.set(_cookieName, cookie, {
@@ -131,16 +131,16 @@
                     {
                         try
                         {
+                            var oldState = org_cometd.JSON.fromJSON(cookie);
+
                             // Remove the cookie, not needed anymore
                             org_cometd.COOKIE.set(_cookieName, '', {
                                 'max-age': -1,
-                                path: _cookiePath,
+                                path: oldState.cookiePath,
                                 expires: -1
                             });
 
-                            var oldState = org_cometd.JSON.fromJSON(cookie);
-
-                            if (oldState && oldState.handshakeResponse && _similarState(oldState))
+                            if (oldState.handshakeResponse && _similarState(oldState))
                             {
                                 _debug('Reload extension restoring state', oldState);
                                 setTimeout(function()
