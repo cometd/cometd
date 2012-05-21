@@ -72,6 +72,17 @@
         </dependency>
         <dependency>
             <groupId>org.cometd.java</groupId>
+            <artifactId>cometd-websocket-jetty</artifactId>
+            <version>${cometdVersion}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.cometd.java</groupId>
+                    <artifactId>cometd-java-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.cometd.java</groupId>
             <artifactId>cometd-java-annotations</artifactId>
             <version>${cometdVersion}</version>
         </dependency>
