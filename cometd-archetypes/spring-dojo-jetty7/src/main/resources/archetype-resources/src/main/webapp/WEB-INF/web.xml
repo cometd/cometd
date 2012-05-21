@@ -10,6 +10,10 @@
     <servlet>
         <servlet-name>cometd</servlet-name>
         <servlet-class>org.cometd.server.CometdServlet</servlet-class>
+        <init-param>
+            <param-name>transports</param-name>
+            <param-value>org.cometd.websocket.server.WebSocketTransport</param-value>
+        </init-param>
     </servlet>
     <servlet-mapping>
         <servlet-name>cometd</servlet-name>

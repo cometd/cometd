@@ -1,22 +1,19 @@
-dojo.require("dojox.cometd");
-
-dojo.addOnLoad(function()
+require(['dojo/dom', 'dojo/_base/unload', 'dojox/cometd', 'dojo/domReady!'],
+function(dom, unloader, cometd)
 {
-    var cometd = dojox.cometd;
-
     function _connectionEstablished()
     {
-        dojo.byId('body').innerHTML += '<div>CometD Connection Established</div>';
+        dom.byId('body').innerHTML += '<div>CometD Connection Established</div>';
     }
 
     function _connectionBroken()
     {
-        dojo.byId('body').innerHTML += '<div>CometD Connection Broken</div>';
+        dom.byId('body').innerHTML += '<div>CometD Connection Broken</div>';
     }
 
     function _connectionClosed()
     {
-        dojo.byId('body').innerHTML += '<div>CometD Connection Closed</div>';
+        dom.byId('body').innerHTML += '<div>CometD Connection Closed</div>';
     }
 
     // Function that manages the connection status with the Bayeux server
@@ -52,7 +49,7 @@ dojo.addOnLoad(function()
             {
                 cometd.subscribe('/hello', function(message)
                 {
-                    dojo.byId('body').innerHTML += '<div>Server Says: ' + message.data.greeting + '</div>';
+                    dom.byId('body').innerHTML += '<div>Server Says: ' + message.data.greeting + '</div>';
                 });
                 // Publish on a service channel since the message is for the server only
                 cometd.publish('/service/hello', { name: 'World' });
@@ -61,7 +58,7 @@ dojo.addOnLoad(function()
     }
 
     // Disconnect when the page unloads
-    dojo.addOnUnload(function()
+    unloader.addOnUnload(function()
     {
         cometd.disconnect(true);
     });
