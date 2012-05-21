@@ -8,9 +8,9 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>cometd-archetype-jquery-jetty6</artifactId>
+    <artifactId>cometd-archetype-jquery-jetty8</artifactId>
     <packaging>maven-archetype</packaging>
-    <name>CometD :: Archetypes :: jQuery and Jetty6</name>
+    <name>CometD :: Archetypes :: jQuery and Jetty8</name>
 
     <build>
         <resources>

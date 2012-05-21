@@ -19,12 +19,12 @@
     </properties>
 
     <modules>
-        <module>jquery-jetty6</module>
         <module>dojo-jetty7</module>
+        <module>spring-dojo-jetty7</module>
         <module>dojo-jetty8</module>
         <module>jquery-jetty7</module>
-        <module>spring-dojo-jetty7</module>
         <module>spring-jquery-jetty7</module>
+        <module>jquery-jetty8</module>
     </modules>
 
     <build>

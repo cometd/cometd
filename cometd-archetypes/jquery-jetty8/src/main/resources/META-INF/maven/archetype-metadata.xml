@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<archetype-descriptor name="cometd-archetype-jquery-jetty6">
+<archetype-descriptor name="cometd-archetype-jquery-jetty8">
     <requiredProperties>
         <requiredProperty key="jettyVersion">
-            <defaultValue>6.1.26</defaultValue>
+            <defaultValue>${jetty8-version}</defaultValue>
         </requiredProperty>
         <requiredProperty key="cometdVersion">
             <defaultValue>${project.version}</defaultValue>
