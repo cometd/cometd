@@ -8,9 +8,9 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>cometd-archetype-dojo-jetty6</artifactId>
+    <artifactId>cometd-archetype-dojo-jetty8</artifactId>
     <packaging>maven-archetype</packaging>
-    <name>CometD :: Archetypes :: Dojo and Jetty6</name>
+    <name>CometD :: Archetypes :: Dojo and Jetty8</name>
 
     <build>
         <resources>

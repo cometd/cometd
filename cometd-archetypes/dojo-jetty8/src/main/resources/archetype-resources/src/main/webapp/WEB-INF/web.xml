@@ -4,12 +4,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://java.sun.com/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
-         version="2.5">
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+         version="3.0">
 
     <servlet>
         <servlet-name>cometd</servlet-name>
         <servlet-class>org.cometd.server.CometdServlet</servlet-class>
+        <init-param>
+            <param-name>transports</param-name>
+            <param-value>org.cometd.websocket.server.WebSocketTransport</param-value>
+        </init-param>
+        <async-supported>true</async-supported>
         <load-on-startup>1</load-on-startup>
     </servlet>
     <servlet-mapping>
@@ -24,11 +29,12 @@
     </servlet>
 
     <filter>
-        <filter-name>continuation</filter-name>
-        <filter-class>org.eclipse.jetty.continuation.ContinuationFilter</filter-class>
+        <filter-name>cross-origin</filter-name>
+        <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+        <async-supported>true</async-supported>
     </filter>
     <filter-mapping>
-        <filter-name>continuation</filter-name>
+        <filter-name>cross-origin</filter-name>
         <url-pattern>/cometd/*</url-pattern>
     </filter-mapping>
 
