@@ -27,6 +27,9 @@ import javax.servlet.ServletContext;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.java.annotation.ServerAnnotationProcessor;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.transport.JSONPTransport;
+import org.cometd.server.transport.JSONTransport;
+import org.cometd.websocket.server.WebSocketTransport;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.context.annotation.Bean;
@@ -78,7 +81,7 @@ public class BayeuxInitializer implements DestructionAwareBeanPostProcessor, Ser
     public BayeuxServer bayeuxServer()
     {
         BayeuxServerImpl bean = new BayeuxServerImpl();
-        bean.setOption(BayeuxServerImpl.LOG_LEVEL, "3");
+        bean.setTransports(new WebSocketTransport(bean), new JSONTransport(bean), new JSONPTransport(bean));
         return bean;
     }
 
