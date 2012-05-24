@@ -1,5 +1,14 @@
-require(['dojox/cometd', 'dojo/dom', 'dojo/_base/unload', 'dojox/cometd/reload'],
-        function(cometd, dom, unload)
+require({
+        packages: [{
+            name: 'dojox',
+            location: '/dojox'
+        },{
+            name: 'org',
+            location: '/org'
+        }]
+    },
+    ['dojox/cometd', 'dojo/dom', 'dojo/_base/unload', 'dojox/cometd/reload'],
+    function(cometd, dom, unload)
 {
     /* handshake listener to report client IDs */
     cometd.addListener("/meta/handshake", function (message)
