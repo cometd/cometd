@@ -300,5 +300,31 @@ public interface BayeuxServer extends Bayeux
          * @return true if message processing should continue, false if it should stop
          */
         boolean sendMeta(ServerSession to, ServerMessage.Mutable message);
+
+        /**
+         * Empty implementation of {@link Extension}.
+         */
+        public static class Adapter implements Extension
+        {
+            public boolean rcv(ServerSession from, ServerMessage.Mutable message)
+            {
+                return true;
+            }
+
+            public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
+            {
+                return true;
+            }
+
+            public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
+            {
+                return true;
+            }
+
+            public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
+            {
+                return true;
+            }
+        }
     }
 }

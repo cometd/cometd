@@ -80,27 +80,13 @@ public class CometDWebSocketUnsubscribeFailureTest extends AbstractCometDWebSock
         evaluateScript("cometd.disconnect(true);");
     }
 
-    public static class UnsubscribeThrowingExtension implements BayeuxServer.Extension
+    public static class UnsubscribeThrowingExtension extends BayeuxServer.Extension.Adapter
     {
-        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
+        @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
             if (Channel.META_UNSUBSCRIBE.equals(message.getChannel()))
                 throw new Error("explicitly_thrown_by_test");
-            return true;
-        }
-
-        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
-        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-        {
             return true;
         }
     }

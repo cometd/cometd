@@ -78,15 +78,11 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTest
         evaluateScript("cometd.disconnect(true);");
     }
 
-    public static class ConnectThrowingExtension implements BayeuxServer.Extension
+    public static class ConnectThrowingExtension extends BayeuxServer.Extension.Adapter
     {
         private int connects;
 
-        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
+        @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
             if (Channel.META_CONNECT.equals(message.getChannel()))
@@ -95,16 +91,6 @@ public class CometDConnectTemporaryFailureTest extends AbstractCometDTest
                 if (connects == 3)
                     throw new Error("explicitly_thrown_by_test");
             }
-            return true;
-        }
-
-        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
-        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-        {
             return true;
         }
     }

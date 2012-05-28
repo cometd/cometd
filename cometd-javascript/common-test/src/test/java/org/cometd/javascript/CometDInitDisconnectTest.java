@@ -65,23 +65,9 @@ public class CometDInitDisconnectTest extends AbstractCometDTest
     public void testHandshakeDisconnect() throws Exception
     {
         final CountDownLatch removeLatch = new CountDownLatch(1);
-        bayeuxServer.addExtension(new BayeuxServer.Extension()
+        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter()
         {
-            public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-            {
-                return true;
-            }
-
-            public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-            {
-                return true;
-            }
-
-            public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-            {
-                return true;
-            }
-
+            @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
             {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel()))

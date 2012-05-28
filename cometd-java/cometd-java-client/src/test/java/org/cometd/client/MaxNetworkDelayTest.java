@@ -54,8 +54,9 @@ public class MaxNetworkDelayTest extends ClientServerTest
         final long maxNetworkDelay = 2000;
         final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
 
-        bayeux.addExtension(new EmptyExtension()
+        bayeux.addExtension(new BayeuxServer.Extension.Adapter()
         {
+            @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
             {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel()))
@@ -109,10 +110,11 @@ public class MaxNetworkDelayTest extends ClientServerTest
         final long maxNetworkDelay = 2000;
         final long sleep = maxNetworkDelay + maxNetworkDelay / 2;
 
-        bayeux.addExtension(new EmptyExtension()
+        bayeux.addExtension(new BayeuxServer.Extension.Adapter()
         {
             private AtomicInteger connects = new AtomicInteger();
 
+            @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
             {
                 if (Channel.META_CONNECT.equals(message.getChannel()))
@@ -170,28 +172,5 @@ public class MaxNetworkDelayTest extends ClientServerTest
         assertTrue(end - begin > TimeUnit.MILLISECONDS.toNanos(timeout));
 
         disconnectBayeuxClient(client);
-    }
-
-    private class EmptyExtension implements BayeuxServer.Extension
-    {
-        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
-        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
-        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
-        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-        {
-            return true;
-        }
     }
 }

@@ -82,7 +82,7 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
         evaluateScript("cometd.disconnect(true);");
     }
 
-    private class DelayingExtension implements BayeuxServer.Extension
+    private class DelayingExtension extends BayeuxServer.Extension.Adapter
     {
         private final AtomicInteger connects = new AtomicInteger();
         private final long delay;
@@ -92,11 +92,7 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
             this.delay = delay;
         }
 
-        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
+        @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
             if (Channel.META_CONNECT.equals(message.getChannel()))
@@ -114,16 +110,6 @@ public class CometDWebSocketMaxNetworkDelayMetaConnectTest extends AbstractComet
                     }
                 }
             }
-            return true;
-        }
-
-        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
-        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-        {
             return true;
         }
     }

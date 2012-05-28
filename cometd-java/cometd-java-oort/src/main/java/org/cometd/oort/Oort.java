@@ -613,23 +613,9 @@ public class Oort extends AggregateLifeCycle
      *
      * @see Oort#incomingCometHandshake(Map, ServerSession)
      */
-    protected class OortExtension implements Extension
+    protected class OortExtension extends Extension.Adapter
     {
-        public boolean rcv(ServerSession from, Mutable message)
-        {
-            return true;
-        }
-
-        public boolean rcvMeta(ServerSession from, Mutable message)
-        {
-            return true;
-        }
-
-        public boolean send(ServerSession from, ServerSession to, Mutable message)
-        {
-            return true;
-        }
-
+        @Override
         public boolean sendMeta(ServerSession to, Mutable message)
         {
             // Skip local sessions

@@ -180,7 +180,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
         Assert.assertFalse(disconnectURI.endsWith("/disconnect"));
     }
 
-    public static class BayeuxURLExtension implements Extension
+    public static class BayeuxURLExtension extends Extension.Adapter
     {
         private final BayeuxServerImpl bayeux;
 
@@ -189,21 +189,7 @@ public class CometDURLPathTest extends AbstractCometDLongPollingTest
             this.bayeux = bayeux;
         }
 
-        public boolean rcv(ServerSession from, Mutable message)
-        {
-            return true;
-        }
-
-        public boolean rcvMeta(ServerSession from, Mutable message)
-        {
-            return true;
-        }
-
-        public boolean send(ServerSession from, ServerSession to, Mutable message)
-        {
-            return true;
-        }
-
+        @Override
         public boolean sendMeta(ServerSession to, Mutable message)
         {
             if (Channel.META_HANDSHAKE.equals(message.getChannel()) ||

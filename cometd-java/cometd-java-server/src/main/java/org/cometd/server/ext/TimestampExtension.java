@@ -24,7 +24,7 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.util.DateCache;
 
-public class TimestampExtension implements Extension
+public class TimestampExtension extends Extension.Adapter
 {
     private final DateCache _dateCache;
 
@@ -46,39 +46,14 @@ public class TimestampExtension implements Extension
         _dateCache.setTimeZone(tz);
     }
 
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.bayeux.server.BayeuxServer.Extension#rcv(org.cometd.bayeux.server.ServerSession, org.cometd.bayeux.server.ServerMessage.Mutable)
-     */
-    public boolean rcv(ServerSession from, Mutable message)
-    {
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.bayeux.server.BayeuxServer.Extension#rcvMeta(org.cometd.bayeux.server.ServerSession, org.cometd.bayeux.server.ServerMessage.Mutable)
-     */
-    public boolean rcvMeta(ServerSession from, Mutable message)
-    {
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.bayeux.server.BayeuxServer.Extension#send(org.cometd.bayeux.server.ServerMessage.Mutable)
-     */
+    @Override
     public boolean send(ServerSession from, ServerSession to, Mutable message)
     {
         message.put(Message.TIMESTAMP_FIELD,_dateCache.format(System.currentTimeMillis()));
         return true;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.cometd.bayeux.server.BayeuxServer.Extension#sendMeta(org.cometd.bayeux.server.ServerSession, org.cometd.bayeux.server.ServerMessage.Mutable)
-     */
+    @Override
     public boolean sendMeta(ServerSession to, Mutable message)
     {
         message.put(Message.TIMESTAMP_FIELD,_dateCache.format(System.currentTimeMillis()));

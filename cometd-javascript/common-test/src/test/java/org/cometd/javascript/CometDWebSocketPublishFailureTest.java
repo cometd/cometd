@@ -85,27 +85,13 @@ public class CometDWebSocketPublishFailureTest extends AbstractCometDWebSocketTe
         Assert.assertEquals("disconnected", status);
     }
 
-    public static class PublishThrowingExtension implements BayeuxServer.Extension
+    public static class PublishThrowingExtension extends BayeuxServer.Extension.Adapter
     {
+        @Override
         public boolean rcv(ServerSession from, ServerMessage.Mutable message)
         {
             // The publish will arrive here, just throw
             throw new Error("explicitly_thrown_by_test");
-        }
-
-        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
-        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
-        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-        {
-            return true;
         }
     }
 }

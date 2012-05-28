@@ -106,8 +106,9 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest
         }
     }
 
-    private class DelayingExtension implements BayeuxServer.Extension
+    private class DelayingExtension extends BayeuxServer.Extension.Adapter
     {
+        @Override
         public boolean rcv(ServerSession from, ServerMessage.Mutable message)
         {
             // We hold the publish longer than the maxNetworkDelay
@@ -120,21 +121,6 @@ public class CometDMaxNetworkDelayTest extends AbstractCometDTest
             {
                 throw new RuntimeException(x);
             }
-        }
-
-        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
-        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
-        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-        {
-            return true;
         }
     }
 }

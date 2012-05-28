@@ -91,27 +91,13 @@ public class CometDConnectFailureTest extends AbstractCometDTest
         Assert.assertFalse(connectLatch.await(4 * backoffIncrement));
     }
 
-    public static class ConnectThrowingExtension implements BayeuxServer.Extension
+    public static class ConnectThrowingExtension extends BayeuxServer.Extension.Adapter
     {
-        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
+        @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
             if (Channel.META_CONNECT.equals(message.getChannel()))
                 throw new Error("explicitly_thrown_by_test");
-            return true;
-        }
-
-        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
-        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-        {
             return true;
         }
     }

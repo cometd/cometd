@@ -75,25 +75,17 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
         evaluateScript("cometd.disconnect(true);");
     }
 
-    private class ReHandshakeExtension implements BayeuxServer.Extension
+    private class ReHandshakeExtension extends BayeuxServer.Extension.Adapter
     {
         private final AtomicInteger connects = new AtomicInteger();
 
-        public boolean rcv(ServerSession session, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
-        public boolean rcvMeta(ServerSession session, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
+        @Override
         public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
         {
             return false;
         }
 
+        @Override
         public boolean sendMeta(ServerSession session, ServerMessage.Mutable message)
         {
             if (Channel.META_CONNECT.equals(message.getChannel()))

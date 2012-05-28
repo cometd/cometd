@@ -103,7 +103,7 @@ public class CometdDemo
                         // access unpacked toolkits
                         Resource.newResource("../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-dojo/"),
                         Resource.newResource("../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-jquery/")
-                        
+
                 }));
 
 
@@ -135,23 +135,9 @@ public class CometdDemo
         // Demo lazy messages
         if (Boolean.getBoolean("LAZY"))
         {
-            bayeux.addExtension(new BayeuxServer.Extension()
+            bayeux.addExtension(new BayeuxServer.Extension.Adapter()
             {
-                public boolean sendMeta(ServerSession to, Mutable message)
-                {
-                    return true;
-                }
-
-                public boolean send(ServerSession from, ServerSession to, Mutable message)
-                {
-                    return true;
-                }
-
-                public boolean rcvMeta(ServerSession from, Mutable message)
-                {
-                    return true;
-                }
-
+                @Override
                 public boolean rcv(ServerSession from, Mutable message)
                 {
                     if (message.getChannel().startsWith("/chat/") && message.getData()!=null && message.getData().toString().indexOf("lazy")>=0)

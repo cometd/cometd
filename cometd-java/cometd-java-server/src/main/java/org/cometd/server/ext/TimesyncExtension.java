@@ -67,7 +67,7 @@ import org.cometd.bayeux.server.ServerSession;
  * lag. But the current client does not do this.
  * </p>
  */
-public class TimesyncExtension implements Extension
+public class TimesyncExtension extends Extension.Adapter
 {
     public static final String LAG_ATTRIBUTE = "lag";
 
@@ -77,7 +77,6 @@ public class TimesyncExtension implements Extension
     {
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * timesync responses are not set if the measured accuracy is less than the
      * accuracyTarget.
@@ -89,7 +88,6 @@ public class TimesyncExtension implements Extension
         return _accuracyTarget;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * timesync responses are not set if the measured accuracy is less than the
      * accuracyTarget.
@@ -102,14 +100,7 @@ public class TimesyncExtension implements Extension
         _accuracyTarget=target;
     }
 
-
-    /* ------------------------------------------------------------ */
-    public boolean rcv(ServerSession from, Mutable message)
-    {
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
+    @Override
     public boolean rcvMeta(ServerSession from, Mutable message)
     {
         Map<String,Object> ext=message.getExt(false);
@@ -127,13 +118,7 @@ public class TimesyncExtension implements Extension
         return true;
     }
 
-    /* ------------------------------------------------------------ */
-    public boolean send(ServerSession from, ServerSession to, Mutable message)
-    {
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
+    @Override
     public boolean sendMeta(ServerSession session, Mutable message)
     {
         ServerMessage associated=message.getAssociated();

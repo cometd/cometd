@@ -278,13 +278,9 @@ public class BayeuxServerTest
     public void testExtensions() throws Exception
     {
         final Queue<String> events = new ConcurrentLinkedQueue<String>();
-        _bayeux.addExtension(new BayeuxServer.Extension()
+        _bayeux.addExtension(new BayeuxServer.Extension.Adapter()
         {
-            public boolean sendMeta(ServerSession to, Mutable message)
-            {
-                return true;
-            }
-
+            @Override
             public boolean send(ServerSession from, ServerSession to, Mutable message)
             {
                 if ("three".equals(message.getData()))
@@ -292,11 +288,7 @@ public class BayeuxServerTest
                 return !"ignoreSend".equals(message.getData());
             }
 
-            public boolean rcvMeta(ServerSession from, Mutable message)
-            {
-                return true;
-            }
-
+            @Override
             public boolean rcv(ServerSession from, Mutable message)
             {
                 if ("one".equals(message.getData()))
@@ -338,8 +330,9 @@ public class BayeuxServerTest
         });
 
 
-        session0.getServerSession().addExtension(new ServerSession.Extension()
+        session0.getServerSession().addExtension(new ServerSession.Extension.Adapter()
         {
+            @Override
             public boolean rcv(ServerSession from, Mutable message)
             {
                 if ("two".equals(message.getData()))
@@ -347,11 +340,7 @@ public class BayeuxServerTest
                 return true;
             }
 
-            public boolean rcvMeta(ServerSession from, Mutable message)
-            {
-                return true;
-            }
-
+            @Override
             public ServerMessage send(ServerSession to, ServerMessage message)
             {
                 if (message.isMeta())
@@ -363,11 +352,6 @@ public class BayeuxServerTest
                     return cloned;
                 }
                 return message;
-            }
-
-            public boolean sendMeta(ServerSession to, Mutable message)
-            {
-                return true;
             }
         });
 

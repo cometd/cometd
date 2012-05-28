@@ -238,13 +238,9 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(SERVICE_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_FIELD));
     }
 
-    private class MetaExtension implements BayeuxServer.Extension
+    private class MetaExtension extends BayeuxServer.Extension.Adapter
     {
-        public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
+        @Override
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
             if (Channel.META_HANDSHAKE.equals(message.getChannel()) && (from == null || !from.isLocalSession()))
@@ -256,11 +252,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
             return true;
         }
 
-        public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
+        @Override
         public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
         {
             if (Channel.META_HANDSHAKE.equals(message.getChannel()) && to != null && !to.isLocalSession())
@@ -273,7 +265,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         }
     }
 
-    private class NonMetaExtension implements BayeuxServer.Extension
+    private class NonMetaExtension extends BayeuxServer.Extension.Adapter
     {
         private final String channel;
 
@@ -282,6 +274,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
             this.channel = channel;
         }
 
+        @Override
         public boolean rcv(ServerSession from, ServerMessage.Mutable message)
         {
             if (from != null && !from.isLocalSession() && channel.equals(message.getChannel()))
@@ -293,11 +286,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
             return true;
         }
 
-        public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-        {
-            return true;
-        }
-
+        @Override
         public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
         {
             if (from != null && from.isLocalSession() && to != null && !to.isLocalSession())
@@ -306,11 +295,6 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 message.getDataAsMap(true).put(SERVER_EXT_DATA_FIELD, SERVER_EXT_INFO);
                 message.getExt(true).put(SERVER_EXT_EXT_FIELD, SERVER_EXT_INFO);
             }
-            return true;
-        }
-
-        public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
-        {
             return true;
         }
     }

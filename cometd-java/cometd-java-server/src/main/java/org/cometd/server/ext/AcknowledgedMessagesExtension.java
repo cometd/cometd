@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * {@link AcknowledgedMessagesClientExtension} on the {@link ServerSession} instances
  * created during handshake for clients that also support the ack extension.</p>
  */
-public class AcknowledgedMessagesExtension implements Extension
+public class AcknowledgedMessagesExtension extends Extension.Adapter
 {
     private final Logger _logger = LoggerFactory.getLogger(getClass().getName());
     private final Map<String, Object> _replyExt;
@@ -48,25 +48,7 @@ public class AcknowledgedMessagesExtension implements Extension
         _replyExt.put("ack", true);
     }
 
-    /* ------------------------------------------------------------ */
-    public boolean rcv(ServerSession from, Mutable message)
-    {
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean rcvMeta(ServerSession from, Mutable message)
-    {
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean send(ServerSession from, ServerSession to, Mutable message)
-    {
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
+    @Override
     public boolean sendMeta(ServerSession to, Mutable message)
     {
         String channel = message.getChannel();
@@ -96,5 +78,4 @@ public class AcknowledgedMessagesExtension implements Extension
 
         return true;
     }
-
 }

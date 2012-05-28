@@ -450,23 +450,9 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
     @Test
     public void testMetaConnectDeliveryOnlySession() throws Exception
     {
-        bayeux.addExtension(new BayeuxServer.Extension()
+        bayeux.addExtension(new BayeuxServer.Extension.Adapter()
         {
-            public boolean rcv(ServerSession from, ServerMessage.Mutable message)
-            {
-                return true;
-            }
-
-            public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
-            {
-                return true;
-            }
-
-            public boolean send(ServerSession from, ServerSession to, ServerMessage.Mutable message)
-            {
-                return true;
-            }
-
+            @Override
             public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
             {
                 if (Channel.META_HANDSHAKE.equals(message.getChannel()))

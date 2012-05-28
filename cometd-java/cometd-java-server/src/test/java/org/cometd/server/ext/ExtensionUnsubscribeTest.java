@@ -92,9 +92,7 @@ public class ExtensionUnsubscribeTest extends AbstractBayeuxClientServerTest
         public boolean rcvMeta(ServerSession from, ServerMessage.Mutable message)
         {
             if (Channel.META_UNSUBSCRIBE.equals(message.getChannel()))
-            {
                 rcvMetas.add(message);
-            }
             return true;
         }
 
@@ -107,9 +105,7 @@ public class ExtensionUnsubscribeTest extends AbstractBayeuxClientServerTest
         public boolean sendMeta(ServerSession to, ServerMessage.Mutable message)
         {
             if (Channel.META_UNSUBSCRIBE.equals(message.getChannel()))
-            {
                 sendMetas.add(message);
-            }
             return true;
         }
     }
