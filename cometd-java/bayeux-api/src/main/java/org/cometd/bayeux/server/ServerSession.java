@@ -272,5 +272,31 @@ public interface ServerSession extends Session
          * @return true if message processing should continue, false if it should stop
          */
         public boolean sendMeta(ServerSession session, ServerMessage.Mutable message);
+
+        /**
+         * Empty implementation of {@link Extension}.
+         */
+        public static class Adapter implements Extension
+        {
+            public boolean rcv(ServerSession session, Mutable message)
+            {
+                return true;
+            }
+
+            public boolean rcvMeta(ServerSession session, Mutable message)
+            {
+                return true;
+            }
+
+            public ServerMessage send(ServerSession to, ServerMessage message)
+            {
+                return message;
+            }
+
+            public boolean sendMeta(ServerSession session, Mutable message)
+            {
+                return true;
+            }
+        }
     }
 }
