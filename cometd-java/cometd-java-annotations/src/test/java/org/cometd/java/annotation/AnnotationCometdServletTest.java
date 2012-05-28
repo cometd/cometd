@@ -51,13 +51,18 @@ public class AnnotationCometdServletTest
         List<Object> services = cometdServlet.getServices();
         Assert.assertNotNull(services);
         Assert.assertEquals(1, services.size());
+
         TestService service = (TestService)services.get(0);
+        TestService registeredService = (TestService)context.getServletContext().getAttribute(TestService.class.getName());
+        Assert.assertSame(service, registeredService);
+
         Assert.assertTrue(service.init);
 
         server.stop();
         server.join();
 
         Assert.assertTrue(service.destroy);
+        Assert.assertNull(context.getServletContext().getAttribute(TestService.class.getName()));
     }
 
     @Service("test")
