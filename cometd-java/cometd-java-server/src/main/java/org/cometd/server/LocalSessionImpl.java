@@ -30,8 +30,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.AbstractClientSession;
 
-
-/* ------------------------------------------------------------ */
 /** A LocalSession implementation.
  * <p>
  * This session is local to the {@link BayeuxServer} instance and
@@ -47,7 +45,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
 
     private ServerSessionImpl _session;
 
-    /* ------------------------------------------------------------ */
     protected LocalSessionImpl(BayeuxServerImpl bayeux,String idHint)
     {
         _bayeux=bayeux;
@@ -62,7 +59,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             _session = null;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.common.AbstractClientSession#newChannel(org.cometd.bayeux.ChannelId)
      */
@@ -72,7 +68,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         return new LocalChannel(channelId);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.common.AbstractClientSession#newChannelId(java.lang.String)
      */
@@ -82,7 +77,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         return _bayeux.newChannelId(channelId);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @see org.cometd.common.AbstractClientSession#sendBatch()
      */
@@ -97,7 +91,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         }
     }
 
-    /* ------------------------------------------------------------ */
     public ServerSession getServerSession()
     {
         if (_session==null)
@@ -105,13 +98,11 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         return _session;
     }
 
-    /* ------------------------------------------------------------ */
     public void handshake()
     {
         handshake(null);
     }
 
-    /* ------------------------------------------------------------ */
     public void handshake(Map<String, Object> template)
     {
         if (_session!=null)
@@ -146,7 +137,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         message.setAssociated(null);
     }
 
-    /* ------------------------------------------------------------ */
     public void disconnect()
     {
         if (_session!=null)
@@ -160,7 +150,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         }
     }
 
-    /* ------------------------------------------------------------ */
     public String getId()
     {
         if (_session==null)
@@ -168,26 +157,22 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         return _session.getId();
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isConnected()
     {
         return _session!=null && _session.isConnected();
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isHandshook()
     {
         return _session!=null && _session.isHandshook();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
         return "L:"+(_session==null?(_idHint+"?"):_session.getId());
     }
 
-    /* ------------------------------------------------------------ */
     /** Send a message (to the server).
      * <p>
      * This method will either batch the message or call {@link #doSend(ServerSessionImpl, org.cometd.bayeux.server.ServerMessage.Mutable)}
@@ -202,7 +187,6 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             doSend(session,message);
     }
 
-    /* ------------------------------------------------------------ */
     /** Send a message (to the server).
      * <p>
      * Extends and sends the message without batching.
@@ -227,33 +211,22 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /** A channel scoped to this local session
      */
     protected class LocalChannel extends AbstractSessionChannel
     {
-        /* ------------------------------------------------------------ */
         LocalChannel(ChannelId id)
         {
             super(id);
         }
 
-        /* ------------------------------------------------------------ */
         public ClientSession getSession()
         {
             throwIfReleased();
             return LocalSessionImpl.this;
         }
 
-        /* ------------------------------------------------------------ */
         public void publish(Object data)
-        {
-            publish(data, null);
-        }
-
-        /* ------------------------------------------------------------ */
-        public void publish(Object data, String messageId)
         {
             throwIfReleased();
             if (_session == null)
@@ -262,14 +235,11 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setChannel(getId());
             message.setData(data);
-            if (messageId != null)
-                message.setId(messageId);
 
             send(_session, message);
             message.setAssociated(null);
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public String toString()
         {
@@ -301,5 +271,4 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
             message.setAssociated(null);
         }
     }
-
 }

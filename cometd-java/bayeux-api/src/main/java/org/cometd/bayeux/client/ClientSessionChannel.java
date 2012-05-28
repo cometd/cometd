@@ -81,19 +81,7 @@ public interface ClientSessionChannel extends Channel
      */
     public void publish(Object data);
 
-    /**
-     * <p>Same as {@link #publish(Object)}, but with the ability to specify the
-     * {@link Message#getId() id of the message} to send.</p>
-     *
-     * @param data      the data to publish
-     * @param messageId the message id to set on the message, or null to let the
-     *                  implementation choose the message id.
-     * @deprecated Use {@link #publish(Object)} instead. Specifying a messageId
-     *             other than null may cause performance slowdown in certain transports.
-     *             Information passed as the messageId should be passed into the data object instead.
-     */
-    @Deprecated
-    public void publish(Object data, String messageId);
+//    public void publish(Object data, MessageListener listener);
 
     /**
      * <p>Subscribes the given {@code listener} to receive messages sent to this channel.</p>

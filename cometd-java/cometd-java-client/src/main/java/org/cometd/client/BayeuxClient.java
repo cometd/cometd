@@ -1275,17 +1275,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
         public void publish(Object data)
         {
-            publish(data, null);
-        }
-
-        public void publish(Object data, String messageId)
-        {
             throwIfReleased();
             Message.Mutable message = newMessage();
             message.setChannel(getId());
             message.setData(data);
-            if (messageId != null)
-                message.setId(String.valueOf(messageId));
             enqueueSend(message);
         }
     }
