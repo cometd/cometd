@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.cometd.java.annotation;
+package org.cometd.annotation;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;

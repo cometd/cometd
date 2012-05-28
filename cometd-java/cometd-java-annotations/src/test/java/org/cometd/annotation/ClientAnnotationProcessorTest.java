@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.cometd.java.annotation;
+package org.cometd.annotation;
 
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;

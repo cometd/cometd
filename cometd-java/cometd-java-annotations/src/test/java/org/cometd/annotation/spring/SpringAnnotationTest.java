@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.cometd.java.annotation.spring;
+package org.cometd.annotation.spring;
 
 import java.beans.Introspector;
 import java.util.Arrays;

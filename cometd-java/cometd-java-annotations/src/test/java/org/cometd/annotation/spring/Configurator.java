@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.cometd.java.annotation.spring;
+package org.cometd.annotation.spring;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
+import org.cometd.annotation.ServerAnnotationProcessor;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.java.annotation.ServerAnnotationProcessor;
 import org.cometd.server.BayeuxServerImpl;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;

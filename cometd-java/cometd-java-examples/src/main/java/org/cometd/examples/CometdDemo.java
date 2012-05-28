@@ -16,11 +16,11 @@
 
 package org.cometd.examples;
 
+import org.cometd.annotation.AnnotationCometdServlet;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.java.annotation.AnnotationCometdServlet;
 import org.cometd.server.CometdServlet;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.eclipse.jetty.server.Server;

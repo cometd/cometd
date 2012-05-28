@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.cometd.java.annotation.guice;
+package org.cometd.annotation.guice;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import org.cometd.java.annotation.ServerAnnotationProcessor;
+import org.cometd.annotation.ServerAnnotationProcessor;
 import org.cometd.server.BayeuxServerImpl;
 import org.junit.Assert;
 import org.junit.Test;

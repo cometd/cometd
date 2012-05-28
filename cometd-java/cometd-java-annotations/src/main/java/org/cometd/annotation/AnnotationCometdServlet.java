@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.cometd.java.annotation;
+package org.cometd.annotation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.Loader;
  *
  *  &lt;servlet&gt;
  *    &lt;servlet-name&gt;cometd&lt;/servlet-name&gt;
- *    &lt;servlet-class&gt;org.cometd.java.annotation.AnnotationCometdServlet&lt;/servlet-class&gt;
+ *    &lt;servlet-class&gt;org.cometd.annotation.AnnotationCometdServlet&lt;/servlet-class&gt;
  *    &lt;init-param&gt;
  *      &lt;param-name&gt;services&lt;/param-name&gt;
  *      &lt;param-value&gt;org.cometd.examples.FooService, org.cometd.examples.BarService&lt;/param-value&gt;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.cometd.java.annotation.guice;
+package org.cometd.annotation.guice;
 
 import javax.inject.Singleton;
 

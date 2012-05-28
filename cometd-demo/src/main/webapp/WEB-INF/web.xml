@@ -38,7 +38,7 @@
     <!-- Cometd Servlet -->
     <servlet>
         <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.java.annotation.AnnotationCometdServlet</servlet-class>
+        <servlet-class>org.cometd.annotation.AnnotationCometdServlet</servlet-class>
         <!--async-supported>true</async-supported-->
         <init-param>
             <param-name>timeout</param-name>
