@@ -16,6 +16,9 @@
 
 package org.cometd.javascript;
 
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -43,12 +46,75 @@ public class CometDPublishTest extends AbstractCometDTest
         Assert.assertTrue(echoLatch.await(5000));
         Assert.assertTrue(publishLatch.await(5000));
 
-        evaluateScript("var disconnectLatch = new Latch(1);");
-        Latch disconnectLatch = get("disconnectLatch");
-        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
-        evaluateScript("cometd.disconnect();");
-        Assert.assertTrue(disconnectLatch.await(5000));
-        String status = evaluateScript("cometd.getStatus();");
-        Assert.assertEquals("disconnected", status);
+        disconnect();
+    }
+
+    @Test
+    public void testPublishSuccessfulInvokesCallback() throws Exception
+    {
+        defineClass(Latch.class);
+
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
+        Assert.assertTrue(readyLatch.await(5000));
+
+        evaluateScript("var publishLatch = new Latch(2);");
+        Latch publishLatch = get("publishLatch");
+        evaluateScript("cometd.addListener('/meta/publish', publishLatch, publishLatch.countDown);");
+
+        evaluateScript("cometd.publish('/echo', 'test1', function(message)" +
+                "{" +
+                "    publishLatch.countDown();" +
+                "});");
+        Assert.assertTrue(publishLatch.await(5000));
+
+        // Be sure that another publish without callback does not trigger the previous callback
+        publishLatch.reset(2);
+        evaluateScript("cometd.publish('/echo', 'test2');");
+        Assert.assertFalse(publishLatch.await(1000));
+        Assert.assertEquals(1, publishLatch.jsGet_count()) ;
+
+        disconnect();
+    }
+
+    @Test
+    public void testPublishFailedInvokesCallback() throws Exception
+    {
+        bayeuxServer.addExtension(new BayeuxServer.Extension.Adapter()
+        {
+            @Override
+            public boolean rcv(ServerSession from, ServerMessage.Mutable message)
+            {
+                return !"/echo".equals(message.getChannel());
+            }
+        });
+
+        defineClass(Latch.class);
+
+        evaluateScript("var readyLatch = new Latch(1);");
+        Latch readyLatch = get("readyLatch");
+        evaluateScript("cometd.addListener('/meta/connect', function(message) { readyLatch.countDown(); });");
+        evaluateScript("cometd.init({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'})");
+        Assert.assertTrue(readyLatch.await(5000));
+
+        evaluateScript("var publishLatch = new Latch(2);");
+        Latch publishLatch = get("publishLatch");
+        evaluateScript("cometd.addListener('/meta/publish', publishLatch, publishLatch.countDown);");
+
+        evaluateScript("cometd.publish('/echo', 'test1', function(message)" +
+                "{" +
+                "    publishLatch.countDown();" +
+                "});");
+        Assert.assertTrue(publishLatch.await(5000));
+
+        // Be sure that another publish without callback does not trigger the previous callback
+        publishLatch.reset(2);
+        evaluateScript("cometd.publish('/echo', 'test2');");
+        Assert.assertFalse(publishLatch.await(1000));
+        Assert.assertEquals(1, publishLatch.jsGet_count()) ;
+
+        disconnect();
     }
 }

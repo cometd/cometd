@@ -39,6 +39,7 @@ org.cometd.Cometd = function(name)
     var _extensions = [];
     var _advice = {};
     var _handshakeProps;
+    var _publishCallbacks = {};
     var _reestablish = false;
     var _connected = false;
     var _config = {
@@ -432,10 +433,18 @@ org.cometd.Cometd = function(name)
         {
             var message = messages[i];
             message.id = '' + _nextMessageId();
+
+            if (_isFunction(message._callback))
+            {
+                _publishCallbacks[message.id] = message._callback;
+                delete message._callback;
+            }
+
             if (_clientId)
             {
                 message.clientId = _clientId;
             }
+
             message = _applyOutgoingExtensions(message);
             if (message !== undefined && message !== null)
             {
@@ -446,6 +455,7 @@ org.cometd.Cometd = function(name)
                 messages.splice(i--, 1);
             }
         }
+
         if (messages.length === 0)
         {
             return;
@@ -986,8 +996,19 @@ org.cometd.Cometd = function(name)
         });
     }
 
+    function _handlePublishCallback(message)
+    {
+        var callback = _publishCallbacks[message.id];
+        if (_isFunction(callback))
+        {
+            delete _publishCallbacks[message.id];
+            callback.call(_cometd, message);
+        }
+    }
+
     function _failMessage(message)
     {
+        _handlePublishCallback(message);
         _notifyListeners('/meta/publish', message);
         _notifyListeners('/meta/unsuccessful', message);
     }
@@ -1010,6 +1031,7 @@ org.cometd.Cometd = function(name)
         {
             if (message.successful)
             {
+                _handlePublishCallback(message);
                 _notifyListeners('/meta/publish', message);
             }
             else
@@ -1547,7 +1569,7 @@ org.cometd.Cometd = function(name)
      * @param content the content of the message
      * @param publishProps an object to be merged with the publish message
      */
-    this.publish = function(channel, content, publishProps)
+    this.publish = function(channel, content, publishProps, publishCallback)
     {
         if (arguments.length < 1)
         {
@@ -1562,9 +1584,21 @@ org.cometd.Cometd = function(name)
             throw 'Illegal state: already disconnected';
         }
 
+        if (_isFunction(content))
+        {
+            publishCallback = content;
+            content = publishProps = {};
+        }
+        else if (_isFunction(publishProps))
+        {
+            publishCallback = publishProps;
+            publishProps = {};
+        }
+
         var bayeuxMessage = {
             channel: channel,
-            data: content
+            data: content,
+            _callback: publishCallback
         };
         var message = this._mixin(false, {}, publishProps, bayeuxMessage);
         _queueSend(message);

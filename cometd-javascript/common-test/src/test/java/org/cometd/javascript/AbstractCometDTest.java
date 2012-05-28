@@ -31,6 +31,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
@@ -259,5 +260,16 @@ public abstract class AbstractCometDTest
             Thread.currentThread().interrupt();
             throw new RuntimeException(x);
         }
+    }
+
+    protected void disconnect() throws InterruptedException
+    {
+        evaluateScript("var disconnectLatch = new Latch(1);");
+        Latch disconnectLatch = get("disconnectLatch");
+        evaluateScript("cometd.addListener('/meta/disconnect', disconnectLatch, disconnectLatch.countDown);");
+        evaluateScript("cometd.disconnect();");
+        Assert.assertTrue(disconnectLatch.await(5000));
+        String status = evaluateScript("cometd.getStatus();");
+        Assert.assertEquals("disconnected", status);
     }
 }
