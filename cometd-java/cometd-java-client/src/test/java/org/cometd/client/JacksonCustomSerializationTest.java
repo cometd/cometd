@@ -92,7 +92,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
-    private static class ExtraExtension implements ClientSession.Extension
+    private static class ExtraExtension extends ClientSession.Extension.Adapter
     {
         private final String content;
 
@@ -101,25 +101,11 @@ public class JacksonCustomSerializationTest extends ClientServerTest
             this.content = content;
         }
 
-        public boolean rcv(ClientSession session, Message.Mutable message)
-        {
-            return true;
-        }
-
-        public boolean rcvMeta(ClientSession session, Message.Mutable message)
-        {
-            return true;
-        }
-
+        @Override
         public boolean send(ClientSession session, Message.Mutable message)
         {
             Map<String, Object> ext = message.getExt(true);
             ext.put("extra", new Extra(content));
-            return true;
-        }
-
-        public boolean sendMeta(ClientSession session, Message.Mutable message)
-        {
             return true;
         }
     }

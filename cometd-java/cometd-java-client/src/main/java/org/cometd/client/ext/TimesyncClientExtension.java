@@ -23,16 +23,12 @@ import org.cometd.bayeux.Message.Mutable;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSession.Extension;
 
-public class TimesyncClientExtension implements Extension
+public class TimesyncClientExtension extends Extension.Adapter
 {
     private volatile int _lag;
     private volatile int _offset;
 
-    public boolean rcv(ClientSession session, Mutable message)
-    {
-        return true;
-    }
-
+    @Override
     public boolean rcvMeta(ClientSession session, Mutable message)
     {
         Map<String,Object> ext=message.getExt(false);
@@ -59,11 +55,7 @@ public class TimesyncClientExtension implements Extension
         return true;
     }
 
-    public boolean send(ClientSession session, Mutable message)
-    {
-        return true;
-    }
-
+    @Override
     public boolean sendMeta(ClientSession session, Mutable message)
     {
         Map<String,Object> ext=message.getExt(true);

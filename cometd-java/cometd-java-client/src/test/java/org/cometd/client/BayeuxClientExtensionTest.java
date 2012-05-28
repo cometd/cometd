@@ -226,26 +226,12 @@ public class BayeuxClientExtensionTest extends ClientServerTest
         });
 
         BayeuxClient client = newBayeuxClient();
-        client.addExtension(new ClientSession.Extension()
+        client.addExtension(new ClientSession.Extension.Adapter()
         {
-            public boolean rcv(ClientSession session, Message.Mutable message)
-            {
-                return true;
-            }
-
-            public boolean rcvMeta(ClientSession session, Message.Mutable message)
-            {
-                return true;
-            }
-
+            @Override
             public boolean send(ClientSession session, Message.Mutable message)
             {
                 return false;
-            }
-
-            public boolean sendMeta(ClientSession session, Message.Mutable message)
-            {
-                return true;
             }
         });
         client.handshake();

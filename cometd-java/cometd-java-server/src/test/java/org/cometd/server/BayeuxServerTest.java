@@ -123,7 +123,6 @@ public class BayeuxServerTest
         Assert.assertEquals(foobar,_events.poll());
     }
 
-
     @Test
     public void testSessionAttributes() throws Exception
     {
@@ -148,7 +147,6 @@ public class BayeuxServerTest
         Assert.assertEquals(null,local.removeAttribute("foo"));
         Assert.assertEquals("foo",session.removeAttribute("bar"));
         Assert.assertEquals(null,local.removeAttribute("bar"));
-
     }
 
     @Test
@@ -244,12 +242,8 @@ public class BayeuxServerTest
         Assert.assertEquals(session0.getId(),events.poll());
         Assert.assertEquals("part2",events.poll());
 
-
         foobar0.unsubscribe();
         Assert.assertEquals(2,_bayeux.getChannel("/foo/bar").getSubscribers().size());
-
-
-
 
         Assert.assertTrue(session0.isConnected());
         Assert.assertTrue(session1.isConnected());
@@ -302,13 +296,9 @@ public class BayeuxServerTest
         //final LocalSession session1 = _bayeux.newLocalSession("s1");
         //session1.handshake();
 
-        session0.addExtension(new ClientSession.Extension()
+        session0.addExtension(new ClientSession.Extension.Adapter()
         {
-            public boolean sendMeta(ClientSession session, org.cometd.bayeux.Message.Mutable message)
-            {
-                return true;
-            }
-
+            @Override
             public boolean send(ClientSession session, org.cometd.bayeux.Message.Mutable message)
             {
                 if ("zero".equals(message.getData()))
@@ -316,11 +306,7 @@ public class BayeuxServerTest
                 return true;
             }
 
-            public boolean rcvMeta(ClientSession session, org.cometd.bayeux.Message.Mutable message)
-            {
-                return true;
-            }
-
+            @Override
             public boolean rcv(ClientSession session, org.cometd.bayeux.Message.Mutable message)
             {
                 if ("five".equals(message.getData()))
@@ -328,7 +314,6 @@ public class BayeuxServerTest
                 return true;
             }
         });
-
 
         session0.getServerSession().addExtension(new ServerSession.Extension.Adapter()
         {
@@ -381,7 +366,6 @@ public class BayeuxServerTest
         Assert.assertEquals("four",events.poll());
         Assert.assertEquals(null,events.poll());
         */
-
     }
 
     class CListener implements BayeuxServer.ChannelListener
@@ -437,7 +421,4 @@ public class BayeuxServerTest
         }
 
     }
-
-
-
 }

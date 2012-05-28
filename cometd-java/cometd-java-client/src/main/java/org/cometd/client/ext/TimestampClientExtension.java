@@ -24,24 +24,16 @@ import java.util.TimeZone;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 
-public class TimestampClientExtension implements ClientSession.Extension
+public class TimestampClientExtension extends ClientSession.Extension.Adapter
 {
-    public boolean rcv(ClientSession session, Message.Mutable message)
-    {
-        return true;
-    }
-
-    public boolean rcvMeta(ClientSession session, Message.Mutable message)
-    {
-        return true;
-    }
-
+    @Override
     public boolean send(ClientSession session, Message.Mutable message)
     {
         addTimestamp(message);
         return true;
     }
 
+    @Override
     public boolean sendMeta(ClientSession session, Message.Mutable message)
     {
         addTimestamp(message);

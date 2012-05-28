@@ -40,18 +40,14 @@ import org.cometd.bayeux.client.ClientSession.Extension;
  * Messages are not acknowledged one by one, but instead a group of messages is
  * acknowledged when long poll returns.
  */
-public class AckExtension implements Extension
+public class AckExtension extends Extension.Adapter
 {
     public static final String EXT_FIELD = "ack";
 
     private volatile boolean _serverSupportsAcks = false;
     private volatile int _ackId = -1;
 
-    public boolean rcv(ClientSession session, Mutable message)
-    {
-        return true;
-    }
-
+    @Override
     public boolean rcvMeta(ClientSession session, Mutable message)
     {
         if(Channel.META_HANDSHAKE.equals(message.getChannel()))
@@ -74,11 +70,7 @@ public class AckExtension implements Extension
         return true;
     }
 
-    public boolean send(ClientSession session, Mutable message)
-    {
-        return true;
-    }
-
+    @Override
     public boolean sendMeta(ClientSession session, Mutable message)
     {
         if(Channel.META_HANDSHAKE.equals(message.getChannel()))
