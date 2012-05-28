@@ -63,6 +63,7 @@ public class AnnotationCometdServlet extends CometdServlet
             {
                 Object service = processService(processor, serviceClass.trim());
                 services.add(service);
+                registerService(service);
             }
         }
     }
@@ -93,13 +94,27 @@ public class AnnotationCometdServlet extends CometdServlet
         return Loader.loadClass(getClass(), serviceClassName).newInstance();
     }
 
+    protected void registerService(Object service)
+    {
+        getServletContext().setAttribute(service.getClass().getName(), service);
+        _logger.info("Registered annotated service {} in servlet context", service);
+    }
+
     @Override
     public void destroy()
     {
         for (Object service : services)
+        {
+            deregisterService(service);
             deprocessService(processor, service);
-
+        }
         super.destroy();
+    }
+
+    protected void deregisterService(Object service)
+    {
+        getServletContext().removeAttribute(service.getClass().getName());
+        _logger.info("Deregistered annotated service {}", service);
     }
 
     protected void deprocessService(ServerAnnotationProcessor processor, Object service)
