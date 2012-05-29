@@ -1,7 +1,7 @@
 require({
         packages: [{
-            name: 'dojox',
-            location: '/dojox'
+            name: 'dojox/cometd',
+            location: '/dojox/cometd'
         },{
             name: 'org',
             location: '/org'
