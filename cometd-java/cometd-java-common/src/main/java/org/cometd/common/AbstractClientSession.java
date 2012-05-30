@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractClientSession implements ClientSession
 {
+    protected static final String PUBLISH_CALLBACK_KEY = "org.cometd.client.publishCallback";
     protected static final Logger logger = LoggerFactory.getLogger(ClientSession.class);
     private static final AtomicLong _idGen = new AtomicLong(0);
     private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
@@ -199,14 +200,18 @@ public abstract class AbstractClientSession implements ClientSession
      */
     public void receive(final Message.Mutable message)
     {
-        String id = message.getChannel();
-        if (id == null)
+        if (message.getChannel() == null)
             throw new IllegalArgumentException("Bayeux messages must have a channel, " + message);
 
         if (!extendRcv(message))
             return;
 
-        MarkableReference<AbstractSessionChannel> channelRef = getReleasableChannel(id);
+        notifyListeners(message);
+    }
+
+    protected void notifyListeners(Message.Mutable message)
+    {
+        MarkableReference<AbstractSessionChannel> channelRef = getReleasableChannel(message.getChannel());
         AbstractSessionChannel channel = channelRef.getReference();
         channel.notifyMessageListeners(message);
         if (channelRef.isMarked())
@@ -221,6 +226,15 @@ public abstract class AbstractClientSession implements ClientSession
             if (wildChannelRef.isMarked())
                 wildChannel.release();
         }
+    }
+
+    protected void notifyListener(ClientSessionChannel.MessageListener listener, Message.Mutable message)
+    {
+        MarkableReference<AbstractSessionChannel> channelRef = getReleasableChannel(message.getChannel());
+        AbstractSessionChannel channel = channelRef.getReference();
+        channel.notifyOnMessage(listener, message);
+        if (channelRef.isMarked())
+            channel.release();
     }
 
     private MarkableReference<AbstractSessionChannel> getReleasableChannel(String id)
@@ -288,9 +302,10 @@ public abstract class AbstractClientSession implements ClientSession
             return Collections.unmodifiableList(_listeners);
         }
 
-        protected abstract void sendSubscribe();
-
-        protected abstract void sendUnSubscribe();
+        public void publish(Object data)
+        {
+            publish(data, null);
+        }
 
         public void subscribe(MessageListener listener)
         {
@@ -304,6 +319,8 @@ public abstract class AbstractClientSession implements ClientSession
             }
         }
 
+        protected abstract void sendSubscribe();
+
         public void unsubscribe(MessageListener listener)
         {
             throwIfReleased();
@@ -315,6 +332,8 @@ public abstract class AbstractClientSession implements ClientSession
                     sendUnSubscribe();
             }
         }
+
+        protected abstract void sendUnSubscribe();
 
         public void unsubscribe()
         {
@@ -405,7 +424,7 @@ public abstract class AbstractClientSession implements ClientSession
             }
         }
 
-        private void notifyOnMessage(MessageListener listener, Message message)
+        protected void notifyOnMessage(MessageListener listener, Message message)
         {
             throwIfReleased();
             try

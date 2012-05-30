@@ -382,7 +382,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         else
         {
             // Check if it is a publish reply
-            if (isPublishReply(message))
+            if (message.isPublishReply())
             {
                 synchronized (this)
                 {
@@ -416,12 +416,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     private boolean isReply(Message message)
     {
-        return message.isMeta() || isPublishReply(message);
-    }
-
-    private boolean isPublishReply(Message message)
-    {
-        return !message.containsKey(Message.DATA_FIELD) && !message.isMeta();
+        return message.isMeta() || message.isPublishReply();
     }
 
     private void failMessages(Throwable cause)

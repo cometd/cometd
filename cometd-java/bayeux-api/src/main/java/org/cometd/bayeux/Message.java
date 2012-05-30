@@ -91,6 +91,12 @@ public interface Message extends Map<String, Object>
     boolean isMeta();
 
     /**
+     * Publish message replies contain the "successful" field
+     * @return whether this message is a publish reply (as opposed to a published message)
+     */
+    boolean isPublishReply();
+
+    /**
      * Convenience method to retrieve the {@link #SUCCESSFUL_FIELD}
      * @return whether the message is successful
      */

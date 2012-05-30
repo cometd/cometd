@@ -108,6 +108,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private final TransportListener connectListener = new ConnectTransportListener();
     private final TransportListener disconnectListener = new DisconnectTransportListener();
     private final TransportListener publishListener = new PublishTransportListener();
+    private final Map<String, ClientSessionChannel.MessageListener> publishCallbacks = new ConcurrentHashMap<String, ClientSessionChannel.MessageListener>();
     private volatile ScheduledExecutorService scheduler;
     private volatile boolean shutdownScheduler;
     private volatile long backoffIncrement;
@@ -951,11 +952,27 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             failed.setId(message.getId());
             failed.setSuccessful(false);
             failed.setChannel(message.getChannel());
-            failed.put("message", messages);
+            failed.put("message", message);
             if (x != null)
                 failed.put("exception", x);
+            failed.put(PUBLISH_CALLBACK_KEY, message.remove(PUBLISH_CALLBACK_KEY));
             receive(failed);
         }
+    }
+
+    @Override
+    protected void notifyListeners(Message.Mutable message)
+    {
+        if (message.isPublishReply())
+        {
+            String messageId = message.getId();
+            ClientSessionChannel.MessageListener listener = messageId == null ?
+                    (ClientSessionChannel.MessageListener)message.remove(PUBLISH_CALLBACK_KEY) :
+                    publishCallbacks.remove(messageId);
+            if (listener != null)
+                notifyListener(listener, message);
+        }
+        super.notifyListeners(message);
     }
 
     /**
@@ -1257,6 +1274,17 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             return BayeuxClient.this;
         }
 
+        public void publish(Object data, MessageListener listener)
+        {
+            throwIfReleased();
+            Message.Mutable message = newMessage();
+            message.setChannel(getId());
+            message.setData(data);
+            if (listener != null)
+                message.put(PUBLISH_CALLBACK_KEY, listener);
+            enqueueSend(message);
+        }
+
         protected void sendSubscribe()
         {
             Message.Mutable message = newMessage();
@@ -1270,15 +1298,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             Message.Mutable message = newMessage();
             message.setChannel(Channel.META_UNSUBSCRIBE);
             message.put(Message.SUBSCRIPTION_FIELD, getId());
-            enqueueSend(message);
-        }
-
-        public void publish(Object data)
-        {
-            throwIfReleased();
-            Message.Mutable message = newMessage();
-            message.setChannel(getId());
-            message.setData(data);
             enqueueSend(message);
         }
     }
@@ -1342,14 +1361,23 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 if (clientId != null)
                     message.setClientId(clientId);
 
-                if (!extendSend(message))
-                    iterator.remove();
+                // Remove the publish callback before calling the extensions
+                ClientSessionChannel.MessageListener callback = (ClientSessionChannel.MessageListener)message.remove(PUBLISH_CALLBACK_KEY);
 
-                // Extensions may have modified the messageId, but we need to own
-                // the messageId in case of meta messages to link request/response
-                // in non request/response transports such as websocket
-                if (message.isMeta())
-                    message.setId(messageId);
+                if (extendSend(message))
+                {
+                    // Extensions may have modified the messageId, but we need to own
+                    // the messageId in case of meta messages to link request/response
+                    // in non request/response transports such as websocket
+                    if (message.isMeta())
+                        message.setId(messageId);
+                    if (callback != null)
+                        publishCallbacks.put(messageId, callback);
+                }
+                else
+                {
+                    iterator.remove();
+                }
             }
             if (!messageList.isEmpty())
             {
