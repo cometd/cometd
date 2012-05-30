@@ -128,6 +128,11 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
         return ChannelId.isMeta(getChannel());
     }
 
+    public boolean isPublishReply()
+    {
+        return !isMeta() && containsKey(SUCCESSFUL_FIELD);
+    }
+
     public boolean isSuccessful()
     {
         Boolean value = (Boolean)get(Message.SUCCESSFUL_FIELD);

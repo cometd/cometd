@@ -434,21 +434,25 @@ org.cometd.Cometd = function(name)
             var message = messages[i];
             message.id = '' + _nextMessageId();
 
-            if (_isFunction(message._callback))
-            {
-                _publishCallbacks[message.id] = message._callback;
-                delete message._callback;
-            }
-
             if (_clientId)
             {
                 message.clientId = _clientId;
+            }
+
+            var callback = undefined;
+            if (_isFunction(message._callback))
+            {
+                callback = message._callback;
+                // Remove the publish callback before calling the extensions
+                delete message._callback;
             }
 
             message = _applyOutgoingExtensions(message);
             if (message !== undefined && message !== null)
             {
                 messages[i] = message;
+                if (callback)
+                    _publishCallbacks[message.id] = callback;
             }
             else
             {

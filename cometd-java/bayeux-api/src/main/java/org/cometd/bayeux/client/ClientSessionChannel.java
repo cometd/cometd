@@ -78,10 +78,19 @@ public interface ClientSessionChannel extends Channel
      * infrastructure responsible of the JSON conversion.</p>
      *
      * @param data the data to publish
+     * @see #publish(Object, MessageListener)
      */
     public void publish(Object data);
 
-//    public void publish(Object data, MessageListener listener);
+    /**
+     * <p>Publishes the given {@code data} onto this channel, notifying the given
+     * {@code listener} of the publish result, whether successful or unsuccessful.</p>
+     *
+     * @param data the data to publish
+     * @param listener the message listener to notify of the publish result
+     * @see #publish(Object)
+     */
+    public void publish(Object data, MessageListener listener);
 
     /**
      * <p>Subscribes the given {@code listener} to receive messages sent to this channel.</p>
