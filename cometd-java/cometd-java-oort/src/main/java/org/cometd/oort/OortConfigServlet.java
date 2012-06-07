@@ -73,7 +73,7 @@ public abstract class OortConfigServlet implements Servlet
         if (bayeux == null)
             throw new UnavailableException("Missing " + BayeuxServer.ATTRIBUTE + " attribute");
 
-        String url = _config.getInitParameter(OORT_URL_PARAM);
+        String url = provideOortURL();
         if (url == null)
             throw new UnavailableException("Missing " + OORT_URL_PARAM + " init parameter");
 
@@ -115,6 +115,18 @@ public abstract class OortConfigServlet implements Servlet
     }
 
     /**
+     * <p>Retrieves the {@code oort.url} parameter from this servlet init parameters.</p>
+     * <p>Subclasses can override this method to compute the {@code oort.url} parameter
+     * dynamically, for example by retrieving the IP address of the host.</p>
+     *
+     * @return the {@code oort.url} parameter
+     */
+    protected String provideOortURL()
+    {
+        return _config.getInitParameter(OORT_URL_PARAM);
+    }
+
+    /**
      * <p>Configures the Oort cloud by establishing connections with other Oort comets.</p>
      * <p>Subclasses implement their own strategy to discover and link with other comets.</p>
      *
@@ -124,6 +136,13 @@ public abstract class OortConfigServlet implements Servlet
      */
     protected abstract void configureCloud(ServletConfig config, Oort oort) throws Exception;
 
+    /**
+     * <p>Creates and returns a new Oort instance.</p>
+     *
+     * @param bayeux the BayeuxServer instance to which the Oort instance should be associated to
+     * @param url the {@code oort.url} of the Oort instance
+     * @return a new Oort instance
+     */
     protected Oort newOort(BayeuxServer bayeux, String url)
     {
         return new Oort(bayeux, url);
