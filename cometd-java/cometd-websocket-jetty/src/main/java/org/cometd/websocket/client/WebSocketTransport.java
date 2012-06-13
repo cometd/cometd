@@ -27,7 +27,6 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,7 +55,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     public final static String CONNECT_TIMEOUT_OPTION = "connectTimeout";
     public final static String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public final static String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
-    public final static String UNIQUE_MESSAGE_ID_GUARANTEED_OPTION = "uniqueMessageIdGuaranteed";
 
     public static WebSocketTransport create(Map<String, Object> options, WebSocketClientFactory webSocketClientFactory)
     {
@@ -82,7 +80,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     private final WebSocket _websocket = new CometDWebSocket();
     private final Map<String, WebSocketExchange> _metaExchanges = new ConcurrentHashMap<String, WebSocketExchange>();
-    private final Map<String, List<WebSocketExchange>> _exchanges = new HashMap<String, List<WebSocketExchange>>();
     private final WebSocketClientFactory _webSocketClientFactory;
     private volatile ScheduledExecutorService _scheduler;
     private volatile boolean _shutdownScheduler;
@@ -91,7 +88,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile long _connectTimeout = 30000L;
     private volatile int _idleTimeout = 60000;
     private volatile int _maxMessageSize;
-    private volatile boolean _uniqueMessageId = true;
     private volatile boolean _connected;
     private volatile boolean _disconnected;
     private volatile boolean _aborted;
@@ -128,7 +124,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _connectTimeout = getOption(CONNECT_TIMEOUT_OPTION, _connectTimeout);
         _idleTimeout = getOption(IDLE_TIMEOUT_OPTION, _idleTimeout);
         _maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, _webSocketClientFactory.getBufferSize());
-        _uniqueMessageId = getOption(UNIQUE_MESSAGE_ID_GUARANTEED_OPTION, _uniqueMessageId);
         if (_scheduler == null)
         {
             _shutdownScheduler = true;
@@ -337,74 +332,22 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         // Register the exchange
         // Message responses must have the same messageId as the requests
-        // Meta messages have unique messageIds, but this may not be true
-        // for publish messages where the application can specify its own
-        // messageId, so we need to take that in account
 
         WebSocketExchange exchange = new WebSocketExchange(message, listener, task);
         debug("Registering {}", exchange);
-        if (_uniqueMessageId || message.isMeta())
-        {
-            Object existing = _metaExchanges.put(message.getId(), exchange);
-            // Paranoid check
-            if (existing != null)
-                throw new IllegalStateException();
-        }
-        else
-        {
-            synchronized (this)
-            {
-                List<WebSocketExchange> exchanges = _exchanges.get(message.getId());
-                if (exchanges == null)
-                {
-                    exchanges = new LinkedList<WebSocketExchange>();
-                    Object existing = _exchanges.put(message.getId(), exchanges);
-                    // Paranoid check
-                    if (existing != null)
-                        throw new IllegalStateException();
-                }
-                exchanges.add(exchange);
-            }
-        }
+        Object existing = _metaExchanges.put(message.getId(), exchange);
+        // Paranoid check
+        if (existing != null)
+            throw new IllegalStateException();
     }
 
     private WebSocketExchange deregisterMessage(Message message)
     {
-        WebSocketExchange exchange = null;
-        if (_uniqueMessageId || message.isMeta())
-        {
-            exchange = _metaExchanges.remove(message.getId());
-            if (Channel.META_CONNECT.equals(message.getChannel()))
-                _connected = false;
-            else if (Channel.META_DISCONNECT.equals(message.getChannel()))
-                _disconnected = true;
-        }
-        else
-        {
-            // Check if it is a publish reply
-            if (message.isPublishReply())
-            {
-                synchronized (this)
-                {
-                    List<WebSocketExchange> exchanges = _exchanges.get(message.getId());
-                    if (exchanges != null)
-                    {
-                        for (int i = 0; i < exchanges.size(); ++i)
-                        {
-                            WebSocketExchange x = exchanges.get(i);
-                            if (message.getChannel().equals(x.message.getChannel()))
-                            {
-                                exchanges.remove(x);
-                                if (exchanges.isEmpty())
-                                    _exchanges.remove(message.getId());
-                                exchange = x;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        WebSocketExchange exchange = _metaExchanges.remove(message.getId());
+        if (Channel.META_CONNECT.equals(message.getChannel()))
+            _connected = false;
+        else if (Channel.META_DISCONNECT.equals(message.getChannel()))
+            _disconnected = true;
 
         debug("Deregistering {} for message {}", exchange, message);
 
@@ -426,22 +369,6 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         {
             deregisterMessage(exchange.message);
             exchange.listener.onException(cause, new Message[]{exchange.message});
-        }
-
-        if (!_uniqueMessageId)
-        {
-            exchanges = new ArrayList<WebSocketExchange>();
-            synchronized (this)
-            {
-                for (List<WebSocketExchange> exchangeList : _exchanges.values())
-                {
-                    exchanges.addAll(exchangeList);
-                    for (WebSocketExchange exchange : exchangeList)
-                        deregisterMessage(exchange.message);
-                }
-            }
-            for (WebSocketExchange exchange : exchanges)
-                exchange.listener.onException(cause, new Message[]{exchange.message});
         }
     }
 

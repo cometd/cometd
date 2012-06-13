@@ -1351,12 +1351,8 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             {
                 Message.Mutable message = iterator.next();
 
-                String messageId = message.getId();
-                if (message.isMeta() || messageId == null)
-                {
-                    messageId = newMessageId();
-                    message.setId(messageId);
-                }
+                String messageId = newMessageId();
+                message.setId(messageId);
 
                 if (clientId != null)
                     message.setClientId(clientId);
@@ -1369,8 +1365,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     // Extensions may have modified the messageId, but we need to own
                     // the messageId in case of meta messages to link request/response
                     // in non request/response transports such as websocket
-                    if (message.isMeta())
-                        message.setId(messageId);
+                    message.setId(messageId);
                     if (callback != null)
                         publishCallbacks.put(messageId, callback);
                 }
