@@ -23,7 +23,8 @@
                         </goals>
                         <configuration>
                             <target>
-                                <copy file="${basedir}/src/main/webapp/dojox/cometd/main.js" tofile="${project.build.directory}/${project.build.finalName}/dojox/cometd.js" />
+                                <copy file="${basedir}/src/main/webapp/dojox/cometd/main.js"
+                                      tofile="${project.build.directory}/${project.build.finalName}/dojox/cometd.js" />
                             </target>
                         </configuration>
                     </execution>
