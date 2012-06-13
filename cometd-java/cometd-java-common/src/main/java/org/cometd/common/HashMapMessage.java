@@ -17,10 +17,7 @@
 package org.cometd.common;
 
 import java.io.Serializable;
-import java.text.ParseException;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.cometd.bayeux.ChannelId;
@@ -179,24 +176,4 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
     // The code below is a relic of a mistake in the API, but it is kept for backward compatibility.
 
     private static JSONContext.Client _jsonContext = new JettyJSONContextClient();
-
-    /**
-     * <p>Parses the given string into a list of {@link Mutable}s.</p>
-     *
-     * @param content the string to parse
-     * @return the list of parsed {@link Mutable}s
-     * @deprecated Use {@link JSONContext#parse(String)} instead
-     */
-    @Deprecated
-    public static List<Mutable> parseMessages(String content)
-    {
-        try
-        {
-            return Arrays.asList(_jsonContext.parse(content));
-        }
-        catch (ParseException x)
-        {
-            throw new RuntimeException(x);
-        }
-    }
 }

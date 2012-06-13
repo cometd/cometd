@@ -16,9 +16,6 @@
 
 package org.cometd.server;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.text.ParseException;
 import java.util.AbstractSet;
 import java.util.Collections;
 import java.util.Iterator;
@@ -28,7 +25,6 @@ import java.util.Set;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.common.HashMapMessage;
 import org.cometd.common.JSONContext;
-import org.eclipse.jetty.util.IO;
 
 public class ServerMessageImpl extends HashMapMessage implements ServerMessage.Mutable
 {
@@ -204,36 +200,4 @@ public class ServerMessageImpl extends HashMapMessage implements ServerMessage.M
     // The code below is a relic of a mistake in the API, but it is kept for backward compatibility
 
     private static JSONContext.Server _jsonContext = new JettyJSONContextServer();
-
-    /**
-     * <p>Parses the content of the given reader into an array of {@link ServerMessage.Mutable}s.</p>
-     *
-     * @param reader the reader to read from
-     * @param jsonDebug whether or not read the whole content of the reader into a string and then parse the string
-     * @return an array of {@link ServerMessage.Mutable}s
-     * @throws ParseException if the parsing fails
-     * @throws IOException if reading from the reader fails
-     * @deprecated
-     */
-    @Deprecated
-    public static ServerMessage.Mutable[] parseServerMessages(Reader reader, boolean jsonDebug) throws ParseException, IOException
-    {
-        if (jsonDebug)
-            return _jsonContext.parse(IO.toString(reader));
-        return _jsonContext.parse(reader);
-    }
-
-    /**
-     * <p>Parses the given string into an array of {@link ServerMessage.Mutable}s.</p>
-     *
-     * @param json the string to parse
-     * @return an array of {@link ServerMessage.Mutable}s
-     * @throws ParseException if the parsing fails
-     * @deprecated
-     */
-    @Deprecated
-    public static ServerMessage.Mutable[] parseServerMessages(String json) throws ParseException
-    {
-        return _jsonContext.parse(json);
-    }
 }

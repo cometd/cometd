@@ -64,22 +64,6 @@ public abstract class HttpTransport extends AbstractServerTransport
         return _currentRequest.get();
     }
 
-    public InetSocketAddress getCurrentLocalAddress()
-    {
-        BayeuxContext context = getContext();
-        if (context != null)
-            return context.getLocalAddress();
-        return null;
-    }
-
-    public InetSocketAddress getCurrentRemoteAddress()
-    {
-        BayeuxContext context = getContext();
-        if (context != null)
-            return context.getRemoteAddress();
-        return null;
-    }
-
     public BayeuxContext getContext()
     {
         HttpServletRequest request = getCurrentRequest();

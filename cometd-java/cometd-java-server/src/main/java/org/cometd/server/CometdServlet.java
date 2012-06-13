@@ -47,21 +47,6 @@ import org.slf4j.LoggerFactory;
 public class CometdServlet extends HttpServlet
 {
     private static final long serialVersionUID = 3637310585741732936L;
-    /**
-     * @deprecated Use {@link BayeuxServerImpl#CONFIG_LOG_LEVEL} instead.
-     */
-    @Deprecated
-    public static final int CONFIG_LEVEL = BayeuxServerImpl.CONFIG_LOG_LEVEL;
-    /**
-     * @deprecated Use {@link BayeuxServerImpl#INFO_LOG_LEVEL} instead.
-     */
-    @Deprecated
-    public static final int INFO_LEVEL = BayeuxServerImpl.INFO_LOG_LEVEL;
-    /**
-     * @deprecated Use {@link BayeuxServerImpl#DEBUG_LOG_LEVEL} instead.
-     */
-    @Deprecated
-    public static final int DEBUG_LEVEL = BayeuxServerImpl.DEBUG_LOG_LEVEL;
 
     protected final Logger _logger = LoggerFactory.getLogger(getClass());
     private volatile BayeuxServerImpl _bayeux;

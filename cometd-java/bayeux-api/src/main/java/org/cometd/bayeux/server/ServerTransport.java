@@ -16,8 +16,6 @@
 
 package org.cometd.bayeux.server;
 
-import java.net.InetSocketAddress;
-
 import org.cometd.bayeux.Transport;
 
 /**
@@ -67,20 +65,6 @@ public interface ServerTransport extends Transport
      * @return whether the messages are delivered to clients exclusively via the "/meta/connect" channel
      */
     public boolean isMetaConnectDeliveryOnly();
-
-    /**
-     * @return the remote socket address
-     * @deprecated use {@link #getContext()} and {@link BayeuxContext#getRemoteAddress()}
-     */
-    @Deprecated
-    public InetSocketAddress getCurrentRemoteAddress();
-
-    /**
-     * @return the local socket address
-     * @deprecated use {@link #getContext()} and {@link BayeuxContext#getLocalAddress()}
-     */
-    @Deprecated
-    public InetSocketAddress getCurrentLocalAddress();
 
     /**
      * @return The current transport context or null if no current context

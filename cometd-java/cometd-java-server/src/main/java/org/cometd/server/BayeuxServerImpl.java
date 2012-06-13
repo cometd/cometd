@@ -589,29 +589,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return result;
     }
 
-
-    /**
-     * Scans all the channels and returns those identified by a {@link ChannelId channel id}
-     * that is a child of the given {@code channelId}.
-     * @param channelId the parent channel id used to look for children
-     * @return a list of channels identified by a {@link ChannelId channel id}
-     * that is a child of the given {@code channelId}
-     * @deprecated because it scans all the existing channels and therefore is inefficient;
-     * if the functionality is needed, then we may consider adding it to ServerChannel.
-     */
-    @Deprecated
-    public List<ServerChannelImpl> getChannelChildren(ChannelId channelId)
-    {
-        ArrayList<ServerChannelImpl> children = new ArrayList<ServerChannelImpl>();
-        for (ServerChannelImpl channel :_channels.values())
-        {
-            channel.waitForInitialized();
-            if (channelId.isParentOf(channel.getChannelId()))
-                children.add(channel);
-        }
-        return children;
-    }
-
     public void removeListener(BayeuxServerListener listener)
     {
         _listeners.remove(listener);
