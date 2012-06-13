@@ -107,11 +107,9 @@ public class ConsoleChatClient
             public void run()
             {
                 ClientSessionChannel chatChannel = client.getChannel("/chat/demo");
-                chatChannel.unsubscribe(chatListener);
                 chatChannel.subscribe(chatListener);
 
-                ClientSessionChannel membersChannel = client.getChannel("/chat/members");
-                membersChannel.unsubscribe(membersListener);
+                ClientSessionChannel membersChannel = client.getChannel("/members/demo");
                 membersChannel.subscribe(membersListener);
 
                 Map<String, Object> data = new HashMap<String, Object>();
