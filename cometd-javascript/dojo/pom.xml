@@ -17,6 +17,7 @@
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>main</id>
                         <phase>prepare-package</phase>
                         <goals>
                             <goal>run</goal>
@@ -53,6 +54,83 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>sync-dojo</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <cometd-dojo-dir>${project.build.directory}/cometd-dojo</cometd-dojo-dir>
+                <cometd-dojo-fetch>scm:git:git@github.com:cometd/cometd-dojo.git</cometd-dojo-fetch>
+                <cometd-dojo-push>scm:git:ssh://git@github.com/cometd/cometd-dojo.git</cometd-dojo-push>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-scm-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>clone</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>checkout</goal>
+                                </goals>
+                                <configuration>
+                                    <checkoutDirectory>${cometd-dojo-dir}</checkoutDirectory>
+                                    <connectionUrl>${cometd-dojo-fetch}</connectionUrl>
+                                    <developerConnectionUrl>${cometd-dojo-push}</developerConnectionUrl>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>push</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>checkin</goal>
+                                </goals>
+                                <configuration>
+                                    <basedir>${cometd-dojo-dir}</basedir>
+                                    <includes>cometd.js,cometd/**,org/**</includes>
+                                    <message>Synchronizing ${project.version}</message>
+                                    <connectionUrl>${cometd-dojo-fetch}</connectionUrl>
+                                    <developerConnectionUrl>${cometd-dojo-push}</developerConnectionUrl>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sync</id>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <copy todir="${cometd-dojo-dir}">
+                                            <fileset dir="${project.build.directory}/${project.build.finalName}">
+                                                <include name="org/**" />
+                                            </fileset>
+                                            <fileset dir="${project.build.directory}/${project.build.finalName}/dojox">
+                                                <include name="cometd.js" />
+                                                <include name="cometd/**" />
+                                            </fileset>
+                                        </copy>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <dependencies>
         <dependency>
