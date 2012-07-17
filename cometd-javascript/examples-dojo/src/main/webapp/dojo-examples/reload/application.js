@@ -1,10 +1,11 @@
 require({
+        baseUrl: '../..',
         packages: [{
             name: 'dojox/cometd',
-            location: '/dojox/cometd'
+            location: 'dojox/cometd'
         },{
             name: 'org',
-            location: '/org'
+            location: 'org'
         }]
     },
     ['dojox/cometd', 'dojo/dom', 'dojo/_base/unload', 'dojox/cometd/reload'],
