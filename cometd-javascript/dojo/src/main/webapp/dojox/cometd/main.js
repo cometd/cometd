@@ -108,12 +108,12 @@ define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/io/script', 
     cometd._metaHandshakeEvent = function(event)
     {
         event.action = "handshake";
-        topic.publish("/cometd/meta", [event]);
+        topic.publish("/cometd/meta", event);
     };
     cometd._metaConnectEvent = function(event)
     {
         event.action = "connect";
-        topic.publish("/cometd/meta", [event]);
+        topic.publish("/cometd/meta", event);
     };
     cometd.addListener('/meta/handshake', cometd, cometd._metaHandshakeEvent);
     cometd.addListener('/meta/connect', cometd, cometd._metaConnectEvent);
