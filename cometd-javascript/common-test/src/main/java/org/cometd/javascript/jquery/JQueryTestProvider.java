@@ -29,7 +29,7 @@ public class JQueryTestProvider implements TestProvider
         threadModel.evaluate(new URL(contextURL + "/json2.js"));
         threadModel.evaluate(new URL(contextURL + "/env.js"));
         threadModel.evaluate("window_location", "window.location = '" + contextURL + "'");
-        threadModel.evaluate(new URL(contextURL + "/jquery/jquery-1.7.2.js"));
+        threadModel.evaluate(new URL(contextURL + "/jquery/jquery-1.8.0.js"));
         threadModel.evaluate(new URL(contextURL + "/org/cometd.js"));
         threadModel.evaluate(new URL(contextURL + "/jquery/jquery.cometd.js"));
         threadModel.evaluate("cometd", "var cometd = $.cometd;");
