@@ -60,6 +60,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     public static final String MESSAGES_PER_FRAME_OPTION = "messagesPerFrame";
     public static final String BUFFER_SIZE_OPTION = "bufferSize";
     public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
+    public static final String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
 
     private final WebSocketFactory _factory = new WebSocketFactory(this);
@@ -85,6 +86,8 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         _factory.setBufferSize(bufferSize);
         int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, bufferSize - 16);
         _factory.setMaxTextMessageSize(maxMessageSize);
+        long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, _factory.getMaxIdleTime());
+        _factory.setMaxIdleTime((int)idleTimeout);
         _executor = newExecutor();
         _scheduler = newScheduledExecutor();
         try
