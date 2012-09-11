@@ -1,7 +1,7 @@
 require({
     baseUrl: '../../jquery',
     paths: {
-        jquery: 'jquery-1.8.0',
+        jquery: 'jquery-1.8.1',
         org: '../org'
     }
 },
