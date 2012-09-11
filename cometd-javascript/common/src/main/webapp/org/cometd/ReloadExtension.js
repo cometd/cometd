@@ -59,7 +59,6 @@
             {
                 if (_state && _state.handshakeResponse !== null)
                 {
-                    _cometd.getTransport().abort();
                     _configure(config);
                     _state.cookiePath = _cookiePath;
                     var cookie = org_cometd.JSON.toJSON(_state);

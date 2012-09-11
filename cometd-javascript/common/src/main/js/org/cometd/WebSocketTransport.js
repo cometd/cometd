@@ -319,6 +319,24 @@ org.cometd.WebSocketTransport = function()
         _send.call(this, envelope, metaConnect);
     };
 
+    _self.abort = function()
+    {
+        _super.abort();
+        if (_webSocket !== null)
+        {
+            try
+            {
+                _webSocket.close(1001);
+            }
+            catch (x)
+            {
+                // Firefox may throw, just ignore
+                this._debug(x);
+            }
+        }
+        this.reset();
+    };
+
     _self.reset = function()
     {
         _super.reset();

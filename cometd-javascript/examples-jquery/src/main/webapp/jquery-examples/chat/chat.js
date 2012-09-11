@@ -43,7 +43,6 @@
     function Chat(state)
     {
         var _self = this;
-        var _wasConnected = false;
         var _connected = false;
         var _username;
         var _lastUser;
@@ -76,7 +75,7 @@
 
             $.cometd.configure({
                 url: cometdURL,
-                logLevel: 'info'
+                logLevel: 'debug'
             });
             $.cometd.handshake();
 
@@ -263,13 +262,13 @@
             }
             else
             {
-                _wasConnected = _connected;
+                var wasConnected = _connected;
                 _connected = message.successful === true;
-                if (!_wasConnected && _connected)
+                if (!wasConnected && _connected)
                 {
                     _connectionEstablished();
                 }
-                else if (_wasConnected && !_connected)
+                else if (wasConnected && !_connected)
                 {
                     _connectionBroken();
                 }
@@ -299,20 +298,18 @@
 
         $(window).unload(function()
         {
-            if ($.cometd.reload)
+            $.cometd.reload();
+            // Save the application state only if the user was chatting
+            if (_username)
             {
-                $.cometd.reload();
-                // Save the application state only if the user was chatting
-                if (_wasConnected && _username)
-                {
-                    var expires = new Date();
-                    expires.setTime(expires.getTime() + 5 * 1000);
-                    org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
-                        username: _username,
-                        useServer: $('#useServer').attr('checked'),
-                        altServer: $('#altServer').val()
-                    }), { 'max-age': 5, expires: expires });
-                }
+                var expires = new Date();
+                expires.setTime(expires.getTime() + 5 * 1000);
+                org.cometd.COOKIE.set('org.cometd.demo.state', org.cometd.JSON.toJSON({
+                    username: _username,
+                    useServer: $('#useServer').attr('checked'),
+                    altServer: $('#altServer').val()
+                }), { 'max-age': 5, expires: expires });
+                $.cometd.getTransport().abort();
             }
             else
             {

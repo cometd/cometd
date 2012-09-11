@@ -53,7 +53,7 @@ function(dojo, cometd)
             // Restore the state, if present
             if (state)
             {
-                dojo.byId('username').value=state.username;
+                dojo.byId('username').value = state.username;
                 setTimeout(function()
                 {
                     // This will perform the handshake
@@ -293,8 +293,11 @@ function(dojo, cometd)
             dojo.cookie('org.cometd.demo.state', dojo.toJson({
                 username: room._username
             }), { 'max-age': 5 });
+            cometd.getTransport().abort();
         }
         else
+        {
             cometd.disconnect();
+        }
     });
 });
