@@ -8,14 +8,15 @@
     </formats>
     <fileSets>
         <fileSet>
-            <directory>${project.basedir}${file.separator}..</directory>
+            <directory>${project.basedir}/..</directory>
             <outputDirectory>/</outputDirectory>
             <excludes>
+                <exclude>**/overlays/**</exclude>
                 <exclude>**/target/**</exclude>
             </excludes>
         </fileSet>
         <fileSet>
-            <directory>${project.basedir}${file.separator}..</directory>
+            <directory>${project.basedir}/..</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>**/target/*.?ar</include>
