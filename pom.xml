@@ -6,13 +6,13 @@
     <artifactId>cometd-project</artifactId>
     <packaging>pom</packaging>
     <name>CometD</name>
-    <version>2.5.1-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>7.6.7.v20120910</jetty-version>
+        <jetty-version>9.0.0.M0</jetty-version>
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
-        <slf4j-version>1.6.6</slf4j-version>
+        <slf4j-version>1.7.1</slf4j-version>
         <spring-version>3.1.2.RELEASE</spring-version>
     </properties>
 
