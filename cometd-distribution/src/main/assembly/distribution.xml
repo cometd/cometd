@@ -13,6 +13,9 @@
             <excludes>
                 <exclude>**/overlays/**</exclude>
                 <exclude>**/target/**</exclude>
+                <exclude>**/.idea/**</exclude>
+                <exclude>**/*.iml</exclude>
+                <exclude>.gitignore</exclude>
             </excludes>
         </fileSet>
         <fileSet>
