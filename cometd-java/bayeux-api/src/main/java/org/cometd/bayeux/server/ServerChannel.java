@@ -120,7 +120,7 @@ public interface ServerChannel extends ConfigurableServerChannel
     {
         /**
          * <p>Callback invoked when a message is being published.</p>
-         * <p>Implementors can decide to return false to signal that the message should not be
+         * <p>Implementers can decide to return false to signal that the message should not be
          * published.</p>
          *
          * @param from    the session that publishes the message

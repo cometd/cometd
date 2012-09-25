@@ -23,32 +23,27 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
     private int[] _ids;
     private int _currentId;
 
-    /* ------------------------------------------------------------ */
     public ArrayIdQueue()
     {
         this(DEFAULT_CAPACITY);
     }
 
-    /* ------------------------------------------------------------ */
     public ArrayIdQueue(int capacity)
     {
         this(capacity, -1);
     }
 
-    /* ------------------------------------------------------------ */
     public ArrayIdQueue(int initCapacity, int growBy)
     {
         this(initCapacity, growBy, null);
     }
 
-    /* ------------------------------------------------------------ */
     public ArrayIdQueue(int initCapacity, int growBy, Object lock)
     {
         super(initCapacity, growBy, lock);
         _ids = new int[initCapacity];
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return currentId the latest batch that has been sent to the client
      */
@@ -60,7 +55,6 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void setCurrentId(int currentId)
     {
         synchronized (_lock)
@@ -69,7 +63,6 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void incrementCurrentId()
     {
         synchronized (_lock)
@@ -78,7 +71,6 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
         }
     }
 
-    /* ------------------------------------------------------------ */
     public boolean add(E e)
     {
         synchronized (_lock)
@@ -90,7 +82,6 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void addUnsafe(E e)
     {
         int nextSlot = _nextSlot;
@@ -98,7 +89,6 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
         _ids[nextSlot] = _currentId;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean offer(E e)
     {
         synchronized (_lock)
@@ -110,7 +100,6 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
         }
     }
 
-    /* ------------------------------------------------------------ */
     public int getAssociatedId(int index)
     {
         synchronized (_lock)
@@ -121,14 +110,12 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
         }
     }
 
-    /* ------------------------------------------------------------ */
     public int getAssociatedIdUnsafe(int index)
     {
         int i = (_nextE + index) % _ids.length;
         return _ids[i];
     }
 
-    /* ------------------------------------------------------------ */
     public E remove(int index)
     {
         synchronized (_lock)
@@ -158,7 +145,6 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
         }
     }
 
-    /* ------------------------------------------------------------ */
     public E set(int index, E element)
     {
         synchronized (_lock)
@@ -174,7 +160,6 @@ public class ArrayIdQueue<E> extends ArrayQueue<E>
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void add(int index, E element)
     {
         synchronized (_lock)

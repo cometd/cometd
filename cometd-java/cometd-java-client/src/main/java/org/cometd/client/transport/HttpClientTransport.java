@@ -42,6 +42,7 @@ public abstract class HttpClientTransport extends ClientTransport
         this.url = url;
     }
 
+    // TODO: remove, cookie now handled natively in HttpClient
     protected CookieProvider getCookieProvider()
     {
         return cookieProvider;

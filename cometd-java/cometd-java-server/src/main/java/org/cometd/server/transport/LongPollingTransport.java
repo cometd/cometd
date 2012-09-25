@@ -43,7 +43,6 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/* ------------------------------------------------------------ */
 /**
  * Abstract Long Polling Transport.
  * <p/>

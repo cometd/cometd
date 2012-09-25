@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>Installing this extension in a {@link BayeuxServer} provides support to
  * message acknowledgement if a client also supports it.</p>
- *
+ * <p/>
  * <p>The main role of this extension is to install the
  * {@link AcknowledgedMessagesClientExtension} on the {@link ServerSession} instances
  * created during handshake for clients that also support the ack extension.</p>
@@ -59,7 +59,7 @@ public class AcknowledgedMessagesExtension extends Extension.Adapter
         {
             Message rcv = message.getAssociated();
 
-            Map<String,Object> ext = rcv.getExt();
+            Map<String, Object> ext = rcv.getExt();
             boolean clientRequestedAcks = ext != null && ext.get("ack") == Boolean.TRUE;
 
             if (clientRequestedAcks && to != null)
@@ -69,11 +69,11 @@ public class AcknowledgedMessagesExtension extends Extension.Adapter
                 ((ServerSessionImpl)to).setMetaConnectDeliveryOnly(true);
             }
 
-            Map<String,Object> mext=message.getExt();
-            if (mext!=null)
-                mext.put("ack",Boolean.TRUE);
+            Map<String, Object> mext = message.getExt();
+            if (mext != null)
+                mext.put("ack", Boolean.TRUE);
             else
-                message.put(Message.EXT_FIELD,_replyExt);
+                message.put(Message.EXT_FIELD, _replyExt);
         }
 
         return true;

@@ -24,7 +24,6 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 
-/* ------------------------------------------------------------ */
 /**
  * Timesync extension (server side).
  *

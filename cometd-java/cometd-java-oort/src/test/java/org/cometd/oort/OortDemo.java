@@ -32,7 +32,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
-/* ------------------------------------------------------------ */
 /**
  * Main class for cometd demo.
  * This is of use when running demo in a terracotta cluster
@@ -42,7 +41,6 @@ public class OortDemo
     private Oort _oort;
     Server _server;
 
-    /* ------------------------------------------------------------ */
     /**
      * @param args
      */
@@ -53,7 +51,6 @@ public class OortDemo
         demo._server.join();
     }
 
-    /* ------------------------------------------------------------ */
     public OortDemo(int port) throws Exception
     {
         String base=".";

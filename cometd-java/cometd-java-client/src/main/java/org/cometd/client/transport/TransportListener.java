@@ -19,11 +19,27 @@ package org.cometd.client.transport;
 import java.util.List;
 
 import org.cometd.bayeux.Message;
+import org.cometd.client.BayeuxClient;
 
+/**
+ * <p>Abstracts the communication between {@link BayeuxClient} and {@link ClientTransport}.</p>
+ * <p>A {@link TransportListener} is associated to every batch of messages being sent,
+ * and notified when responses for those messages come back, or a failure occurs.</p>
+ *
+ * @see MessageClientTransport
+ */
 public interface TransportListener
 {
+    /**
+     * Callback method invoked when the batch of messages is being sent.
+     * @param messages the batch of messages being sent
+     */
     void onSending(Message[] messages);
 
+    /**
+     *
+     * @param messages
+     */
     void onMessages(List<Message.Mutable> messages);
 
     void onConnectException(Throwable x, Message[] messages);

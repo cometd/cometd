@@ -23,7 +23,6 @@ import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 
-/* ------------------------------------------------------------ */
 /**
  * <p>The server-side Bayeux interface.</p>
  * <p>An instance of the {@link BayeuxServer} interface is available to

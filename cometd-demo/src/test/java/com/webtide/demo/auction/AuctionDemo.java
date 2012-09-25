@@ -30,7 +30,6 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.webtide.demo.auction.AuctionServlet;
 
-/* ------------------------------------------------------------ */
 /**
  * Main class for cometd demo.
  * This is of use when running demo in a terracotta cluster
@@ -40,7 +39,6 @@ public class AuctionDemo
     private static int _testHandshakeFailure;
     private Oort _oort;
 
-    /* ------------------------------------------------------------ */
     /**
      * @param args
      */
@@ -50,7 +48,6 @@ public class AuctionDemo
         // AuctionDemo d8081=new AuctionDemo(8081);
     }
 
-    /* ------------------------------------------------------------ */
     public AuctionDemo(int port) throws Exception
     {
         String base=".";
