@@ -138,7 +138,7 @@ public class TimesyncExtension extends Extension.Adapter
                     {
                         // old style timesync
                         Map<String,Object> extOut=message.getExt(true);
-                        Map<String, Object> timesync = new HashMap<String, Object>(3);
+                        Map<String, Object> timesync = new HashMap<>(3);
                         timesync.put("tc", tc);
                         timesync.put("ts", ts);
                         timesync.put("p", System.currentTimeMillis() - ts);
@@ -154,7 +154,7 @@ public class TimesyncExtension extends Extension.Adapter
                         if (l == 0 || a >= _accuracyTarget || a <= -_accuracyTarget)
                         {
                             Map<String,Object> extOut = message.getExt(true);
-                            Map<String, Object> timesync = new HashMap<String, Object>(4);
+                            Map<String, Object> timesync = new HashMap<>(4);
                             timesync.put("tc", tc);
                             timesync.put("ts", ts);
                             timesync.put("p", System.currentTimeMillis() - ts);

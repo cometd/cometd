@@ -18,7 +18,6 @@ package org.cometd.server.filter;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -90,17 +89,13 @@ public class JSONDataFilter implements DataFilter
         return array;
     }
 
-    protected Object filterMap(ServerSession from, ServerChannel to, Map map)
+    protected Object filterMap(ServerSession from, ServerChannel to, Map<String, Object> map)
     {
         if (map == null)
             return null;
 
-        Iterator iter=map.entrySet().iterator();
-        while(iter.hasNext())
-        {
-            Map.Entry entry=(Map.Entry)iter.next();
-            entry.setValue(filter(from,to,entry.getValue()));
-        }
+        for (Map.Entry<String, Object> entry : map.entrySet())
+            entry.setValue(filter(from, to, entry.getValue()));
 
         return map;
     }

@@ -44,12 +44,12 @@ public class ServerChannelImpl implements ServerChannel
     private final BayeuxServerImpl _bayeux;
     private final ChannelId _id;
     private final AttributesMap _attributes = new AttributesMap();
-    private final Set<ServerSession> _subscribers = new CopyOnWriteArraySet<ServerSession>();
-    private final List<ServerChannelListener> _listeners = new CopyOnWriteArrayList<ServerChannelListener>();
-    private final List<Authorizer> _authorizers = new CopyOnWriteArrayList<Authorizer>();
+    private final Set<ServerSession> _subscribers = new CopyOnWriteArraySet<>();
+    private final List<ServerChannelListener> _listeners = new CopyOnWriteArrayList<>();
+    private final List<Authorizer> _authorizers = new CopyOnWriteArrayList<>();
     private final CountDownLatch _initialized = new CountDownLatch(1);
     private final AtomicInteger _sweeperPasses = new AtomicInteger();
-    private final Set<ServerChannelImpl> _children = new ConcurrentHashSet<ServerChannelImpl>();
+    private final Set<ServerChannelImpl> _children = new ConcurrentHashSet<>();
     private final ServerChannelImpl _parent;
     private boolean _lazy;
     private boolean _persistent;

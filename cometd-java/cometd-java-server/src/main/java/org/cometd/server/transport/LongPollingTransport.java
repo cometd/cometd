@@ -65,8 +65,8 @@ public abstract class LongPollingTransport extends HttpTransport
     public final static String ALLOW_MULTI_SESSIONS_NO_BROWSER_OPTION = "allowMultiSessionsNoBrowser";
 
     private final Logger _logger = LoggerFactory.getLogger(getClass());
-    private final ConcurrentHashMap<String, AtomicInteger> _browserMap = new ConcurrentHashMap<String, AtomicInteger>();
-    private final Map<String, AtomicInteger> _browserSweep = new ConcurrentHashMap<String, AtomicInteger>();
+    private final ConcurrentHashMap<String, AtomicInteger> _browserMap = new ConcurrentHashMap<>();
+    private final Map<String, AtomicInteger> _browserSweep = new ConcurrentHashMap<>();
     private String _browserId = "BAYEUX_BROWSER";
     private int _maxSessionsPerBrowser = 1;
     private long _multiSessionInterval = 2000;
@@ -489,7 +489,7 @@ public abstract class LongPollingTransport extends HttpTransport
         if (requestParameters.length == 1)
             return parseMessages(requestParameters[0]);
 
-        List<ServerMessage.Mutable> messages = new ArrayList<ServerMessage.Mutable>();
+        List<ServerMessage.Mutable> messages = new ArrayList<>();
         for (String batch : requestParameters)
         {
             if (batch == null)

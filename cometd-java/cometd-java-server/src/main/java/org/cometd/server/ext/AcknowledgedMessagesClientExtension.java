@@ -50,7 +50,7 @@ public class AcknowledgedMessagesClientExtension implements Extension
         synchronized (_lock)
         {
             Queue<ServerMessage> queue = _session.getQueue();
-            _unackedQueue = new ArrayIdQueue<ServerMessage>(16, 32, queue);
+            _unackedQueue = new ArrayIdQueue<>(16, 32, queue);
             _unackedQueue.setCurrentId(1);
         }
     }

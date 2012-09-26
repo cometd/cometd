@@ -44,7 +44,7 @@ public class AcknowledgedMessagesExtension extends Extension.Adapter
 
     public AcknowledgedMessagesExtension()
     {
-        _replyExt = new HashMap<String, Object>(1);
+        _replyExt = new HashMap<>(1);
         _replyExt.put("ack", true);
     }
 

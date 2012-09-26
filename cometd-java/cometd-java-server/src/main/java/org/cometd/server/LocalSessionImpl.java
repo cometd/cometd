@@ -38,8 +38,8 @@ import org.cometd.common.AbstractClientSession;
  */
 public class LocalSessionImpl extends AbstractClientSession implements LocalSession
 {
-    private final Queue<ServerMessage.Mutable> _queue = new ConcurrentLinkedQueue<ServerMessage.Mutable>();
-    private final Map<String, ClientSessionChannel.MessageListener> publishCallbacks = new ConcurrentHashMap<String, ClientSessionChannel.MessageListener>();
+    private final Queue<ServerMessage.Mutable> _queue = new ConcurrentLinkedQueue<>();
+    private final Map<String, ClientSessionChannel.MessageListener> publishCallbacks = new ConcurrentHashMap<>();
     private final BayeuxServerImpl _bayeux;
     private final String _idHint;
 

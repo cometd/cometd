@@ -43,7 +43,7 @@ public abstract class HttpTransport extends AbstractServerTransport
     public static final String JSON_DEBUG_OPTION = "jsonDebug";
     public static final String MESSAGE_PARAM = "message";
 
-    private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<HttpServletRequest>();
+    private final ThreadLocal<HttpServletRequest> _currentRequest = new ThreadLocal<>();
 
     protected HttpTransport(BayeuxServerImpl bayeux, String name)
     {

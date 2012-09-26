@@ -76,14 +76,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     private final Logger _logger = LoggerFactory.getLogger(getClass().getName() + "." + System.identityHashCode(this));
     private final SecureRandom _random = new SecureRandom();
-    private final List<BayeuxServerListener> _listeners = new CopyOnWriteArrayList<BayeuxServerListener>();
-    private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
-    private final ConcurrentMap<String, ServerSessionImpl> _sessions = new ConcurrentHashMap<String, ServerSessionImpl>();
-    private final ConcurrentMap<String, ServerChannelImpl> _channels = new ConcurrentHashMap<String, ServerChannelImpl>();
-    private final ConcurrentMap<String, ServerTransport> _transports = new ConcurrentHashMap<String, ServerTransport>();
-    private final List<String> _allowedTransports = new CopyOnWriteArrayList<String>();
-    private final ThreadLocal<AbstractServerTransport> _currentTransport = new ThreadLocal<AbstractServerTransport>();
-    private final Map<String,Object> _options = new TreeMap<String, Object>();
+    private final List<BayeuxServerListener> _listeners = new CopyOnWriteArrayList<>();
+    private final List<Extension> _extensions = new CopyOnWriteArrayList<>();
+    private final ConcurrentMap<String, ServerSessionImpl> _sessions = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ServerChannelImpl> _channels = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ServerTransport> _transports = new ConcurrentHashMap<>();
+    private final List<String> _allowedTransports = new CopyOnWriteArrayList<>();
+    private final ThreadLocal<AbstractServerTransport> _currentTransport = new ThreadLocal<>();
+    private final Map<String,Object> _options = new TreeMap<>();
     private final Timeout _timeout = new Timeout();
     private final Map<String, Object> _handshakeAdvice;
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
@@ -95,7 +95,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         addTransport(new JSONTransport(this));
         addTransport(new JSONPTransport(this));
-        _handshakeAdvice = new HashMap<String, Object>(2);
+        _handshakeAdvice = new HashMap<>(2);
         _handshakeAdvice.put(Message.RECONNECT_FIELD, Message.RECONNECT_HANDSHAKE_VALUE);
         _handshakeAdvice.put(Message.INTERVAL_FIELD, 0L);
     }
@@ -419,7 +419,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
         // Another thread may add this channel concurrently, so wait until it is initialized
         channel.waitForInitialized();
-        return new AtomicMarkableReference<ServerChannelImpl>(channel, initialized);
+        return new AtomicMarkableReference<>(channel, initialized);
     }
 
     private void notifyConfigureChannel(Initializer listener, ServerChannel channel)
@@ -580,7 +580,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public List<ServerChannel> getChannels()
     {
-        List<ServerChannel> result = new ArrayList<ServerChannel>();
+        List<ServerChannel> result = new ArrayList<>();
         for (ServerChannelImpl channel : _channels.values())
         {
             channel.waitForInitialized();
@@ -684,7 +684,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         if (_policy != null && !_policy.canPublish(this, session, channel, message))
         {
-            _logger.warn("{} denied Publish@{} by {}", new Object[]{session, channel.getId(), _policy});
+            _logger.warn("{} denied Publish@{} by {}", session, channel.getId(), _policy);
             return Authorizer.Result.deny("denied_by_security_policy");
         }
         return isOperationAuthorized(Authorizer.Operation.PUBLISH, session, message, channel.getChannelId());
@@ -694,7 +694,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         if (_policy != null && !_policy.canSubscribe(this, session, channel, message))
         {
-            _logger.warn("{} denied Subscribe@{} by {}", new Object[]{session, channel, _policy});
+            _logger.warn("{} denied Subscribe@{} by {}", session, channel, _policy);
             return Authorizer.Result.deny("denied_by_security_policy");
         }
         return isOperationAuthorized(Authorizer.Operation.SUBSCRIBE, session, message, channel.getChannelId());
@@ -704,7 +704,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         if (_policy != null && !_policy.canCreate(BayeuxServerImpl.this, session, channel, message))
         {
-            _logger.warn("{} denied Create@{} by {}", new Object[]{session, message.getChannel(), _policy});
+            _logger.warn("{} denied Create@{} by {}", session, message.getChannel(), _policy);
             return Authorizer.Result.deny("denied_by_security_policy");
         }
         return isOperationAuthorized(Authorizer.Operation.CREATE, session, message, new ChannelId(channel));
@@ -712,7 +712,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     private Authorizer.Result isOperationAuthorized(Authorizer.Operation operation, ServerSession session, ServerMessage message, ChannelId channelId)
     {
-        List<ServerChannel> channels = new ArrayList<ServerChannel>();
+        List<ServerChannel> channels = new ArrayList<>();
         for (String wildName : channelId.getWilds())
         {
             ServerChannelImpl channel = _channels.get(wildName);
@@ -837,7 +837,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 for (ServerSession session : channel.getSubscribers())
                 {
                     if (wildSubscribers == null)
-                        wildSubscribers = new HashSet<String>();
+                        wildSubscribers = new HashSet<>();
                     if (wildSubscribers.add(session.getId()))
                         ((ServerSessionImpl)session).doDeliver(from, mutable);
                 }
@@ -1083,7 +1083,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public List<ServerTransport> getTransports()
     {
-        return new ArrayList<ServerTransport>(_transports.values());
+        return new ArrayList<>(_transports.values());
     }
 
     public List<String> getAllowedTransports()
@@ -1154,7 +1154,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         StringBuilder b = new StringBuilder();
 
-        ArrayList<Object> children = new ArrayList<Object>();
+        ArrayList<Object> children = new ArrayList<>();
         if (_policy!=null)
             children.add(_policy);
 
@@ -1193,7 +1193,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (channels instanceof Object[])
             {
                 Object[] array=(Object[])channels;
-                List<String> channelList=new ArrayList<String>();
+                List<String> channelList=new ArrayList<>();
                 for (Object o:array)
                     channelList.add(String.valueOf(o));
                 return channelList;
@@ -1202,7 +1202,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (channels instanceof List)
             {
                 List<?> list=(List<?>)channels;
-                List<String> channelList=new ArrayList<String>();
+                List<String> channelList=new ArrayList<>();
                 for (Object o:list)
                     channelList.add(String.valueOf(o));
                 return channelList;

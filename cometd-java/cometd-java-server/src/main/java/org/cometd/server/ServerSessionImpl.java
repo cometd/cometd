@@ -55,14 +55,14 @@ public class ServerSessionImpl implements ServerSession
     private static final Logger _logger = LoggerFactory.getLogger(ServerSession.class);
     private final BayeuxServerImpl _bayeux;
     private final String _id;
-    private final List<ServerSessionListener> _listeners = new CopyOnWriteArrayList<ServerSessionListener>();
-    private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
-    private final ArrayQueue<ServerMessage> _queue = new ArrayQueue<ServerMessage>(8, 16, this);
+    private final List<ServerSessionListener> _listeners = new CopyOnWriteArrayList<>();
+    private final List<Extension> _extensions = new CopyOnWriteArrayList<>();
+    private final ArrayQueue<ServerMessage> _queue = new ArrayQueue<>(8, 16, this);
     private final LocalSessionImpl _localSession;
     private final AttributesMap _attributes = new AttributesMap();
     private final AtomicBoolean _connected = new AtomicBoolean();
     private final AtomicBoolean _handshook = new AtomicBoolean();
-    private final Map<ServerChannelImpl, Boolean> _subscribedTo = new ConcurrentHashMap<ServerChannelImpl, Boolean>();
+    private final Map<ServerChannelImpl, Boolean> _subscribedTo = new ConcurrentHashMap<>();
 
     private AbstractServerTransport.Scheduler _scheduler;
     private ServerTransport _advisedTransport;
@@ -431,7 +431,7 @@ public class ServerSessionImpl implements ServerSession
 
     public List<ServerMessage> takeQueue()
     {
-        List<ServerMessage> copy = new ArrayList<ServerMessage>();
+        List<ServerMessage> copy = new ArrayList<>();
         synchronized (_queue)
         {
             if (!_queue.isEmpty())
@@ -751,7 +751,7 @@ public class ServerSessionImpl implements ServerSession
             // because we want to send to the client the *current* interval
             long interval = calculateInterval(transport.getInterval());
 
-            Map<String, Object> advice = new HashMap<String, Object>(3);
+            Map<String, Object> advice = new HashMap<>(3);
             advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_RETRY_VALUE);
             advice.put(Message.INTERVAL_FIELD, interval);
             advice.put(Message.TIMEOUT_FIELD, timeout);

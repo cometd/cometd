@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractService
 {
     protected final Logger _logger = LoggerFactory.getLogger(getClass());
-    private final Map<String, Invoker> invokers = new ConcurrentHashMap<String, Invoker>();
+    private final Map<String, Invoker> invokers = new ConcurrentHashMap<>();
     private final String _name;
     private final BayeuxServerImpl _bayeux;
     private final LocalSession _session;
@@ -204,7 +204,7 @@ public abstract class AbstractService
      */
     protected void addService(String channelName, String methodName)
     {
-        _logger.debug("Mapping {}#{} to {}", new Object[]{_name, methodName, channelName});
+        _logger.debug("Mapping {}#{} to {}", _name, methodName, channelName);
 
         Method method = null;
 
@@ -315,14 +315,14 @@ public abstract class AbstractService
 
     private void invoke(final Method method, final ServerSession fromClient, final ServerMessage msg)
     {
-        _logger.debug("Invoking {}#{} from {} with {}", new Object[]{_name, method.getName(), fromClient, msg});
+        _logger.debug("Invoking {}#{} from {} with {}", _name, method.getName(), fromClient, msg);
 
         ThreadPool threadPool = getThreadPool();
         if (threadPool == null)
             doInvoke(method, fromClient, msg);
         else
         {
-            threadPool.dispatch(new Runnable()
+            threadPool.execute(new Runnable()
             {
                 public void run()
                 {
@@ -374,11 +374,7 @@ public abstract class AbstractService
                 if (reply != null)
                     send(fromClient, channel, reply, id);
             }
-            catch (Exception e)
-            {
-                exception(method.toString(), fromClient, _session, msg, e);
-            }
-            catch (Error e)
+            catch (Throwable e)
             {
                 exception(method.toString(), fromClient, _session, msg, e);
             }
