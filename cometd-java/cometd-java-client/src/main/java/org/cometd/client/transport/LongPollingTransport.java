@@ -185,7 +185,7 @@ public class LongPollingTransport extends HttpClientTransport
                 int status = response.status();
                 if (status == HttpStatus.OK_200)
                 {
-                    String content = getContent("UTF-8");
+                    String content = getContentAsString();
                     if (content != null && content.length() > 0)
                     {
                         try

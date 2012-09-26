@@ -90,8 +90,8 @@
         <connection>scm:git:git://github.com/cometd/cometd.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/cometd/cometd.git</developerConnection>
         <url>https://github.com/cometd/cometd</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <organization>
         <name>Dojo Foundation</name>
@@ -391,5 +391,18 @@
         </dependencies>
     </dependencyManagement>
 
+    <!-- TODO: remove when referencing a stable Jetty release -->
+    <repositories>
+        <repository>
+            <id>jetty-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
 </project>
