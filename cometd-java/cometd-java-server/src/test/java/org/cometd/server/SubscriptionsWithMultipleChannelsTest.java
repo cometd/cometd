@@ -16,12 +16,13 @@
 
 package org.cometd.server;
 
+import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.Message;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,80 +31,70 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
     @Test
     public void testSubscribeWithMultipleChannels() throws Exception
     {
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange subscribe = newBayeuxExchange("[{" +
+        Request subscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/subscribe\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"subscription\": [\"/foo\",\"/bar\"]" +
                 "}]");
-        subscribe.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(subscribe);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
-        Assert.assertEquals(200, subscribe.getResponseStatus());
+        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(subscribe.getResponseContent());
+        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(1, messages.length);
-        Message.Mutable response = messages[0];
-        Assert.assertTrue(response.isSuccessful());
-        Object subscriptions = response.get(Message.SUBSCRIPTION_FIELD);
+        Message.Mutable message = messages[0];
+        Assert.assertTrue(message.isSuccessful());
+        Object subscriptions = message.get(Message.SUBSCRIPTION_FIELD);
         Assert.assertTrue(subscriptions instanceof Object[]);
     }
 
     @Test
     public void testUnsubscribeWithMultipleChannels() throws Exception
     {
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange subscribe = newBayeuxExchange("[{" +
+        Request subscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/subscribe\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"subscription\": [\"/foo\",\"/bar\"]" +
                 "}]");
-        subscribe.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(subscribe);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
-        Assert.assertEquals(200, subscribe.getResponseStatus());
+        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        ContentExchange unsubscribe = newBayeuxExchange("[{" +
+        Request unsubscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/unsubscribe\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"subscription\": [\"/foo\",\"/bar\"]" +
                 "}]");
-        unsubscribe.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(unsubscribe);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, unsubscribe.waitForDone());
-        Assert.assertEquals(200, unsubscribe.getResponseStatus());
+        response = unsubscribe.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(unsubscribe.getResponseContent());
+        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(1, messages.length);
-        Message.Mutable response = messages[0];
-        Assert.assertTrue(response.isSuccessful());
-        Object subscriptions = response.get(Message.SUBSCRIPTION_FIELD);
+        Message.Mutable message = messages[0];
+        Assert.assertTrue(message.isSuccessful());
+        Object subscriptions = message.get(Message.SUBSCRIPTION_FIELD);
         Assert.assertTrue(subscriptions instanceof Object[]);
     }
 }

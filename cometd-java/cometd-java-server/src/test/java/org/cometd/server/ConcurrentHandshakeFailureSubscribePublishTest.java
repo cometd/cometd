@@ -17,6 +17,7 @@
 package org.cometd.server;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.cometd.bayeux.Channel;
@@ -26,8 +27,8 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -55,7 +56,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
         // (by not allowing a subscribe until the handshake is completed)
         // yet the server must behave properly
         String channelName = "/foo";
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
@@ -65,12 +66,11 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
                 "\"channel\": \"/meta/subscribe\"," +
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(handshake.getResponseContent());
+        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(2, messages.length);
         Message handshakeResponse = messages[0];
         Assert.assertFalse(handshakeResponse.isSuccessful());
@@ -112,7 +112,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
         // A bad sequence of messages that clients should prevent
         // (by not allowing a publish until the handshake is completed)
         // yet the server must behave properly
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
@@ -122,12 +122,11 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
                 "\"channel\": \"" + channelName + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(handshake.getResponseContent());
+        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(2, messages.length);
         Message handshakeResponse = messages[0];
         Assert.assertFalse(handshakeResponse.isSuccessful());

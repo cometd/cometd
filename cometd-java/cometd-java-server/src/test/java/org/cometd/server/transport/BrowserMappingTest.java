@@ -21,9 +21,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.AbstractServerTransport;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -45,41 +45,35 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
     @Test
     public void testSameDomainWithCookieHoldsConnect() throws Exception
     {
-        ContentExchange handshake = newBayeuxExchange("" +
+        Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
         // First connect always returns immediately
-        ContentExchange connect1 = newBayeuxExchange("[{" +
+        Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect1.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect1);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        Assert.assertEquals(200, connect1.getResponseStatus());
+        response = connect1.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         long begin = System.currentTimeMillis();
-        ContentExchange connect2 = newBayeuxExchange("[{" +
+        Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect2.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect2);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
-        Assert.assertEquals(200, connect2.getResponseStatus());
+        response = connect2.send().get(timeout * 2, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
         long elapsed = System.currentTimeMillis() - begin;
         Assert.assertTrue("" + elapsed, elapsed >= timeout);
     }
@@ -87,38 +81,38 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
     @Test
     public void testSameDomainWithoutCookieDoesNotHoldConnect() throws Exception
     {
-        ContentExchange handshake = newBayeuxExchange("" +
+        Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
+        String clientId = extractClientId(response);
 
         // First connect always returns immediately
-        ContentExchange connect1 = newBayeuxExchange("[{" +
+        Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        httpClient.send(connect1);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        Assert.assertEquals(200, connect1.getResponseStatus());
+        response = connect1.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
+
+        // Remove cookie
+        httpClient.getCookieStore().clear();
 
         long begin = System.nanoTime();
-        ContentExchange connect2 = newBayeuxExchange("[{" +
+        Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        httpClient.send(connect2);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
-        Assert.assertEquals(200, connect2.getResponseStatus());
+        response = connect2.send().get(timeout * 2, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
         long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
         Assert.assertTrue("" + elapsed, elapsed < timeout / 2);
     }
@@ -126,16 +120,15 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
     @Test
     public void testSameDomainWithoutCookieWithOptionHoldsConnect() throws Exception
     {
-        ContentExchange handshake = newBayeuxExchange("" +
+        Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         AbstractServerTransport transport = (AbstractServerTransport)bayeux.getTransport("long-polling");
         transport.setOption(LongPollingTransport.ALLOW_MULTI_SESSIONS_NO_BROWSER_OPTION, true);
@@ -143,27 +136,25 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         init.setAccessible(true);
         init.invoke(transport);
 
-        String clientId = extractClientId(handshake);
+        String clientId = extractClientId(response);
 
         // First connect always returns immediately
-        ContentExchange connect1 = newBayeuxExchange("[{" +
+        Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        httpClient.send(connect1);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        Assert.assertEquals(200, connect1.getResponseStatus());
+        response = connect1.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         long begin = System.currentTimeMillis();
-        ContentExchange connect2 = newBayeuxExchange("[{" +
+        Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        httpClient.send(connect2);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
-        Assert.assertEquals(200, connect2.getResponseStatus());
+        response = connect2.send().get(timeout * 2, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
         long elapsed = System.currentTimeMillis() - begin;
         Assert.assertTrue("" + elapsed, elapsed >= timeout);
     }
@@ -171,42 +162,39 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
     @Test
     public void testDifferentDomainWithoutCookieHoldsConnect() throws Exception
     {
-        ContentExchange handshake = newBayeuxExchange("" +
+        Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
+        String clientId = extractClientId(response);
 
         // First connect always returns immediately
-        ContentExchange connect1 = newBayeuxExchange("[{" +
+        Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect1.setRequestHeader(HttpHeaders.HOST, "http://127.0.0.1:" + port);
-        connect1.setRequestHeader("Origin", "http://localhost:" + port);
-        httpClient.send(connect1);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        Assert.assertEquals(200, connect1.getResponseStatus());
+        connect1.header(HttpHeader.HOST.asString(), "http://127.0.0.1:" + port);
+        connect1.header("Origin", "http://localhost:" + port);
+        response = connect1.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         long begin = System.currentTimeMillis();
-        ContentExchange connect2 = newBayeuxExchange("[{" +
+        Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect2.setRequestHeader(HttpHeaders.HOST, "http://127.0.0.1:" + port);
-        connect2.setRequestHeader("Origin", "http://localhost:" + port);
-        httpClient.send(connect2);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
-        Assert.assertEquals(200, connect2.getResponseStatus());
+        connect2.header(HttpHeader.HOST.asString(), "http://127.0.0.1:" + port);
+        connect2.header("Origin", "http://localhost:" + port);
+        response = connect2.send().get(timeout * 2, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
         long elapsed = System.currentTimeMillis() - begin;
         Assert.assertTrue("" + elapsed, elapsed >= timeout);
     }

@@ -18,6 +18,7 @@ package org.cometd.server;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
@@ -28,9 +29,8 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -66,54 +66,47 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
             }
         });
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange connect1 = newBayeuxExchange("[{" +
+        Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect1.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect1);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        Assert.assertEquals(200, connect1.getResponseStatus());
+        response = connect1.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        ContentExchange connect2 = newBayeuxExchange("[{" +
+        Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect2.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect2);
+        Future<ContentResponse> futureResponse = connect2.send();
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
-        ContentExchange publish = newBayeuxExchange("[{" +
+        Request publish = newBayeuxRequest("[{" +
                 "\"channel\":\"" + channelName + "\"," +
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        publish.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(publish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(200, publish.getResponseStatus());
+        response = publish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         // Wait for the second connect to return
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
-        Assert.assertEquals(200, connect2.getResponseStatus());
+        response = futureResponse.get(timeout * 2, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(connect2.getResponseContent());
+        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Message.Mutable connect = messages[0];
         Map<String,Object> advice = connect.getAdvice();
         Assert.assertNotNull(advice);
@@ -152,54 +145,47 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
             }
         });
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange connect1 = newBayeuxExchange("[{" +
+        Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect1.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect1);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        Assert.assertEquals(200, connect1.getResponseStatus());
+        response = connect1.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        ContentExchange connect2 = newBayeuxExchange("[{" +
+        Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect2.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect2);
+        Future<ContentResponse> futureResponse = connect2.send();
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
-        ContentExchange publish = newBayeuxExchange("[{" +
+        Request publish = newBayeuxRequest("[{" +
                 "\"channel\":\"" + channelName + "\"," +
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        publish.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(publish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(200, publish.getResponseStatus());
+        response = publish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         // Wait for the second connect to return
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
-        Assert.assertEquals(200, connect2.getResponseStatus());
+        response = futureResponse.get(timeout * 2, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(connect2.getResponseContent());
+        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Message.Mutable connect = messages[0];
         Map<String,Object> advice = connect.getAdvice();
         Assert.assertNotNull(advice);
@@ -211,33 +197,29 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
     @Test
     public void testCustomIntervalViaAdvice() throws Exception
     {
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange connect1 = newBayeuxExchange("[{" +
+        Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect1.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect1);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        Assert.assertEquals(200, connect1.getResponseStatus());
+        response = connect1.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         // The client tells the server that it's going to sleep and won't connect for a while
         // The server must adjust to not expire its session
         long newInterval = 1000;
-        ContentExchange connect2 = newBayeuxExchange("[{" +
+        Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"," +
@@ -246,13 +228,11 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
                 "    \"interval\": " + newInterval +
                 "}" +
                 "}]");
-        connect2.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect2);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
-        Assert.assertEquals(200, connect2.getResponseStatus());
+        response = connect2.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(connect2.getResponseContent());
+        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Message.Mutable connect = messages[0];
         Map<String,Object> advice = connect.getAdvice();
         Assert.assertNotNull(advice);

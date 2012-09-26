@@ -19,44 +19,43 @@ package org.cometd.server;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.rules.TestWatchman;
-import org.junit.runners.model.FrameworkMethod;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public abstract class AbstractBayeuxServerTest
 {
     @Rule
-    public final TestWatchman testName = new TestWatchman()
+    public final TestWatcher testName = new TestWatcher()
     {
         @Override
-        public void starting(FrameworkMethod method)
+        protected void starting(Description description)
         {
-            super.starting(method);
-            System.err.printf("Running %s.%s%n", method.getMethod().getDeclaringClass().getName(), method.getName());
+            super.starting(description);
+            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
     };
     protected Server server;
-    protected Connector connector;
+    protected ServerConnector connector;
     protected int port;
     protected ServletContextHandler context;
     protected CometdServlet cometdServlet;
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
-    protected long timeout = 5000;
+    protected long timeout = 2000;
 
     @Before
     public void startServer() throws Exception
     {
         server = new Server();
-        connector = new SelectChannelConnector();
+        connector = new ServerConnector(server);
         server.addConnector(connector);
 
         HandlerCollection handlers = new HandlerCollection();
@@ -68,7 +67,7 @@ public abstract class AbstractBayeuxServerTest
         // Setup comet servlet
         cometdServlet = new CometdServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
-        Map<String, String> options = new HashMap<String, String>();
+        Map<String, String> options = new HashMap<>();
         options.put("timeout", String.valueOf(timeout));
         if (Boolean.getBoolean("debugTests"))
         {

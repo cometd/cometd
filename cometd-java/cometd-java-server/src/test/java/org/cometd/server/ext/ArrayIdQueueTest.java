@@ -24,7 +24,7 @@ public class ArrayIdQueueTest
     @Test
     public void testQueue() throws Exception
     {
-        ArrayIdQueue<String> queue = new ArrayIdQueue<String>(3);
+        ArrayIdQueue<String> queue = new ArrayIdQueue<>(3);
 
         int id=10;
         queue.setCurrentId(id);

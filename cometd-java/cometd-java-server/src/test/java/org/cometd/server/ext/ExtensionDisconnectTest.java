@@ -18,6 +18,7 @@ package org.cometd.server.ext;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -25,8 +26,8 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractBayeuxClientServerTest;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -39,25 +40,23 @@ public class ExtensionDisconnectTest extends AbstractBayeuxClientServerTest
     {
         bayeux.addExtension(extension);
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
-                                                  "\"channel\": \"/meta/handshake\"," +
-                                                  "\"version\": \"1.0\"," +
-                                                  "\"minimumVersion\": \"1.0\"," +
-                                                  "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                                                  "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        Request handshake = newBayeuxRequest("[{" +
+                "\"channel\": \"/meta/handshake\"," +
+                "\"version\": \"1.0\"," +
+                "\"minimumVersion\": \"1.0\"," +
+                "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                "}]");
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange disconnect = newBayeuxExchange("[{" +
-                                                    "\"channel\": \"/meta/disconnect\"," +
-                                                    "\"clientId\": \"" + clientId + "\"" +
-                                                    "}]");
-        httpClient.send(disconnect);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
-        Assert.assertEquals(200, disconnect.getResponseStatus());
+        Request disconnect = newBayeuxRequest("[{" +
+                "\"channel\": \"/meta/disconnect\"," +
+                "\"clientId\": \"" + clientId + "\"" +
+                "}]");
+        response = disconnect.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         Assert.assertEquals(0, extension.rcvs.size());
         Assert.assertEquals(1, extension.rcvMetas.size());
@@ -67,10 +66,10 @@ public class ExtensionDisconnectTest extends AbstractBayeuxClientServerTest
 
     private class CountingExtension implements BayeuxServer.Extension
     {
-        private final List<Message> rcvs = new ArrayList<Message>();
-        private final List<Message> rcvMetas = new ArrayList<Message>();
-        private final List<Message> sends = new ArrayList<Message>();
-        private final List<Message> sendMetas = new ArrayList<Message>();
+        private final List<Message> rcvs = new ArrayList<>();
+        private final List<Message> rcvMetas = new ArrayList<>();
+        private final List<Message> sends = new ArrayList<>();
+        private final List<Message> sendMetas = new ArrayList<>();
 
         public boolean rcv(ServerSession from, ServerMessage.Mutable message)
         {

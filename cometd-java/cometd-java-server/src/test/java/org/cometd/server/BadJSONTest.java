@@ -17,14 +17,14 @@
 package org.cometd.server;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.server.transport.JSONTransport;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -47,38 +47,33 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
             }
         });
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange connect = newBayeuxExchange("[{" +
+        Request connect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        Assert.assertEquals(200, connect.getResponseStatus());
+        response = connect.send().get(5, TimeUnit.SECONDS);
+
+        Assert.assertEquals(200, response.status());
 
         // Forge a bad JSON message
-        ContentExchange badConnect = newBayeuxExchange("[{" +
+        Request badConnect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"");
                 //"}]"); Bad JSON, missing this line
-        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(badConnect);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, badConnect.waitForDone());
-        Assert.assertEquals(400, badConnect.getResponseStatus());
+        response = badConnect.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(400, response.status());
     }
 }

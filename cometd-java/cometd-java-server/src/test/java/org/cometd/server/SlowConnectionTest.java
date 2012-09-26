@@ -21,8 +21,10 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URI;
+import java.util.EnumSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -35,12 +37,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.transport.JSONTransport;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -52,7 +52,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         context.stop();
         CountDownLatch exceptionLatch = new CountDownLatch(1);
         Filter filter = new ExceptionDetectorFilter(exceptionLatch);
-        context.addFilter(new FilterHolder(filter), "/*", FilterMapping.DEFAULT);
+        context.addFilter(new FilterHolder(filter), "/*", EnumSet.of(DispatcherType.REQUEST));
         context.start();
         bayeux = cometdServlet.getBayeux();
 
@@ -81,41 +81,36 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
         long maxInterval = 5000L;
         transport.setMaxInterval(maxInterval);
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
         String channelName = "/foo";
-        ContentExchange subscribe = newBayeuxExchange("[{" +
+        Request subscribe = newBayeuxRequest("[{" +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"channel\": \"/meta/subscribe\"," +
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
-        httpClient.send(subscribe);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
-        Assert.assertEquals(200, subscribe.getResponseStatus());
+        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        ContentExchange connect1 = newBayeuxExchange("[{" +
+        Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect1.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect1);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        Assert.assertEquals(200, connect1.getResponseStatus());
+        response = connect1.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         // Send a server-side message so it gets written to the client
-        bayeux.getChannel(channelName).publish(null, "x", null);
+        bayeux.getChannel(channelName).publish(null, "x");
 
         Socket socket = new Socket("localhost", port);
         OutputStream output = socket.getOutputStream();

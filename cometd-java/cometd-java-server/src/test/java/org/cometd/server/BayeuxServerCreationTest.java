@@ -40,7 +40,7 @@ public class BayeuxServerCreationTest
         assertEquals(2, knownTransports.size());
         assertTrue(knownTransports.contains(JSONTransport.NAME));
         assertTrue(knownTransports.contains(JSONPTransport.NAME));
-        assertEquals(knownTransports, new HashSet<String>(bayeuxServer.getAllowedTransports()));
+        assertEquals(knownTransports, new HashSet<>(bayeuxServer.getAllowedTransports()));
     }
 
     @Test
@@ -48,7 +48,7 @@ public class BayeuxServerCreationTest
     {
         BayeuxServerImpl bayeuxServer = new BayeuxServerImpl();
 
-        Map<String, String> options = new HashMap<String, String>();
+        Map<String, String> options = new HashMap<>();
         String timeoutKey = "timeout";
         String timeoutValue = "10007";
         options.put(timeoutKey, timeoutValue);

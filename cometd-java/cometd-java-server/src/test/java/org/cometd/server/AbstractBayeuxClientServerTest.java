@@ -20,13 +20,12 @@ import java.io.UnsupportedEncodingException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -48,9 +47,9 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
         httpClient.stop();
     }
 
-    protected String extractClientId(ContentExchange handshake) throws UnsupportedEncodingException
+    protected String extractClientId(ContentResponse handshake) throws UnsupportedEncodingException
     {
-        String content = handshake.getResponseContent();
+        String content = new String(handshake.content(), "UTF-8");
         Matcher matcher = Pattern.compile("\"clientId\"\\s*:\\s*\"([^\"]*)\"").matcher(content);
         Assert.assertTrue(matcher.find());
         String clientId = matcher.group(1);
@@ -58,30 +57,17 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
         return clientId;
     }
 
-    protected String extractBayeuxCookie(ContentExchange handshake)
+    protected Request newBayeuxRequest(String requestBody) throws UnsupportedEncodingException
     {
-        HttpFields headers = handshake.getResponseFields();
-        Buffer cookie = headers.get(HttpHeaders.SET_COOKIE_BUFFER);
-        String cookieName = "BAYEUX_BROWSER";
-        Matcher matcher = Pattern.compile(cookieName + "=([^;]*)").matcher(cookie.toString());
-        Assert.assertTrue(matcher.find());
-        String bayeuxCookie = matcher.group(1);
-        Assert.assertTrue(bayeuxCookie.length() > 0);
-        return cookieName + "=" + bayeuxCookie;
+        Request request = httpClient.newRequest(cometdURL);
+        configureBayeuxRequest(request, requestBody, "UTF-8");
+        return request;
     }
 
-    protected ContentExchange newBayeuxExchange(String requestBody) throws UnsupportedEncodingException
+    protected void configureBayeuxRequest(Request request, String requestBody, String encoding) throws UnsupportedEncodingException
     {
-        ContentExchange result = new ContentExchange(true);
-        configureBayeuxExchange(result, requestBody, "UTF-8");
-        return result;
-    }
-
-    protected void configureBayeuxExchange(ContentExchange exchange, String requestBody, String encoding) throws UnsupportedEncodingException
-    {
-        exchange.setURL(cometdURL);
-        exchange.setMethod(HttpMethods.POST);
-        exchange.setRequestContentType("application/json;charset=" + encoding);
-        exchange.setRequestContent(new ByteArrayBuffer(requestBody, encoding));
+        request.method(HttpMethod.POST);
+        request.header(HttpHeader.CONTENT_TYPE.asString(), "application/json;charset=" + encoding);
+        request.content(new StringContentProvider(requestBody, encoding));
     }
 }

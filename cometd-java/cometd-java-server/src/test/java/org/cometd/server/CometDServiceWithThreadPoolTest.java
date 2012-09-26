@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -37,35 +37,32 @@ public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
 
         TestService service = new TestService(bayeux, channel);
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
-                                                  "\"channel\": \"/meta/handshake\"," +
-                                                  "\"version\": \"1.0\"," +
-                                                  "\"minimumVersion\": \"1.0\"," +
-                                                  "\"supportedConnectionTypes\": [\"long-polling\"]" +
-                                                  "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        Request handshake = newBayeuxRequest("[{" +
+                "\"channel\": \"/meta/handshake\"," +
+                "\"version\": \"1.0\"," +
+                "\"minimumVersion\": \"1.0\"," +
+                "\"supportedConnectionTypes\": [\"long-polling\"]" +
+                "}]");
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange subscribe = newBayeuxExchange("[{" +
-                                                   "\"channel\": \"/meta/subscribe\"," +
-                                                   "\"clientId\": \"" + clientId + "\"," +
-                                                   "\"subscription\": \"" + channel + "\"" +
-                                                   "}]");
-        httpClient.send(subscribe);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
-        Assert.assertEquals(200, subscribe.getResponseStatus());
+        Request subscribe = newBayeuxRequest("[{" +
+                "\"channel\": \"/meta/subscribe\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"subscription\": \"" + channel + "\"" +
+                "}]");
+        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        ContentExchange publish = newBayeuxExchange("[{" +
-                                                    "\"channel\": \"" + channel + "\"," +
-                                                    "\"clientId\": \"" + clientId + "\"," +
-                                                    "\"data\": {}" +
-                                                    "}]");
-        httpClient.send(publish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(200, publish.getResponseStatus());
+        Request publish = newBayeuxRequest("[{" +
+                "\"channel\": \"" + channel + "\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"data\": {}" +
+                "}]");
+        response = publish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         Assert.assertTrue(service.await(5000));
 

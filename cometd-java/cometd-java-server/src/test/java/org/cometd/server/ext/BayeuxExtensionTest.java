@@ -17,6 +17,7 @@
 package org.cometd.server.ext;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Channel;
@@ -28,8 +29,8 @@ import org.cometd.common.JSONContext;
 import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.cometd.server.AbstractService;
 import org.cometd.server.JettyJSONContextServer;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -52,7 +53,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
     public void testBayeuxExtensionOnHandshake() throws Exception
     {
         bayeux.addExtension(new MetaExtension());
-        final AtomicReference<ServerMessage> handshakeRef = new AtomicReference<ServerMessage>();
+        final AtomicReference<ServerMessage> handshakeRef = new AtomicReference<>();
         new AbstractService(bayeux, "test")
         {
             {
@@ -65,7 +66,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
             }
         };
 
-        ContentExchange handshake = newBayeuxExchange("" +
+        Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
@@ -75,9 +76,8 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"ext\": { \"" + CLIENT_EXT_FIELD + "\": \"" + CLIENT_INFO + "\" }," +
                 "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         Assert.assertEquals(SERVER_EXT_INFO, handshakeRef.get().get(SERVER_EXT_MESSAGE_FIELD));
         Assert.assertEquals(SERVER_EXT_INFO, handshakeRef.get().getDataAsMap().get(SERVER_EXT_DATA_FIELD));
@@ -87,7 +87,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(CLIENT_INFO, handshakeRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
 
         JSONContext.Server jsonContext = new JettyJSONContextServer();
-        ServerMessage.Mutable[] messages = jsonContext.parse(handshake.getResponseContent());
+        ServerMessage.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(1, messages.length);
         Map message = messages[0];
         Assert.assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
@@ -100,7 +100,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
     {
         final String channel = "/service/test";
         bayeux.addExtension(new NonMetaExtension(channel));
-        final AtomicReference<ServerMessage> publishRef = new AtomicReference<ServerMessage>();
+        final AtomicReference<ServerMessage> publishRef = new AtomicReference<>();
         new AbstractService(bayeux, "test")
         {
             {
@@ -119,20 +119,19 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
             }
         };
 
-        ContentExchange handshake = newBayeuxExchange("" +
+        Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange publish = newBayeuxExchange("" +
+        Request publish = newBayeuxRequest("" +
                 "[{" +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"channel\": \"" + channel + "\"," +
@@ -140,9 +139,8 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"ext\": { \"" + CLIENT_EXT_FIELD + "\": \"" + CLIENT_INFO + "\" }," +
                 "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
                 "}]");
-        httpClient.send(publish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(200, publish.getResponseStatus());
+        response = publish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         Assert.assertEquals(SERVER_EXT_INFO, publishRef.get().get(SERVER_EXT_MESSAGE_FIELD));
         Assert.assertEquals(SERVER_EXT_INFO, publishRef.get().getDataAsMap().get(SERVER_EXT_DATA_FIELD));
@@ -152,7 +150,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(CLIENT_INFO, publishRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
 
         JSONContext.Server jsonContext = new JettyJSONContextServer();
-        ServerMessage.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
+        ServerMessage.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(2, messages.length);
         Map message = messages[0].containsKey(Message.DATA_FIELD) ? messages[0] : messages[1];
         Assert.assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
@@ -168,7 +166,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
     {
         final String channel = "/test";
         bayeux.addExtension(new NonMetaExtension(channel));
-        final AtomicReference<ServerMessage> publishRef = new AtomicReference<ServerMessage>();
+        final AtomicReference<ServerMessage> publishRef = new AtomicReference<>();
         new AbstractService(bayeux, "test")
         {
             {
@@ -184,30 +182,28 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
             }
         };
 
-        ContentExchange handshake = newBayeuxExchange("" +
+        Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange subscribe = newBayeuxExchange("" +
+        Request subscribe = newBayeuxRequest("" +
                 "[{" +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"channel\": \"/meta/subscribe\"," +
                 "\"subscription\": \"" + channel + "\"," +
                 "}]");
-        httpClient.send(subscribe);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
-        Assert.assertEquals(200, subscribe.getResponseStatus());
+        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        ContentExchange publish = newBayeuxExchange("" +
+        Request publish = newBayeuxRequest("" +
                 "[{" +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"channel\": \"" + channel + "\"," +
@@ -215,9 +211,8 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"ext\": { \"" + CLIENT_EXT_FIELD + "\": \"" + CLIENT_INFO + "\" }," +
                 "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
                 "}]");
-        httpClient.send(publish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(200, publish.getResponseStatus());
+        response = publish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         Assert.assertEquals(SERVER_EXT_INFO, publishRef.get().get(SERVER_EXT_MESSAGE_FIELD));
         Assert.assertEquals(SERVER_EXT_INFO, publishRef.get().getDataAsMap().get(SERVER_EXT_DATA_FIELD));
@@ -227,7 +222,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(CLIENT_INFO, publishRef.get().getDataAsMap().get(CLIENT_DATA_FIELD));
 
         JSONContext.Server jsonContext = new JettyJSONContextServer();
-        ServerMessage.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
+        ServerMessage.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(2, messages.length);
         Map message = messages[0].containsKey(Message.DATA_FIELD) ? messages[0] : messages[1];
         Assert.assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));

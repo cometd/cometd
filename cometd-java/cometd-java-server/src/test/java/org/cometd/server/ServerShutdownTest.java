@@ -16,11 +16,12 @@
 
 package org.cometd.server;
 
-import java.io.EOFException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -29,50 +30,36 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest
     @Test
     public void testServerShutdown() throws Exception
     {
-        ContentExchange handshake = newBayeuxExchange("" +
+        Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange connect = newBayeuxExchange("" +
+        Request connect = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"," +
                 "\"advice\": { \"timeout\": 0 }" +
                 "}]");
-        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        Assert.assertEquals(200, connect.getResponseStatus());
+        response = connect.send().get(5, TimeUnit.SECONDS);
 
-        connect = new ContentExchange(true)
-        {
-            @Override
-            protected void onException(Throwable x)
-            {
-                // Suppress expected exceptions
-                if (!(x instanceof EOFException))
-                    super.onException(x);
-            }
-        };
-        configureBayeuxExchange(connect, "" +
+        Assert.assertEquals(200, response.status());
+
+        connect = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
-                "}]", "UTF-8");
-        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect);
+                "}]");
+        Future<ContentResponse> futureResponse = connect.send();
 
         // Wait for the connect to arrive to the server
         Thread.sleep(1000);
@@ -82,6 +69,13 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest
         server.join();
 
         // Expect the connect to be back with an exception
-        Assert.assertEquals(HttpExchange.STATUS_EXCEPTED, connect.waitForDone());
+        try
+        {
+            futureResponse.get(timeout * 2, TimeUnit.SECONDS);
+            Assert.fail();
+        }
+        catch (ExecutionException expected)
+        {
+        }
     }
 }

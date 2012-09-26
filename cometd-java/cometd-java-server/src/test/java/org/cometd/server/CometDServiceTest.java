@@ -6,8 +6,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -18,8 +18,8 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
     {
         final String channel1 = "/foo";
         final String channel2 = "/bar";
-        final AtomicReference<CountDownLatch> publishLatch1 = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
-        final AtomicReference<CountDownLatch> publishLatch2 = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> publishLatch1 = new AtomicReference<>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> publishLatch2 = new AtomicReference<>(new CountDownLatch(1));
         AbstractService service = new AbstractService(bayeux, "test_remove")
         {
             {
@@ -38,81 +38,74 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
             }
         };
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange publish1 = newBayeuxExchange("[{" +
+        Request publish1 = newBayeuxRequest("[{" +
                 "\"channel\": \"" + channel1 + "\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(publish1);
+        response = publish1.send().get(5, TimeUnit.SECONDS);
         Assert.assertTrue(publishLatch1.get().await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish1.waitForDone());
-        Assert.assertEquals(200, publish1.getResponseStatus());
+        Assert.assertEquals(200, response.status());
 
-        ContentExchange publish2 = newBayeuxExchange("[{" +
+        Request publish2 = newBayeuxRequest("[{" +
                 "\"channel\": \"" + channel2 + "\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(publish2);
+        response = publish2.send().get(5, TimeUnit.SECONDS);
         Assert.assertTrue(publishLatch2.get().await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish2.waitForDone());
-        Assert.assertEquals(200, publish2.getResponseStatus());
+        Assert.assertEquals(200, response.status());
 
         service.removeService(channel1, "one");
         publishLatch1.set(new CountDownLatch(1));
         publishLatch2.set(new CountDownLatch(1));
 
-        publish1 = newBayeuxExchange("[{" +
+        publish1 = newBayeuxRequest("[{" +
                 "\"channel\": \"" + channel1 + "\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(publish1);
+        response = publish1.send().get(5, TimeUnit.SECONDS);
         Assert.assertFalse(publishLatch1.get().await(1, TimeUnit.SECONDS));
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish1.waitForDone());
-        Assert.assertEquals(200, publish1.getResponseStatus());
+        Assert.assertEquals(200, response.status());
 
-        publish2 = newBayeuxExchange("[{" +
+        publish2 = newBayeuxRequest("[{" +
                 "\"channel\": \"" + channel2 + "\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(publish2);
+        response = publish2.send().get(5, TimeUnit.SECONDS);
         Assert.assertTrue(publishLatch2.get().await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish2.waitForDone());
-        Assert.assertEquals(200, publish2.getResponseStatus());
+        Assert.assertEquals(200, response.status());
 
         service.removeService(channel2);
         publishLatch2.set(new CountDownLatch(1));
 
-        publish2 = newBayeuxExchange("[{" +
+        publish2 = newBayeuxRequest("[{" +
                 "\"channel\": \"" + channel2 + "\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(publish2);
+        response = publish2.send().get(5, TimeUnit.SECONDS);
         Assert.assertFalse(publishLatch2.get().await(1, TimeUnit.SECONDS));
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish2.waitForDone());
-        Assert.assertEquals(200, publish2.getResponseStatus());
+        Assert.assertEquals(200, response.status());
 
-        ContentExchange disconnect = newBayeuxExchange("[{" +
+        Request disconnect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/disconnect\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
-        httpClient.send(disconnect);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
-        Assert.assertEquals(200, disconnect.getResponseStatus());
+        response = disconnect.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
     }
 }

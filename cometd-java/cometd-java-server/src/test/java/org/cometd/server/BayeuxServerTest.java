@@ -36,7 +36,7 @@ import org.junit.Test;
 
 public class BayeuxServerTest
 {
-    private final Queue<Object> _events = new ConcurrentLinkedQueue<Object>();
+    private final Queue<Object> _events = new ConcurrentLinkedQueue<>();
     private final BayeuxServerImpl _bayeux = new BayeuxServerImpl();
 
     private ServerSessionImpl newServerSession()
@@ -153,16 +153,16 @@ public class BayeuxServerTest
     public void testLocalSessions() throws Exception
     {
         LocalSession session0 = _bayeux.newLocalSession("s0");
-        Assert.assertTrue(session0.toString().indexOf("s0?")>=0);
+        Assert.assertTrue(session0.toString().contains("s0?"));
         session0.handshake();
-        Assert.assertTrue(session0.toString().indexOf("s0_")>=0);
+        Assert.assertTrue(session0.toString().contains("s0_"));
 
         final LocalSession session1 = _bayeux.newLocalSession("s1");
         session1.handshake();
         final LocalSession session2 = _bayeux.newLocalSession("s2");
         session2.handshake();
 
-        final Queue<String> events = new ConcurrentLinkedQueue<String>();
+        final Queue<String> events = new ConcurrentLinkedQueue<>();
 
         ClientSessionChannel.MessageListener listener = new ClientSessionChannel.MessageListener()
         {
@@ -271,7 +271,7 @@ public class BayeuxServerTest
     @Test
     public void testExtensions() throws Exception
     {
-        final Queue<String> events = new ConcurrentLinkedQueue<String>();
+        final Queue<String> events = new ConcurrentLinkedQueue<>();
         _bayeux.addExtension(new BayeuxServer.Extension.Adapter()
         {
             @Override

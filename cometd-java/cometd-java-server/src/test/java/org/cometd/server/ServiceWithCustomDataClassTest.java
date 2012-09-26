@@ -22,8 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerSession;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.Assert;
 import org.junit.Test;
@@ -47,20 +47,19 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
         TestJettyJSONContextServer jsonContext = (TestJettyJSONContextServer)bayeux.getOption(BayeuxServerImpl.JSON_CONTEXT);
         jsonContext.getJSON().addConvertor(Holder.class, new HolderConvertor());
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
+        String clientId = extractClientId(response);
 
         String value = "bar";
-        ContentExchange publish = newBayeuxExchange("[{" +
+        Request publish = newBayeuxRequest("[{" +
                 "\"channel\": \"" + channelName + "\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {" +
@@ -68,9 +67,8 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
                 "    \"field\":\"" + value + "\"" +
                 "}" +
                 "}]");
-        httpClient.send(publish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(200, publish.getResponseStatus());
+        response = publish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertNotNull(service.holder);

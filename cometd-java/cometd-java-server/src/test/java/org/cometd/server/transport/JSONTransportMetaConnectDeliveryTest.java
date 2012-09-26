@@ -17,14 +17,14 @@
 package org.cometd.server.transport;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Message;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractBayeuxClientServerTest;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -39,66 +39,58 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
     @Test
     public void testJSONTransportMetaConnectDelivery() throws Exception
     {
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange connect = newBayeuxExchange("[{" +
+        Request connect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        Assert.assertEquals(200, connect.getResponseStatus());
+        response = connect.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         String channel = "/foo";
 
-        ContentExchange subscribe = newBayeuxExchange("[{" +
+        Request subscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/subscribe\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
-        httpClient.send(subscribe);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
-        Assert.assertEquals(200, subscribe.getResponseStatus());
+        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        ContentExchange publish = newBayeuxExchange("[{" +
+        Request publish = newBayeuxRequest("[{" +
                 "\"channel\": \"" + channel + "\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(publish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(200, publish.getResponseStatus());
+        response = publish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         // Expect only the meta response to the publish
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
+        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(1, messages.length);
 
-        connect = newBayeuxExchange("[{" +
+        connect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        Assert.assertEquals(200, connect.getResponseStatus());
+        response = connect.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         // Expect meta response to the connect plus the published message
-        messages = jsonContext.parse(connect.getResponseContent());
+        messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(2, messages.length);
     }
 }

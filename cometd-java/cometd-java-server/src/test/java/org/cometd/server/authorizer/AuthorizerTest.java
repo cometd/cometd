@@ -16,6 +16,8 @@
 
 package org.cometd.server.authorizer;
 
+import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.Authorizer;
@@ -25,8 +27,8 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.AbstractBayeuxClientServerTest;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -53,43 +55,40 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
             }
         });
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange publish = newBayeuxExchange("[{" +
+        Request publish = newBayeuxRequest("[{" +
                 "\"channel\": \"/foo\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(publish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(200, publish.getResponseStatus());
+        response = publish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
+        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];
         Assert.assertFalse(message.isSuccessful());
 
-        publish = newBayeuxExchange("[{" +
+        publish = newBayeuxRequest("[{" +
                 "\"channel\": \"/service/foo\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(publish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(200, publish.getResponseStatus());
+        response = publish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        messages = jsonContext.parse(publish.getResponseContent());
+        messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(1, messages.length);
         message = messages[0];
         Assert.assertTrue(message.isSuccessful());
@@ -113,44 +112,41 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
             }
         });
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange publish = newBayeuxExchange("[{" +
+        Request publish = newBayeuxRequest("[{" +
                 "\"channel\": \"" + channelName + "\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(publish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(200, publish.getResponseStatus());
+        response = publish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
+        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];
         Assert.assertFalse(message.isSuccessful());
 
         // Check that publishing to another channel does not involve authorizers
-        ContentExchange grantedPublish = newBayeuxExchange("[{" +
+        Request grantedPublish = newBayeuxRequest("[{" +
                 "\"channel\": \"/foo\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(grantedPublish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, grantedPublish.waitForDone());
-        Assert.assertEquals(200, grantedPublish.getResponseStatus());
+        response = grantedPublish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        messages = jsonContext.parse(grantedPublish.getResponseContent());
+        messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(1, messages.length);
         message = messages[0];
         Assert.assertTrue(message.isSuccessful());
@@ -159,29 +155,27 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
     @Test
     public void testNoAuthorizersGrant() throws Exception
     {
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange publish = newBayeuxExchange("[{" +
+        Request publish = newBayeuxRequest("[{" +
                 "\"channel\": \"/test\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(publish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(200, publish.getResponseStatus());
+        response = publish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
+        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];
         Assert.assertTrue(message.isSuccessful());
@@ -212,44 +206,41 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
             }
         });
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange publish = newBayeuxExchange("[{" +
+        Request publish = newBayeuxRequest("[{" +
                 "\"channel\": \"" + channelName + "\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(publish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(200, publish.getResponseStatus());
+        response = publish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
+        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];
         Assert.assertFalse(message.isSuccessful());
 
         // Check that publishing to another channel does not involve authorizers
-        ContentExchange grantedPublish = newBayeuxExchange("[{" +
+        Request grantedPublish = newBayeuxRequest("[{" +
                 "\"channel\": \"/foo\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(grantedPublish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, grantedPublish.waitForDone());
-        Assert.assertEquals(200, grantedPublish.getResponseStatus());
+        response = grantedPublish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        messages = jsonContext.parse(grantedPublish.getResponseContent());
+        messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(1, messages.length);
         message = messages[0];
         Assert.assertTrue(message.isSuccessful());
@@ -281,44 +272,41 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
             }
         });
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange publish = newBayeuxExchange("[{" +
+        Request publish = newBayeuxRequest("[{" +
                 "\"channel\": \"" + channelName + "\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(publish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(200, publish.getResponseStatus());
+        response = publish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(publish.getResponseContent());
+        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];
         Assert.assertTrue(message.isSuccessful());
 
         // Check that publishing again fails (the authorizer has been removed)
-        ContentExchange grantedPublish = newBayeuxExchange("[{" +
+        Request grantedPublish = newBayeuxRequest("[{" +
                 "\"channel\": \"" + channelName + "\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        httpClient.send(grantedPublish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, grantedPublish.waitForDone());
-        Assert.assertEquals(200, grantedPublish.getResponseStatus());
+        response = grantedPublish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        messages = jsonContext.parse(grantedPublish.getResponseContent());
+        messages = jsonContext.parse(response.contentAsString());
         Assert.assertEquals(1, messages.length);
         message = messages[0];
         Assert.assertFalse(message.isSuccessful());

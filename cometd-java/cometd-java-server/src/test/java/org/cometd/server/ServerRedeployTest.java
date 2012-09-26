@@ -16,9 +16,11 @@
 
 package org.cometd.server;
 
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpHeaders;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Assert;
 import org.junit.Test;
@@ -28,40 +30,35 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest
     @Test
     public void testServerRedeploy() throws Exception
     {
-        ContentExchange handshake = newBayeuxExchange("" +
+        Request handshake = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange connect = newBayeuxExchange("" +
+        Request connect = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"," +
                 "\"advice\": { \"timeout\": 0 }" +
                 "}]");
-        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        Assert.assertEquals(200, connect.getResponseStatus());
+        response = connect.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        connect = newBayeuxExchange("" +
+        connect = newBayeuxRequest("" +
                 "[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect);
+        Future<ContentResponse> futureResponse = connect.send();
 
         // Wait for the connect to arrive to the server
         Thread.sleep(1000);
@@ -70,7 +67,7 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest
         context.stop();
 
         // Expect the connect to be back with an exception
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        Assert.assertEquals(HttpStatus.REQUEST_TIMEOUT_408, connect.getResponseStatus());
+        response = futureResponse.get(timeout * 2, TimeUnit.SECONDS);
+        Assert.assertEquals(HttpStatus.REQUEST_TIMEOUT_408, response.status());
     }
 }

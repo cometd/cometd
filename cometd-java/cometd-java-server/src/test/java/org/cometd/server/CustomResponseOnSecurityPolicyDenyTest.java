@@ -20,6 +20,7 @@ import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -28,9 +29,8 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -48,24 +48,23 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 Map<String,Object> advice = reply.getAdvice(true);
                 advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_HANDSHAKE_VALUE);
                 Map<String, Object> ext = reply.getExt(true);
-                Map<String, Object> extra = new HashMap<String, Object>();
+                Map<String, Object> extra = new HashMap<>();
                 ext.put("com.acme", extra);
                 extra.put("failure", "test");
                 return false;
             }
         });
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        checkResponse(handshake, Message.RECONNECT_HANDSHAKE_VALUE);
+        checkResponse(response, Message.RECONNECT_HANDSHAKE_VALUE);
     }
 
     @Test
@@ -80,7 +79,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 Map<String,Object> advice = reply.getAdvice(true);
                 advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                 Map<String, Object> ext = reply.getExt(true);
-                Map<String, Object> extra = new HashMap<String, Object>();
+                Map<String, Object> extra = new HashMap<>();
                 ext.put("com.acme", extra);
                 extra.put("failure", "test");
                 return false;
@@ -103,7 +102,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 Map<String, Object> advice = reply.getAdvice(true);
                 advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                 Map<String, Object> ext = reply.getExt(true);
-                Map<String, Object> extra = new HashMap<String, Object>();
+                Map<String, Object> extra = new HashMap<>();
                 ext.put("com.acme", extra);
                 extra.put("failure", "test");
                 return false;
@@ -125,71 +124,63 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 Map<String,Object> advice = reply.getAdvice(true);
                 advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                 Map<String, Object> ext = reply.getExt(true);
-                Map<String, Object> extra = new HashMap<String, Object>();
+                Map<String, Object> extra = new HashMap<>();
                 ext.put("com.acme", extra);
                 extra.put("failure", "test");
                 return false;
             }
         });
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange subscribe = newBayeuxExchange("[{" +
+        Request subscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/subscribe\"," +
                 "\"subscription\": \"/test\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
-        subscribe.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(subscribe);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, subscribe.waitForDone());
-        Assert.assertEquals(200, subscribe.getResponseStatus());
+        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        checkResponse(subscribe, Message.RECONNECT_NONE_VALUE);
+        checkResponse(response, Message.RECONNECT_NONE_VALUE);
     }
 
-    private ContentExchange publish() throws Exception
+    private ContentResponse publish() throws Exception
     {
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange publish = newBayeuxExchange("[{" +
+        Request publish = newBayeuxRequest("[{" +
                 "\"channel\": \"/test\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        publish.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(publish);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, publish.waitForDone());
-        Assert.assertEquals(200, publish.getResponseStatus());
+        response = publish.send().get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(200, response.status());
 
-        return publish;
+        return response;
     }
 
-    private void checkResponse(ContentExchange reply, String reconnectAdvice) throws ParseException, UnsupportedEncodingException
+    private void checkResponse(ContentResponse reply, String reconnectAdvice) throws ParseException, UnsupportedEncodingException
     {
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] responses = jsonContext.parse(reply.getResponseContent());
+        Message.Mutable[] responses = jsonContext.parse(reply.contentAsString());
         Assert.assertEquals(1, responses.length);
         Message response = responses[0];
         Map<String, Object> advice = response.getAdvice();
