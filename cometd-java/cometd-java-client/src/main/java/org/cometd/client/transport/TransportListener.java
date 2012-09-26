@@ -32,21 +32,23 @@ public interface TransportListener
 {
     /**
      * Callback method invoked when the batch of messages is being sent.
+     *
      * @param messages the batch of messages being sent
      */
     void onSending(Message[] messages);
 
     /**
+     * Callback method invoked when a batch of message is received.
      *
-     * @param messages
+     * @param messages the batch of messages received
      */
     void onMessages(List<Message.Mutable> messages);
 
-    void onConnectException(Throwable x, Message[] messages);
-
-    void onException(Throwable x, Message[] messages);
-
-    void onExpire(Message[] messages);
-
-    void onProtocolError(String info, Message[] messages);
+    /**
+     * Callback method invoked when a failure to send or receive messages occurs.
+     *
+     * @param failure the failure occurred
+     * @param messages the batch of messages being sent
+     */
+    void onFailure(Throwable failure, Message[] messages);
 }

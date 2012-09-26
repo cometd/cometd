@@ -297,18 +297,21 @@ public class ServerChannelImpl implements ServerChannel
         // as we are now "sending" this message
         mutable.setClientId(null);
 
+        // Reset the messageId to avoid clashes with message-based transports such
+        // as websocket that may rely on the messageId to match request/responses.
+        mutable.setId(null);
+
         if (_bayeux.extendSend(session, null, mutable))
             _bayeux.doPublish(session, this, mutable);
     }
 
-    public void publish(Session from, Object data, String id)
+    public void publish(Session from, Object data)
     {
         ServerMessage.Mutable mutable = _bayeux.newMessage();
         mutable.setChannel(getId());
         if (from != null)
             mutable.setClientId(from.getId());
         mutable.setData(data);
-        mutable.setId(id);
         publish(from, mutable);
     }
 

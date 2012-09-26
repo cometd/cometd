@@ -16,7 +16,6 @@
 
 package org.cometd.client;
 
-import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,7 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Bayeux;
@@ -100,15 +98,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
 
     private final Logger logger = LoggerFactory.getLogger(getClass().getName() + "." + System.identityHashCode(this));
     private final TransportRegistry transportRegistry = new TransportRegistry();
-    private final Map<String, Object> options = new ConcurrentHashMap<String, Object>();
-    private final AtomicReference<BayeuxClientState> bayeuxClientState = new AtomicReference<BayeuxClientState>();
-    private final List<Message.Mutable> messageQueue = new ArrayList<Message.Mutable>(32);
+    private final Map<String, Object> options = new ConcurrentHashMap<>();
+    private final AtomicReference<BayeuxClientState> bayeuxClientState = new AtomicReference<>();
+    private final List<Message.Mutable> messageQueue = new ArrayList<>(32);
     private final HttpClientTransport.CookieProvider cookieProvider = new HttpClientTransport.StandardCookieProvider();
     private final TransportListener handshakeListener = new HandshakeTransportListener();
     private final TransportListener connectListener = new ConnectTransportListener();
     private final TransportListener disconnectListener = new DisconnectTransportListener();
     private final TransportListener publishListener = new PublishTransportListener();
-    private final Map<String, ClientSessionChannel.MessageListener> publishCallbacks = new ConcurrentHashMap<String, ClientSessionChannel.MessageListener>();
+    private final Map<String, ClientSessionChannel.MessageListener> publishCallbacks = new ConcurrentHashMap<>();
     private volatile ScheduledExecutorService scheduler;
     private volatile boolean shutdownScheduler;
     private volatile long backoffIncrement;
@@ -363,7 +361,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 message.putAll(bayeuxClientState.handshakeFields);
             message.setChannel(Channel.META_HANDSHAKE);
             List<ClientTransport> transports = transportRegistry.negotiate(getAllowedTransports().toArray(), BAYEUX_VERSION);
-            List<String> transportNames = new ArrayList<String>(transports.size());
+            List<String> transportNames = new ArrayList<>(transports.size());
             for (ClientTransport transport : transports)
                 transportNames.add(transport.getName());
             message.put(Message.SUPPORTED_CONNECTION_TYPES_FIELD, transportNames);
@@ -387,7 +385,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     public boolean waitFor(long waitMs, State state, State... states)
     {
         long start = System.nanoTime();
-        List<State> waitForStates = new ArrayList<State>();
+        List<State> waitForStates = new ArrayList<>();
         waitForStates.add(state);
         waitForStates.addAll(Arrays.asList(states));
         synchronized (this)
@@ -1141,41 +1139,21 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                 processMessage(message);
         }
 
-        public void onConnectException(Throwable x, Message[] messages)
-        {
-            onFailure(x, messages);
-        }
-
-        public void onException(Throwable x, Message[] messages)
-        {
-            onFailure(x, messages);
-        }
-
-        public void onExpire(Message[] messages)
-        {
-            onFailure(new TimeoutException("expired"), messages);
-        }
-
-        public void onProtocolError(String info, Message[] messages)
-        {
-            onFailure(new ProtocolException(info), messages);
-        }
-
         protected void processMessage(Message.Mutable message)
         {
             BayeuxClient.this.processMessage(message);
         }
 
-        protected void onFailure(Throwable x, Message[] messages)
+        public void onFailure(Throwable failure, Message[] messages)
         {
-            BayeuxClient.this.onFailure(x, messages);
-            failMessages(x, messages);
+            BayeuxClient.this.onFailure(failure, messages);
+            failMessages(failure, messages);
         }
     }
 
     private class HandshakeTransportListener extends PublishTransportListener
     {
-        protected void onFailure(Throwable x, Message[] messages)
+        public void onFailure(Throwable failure, Message[] messages)
         {
             updateBayeuxClientState(new BayeuxClientStateUpdater()
             {
@@ -1198,7 +1176,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     }
                 }
             });
-            super.onFailure(x, messages);
+            super.onFailure(failure, messages);
         }
 
         @Override
@@ -1214,7 +1192,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private class ConnectTransportListener extends PublishTransportListener
     {
         @Override
-        protected void onFailure(Throwable x, Message[] messages)
+        public void onFailure(Throwable failure, Message[] messages)
         {
             updateBayeuxClientState(new BayeuxClientStateUpdater()
             {
@@ -1223,7 +1201,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     return new UnconnectedState(oldState.handshakeFields, oldState.advice, oldState.transport, oldState.clientId, oldState.nextBackoff());
                 }
             });
-            super.onFailure(x, messages);
+            super.onFailure(failure, messages);
         }
 
         @Override
@@ -1239,7 +1217,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private class DisconnectTransportListener extends PublishTransportListener
     {
         @Override
-        protected void onFailure(Throwable x, Message[] messages)
+        public void onFailure(Throwable failure, Message[] messages)
         {
             updateBayeuxClientState(new BayeuxClientStateUpdater()
             {
@@ -1248,7 +1226,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
                     return new DisconnectedState(oldState.transport);
                 }
             });
-            super.onFailure(x, messages);
+            super.onFailure(failure, messages);
         }
 
         @Override
@@ -1346,7 +1324,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         protected void send(TransportListener listener, Message.Mutable... messages)
         {
             // Use ArrayList because Arrays.asList() does not support Iterator.remove()
-            List<Message.Mutable> messageList = new ArrayList<Message.Mutable>(Arrays.asList(messages));
+            List<Message.Mutable> messageList = new ArrayList<>(Arrays.asList(messages));
             for (Iterator<Message.Mutable> iterator = messageList.iterator(); iterator.hasNext();)
             {
                 Message.Mutable message = iterator.next();

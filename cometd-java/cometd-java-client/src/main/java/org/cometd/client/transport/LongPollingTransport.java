@@ -16,6 +16,7 @@
 
 package org.cometd.client.transport;
 
+import java.net.ProtocolException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -127,7 +128,7 @@ public class LongPollingTransport extends HttpClientTransport
             url += type;
         }
 
-        Request request = _httpClient.newRequest(url).method(HttpMethod.POST);
+        final Request request = _httpClient.newRequest(url).method(HttpMethod.POST);
         request.header(HttpHeader.CONTENT_TYPE.asString(), "application/json;charset=UTF-8");
         request.content(new StringContentProvider(generateJSON(messages)));
 
@@ -176,10 +177,7 @@ public class LongPollingTransport extends HttpClientTransport
 
                 if (result.isFailed())
                 {
-                    // TODO: distinguish the exceptions to call the right callback
-                    // TODO: even though it's not really used: all callbacks call BayeuxClient.onFailure()
-                    // TODO: only used in tests
-                    listener.onException(result.getFailure(), messages);
+                    listener.onFailure(result.getFailure(), messages);
                     return;
                 }
 
@@ -207,17 +205,17 @@ public class LongPollingTransport extends HttpClientTransport
                         }
                         catch (ParseException x)
                         {
-                            listener.onException(x, messages);
+                            listener.onFailure(x, messages);
                         }
                     }
                     else
                     {
-                        listener.onProtocolError("Empty response: " + this, messages);
+                        listener.onFailure(new ProtocolException("Empty response content " + request), messages);
                     }
                 }
                 else
                 {
-                    listener.onProtocolError("Unexpected response " + status + ": " + this, messages);
+                    listener.onFailure(new ProtocolException("Unexpected response " + status + ": " + request), messages);
                 }
             }
         });
