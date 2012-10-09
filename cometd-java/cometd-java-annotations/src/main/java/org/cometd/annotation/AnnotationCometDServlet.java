@@ -43,9 +43,9 @@ import org.eclipse.jetty.util.Loader;
  *  &lt;/servlet&gt;
  * </pre>
  */
-public class AnnotationCometdServlet extends CometdServlet
+public class AnnotationCometDServlet extends CometdServlet
 {
-    private final List<Object> services = new ArrayList<Object>();
+    private final List<Object> services = new ArrayList<>();
     private volatile ServerAnnotationProcessor processor;
 
     @Override

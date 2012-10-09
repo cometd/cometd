@@ -27,7 +27,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class AnnotationCometdServletTest
+public class AnnotationCometDServletTest
 {
     @Test
     public void testLifecycle() throws Exception
@@ -40,7 +40,7 @@ public class AnnotationCometdServletTest
         String contextPath = "/cometd";
         ServletContextHandler context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
 
-        AnnotationCometdServlet cometdServlet = new AnnotationCometdServlet();
+        AnnotationCometDServlet cometdServlet = new AnnotationCometDServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
         cometdServletHolder.setInitParameter("services", TestService.class.getName());
         String cometdServletPath = "/cometd";

@@ -42,7 +42,7 @@ class AnnotationProcessor
         if (bean == null)
             return false;
 
-        List<Method> postConstructs = new ArrayList<Method>();
+        List<Method> postConstructs = new ArrayList<>();
         for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
         {
             boolean foundInClass = false;
@@ -82,7 +82,7 @@ class AnnotationProcessor
         if (bean == null)
             return false;
 
-        List<Method> preDestroys = new ArrayList<Method>();
+        List<Method> preDestroys = new ArrayList<>();
         for (Class<?> c = bean.getClass(); c != null; c = c.getSuperclass())
         {
             boolean foundInClass = false;
@@ -242,13 +242,13 @@ class AnnotationProcessor
                         Object value = getField(bean, field);
                         if (value != null)
                         {
-                            logger.debug("Avoid injection of field {} on bean {}, it's already injected with {}", new Object[]{field, bean, value});
+                            logger.debug("Avoid injection of field {} on bean {}, it's already injected with {}", field, bean, value);
                             continue;
                         }
 
                         setField(bean, field, injectable);
                         result = true;
-                        logger.debug("Injected {} to field {} on bean {}", new Object[]{injectable, field, bean});
+                        logger.debug("Injected {} to field {} on bean {}", injectable, field, bean);
                     }
                 }
             }
@@ -269,14 +269,14 @@ class AnnotationProcessor
                                 Object value = invokeMethod(bean, getter);
                                 if (value != null)
                                 {
-                                    logger.debug("Avoid injection of method {} on bean {}, it's already injected with {}", new Object[]{method, bean, value});
+                                    logger.debug("Avoid injection of method {} on bean {}, it's already injected with {}", method, bean, value);
                                     continue;
                                 }
                             }
 
                             invokeMethod(bean, method, injectable);
                             result = true;
-                            logger.debug("Injected {} to method {} on bean {}", new Object[]{injectable, method, bean});
+                            logger.debug("Injected {} to method {} on bean {}", injectable, method, bean);
                         }
                     }
                 }

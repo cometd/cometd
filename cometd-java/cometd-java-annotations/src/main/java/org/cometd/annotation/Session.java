@@ -22,6 +22,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.cometd.bayeux.client.ClientSession;
+import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerSession;
+
 /**
  * <p>Identifies fields and methods that can be injected with {@link org.cometd.bayeux.Session sessions} objects
  * scoped to the service instance.</p>

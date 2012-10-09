@@ -59,8 +59,8 @@ import org.cometd.bayeux.client.ClientSessionChannel;
  */
 public class ClientAnnotationProcessor extends AnnotationProcessor
 {
-    private final ConcurrentMap<Object, List<ListenerCallback>> listeners = new ConcurrentHashMap<Object, List<ListenerCallback>>();
-    private final ConcurrentMap<Object, List<SubscriptionCallback>> subscribers = new ConcurrentHashMap<Object, List<SubscriptionCallback>>();
+    private final ConcurrentMap<Object, List<ListenerCallback>> listeners = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Object, List<SubscriptionCallback>> subscribers = new ConcurrentHashMap<>();
     private final ClientSession clientSession;
     private final Object[] injectables;
 
@@ -181,7 +181,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                     {
                         setField(bean, field, clientSession);
                         result = true;
-                        logger.debug("Injected {} to field {} on bean {}", new Object[]{clientSession, field, bean});
+                        logger.debug("Injected {} to field {} on bean {}", clientSession, field, bean);
                     }
                 }
             }
@@ -198,7 +198,7 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                         {
                             invokeMethod(bean, method, clientSession);
                             result = true;
-                            logger.debug("Injected {} to method {} on bean {}", new Object[]{clientSession, method, bean});
+                            logger.debug("Injected {} to method {} on bean {}", clientSession, method, bean);
                         }
                     }
                 }
@@ -227,14 +227,14 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                         List<ListenerCallback> callbacks = listeners.get(bean);
                         if (callbacks == null)
                         {
-                            callbacks = new CopyOnWriteArrayList<ListenerCallback>();
+                            callbacks = new CopyOnWriteArrayList<>();
                             List<ListenerCallback> existing = listeners.putIfAbsent(bean, callbacks);
                             if (existing != null)
                                 callbacks = existing;
                         }
                         callbacks.add(listenerCallback);
                         result = true;
-                        logger.debug("Registered listener for channel {} to method {} on bean {}", new Object[]{channel, method, bean});
+                        logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
                     }
                 }
             }
@@ -285,14 +285,14 @@ public class ClientAnnotationProcessor extends AnnotationProcessor
                         List<SubscriptionCallback> callbacks = subscribers.get(bean);
                         if (callbacks == null)
                         {
-                            callbacks = new CopyOnWriteArrayList<SubscriptionCallback>();
+                            callbacks = new CopyOnWriteArrayList<>();
                             List<SubscriptionCallback> existing = subscribers.putIfAbsent(bean, callbacks);
                             if (existing != null)
                                 callbacks = existing;
                         }
                         callbacks.add(subscriptionCallback);
                         result = true;
-                        logger.debug("Registered subscriber for channel {} to method {} on bean {}", new Object[]{channel, method, bean});
+                        logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
                     }
                 }
             }

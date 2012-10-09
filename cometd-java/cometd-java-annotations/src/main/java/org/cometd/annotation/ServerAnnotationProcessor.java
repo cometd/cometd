@@ -77,9 +77,9 @@ import org.cometd.bayeux.server.ServerSession;
  */
 public class ServerAnnotationProcessor extends AnnotationProcessor
 {
-    private final ConcurrentMap<Object, LocalSession> sessions = new ConcurrentHashMap<Object, LocalSession>();
-    private final ConcurrentMap<Object, List<ListenerCallback>> listeners = new ConcurrentHashMap<Object, List<ListenerCallback>>();
-    private final ConcurrentMap<Object, List<SubscriptionCallback>> subscribers = new ConcurrentHashMap<Object, List<SubscriptionCallback>>();
+    private final ConcurrentMap<Object, LocalSession> sessions = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Object, List<ListenerCallback>> listeners = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Object, List<SubscriptionCallback>> subscribers = new ConcurrentHashMap<>();
     private final BayeuxServer bayeuxServer;
     private final Object[] injectables;
 
@@ -147,7 +147,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                                 boolean flip = false;
                                 try
                                 {
-                                    logger.debug("Configure channel {} with method {} on bean {}", new Object[]{channel, method, bean});
+                                    logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
                                     if (!method.isAccessible())
                                     {
                                         flip = true;
@@ -171,13 +171,13 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
                         if (initialized)
                         {
-                            logger.debug("Channel {} already initialized. Not called method {} on bean {}", new Object[]{channel, method, bean});
+                            logger.debug("Channel {} already initialized. Not called method {} on bean {}", channel, method, bean);
                         }
                         else
                         {
                             if (configure.configureIfExists())
                             {
-                                logger.debug("Configure channel {} with method {} on bean {}", new Object[]{channel, method, bean});
+                                logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
                                 init.configureChannel(bayeuxServer.getChannel(channel));
                             }
                             else if (configure.errorIfExists())
@@ -206,7 +206,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         if (serviceAnnotation == null)
             return false;
 
-        List<Object> injectables = new ArrayList<Object>(Arrays.asList(this.injectables));
+        List<Object> injectables = new ArrayList<>(Arrays.asList(this.injectables));
         injectables.add(0, bayeuxServer);
         boolean result = processInjectables(bean, injectables);
         LocalSession session = findOrCreateLocalSession(bean, serviceAnnotation.value());
@@ -335,7 +335,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                     {
                         setField(bean, field, value);
                         result = true;
-                        logger.debug("Injected {} to field {} on bean {}", new Object[]{value, field, bean});
+                        logger.debug("Injected {} to field {} on bean {}", value, field, bean);
                     }
                 }
             }
@@ -358,7 +358,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         {
                             invokeMethod(bean, method, value);
                             result = true;
-                            logger.debug("Injected {} to method {} on bean {}", new Object[]{value, method, bean});
+                            logger.debug("Injected {} to method {} on bean {}", value, method, bean);
                         }
                     }
                 }
@@ -388,14 +388,14 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         List<ListenerCallback> callbacks = listeners.get(bean);
                         if (callbacks == null)
                         {
-                            callbacks = new CopyOnWriteArrayList<ListenerCallback>();
+                            callbacks = new CopyOnWriteArrayList<>();
                             List<ListenerCallback> existing = listeners.putIfAbsent(bean, callbacks);
                             if (existing != null)
                                 callbacks = existing;
                         }
                         callbacks.add(listenerCallback);
                         result = true;
-                        logger.debug("Registered listener for channel {} to method {} on bean {}", new Object[]{channel, method, bean});
+                        logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
                     }
                 }
             }
@@ -442,14 +442,14 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         List<SubscriptionCallback> callbacks = subscribers.get(bean);
                         if (callbacks == null)
                         {
-                            callbacks = new CopyOnWriteArrayList<SubscriptionCallback>();
+                            callbacks = new CopyOnWriteArrayList<>();
                             List<SubscriptionCallback> existing = subscribers.putIfAbsent(bean, callbacks);
                             if (existing != null)
                                 callbacks = existing;
                         }
                         callbacks.add(subscriptionCallback);
                         result = true;
-                        logger.debug("Registered subscriber for channel {} to method {} on bean {}", new Object[]{channel, method, bean});
+                        logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
                     }
                 }
             }

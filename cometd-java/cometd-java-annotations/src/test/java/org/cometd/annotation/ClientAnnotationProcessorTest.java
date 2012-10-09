@@ -32,9 +32,8 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -62,8 +61,8 @@ public class ClientAnnotationProcessorTest
     {
         server = new Server();
 
-        Connector connector = new SelectChannelConnector();
-        connector.setMaxIdleTime(30000);
+        ServerConnector connector = new ServerConnector(server);
+        connector.setIdleTimeout(30000);
         server.addConnector(connector);
 
         String contextPath = "";
@@ -174,11 +173,11 @@ public class ClientAnnotationProcessorTest
     @Test
     public void testListenUnlisten() throws Exception
     {
-        final AtomicReference<Message> handshakeRef = new AtomicReference<Message>();
+        final AtomicReference<Message> handshakeRef = new AtomicReference<>();
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
-        final AtomicReference<Message> connectRef = new AtomicReference<Message>();
+        final AtomicReference<Message> connectRef = new AtomicReference<>();
         final CountDownLatch connectLatch = new CountDownLatch(1);
-        final AtomicReference<Message> disconnectRef = new AtomicReference<Message>();
+        final AtomicReference<Message> disconnectRef = new AtomicReference<>();
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
 
         @Service
@@ -231,8 +230,8 @@ public class ClientAnnotationProcessorTest
     @Test
     public void testSubscribeUnsubscribe() throws Exception
     {
-        final AtomicReference<Message> messageRef = new AtomicReference<Message>();
-        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<Message> messageRef = new AtomicReference<>();
+        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
 
         @Service
         class S
@@ -287,7 +286,7 @@ public class ClientAnnotationProcessorTest
     public void testUsage() throws Exception
     {
         final CountDownLatch connectLatch = new CountDownLatch(1);
-        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>();
+        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>();
 
         @Service
         class S
