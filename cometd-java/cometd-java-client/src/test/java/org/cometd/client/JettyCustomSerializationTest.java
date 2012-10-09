@@ -39,9 +39,9 @@ public class JettyCustomSerializationTest extends ClientServerTest
     @Test
     public void testJettyCustomSerialization() throws Exception
     {
-        Map<String, String> serverOptions = new HashMap<String, String>();
+        Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(BayeuxServerImpl.JSON_CONTEXT, TestJettyJSONContextServer.class.getName());
-        Map<String, Object> clientOptions = new HashMap<String, Object>();
+        Map<String, Object> clientOptions = new HashMap<>();
         clientOptions.put(ClientTransport.JSON_CONTEXT, new TestJettyJSONContextClient());
 
         startServer(serverOptions);

@@ -80,7 +80,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel testChannel = client.getChannel(testChannelName);
         client.startBatch();
         testChannel.subscribe(new ClientSessionChannel.MessageListener()
@@ -95,7 +95,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         Assert.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         // Tell the server to unsubscribe the session
-        Map<String, Object> unsubscribe = new HashMap<String, Object>();
+        Map<String, Object> unsubscribe = new HashMap<>();
         unsubscribe.put(actionField, unsubscribeAction);
         ClientSessionChannel systemChannel = client.getChannel(systemChannelName);
         systemChannel.publish(unsubscribe);
@@ -107,7 +107,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         Assert.assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
 
         // Tell the server to resubscribe the session
-        Map<String, Object> resubscribe = new HashMap<String, Object>();
+        Map<String, Object> resubscribe = new HashMap<>();
         resubscribe.put(actionField, subscribeAction);
         systemChannel.publish(resubscribe);
         Assert.assertTrue(resubscribeLatch.await(5, TimeUnit.SECONDS));
@@ -149,7 +149,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
                     subscribeLatch.countDown();
             }
         });
-        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel testChannel = client.getChannel(testChannelName);
         testChannel.subscribe(new ClientSessionChannel.MessageListener()
         {
@@ -192,7 +192,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         final String systemChannelName = "/service/system";
 
         final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
-        final AtomicReference<ServerSession> sessionRef = new AtomicReference<ServerSession>();
+        final AtomicReference<ServerSession> sessionRef = new AtomicReference<>();
         new AbstractService(bayeux, "test")
         {
             {
@@ -219,7 +219,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel testChannel = client.getChannel(testChannelName);
         client.startBatch();
         testChannel.subscribe(new ClientSessionChannel.MessageListener()
@@ -234,7 +234,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         Assert.assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         // Tell the server to unsubscribe the session
-        Map<String, Object> unsubscribe = new HashMap<String, Object>();
+        Map<String, Object> unsubscribe = new HashMap<>();
         unsubscribe.put(actionField, unsubscribeAction);
         ClientSessionChannel systemChannel = client.getChannel(systemChannelName);
         systemChannel.publish(unsubscribe);

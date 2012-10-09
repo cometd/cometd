@@ -49,10 +49,10 @@ public class JacksonCustomSerializationTest extends ClientServerTest
     @Test
     public void testJacksonCustomSerialization() throws Exception
     {
-        Map<String, String> serverOptions = new HashMap<String, String>();
+        Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(BayeuxServerImpl.JSON_CONTEXT, TestJacksonJSONContextServer.class.getName());
         serverOptions.put(HttpTransport.JSON_DEBUG_OPTION, "true");
-        Map<String, Object> clientOptions = new HashMap<String, Object>();
+        Map<String, Object> clientOptions = new HashMap<>();
         clientOptions.put(ClientTransport.JSON_CONTEXT, new TestJacksonJSONContextClient());
 
         startServer(serverOptions);

@@ -62,7 +62,7 @@ public class AckExtensionTest extends ClientServerTest
         client.addExtension(new AckExtension());
 
         final String channelName = "/chat/demo";
-        final BlockingQueue<Message> messages = new BlockingArrayQueue<Message>();
+        final BlockingQueue<Message> messages = new BlockingArrayQueue<>();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -117,7 +117,7 @@ public class AckExtensionTest extends ClientServerTest
 
         // Send messages while client is offline
         for (int i = count; i < 2 * count; ++i)
-            chatChannel.publish(null, "hello_" + i, null);
+            chatChannel.publish(null, "hello_" + i);
 
         Thread.sleep(1000);
         Assert.assertEquals(0, messages.size());

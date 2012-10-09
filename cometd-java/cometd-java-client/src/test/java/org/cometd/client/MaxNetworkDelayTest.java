@@ -43,7 +43,7 @@ public class MaxNetworkDelayTest extends ClientServerTest
     @Before
     public void setUp() throws Exception
     {
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new HashMap<>();
         params.put("timeout", String.valueOf(timeout));
         startServer(params);
     }

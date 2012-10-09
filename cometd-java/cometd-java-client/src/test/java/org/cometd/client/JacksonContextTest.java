@@ -42,11 +42,11 @@ public class JacksonContextTest extends ClientServerTest
     @Test
     public void testAllMessagesUseJackson() throws Exception
     {
-        Map<String, String> serverParams = new HashMap<String, String>();
+        Map<String, String> serverParams = new HashMap<>();
         serverParams.put(BayeuxServerImpl.JSON_CONTEXT, JacksonJSONContextServer.class.getName());
         startServer(serverParams);
 
-        Map<String, Object> clientParams = new HashMap<String, Object>();
+        Map<String, Object> clientParams = new HashMap<>();
         clientParams.put(ClientTransport.JSON_CONTEXT, new JacksonJSONContextClient());
         final BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientParams, httpClient));
         client.setDebugEnabled(debugTests());
@@ -85,11 +85,11 @@ public class JacksonContextTest extends ClientServerTest
             {
                 // Republish
                 Map<String, Object> data = message.getDataAsMap();
-                Map<String, Object> republishData = new HashMap<String, Object>(data);
+                Map<String, Object> republishData = new HashMap<>(data);
                 republishData.put("republish", true);
-                getBayeux().getChannel(channelName).publish(getServerSession(), republishData, null);
+                getBayeux().getChannel(channelName).publish(getServerSession(), republishData);
                 // Deliver
-                Map<String, Object> deliverData = new HashMap<String, Object>(data);
+                Map<String, Object> deliverData = new HashMap<>(data);
                 deliverData.put("deliver", true);
                 session.deliver(getServerSession(), channelName, deliverData, null);
             }
@@ -126,7 +126,7 @@ public class JacksonContextTest extends ClientServerTest
                         clientLatch.countDown();
                     }
                 });
-                Map<String, Object> data = new HashMap<String, Object>();
+                Map<String, Object> data = new HashMap<>();
                 data.put("publish", true);
                 channel.publish(data);
             }

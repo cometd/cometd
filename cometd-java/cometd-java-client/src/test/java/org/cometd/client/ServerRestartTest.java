@@ -42,7 +42,7 @@ public class ServerRestartTest extends ClientServerTest
     @Test
     public void testServerRestart() throws Exception
     {
-        final AtomicReference<CountDownLatch> sendLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(3));
+        final AtomicReference<CountDownLatch> sendLatch = new AtomicReference<>(new CountDownLatch(3));
         BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
         {
             @Override

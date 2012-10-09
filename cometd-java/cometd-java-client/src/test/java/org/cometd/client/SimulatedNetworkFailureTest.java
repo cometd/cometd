@@ -42,7 +42,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
     @Before
     public void setUp() throws Exception
     {
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new HashMap<>();
         params.put("timeout", String.valueOf(timeout));
         params.put("maxInterval", String.valueOf(maxInterval));
         params.put("sweepIntervalMs", String.valueOf(sweepInterval));
@@ -53,7 +53,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
     public void testClientShortNetworkFailure() throws Exception
     {
         final CountDownLatch connectLatch = new CountDownLatch(2);
-        final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<CountDownLatch>();
+        final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<>();
         final AtomicBoolean connected = new AtomicBoolean(false);
 
         TestBayeuxClient client = new TestBayeuxClient()
@@ -137,7 +137,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
     {
         final CountDownLatch connectLatch = new CountDownLatch(2);
         final CountDownLatch handshakeLatch = new CountDownLatch(2);
-        final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<CountDownLatch>();
+        final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<>();
         final AtomicBoolean connected = new AtomicBoolean(false);
 
         TestBayeuxClient client = new TestBayeuxClient()

@@ -17,7 +17,8 @@
 package org.cometd.client;
 
 import org.cometd.client.transport.LongPollingTransport;
-import org.eclipse.jetty.client.ContentExchange;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -31,10 +32,9 @@ public class MissingContentTypeTest extends ClientServerTest
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient)
         {
             @Override
-            protected void customize(ContentExchange exchange)
+            protected void customize(Request request)
             {
-                super.customize(exchange);
-                exchange.getRequestFields().remove("Content-Type");
+                request.headers().remove(HttpHeader.CONTENT_TYPE);
             }
         });
         client.setDebugEnabled(debugTests());

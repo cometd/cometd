@@ -65,7 +65,7 @@ public class PublishDoesNotLeakClientIdTest extends ClientServerTest
                     }
                 });
                 final CountDownLatch latch = new CountDownLatch(1);
-                final AtomicReference<Message> messageRef = new AtomicReference<Message>();
+                final AtomicReference<Message> messageRef = new AtomicReference<>();
                 client1.getChannel(channel).subscribe(new ClientSessionChannel.MessageListener()
                 {
                     public void onMessage(ClientSessionChannel channel, Message message)

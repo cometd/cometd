@@ -51,4 +51,22 @@ public interface TransportListener
      * @param messages the batch of messages being sent
      */
     void onFailure(Throwable failure, Message[] messages);
+
+    public static class Empty implements TransportListener
+    {
+        @Override
+        public void onSending(Message[] messages)
+        {
+        }
+
+        @Override
+        public void onMessages(List<Message.Mutable> messages)
+        {
+        }
+
+        @Override
+        public void onFailure(Throwable failure, Message[] messages)
+        {
+        }
+    }
 }

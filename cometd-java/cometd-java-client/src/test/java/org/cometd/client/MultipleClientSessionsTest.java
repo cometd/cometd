@@ -48,7 +48,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
     @Before
     public void init() throws Exception
     {
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new HashMap<>();
         params.put("timeout", String.valueOf(timeout));
         startServer(params);
     }
@@ -65,7 +65,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
         init.invoke(transport);
 
         BayeuxClient client1 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<Message>();
+        final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
         final CountDownLatch latch1 = new CountDownLatch(2);
         client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -85,7 +85,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
         Thread.sleep(1000);
 
         BayeuxClient client2 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<Message>();
+        final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
         final CountDownLatch latch2 = new CountDownLatch(1);
         client2.setCookie("BAYEUX_BROWSER", cookie);
         client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
@@ -140,7 +140,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
             }
         };
         client1.setDebugEnabled(debugTests());
-        final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<Message>();
+        final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
         client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -158,7 +158,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
         Thread.sleep(1000);
 
         BayeuxClient client2 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<Message>();
+        final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
         client2.setCookie("BAYEUX_BROWSER", cookie);
         client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -173,7 +173,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
         Thread.sleep(1000);
 
         BayeuxClient client3 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<Message>();
+        final ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<>();
         client3.setCookie("BAYEUX_BROWSER", cookie);
         client3.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -193,14 +193,14 @@ public class MultipleClientSessionsTest extends ClientServerTest
 
         // Second client must be in normal poll mode
         assertTrue(connects2.size() > 1);
-        Message lastConnect2 = new LinkedList<Message>(connects2).getLast();
+        Message lastConnect2 = new LinkedList<>(connects2).getLast();
         Map<String,Object> advice2 = lastConnect2.getAdvice();
         assertNotNull(advice2);
         assertSame(Boolean.TRUE, advice2.get("multiple-clients"));
 
         // Third client must be in normal poll mode
         assertTrue(connects3.size() > 1);
-        Message lastConnect3 = new LinkedList<Message>(connects3).getLast();
+        Message lastConnect3 = new LinkedList<>(connects3).getLast();
         Map<String,Object> advice3 = lastConnect3.getAdvice();
         assertNotNull(advice3);
         assertSame(Boolean.TRUE, advice3.get("multiple-clients"));
@@ -224,7 +224,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
         BayeuxClient client5 = null;
         for (int i = 0; i < 10; ++i)
         {
-            lastConnect2 = new LinkedList<Message>(connects2).getLast();
+            lastConnect2 = new LinkedList<>(connects2).getLast();
             advice2 = lastConnect2.getAdvice();
             if (advice2 == null || !advice2.containsKey("multiple-clients"))
             {
@@ -232,7 +232,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
                 client5 = client3;
                 break;
             }
-            lastConnect3 = new LinkedList<Message>(connects3).getLast();
+            lastConnect3 = new LinkedList<>(connects3).getLast();
             advice3 = lastConnect3.getAdvice();
             if (advice3 == null || !advice3.containsKey("multiple-clients"))
             {
@@ -251,9 +251,9 @@ public class MultipleClientSessionsTest extends ClientServerTest
         Thread.sleep(timeout + 2 * multiSessionInterval);
         Message lastConnect;
         if (client5 == client2)
-            lastConnect = new LinkedList<Message>(connects2).getLast();
+            lastConnect = new LinkedList<>(connects2).getLast();
         else
-            lastConnect = new LinkedList<Message>(connects3).getLast();
+            lastConnect = new LinkedList<>(connects3).getLast();
         Map<String, Object> advice = lastConnect.getAdvice();
         assertTrue(advice == null || !advice.containsKey("multiple-clients"));
 
@@ -283,7 +283,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
             }
         };
         client1.setDebugEnabled(debugTests());
-        final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<Message>();
+        final ConcurrentLinkedQueue<Message> connects1 = new ConcurrentLinkedQueue<>();
         client1.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -301,7 +301,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
         Thread.sleep(1000);
 
         BayeuxClient client2 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<Message>();
+        final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
         client2.setCookie("BAYEUX_BROWSER", cookie);
         client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -316,7 +316,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
         Thread.sleep(1000);
 
         BayeuxClient client3 = newBayeuxClient();
-        final ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<Message>();
+        final ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<>();
         client3.setCookie("BAYEUX_BROWSER", cookie);
         client3.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -339,7 +339,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
 
         // Third client must be in normal poll mode
         assertTrue(connects3.size() > 1);
-        Message lastConnect3 = new LinkedList<Message>(connects3).getLast();
+        Message lastConnect3 = new LinkedList<>(connects3).getLast();
         Map<String,Object> advice3 = lastConnect3.getAdvice();
         assertNotNull(advice3);
         assertSame(Boolean.TRUE, advice3.get("multiple-clients"));
@@ -362,14 +362,14 @@ public class MultipleClientSessionsTest extends ClientServerTest
         // Loop until client3 switched to long poll
         for (int i = 0; i < 10; ++i)
         {
-            lastConnect3 = new LinkedList<Message>(connects3).getLast();
+            lastConnect3 = new LinkedList<>(connects3).getLast();
             advice3 = lastConnect3.getAdvice();
             if (advice3 == null || !advice3.containsKey("multiple-clients"))
                 break;
             Thread.sleep(timeout / 10);
         }
 
-        lastConnect3 = new LinkedList<Message>(connects3).getLast();
+        lastConnect3 = new LinkedList<>(connects3).getLast();
         advice3 = lastConnect3.getAdvice();
         assertTrue(advice3 == null || !advice3.containsKey("multiple-clients"));
 

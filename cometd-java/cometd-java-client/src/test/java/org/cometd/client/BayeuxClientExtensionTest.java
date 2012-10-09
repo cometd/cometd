@@ -246,10 +246,10 @@ public class BayeuxClientExtensionTest extends ClientServerTest
 
     private class CountingExtension implements ClientSession.Extension
     {
-        private final List<Message> rcvs = new ArrayList<Message>();
-        private final List<Message> rcvMetas = new ArrayList<Message>();
-        private final List<Message> sends = new ArrayList<Message>();
-        private final List<Message> sendMetas = new ArrayList<Message>();
+        private final List<Message> rcvs = new ArrayList<>();
+        private final List<Message> rcvMetas = new ArrayList<>();
+        private final List<Message> sends = new ArrayList<>();
+        private final List<Message> sendMetas = new ArrayList<>();
         private final String channel;
 
         private CountingExtension(String channel)

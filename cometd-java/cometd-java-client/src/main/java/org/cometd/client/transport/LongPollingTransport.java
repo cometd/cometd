@@ -131,6 +131,7 @@ public class LongPollingTransport extends HttpClientTransport
         final Request request = _httpClient.newRequest(url).method(HttpMethod.POST);
         request.header(HttpHeader.CONTENT_TYPE.asString(), "application/json;charset=UTF-8");
         request.content(new StringContentProvider(generateJSON(messages)));
+        customize(request);
 
         synchronized (this)
         {
@@ -219,5 +220,9 @@ public class LongPollingTransport extends HttpClientTransport
                 }
             }
         });
+    }
+
+    protected void customize(Request request)
+    {
     }
 }

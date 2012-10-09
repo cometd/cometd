@@ -19,7 +19,7 @@ package org.cometd.client;
 import java.util.Collections;
 
 import org.cometd.client.transport.LongPollingTransport;
-import org.eclipse.jetty.client.ContentExchange;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
@@ -70,12 +70,11 @@ public class HandshakeWithAuthenticationTest extends ClientServerTest
         LongPollingTransport transport = new LongPollingTransport(null, httpClient)
         {
             @Override
-            protected void customize(ContentExchange exchange)
+            protected void customize(Request request)
             {
-                super.customize(exchange);
                 String authorization = userName + ":" + password;
                 authorization = B64Code.encode(authorization);
-                exchange.addRequestHeader("Authorization", "Basic " + authorization);
+                request.header("Authorization", "Basic " + authorization);
             }
         };
         BayeuxClient client = new BayeuxClient(cometdURL, transport);

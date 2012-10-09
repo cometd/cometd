@@ -46,7 +46,7 @@ public class CookiesTest extends ClientServerTest
     @Test
     public void testCookieSentOnHandshakeResponse() throws Exception
     {
-        final AtomicReference<String> browserCookie = new AtomicReference<String>();
+        final AtomicReference<String> browserCookie = new AtomicReference<>();
         final BayeuxClient client = newBayeuxClient();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {

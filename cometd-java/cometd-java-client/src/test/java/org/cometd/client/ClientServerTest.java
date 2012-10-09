@@ -22,29 +22,28 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.CometdServlet;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Rule;
-import org.junit.rules.TestWatchman;
-import org.junit.runners.model.FrameworkMethod;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public class ClientServerTest
 {
     @Rule
-    public final TestWatchman testName = new TestWatchman()
+    public final TestWatcher testName = new TestWatcher()
     {
         @Override
-        public void starting(FrameworkMethod method)
+        protected void starting(Description description)
         {
-            super.starting(method);
-            System.err.printf("Running %s.%s%n", method.getMethod().getDeclaringClass().getName(), method.getName());
+            super.starting(description);
+            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
     };
-    protected Connector connector;
+    protected ServerConnector connector;
     protected Server server;
     protected ServletContextHandler context;
     protected HttpClient httpClient;
@@ -56,8 +55,8 @@ public class ClientServerTest
     {
         server = new Server();
 
-        connector = new SelectChannelConnector();
-        connector.setMaxIdleTime(30000);
+        connector = new ServerConnector(server);
+        connector.setIdleTimeout(30000);
         server.addConnector(connector);
 
         String contextPath = "";

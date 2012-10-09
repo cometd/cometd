@@ -47,7 +47,7 @@ public class TimeExtensionsTest extends ClientServerTest
         final BayeuxClient client = newBayeuxClient();
         client.addExtension(new TimestampClientExtension());
 
-        final Queue<Message> messages = new ConcurrentLinkedQueue<Message>();
+        final Queue<Message> messages = new ConcurrentLinkedQueue<>();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -78,7 +78,7 @@ public class TimeExtensionsTest extends ClientServerTest
         final BayeuxClient client = newBayeuxClient();
         client.addExtension(new TimesyncClientExtension());
 
-        final Queue<Message> messages = new ConcurrentLinkedQueue<Message>();
+        final Queue<Message> messages = new ConcurrentLinkedQueue<>();
         client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)

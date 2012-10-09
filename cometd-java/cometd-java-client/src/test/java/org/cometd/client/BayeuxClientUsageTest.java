@@ -29,7 +29,6 @@ import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JacksonJSONContextServer;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -44,23 +43,13 @@ public class BayeuxClientUsageTest extends ClientServerTest
     }
 
     @Test
-    public void testClientWithSocketConnector() throws Exception
-    {
-        startServer(null);
-        httpClient.stop();
-        httpClient.setConnectorType(HttpClient.CONNECTOR_SOCKET);
-        httpClient.start();
-        testClient(newBayeuxClient());
-    }
-
-    @Test
     public void testClientWithJackson() throws Exception
     {
-        Map<String, String> serverOptions = new HashMap<String, String>();
+        Map<String, String> serverOptions = new HashMap<>();
         serverOptions.put(BayeuxServerImpl.JSON_CONTEXT, JacksonJSONContextServer.class.getName());
         startServer(serverOptions);
 
-        Map<String, Object> clientOptions = new HashMap<String, Object>();
+        Map<String, Object> clientOptions = new HashMap<>();
         clientOptions.put(ClientTransport.JSON_CONTEXT, new JacksonJSONContextClient());
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientOptions, httpClient));
 
@@ -88,7 +77,7 @@ public class BayeuxClientUsageTest extends ClientServerTest
             }
         });
 
-        final BlockingArrayQueue<Object> results = new BlockingArrayQueue<Object>();
+        final BlockingArrayQueue<Object> results = new BlockingArrayQueue<>();
         client.getChannel("/meta/*").addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)

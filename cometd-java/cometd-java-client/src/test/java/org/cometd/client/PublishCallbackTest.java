@@ -49,7 +49,7 @@ public class PublishCallbackTest extends ClientServerTest
         client.handshake();
         assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
         channel.publish(new HashMap(), new ClientSessionChannel.MessageListener()
         {
@@ -87,7 +87,7 @@ public class PublishCallbackTest extends ClientServerTest
         client.handshake();
         assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
         channel.publish(new HashMap(), new ClientSessionChannel.MessageListener()
         {
@@ -118,7 +118,7 @@ public class PublishCallbackTest extends ClientServerTest
         BayeuxClient client = newBayeuxClient();
         client.handshake();
 
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
         channel.publish(new HashMap(), new ClientSessionChannel.MessageListener()
         {

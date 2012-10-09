@@ -22,6 +22,7 @@ import java.net.ConnectException;
 import java.net.ProtocolException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -52,9 +54,10 @@ import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.DefaultSecurityPolicy;
-import org.eclipse.jetty.client.ContentExchange;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;
 import org.junit.Before;
@@ -109,7 +112,7 @@ public class BayeuxClientTest extends ClientServerTest
         client.handshake();
 
         final String channelName = "/foo/bar";
-        final BlockingArrayQueue<String> messages = new BlockingArrayQueue<String>();
+        final BlockingArrayQueue<String> messages = new BlockingArrayQueue<>();
         client.batch(new Runnable()
         {
             public void run()
@@ -142,14 +145,20 @@ public class BayeuxClientTest extends ClientServerTest
         LongPollingTransport transport = new LongPollingTransport(null, httpClient)
         {
             @Override
-            protected void customize(ContentExchange exchange)
+            protected void customize(Request request)
             {
-                super.customize(exchange);
-                // Remove the address so that the send will fail
-                exchange.setAddress(null);
+                request.listener(new Request.Listener.Empty()
+                {
+                    @Override
+                    public void onBegin(Request request)
+                    {
+                        // Remove the host header so the request will fail
+                        request.headers().remove(HttpHeader.HOST);
+                    }
+                });
             }
         };
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         BayeuxClient client = new BayeuxClient(cometdURL, transport)
         {
             @Override
@@ -189,14 +198,13 @@ public class BayeuxClientTest extends ClientServerTest
         LongPollingTransport transport = new LongPollingTransport(null, httpClient)
         {
             @Override
-            protected void customize(ContentExchange exchange)
+            protected void customize(Request request)
             {
-                super.customize(exchange);
-                // Modify the exchange so that the server chokes it
-                exchange.setMethod("PUT");
+                // Modify the request so that the server chokes it
+                request.method(HttpMethod.PUT);
             }
         };
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         BayeuxClient client = new BayeuxClient(cometdURL, transport)
         {
             @Override
@@ -242,7 +250,7 @@ public class BayeuxClientTest extends ClientServerTest
                 return false;
             }
         });
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -265,7 +273,7 @@ public class BayeuxClientTest extends ClientServerTest
     @Test
     public void testHandshakeFailsNoTransports() throws Exception
     {
-        final AtomicReference<Message> handshake = new AtomicReference<Message>();
+        final AtomicReference<Message> handshake = new AtomicReference<>();
         final CountDownLatch handshakeLatch = new CountDownLatch(1);
         final CountDownLatch connectLatch = new CountDownLatch(1);
 
@@ -312,10 +320,10 @@ public class BayeuxClientTest extends ClientServerTest
     {
         context.stop();
         TestFilter filter = new TestFilter();
-        context.addFilter(new FilterHolder(filter), "/*", FilterMapping.DEFAULT);
+        context.addFilter(new FilterHolder(filter), "/*", EnumSet.of(DispatcherType.REQUEST));
         context.start();
 
-        final BlockingArrayQueue<Message> queue = new BlockingArrayQueue<Message>(100, 100);
+        final BlockingArrayQueue<Message> queue = new BlockingArrayQueue<>(100, 100);
         final AtomicBoolean connected = new AtomicBoolean(false);
         BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
         {
@@ -423,7 +431,7 @@ public class BayeuxClientTest extends ClientServerTest
             }
         };
         client.setDebugEnabled(debugTests());
-        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<>(new CountDownLatch(1));
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -539,7 +547,7 @@ public class BayeuxClientTest extends ClientServerTest
     @Test
     public void testPublish() throws Exception
     {
-        final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
+        final BlockingArrayQueue<String> results = new BlockingArrayQueue<>();
 
         String channelName = "/chat/msg";
         bayeux.createIfAbsent(channelName);
@@ -572,7 +580,7 @@ public class BayeuxClientTest extends ClientServerTest
     @Test
     public void testWaitFor() throws Exception
     {
-        final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
+        final BlockingArrayQueue<String> results = new BlockingArrayQueue<>();
 
         String channelName = "/chat/msg";
         bayeux.createIfAbsent(channelName);
@@ -711,7 +719,7 @@ public class BayeuxClientTest extends ClientServerTest
     @Test
     public void testAbortThenRestart() throws Exception
     {
-        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(2));
+        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<>(new CountDownLatch(2));
         BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
         {
             @Override
@@ -754,7 +762,7 @@ public class BayeuxClientTest extends ClientServerTest
     public void testAbortBeforePublishThenRestart() throws Exception
     {
         final String channelName = "/service/test";
-        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<>(new CountDownLatch(1));
         final CountDownLatch publishLatch = new CountDownLatch(1);
         final CountDownLatch failureLatch = new CountDownLatch(1);
         BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
@@ -832,8 +840,8 @@ public class BayeuxClientTest extends ClientServerTest
     {
         final String channelName = "/test";
         final AtomicBoolean abort = new AtomicBoolean(false);
-        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
-        final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> connectLatch = new AtomicReference<>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> publishLatch = new AtomicReference<>(new CountDownLatch(1));
         BayeuxClient client = new BayeuxClient(cometdURL, LongPollingTransport.create(null, httpClient))
         {
             @Override
@@ -866,7 +874,7 @@ public class BayeuxClientTest extends ClientServerTest
         Assert.assertTrue(connectLatch.get().await(5, TimeUnit.SECONDS));
 
         ClientSessionChannel channel = client.getChannel(channelName);
-        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> messageLatch = new AtomicReference<>(new CountDownLatch(1));
         channel.subscribe(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -905,8 +913,8 @@ public class BayeuxClientTest extends ClientServerTest
         };
         client.setDebugEnabled(debugTests());
 
-        final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
-        final AtomicReference<CountDownLatch> disconnectedLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> disconnectedLatch = new AtomicReference<>(new CountDownLatch(1));
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -946,7 +954,7 @@ public class BayeuxClientTest extends ClientServerTest
     @Test
     public void testAuthentication() throws Exception
     {
-        final AtomicReference<String> sessionId = new AtomicReference<String>();
+        final AtomicReference<String> sessionId = new AtomicReference<>();
         class A extends DefaultSecurityPolicy implements ServerSession.RemoveListener
         {
             @Override
@@ -983,7 +991,7 @@ public class BayeuxClientTest extends ClientServerTest
         bayeux.setSecurityPolicy(authenticator);
         BayeuxClient client = newBayeuxClient();
 
-        Map<String, Object> authentication = new HashMap<String, Object>();
+        Map<String, Object> authentication = new HashMap<>();
         authentication.put("token", "1234567890");
         Message.Mutable fields = new HashMapMessage();
         fields.getExt(true).put("authentication", authentication);
@@ -1004,7 +1012,7 @@ public class BayeuxClientTest extends ClientServerTest
         stopServer();
 
         long timeout = 5000;
-        Map<String, String> serverParams = new HashMap<String, String>();
+        Map<String, String> serverParams = new HashMap<>();
         serverParams.put("timeout", String.valueOf(timeout));
         startServer(serverParams);
 
@@ -1075,19 +1083,24 @@ public class BayeuxClientTest extends ClientServerTest
     @Test
     public void testStateUnSubscribes() throws Exception
     {
-        final BlockingArrayQueue<Object> results = new BlockingArrayQueue<Object>();
+        final BlockingArrayQueue<Object> results = new BlockingArrayQueue<>();
 
         final AtomicBoolean failHandShake = new AtomicBoolean(true);
 
         LongPollingTransport transport = new LongPollingTransport(null, httpClient)
         {
             @Override
-            protected void customize(ContentExchange exchange)
+            protected void customize(Request request)
             {
-                super.customize(exchange);
-
                 if (failHandShake.compareAndSet(true, false))
-                    exchange.setAddress(null);
+                    request.listener(new Request.Listener.Empty()
+                    {
+                        @Override
+                        public void onBegin(Request request)
+                        {
+                            request.headers().remove(HttpHeader.HOST);
+                        }
+                    });
             }
         };
 

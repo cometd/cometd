@@ -17,21 +17,23 @@
 package org.cometd.client.transport;
 
 import java.io.OutputStream;
+import java.net.ConnectException;
+import java.net.ProtocolException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Message.Mutable;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestWatchman;
-import org.junit.runners.model.FrameworkMethod;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -40,13 +42,13 @@ import static org.junit.Assert.assertTrue;
 public class LongPollingTransportTest
 {
     @Rule
-    public final TestWatchman testName = new TestWatchman()
+    public final TestWatcher testName = new TestWatcher()
     {
         @Override
-        public void starting(FrameworkMethod method)
+        protected void starting(Description description)
         {
-            super.starting(method);
-            System.err.printf("Running %s.%s%n", method.getMethod().getDeclaringClass().getName(), method.getName());
+            super.starting(description);
+            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
         }
     };
 
@@ -69,7 +71,7 @@ public class LongPollingTransportTest
     {
         final long processingTime = 500;
         final ServerSocket serverSocket = new ServerSocket(0);
-        final AtomicReference<Exception> serverException = new AtomicReference<Exception>();
+        final AtomicReference<Exception> serverException = new AtomicReference<>();
         Thread serverThread = new Thread()
         {
             @Override
@@ -114,7 +116,7 @@ public class LongPollingTransportTest
                 transport.init();
 
                 long start = System.nanoTime();
-                transport.send(new EmptyTransportListener()
+                transport.send(new TransportListener.Empty()
                 {
                     @Override
                     public void onMessages(List<Message.Mutable> messages)
@@ -150,7 +152,7 @@ public class LongPollingTransportTest
     {
         final long processingTime = 500;
         final ServerSocket serverSocket = new ServerSocket(0);
-        final AtomicReference<Exception> serverException = new AtomicReference<Exception>();
+        final AtomicReference<Exception> serverException = new AtomicReference<>();
         Thread serverThread = new Thread()
         {
             @Override
@@ -193,12 +195,13 @@ public class LongPollingTransportTest
                 transport.init();
 
                 long start = System.nanoTime();
-                transport.send(new EmptyTransportListener()
+                transport.send(new TransportListener.Empty()
                 {
                     @Override
-                    public void onProtocolError(String info, Message[] messages)
+                    public void onFailure(Throwable failure, Message[] messages)
                     {
-                        latch.countDown();
+                        if (failure instanceof ProtocolException)
+                            latch.countDown();
                     }
                 });
                 long end = System.nanoTime();
@@ -237,12 +240,13 @@ public class LongPollingTransportTest
             transport.setURL(serverURL);
             transport.init();
 
-            transport.send(new EmptyTransportListener()
+            transport.send(new TransportListener.Empty()
             {
                 @Override
-                public void onConnectException(Throwable x, Message[] messages)
+                public void onFailure(Throwable failure, Message[] messages)
                 {
-                    latch.countDown();
+                    if (failure instanceof ConnectException)
+                        latch.countDown();
                 }
             });
 
@@ -259,7 +263,7 @@ public class LongPollingTransportTest
     {
         final long processingTime = 500;
         final ServerSocket serverSocket = new ServerSocket(0);
-        final AtomicReference<Exception> serverException = new AtomicReference<Exception>();
+        final AtomicReference<Exception> serverException = new AtomicReference<>();
         Thread serverThread = new Thread()
         {
             @Override
@@ -295,10 +299,10 @@ public class LongPollingTransportTest
                 transport.init();
 
                 long start = System.nanoTime();
-                transport.send(new EmptyTransportListener()
+                transport.send(new TransportListener.Empty()
                 {
                     @Override
-                    public void onException(Throwable x, Message[] messages)
+                    public void onFailure(Throwable failure, Message[] messages)
                     {
                         latch.countDown();
                     }
@@ -327,7 +331,7 @@ public class LongPollingTransportTest
     {
         final long timeout = 1000;
         final ServerSocket serverSocket = new ServerSocket(0);
-        final AtomicReference<Exception> serverException = new AtomicReference<Exception>();
+        final AtomicReference<Exception> serverException = new AtomicReference<>();
         Thread serverThread = new Thread()
         {
             @Override
@@ -363,7 +367,7 @@ public class LongPollingTransportTest
         try
         {
             HttpClient httpClient = new HttpClient();
-            httpClient.setTimeout(timeout);
+            httpClient.setIdleTimeout(timeout);
             httpClient.start();
 
             try
@@ -373,12 +377,13 @@ public class LongPollingTransportTest
                 transport.setURL(serverURL);
                 transport.init();
 
-                transport.send(new EmptyTransportListener()
+                transport.send(new TransportListener.Empty()
                 {
                     @Override
-                    public void onExpire(Message[] messages)
+                    public void onFailure(Throwable failure, Message[] messages)
                     {
-                        latch.countDown();
+                        if (failure instanceof TimeoutException)
+                            latch.countDown();
                     }
                 });
 
@@ -394,33 +399,6 @@ public class LongPollingTransportTest
             serverThread.join();
             assertNull(serverException.get());
             serverSocket.close();
-        }
-    }
-
-    private class EmptyTransportListener implements TransportListener
-    {
-        public void onSending(Message[] messages)
-        {
-        }
-
-        public void onMessages(List<Mutable> metaMessages)
-        {
-        }
-
-        public void onConnectException(Throwable x, Message[] messages)
-        {
-        }
-
-        public void onException(Throwable x, Message[] messages)
-        {
-        }
-
-        public void onExpire(Message[] messages)
-        {
-        }
-
-        public void onProtocolError(String info, Message[] messages)
-        {
         }
     }
 }
