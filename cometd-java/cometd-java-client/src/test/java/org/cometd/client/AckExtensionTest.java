@@ -109,9 +109,15 @@ public class AckExtensionTest extends ClientServerTest
         for (int i = 0; i < count; ++i)
             Assert.assertEquals("hello_" + i, messages.poll(5, TimeUnit.SECONDS).getData());
 
+        // Wait for the long poll to happen
+        Thread.sleep(1000);
+
         int port = connector.getLocalPort();
         connector.stop();
+
+        // Wait for connections to process the remote close
         Thread.sleep(1000);
+
         Assert.assertTrue(connector.isStopped());
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.UNCONNECTED));
 
