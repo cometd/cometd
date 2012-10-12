@@ -70,7 +70,7 @@ public class DeliverWithTimeStampExtensionTest extends ClientServerTest
         // Wait for the long poll
         Thread.sleep(1000);
 
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
 
         Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
 

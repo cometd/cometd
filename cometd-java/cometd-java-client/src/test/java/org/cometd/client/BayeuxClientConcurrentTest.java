@@ -173,7 +173,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         // Publish will fail
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertTrue(failLatch.await(5, TimeUnit.SECONDS));
         assertFalse(publishLatch.await(1, TimeUnit.SECONDS));
 
@@ -215,7 +215,7 @@ public class BayeuxClientConcurrentTest extends ClientServerTest
 
         assertTrue(client.waitFor(5000, BayeuxClient.State.UNCONNECTED));
 
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);

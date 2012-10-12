@@ -175,7 +175,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest
                     {
                     }
                 });
-                channel.publish(new HashMap());
+                channel.publish(new HashMap<>());
             }
         });
 
@@ -237,7 +237,7 @@ public class BayeuxClientExtensionTest extends ClientServerTest
         client.handshake();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        client.getChannel(channelName).publish(new HashMap());
+        client.getChannel(channelName).publish(new HashMap<>());
 
         Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
 

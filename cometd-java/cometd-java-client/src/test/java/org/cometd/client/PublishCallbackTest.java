@@ -51,7 +51,7 @@ public class PublishCallbackTest extends ClientServerTest
 
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
-        channel.publish(new HashMap(), new ClientSessionChannel.MessageListener()
+        channel.publish(new HashMap<>(), new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
@@ -64,7 +64,7 @@ public class PublishCallbackTest extends ClientServerTest
 
         // Publish again without callback, must not trigger the previous callback
         latch.set(new CountDownLatch(1));
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
 
         Assert.assertFalse(latch.get().await(1, TimeUnit.SECONDS));
 
@@ -89,7 +89,7 @@ public class PublishCallbackTest extends ClientServerTest
 
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
-        channel.publish(new HashMap(), new ClientSessionChannel.MessageListener()
+        channel.publish(new HashMap<>(), new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
@@ -120,7 +120,7 @@ public class PublishCallbackTest extends ClientServerTest
 
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         ClientSessionChannel channel = client.getChannel("/test");
-        channel.publish(new HashMap(), new ClientSessionChannel.MessageListener()
+        channel.publish(new HashMap<>(), new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {

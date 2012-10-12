@@ -178,7 +178,7 @@ public class CookiesTest extends ClientServerTest
         });
         assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         channel.unsubscribe();

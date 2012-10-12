@@ -101,7 +101,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
 
         // Publish, it must succeed
         publishLatch.set(new CountDownLatch(1));
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
 
         // Wait for the connect to return
@@ -114,7 +114,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
 
         // Another publish, it must fail
         publishLatch.set(new CountDownLatch(1));
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
 
         // Sleep to allow the next connect to be issued
@@ -126,7 +126,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
 
         // We should be able to publish now
         publishLatch.set(new CountDownLatch(1));
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertFalse(publishLatch.get().await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
@@ -193,7 +193,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
 
         // Publish, it must succeed
         publishLatch.set(new CountDownLatch(1));
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
 
         // Wait for the connect to return
@@ -206,7 +206,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
 
         // Another publish, it must fail
         publishLatch.set(new CountDownLatch(1));
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
 
         // Sleep to allow the next connect to be issued
@@ -218,7 +218,7 @@ public class SimulatedNetworkFailureTest extends ClientServerTest
 
         // We should be able to publish now
         publishLatch.set(new CountDownLatch(1));
-        channel.publish(new HashMap());
+        channel.publish(new HashMap<>());
         assertFalse(publishLatch.get().await(1, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
