@@ -344,6 +344,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
         @OnWebSocketConnect
         public void onWebSocketConnect(WebSocketConnection connection)
         {
+            logger.debug("WebSocketServer: Notified of Connect");
             _connection = connection;
         }
 
@@ -351,6 +352,8 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
         @OnWebSocketClose
         public void onWebSocketClose(int code, String reason)
         {
+            logger.debug("WebSocketServer: Notified of Close");
+
             final ServerSessionImpl session = _session;
             if (session != null)
             {
@@ -382,6 +385,8 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
         @OnWebSocketMessage
         public void onWebSocketText(String data)
         {
+            logger.debug("WebSocketServer: Notified of Text");
+
             _handshake.set(_context);
             getBayeux().setCurrentTransport(WebSocketTransport.this);
             try

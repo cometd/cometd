@@ -107,6 +107,10 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile boolean _aborted;
     private volatile boolean _webSocketSupported = true;
     private volatile WebSocketConnection _connection;
+    private volatile WebSocketClient _client;
+
+    private volatile CometDWebSocket _ws = new CometDWebSocket();
+    
     private volatile TransportListener _listener;
     private volatile Map<String, Object> _advice;
 
@@ -208,13 +212,18 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         try
         {
-            WebSocketConnection connection = connect(listener, messages);
-            if (connection == null)
+            WebSocketClient client = connect(listener, messages);
+            
+            if (client == null)
+            {
                 return;
-
+            }
+            
             for (Message.Mutable message : messages)
+            {
                 registerMessage(message, listener);
-
+            }
+            
             String content = generateJSON(messages);
 
             debug("Sending messages {}", content);
@@ -222,7 +231,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             // otherwise we may have a race condition where the response is so
             // fast that it arrives before the onSending() is called.
             listener.onSending(messages);
-            connection.write(null,new FutureCallback<>(),content);
+    
+            _ws._connection.write(null,new FutureCallback<>(),content);
         }
         catch (Exception x)
         {
@@ -232,13 +242,13 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         }
     }
 
-    private WebSocketConnection connect(TransportListener listener, Mutable[] messages)
+    private WebSocketClient connect(TransportListener listener, Mutable[] messages)
     {
-        WebSocketConnection connection = _connection;
+        WebSocketClient client = _client;
         
-        if (connection != null)
+        if (client != null)
         {
-            return connection;
+            return client;
         }
         
         try
@@ -254,20 +264,25 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             for (Cookie cookie : getCookieProvider().getCookies())
                 cookies.put(cookie.getName(), cookie.getValue());
 
-            WebSocketClient client = newWebSocketClient();
+            _client = newWebSocketClient();
             //client.setProtocol(_protocol);
             // TODO CookieTime client.getCookies().putAll(cookies);
 
-            Future<UpgradeResponse> future = client.connect(uri);
+            Future<UpgradeResponse> future = _client.connect(uri);
 
             UpgradeResponse resp = future.get(_connectTimeout,TimeUnit.MILLISECONDS);
-                        
+            
+            while ( _ws._connection == null )
+            {
+             System.out.println("Boo");   
+            }
+            
             if (_aborted)
             {
                 listener.onFailure(new IOException("Aborted"), messages);
             }
 
-            return _connection;
+            return _client;
         }
         catch (ConnectException x)
         {
@@ -305,12 +320,12 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         {
             listener.onFailure(x, messages);
         }
-        return _connection;
+        return _client;
     }
 
     protected WebSocketClient newWebSocketClient()
     {
-        WebSocketClient result = _webSocketClientFactory.newWebSocketClient(new CometDWebSocket());
+        WebSocketClient result = _webSocketClientFactory.newWebSocketClient(_ws);
         result.getPolicy().setMaxTextMessageSize(_maxMessageSize);
         result.getPolicy().setIdleTimeout(_idleTimeout);
         return result;
@@ -453,6 +468,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         @OnWebSocketConnect
         public void onOpen(WebSocketConnection connection)
         {
+            logger.debug("WebSocketClient: Notified of Open");
+
             _connection = connection;
             debug("Opened websocket connection {}", connection);
         }
@@ -460,6 +477,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         @OnWebSocketClose
         public void onClose(int closeCode, String message)
         {
+            logger.debug("WebSocketClient: Notified of Close");
+
             _connection = null;
             debug("Closed websocket connection with code {} {}: {} ", closeCode, message, _connection);
             failMessages(new EOFException("Connection closed " + closeCode + " " + message));
@@ -468,6 +487,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         @OnWebSocketMessage
         public void onMessage(String data)
         {
+            logger.debug("WebSocketClient: Notified of Text");
+
             try
             {
                 List<Mutable> messages = parseMessages(data);
