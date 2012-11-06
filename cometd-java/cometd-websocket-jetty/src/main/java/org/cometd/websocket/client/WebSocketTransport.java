@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -106,10 +107,11 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile boolean _disconnected;
     private volatile boolean _aborted;
     private volatile boolean _webSocketSupported = true;
-    private volatile WebSocketConnection _connection;
-    private volatile WebSocketClient _client;
-
-    private volatile CometDWebSocket _ws = new CometDWebSocket();
+    
+    private WebSocketLink _wslink;
+    //private volatile WebSocketConnection _connection;
+    //private volatile WebSocketClient _client;
+    //private volatile CometDWebSocket _ws = new CometDWebSocket();
     
     private volatile TransportListener _listener;
     private volatile Map<String, Object> _advice;
@@ -195,12 +197,12 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     protected void disconnect(String reason)
     {
-        WebSocketConnection connection = _connection;
-        _connection = null;
-        if (connection != null && connection.isOpen())
+        WebSocketLink wslink = _wslink;
+        _wslink = null;
+        if (wslink != null && wslink.getConnection().isOpen())
         {
-            debug("Closing websocket connection {}", connection);
-            connection.close(1000, reason);
+            debug("Closing websocket connection {}", wslink.getConnection());
+           wslink.getConnection().close(1000, reason);
         }
     }
 
@@ -212,9 +214,9 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         try
         {
-            WebSocketClient client = connect(listener, messages);
+            WebSocketLink wslink = connect(listener, messages);
             
-            if (client == null)
+            if (wslink == null)
             {
                 return;
             }
@@ -232,23 +234,24 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             // fast that it arrives before the onSending() is called.
             listener.onSending(messages);
     
-            _ws._connection.write(null,new FutureCallback<>(),content);
+            wslink.getConnection().write(null,new FutureCallback<>(),content);
         }
         catch (Exception x)
         {
+            x.printStackTrace();
             complete(messages);
             disconnect("Exception");
             listener.onFailure(x, messages);
         }
     }
 
-    private WebSocketClient connect(TransportListener listener, Mutable[] messages)
+    private WebSocketLink connect(TransportListener listener, Mutable[] messages)
     {
-        WebSocketClient client = _client;
+        WebSocketLink wslink = _wslink;
         
-        if (client != null)
+        if (wslink != null)
         {
-            return client;
+            return wslink;
         }
         
         try
@@ -264,25 +267,23 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             for (Cookie cookie : getCookieProvider().getCookies())
                 cookies.put(cookie.getName(), cookie.getValue());
 
-            _client = newWebSocketClient();
+            _wslink = newWebSocketLink();
             //client.setProtocol(_protocol);
             // TODO CookieTime client.getCookies().putAll(cookies);
 
-            Future<UpgradeResponse> future = _client.connect(uri);
-
-            UpgradeResponse resp = future.get(_connectTimeout,TimeUnit.MILLISECONDS);
+            boolean connectStatus = _wslink.connect(uri);
             
-            while ( _ws._connection == null )
+            if (!connectStatus)
             {
-             System.out.println("Boo");   
+                listener.onFailure(new IOException("Connect Timeout"),messages);
             }
             
             if (_aborted)
             {
                 listener.onFailure(new IOException("Aborted"), messages);
             }
-
-            return _client;
+            
+            return _wslink;
         }
         catch (ConnectException x)
         {
@@ -320,15 +321,17 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         {
             listener.onFailure(x, messages);
         }
-        return _client;
+        
+        return _wslink;
     }
 
-    protected WebSocketClient newWebSocketClient()
+    protected WebSocketLink newWebSocketLink()
     {
-        WebSocketClient result = _webSocketClientFactory.newWebSocketClient(_ws);
+        CometDWebSocket ws = new CometDWebSocket();
+        WebSocketClient result = _webSocketClientFactory.newWebSocketClient(ws);
         result.getPolicy().setMaxTextMessageSize(_maxMessageSize);
         result.getPolicy().setIdleTimeout(_idleTimeout);
-        return result;
+        return new WebSocketLink(result,ws);
     }
 
     private void complete(Message.Mutable[] messages)
@@ -463,6 +466,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     @WebSocket
     protected class CometDWebSocket 
     {
+        CountDownLatch clatch = new CountDownLatch(1);
+        
         private WebSocketConnection _connection; 
         
         @OnWebSocketConnect
@@ -471,6 +476,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             logger.debug("WebSocketClient: Notified of Open");
 
             _connection = connection;
+            clatch.countDown();
             debug("Opened websocket connection {}", connection);
         }
 
@@ -500,6 +506,48 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
                 failMessages(x);
                 disconnect("Exception");
             }
+        }
+        
+        public WebSocketConnection getConnection()
+        {
+            return _connection;
+        }
+        
+        public boolean await(long timeout)
+        {
+            try
+            {
+               return clatch.await(timeout,TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException e)
+            {
+                return false;
+            }
+        }
+    }
+    
+    private class WebSocketLink
+    {
+        private WebSocketClient _client;
+        private CometDWebSocket _websocket;
+        protected WebSocketLink(WebSocketClient client, CometDWebSocket websocket )
+        {
+            _client = client;
+            _websocket = websocket;
+        }
+        
+        public WebSocketConnection getConnection()
+        {
+            return _websocket.getConnection();
+        }
+
+        protected boolean connect( URI uri ) throws IOException, TimeoutException, InterruptedException, ExecutionException
+        {
+            Future<UpgradeResponse> future = _client.connect(uri);
+
+            UpgradeResponse resp = future.get(_connectTimeout,TimeUnit.MILLISECONDS);
+        
+            return _websocket.await(_connectTimeout);
         }
     }
 
