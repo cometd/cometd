@@ -30,9 +30,9 @@ import javax.inject.Singleton;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.java.annotation.Listener;
-import org.cometd.java.annotation.Service;
-import org.cometd.java.annotation.Session;
+import org.cometd.annotation.Listener;
+import org.cometd.annotation.Service;
+import org.cometd.annotation.Session;
 
 @Named
 @Singleton

@@ -25,7 +25,7 @@ import javax.inject.Inject;
 import javax.servlet.ServletContext;
 
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.java.annotation.ServerAnnotationProcessor;
+import org.cometd.annotation.ServerAnnotationProcessor;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
