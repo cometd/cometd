@@ -119,11 +119,12 @@ org.cometd.WebSocketTransport = function()
             {
                 messageIds.push(message.id);
                 var self = this;
+                var webSocket = _webSocket;
                 _timeouts[message.id] = this.setTimeout(function()
                 {
-                    if (_webSocket)
+                    if (webSocket)
                     {
-                        _webSocket.close(1000, 'Timeout');
+                        webSocket.close(1000, 'Timeout');
                     }
                 }, delay);
             }
@@ -150,9 +151,10 @@ org.cometd.WebSocketTransport = function()
         catch (x)
         {
             // Keep the semantic of calling response callbacks asynchronously after the request
+            var webSocket = _webSocket;
             this.setTimeout(function()
             {
-                envelope.onFailure(_webSocket, envelope.messages, 'error', x);
+                envelope.onFailure(webSocket, envelope.messages, 'error', x);
             }, 0);
         }
     }
