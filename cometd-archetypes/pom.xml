@@ -15,7 +15,7 @@
     <description>${project.version} - CometD archetype for creating a server-side event-driven web application</description>
 
     <properties>
-        <jetty8-version>8.1.3.v20120416</jetty8-version>
+        <jetty8-version>8.1.8.v20121106</jetty8-version>
     </properties>
 
     <modules>
