@@ -503,7 +503,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
             {
                 method.setAccessible(true);
                 Object result = method.invoke(target, from, message);
-                return result != Boolean.FALSE;
+                return !Boolean.FALSE.equals(result);
             }
             catch (InvocationTargetException x)
             {
