@@ -40,7 +40,7 @@ org.cometd.WebSocketTransport = function()
         }
 
         var webSocket = new org.cometd.WebSocket(url);
-        webSocket.onopen = function()
+        var onopen = function()
         {
             self._debug('WebSocket opened', webSocket);
             if (connectTimer)
@@ -57,7 +57,7 @@ org.cometd.WebSocketTransport = function()
             }
             self.onOpen();
         };
-        webSocket.onclose = function(event)
+        var onclose = function(event)
         {
             var code = event ? event.code : 1000;
             var reason = event ? event.reason : undefined;
@@ -76,11 +76,7 @@ org.cometd.WebSocketTransport = function()
             }
             self.onClose(code, reason);
         };
-        webSocket.onerror = function()
-        {
-            webSocket.onclose({ code: 1002 });
-        };
-        webSocket.onmessage = function(message)
+        var onmessage = function(message)
         {
             self._debug('WebSocket message', message, webSocket);
             if (webSocket !== _webSocket)
@@ -90,6 +86,14 @@ org.cometd.WebSocketTransport = function()
             }
             self.onMessage(message);
         };
+
+        webSocket.onopen = onopen;
+        webSocket.onclose = onclose;
+        webSocket.onerror = function()
+        {
+            onclose({ code: 1002 });
+        };
+        webSocket.onmessage = onmessage;
 
         _webSocket = webSocket;
         this._debug('Transport', this.getType(), 'configured callbacks on', webSocket);
