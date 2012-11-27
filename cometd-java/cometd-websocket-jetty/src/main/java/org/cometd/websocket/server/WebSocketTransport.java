@@ -26,14 +26,18 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.net.websocket.HandshakeRequest;
+import javax.net.websocket.SendResult;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -49,21 +53,21 @@ import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.transport.HttpTransport;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.core.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.api.WebSocketException;
-import org.eclipse.jetty.websocket.core.api.WebSocketListener;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.server.WebSocketCreator;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.server.ServletWebSocketRequest;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,9 +121,9 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
             @Override
             public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
             {
-                if ( req instanceof HttpServletRequest )
-                {
-                    WebSocketContext handshake = new WebSocketContext((HttpServletRequest)req);
+                if ( req instanceof ServletWebSocketRequest )
+                {                    
+                    WebSocketContext handshake = new WebSocketContext((ServletWebSocketRequest)req);
                     return new WebSocketScheduler(handshake, req.getHeader("User-Agent"));
                 }
                 
@@ -192,7 +196,9 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    {
+    {        
+        System.out.println("In WebSocketTransport, going to factory acceptWebSocket");
+        
         if (!_factory.acceptWebSocket(request, response))
         {
             _logger.warn("Websocket not accepted");
@@ -201,21 +207,6 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
         }
     }
     
-    // this is the old call to create the websocket
-    public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
-    {
-        boolean sameProtocol = (_protocol == null && protocol == null) ||
-                (_protocol != null && _protocol.equals(protocol));
-
-        if (sameProtocol)
-        {
-            WebSocketContext handshake = new WebSocketContext(request);
-             new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
-        }
-
-        return null;
-    }
-
     public boolean checkOrigin(HttpServletRequest request, String origin)
     {
         return true;
@@ -281,7 +272,17 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
     protected void send(WebSocketConnection connection, String data) throws IOException
     {
         debug("Sending {}", data);
-        connection.write(null,new FutureCallback<>(),data);
+        Future<SendResult> result = connection.write(data);
+        
+        try
+        {
+            result.get();
+        }
+        catch (InterruptedException | ExecutionException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     protected void onClose(int code, String message)
@@ -686,69 +687,69 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
     protected class WebSocketContext implements BayeuxContext
     {
         private final Principal _principal;
-        private final InetSocketAddress _local;
-        private final InetSocketAddress _remote;
+        //private final InetSocketAddress _local;
+        //private final InetSocketAddress _remote;
         private final Map<String, List<String>> _headers = new HashMap<String, List<String>>();
-        private final Map<String, List<String>> _parameters = new HashMap<String, List<String>>();
-        private final Map<String, Object> _attributes = new HashMap<String, Object>();
-        private final Map<String, String> _cookies = new HashMap<String, String>();
+        //private final Map<String, List<String>> _parameters = new HashMap<String, List<String>>();
+        //private final Map<String, Object> _attributes = new HashMap<String, Object>();
+        //private final Map<String, String> _cookies = new HashMap<String, String>();
         private final HttpSession _session;
-        private final ServletContext _context;
-        private final String _url;
+        //private final ServletContext _context;
+        //private final String _url;
 
         @SuppressWarnings("unchecked")
-        public WebSocketContext(HttpServletRequest request)
+        public WebSocketContext(ServletWebSocketRequest request)
         {
-            _local = new InetSocketAddress(request.getLocalAddr(), request.getLocalPort());
-            _remote = new InetSocketAddress(request.getRemoteAddr(), request.getRemotePort());
-
-            for (String name : Collections.list((Enumeration<String>)request.getHeaderNames()))
-                _headers.put(name, Collections.unmodifiableList(Collections.list(request.getHeaders(name))));
-
-            for (String name : Collections.list((Enumeration<String>)request.getParameterNames()))
-                _parameters.put(name, Collections.unmodifiableList(Arrays.asList(request.getParameterValues(name))));
-
-            for (String name : Collections.list((Enumeration<String>)request.getAttributeNames()))
-                _attributes.put(name, request.getAttribute(name));
-
-            Cookie[] cookies = request.getCookies();
-            if (cookies != null)
-            {
-                for (Cookie c : cookies)
-                    _cookies.put(c.getName(), c.getValue());
-            }
-
-            _principal = request.getUserPrincipal();
-
-            _session = request.getSession(false);
-            if (_session != null)
-            {
-                _context = _session.getServletContext();
-            }
-            else
-            {
-                ServletContext context = null;
-                try
-                {
-                    HttpSession s = request.getSession(true);
-                    context = s.getServletContext();
-                    s.invalidate();
-                }
-                catch (IllegalStateException x)
-                {
-                    _logger.trace("", x);
-                }
-                finally
-                {
-                    _context = context;
-                }
-            }
-
-            StringBuffer url = request.getRequestURL();
-            String query = request.getQueryString();
-            if (query != null)
-                url.append("?").append(query);
-            this._url = url.toString();
+//            _local = new InetSocketAddress(request.getLocalAddr(), request.getLocalPort());
+//            _remote = new InetSocketAddress(request.getRemoteAddr(), request.getRemotePort());
+//
+            for (String name : request.getHeaders().keySet())
+                _headers.put(name, request.getHeaders(name));
+//
+//            for (String name : Collections.list((Enumeration<String>)request.getParameterNames()))
+//                _parameters.put(name, Collections.unmodifiableList(Arrays.asList(request.getParameterValues(name))));
+//
+//            for (String name : Collections.list((Enumeration<String>)request.getAttributeNames()))
+//                _attributes.put(name, request.getAttribute(name));
+//
+//            Cookie[] cookies = request.getCookies();
+//            if (cookies != null)
+//            {
+//                for (Cookie c : cookies)
+//                    _cookies.put(c.getName(), c.getValue());
+//            }
+//
+              _principal = request.getUserPrincipal();
+//
+              _session = (HttpSession)request.getSession();
+//            if (_session != null)
+//            {
+//                _context = _session.getServletContext();
+//            }
+//            else
+//            {
+//                ServletContext context = null;
+//                try
+//                {
+//                    HttpSession s = request.getSession(true);
+//                    context = s.getServletContext();
+//                    s.invalidate();
+//                }
+//                catch (IllegalStateException x)
+//                {
+//                    _logger.trace("", x);
+//                }
+//                finally
+//                {
+//                    _context = context;
+//                }
+//            }
+//
+//            StringBuffer url = request.getRequestURL();
+//            String query = request.getQueryString();
+//            if (query != null)
+//                url.append("?").append(query);
+//            this._url = url.toString();
         }
 
         public Principal getUserPrincipal()
@@ -762,16 +763,108 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
             return request != null && request.isUserInRole(role);
         }
 
+        @Override
         public InetSocketAddress getRemoteAddress()
         {
-            return _remote;
+            // TODO Auto-generated method stub
+            return null;
         }
 
+        @Override
         public InetSocketAddress getLocalAddress()
         {
-            return _local;
+            // TODO Auto-generated method stub
+            return null;
         }
 
+
+        @Override
+        public String getParameter(String name)
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public List<String> getParameterValues(String name)
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public String getCookie(String name)
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public String getHttpSessionId()
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public Object getHttpSessionAttribute(String name)
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public void setHttpSessionAttribute(String name, Object value)
+        {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public void invalidateHttpSession()
+        {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public Object getRequestAttribute(String name)
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public Object getContextAttribute(String name)
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public String getContextInitParameter(String name)
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public String getURL()
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+//        public InetSocketAddress getRemoteAddress()
+//        {
+//            return _remote;
+//        }
+//
+//        public InetSocketAddress getLocalAddress()
+//        {
+//            return _local;
+//        }
+//
         public String getHeader(String name)
         {
             List<String> headers = _headers.get(name);
@@ -783,65 +876,65 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
             return _headers.get(name);
         }
 
-        public String getParameter(String name)
-        {
-            List<String> params = _parameters.get(name);
-            return params != null && params.size() > 0 ? params.get(0) : null;
-        }
-
-        public List<String> getParameterValues(String name)
-        {
-            return _parameters.get(name);
-        }
-
-        public String getCookie(String name)
-        {
-            return _cookies.get(name);
-        }
-
-        public String getHttpSessionId()
-        {
-            return _session == null ? null : _session.getId();
-        }
-
-        public Object getHttpSessionAttribute(String name)
-        {
-            return _session == null ? null : _session.getAttribute(name);
-        }
-
-        public void setHttpSessionAttribute(String name, Object value)
-        {
-            if (_session != null)
-                _session.setAttribute(name, value);
-            else
-                throw new IllegalStateException("!session");
-        }
-
-        public void invalidateHttpSession()
-        {
-            if (_session != null)
-                _session.invalidate();
-        }
-
-        public Object getRequestAttribute(String name)
-        {
-            return _attributes.get(name);
-        }
-
-        public Object getContextAttribute(String name)
-        {
-            return _context.getAttribute(name);
-        }
-
-        public String getContextInitParameter(String name)
-        {
-            return _context.getInitParameter(name);
-        }
-
-        public String getURL()
-        {
-            return _url;
-        }
+//        public String getParameter(String name)
+//        {
+//            List<String> params = _parameters.get(name);
+//            return params != null && params.size() > 0 ? params.get(0) : null;
+//        }
+//
+//        public List<String> getParameterValues(String name)
+//        {
+//            return _parameters.get(name);
+//        }
+//
+//        public String getCookie(String name)
+//        {
+//            return _cookies.get(name);
+//        }
+//
+//        public String getHttpSessionId()
+//        {
+//            return _session == null ? null : _session.getId();
+//        }
+//
+//        public Object getHttpSessionAttribute(String name)
+//        {
+//            return _session == null ? null : _session.getAttribute(name);
+//        }
+//
+//        public void setHttpSessionAttribute(String name, Object value)
+//        {
+//            if (_session != null)
+//                _session.setAttribute(name, value);
+//            else
+//                throw new IllegalStateException("!session");
+//        }
+//
+//        public void invalidateHttpSession()
+//        {
+//            if (_session != null)
+//                _session.invalidate();
+//        }
+//
+//        public Object getRequestAttribute(String name)
+//        {
+//            return _attributes.get(name);
+//        }
+//
+//        public Object getContextAttribute(String name)
+//        {
+//            return _context.getAttribute(name);
+//        }
+//
+//        public String getContextInitParameter(String name)
+//        {
+//            return _context.getInitParameter(name);
+//        }
+//
+//        public String getURL()
+//        {
+//            return _url;
+//        }
     }
 
    

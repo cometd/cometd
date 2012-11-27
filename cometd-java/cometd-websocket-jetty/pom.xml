@@ -40,6 +40,17 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty.websocket</groupId>
+            <artifactId>websocket-servlet</artifactId>
+            <version>${jetty-version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.eclipse.jetty.orbit</groupId>
+                <artifactId>javax.servlet</artifactId>
+              </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.websocket</groupId>
             <artifactId>websocket-client</artifactId>
             <version>${jetty-version}</version>
             <!-- exclusions>

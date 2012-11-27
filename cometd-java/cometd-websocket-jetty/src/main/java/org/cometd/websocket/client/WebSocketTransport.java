@@ -39,6 +39,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import javax.net.websocket.SendResult;
+
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
@@ -49,14 +51,14 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.core.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.core.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.core.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -201,8 +203,16 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _wslink = null;
         if (wslink != null && wslink.getConnection().isOpen())
         {
-            debug("Closing websocket connection {}", wslink.getConnection());
-           wslink.getConnection().close(1000, reason);
+            debug("Closing websocket connection {}",wslink.getConnection());
+            try
+            {
+                wslink.getConnection().close(1000,reason);
+            }
+            catch (IOException e)
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         }
     }
 
@@ -234,7 +244,9 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             // fast that it arrives before the onSending() is called.
             listener.onSending(messages);
     
-            wslink.getConnection().write(null,new FutureCallback<>(),content);
+            Future<SendResult> result = wslink.getConnection().write(content);
+            
+            result.get();
         }
         catch (Exception x)
         {
