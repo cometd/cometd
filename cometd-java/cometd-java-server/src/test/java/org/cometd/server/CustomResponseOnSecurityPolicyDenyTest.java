@@ -62,7 +62,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         checkResponse(response, Message.RECONNECT_HANDSHAKE_VALUE);
     }
@@ -138,7 +138,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -148,7 +148,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = subscribe.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         checkResponse(response, Message.RECONNECT_NONE_VALUE);
     }
@@ -162,7 +162,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -172,7 +172,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"data\": {}" +
                 "}]");
         response = publish.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         return response;
     }
@@ -180,7 +180,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
     private void checkResponse(ContentResponse reply, String reconnectAdvice) throws ParseException, UnsupportedEncodingException
     {
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] responses = jsonContext.parse(reply.contentAsString());
+        Message.Mutable[] responses = jsonContext.parse(reply.getContentAsString());
         Assert.assertEquals(1, responses.length);
         Message response = responses[0];
         Map<String, Object> advice = response.getAdvice();

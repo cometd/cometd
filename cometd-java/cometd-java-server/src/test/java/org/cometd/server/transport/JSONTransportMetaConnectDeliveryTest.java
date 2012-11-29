@@ -46,7 +46,7 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -56,7 +56,7 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String channel = "/foo";
 
@@ -66,7 +66,7 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         response = subscribe.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Request publish = newBayeuxRequest("[{" +
                 "\"channel\": \"" + channel + "\"," +
@@ -74,11 +74,11 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"data\": {}" +
                 "}]");
         response = publish.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         // Expect only the meta response to the publish
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
+        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(1, messages.length);
 
         connect = newBayeuxRequest("[{" +
@@ -87,10 +87,10 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         // Expect meta response to the connect plus the published message
-        messages = jsonContext.parse(response.contentAsString());
+        messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(2, messages.length);
     }
 }

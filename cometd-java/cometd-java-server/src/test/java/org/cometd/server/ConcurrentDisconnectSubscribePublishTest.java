@@ -68,7 +68,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -78,7 +78,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         // Forge a bad sequence of messages to simulate concurrent arrival of disconnect and subscribe messages
         String channel = "/foo";
@@ -91,12 +91,12 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         response = disconnect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Assert.assertFalse("not subscribed", subscribed.get());
         Assert.assertFalse("not serviced", serviced.get());
         // The response to the subscribe must be that the client is unknown
-        Assert.assertTrue(response.contentAsString().contains("402::"));
+        Assert.assertTrue(response.getContentAsString().contains("402::"));
     }
 
     @Test
@@ -123,7 +123,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -133,7 +133,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Request subscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/subscribe\"," +
@@ -141,7 +141,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
         response = subscribe.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         // Forge a bad sequence of messages to simulate concurrent arrival of disconnect and publish messages
         Request disconnect = newBayeuxRequest("[{" +
@@ -157,9 +157,9 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
                 "\"data\": {}" +
                 "}]");
         response = disconnect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
         Assert.assertEquals(1, publishes.get());
         // The response to the subscribe must be that the client is unknown
-        Assert.assertTrue(response.contentAsString().contains("402::"));
+        Assert.assertTrue(response.getContentAsString().contains("402::"));
     }
 }

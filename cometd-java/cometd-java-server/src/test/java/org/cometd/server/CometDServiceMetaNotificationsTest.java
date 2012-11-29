@@ -81,7 +81,7 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
         Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -93,7 +93,7 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
         response = connect.send().get(5, TimeUnit.SECONDS);
 
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String channel = "/foo";
         Request subscribe = newBayeuxRequest("[{" +
@@ -103,7 +103,7 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                 "}]");
         response = subscribe.send().get(5, TimeUnit.SECONDS);
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Request unsubscribe = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/unsubscribe\"," +
@@ -112,7 +112,7 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                 "}]");
         response = unsubscribe.send().get(5, TimeUnit.SECONDS);
         Assert.assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Request disconnect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/disconnect\"," +
@@ -120,6 +120,6 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                 "}]");
         response = disconnect.send().get(5, TimeUnit.SECONDS);
         Assert.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
     }
 }

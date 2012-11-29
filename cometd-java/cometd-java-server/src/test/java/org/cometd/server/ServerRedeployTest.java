@@ -38,7 +38,7 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -50,7 +50,7 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest
                 "\"advice\": { \"timeout\": 0 }" +
                 "}]");
         response = connect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         connect = newBayeuxRequest("" +
                 "[{" +
@@ -68,6 +68,6 @@ public class ServerRedeployTest extends AbstractBayeuxClientServerTest
 
         // Expect the connect to be back with an exception
         response = futureResponse.get(timeout * 2, TimeUnit.SECONDS);
-        Assert.assertEquals(HttpStatus.REQUEST_TIMEOUT_408, response.status());
+        Assert.assertEquals(HttpStatus.REQUEST_TIMEOUT_408, response.getStatus());
     }
 }

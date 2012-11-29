@@ -56,7 +56,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -67,7 +67,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
         response = subscribe.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -75,7 +75,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect1.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -92,14 +92,14 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = disconnect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         disconnectLatch.countDown();
 
         response = futureResponse.get(timeout * 2, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
-        Assert.assertTrue(response.contentAsString().toLowerCase().contains("unknown"));
+        Assert.assertTrue(response.getContentAsString().toLowerCase().contains("unknown"));
 
         Assert.assertNull(bayeux.getSession(clientId));
     }
@@ -143,7 +143,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -154,7 +154,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
         response = subscribe.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -162,7 +162,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect1.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -179,7 +179,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = disconnect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         disconnectLatch.countDown();
 
@@ -187,9 +187,9 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         Assert.assertFalse(suspendLatch.await(1, TimeUnit.SECONDS));
 
         response = futureResponse.get(timeout * 2, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
-        Assert.assertTrue(response.contentAsString().toLowerCase().contains("\"none\""));
+        Assert.assertTrue(response.getContentAsString().toLowerCase().contains("\"none\""));
 
         Assert.assertNull(bayeux.getSession(clientId));
     }

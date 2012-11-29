@@ -67,10 +67,10 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
+        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(2, messages.length);
         Message handshakeResponse = messages[0];
         Assert.assertFalse(handshakeResponse.isSuccessful());
@@ -123,10 +123,10 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
                 "\"data\": {}" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
+        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(2, messages.length);
         Message handshakeResponse = messages[0];
         Assert.assertFalse(handshakeResponse.isSuccessful());
