@@ -39,8 +39,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.net.websocket.SendResult;
-
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
@@ -49,6 +47,7 @@ import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.websocket.client.ClientUpgradeResponse;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -59,6 +58,7 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -244,7 +244,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             // fast that it arrives before the onSending() is called.
             listener.onSending(messages);
     
-            Future<SendResult> result = wslink.getConnection().write(content);
+            Future<WriteResult> result = wslink.getConnection().write(content);
             
             result.get();
         }
@@ -555,9 +555,9 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         protected boolean connect( URI uri ) throws IOException, TimeoutException, InterruptedException, ExecutionException
         {
-            Future<UpgradeResponse> future = _client.connect(uri);
+            Future<ClientUpgradeResponse> future = _client.connect(uri);
 
-            UpgradeResponse resp = future.get(_connectTimeout,TimeUnit.MILLISECONDS);
+            ClientUpgradeResponse resp = future.get(_connectTimeout,TimeUnit.MILLISECONDS);
         
             return _websocket.await(_connectTimeout);
         }

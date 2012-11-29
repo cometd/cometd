@@ -36,8 +36,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.net.websocket.HandshakeRequest;
-import javax.net.websocket.SendResult;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -65,6 +63,7 @@ import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.server.ServletWebSocketRequest;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -272,7 +271,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
     protected void send(WebSocketConnection connection, String data) throws IOException
     {
         debug("Sending {}", data);
-        Future<SendResult> result = connection.write(data);
+        Future<WriteResult> result = connection.write(data);
         
         try
         {
@@ -686,7 +685,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
 
     protected class WebSocketContext implements BayeuxContext
     {
-        private final Principal _principal;
+        //private final Principal _principal;
         //private final InetSocketAddress _local;
         //private final InetSocketAddress _remote;
         private final Map<String, List<String>> _headers = new HashMap<String, List<String>>();
@@ -719,7 +718,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
 //                    _cookies.put(c.getName(), c.getValue());
 //            }
 //
-              _principal = request.getUserPrincipal();
+              //_principal = request.
 //
               _session = (HttpSession)request.getSession();
 //            if (_session != null)
@@ -754,7 +753,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
 
         public Principal getUserPrincipal()
         {
-            return _principal;
+            return null;//_principal;
         }
 
         public boolean isUserInRole(String role)
