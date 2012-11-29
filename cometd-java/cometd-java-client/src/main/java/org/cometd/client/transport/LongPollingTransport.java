@@ -16,6 +16,7 @@
 
 package org.cometd.client.transport;
 
+import java.io.IOException;
 import java.net.ProtocolException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -112,7 +113,7 @@ public class LongPollingTransport extends HttpClientTransport
         }
         for (Request request : requests)
         {
-            request.abort();
+            request.abort(new IOException("aborting"));
         }
     }
 
@@ -183,7 +184,7 @@ public class LongPollingTransport extends HttpClientTransport
                 }
 
                 Response response = result.getResponse();
-                int status = response.status();
+                int status = response.getStatus();
                 if (status == HttpStatus.OK_200)
                 {
                     String content = getContentAsString();
