@@ -46,7 +46,7 @@ public class LongPollingTransport extends HttpClientTransport
     {
         HttpClient httpClient = new HttpClient();
         httpClient.setIdleTimeout(5000);
-        httpClient.setMaxConnectionsPerAddress(32768);
+        httpClient.setMaxConnectionsPerDestination(32768);
         return create(options, httpClient);
     }
 

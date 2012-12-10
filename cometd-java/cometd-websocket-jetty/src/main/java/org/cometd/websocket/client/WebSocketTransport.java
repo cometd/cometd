@@ -54,6 +54,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketConnection;
@@ -152,11 +153,15 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         _webSocketClientFactory.getPolicy().setIdleTimeout(_idleTimeout);
         _webSocketClientFactory.getPolicy().setMaxTextMessageSize(_maxMessageSize);
         
+        logger.debug("schedule state: {}", _scheduler == null );
         if (_scheduler == null)
         {
             _shutdownScheduler = true;
             _scheduler = Executors.newSingleThreadScheduledExecutor();
         }
+        logger.debug("schedule state: {}", _scheduler == null );
+        
+        logger.debug("transport {}", this);
     }
 
     private long getMaxNetworkDelay()
@@ -201,7 +206,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     {
         WebSocketLink wslink = _wslink;
         _wslink = null;
-        if (wslink != null && wslink.getConnection().isOpen())
+        if (wslink != null && wslink.getConnection() != null && wslink.getConnection().isOpen())
         {
             debug("Closing websocket connection {}",wslink.getConnection());
             try
@@ -329,8 +334,14 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             _webSocketSupported = false;
             listener.onFailure(x, messages);
         }
+        catch (IllegalStateException x)
+        {
+            _webSocketSupported = false; 
+            listener.onFailure(x, messages);
+        }
         catch (ExecutionException x)
         {
+            _webSocketSupported = false; // the UpgradeException is nesting under this
             listener.onFailure(x, messages);
         }
         
@@ -374,6 +385,9 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         // Schedule a task to expire if the maxNetworkDelay elapses
         final long expiration = System.currentTimeMillis() + maxNetworkDelay;
+
+        logger.debug("schedule state: {} {}", _scheduler == null, this );
+
         ScheduledFuture<?> task = _scheduler.schedule(new Runnable()
         {
             public void run()

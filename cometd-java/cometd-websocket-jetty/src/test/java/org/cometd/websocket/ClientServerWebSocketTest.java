@@ -48,7 +48,7 @@ public abstract class ClientServerWebSocketTest
             System.err.printf("Running %s.%s%n", method.getMethod().getDeclaringClass().getName(), method.getName());
         }
     };
-    protected NetworkConnector connector;
+    protected ServerConnector connector;
     protected Server server;
     protected String contextPath;
     protected ServletContextHandler context;

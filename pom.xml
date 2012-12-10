@@ -110,7 +110,7 @@
         <profile>
             <id>osgi</id>
             <activation>
-                <jdk>[1.6,)</jdk>
+                <jdk>[1.8,)</jdk>
             </activation>
             <build>
                 <plugins>
