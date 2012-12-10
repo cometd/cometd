@@ -153,7 +153,7 @@ public class BayeuxClientTest extends ClientServerTest
                     public void onBegin(Request request)
                     {
                         // Remove the host header so the request will fail
-                        request.headers().remove(HttpHeader.HOST);
+                        request.getHeaders().remove(HttpHeader.HOST);
                     }
                 });
             }
@@ -165,7 +165,7 @@ public class BayeuxClientTest extends ClientServerTest
             public void onFailure(Throwable x, Message[] messages)
             {
                 // Suppress logging of expected exception
-                if (!(x instanceof UnknownHostException))
+                if (!(x instanceof ProtocolException))
                     super.onFailure(x, messages);
             }
         };
@@ -1098,7 +1098,7 @@ public class BayeuxClientTest extends ClientServerTest
                         @Override
                         public void onBegin(Request request)
                         {
-                            request.headers().remove(HttpHeader.HOST);
+                            request.getHeaders().remove(HttpHeader.HOST);
                         }
                     });
             }

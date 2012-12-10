@@ -62,7 +62,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -72,10 +72,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         response = publish.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
+        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];
         Assert.assertFalse(message.isSuccessful());
@@ -86,9 +86,9 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         response = publish.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
-        messages = jsonContext.parse(response.contentAsString());
+        messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(1, messages.length);
         message = messages[0];
         Assert.assertTrue(message.isSuccessful());
@@ -119,7 +119,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -129,10 +129,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         response = publish.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
+        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];
         Assert.assertFalse(message.isSuccessful());
@@ -144,9 +144,9 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         response = grantedPublish.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
-        messages = jsonContext.parse(response.contentAsString());
+        messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(1, messages.length);
         message = messages[0];
         Assert.assertTrue(message.isSuccessful());
@@ -162,7 +162,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -172,10 +172,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         response = publish.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
+        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];
         Assert.assertTrue(message.isSuccessful());
@@ -213,7 +213,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -223,10 +223,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         response = publish.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
+        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];
         Assert.assertFalse(message.isSuccessful());
@@ -238,9 +238,9 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         response = grantedPublish.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
-        messages = jsonContext.parse(response.contentAsString());
+        messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(1, messages.length);
         message = messages[0];
         Assert.assertTrue(message.isSuccessful());
@@ -279,7 +279,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -289,10 +289,10 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         response = publish.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
-        Message.Mutable[] messages = jsonContext.parse(response.contentAsString());
+        Message.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(1, messages.length);
         Message message = messages[0];
         Assert.assertTrue(message.isSuccessful());
@@ -304,9 +304,9 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"data\": {}" +
                 "}]");
         response = grantedPublish.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
-        messages = jsonContext.parse(response.contentAsString());
+        messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(1, messages.length);
         message = messages[0];
         Assert.assertFalse(message.isSuccessful());

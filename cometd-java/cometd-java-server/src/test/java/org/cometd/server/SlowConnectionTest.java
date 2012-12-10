@@ -88,7 +88,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -99,7 +99,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
         response = subscribe.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
@@ -107,7 +107,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect1.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         // Send a server-side message so it gets written to the client
         bayeux.getChannel(channelName).publish(null, "x");

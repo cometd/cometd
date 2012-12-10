@@ -90,7 +90,10 @@ public class LongPollingTransport extends HttpClientTransport
     {
         super.init();
         _aborted = false;
-        _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, _httpClient.getIdleTimeout());
+        long defaultMaxNetworkDelay = _httpClient.getIdleTimeout();
+        if (defaultMaxNetworkDelay <= 0)
+            defaultMaxNetworkDelay = 10000;
+        _maxNetworkDelay = getOption(MAX_NETWORK_DELAY_OPTION, defaultMaxNetworkDelay);
         Pattern uriRegexp = Pattern.compile("(^https?://(((\\[[^\\]]+\\])|([^:/\\?#]+))(:(\\d+))?))?([^\\?#]*)(.*)?");
         Matcher uriMatcher = uriRegexp.matcher(getURL());
         if (uriMatcher.matches())
@@ -112,7 +115,7 @@ public class LongPollingTransport extends HttpClientTransport
         }
         for (Request request : requests)
         {
-            request.abort();
+            request.abort(new Exception("Transport " + this + " aborted"));
         }
     }
 
@@ -183,7 +186,7 @@ public class LongPollingTransport extends HttpClientTransport
                 }
 
                 Response response = result.getResponse();
-                int status = response.status();
+                int status = response.getStatus();
                 if (status == HttpStatus.OK_200)
                 {
                     String content = getContentAsString();

@@ -17,18 +17,19 @@
 package org.cometd.client;
 
 import java.util.HashMap;
-import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class HighRateServerEventsTest extends ClientServerTest
 {
@@ -48,11 +49,10 @@ public class HighRateServerEventsTest extends ClientServerTest
 
         final BayeuxClient client = newBayeuxClient();
         client.handshake();
-        client.waitFor(5000, BayeuxClient.State.CONNECTED);
+        Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        final AtomicReference<Exception> failure = new AtomicReference<>();
+        final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         final AtomicInteger messages = new AtomicInteger();
-        final CyclicBarrier barrier = new CyclicBarrier(2);
         client.batch(new Runnable()
         {
             public void run()
@@ -63,14 +63,7 @@ public class HighRateServerEventsTest extends ClientServerTest
                     public void onMessage(ClientSessionChannel channel, Message message)
                     {
                         messages.incrementAndGet();
-                        try
-                        {
-                            barrier.await();
-                        }
-                        catch (Exception x)
-                        {
-                            failure.set(x);
-                        }
+                        latch.get().countDown();
                     }
                 });
                 channel.publish(new HashMap<String, Object>());
@@ -78,21 +71,19 @@ public class HighRateServerEventsTest extends ClientServerTest
         });
 
         // Wait until subscription is acknowledged
-        barrier.await();
-        assertNull(failure.get());
+        Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
 
         long begin = System.nanoTime();
         int count = 500;
+        messages.set(0);
+        latch.set(new CountDownLatch(count));
         for (int i = 0; i < count; ++i)
-        {
             service.getChannel(channelName).publish(new HashMap<String, Object>());
-            barrier.await();
-            assertNull(failure.get());
-        }
         long end = System.nanoTime();
-        System.err.println("rate = " + count * 1000000000L / (end - begin) + " messages/s");
+        Assert.assertTrue(latch.get().await(count * 100, TimeUnit.MILLISECONDS));
+        System.err.println("rate = " + count * 1_000_000_000L / (end - begin) + " messages/s");
 
-        assertEquals(count + 1, messages.get());
+        assertEquals(count, messages.get());
 
         disconnectBayeuxClient(client);
     }

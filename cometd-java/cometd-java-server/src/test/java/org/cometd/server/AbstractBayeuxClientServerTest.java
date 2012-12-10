@@ -49,7 +49,7 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
 
     protected String extractClientId(ContentResponse handshake) throws UnsupportedEncodingException
     {
-        String content = new String(handshake.content(), "UTF-8");
+        String content = handshake.getContentAsString();
         Matcher matcher = Pattern.compile("\"clientId\"\\s*:\\s*\"([^\"]*)\"").matcher(content);
         Assert.assertTrue(matcher.find());
         String clientId = matcher.group(1);
