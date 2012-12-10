@@ -54,7 +54,7 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -68,7 +68,7 @@ public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTe
                 "}" +
                 "}]");
         response = publish.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertNotNull(service.holder);

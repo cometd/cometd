@@ -47,7 +47,7 @@ public class ExtensionDisconnectTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -56,7 +56,7 @@ public class ExtensionDisconnectTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = disconnect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Assert.assertEquals(0, extension.rcvs.size());
         Assert.assertEquals(1, extension.rcvMetas.size());

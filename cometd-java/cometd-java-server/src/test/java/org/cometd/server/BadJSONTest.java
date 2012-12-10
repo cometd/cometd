@@ -54,7 +54,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -65,7 +65,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
                 "}]");
         response = connect.send().get(5, TimeUnit.SECONDS);
 
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         // Forge a bad JSON message
         Request badConnect = newBayeuxRequest("[{" +
@@ -74,6 +74,6 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
                 "\"connectionType\": \"long-polling\"");
                 //"}]"); Bad JSON, missing this line
         response = badConnect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(400, response.status());
+        Assert.assertEquals(400, response.getStatus());
     }
 }

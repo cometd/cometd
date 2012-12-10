@@ -24,13 +24,13 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.WebSocketClientFactory;
+import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.TestWatchman;
@@ -48,7 +48,7 @@ public abstract class ClientServerWebSocketTest
             System.err.printf("Running %s.%s%n", method.getMethod().getDeclaringClass().getName(), method.getName());
         }
     };
-    protected Connector connector;
+    protected ServerConnector connector;
     protected Server server;
     protected String contextPath;
     protected ServletContextHandler context;
@@ -63,8 +63,8 @@ public abstract class ClientServerWebSocketTest
     {
         server = new Server();
 
-        connector = new SelectChannelConnector();
-        connector.setMaxIdleTime(30000);
+        connector = new ServerConnector(server);
+        //connector.setMaxIdleTime(30000);
         server.addConnector(connector);
 
         contextPath = "";
@@ -90,7 +90,7 @@ public abstract class ClientServerWebSocketTest
 
         wsThreadPool = new QueuedThreadPool();
         wsThreadPool.setName(wsThreadPool.getName() + "-client");
-        wsThreadPool.setMaxStopTimeMs(1000);
+        //wsThreadPool.setMaxStopTimeMs(1000);
 
         wsFactory = new WebSocketClientFactory(wsThreadPool);
 

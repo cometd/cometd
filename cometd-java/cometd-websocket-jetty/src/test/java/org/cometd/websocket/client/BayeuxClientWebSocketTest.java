@@ -142,7 +142,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         final CountDownLatch connectLatch = new CountDownLatch(2);
         WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsFactory);
         webSocketTransport.setOption(WebSocketTransport.CONNECT_TIMEOUT_OPTION, 1000L);
-        webSocketTransport.setDebugEnabled(debugTests());
+        webSocketTransport.setDebugEnabled(true);
         LongPollingTransport longPollingTransport = LongPollingTransport.create(null, httpClient);
         longPollingTransport.setDebugEnabled(debugTests());
         final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
@@ -329,7 +329,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         final LocalSession emitter = bayeux.newLocalSession("test_emitter");
         emitter.handshake();
         final String data = "test_data";
-        bayeux.getChannel(channelName).publish(emitter, data, null);
+        bayeux.getChannel(channelName).publish(emitter, data);
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is not responded
@@ -351,7 +351,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {
-                bayeux.getChannel(channelName).publish(emitter, data, null);
+                bayeux.getChannel(channelName).publish(emitter, data);
                 return true;
             }
         });
@@ -411,7 +411,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         final LocalSession emitter = bayeux.newLocalSession("test_emitter");
         emitter.handshake();
         final String data = "test_data";
-        bayeux.getChannel(channelName).publish(emitter, data, null);
+        bayeux.getChannel(channelName).publish(emitter, data);
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is responded
@@ -434,7 +434,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {
-                bayeux.getChannel(channelName).publish(emitter, data, null);
+                bayeux.getChannel(channelName).publish(emitter, data);
                 return true;
             }
         });
@@ -501,7 +501,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         final LocalSession emitter = bayeux.newLocalSession("test_emitter");
         emitter.handshake();
         final String data = "test_data";
-        bayeux.getChannel(channelName).publish(emitter, data, null);
+        bayeux.getChannel(channelName).publish(emitter, data);
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is responded
@@ -523,7 +523,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {
-                bayeux.getChannel(channelName).publish(emitter, data, null);
+                bayeux.getChannel(channelName).publish(emitter, data);
                 return true;
             }
         });
@@ -645,12 +645,12 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         // Send messages while client is offline
         for (int i = count; i < 2 * count; ++i)
-            chatChannel.publish(null, "hello_" + i, null);
+            chatChannel.publish(null, "hello_" + i);
 
         Thread.sleep(1000);
         Assert.assertEquals(0, messages.size());
 
-        connector.setPort(port);
+        // FIXME connector.setPort(port);
         connector.start();
         Assert.assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
@@ -825,7 +825,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         runServer(serverOptions);
 
         wsFactory.stop();
-        wsFactory.setBufferSize(bufferSize);
+        //wsFactory.setBufferSize(bufferSize);
         wsFactory.start();
 
         Map<String, Object> clientOptions = new HashMap<String, Object>();

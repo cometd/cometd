@@ -68,6 +68,6 @@ public class SpringFrameworkConfigurationTest extends AbstractBayeuxClientServer
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        assertEquals(200, response.status());
+        assertEquals(200, response.getStatus());
     }
 }

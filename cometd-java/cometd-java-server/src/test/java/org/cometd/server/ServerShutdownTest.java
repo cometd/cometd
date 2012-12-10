@@ -38,7 +38,7 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -51,7 +51,7 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest
                 "}]");
         response = connect.send().get(5, TimeUnit.SECONDS);
 
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         connect = newBayeuxRequest("" +
                 "[{" +

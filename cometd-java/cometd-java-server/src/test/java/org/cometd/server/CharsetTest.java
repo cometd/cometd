@@ -39,7 +39,7 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -63,16 +63,16 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
                 "}]");
         // In some cross domain configuration (for example IE9 using XDomainRequest),
         // the Content-Type header is not sent, and we must behave well even if it's missing
-        publish.headers().remove(HttpHeader.CONTENT_TYPE);
+        publish.getHeaders().remove(HttpHeader.CONTENT_TYPE);
         response = publish.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Request disconnect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/disconnect\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = disconnect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -85,7 +85,7 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -112,13 +112,13 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
                 "\"data\":\"" + data + "\"" +
                 "}]", encoding);
         response = publish.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Request disconnect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/disconnect\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = disconnect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
     }
 }

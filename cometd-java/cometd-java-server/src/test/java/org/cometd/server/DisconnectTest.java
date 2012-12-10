@@ -37,7 +37,7 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
         ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
 
@@ -47,7 +47,7 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
         response = connect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         ServerSession serverSession = bayeux.getSession(clientId);
         Assert.assertNotNull(serverSession);
@@ -66,7 +66,7 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
         response = disconnect.send().get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response.status());
+        Assert.assertEquals(200, response.getStatus());
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
