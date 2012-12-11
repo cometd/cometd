@@ -17,11 +17,13 @@
 package org.cometd.benchmark;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -47,16 +49,18 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.AbstractService;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.CometdServlet;
+import org.cometd.server.CometDServlet;
 import org.cometd.server.JacksonJSONContextServer;
 import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.server.AbstractConnectionFactory;
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -88,12 +92,12 @@ public class BayeuxLoadServer
             value = String.valueOf(ssl);
         ssl = Boolean.parseBoolean(value);
 
-        int acceptors = Runtime.getRuntime().availableProcessors();
-        System.err.printf("acceptors [%d]: ", acceptors);
+        int selectors = Runtime.getRuntime().availableProcessors();
+        System.err.printf("selectors [%d]: ", selectors);
         value = console.readLine().trim();
         if (value.length() == 0)
-            value = String.valueOf(acceptors);
-        acceptors = Integer.parseInt(value);
+            value = String.valueOf(selectors);
+        selectors = Integer.parseInt(value);
 
         int maxThreads = 256;
         System.err.printf("max threads [%d]: ", maxThreads);
@@ -123,43 +127,35 @@ public class BayeuxLoadServer
             value = String.valueOf(qos);
         qos = Boolean.parseBoolean(value);
 
-        Server server = new Server();
+        MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(maxThreads);
+//        ExecutorThreadPool jettyThreadPool = new ExecutorThreadPool(maxThreads, maxThreads, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+        Server server = new Server(jettyThreadPool);
 
         // Setup JMX
-        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        server.getContainer().addEventListener(mbContainer);
-        server.addBean(mbContainer);
+        MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        server.addBean(mbeanContainer);
 
-        SelectChannelConnector connector;
+        SslContextFactory sslContextFactory = null;
         if (ssl)
         {
-            SslSelectChannelConnector sslConnector = new SslSelectChannelConnector();
-            File keyStoreFile = new File("src/main/resources/keystore.jks");
-            if (!keyStoreFile.exists())
-                throw new FileNotFoundException(keyStoreFile.getAbsolutePath());
-            SslContextFactory sslContextFactory = sslConnector.getSslContextFactory();
-            sslContextFactory.setKeyStorePath(keyStoreFile.getAbsolutePath());
+            Path keyStoreFile = Paths.get("src/main/resources/keystore.jks");
+            if (Files.exists(keyStoreFile))
+                throw new FileNotFoundException(keyStoreFile.toString());
+            sslContextFactory = new SslContextFactory();
+            sslContextFactory.setKeyStorePath(keyStoreFile.toString());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setKeyManagerPassword("keypwd");
-//            sslConnector.setUseDirectBuffers(true);
-            connector = sslConnector;
         }
-        else
-        {
-            connector = new SelectChannelConnector();
-        }
+
+        ConnectionFactory[] factories = AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory());
+        ServerConnector connector = new ServerConnector(server, null, null, null, 1, selectors, factories);
         // Make sure the OS is configured properly for load testing;
         // see http://cometd.org/documentation/howtos/loadtesting
         connector.setAcceptQueueSize(2048);
         // Make sure the server timeout on a TCP connection is large
-        connector.setMaxIdleTime(240000);
-        connector.setAcceptors(acceptors);
+        connector.setIdleTimeout(240000);
         connector.setPort(port);
         server.addConnector(connector);
-
-        MonitoringQueuedThreadPool jettyThreadPool = new MonitoringQueuedThreadPool(maxThreads);
-//        ExecutorThreadPool jettyThreadPool = new ExecutorThreadPool(maxThreads, maxThreads, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
-        server.setThreadPool(jettyThreadPool);
 
         HandlerWrapper handler = server;
 
@@ -196,7 +192,7 @@ public class BayeuxLoadServer
 
         // Setup comet servlet
         String cometServletPath = "/cometd";
-        CometdServlet cometServlet = new CometdServlet();
+        CometDServlet cometServlet = new CometDServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometServlet);
         // Make sure the expiration timeout is large to avoid clients to timeout
         // This value must be several times larger than the client value
@@ -213,7 +209,7 @@ public class BayeuxLoadServer
 
         BayeuxServerImpl bayeux = cometServlet.getBayeux();
 
-        MonitoringThreadPoolExecutor websocketThreadPool = new MonitoringThreadPoolExecutor(maxThreads, jettyThreadPool.getMaxIdleTimeMs(), TimeUnit.MILLISECONDS, new ThreadPoolExecutor.AbortPolicy());
+        MonitoringThreadPoolExecutor websocketThreadPool = new MonitoringThreadPoolExecutor(maxThreads, jettyThreadPool.getIdleTimeout(), TimeUnit.MILLISECONDS, new ThreadPoolExecutor.AbortPolicy());
 
         LoadWebSocketTransport webSocketTransport = new LoadWebSocketTransport(bayeux, websocketThreadPool);
         webSocketTransport.init();
@@ -413,7 +409,7 @@ public class BayeuxLoadServer
         private final AtomicLong minLatency = new AtomicLong();
         private final AtomicLong maxLatency = new AtomicLong();
         private final AtomicLong totLatency = new AtomicLong();
-        private final ConcurrentMap<Long, AtomicLong> latencies = new ConcurrentHashMap<Long, AtomicLong>();
+        private final ConcurrentMap<Long, AtomicLong> latencies = new ConcurrentHashMap<>();
         private final ThreadLocal<Boolean> currentEnabled = new ThreadLocal<Boolean>()
         {
             @Override
@@ -480,7 +476,7 @@ public class BayeuxLoadServer
                 long requestCount = requests.get();
 
                 // Needs to be sorted in order to calculate the median (aka latency at 50th percentile)
-                Map<Long, AtomicLong> sortedLatencies = new TreeMap<Long, AtomicLong>(latencies);
+                Map<Long, AtomicLong> sortedLatencies = new TreeMap<>(latencies);
                 latencies.clear();
 
                 long requests = 0;

@@ -43,9 +43,9 @@ import org.cometd.server.ext.TimesyncExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CometdDemoServlet extends GenericServlet
+public class CometDDemoServlet extends GenericServlet
 {
-    private static final Logger logger = LoggerFactory.getLogger(CometdDemoServlet.class);
+    private static final Logger logger = LoggerFactory.getLogger(CometDDemoServlet.class);
 
     @Override
     public void init() throws ServletException

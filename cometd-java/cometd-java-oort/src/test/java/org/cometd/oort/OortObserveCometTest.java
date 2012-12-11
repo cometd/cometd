@@ -28,6 +28,7 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -276,7 +277,7 @@ public class OortObserveCometTest extends OortTest
 
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.UNCONNECTED));
 
-        server2.getConnectors()[0].setPort(port2);
+        ((ServerConnector)server2.getConnectors()[0]).setPort(port2);
         server2.start();
 
         Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));

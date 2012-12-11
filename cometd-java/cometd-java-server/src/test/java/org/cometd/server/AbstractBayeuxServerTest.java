@@ -46,7 +46,7 @@ public abstract class AbstractBayeuxServerTest
     protected ServerConnector connector;
     protected int port;
     protected ServletContextHandler context;
-    protected CometdServlet cometdServlet;
+    protected CometDServlet cometdServlet;
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
     protected long timeout = 2000;
@@ -65,7 +65,7 @@ public abstract class AbstractBayeuxServerTest
         context = new ServletContextHandler(handlers, contextPath, ServletContextHandler.SESSIONS);
 
         // Setup comet servlet
-        cometdServlet = new CometdServlet();
+        cometdServlet = new CometDServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
         Map<String, String> options = new HashMap<>();
         options.put("timeout", String.valueOf(timeout));

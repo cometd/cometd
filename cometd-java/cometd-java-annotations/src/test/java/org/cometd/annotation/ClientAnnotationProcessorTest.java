@@ -30,7 +30,7 @@ import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.server.CometdServlet;
+import org.cometd.server.CometDServlet;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -68,8 +68,8 @@ public class ClientAnnotationProcessorTest
         String contextPath = "";
         ServletContextHandler context = new ServletContextHandler(server, contextPath);
 
-        // Cometd servlet
-        ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
+        // CometD servlet
+        ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("multiFrameInterval", "2000");
         if (Boolean.getBoolean("debugTests"))

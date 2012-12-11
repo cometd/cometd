@@ -40,7 +40,7 @@ import org.junit.Test;
 
 public class SetiTest extends OortTest
 {
-    private List<Seti> setis = new ArrayList<Seti>();
+    private List<Seti> setis = new ArrayList<>();
 
     protected Seti startSeti(Oort oort) throws Exception
     {
@@ -96,7 +96,7 @@ public class SetiTest extends OortTest
         LatchListener publishLatch = new LatchListener();
         String loginChannelName = "/service/login";
 
-        Map<String, Object> login1 = new HashMap<String, Object>();
+        Map<String, Object> login1 = new HashMap<>();
         login1.put("user", "user1");
         ClientSessionChannel loginChannel1 = client1.getChannel(loginChannelName);
         loginChannel1.addListener(publishLatch);
@@ -104,7 +104,7 @@ public class SetiTest extends OortTest
         Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         publishLatch.reset(1);
-        Map<String, Object> login2 = new HashMap<String, Object>();
+        Map<String, Object> login2 = new HashMap<>();
         login2.put("user", "user2");
         ClientSessionChannel loginChannel2 = client2.getChannel(loginChannelName);
         loginChannel2.addListener(publishLatch);
@@ -122,7 +122,7 @@ public class SetiTest extends OortTest
                 messageLatch.countDown();
             }
         });
-        Map<String, Object> data1 = new HashMap<String, Object>();
+        Map<String, Object> data1 = new HashMap<>();
         data1.put("peer", "user2");
         client1.getChannel(channel).publish(data1);
 
@@ -159,10 +159,10 @@ public class SetiTest extends OortTest
         BayeuxClient client1 = startClient(oort1, null);
         BayeuxClient client2 = startClient(oort2, null);
 
-        Map<String, Object> login1 = new HashMap<String, Object>();
+        Map<String, Object> login1 = new HashMap<>();
         login1.put("user", "user1");
         client1.getChannel("/service/login").publish(login1);
-        Map<String, Object> login2 = new HashMap<String, Object>();
+        Map<String, Object> login2 = new HashMap<>();
         login2.put("user", "user2");
         client2.getChannel("/service/login").publish(login2);
 
@@ -173,7 +173,7 @@ public class SetiTest extends OortTest
         seti1.addPresenceListener(absenceListener);
 
         // Disassociate
-        Map<String, Object> logout2 = new HashMap<String, Object>();
+        Map<String, Object> logout2 = new HashMap<>();
         logout2.put("user", "user2");
         client2.getChannel("/service/logout").publish(logout2);
 
@@ -188,7 +188,7 @@ public class SetiTest extends OortTest
                 messageLatch.countDown();
             }
         });
-        Map<String, Object> data1 = new HashMap<String, Object>();
+        Map<String, Object> data1 = new HashMap<>();
         data1.put("peer", "user2");
         client1.getChannel(channel).publish(data1);
 
@@ -224,18 +224,18 @@ public class SetiTest extends OortTest
         new SetiService(seti2);
 
         BayeuxClient client1 = startClient(oort1, null);
-        Map<String, Object> login1 = new HashMap<String, Object>();
+        Map<String, Object> login1 = new HashMap<>();
         login1.put("user", "user1");
         client1.getChannel("/service/login").publish(login1);
 
-        final AtomicReference<String> session2 = new AtomicReference<String>();
+        final AtomicReference<String> session2 = new AtomicReference<>();
         BayeuxClient client2 = new BayeuxClient(oort2.getURL(), new LongPollingTransport(null, oort2.getHttpClient()))
         {
             @Override
             protected void processConnect(Message.Mutable connect)
             {
                 // Send the login message, so Seti can associate this user
-                Map<String, Object> login2 = new HashMap<String, Object>();
+                Map<String, Object> login2 = new HashMap<>();
                 login2.put("user", "user2");
                 getChannel("/service/login").publish(login2);
 
@@ -323,7 +323,7 @@ public class SetiTest extends OortTest
 
         LatchListener publishLatch = new LatchListener();
 
-        Map<String, Object> login1A = new HashMap<String, Object>();
+        Map<String, Object> login1A = new HashMap<>();
         login1A.put("user", "user1");
         ClientSessionChannel loginChannel1A = client1A.getChannel("/service/login");
         loginChannel1A.addListener(publishLatch);
@@ -332,7 +332,7 @@ public class SetiTest extends OortTest
 
         // Login the same user to the same server with a different client
         publishLatch.reset(1);
-        Map<String, Object> login1B = new HashMap<String, Object>();
+        Map<String, Object> login1B = new HashMap<>();
         login1B.put("user", "user1");
         ClientSessionChannel loginChannel1B = client1B.getChannel("/service/login");
         loginChannel1B.addListener(publishLatch);
@@ -341,7 +341,7 @@ public class SetiTest extends OortTest
 
         // Login the same user to another server with a different client
         publishLatch.reset(1);
-        Map<String, Object> login1C = new HashMap<String, Object>();
+        Map<String, Object> login1C = new HashMap<>();
         login1C.put("user", "user1");
         ClientSessionChannel loginChannel1C = client1C.getChannel("/service/login");
         loginChannel1C.addListener(publishLatch);
@@ -349,7 +349,7 @@ public class SetiTest extends OortTest
         Assert.assertTrue(publishLatch.await(5, TimeUnit.SECONDS));
 
         publishLatch.reset(1);
-        Map<String, Object> login2 = new HashMap<String, Object>();
+        Map<String, Object> login2 = new HashMap<>();
         login2.put("user", "user2");
         ClientSessionChannel loginChannel2 = client3.getChannel("/service/login");
         loginChannel2.addListener(publishLatch);
@@ -386,7 +386,7 @@ public class SetiTest extends OortTest
                 messageLatch.countDown();
             }
         });
-        Map<String, Object> data = new HashMap<String, Object>();
+        Map<String, Object> data = new HashMap<>();
         data.put("peer", "user1");
         client3.getChannel(channel).publish(data);
 
@@ -400,7 +400,7 @@ public class SetiTest extends OortTest
 
         // Disassociate client1A
         publishLatch.reset(1);
-        Map<String, Object> logout = new HashMap<String, Object>();
+        Map<String, Object> logout = new HashMap<>();
         logout.put("user", "user1");
         ClientSessionChannel logoutChannel1A = client1A.getChannel("/service/logout");
         logoutChannel1A.addListener(publishLatch);
@@ -463,7 +463,7 @@ public class SetiTest extends OortTest
         seti2.addPresenceListener(listener);
 
         LatchListener publishLatch = new LatchListener();
-        Map<String, Object> login1 = new HashMap<String, Object>();
+        Map<String, Object> login1 = new HashMap<>();
         String userId = "user1";
         login1.put("user", userId);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
@@ -478,7 +478,7 @@ public class SetiTest extends OortTest
         Assert.assertTrue(seti2.isPresent(userId));
 
         publishLatch.reset(1);
-        Map<String, Object> logout1 = new HashMap<String, Object>();
+        Map<String, Object> logout1 = new HashMap<>();
         logout1.put("user", userId);
         ClientSessionChannel logoutChannel1 = client1.getChannel("/service/logout");
         logoutChannel1.addListener(publishLatch);

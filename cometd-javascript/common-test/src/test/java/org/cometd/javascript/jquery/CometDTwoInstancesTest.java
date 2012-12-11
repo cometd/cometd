@@ -34,7 +34,7 @@ public class CometDTwoInstancesTest extends AbstractCometDTest
         Latch handshakeLatch2 = get("handshakeLatch2");
 
         evaluateScript("" +
-                "var cometd2 = new $.Cometd('jquery');" +
+                "var cometd2 = new $.CometD('jquery');" +
                 "" +
                 "cometd.addListener('/meta/handshake', handshakeLatch, 'countDown');" +
                 "cometd2.addListener('/meta/handshake', handshakeLatch2, 'countDown');" +

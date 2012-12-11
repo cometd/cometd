@@ -17,6 +17,8 @@
 package org.cometd.javascript;
 
 import java.io.IOException;
+import java.util.EnumSet;
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -27,7 +29,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,7 +42,7 @@ public class CometDWebSocketConnectTimeoutTest extends AbstractCometDWebSocketTe
         context.stop();
         TimeoutFilter filter = new TimeoutFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
+        context.addFilter(filterHolder, cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
         context.start();
 
         defineClass(Latch.class);

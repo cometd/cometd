@@ -17,7 +17,9 @@
 package org.cometd.javascript;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -32,7 +34,6 @@ import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.junit.Assert;
@@ -44,8 +45,8 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
     protected void customizeContext(ServletContextHandler context) throws Exception
     {
         super.customizeContext(context);
-        context.addFilter(new FilterHolder(new CrossOriginFilter()), cometServletPath + "/*", FilterMapping.REQUEST);
-        context.addFilter(new FilterHolder(new ConnectThrowingFilter()), cometServletPath + "/*", FilterMapping.REQUEST);
+        context.addFilter(new FilterHolder(new CrossOriginFilter()), cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(new FilterHolder(new ConnectThrowingFilter()), cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
     @Test
@@ -54,9 +55,9 @@ public class CometDCrossOriginReHandshakeTest extends AbstractCometDLongPollingT
         bayeuxServer.addExtension(new ReHandshakeExtension());
 
         defineClass(Latch.class);
-        String crossOriginCometdURL = cometdURL.replace("localhost", "127.0.0.1");
+        String crossOriginCometDURL = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({" +
-                       "url: '" + crossOriginCometdURL + "', " +
+                       "url: '" + crossOriginCometDURL + "', " +
                        "requestHeaders: { Origin: 'http://localhost:8080' }, " +
                        "logLevel: '" + getLogLevel() + "'" +
                        "});");

@@ -21,10 +21,9 @@ import java.util.Map;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.CometdServlet;
+import org.cometd.server.CometDServlet;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -71,7 +70,7 @@ public abstract class ClientServerWebSocketTest
         context = new ServletContextHandler(server, contextPath, true, false);
 
         // CometD servlet
-        ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
+        ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("transports", org.cometd.websocket.server.WebSocketTransport.class.getName());
         cometdServletHolder.setInitParameter("timeout", "10000");
         if (debugTests())

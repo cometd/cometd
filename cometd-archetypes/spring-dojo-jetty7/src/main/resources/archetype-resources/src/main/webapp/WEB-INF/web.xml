@@ -9,7 +9,7 @@
 
     <servlet>
         <servlet-name>cometd</servlet-name>
-        <servlet-class>org.cometd.server.CometdServlet</servlet-class>
+        <servlet-class>org.cometd.server.CometDServlet</servlet-class>
     </servlet>
     <servlet-mapping>
         <servlet-name>cometd</servlet-name>

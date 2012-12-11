@@ -1,5 +1,5 @@
 /**
- * The constructor for a Cometd object, identified by an optional name.
+ * The constructor for a CometD object, identified by an optional name.
  * The default name is the string 'default'.
  * In the rare case a page needs more than one Bayeux conversation,
  * a new instance can be created via:
@@ -7,10 +7,10 @@
  * var bayeuxUrl2 = ...;
  *
  * // Dojo style
- * var cometd2 = new dojox.Cometd('another_optional_name');
+ * var cometd2 = new dojox.CometD('another_optional_name');
  *
  * // jQuery style
- * var cometd2 = new $.Cometd('another_optional_name');
+ * var cometd2 = new $.CometD('another_optional_name');
  *
  * cometd2.init({url: bayeuxUrl2});
  * </pre>
@@ -20,7 +20,7 @@
 // Be very careful in not changing the function order and pass this file every time through JSLint (http://jslint.com)
 // The only implied globals must be "dojo", "org" and "window", and check that there are no "unused" warnings
 // Failing to pass JSLint may result in shrinkers/minifiers to create an unusable file.
-org.cometd.Cometd = function(name)
+org.cometd.CometD = function(name)
 {
     var _cometd = this;
     var _name = name || 'default';
@@ -1780,7 +1780,7 @@ org.cometd.Cometd = function(name)
     };
 
     /**
-     * Returns the name assigned to this Cometd object, or the string 'default'
+     * Returns the name assigned to this CometD object, or the string 'default'
      * if no name has been explicitly passed as parameter to the constructor.
      */
     this.getName = function()

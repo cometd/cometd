@@ -20,7 +20,7 @@ import java.util.Map;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.server.CometdServlet;
+import org.cometd.server.CometDServlet;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -63,7 +63,7 @@ public class ClientServerTest
         context = new ServletContextHandler(server, contextPath);
 
         // CometD servlet
-        ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
+        ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         if (debugTests())
             cometdServletHolder.setInitParameter("logLevel", "3");

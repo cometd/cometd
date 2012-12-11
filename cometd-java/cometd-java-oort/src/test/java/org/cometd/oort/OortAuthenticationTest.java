@@ -71,7 +71,7 @@ public class OortAuthenticationTest extends OortTest
         // A client that forges an Oort comet authentication may not connect
         Message.Mutable forgedAuthFields = new HashMapMessage();
         Map<String, Object> ext = forgedAuthFields.getExt(true);
-        Map<String, Object> oortExt = new HashMap<String, Object>();
+        Map<String, Object> oortExt = new HashMap<>();
         ext.put(Oort.EXT_OORT_FIELD, oortExt);
         oortExt.put(Oort.EXT_OORT_URL_FIELD, oort1.getURL());
         oortExt.put(Oort.EXT_OORT_SECRET_FIELD, "anything");

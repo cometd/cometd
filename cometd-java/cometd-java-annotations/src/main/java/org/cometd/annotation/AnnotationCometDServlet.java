@@ -21,11 +21,11 @@ import java.util.List;
 import javax.servlet.ServletException;
 
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.server.CometdServlet;
+import org.cometd.server.CometDServlet;
 import org.eclipse.jetty.util.Loader;
 
 /**
- * <p>A specialized version of {@link CometdServlet} that can be configured with the init-parameter
+ * <p>A specialized version of {@link CometDServlet} that can be configured with the init-parameter
  * <b>services</b> to be a comma separated list of class names of annotated services, that will
  * be processed by {@link ServerAnnotationProcessor} upon initialization.</p>
  *
@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.Loader;
  *
  *  &lt;servlet&gt;
  *    &lt;servlet-name&gt;cometd&lt;/servlet-name&gt;
- *    &lt;servlet-class&gt;org.cometd.annotation.AnnotationCometdServlet&lt;/servlet-class&gt;
+ *    &lt;servlet-class&gt;org.cometd.annotation.AnnotationCometDServlet&lt;/servlet-class&gt;
  *    &lt;init-param&gt;
  *      &lt;param-name&gt;services&lt;/param-name&gt;
  *      &lt;param-value&gt;org.cometd.examples.FooService, org.cometd.examples.BarService&lt;/param-value&gt;
@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.Loader;
  *  &lt;/servlet&gt;
  * </pre>
  */
-public class AnnotationCometDServlet extends CometdServlet
+public class AnnotationCometDServlet extends CometDServlet
 {
     private final List<Object> services = new ArrayList<>();
     private volatile ServerAnnotationProcessor processor;

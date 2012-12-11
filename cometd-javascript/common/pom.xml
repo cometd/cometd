@@ -43,7 +43,7 @@
                                         <include>${jsSourceDir}/org/cometd/LongPollingTransport.js</include>
                                         <include>${jsSourceDir}/org/cometd/CallbackPollingTransport.js</include>
                                         <include>${jsSourceDir}/org/cometd/WebSocketTransport.js</include>
-                                        <include>${jsSourceDir}/org/cometd/Cometd.js</include>
+                                        <include>${jsSourceDir}/org/cometd/CometD.js</include>
                                         <include>${jsSourceDir}/org/cometd/cometd-amd.js</include>
                                     </includes>
                                 </aggregation>

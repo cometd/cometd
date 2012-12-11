@@ -49,13 +49,14 @@ import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
+import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 
 public class BayeuxLoadClient
 {
     private final Random random = new Random();
     private final BenchmarkHelper helper = new BenchmarkHelper();
     private final List<LoadBayeuxClient> bayeuxClients = Collections.synchronizedList(new ArrayList<LoadBayeuxClient>());
-    private final ConcurrentMap<Integer, AtomicInteger> rooms = new ConcurrentHashMap<Integer, AtomicInteger>();
+    private final ConcurrentMap<Integer, AtomicInteger> rooms = new ConcurrentHashMap<>();
     private final AtomicLong start = new AtomicLong();
     private final AtomicLong end = new AtomicLong();
     private final AtomicLong responses = new AtomicLong();
@@ -66,9 +67,9 @@ public class BayeuxLoadClient
     private final AtomicLong minLatency = new AtomicLong();
     private final AtomicLong maxLatency = new AtomicLong();
     private final AtomicLong totLatency = new AtomicLong();
-    private final ConcurrentMap<Long, AtomicLong> wallLatencies = new ConcurrentHashMap<Long, AtomicLong>();
-    private final Map<String, AtomicStampedReference<Long>> sendTimes = new ConcurrentHashMap<String, AtomicStampedReference<Long>>();
-    private final Map<String, AtomicStampedReference<List<Long>>> arrivalTimes = new ConcurrentHashMap<String, AtomicStampedReference<List<Long>>>();
+    private final ConcurrentMap<Long, AtomicLong> wallLatencies = new ConcurrentHashMap<>();
+    private final Map<String, AtomicStampedReference<Long>> sendTimes = new ConcurrentHashMap<>();
+    private final Map<String, AtomicStampedReference<List<Long>>> arrivalTimes = new ConcurrentHashMap<>();
     private ScheduledExecutorService scheduler;
     private MonitoringQueuedThreadPool threadPool;
     private HttpClient httpClient;
@@ -176,26 +177,28 @@ public class BayeuxLoadClient
 
         scheduler = Executors.newScheduledThreadPool(8);
 
-        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        mbContainer.start();
-        mbContainer.addBean(this);
+        MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        mbeanContainer.beanAdded(null, this);
 
         threadPool = new MonitoringQueuedThreadPool(maxThreads);
         threadPool.setDaemon(true);
         threadPool.start();
-        mbContainer.addBean(threadPool);
+        mbeanContainer.beanAdded(null, threadPool);
 
         httpClient = new HttpClient();
-        httpClient.setMaxConnectionsPerAddress(50000);
-        httpClient.setThreadPool(threadPool);
+        httpClient.addBean(mbeanContainer);
+        httpClient.setMaxConnectionsPerDestination(50000);
+        httpClient.setExecutor(threadPool);
         httpClient.setIdleTimeout(5000);
-//        httpClient.setUseDirectBuffers(false);
         httpClient.start();
-        mbContainer.addBean(httpClient);
+        mbeanContainer.beanAdded(null, httpClient);
 
-        webSocketClientFactory = new WebSocketClientFactory(threadPool, new ZeroMaskGen(), 8 * 1024);
+        webSocketClientFactory = new WebSocketClientFactory(threadPool);
+        webSocketClientFactory.setMasker(new ZeroMasker());
+        webSocketClientFactory.getPolicy().setBufferSize(8 * 1024);
+        webSocketClientFactory.addBean(mbeanContainer);
         webSocketClientFactory.start();
-        mbContainer.addBean(webSocketClientFactory);
+        mbeanContainer.beanAdded(null, webSocketClientFactory);
 
         HandshakeListener handshakeListener = new HandshakeListener(channel, rooms, roomsPerClient);
         DisconnectListener disconnectListener = new DisconnectListener();
@@ -358,7 +361,7 @@ public class BayeuxLoadClient
                         room = nextRandom(rooms);
                         clientsPerRoom = this.rooms.get(room);
                     }
-                    Map<String, Object> message = new HashMap<String, Object>(4);
+                    Map<String, Object> message = new HashMap<>(4);
                     message.put("room", room);
                     message.put("user", clientIndex);
                     message.put("chat", chat);
@@ -406,8 +409,6 @@ public class BayeuxLoadClient
 
         threadPool.stop();
 
-        mbContainer.stop();
-
         scheduler.shutdown();
         scheduler.awaitTermination(1000, TimeUnit.MILLISECONDS);
     }
@@ -418,13 +419,13 @@ public class BayeuxLoadClient
         {
             case LONG_POLLING:
             {
-                Map<String, Object> options = new HashMap<String, Object>();
+                Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT, new JacksonJSONContextClient());
                 return new LongPollingTransport(options, httpClient);
             }
             case WEBSOCKET:
             {
-                Map<String, Object> options = new HashMap<String, Object>();
+                Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT, new JacksonJSONContextClient());
                 options.put(WebSocketTransport.IDLE_TIMEOUT_OPTION, 35000);
                 return new WebSocketTransport(options, webSocketClientFactory, scheduler);
@@ -527,7 +528,7 @@ public class BayeuxLoadClient
         if (wallLatencies.size() > 1)
         {
             // Needs to be sorted in order to calculate the median (aka latency at 50th percentile)
-            Map<Long, AtomicLong> sortedWallLatencies = new TreeMap<Long, AtomicLong>(wallLatencies);
+            Map<Long, AtomicLong> sortedWallLatencies = new TreeMap<>(wallLatencies);
             wallLatencies.clear();
 
             long messages = 0;
@@ -662,7 +663,7 @@ public class BayeuxLoadClient
                     {
                         public void run()
                         {
-                            List<Integer> roomsSubscribedTo = new ArrayList<Integer>();
+                            List<Integer> roomsSubscribedTo = new ArrayList<>();
                             for (int j = 0; j < roomsPerClient; ++j)
                             {
                                 // Avoid to subscribe the same client twice to the same room
@@ -749,7 +750,7 @@ public class BayeuxLoadClient
 
     private class LoadBayeuxClient extends BayeuxClient
     {
-        private final List<Integer> subscriptions = new ArrayList<Integer>();
+        private final List<Integer> subscriptions = new ArrayList<>();
         private final ClientSessionChannel.MessageListener latencyListener;
 
         private LoadBayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport transport, ClientSessionChannel.MessageListener listener)
@@ -823,9 +824,9 @@ public class BayeuxLoadClient
                 {
                     int room = (Integer)data.get("room");
                     int clientsInRoom = rooms.get(room).get();
-                    sendTimes.put(message.getId(), new AtomicStampedReference<Long>(now, clientsInRoom));
+                    sendTimes.put(message.getId(), new AtomicStampedReference<>(now, clientsInRoom));
                     // There is no write-cheap concurrent list in JDK, so let's use a synchronized wrapper
-                    arrivalTimes.put(message.getId(), new AtomicStampedReference<List<Long>>(Collections.synchronizedList(new LinkedList<Long>()), clientsInRoom));
+                    arrivalTimes.put(message.getId(), new AtomicStampedReference<>(Collections.synchronizedList(new LinkedList<Long>()), clientsInRoom));
                 }
             }
         }

@@ -17,15 +17,16 @@
 package org.cometd.javascript;
 
 import java.io.EOFException;
-import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutionException;
 
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.BlockingResponseListener;
+import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.http.HttpMethod;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.slf4j.Logger;
@@ -39,9 +40,9 @@ public class XMLHttpRequestExchange extends ScriptableObject
     {
     }
 
-    public void jsConstructor(Object cookieStore, Object threadModel, Scriptable thiz, String method, String url, boolean async)
+    public void jsConstructor(Object client, Object cookieStore, Object threadModel, Scriptable thiz, String method, String url, boolean async)
     {
-        exchange = new CometDExchange((HttpCookieStore)cookieStore, (ThreadModel)threadModel, thiz, method, url, async);
+        exchange = new CometDExchange((XMLHttpRequestClient)client, (HttpCookieStore)cookieStore, (ThreadModel)threadModel, thiz, method, url, async);
     }
 
     public String getClassName()
@@ -49,30 +50,25 @@ public class XMLHttpRequestExchange extends ScriptableObject
         return "XMLHttpRequestExchange";
     }
 
-    public HttpExchange getHttpExchange()
-    {
-        return exchange;
-    }
-
     public boolean isAsynchronous()
     {
         return exchange.isAsynchronous();
     }
 
-    public void await() throws InterruptedException
+    public void await() throws InterruptedException, ExecutionException
     {
-        exchange.waitForDone();
+        exchange.get();
         exchange.notifyReadyStateChange(false);
     }
 
     public void jsFunction_addRequestHeader(String name, String value)
     {
-        exchange.addRequestHeader(name, value);
+        exchange.getRequest().header(name, value);
     }
 
     public String jsGet_method()
     {
-        return exchange.getMethod();
+        return exchange.getRequest().getMethod().asString();
     }
 
     public void jsFunction_setRequestContent(String data) throws UnsupportedEncodingException
@@ -102,7 +98,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
 
     public void jsFunction_abort()
     {
-        exchange.cancel();
+        exchange.abort();
     }
 
     public String jsFunction_getAllResponseHeaders()
@@ -115,12 +111,29 @@ public class XMLHttpRequestExchange extends ScriptableObject
         return exchange.getResponseHeader(name);
     }
 
-    public void send(HttpClient httpClient) throws Exception
+    public void jsFunction_send() throws Exception
     {
-        exchange.send(httpClient);
+        exchange.send();
+        try
+        {
+            if (!isAsynchronous())
+                await();
+        }
+        catch (InterruptedException x)
+        {
+            throw new InterruptedIOException();
+        }
+        catch (ExecutionException x)
+        {
+            Throwable cause = x.getCause();
+            if (cause instanceof Exception)
+                throw (Exception)cause;
+            else
+                throw (Error)cause;
+        }
     }
 
-    public static class CometDExchange extends ContentExchange
+    public static class CometDExchange extends BlockingResponseListener
     {
         public enum ReadyState
         {
@@ -135,21 +148,20 @@ public class XMLHttpRequestExchange extends ScriptableObject
         private volatile boolean aborted;
         private volatile ReadyState readyState = ReadyState.UNSENT;
         private volatile String responseText;
+        private volatile int responseStatus;
         private volatile String responseStatusText;
 
-        public CometDExchange(HttpCookieStore cookieStore, ThreadModel threads, Scriptable thiz, String method, String url, boolean async)
+        public CometDExchange(XMLHttpRequestClient client, HttpCookieStore cookieStore, ThreadModel threads, Scriptable thiz, String method, String url, boolean async)
         {
-            super(true);
+            super(client.getHttpClient().newRequest(url));
+            getRequest().method(HttpMethod.fromString(method));
             this.cookieStore = cookieStore;
             this.threads = threads;
             this.thiz = thiz;
-            setMethod(method == null ? "GET" : method.toUpperCase());
-            setURL(url);
             this.async = async;
             aborted = false;
             readyState = ReadyState.OPENED;
             responseStatusText = null;
-            getRequestFields().clear();
             if (async)
                 notifyReadyStateChange(false);
         }
@@ -172,23 +184,19 @@ public class XMLHttpRequestExchange extends ScriptableObject
             threads.invoke(sync, thiz, thiz, "onreadystatechange");
         }
 
-        public void send(HttpClient httpClient) throws Exception
+        public void send() throws Exception
         {
-            String cookies = cookieStore.jsFunction_get(getScheme().toString("UTF-8"), getAddress().toString(), "");
-            if (cookies.length() > 0)
-                setRequestHeader(HttpHeaders.COOKIE, cookies);
             log("Submitted {}", this);
-            httpClient.send(this);
+            getRequest().send(this);
         }
 
-        @Override
-        public void cancel()
+        public void abort()
         {
-            super.cancel();
+            cancel(false);
             log("Aborted {}", this);
             aborted = true;
             responseText = null;
-            getRequestFields().clear();
+            getRequest().getHeaders().clear();
             if (!async || readyState == ReadyState.HEADERS_RECEIVED || readyState == ReadyState.LOADING)
             {
                 readyState = ReadyState.DONE;
@@ -207,6 +215,11 @@ public class XMLHttpRequestExchange extends ScriptableObject
             return responseText;
         }
 
+        public int getResponseStatus()
+        {
+            return responseStatus;
+        }
+
         public String getResponseStatusText()
         {
             return responseStatusText;
@@ -214,47 +227,31 @@ public class XMLHttpRequestExchange extends ScriptableObject
 
         public void setRequestContent(String content) throws UnsupportedEncodingException
         {
-            setRequestContent(new ByteArrayBuffer(content, "UTF-8"));
+            getRequest().content(new StringContentProvider(content));
         }
 
         public String getAllResponseHeaders()
         {
-            return getResponseFields().toString();
+            return getRequest().getHeaders().toString();
         }
 
         public String getResponseHeader(String name)
         {
-            return getResponseFields().getStringField(name);
+            return getRequest().getHeaders().getStringField(name);
         }
 
         @Override
-        protected void onResponseStatus(Buffer version, int status, Buffer statusText) throws IOException
+        public void onBegin(Response response)
         {
-            super.onResponseStatus(version, status, statusText);
-            this.responseStatusText = new String(statusText.asArray(), "UTF-8");
+            super.onBegin(response);
+            this.responseStatus = response.getStatus();
+            this.responseStatusText = response.getReason();
         }
 
         @Override
-        protected void onResponseHeader(Buffer name, Buffer value) throws IOException
+        public void onHeaders(Response response)
         {
-            super.onResponseHeader(name, value);
-            int headerName = HttpHeaders.CACHE.getOrdinal(name);
-            if (headerName == HttpHeaders.SET_COOKIE_ORDINAL)
-            {
-                try
-                {
-                    cookieStore.jsFunction_set(getScheme().toString("UTF-8"), getAddress().toString(), "", value.toString("UTF-8"));
-                }
-                catch (Exception x)
-                {
-                    throw (IOException)new IOException().initCause(x);
-                }
-            }
-        }
-
-        @Override
-        protected void onResponseHeaderComplete() throws IOException
-        {
+            super.onHeaders(response);
             if (!aborted)
             {
                 if (async)
@@ -266,9 +263,9 @@ public class XMLHttpRequestExchange extends ScriptableObject
         }
 
         @Override
-        protected void onResponseContent(Buffer buffer) throws IOException
+        public void onContent(Response response, ByteBuffer content)
         {
-            super.onResponseContent(buffer);
+            super.onContent(response, content);
             if (!aborted)
             {
                 if (async)
@@ -283,37 +280,26 @@ public class XMLHttpRequestExchange extends ScriptableObject
         }
 
         @Override
-        protected void onResponseComplete() throws IOException
+        public void onComplete(Result result)
         {
             if (!aborted)
             {
-                log("Completed ({}) {}", getResponseStatus(), this);
-                responseText = getResponseContent();
-                readyState = ReadyState.DONE;
-                if (async)
-                    notifyReadyStateChange(true);
+                if (result.isSucceeded())
+                {
+                    Response response = result.getResponse();
+                    log("Succeeded ({}) {}", response.getStatus(), this);
+                    responseText = getContentAsString();
+                    readyState = ReadyState.DONE;
+                    if (async)
+                        notifyReadyStateChange(true);
+                }
+                else
+                {
+                    Throwable failure = result.getFailure();
+                    if (!(failure instanceof EOFException))
+                        log("Failed " + this, failure);
+                }
             }
-        }
-
-        @Override
-        protected void onException(Throwable x)
-        {
-            if (!(x instanceof EOFException))
-                super.onException(x);
-        }
-
-        @Override
-        protected void onRequestCommitted() throws IOException
-        {
-            super.onRequestCommitted();
-            log("Committed {}", this);
-        }
-
-        @Override
-        protected void onRequestComplete() throws IOException
-        {
-            super.onRequestComplete();
-            log("Sent {}", this);
         }
 
         private void log(String message, Object... args)

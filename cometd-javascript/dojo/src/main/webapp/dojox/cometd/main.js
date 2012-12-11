@@ -21,9 +21,9 @@ define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/io/script', 
     org_cometd.JSON.toJSON = JSON.stringify;
     org_cometd.JSON.fromJSON = JSON.parse;
 
-    dojox.Cometd = function(name)
+    dojox.CometD = function(name)
     {
-        var cometd = new org_cometd.Cometd(name);
+        var cometd = new org_cometd.CometD(name);
 
         function LongPollingTransport()
         {
@@ -91,7 +91,7 @@ define(['org/cometd', 'dojo/json', 'dojox', 'dojo/_base/xhr', 'dojo/io/script', 
     };
 
     // The default cometd instance
-    var cometd = new dojox.Cometd();
+    var cometd = new dojox.CometD();
     dojox.cometd = cometd;
 
     // Create a compatibility API for dojox.cometd instance with the original API.

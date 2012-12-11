@@ -16,9 +16,9 @@ require({
     {
         if (message.successful)
         {
-            dom.byId('previous').innerHTML = org.cometd.COOKIE.get('demoLastCometdID');
+            dom.byId('previous').innerHTML = org.cometd.COOKIE.get('demoLastCometDID');
             dom.byId('current').innerHTML = message.clientId;
-            org.cometd.COOKIE.set('demoLastCometdID', message.clientId, {
+            org.cometd.COOKIE.set('demoLastCometDID', message.clientId, {
                 'max-age': 300,
                 path : '/',
                 expires: new Date(new Date().getTime() + 300 * 1000)

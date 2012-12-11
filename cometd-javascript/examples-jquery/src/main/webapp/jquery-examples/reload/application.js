@@ -17,9 +17,9 @@ function($, cometd)
       {
           if (message.successful)
           {
-              $('#previous').html(org.cometd.COOKIE.get('demoLastCometdID'));
+              $('#previous').html(org.cometd.COOKIE.get('demoLastCometDID'));
               $('#current').html(message.clientId);
-              org.cometd.COOKIE.set('demoLastCometdID', message.clientId, {
+              org.cometd.COOKIE.set('demoLastCometDID', message.clientId, {
                   'max-age': 300,
                   path : '/',
                   expires: new Date(new Date().getTime() + 300 * 1000)

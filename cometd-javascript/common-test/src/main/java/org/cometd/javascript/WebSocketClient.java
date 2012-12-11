@@ -19,39 +19,43 @@ package org.cometd.javascript;
 import java.io.IOException;
 import java.net.URI;
 
-import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.api.WebSocketConnection;
+import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WebSocketClient extends ScriptableObject implements WebSocket.OnTextMessage
+public class WebSocketClient extends ScriptableObject implements WebSocketListener
 {
     private final Logger logger = LoggerFactory.getLogger(getClass().getName());
     private ThreadModel threads;
     private Scriptable thiz;
-    private FrameConnection connection;
+    private WebSocketConnection connection;
 
     public WebSocketClient()
     {
     }
 
-    public WebSocketClient(Object cookieStore, Object threadModel, Scriptable thiz, Object factory, String url)
+    public void jsConstructor(Object cookieStore, Object threadModel, Scriptable thiz, Object factory, String url)
     {
         this.threads = (ThreadModel)threadModel;
         this.thiz = thiz;
         try
         {
             WebSocketClientFactory wsFactory = (WebSocketClientFactory)factory;
-            org.eclipse.jetty.websocket.WebSocketClient wsClient = wsFactory.newWebSocketClient();
+            org.eclipse.jetty.websocket.client.WebSocketClient wsClient = wsFactory.newWebSocketClient(this);
             URI uri = new URI(url);
-            wsClient.getCookies().putAll(((HttpCookieStore)cookieStore).getAll(uri));
+            // TODO: pass in cookies
+//            wsClient.getUpgradeRequest().setCookieStore();
+//            wsClient.getCookies().putAll(((HttpCookieStore)cookieStore).getAll(uri));
             log("Opening WebSocket connection to {}", uri);
-            wsClient.open(uri, this);
+            wsClient.connect(uri);
         }
         catch (Exception x)
         {
-            onError(x);
+            onWebSocketException(new WebSocketException(x));
         }
     }
 
@@ -63,22 +67,29 @@ public class WebSocketClient extends ScriptableObject implements WebSocket.OnTex
     public void jsFunction_send(String data) throws IOException
     {
         log("WebSocket sending data {}", data);
-        connection.sendMessage(data);
+        connection.write(data);
     }
 
-    public void jsFunction_close(int code, String reason)
+    public void jsFunction_close(int code, String reason) throws IOException
     {
         connection.close(code, reason);
     }
 
-    public void onOpen(Connection connection)
+    @Override
+    public void onWebSocketConnect(WebSocketConnection connection)
     {
-        this.connection = (FrameConnection)connection;
+        this.connection = connection;
         log("WebSocket opened connection {}", connection);
         threads.invoke(false, thiz, thiz, "onopen");
     }
 
-    public void onMessage(String data)
+    @Override
+    public void onWebSocketBinary(byte[] payload, int offset, int len)
+    {
+    }
+
+    @Override
+    public void onWebSocketText(String data)
     {
         log("WebSocket message data {}", data);
         // Use single quotes so they do not mess up with quotes in the data string
@@ -86,7 +97,8 @@ public class WebSocketClient extends ScriptableObject implements WebSocket.OnTex
         threads.invoke(false, thiz, thiz, "onmessage", event);
     }
 
-    public void onClose(int closeCode, String reason)
+    @Override
+    public void onWebSocketClose(int closeCode, String reason)
     {
         log("WebSocket closed with code {}/{}", closeCode, reason);
         // Use single quotes so they do not mess up with quotes in the reason string
@@ -94,7 +106,8 @@ public class WebSocketClient extends ScriptableObject implements WebSocket.OnTex
         threads.invoke(false, thiz, thiz, "onclose", event);
     }
 
-    public void onError(Throwable x)
+    @Override
+    public void onWebSocketException(WebSocketException x)
     {
         log("WebSocket error {}", x);
         threads.invoke(false, thiz, thiz, "onerror");

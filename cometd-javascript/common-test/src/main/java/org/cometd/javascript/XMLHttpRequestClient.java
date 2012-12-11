@@ -16,8 +16,6 @@
 
 package org.cometd.javascript;
 
-import java.io.InterruptedIOException;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.mozilla.javascript.ScriptableObject;
 
@@ -46,29 +44,18 @@ public class XMLHttpRequestClient extends ScriptableObject
     public void start() throws Exception
     {
         httpClient = new HttpClient();
-        httpClient.setMaxConnectionsPerAddress(maxConnections);
+        httpClient.setMaxConnectionsPerDestination(maxConnections);
         httpClient.setIdleTimeout(300000);
-        httpClient.setTimeout(300000);
-//        httpClient.setConnectorType(HttpClient.CONNECTOR_SOCKET);
         httpClient.start();
+    }
+
+    public HttpClient getHttpClient()
+    {
+        return httpClient;
     }
 
     public void stop() throws Exception
     {
         httpClient.stop();
-    }
-
-    public void jsFunction_send(XMLHttpRequestExchange exchange) throws Exception
-    {
-        exchange.send(httpClient);
-        try
-        {
-            if (!exchange.isAsynchronous())
-                exchange.await();
-        }
-        catch (InterruptedException x)
-        {
-            throw new InterruptedIOException();
-        }
     }
 }

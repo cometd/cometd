@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * and will be passed to  {@link BayeuxServerImpl#setAllowedTransports(List)}.</p>
  * <p>All other init parameters are passed to {@link BayeuxServerImpl#setOption(String, Object)}.</p>
  */
-public class CometdServlet extends HttpServlet
+public class CometDServlet extends HttpServlet
 {
     private static final long serialVersionUID = 3637310585741732936L;
 

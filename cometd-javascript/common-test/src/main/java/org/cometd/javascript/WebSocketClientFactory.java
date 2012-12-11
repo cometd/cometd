@@ -17,12 +17,12 @@
 package org.cometd.javascript;
 
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.ZeroMaskGen;
+import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 import org.mozilla.javascript.ScriptableObject;
 
 public class WebSocketClientFactory extends ScriptableObject
 {
-    private org.eclipse.jetty.websocket.WebSocketClientFactory factory;
+    private org.eclipse.jetty.websocket.client.WebSocketClientFactory factory;
     private QueuedThreadPool threadPool;
 
     public WebSocketClientFactory()
@@ -41,19 +41,18 @@ public class WebSocketClientFactory extends ScriptableObject
     public void start() throws Exception
     {
         threadPool = new QueuedThreadPool();
-        threadPool.start();
-        factory = new org.eclipse.jetty.websocket.WebSocketClientFactory(threadPool, new ZeroMaskGen());
+        factory = new org.eclipse.jetty.websocket.client.WebSocketClientFactory(threadPool);
+        factory.setMasker(new ZeroMasker());
         factory.start();
     }
 
     public void stop() throws Exception
     {
         factory.stop();
-        threadPool.stop();
     }
 
-    public org.eclipse.jetty.websocket.WebSocketClient newWebSocketClient()
+    public org.eclipse.jetty.websocket.client.WebSocketClient newWebSocketClient(Object target)
     {
-        return factory.newWebSocketClient();
+        return factory.newWebSocketClient(target);
     }
 }

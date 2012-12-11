@@ -935,7 +935,7 @@ var window = this;
 
                 var absolute = /^https?:\/\//.test(url);
                 var absoluteURL = absolute ? url : window.location.href + url;
-                this._exchange = new XMLHttpRequestExchange(cookies, threadModel, this, method, absoluteURL, async);
+                this._exchange = new XMLHttpRequestExchange(xhrClient, cookies, threadModel, this, method, absoluteURL, async);
             },
             setRequestHeader: function(header, value)
             {
@@ -948,7 +948,7 @@ var window = this;
                 if (this.readyState !== XMLHttpRequest.OPENED) throw 'INVALID_STATE_ERR';
                 if (this._exchange.method == 'GET') data = null;
                 if (data) this._exchange.setRequestContent(data);
-                xhrClient.send(this._exchange);
+                this._exchange.send();
             },
             abort: function()
             {

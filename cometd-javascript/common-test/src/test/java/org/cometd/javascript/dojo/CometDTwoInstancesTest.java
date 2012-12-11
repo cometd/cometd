@@ -34,7 +34,7 @@ public class CometDTwoInstancesTest extends AbstractCometDTest
         Latch handshakeLatch2 = get("handshakeLatch2");
 
         evaluateScript("" +
-                "var cometd2 = new dojox.Cometd('dojo');" +
+                "var cometd2 = new dojox.CometD('dojo');" +
                 "var jsonpTransport = cometd2.unregisterTransport('long-polling');" +
                 "" +
                 "/* Check that the other cometd object has not been influenced */" +

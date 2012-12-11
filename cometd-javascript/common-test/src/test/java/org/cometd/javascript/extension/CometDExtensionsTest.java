@@ -231,14 +231,14 @@ public class CometDExtensionsTest extends AbstractCometDTest
                        "});");
         Object extName = get("n");
         Assert.assertNotNull(extName);
-        Object extCometd = get("c");
-        Assert.assertNotNull(extCometd);
+        Object extCometD = get("c");
+        Assert.assertNotNull(extCometD);
 
         evaluateScript("cometd.unregisterExtension('ext1');");
         extName = get("n");
         Assert.assertNull(extName);
-        extCometd = get("c");
-        Assert.assertNull(extCometd);
+        extCometD = get("c");
+        Assert.assertNull(extCometD);
     }
 
     public static class Listener extends ScriptableObject

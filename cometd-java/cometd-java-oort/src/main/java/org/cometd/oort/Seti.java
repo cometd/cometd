@@ -65,8 +65,8 @@ public class Seti extends AbstractLifeCycle
     public static final String SETI_ATTRIBUTE = Seti.class.getName();
     private static final String SETI_ALL_CHANNEL = "/seti/all";
 
-    private final Map<String, Set<Location>> _uid2Location = new HashMap<String, Set<Location>>();
-    private final List<PresenceListener> listeners = new CopyOnWriteArrayList<PresenceListener>();
+    private final Map<String, Set<Location>> _uid2Location = new HashMap<>();
+    private final List<PresenceListener> _listeners = new CopyOnWriteArrayList<>();
     private final Logger _logger;
     private final Oort _oort;
     private final String _setiId;
@@ -210,7 +210,7 @@ public class Seti extends AbstractLifeCycle
             {
                 debug("Broadcasting presence addition for user {}", userId);
                 // Let everyone in the cluster know that this session is here
-                _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, true), null);
+                _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, true));
             }
         }
 
@@ -224,7 +224,7 @@ public class Seti extends AbstractLifeCycle
             Set<Location> locations = _uid2Location.get(userId);
             if (locations == null)
             {
-                locations = new HashSet<Location>();
+                locations = new HashSet<>();
                 _uid2Location.put(userId, locations);
             }
             boolean result = locations.add(location);
@@ -301,7 +301,7 @@ public class Seti extends AbstractLifeCycle
         {
             debug("Broadcasting presence removal for user {}", userId);
             // Let everyone in the cluster know that this session is not here anymore
-            _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, false), null);
+            _oort.getBayeuxServer().getChannel(SETI_ALL_CHANNEL).publish(_session, new SetiPresence(userId, false));
         }
 
         return removed;
@@ -348,7 +348,7 @@ public class Seti extends AbstractLifeCycle
     {
         for (String toUserId : toUserIds)
         {
-            Set<Location> copy = new HashSet<Location>();
+            Set<Location> copy = new HashSet<>();
             synchronized (_uid2Location)
             {
                 Set<Location> locations = _uid2Location.get(toUserId);
@@ -429,12 +429,12 @@ public class Seti extends AbstractLifeCycle
 
     public void addPresenceListener(PresenceListener listener)
     {
-        listeners.add(listener);
+        _listeners.add(listener);
     }
 
     public void removePresenceListener(PresenceListener listener)
     {
-        listeners.remove(listener);
+        _listeners.remove(listener);
     }
 
     private void notifyPresenceAdded(Map<String, Object> presence)
@@ -442,7 +442,7 @@ public class Seti extends AbstractLifeCycle
         String userId = (String)presence.get(SetiPresence.USER_ID_FIELD);
         String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
         PresenceListener.Event event = new PresenceListener.Event(this, userId, oortURL);
-        for (PresenceListener listener : listeners)
+        for (PresenceListener listener : _listeners)
         {
             try
             {
@@ -460,7 +460,7 @@ public class Seti extends AbstractLifeCycle
         String userId = (String)presence.get(SetiPresence.USER_ID_FIELD);
         String oortURL = (String)presence.get(SetiPresence.OORT_URL_FIELD);
         PresenceListener.Event event = new PresenceListener.Event(this, userId, oortURL);
-        for (PresenceListener listener : listeners)
+        for (PresenceListener listener : _listeners)
         {
             try
             {
@@ -485,7 +485,7 @@ public class Seti extends AbstractLifeCycle
         String channel = (String)messageData.get(SetiMessage.CHANNEL_FIELD);
         Object data = messageData.get(SetiMessage.DATA_FIELD);
 
-        Set<Location> copy = new HashSet<Location>();
+        Set<Location> copy = new HashSet<>();
         synchronized (_uid2Location)
         {
             Set<Location> locations = _uid2Location.get(userId);

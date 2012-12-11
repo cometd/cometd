@@ -35,7 +35,7 @@ import org.cometd.websocket.client.WebSocketTransport;
  */
 public class OortComet extends BayeuxClient
 {
-    private final ConcurrentMap<String, ClientSessionChannel.MessageListener> _subscriptions = new ConcurrentHashMap<String, ClientSessionChannel.MessageListener>();
+    private final ConcurrentMap<String, ClientSessionChannel.MessageListener> _subscriptions = new ConcurrentHashMap<>();
     private final Oort _oort;
     private final String _cometURL;
     private volatile boolean _subscriptionsAllowed;
@@ -145,7 +145,7 @@ public class OortComet extends BayeuxClient
                     _subscriptionsAllowed = true;
                     subscribe(_oort.getObservedChannels());
 
-                    getChannel(Oort.OORT_CLOUD_CHANNEL).publish(new ArrayList<String>(_oort.getKnownComets()));
+                    getChannel(Oort.OORT_CLOUD_CHANNEL).publish(new ArrayList<>(_oort.getKnownComets()));
                 }
             });
         }

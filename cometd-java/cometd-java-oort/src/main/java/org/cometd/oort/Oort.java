@@ -54,11 +54,11 @@ import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.websocket.WebSocketClientFactory;
+import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +78,7 @@ import org.slf4j.LoggerFactory;
  * @see OortMulticastConfigServlet
  * @see OortStaticConfigServlet
  */
-public class Oort extends AggregateLifeCycle
+public class Oort extends ContainerLifeCycle
 {
     public final static String OORT_ATTRIBUTE = Oort.class.getName();
     public static final String EXT_OORT_FIELD = "org.cometd.oort";
@@ -90,11 +90,11 @@ public class Oort extends AggregateLifeCycle
     public static final String OORT_CLOUD_CHANNEL = "/oort/cloud";
     private static final String COMET_URL_ATTRIBUTE = EXT_OORT_FIELD + "." + EXT_COMET_URL_FIELD;
 
-    private final ConcurrentMap<String, OortComet> _pendingComets = new ConcurrentHashMap<String, OortComet>();
-    private final ConcurrentMap<String, ClientCometInfo> _clientComets = new ConcurrentHashMap<String, ClientCometInfo>();
-    private final ConcurrentMap<String, ServerCometInfo> _serverComets = new ConcurrentHashMap<String, ServerCometInfo>();
-    private final ConcurrentMap<String, Boolean> _channels = new ConcurrentHashMap<String, Boolean>();
-    private final CopyOnWriteArrayList<CometListener> _cometListeners = new CopyOnWriteArrayList<CometListener>();
+    private final ConcurrentMap<String, OortComet> _pendingComets = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ClientCometInfo> _clientComets = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ServerCometInfo> _serverComets = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Boolean> _channels = new ConcurrentHashMap<>();
+    private final CopyOnWriteArrayList<CometListener> _cometListeners = new CopyOnWriteArrayList<>();
     private final Extension _oortExtension = new OortExtension();
     private final ServerChannel.MessageListener _cloudListener = new CloudListener();
     private final BayeuxServer _bayeux;
@@ -137,7 +137,7 @@ public class Oort extends AggregateLifeCycle
         if (_httpClient == null)
         {
             _httpClient = new HttpClient();
-            _httpClient.setThreadPool(_threadPool);
+            _httpClient.setExecutor(_threadPool);
         }
         addBean(_httpClient);
 
@@ -323,7 +323,7 @@ public class Oort extends AggregateLifeCycle
         String b64Secret = encodeSecret(getSecret());
         Message.Mutable fields = new HashMapMessage();
         Map<String, Object> ext = fields.getExt(true);
-        Map<String, Object> oortExt = new HashMap<String, Object>(4);
+        Map<String, Object> oortExt = new HashMap<>(4);
         ext.put(EXT_OORT_FIELD, oortExt);
         oortExt.put(EXT_OORT_URL_FIELD, getURL());
         oortExt.put(EXT_OORT_ID_FIELD, getId());
@@ -410,7 +410,7 @@ public class Oort extends AggregateLifeCycle
      */
     public Set<String> getKnownComets()
     {
-        Set<String> result = new HashSet<String>();
+        Set<String> result = new HashSet<>();
         for (ClientCometInfo cometInfo : _clientComets.values())
             result.add(cometInfo.getURL());
         return result;
@@ -654,7 +654,7 @@ public class Oort extends AggregateLifeCycle
                     // that the connection "succeeded" from the Oort point of view, but
                     // we add the advice information to drop it because if it already exists.
                     Map<String, Object> ext = message.getExt(true);
-                    Map<String, Object> oortExt = new HashMap<String, Object>(2);
+                    Map<String, Object> oortExt = new HashMap<>(2);
                     ext.put(EXT_OORT_FIELD, oortExt);
                     oortExt.put(EXT_OORT_URL_FIELD, getURL());
                     oortExt.put(EXT_OORT_ID_FIELD, getId());
@@ -758,7 +758,7 @@ public class Oort extends AggregateLifeCycle
 
     public Set<String> getObservedChannels()
     {
-        return new HashSet<String>(_channels.keySet());
+        return new HashSet<>(_channels.keySet());
     }
 
     /**
@@ -910,7 +910,7 @@ public class Oort extends AggregateLifeCycle
     protected static class ClientCometInfo extends CometInfo
     {
         private final OortComet comet;
-        private final Map<String, Boolean> urls = new ConcurrentHashMap<String, Boolean>();
+        private final Map<String, Boolean> urls = new ConcurrentHashMap<>();
 
         protected ClientCometInfo(String id, String url, OortComet comet)
         {
@@ -989,7 +989,7 @@ public class Oort extends AggregateLifeCycle
                     }
 
                     if (message.isSuccessful())
-                        getLogger().info("Connected to comet {} as {} with {}/{}", new Object[]{url, cometURL, message.getClientId(), oortComet.getTransport()});
+                        getLogger().info("Connected to comet {} as {} with {}/{}", url, cometURL, message.getClientId(), oortComet.getTransport());
                 }
             }
 

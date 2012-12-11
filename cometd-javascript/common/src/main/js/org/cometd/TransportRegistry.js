@@ -1,5 +1,5 @@
 /**
- * A registry for transports used by the Cometd object.
+ * A registry for transports used by the CometD object.
  */
 org.cometd.TransportRegistry = function()
 {

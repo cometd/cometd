@@ -30,9 +30,6 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
 
-/**
- *
- */
 public class ConsoleChatClient
 {
     public static void main(String[] args) throws IOException
@@ -84,7 +81,7 @@ public class ConsoleChatClient
             String text = input.readLine();
             if (text == null || "\\q".equals(text))
             {
-                Map<String, Object> data = new HashMap<String, Object>();
+                Map<String, Object> data = new HashMap<>();
                 data.put("user", nickname);
                 data.put("membership", "leave");
                 data.put("chat", nickname + " has left");
@@ -93,7 +90,7 @@ public class ConsoleChatClient
                 break;
             }
 
-            Map<String, Object> data = new HashMap<String, Object>();
+            Map<String, Object> data = new HashMap<>();
             data.put("user", nickname);
             data.put("chat", text);
             client.getChannel("/chat/demo").publish(data);
@@ -112,7 +109,7 @@ public class ConsoleChatClient
                 ClientSessionChannel membersChannel = client.getChannel("/members/demo");
                 membersChannel.subscribe(membersListener);
 
-                Map<String, Object> data = new HashMap<String, Object>();
+                Map<String, Object> data = new HashMap<>();
                 data.put("user", nickname);
                 data.put("membership", "join");
                 data.put("chat", nickname + " has joined");
@@ -124,7 +121,7 @@ public class ConsoleChatClient
     private void connectionEstablished()
     {
         System.err.printf("system: Connection to Server Opened%n");
-        Map<String, Object> data = new HashMap<String, Object>();
+        Map<String, Object> data = new HashMap<>();
         data.put("user", nickname);
         data.put("room", "/chat/demo");
         client.getChannel("/service/members").publish(data);

@@ -45,7 +45,7 @@ import org.cometd.server.filter.NoMarkupFilter;
 @Service("chat")
 public class ChatService
 {
-    private final ConcurrentMap<String, Map<String, String>> _members = new ConcurrentHashMap<String, Map<String, String>>();
+    private final ConcurrentMap<String, Map<String, String>> _members = new ConcurrentHashMap<>();
     @Inject
     private BayeuxServer _bayeux;
     @Session
@@ -74,7 +74,7 @@ public class ChatService
         Map<String, String> roomMembers = _members.get(room);
         if (roomMembers == null)
         {
-            Map<String, String> new_room = new ConcurrentHashMap<String, String>();
+            Map<String, String> new_room = new ConcurrentHashMap<>();
             roomMembers = _members.putIfAbsent(room, new_room);
             if (roomMembers == null) roomMembers = new_room;
         }
@@ -117,13 +117,13 @@ public class ChatService
         Map<String, String> membersMap = _members.get(room);
         if (membersMap==null)
         {
-            Map<String,String>new_room=new ConcurrentHashMap<String, String>();
+            Map<String,String>new_room=new ConcurrentHashMap<>();
             membersMap=_members.putIfAbsent(room,new_room);
             if (membersMap==null)
                 membersMap=new_room;
         }
         String[] peerNames = ((String)data.get("peer")).split(",");
-        ArrayList<ServerSession> peers = new ArrayList<ServerSession>(peerNames.length);
+        ArrayList<ServerSession> peers = new ArrayList<>(peerNames.length);
 
         for (String peerName : peerNames)
         {
@@ -138,7 +138,7 @@ public class ChatService
 
         if (peers.size() > 0)
         {
-            Map<String, Object> chat = new HashMap<String, Object>();
+            Map<String, Object> chat = new HashMap<>();
             String text=(String)data.get("chat");
             chat.put("chat", text);
             chat.put("user", data.get("user"));
@@ -164,7 +164,7 @@ public class ChatService
         @Override
         protected Object filterString(String string)
         {
-            if (string.indexOf("dang")>=0)
+            if (string.contains("dang"))
                 throw new DataFilter.Abort();
             return string;
         }

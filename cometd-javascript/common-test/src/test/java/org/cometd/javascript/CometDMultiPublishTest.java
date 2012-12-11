@@ -18,11 +18,13 @@ package org.cometd.javascript;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -33,7 +35,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
 import org.junit.Test;
@@ -47,7 +48,7 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest
         super.customizeContext(context);
         PublishThrowingFilter filter = new PublishThrowingFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
+        context.addFilter(filterHolder, cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
     @Test

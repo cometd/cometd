@@ -28,38 +28,28 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.server.CometdServlet;
+import org.cometd.server.CometDServlet;
 import org.cometd.websocket.server.WebSocketTransport;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.junit.After;
 import org.junit.Rule;
-import org.junit.rules.TestWatchman;
-import org.junit.runners.model.FrameworkMethod;
 
 public abstract class OortTest
 {
     @Rule
-    public final TestWatchman testName = new TestWatchman()
-    {
-        @Override
-        public void starting(FrameworkMethod method)
-        {
-            super.starting(method);
-            System.err.printf("Running %s.%s%n", method.getMethod().getDeclaringClass().getName(), method.getName());
-        }
-    };
-    private final List<Server> servers = new ArrayList<Server>();
-    private final List<Oort> oorts = new ArrayList<Oort>();
-    private final List<BayeuxClient> clients = new ArrayList<BayeuxClient>();
+    public final TestTracker testName = new TestTracker();
+    private final List<Server> servers = new ArrayList<>();
+    private final List<Oort> oorts = new ArrayList<>();
+    private final List<BayeuxClient> clients = new ArrayList<>();
 
     protected Server startServer(int port) throws Exception
     {
         Server server = new Server();
-        Connector connector = new SelectChannelConnector();
+        ServerConnector connector = new ServerConnector(server);
         connector.setPort(port);
         server.addConnector(connector);
 
@@ -67,7 +57,7 @@ public abstract class OortTest
         ServletContextHandler context = new ServletContextHandler(server, contextPath);
 
         // CometD servlet
-        ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
+        ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
         if (Boolean.getBoolean("debugTests"))

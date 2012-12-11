@@ -91,7 +91,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     }
 
     //private final WebSocket _websocket = new CometDWebSocket();
-    private final Map<String, WebSocketExchange> _metaExchanges = new ConcurrentHashMap<String, WebSocketExchange>();
+    private final Map<String, WebSocketExchange> _metaExchanges = new ConcurrentHashMap<>();
     private final WebSocketClientFactory _webSocketClientFactory;
     private volatile ScheduledExecutorService _scheduler;
     private volatile boolean _shutdownScheduler;
@@ -273,7 +273,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             debug("Opening websocket connection to {}", uri);
 
             // Prepare the cookies
-            Map<String, String> cookies = new HashMap<String, String>();
+            Map<String, String> cookies = new HashMap<>();
             for (Cookie cookie : getCookieProvider().getCookies())
                 cookies.put(cookie.getName(), cookie.getValue());
 
@@ -433,7 +433,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     private void failMessages(Throwable cause)
     {
-        List<WebSocketExchange> exchanges = new ArrayList<WebSocketExchange>(_metaExchanges.values());
+        List<WebSocketExchange> exchanges = new ArrayList<>(_metaExchanges.values());
         for (WebSocketExchange exchange : exchanges)
         {
             deregisterMessage(exchange.message);

@@ -49,7 +49,7 @@ import org.cometd.server.filter.NoMarkupFilter;
 @Service("chat")
 public class OortChatService
 {
-    private final ConcurrentMap<String, Set<String>> _members = new ConcurrentHashMap<String, Set<String>>();
+    private final ConcurrentMap<String, Set<String>> _members = new ConcurrentHashMap<>();
     @Inject
     private BayeuxServer _bayeux;
     @Inject
@@ -105,7 +105,7 @@ public class OortChatService
         Set<String> members = _members.get(room);
         if (members == null)
         {
-            Set<String> newMembers = new HashSet<String>();
+            Set<String> newMembers = new HashSet<>();
             members = _members.putIfAbsent(room, newMembers);
             if (members == null)
                 members = newMembers;

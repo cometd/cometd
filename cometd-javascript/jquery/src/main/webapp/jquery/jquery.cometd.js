@@ -107,9 +107,9 @@
             return that;
         }
 
-        $.Cometd = function(name)
+        $.CometD = function(name)
         {
-            var cometd = new org_cometd.Cometd(name);
+            var cometd = new org_cometd.CometD(name);
 
             // Registration order is important
             if (org_cometd.WebSocket)
@@ -123,7 +123,7 @@
         };
 
         // The default cometd instance
-        $.cometd = new $.Cometd();
+        $.cometd = new $.CometD();
 
         return $.cometd;
     }

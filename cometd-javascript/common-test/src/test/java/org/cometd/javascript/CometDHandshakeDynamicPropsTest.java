@@ -17,6 +17,8 @@
 package org.cometd.javascript;
 
 import java.io.IOException;
+import java.util.EnumSet;
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -28,7 +30,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Assert;
 import org.junit.Test;
@@ -43,7 +44,7 @@ public class CometDHandshakeDynamicPropsTest extends AbstractCometDLongPollingTe
         super.customizeContext(context);
         filter = new BayeuxFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
+        context.addFilter(filterHolder, cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
     @Test

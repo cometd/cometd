@@ -16,8 +16,10 @@
 
 package org.cometd.javascript;
 
+import java.util.EnumSet;
+import javax.servlet.DispatcherType;
+
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.junit.Assert;
@@ -31,16 +33,16 @@ public class CometDCrossOriginTest extends AbstractCometDTest
         super.customizeContext(context);
         CrossOriginFilter filter = new CrossOriginFilter();
         FilterHolder filterHolder = new FilterHolder(filter);
-        context.addFilter(filterHolder, cometServletPath + "/*", FilterMapping.REQUEST);
+        context.addFilter(filterHolder, cometServletPath + "/*", EnumSet.of(DispatcherType.REQUEST));
     }
 
     @Test
     public void testCrossOriginSupported() throws Exception
     {
         defineClass(Latch.class);
-        String crossOriginCometdURL = cometdURL.replace("localhost", "127.0.0.1");
+        String crossOriginCometDURL = cometdURL.replace("localhost", "127.0.0.1");
         evaluateScript("cometd.configure({" +
-                       "url: '" + crossOriginCometdURL + "', " +
+                       "url: '" + crossOriginCometDURL + "', " +
                        "requestHeaders: { Origin: 'http://localhost:8080' }, " +
                        "logLevel: '" + getLogLevel() + "'" +
                        "});");

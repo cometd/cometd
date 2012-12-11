@@ -21,11 +21,11 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.CometdServlet;
+import org.cometd.server.CometDServlet;
 import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -78,7 +78,7 @@ public abstract class AbstractCometDTest
         cookies = new HttpCookieStore();
 
         server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector();
+        ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
         HandlerCollection handlers = new HandlerCollection();
@@ -91,7 +91,7 @@ public abstract class AbstractCometDTest
         context.addServlet(DefaultServlet.class, "/");
 
         // Setup CometD servlet
-        CometdServlet cometdServlet = new CometdServlet();
+        CometDServlet cometdServlet = new CometDServlet();
         ServletHolder cometServletHolder = new ServletHolder(cometdServlet);
         cometServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
         cometServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
@@ -165,6 +165,7 @@ public abstract class AbstractCometDTest
         {
             ScriptableObject rootScope = jsContext.initStandardObjects();
 
+            // TODO: not needed now that HttpClient supports cookies
             ScriptableObject.defineClass(rootScope, HttpCookieStore.class);
             jsContext.evaluateString(rootScope, "var cookies = new HttpCookieStore();", "cookies", 1, null);
             HttpCookieStore cookies = (HttpCookieStore)rootScope.get("cookies", rootScope);

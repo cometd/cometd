@@ -19,10 +19,10 @@ package com.webtide.demo.auction;
 import org.cometd.oort.Oort;
 import org.cometd.oort.OortStaticConfigServlet;
 import org.cometd.oort.SetiServlet;
-import org.cometd.server.CometdServlet;
+import org.cometd.server.CometDServlet;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
@@ -36,59 +36,47 @@ import org.webtide.demo.auction.AuctionServlet;
  */
 public class AuctionDemo
 {
-    private static int _testHandshakeFailure;
-    private Oort _oort;
-
-    /**
-     * @param args
-     */
     public static void main(String[] args) throws Exception
     {
-        AuctionDemo d8080=new AuctionDemo(8080);
-        // AuctionDemo d8081=new AuctionDemo(8081);
+        new AuctionDemo(8080);
     }
 
     public AuctionDemo(int port) throws Exception
     {
-        String base=".";
+        String base = ".";
 
-        // Manually contruct context to avoid hassles with webapp classloaders for now.
-        Server server = new Server();
         QueuedThreadPool qtp = new QueuedThreadPool();
         qtp.setMinThreads(5);
         qtp.setMaxThreads(200);
-        server.setThreadPool(qtp);
+        Server server = new Server(qtp);
 
-        SelectChannelConnector connector=new SelectChannelConnector();
-        // SocketConnector connector=new SocketConnector();
+        ServerConnector connector = new ServerConnector(server);
         connector.setPort(port);
         server.addConnector(connector);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
 
-        ServletContextHandler context = new ServletContextHandler(contexts,"/",ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
 
-        context.setBaseResource(new ResourceCollection(new Resource[]
-        {
-            Resource.newResource(base+"/src/main/webapp/"),
-            Resource.newResource(base+"/target/cometd-demo-2.0.beta1-SNAPSHOT/"),
-        }));
+        context.setBaseResource(new ResourceCollection(
+                Resource.newResource(base + "/src/main/webapp/"),
+                Resource.newResource(base + "/target/cometd-demo-2.0.beta1-SNAPSHOT/"))
+        );
 
-        // Cometd servlet
-        ServletHolder cometd_holder = new ServletHolder(CometdServlet.class);
-        cometd_holder.setInitParameter("timeout","200000");
-        cometd_holder.setInitParameter("interval","100");
-        cometd_holder.setInitParameter("maxInterval","100000");
-        cometd_holder.setInitParameter("multiFrameInterval","1500");
-        cometd_holder.setInitParameter("directDeliver","true");
-        cometd_holder.setInitParameter("logLevel","0");
+        // CometD servlet
+        ServletHolder cometd_holder = new ServletHolder(CometDServlet.class);
+        cometd_holder.setInitParameter("timeout", "200000");
+        cometd_holder.setInitParameter("interval", "100");
+        cometd_holder.setInitParameter("maxInterval", "100000");
+        cometd_holder.setInitParameter("multiSessionInterval", "1500");
+        cometd_holder.setInitParameter("logLevel", "0");
         cometd_holder.setInitOrder(1);
         context.addServlet(cometd_holder, "/cometd/*");
 
         ServletHolder oort_holder = new ServletHolder(OortStaticConfigServlet.class);
-        oort_holder.setInitParameter(OortStaticConfigServlet.OORT_URL_PARAM,"http://localhost:"+port+"/cometd");
-        oort_holder.setInitParameter(OortStaticConfigServlet.OORT_CLOUD_PARAM,"");
+        oort_holder.setInitParameter(OortStaticConfigServlet.OORT_URL_PARAM, "http://localhost:" + port + "/cometd");
+        oort_holder.setInitParameter(OortStaticConfigServlet.OORT_CLOUD_PARAM, "");
         // oort_holder.setInitParameter(OortStaticConfigServlet.OORT_CLOUD_PARAM,(port==8080)?"http://localhost:"+8081+"/cometd":"http://localhost:"+8080+"/cometd");
         oort_holder.setInitOrder(2);
         context.addServlet(oort_holder, "/oort/*");
@@ -105,8 +93,7 @@ public class AuctionDemo
 
         server.start();
 
-        _oort = (Oort)context.getServletContext().getAttribute(Oort.OORT_ATTRIBUTE);
-        assert(_oort!=null);
-
+        Oort oort = (Oort)context.getServletContext().getAttribute(Oort.OORT_ATTRIBUTE);
+        assert (oort != null);
     }
 }
