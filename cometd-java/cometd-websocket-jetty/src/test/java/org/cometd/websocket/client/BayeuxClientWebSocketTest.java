@@ -142,7 +142,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         final CountDownLatch connectLatch = new CountDownLatch(2);
         WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsFactory);
         webSocketTransport.setOption(WebSocketTransport.CONNECT_TIMEOUT_OPTION, 1000L);
-        webSocketTransport.setDebugEnabled(debugTests());
+        webSocketTransport.setDebugEnabled(true);
         LongPollingTransport longPollingTransport = LongPollingTransport.create(null, httpClient);
         longPollingTransport.setDebugEnabled(debugTests());
         final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
@@ -182,7 +182,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         Assert.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
 
-        // FIXME connector.setPort(port);
+        connector.setPort(port);
         startServer();
 
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));

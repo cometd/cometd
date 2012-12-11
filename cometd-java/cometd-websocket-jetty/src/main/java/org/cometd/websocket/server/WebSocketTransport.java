@@ -17,6 +17,7 @@
 package org.cometd.websocket.server;
 
 import java.io.IOException;
+import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.text.ParseException;
@@ -32,6 +33,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -679,49 +681,49 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
 
     protected class WebSocketContext implements BayeuxContext
     {
-        //private final Principal _principal;
+        private final Principal _principal;
         //private final InetSocketAddress _local;
         //private final InetSocketAddress _remote;
         private final Map<String, List<String>> _headers = new HashMap<String, List<String>>();
-        //private final Map<String, List<String>> _parameters = new HashMap<String, List<String>>();
-        //private final Map<String, Object> _attributes = new HashMap<String, Object>();
-        //private final Map<String, String> _cookies = new HashMap<String, String>();
+        private final Map<String, List<String>> _parameters = new HashMap<String, List<String>>();
+        private final Map<String, Object> _attributes = new HashMap<String, Object>();
+        private final Map<String, String> _cookies = new HashMap<String, String>();
         private final HttpSession _session;
-        //private final ServletContext _context;
-        //private final String _url;
+        private final ServletContext _context;
+        private final String _url;
+        private final String _origin;
 
         @SuppressWarnings("unchecked")
         public WebSocketContext(ServletWebSocketRequest request)
         {
+            _principal = request.getPrincipal();
+
 //            _local = new InetSocketAddress(request.getLocalAddr(), request.getLocalPort());
 //            _remote = new InetSocketAddress(request.getRemoteAddr(), request.getRemotePort());
 //
             for (String name : request.getHeaders().keySet())
+            {
                 _headers.put(name, request.getHeaders(name));
-//
-//            for (String name : Collections.list((Enumeration<String>)request.getParameterNames()))
-//                _parameters.put(name, Collections.unmodifiableList(Arrays.asList(request.getParameterValues(name))));
-//
-//            for (String name : Collections.list((Enumeration<String>)request.getAttributeNames()))
-//                _attributes.put(name, request.getAttribute(name));
-//
-//            Cookie[] cookies = request.getCookies();
-//            if (cookies != null)
-//            {
-//                for (Cookie c : cookies)
-//                    _cookies.put(c.getName(), c.getValue());
-//            }
-//
-              //_principal = request.
-//
-              _session = (HttpSession)request.getSession();
-//            if (_session != null)
-//            {
-//                _context = _session.getServletContext();
-//            }
-//            else
-//            {
-//                ServletContext context = null;
+            }
+
+            _parameters.putAll(request.getServletParameters());
+            _attributes.putAll(request.getServletAttributes());
+
+            List<HttpCookie> cookies = request.getCookies();
+            if (cookies != null)
+            {
+                for (HttpCookie c : cookies)
+                    _cookies.put(c.getName(), c.getValue());
+            }
+
+            _session = (HttpSession)request.getSession();
+            if (_session != null)
+            {
+                _context = _session.getServletContext();
+            }
+            else
+            {
+                ServletContext context = null;
 //                try
 //                {
 //                    HttpSession s = request.getSession(true);
@@ -734,200 +736,137 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
 //                }
 //                finally
 //                {
-//                    _context = context;
+                    _context = context;
 //                }
-//            }
-//
-//            StringBuffer url = request.getRequestURL();
-//            String query = request.getQueryString();
-//            if (query != null)
-//                url.append("?").append(query);
-//            this._url = url.toString();
+            }
+
+            StringBuffer url = request.getRequestURL();
+            String query = request.getQueryString();
+
+            if (query != null)
+                url.append("?").append(query);
+
+            this._url = url.toString();
+
+            _origin = request.getOrigin();
         }
 
+        /**
+         * Note: the principal may be null
+         */
+        @Override
         public Principal getUserPrincipal()
         {
-            return null;//_principal;
+            return _principal;
         }
 
+        @Override
         public boolean isUserInRole(String role)
         {
             HttpServletRequest request = WebSocketTransport.this.getCurrentRequest();
             return request != null && request.isUserInRole(role);
         }
 
-        @Override
-        public InetSocketAddress getRemoteAddress()
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
 
         @Override
-        public InetSocketAddress getLocalAddress()
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-
-        @Override
-        public String getParameter(String name)
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public List<String> getParameterValues(String name)
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public String getCookie(String name)
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public String getHttpSessionId()
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Object getHttpSessionAttribute(String name)
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public void setHttpSessionAttribute(String name, Object value)
-        {
-            // TODO Auto-generated method stub
-
-        }
-
-        @Override
-        public void invalidateHttpSession()
-        {
-            // TODO Auto-generated method stub
-
-        }
-
-        @Override
-        public Object getRequestAttribute(String name)
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Object getContextAttribute(String name)
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public String getContextInitParameter(String name)
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public String getURL()
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-//        public InetSocketAddress getRemoteAddress()
-//        {
-//            return _remote;
-//        }
-//
-//        public InetSocketAddress getLocalAddress()
-//        {
-//            return _local;
-//        }
-//
         public String getHeader(String name)
         {
             List<String> headers = _headers.get(name);
             return headers != null && headers.size() > 0 ? headers.get(0) : null;
         }
 
+        @Override
         public List<String> getHeaderValues(String name)
         {
             return _headers.get(name);
         }
 
-//        public String getParameter(String name)
-//        {
-//            List<String> params = _parameters.get(name);
-//            return params != null && params.size() > 0 ? params.get(0) : null;
-//        }
-//
-//        public List<String> getParameterValues(String name)
-//        {
-//            return _parameters.get(name);
-//        }
-//
-//        public String getCookie(String name)
-//        {
-//            return _cookies.get(name);
-//        }
-//
-//        public String getHttpSessionId()
-//        {
-//            return _session == null ? null : _session.getId();
-//        }
-//
-//        public Object getHttpSessionAttribute(String name)
-//        {
-//            return _session == null ? null : _session.getAttribute(name);
-//        }
-//
-//        public void setHttpSessionAttribute(String name, Object value)
-//        {
-//            if (_session != null)
-//                _session.setAttribute(name, value);
-//            else
-//                throw new IllegalStateException("!session");
-//        }
-//
-//        public void invalidateHttpSession()
-//        {
-//            if (_session != null)
-//                _session.invalidate();
-//        }
-//
-//        public Object getRequestAttribute(String name)
-//        {
-//            return _attributes.get(name);
-//        }
-//
-//        public Object getContextAttribute(String name)
-//        {
-//            return _context.getAttribute(name);
-//        }
-//
-//        public String getContextInitParameter(String name)
-//        {
-//            return _context.getInitParameter(name);
-//        }
-//
-//        public String getURL()
-//        {
-//            return _url;
-//        }
+        public String getParameter(String name)
+        {
+            List<String> params = _parameters.get(name);
+            return params != null && params.size() > 0 ? params.get(0) : null;
+        }
+
+        @Override
+        public List<String> getParameterValues(String name)
+        {
+            return _parameters.get(name);
+        }
+
+        @Override
+        public String getCookie(String name)
+        {
+            return _cookies.get(name);
+        }
+
+        @Override
+        public String getHttpSessionId()
+        {
+            return _session == null ? null : _session.getId();
+        }
+
+        @Override
+        public Object getHttpSessionAttribute(String name)
+        {
+            return _session == null ? null : _session.getAttribute(name);
+        }
+
+        @Override
+        public void setHttpSessionAttribute(String name, Object value)
+        {
+            if (_session != null)
+                _session.setAttribute(name, value);
+            else
+                throw new IllegalStateException("!session");
+        }
+
+        @Override
+        public void invalidateHttpSession()
+        {
+            if (_session != null)
+                _session.invalidate();
+        }
+
+        @Override
+        public Object getRequestAttribute(String name)
+        {
+            return _attributes.get(name);
+        }
+
+        @Override
+        public Object getContextAttribute(String name)
+        {
+            return _context.getAttribute(name);
+        }
+
+        @Override
+        public String getContextInitParameter(String name)
+        {
+            return _context.getInitParameter(name);
+        }
+
+        @Override
+        public String getURL()
+        {
+            return _url;
+        }
+
+        public String getOrigin()
+        {
+            return _origin;
+        }
+
+        @Override
+        public InetSocketAddress getRemoteAddress()
+        {
+            return null;
+        }
+
+        @Override
+        public InetSocketAddress getLocalAddress()
+        {
+            return null;
+        }
     }
 
 

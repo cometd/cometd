@@ -48,8 +48,7 @@ import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.websocket.WebSocketClientFactory;
-import org.eclipse.jetty.websocket.ZeroMaskGen;
+import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
 
 public class BayeuxLoadClient
 {
