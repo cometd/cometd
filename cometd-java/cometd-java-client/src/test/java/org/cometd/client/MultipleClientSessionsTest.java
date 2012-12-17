@@ -18,6 +18,7 @@ package org.cometd.client;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.HttpCookie;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -78,7 +79,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
         client1.handshake();
 
         assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
-        String cookie = client1.getCookie("BAYEUX_BROWSER");
+        HttpCookie cookie = client1.getCookie("BAYEUX_BROWSER");
         assertNotNull(cookie);
 
         // Give some time to the first client to establish the long poll before the second client
@@ -87,7 +88,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
         BayeuxClient client2 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
         final CountDownLatch latch2 = new CountDownLatch(1);
-        client2.setCookie("BAYEUX_BROWSER", cookie);
+        client2.putCookie(cookie);
         client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -151,7 +152,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
         });
         client1.handshake();
         assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
-        String cookie = client1.getCookie("BAYEUX_BROWSER");
+        HttpCookie cookie = client1.getCookie("BAYEUX_BROWSER");
         assertNotNull(cookie);
 
         // Give some time to the first client to establish the long poll before the second client
@@ -159,7 +160,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
 
         BayeuxClient client2 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
-        client2.setCookie("BAYEUX_BROWSER", cookie);
+        client2.putCookie(cookie);
         client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -174,7 +175,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
 
         BayeuxClient client3 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<>();
-        client3.setCookie("BAYEUX_BROWSER", cookie);
+        client3.putCookie(cookie);
         client3.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -294,7 +295,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
         });
         client1.handshake();
         assertTrue(client1.waitFor(5000, BayeuxClient.State.CONNECTED));
-        String cookie = client1.getCookie("BAYEUX_BROWSER");
+        HttpCookie cookie = client1.getCookie("BAYEUX_BROWSER");
         assertNotNull(cookie);
 
         // Give some time to the first client to establish the long poll before the second client
@@ -302,7 +303,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
 
         BayeuxClient client2 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects2 = new ConcurrentLinkedQueue<>();
-        client2.setCookie("BAYEUX_BROWSER", cookie);
+        client2.putCookie(cookie);
         client2.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -317,7 +318,7 @@ public class MultipleClientSessionsTest extends ClientServerTest
 
         BayeuxClient client3 = newBayeuxClient();
         final ConcurrentLinkedQueue<Message> connects3 = new ConcurrentLinkedQueue<>();
-        client3.setCookie("BAYEUX_BROWSER", cookie);
+        client3.putCookie(cookie);
         client3.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)

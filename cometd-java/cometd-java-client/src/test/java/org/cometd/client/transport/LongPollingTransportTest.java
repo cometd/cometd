@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.Message;
 import org.cometd.common.HashMapMessage;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.HttpCookieStore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -113,6 +114,7 @@ public class LongPollingTransportTest
                 final CountDownLatch latch = new CountDownLatch(1);
                 HttpClientTransport transport = new LongPollingTransport(null, httpClient);
                 transport.setURL(serverURL);
+                transport.setCookieStore(new HttpCookieStore());
                 transport.init();
 
                 long start = System.nanoTime();
@@ -192,6 +194,7 @@ public class LongPollingTransportTest
                 HttpClientTransport transport = new LongPollingTransport(null, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
+                transport.setCookieStore(new HttpCookieStore());
                 transport.init();
 
                 long start = System.nanoTime();
@@ -238,6 +241,7 @@ public class LongPollingTransportTest
             HttpClientTransport transport = new LongPollingTransport(null, httpClient);
             final CountDownLatch latch = new CountDownLatch(1);
             transport.setURL(serverURL);
+            transport.setCookieStore(new HttpCookieStore());
             transport.init();
 
             transport.send(new TransportListener.Empty()
@@ -296,6 +300,7 @@ public class LongPollingTransportTest
                 HttpClientTransport transport = new LongPollingTransport(null, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
+                transport.setCookieStore(new HttpCookieStore());
                 transport.init();
 
                 long start = System.nanoTime();
@@ -375,6 +380,7 @@ public class LongPollingTransportTest
                 HttpClientTransport transport = new LongPollingTransport(null, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
+                transport.setCookieStore(new HttpCookieStore());
                 transport.init();
 
                 transport.send(new TransportListener.Empty()

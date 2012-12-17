@@ -55,7 +55,6 @@ import org.eclipse.jetty.websocket.api.WebSocketConnection;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WriteResult;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -80,7 +79,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
     public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
 
     private WebSocketServerFactory _factory;// = new WebSocketServerFactory(new WebSocketPolicy(WebSocketBehavior.SERVER));
-    private final ThreadLocal<WebSocketContext> _handshake = new ThreadLocal<WebSocketContext>();
+    private final ThreadLocal<WebSocketContext> _handshake = new ThreadLocal<>();
     private String _protocol;
     private Executor _executor;
     private ScheduledExecutorService _scheduler;
@@ -116,16 +115,14 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
             @Override
             public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
             {
-                if ( req instanceof ServletWebSocketRequest )
+                if (req instanceof ServletWebSocketRequest)
                 {
                     WebSocketContext handshake = new WebSocketContext((ServletWebSocketRequest)req);
                     return new WebSocketScheduler(handshake, req.getHeader("User-Agent"));
                 }
-
                 return null;
             }
-        }
-        );
+        });
         _executor = newExecutor();
         _scheduler = newScheduledExecutor();
         try
@@ -192,8 +189,6 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        System.out.println("In WebSocketTransport, going to factory acceptWebSocket");
-
         if (!_factory.acceptWebSocket(request, response))
         {
             _logger.warn("Websocket not accepted");
@@ -267,7 +262,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
     protected void send(WebSocketConnection connection, String data) throws IOException
     {
         debug("Sending {}", data);
-        Future<WriteResult> result = connection.write(data);
+        Future<Void> result = connection.write(data);
 
         try
         {
@@ -295,7 +290,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
     public void onWebSocketClose(int statusCode, String reason)
     {
         // TODO Auto-generated method stub
-
+        System.out.println("statusCode = " + statusCode);
     }
 
     @Override
@@ -684,10 +679,10 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
         private final Principal _principal;
         //private final InetSocketAddress _local;
         //private final InetSocketAddress _remote;
-        private final Map<String, List<String>> _headers = new HashMap<String, List<String>>();
-        private final Map<String, List<String>> _parameters = new HashMap<String, List<String>>();
-        private final Map<String, Object> _attributes = new HashMap<String, Object>();
-        private final Map<String, String> _cookies = new HashMap<String, String>();
+        private final Map<String, List<String>> _headers = new HashMap<>();
+        private final Map<String, List<String>> _parameters = new HashMap<>();
+        private final Map<String, Object> _attributes = new HashMap<>();
+        private final Map<String, String> _cookies = new HashMap<>();
         private final HttpSession _session;
         private final ServletContext _context;
         private final String _url;
@@ -868,6 +863,4 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
             return null;
         }
     }
-
-
 }

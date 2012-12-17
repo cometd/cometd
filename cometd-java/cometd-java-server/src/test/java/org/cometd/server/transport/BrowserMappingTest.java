@@ -103,7 +103,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(200, response.getStatus());
 
         // Remove cookie
-        httpClient.getCookieStore().clear();
+        httpClient.getCookieStore().removeAll();
 
         long begin = System.nanoTime();
         Request connect2 = newBayeuxRequest("[{" +

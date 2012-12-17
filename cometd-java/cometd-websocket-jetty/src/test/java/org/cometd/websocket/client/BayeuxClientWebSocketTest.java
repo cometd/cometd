@@ -142,7 +142,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         final CountDownLatch connectLatch = new CountDownLatch(2);
         WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsFactory);
         webSocketTransport.setOption(WebSocketTransport.CONNECT_TIMEOUT_OPTION, 1000L);
-        webSocketTransport.setDebugEnabled(true);
+        webSocketTransport.setDebugEnabled(debugTests());
         LongPollingTransport longPollingTransport = LongPollingTransport.create(null, httpClient);
         longPollingTransport.setDebugEnabled(debugTests());
         final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
@@ -159,7 +159,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
             public void onFailure(Throwable x, Message[] messages)
             {
                 // Expect exception and suppress stack trace logging
-                if (!(x instanceof IllegalStateException))
+                if (!(x instanceof ConnectException))
                     super.onFailure(x, messages);
             }
         };
@@ -176,14 +176,14 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         });
 
         int port = connector.getLocalPort();
-        stopServer();
+        server.stop();
 
         client.handshake();
 
         Assert.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
 
         connector.setPort(port);
-        startServer();
+        server.start();
 
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
@@ -221,7 +221,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         {
             public void onMessage(ClientSessionChannel channel, Message message)
             {
-                connectLatch.countDown();
+                if (message.isSuccessful())
+                    connectLatch.countDown();
             }
         });
         client.handshake();

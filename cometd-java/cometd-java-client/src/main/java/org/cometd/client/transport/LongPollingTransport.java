@@ -16,11 +16,19 @@
 
 package org.cometd.client.transport;
 
+import java.io.IOException;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
+import java.net.HttpCookie;
 import java.net.ProtocolException;
+import java.net.URI;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,6 +40,8 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.client.util.TimedResponseListener;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -71,6 +81,7 @@ public class LongPollingTransport extends HttpClientTransport
     private volatile boolean _aborted;
     private volatile long _maxNetworkDelay;
     private volatile boolean _appendMessageType;
+    private volatile CookieManager _cookieManager;
     private volatile Map<String, Object> _advice;
 
     public LongPollingTransport(Map<String, Object> options, HttpClient httpClient)
@@ -101,6 +112,7 @@ public class LongPollingTransport extends HttpClientTransport
             String afterPath = uriMatcher.group(9);
             _appendMessageType = afterPath == null || afterPath.trim().length() == 0;
         }
+        _cookieManager = new CookieManager(getCookieStore(), CookiePolicy.ACCEPT_ALL);
     }
 
     @Override
@@ -123,6 +135,7 @@ public class LongPollingTransport extends HttpClientTransport
     public void send(final TransportListener listener, final Message.Mutable... messages)
     {
         String url = getURL();
+        final URI uri = URI.create(url);
         if (_appendMessageType && messages.length == 1 && messages[0].isMeta())
         {
             String type = messages[0].getChannel().substring(Channel.META.length());
@@ -133,7 +146,17 @@ public class LongPollingTransport extends HttpClientTransport
 
         final Request request = _httpClient.newRequest(url).method(HttpMethod.POST);
         request.header(HttpHeader.CONTENT_TYPE.asString(), "application/json;charset=UTF-8");
+
+        StringBuilder builder = new StringBuilder();
+        for (HttpCookie cookie : getCookieStore().get(uri))
+        {
+            builder.setLength(0);
+            builder.append(cookie.getName()).append("=").append(cookie.getValue());
+            request.header(HttpHeader.COOKIE.asString(), builder.toString());
+        }
+
         request.content(new StringContentProvider(generateJSON(messages)));
+
         customize(request);
 
         synchronized (this)
@@ -142,6 +165,15 @@ public class LongPollingTransport extends HttpClientTransport
                 throw new IllegalStateException("Aborted");
             _requests.add(request);
         }
+
+        request.listener(new Request.Listener.Empty()
+        {
+            @Override
+            public void onHeaders(Request request)
+            {
+                listener.onSending(messages);
+            }
+        });
 
         long maxNetworkDelay = _maxNetworkDelay;
         if (messages.length == 1 && Channel.META_CONNECT.equals(messages[0].getChannel()))
@@ -158,19 +190,42 @@ public class LongPollingTransport extends HttpClientTransport
                     maxNetworkDelay += Long.parseLong(timeout.toString());
             }
         }
-        request.idleTimeout(maxNetworkDelay);
-
-        request.listener(new Request.Listener.Empty()
+        // Set the idle timeout for this request larger than the total timeout
+        // so there are no races between the two timeouts
+        request.idleTimeout(maxNetworkDelay * 2);
+        request.send(new TimedResponseListener(maxNetworkDelay, TimeUnit.MILLISECONDS, request, new BufferingResponseListener()
         {
             @Override
-            public void onHeaders(Request request)
+            public boolean onHeader(Response response, HttpField field)
             {
-                listener.onSending(messages);
+                // We do not allow cookies to be handled by HttpClient, since one
+                // HttpClient instance is shared by multiple BayeuxClient instances.
+                // Instead, we store the cookies in the BayeuxClient instance.
+                switch (field.getHeader())
+                {
+                    case SET_COOKIE:
+                    case SET_COOKIE2:
+                        Map<String, List<String>> cookies = new HashMap<>(1);
+                        cookies.put(field.getName(), Collections.singletonList(field.getValue()));
+                        storeCookies(uri, cookies);
+                        return false;
+                    default:
+                        return true;
+                }
             }
-        });
 
-        request.send(new BufferingResponseListener()
-        {
+            private void storeCookies(URI uri, Map<String, List<String>> cookies)
+            {
+                try
+                {
+                    _cookieManager.put(uri, cookies);
+                }
+                catch (IOException x)
+                {
+                    logger.debug("", x);
+                }
+            }
+
             @Override
             public void onComplete(Result result)
             {
@@ -222,7 +277,7 @@ public class LongPollingTransport extends HttpClientTransport
                     listener.onFailure(new ProtocolException("Unexpected response " + status + ": " + request), messages);
                 }
             }
-        });
+        }));
     }
 
     protected void customize(Request request)

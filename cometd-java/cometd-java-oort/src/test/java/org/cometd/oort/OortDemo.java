@@ -62,7 +62,7 @@ public class OortDemo
         MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         _server.addBean(mbeanContainer);
 
-        ServerConnector connector = new ServerConnector();
+        ServerConnector connector = new ServerConnector(_server);
         connector.setPort(port);
         _server.addConnector(connector);
 

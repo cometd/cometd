@@ -16,6 +16,7 @@
 
 package org.cometd.client;
 
+import java.net.HttpCookie;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -46,7 +47,7 @@ public class CookiesTest extends ClientServerTest
     @Test
     public void testCookieSentOnHandshakeResponse() throws Exception
     {
-        final AtomicReference<String> browserCookie = new AtomicReference<>();
+        final AtomicReference<HttpCookie> browserCookie = new AtomicReference<>();
         final BayeuxClient client = newBayeuxClient();
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {
@@ -69,20 +70,24 @@ public class CookiesTest extends ClientServerTest
         client.handshake();
         assertTrue(client.waitFor(5000, BayeuxClient.State.CONNECTED));
 
-        client.setCookie("foo", "bar", 1);
-        assertNotNull(client.getCookie("foo"));
+        long maxAge = 1;
+        HttpCookie cookie = new HttpCookie("foo", "bar");
+        cookie.setMaxAge(maxAge);
+        client.putCookie(cookie);
+        assertNotNull(client.getCookie(cookie.getName()));
 
         // Allow cookie to expire
-        Thread.sleep(1500);
+        TimeUnit.SECONDS.sleep(maxAge * 2);
 
-        assertNull(client.getCookie("foo"));
+        assertNull(client.getCookie(cookie.getName()));
 
-        client.setCookie("foo", "bar");
-        assertNotNull(client.getCookie("foo"));
+        cookie = new HttpCookie("foo", "bar");
+        client.putCookie(cookie);
+        assertNotNull(client.getCookie(cookie.getName()));
 
-        Thread.sleep(1500);
+        TimeUnit.SECONDS.sleep(maxAge * 2);
 
-        assertNotNull(client.getCookie("foo"));
+        assertNotNull(client.getCookie(cookie.getName()));
 
         disconnectBayeuxClient(client);
     }
@@ -160,8 +165,8 @@ public class CookiesTest extends ClientServerTest
 
         BayeuxClient client = newBayeuxClient();
 
-        client.setCookie(cookie1, "value1");
-        client.setCookie(cookie2, "value2");
+        client.putCookie(new HttpCookie(cookie1, "value1"));
+        client.putCookie(new HttpCookie(cookie2, "value2"));
 
         client.handshake();
 

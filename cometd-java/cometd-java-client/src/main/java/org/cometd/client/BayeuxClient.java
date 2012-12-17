@@ -16,12 +16,17 @@
 
 package org.cometd.client;
 
+import java.net.CookieManager;
+import java.net.CookieStore;
+import java.net.HttpCookie;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -101,12 +106,13 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     private final Map<String, Object> options = new ConcurrentHashMap<>();
     private final AtomicReference<BayeuxClientState> bayeuxClientState = new AtomicReference<>();
     private final List<Message.Mutable> messageQueue = new ArrayList<>(32);
-    private final HttpClientTransport.CookieProvider cookieProvider = new HttpClientTransport.StandardCookieProvider();
+    private final CookieStore cookieStore = new CookieManager().getCookieStore();
     private final TransportListener handshakeListener = new HandshakeTransportListener();
     private final TransportListener connectListener = new ConnectTransportListener();
     private final TransportListener disconnectListener = new DisconnectTransportListener();
     private final TransportListener publishListener = new PublishTransportListener();
     private final Map<String, ClientSessionChannel.MessageListener> publishCallbacks = new ConcurrentHashMap<>();
+    private final String url;
     private volatile ScheduledExecutorService scheduler;
     private volatile boolean shutdownScheduler;
     private volatile long backoffIncrement;
@@ -141,11 +147,10 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
      */
     public BayeuxClient(String url, ScheduledExecutorService scheduler, ClientTransport transport, ClientTransport... transports)
     {
-        if (transport == null)
-            throw new IllegalArgumentException("Transport cannot be null");
-
+        this.url = Objects.requireNonNull(url);
         this.scheduler = scheduler;
 
+        transport = Objects.requireNonNull(transport);
         transportRegistry.add(transport);
         for (ClientTransport t : transports)
             transportRegistry.add(t);
@@ -161,11 +166,19 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             {
                 HttpClientTransport httpTransport = (HttpClientTransport)clientTransport;
                 httpTransport.setURL(url);
-                httpTransport.setCookieProvider(cookieProvider);
+                httpTransport.setCookieStore(cookieStore);
             }
         }
 
         bayeuxClientState.set(new DisconnectedState(null));
+    }
+
+    /**
+     * @return the URL passed when constructing this instance
+     */
+    public String getURL()
+    {
+        return url;
     }
 
     /**
@@ -188,45 +201,44 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         return maxBackoff;
     }
 
+    public CookieStore getCookieStore()
+    {
+        return cookieStore;
+    }
+
     /**
-     * <p>Retrieves the cookie with the given name, if available.</p>
+     * <p>Retrieves the first cookie with the given name, if available.</p>
      * <p>Note that currently only HTTP transports support cookies.</p>
      *
      * @param name the cookie name
-     * @return the cookie value
-     * @see #setCookie(String, String)
+     * @return the cookie, or null if no such cookie is found
+     * @see #putCookie(HttpCookie)
      */
-    public String getCookie(String name)
+    public HttpCookie getCookie(String name)
     {
-        HttpClientTransport.Cookie cookie = cookieProvider.getCookie(name);
-        if (cookie != null)
-            return cookie.getValue();
+        for (HttpCookie cookie : getCookieStore().get(URI.create(getURL())))
+        {
+            if (name.equals(cookie.getName()))
+                return cookie;
+        }
         return null;
     }
 
-    /**
-     * <p>Sets a cookie that never expires.</p>
-     *
-     * @param name  the cookie name
-     * @param value the cookie value
-     * @see #setCookie(String, String, int)
-     */
-    public void setCookie(String name, String value)
+    public void putCookie(HttpCookie cookie)
     {
-        setCookie(name, value, -1);
-    }
-
-    /**
-     * <p>Sets a cookie with the given max age in seconds.</p>
-     *
-     * @param name   the cookie name
-     * @param value  the cookie value
-     * @param maxAge the max age of the cookie, in seconds, before expiration
-     */
-    public void setCookie(String name, String value, int maxAge)
-    {
-        HttpClientTransport.Cookie cookie = new HttpClientTransport.Cookie(name, value, null, null, maxAge, false, 0, null);
-        cookieProvider.setCookie(cookie);
+        URI uri = URI.create(getURL());
+        if (cookie.getPath() == null)
+        {
+            String path = uri.getPath();
+            if (path == null || !path.contains("/"))
+                path = "/";
+            else
+                path = path.substring(0, path.lastIndexOf("/") + 1);
+            cookie.setPath(path);
+        }
+        if (cookie.getDomain() == null)
+            cookie.setDomain(uri.getHost());
+        getCookieStore().add(uri, cookie);
     }
 
     public String getId()
@@ -881,7 +893,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         Message.Mutable[] messages = takeMessages();
         failMessages(null, messages);
 
-        cookieProvider.clear();
+        cookieStore.removeAll();
 
         if (shutdownScheduler)
         {
