@@ -16,8 +16,6 @@
 
 package org.cometd.server;
 
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.junit.Ignore;
@@ -67,7 +65,7 @@ public class SpringFrameworkConfigurationTest extends AbstractBayeuxClientServer
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         assertEquals(200, response.getStatus());
     }
 }

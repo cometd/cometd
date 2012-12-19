@@ -17,7 +17,6 @@
 package org.cometd.server;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -53,7 +52,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -63,7 +62,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect.send().get(5, TimeUnit.SECONDS);
+        response = connect.send();
 
         Assert.assertEquals(200, response.getStatus());
 
@@ -73,7 +72,7 @@ public class BadJSONTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"");
                 //"}]"); Bad JSON, missing this line
-        response = badConnect.send().get(5, TimeUnit.SECONDS);
+        response = badConnect.send();
         Assert.assertEquals(400, response.getStatus());
     }
 }

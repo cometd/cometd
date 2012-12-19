@@ -17,6 +17,7 @@
 package org.cometd.server;
 
 import java.io.UnsupportedEncodingException;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -66,6 +67,7 @@ public abstract class AbstractBayeuxClientServerTest extends AbstractBayeuxServe
 
     protected void configureBayeuxRequest(Request request, String requestBody, String encoding) throws UnsupportedEncodingException
     {
+        request.timeout(5, TimeUnit.SECONDS);
         request.method(HttpMethod.POST);
         request.header(HttpHeader.CONTENT_TYPE.asString(), "application/json;charset=" + encoding);
         request.content(new StringContentProvider(requestBody, encoding));

@@ -17,7 +17,6 @@
 package org.cometd.server.ext;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Channel;
@@ -76,7 +75,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"ext\": { \"" + CLIENT_EXT_FIELD + "\": \"" + CLIENT_INFO + "\" }," +
                 "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         Assert.assertEquals(SERVER_EXT_INFO, handshakeRef.get().get(SERVER_EXT_MESSAGE_FIELD));
@@ -126,7 +125,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -139,7 +138,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"ext\": { \"" + CLIENT_EXT_FIELD + "\": \"" + CLIENT_INFO + "\" }," +
                 "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
                 "}]");
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         Assert.assertEquals(SERVER_EXT_INFO, publishRef.get().get(SERVER_EXT_MESSAGE_FIELD));
@@ -189,7 +188,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -200,7 +199,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"channel\": \"/meta/subscribe\"," +
                 "\"subscription\": \"" + channel + "\"," +
                 "}]");
-        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        response = subscribe.send();
         Assert.assertEquals(200, response.getStatus());
 
         Request publish = newBayeuxRequest("" +
@@ -211,7 +210,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
                 "\"ext\": { \"" + CLIENT_EXT_FIELD + "\": \"" + CLIENT_INFO + "\" }," +
                 "\"data\": { \"" + CLIENT_DATA_FIELD + "\": \"" + CLIENT_INFO + "\" }" +
                 "}]");
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         Assert.assertEquals(SERVER_EXT_INFO, publishRef.get().get(SERVER_EXT_MESSAGE_FIELD));

@@ -19,7 +19,6 @@ package org.cometd.server.ext;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -49,7 +48,7 @@ public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -60,7 +59,7 @@ public class ExtensionPublishReceivedTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
-        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        response = subscribe.send();
         Assert.assertEquals(200, response.getStatus());
 
         Assert.assertEquals(0, extension.rcvs.size());

@@ -16,8 +16,6 @@
 
 package org.cometd.server;
 
-import java.util.concurrent.TimeUnit;
-
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
@@ -38,7 +36,7 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -64,14 +62,14 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
         // In some cross domain configuration (for example IE9 using XDomainRequest),
         // the Content-Type header is not sent, and we must behave well even if it's missing
         publish.getHeaders().remove(HttpHeader.CONTENT_TYPE);
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         Request disconnect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/disconnect\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
-        response = disconnect.send().get(5, TimeUnit.SECONDS);
+        response = disconnect.send();
         Assert.assertEquals(200, response.getStatus());
     }
 
@@ -84,7 +82,7 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -111,14 +109,14 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"data\":\"" + data + "\"" +
                 "}]", encoding);
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         Request disconnect = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/disconnect\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
-        response = disconnect.send().get(5, TimeUnit.SECONDS);
+        response = disconnect.send();
         Assert.assertEquals(200, response.getStatus());
     }
 }

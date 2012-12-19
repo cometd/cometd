@@ -43,7 +43,7 @@ public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -53,7 +53,7 @@ public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
-        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        response = subscribe.send();
         Assert.assertEquals(200, response.getStatus());
 
         Request publish = newBayeuxRequest("[{" +
@@ -61,7 +61,7 @@ public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerT
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         Assert.assertTrue(service.await(5000));

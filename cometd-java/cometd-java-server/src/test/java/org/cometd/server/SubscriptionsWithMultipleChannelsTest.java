@@ -16,8 +16,6 @@
 
 package org.cometd.server;
 
-import java.util.concurrent.TimeUnit;
-
 import org.cometd.bayeux.Message;
 import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
@@ -37,7 +35,7 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -47,7 +45,7 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"subscription\": [\"/foo\",\"/bar\"]" +
                 "}]");
-        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        response = subscribe.send();
         Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
@@ -68,7 +66,7 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -78,7 +76,7 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"subscription\": [\"/foo\",\"/bar\"]" +
                 "}]");
-        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        response = subscribe.send();
         Assert.assertEquals(200, response.getStatus());
 
         Request unsubscribe = newBayeuxRequest("[{" +
@@ -86,7 +84,7 @@ public class SubscriptionsWithMultipleChannelsTest extends AbstractBayeuxClientS
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"subscription\": [\"/foo\",\"/bar\"]" +
                 "}]");
-        response = unsubscribe.send().get(5, TimeUnit.SECONDS);
+        response = unsubscribe.send();
         Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();

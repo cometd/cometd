@@ -16,8 +16,6 @@
 
 package org.cometd.server.authorizer;
 
-import java.util.concurrent.TimeUnit;
-
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.Authorizer;
@@ -61,7 +59,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -71,7 +69,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
@@ -85,7 +83,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         messages = jsonContext.parse(response.getContentAsString());
@@ -118,7 +116,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -128,7 +126,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
@@ -143,7 +141,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = grantedPublish.send().get(5, TimeUnit.SECONDS);
+        response = grantedPublish.send();
         Assert.assertEquals(200, response.getStatus());
 
         messages = jsonContext.parse(response.getContentAsString());
@@ -161,7 +159,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -171,7 +169,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
@@ -212,7 +210,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -222,7 +220,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
@@ -237,7 +235,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = grantedPublish.send().get(5, TimeUnit.SECONDS);
+        response = grantedPublish.send();
         Assert.assertEquals(200, response.getStatus());
 
         messages = jsonContext.parse(response.getContentAsString());
@@ -278,7 +276,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -288,7 +286,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
@@ -303,7 +301,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = grantedPublish.send().get(5, TimeUnit.SECONDS);
+        response = grantedPublish.send();
         Assert.assertEquals(200, response.getStatus());
 
         messages = jsonContext.parse(response.getContentAsString());

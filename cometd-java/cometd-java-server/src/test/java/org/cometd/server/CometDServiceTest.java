@@ -44,7 +44,7 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -54,7 +54,7 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish1.send().get(5, TimeUnit.SECONDS);
+        response = publish1.send();
         Assert.assertTrue(publishLatch1.get().await(5, TimeUnit.SECONDS));
         Assert.assertEquals(200, response.getStatus());
 
@@ -63,7 +63,7 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish2.send().get(5, TimeUnit.SECONDS);
+        response = publish2.send();
         Assert.assertTrue(publishLatch2.get().await(5, TimeUnit.SECONDS));
         Assert.assertEquals(200, response.getStatus());
 
@@ -76,7 +76,7 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish1.send().get(5, TimeUnit.SECONDS);
+        response = publish1.send();
         Assert.assertFalse(publishLatch1.get().await(1, TimeUnit.SECONDS));
         Assert.assertEquals(200, response.getStatus());
 
@@ -85,7 +85,7 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish2.send().get(5, TimeUnit.SECONDS);
+        response = publish2.send();
         Assert.assertTrue(publishLatch2.get().await(5, TimeUnit.SECONDS));
         Assert.assertEquals(200, response.getStatus());
 
@@ -97,7 +97,7 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish2.send().get(5, TimeUnit.SECONDS);
+        response = publish2.send();
         Assert.assertFalse(publishLatch2.get().await(1, TimeUnit.SECONDS));
         Assert.assertEquals(200, response.getStatus());
 
@@ -105,7 +105,7 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
                 "\"channel\": \"/meta/disconnect\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
-        response = disconnect.send().get(5, TimeUnit.SECONDS);
+        response = disconnect.send();
         Assert.assertEquals(200, response.getStatus());
     }
 }

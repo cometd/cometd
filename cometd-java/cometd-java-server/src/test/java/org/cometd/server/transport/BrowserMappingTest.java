@@ -52,7 +52,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -63,7 +63,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect1.send().get(5, TimeUnit.SECONDS);
+        response = connect1.send();
         Assert.assertEquals(200, response.getStatus());
 
         long begin = System.currentTimeMillis();
@@ -72,7 +72,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect2.send().get(timeout * 2, TimeUnit.SECONDS);
+        response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assert.assertEquals(200, response.getStatus());
         long elapsed = System.currentTimeMillis() - begin;
         Assert.assertTrue("" + elapsed, elapsed >= timeout);
@@ -88,7 +88,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -99,7 +99,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect1.send().get(5, TimeUnit.SECONDS);
+        response = connect1.send();
         Assert.assertEquals(200, response.getStatus());
 
         // Remove cookie
@@ -111,7 +111,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect2.send().get(timeout * 2, TimeUnit.SECONDS);
+        response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assert.assertEquals(200, response.getStatus());
         long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
         Assert.assertTrue("" + elapsed, elapsed < timeout / 2);
@@ -127,7 +127,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         AbstractServerTransport transport = (AbstractServerTransport)bayeux.getTransport("long-polling");
@@ -144,7 +144,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect1.send().get(5, TimeUnit.SECONDS);
+        response = connect1.send();
         Assert.assertEquals(200, response.getStatus());
 
         long begin = System.currentTimeMillis();
@@ -153,7 +153,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect2.send().get(timeout * 2, TimeUnit.SECONDS);
+        response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assert.assertEquals(200, response.getStatus());
         long elapsed = System.currentTimeMillis() - begin;
         Assert.assertTrue("" + elapsed, elapsed >= timeout);
@@ -169,7 +169,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -182,7 +182,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "}]");
         connect1.header(HttpHeader.HOST.asString(), "http://127.0.0.1:" + port);
         connect1.header("Origin", "http://localhost:" + port);
-        response = connect1.send().get(5, TimeUnit.SECONDS);
+        response = connect1.send();
         Assert.assertEquals(200, response.getStatus());
 
         long begin = System.currentTimeMillis();
@@ -193,7 +193,7 @@ public class BrowserMappingTest extends AbstractBayeuxClientServerTest
                 "}]");
         connect2.header(HttpHeader.HOST.asString(), "http://127.0.0.1:" + port);
         connect2.header("Origin", "http://localhost:" + port);
-        response = connect2.send().get(timeout * 2, TimeUnit.SECONDS);
+        response = connect2.timeout(timeout * 2, TimeUnit.SECONDS).send();
         Assert.assertEquals(200, response.getStatus());
         long elapsed = System.currentTimeMillis() - begin;
         Assert.assertTrue("" + elapsed, elapsed >= timeout);

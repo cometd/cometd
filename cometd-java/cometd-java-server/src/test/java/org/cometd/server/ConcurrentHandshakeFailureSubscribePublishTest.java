@@ -17,7 +17,6 @@
 package org.cometd.server;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.cometd.bayeux.Channel;
@@ -66,7 +65,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
                 "\"channel\": \"/meta/subscribe\"," +
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();
@@ -122,7 +121,7 @@ public class ConcurrentHandshakeFailureSubscribePublishTest extends AbstractBaye
                 "\"channel\": \"" + channelName + "\"," +
                 "\"data\": {}" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();

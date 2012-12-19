@@ -192,7 +192,7 @@ public class LongPollingTransport extends HttpClientTransport
         }
         // Set the idle timeout for this request larger than the total timeout
         // so there are no races between the two timeouts
-        request.idleTimeout(maxNetworkDelay * 2);
+        request.idleTimeout(maxNetworkDelay * 2, TimeUnit.MILLISECONDS);
         request.send(new TimedResponseListener(maxNetworkDelay, TimeUnit.MILLISECONDS, request, new BufferingResponseListener()
         {
             @Override

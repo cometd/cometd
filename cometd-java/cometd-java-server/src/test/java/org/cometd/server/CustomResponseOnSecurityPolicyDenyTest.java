@@ -20,7 +20,6 @@ import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -61,7 +60,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         checkResponse(response, Message.RECONNECT_HANDSHAKE_VALUE);
@@ -137,7 +136,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -147,7 +146,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"subscription\": \"/test\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
-        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        response = subscribe.send();
         Assert.assertEquals(200, response.getStatus());
 
         checkResponse(response, Message.RECONNECT_NONE_VALUE);
@@ -161,7 +160,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -171,7 +170,7 @@ public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClient
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         return response;

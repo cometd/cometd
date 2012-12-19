@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.BlockingResponseListener;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.mozilla.javascript.Scriptable;
@@ -133,7 +133,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         }
     }
 
-    public static class CometDExchange extends BlockingResponseListener
+    public static class CometDExchange extends FutureResponseListener
     {
         public enum ReadyState
         {

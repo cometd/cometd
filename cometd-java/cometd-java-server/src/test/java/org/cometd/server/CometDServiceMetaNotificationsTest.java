@@ -79,7 +79,7 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(200, response.getStatus());
 
@@ -90,7 +90,7 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect.send().get(5, TimeUnit.SECONDS);
+        response = connect.send();
 
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(200, response.getStatus());
@@ -101,7 +101,7 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
-        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        response = subscribe.send();
         Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(200, response.getStatus());
 
@@ -110,7 +110,7 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
-        response = unsubscribe.send().get(5, TimeUnit.SECONDS);
+        response = unsubscribe.send();
         Assert.assertTrue(unsubscribeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(200, response.getStatus());
 
@@ -118,7 +118,7 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
                 "\"channel\": \"/meta/disconnect\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
-        response = disconnect.send().get(5, TimeUnit.SECONDS);
+        response = disconnect.send();
         Assert.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(200, response.getStatus());
     }

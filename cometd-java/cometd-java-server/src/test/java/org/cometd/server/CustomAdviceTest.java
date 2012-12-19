@@ -18,7 +18,6 @@ package org.cometd.server;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
@@ -31,6 +30,7 @@ import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -72,7 +72,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -82,7 +82,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect1.send().get(5, TimeUnit.SECONDS);
+        response = connect1.send();
         Assert.assertEquals(200, response.getStatus());
 
         Request connect2 = newBayeuxRequest("[{" +
@@ -90,7 +90,8 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        Future<ContentResponse> futureResponse = connect2.send();
+        FutureResponseListener futureResponse = new FutureResponseListener(connect2);
+        connect2.send(futureResponse);
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         Request publish = newBayeuxRequest("[{" +
@@ -98,7 +99,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         // Wait for the second connect to return
@@ -151,7 +152,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -161,7 +162,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect1.send().get(5, TimeUnit.SECONDS);
+        response = connect1.send();
         Assert.assertEquals(200, response.getStatus());
 
         Request connect2 = newBayeuxRequest("[{" +
@@ -169,7 +170,8 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        Future<ContentResponse> futureResponse = connect2.send();
+        FutureResponseListener futureResponse = new FutureResponseListener(connect2);
+        connect2.send(futureResponse);
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
         Request publish = newBayeuxRequest("[{" +
@@ -177,7 +179,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
                 "\"clientId\":\"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         // Wait for the second connect to return
@@ -203,7 +205,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -213,7 +215,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect1.send().get(5, TimeUnit.SECONDS);
+        response = connect1.send();
         Assert.assertEquals(200, response.getStatus());
 
         // The client tells the server that it's going to sleep and won't connect for a while
@@ -228,7 +230,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
                 "    \"interval\": " + newInterval +
                 "}" +
                 "}]");
-        response = connect2.send().get(5, TimeUnit.SECONDS);
+        response = connect2.send();
         Assert.assertEquals(200, response.getStatus());
 
         JSONContext.Client jsonContext = new JettyJSONContextClient();

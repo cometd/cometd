@@ -17,7 +17,6 @@
 package org.cometd.server.transport;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Message;
 import org.cometd.common.JSONContext;
@@ -45,7 +44,7 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -55,7 +54,7 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect.send().get(5, TimeUnit.SECONDS);
+        response = connect.send();
         Assert.assertEquals(200, response.getStatus());
 
         String channel = "/foo";
@@ -65,7 +64,7 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"subscription\": \"" + channel + "\"" +
                 "}]");
-        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        response = subscribe.send();
         Assert.assertEquals(200, response.getStatus());
 
         Request publish = newBayeuxRequest("[{" +
@@ -73,7 +72,7 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"data\": {}" +
                 "}]");
-        response = publish.send().get(5, TimeUnit.SECONDS);
+        response = publish.send();
         Assert.assertEquals(200, response.getStatus());
 
         // Expect only the meta response to the publish
@@ -86,7 +85,7 @@ public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientSe
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect.send().get(5, TimeUnit.SECONDS);
+        response = connect.send();
         Assert.assertEquals(200, response.getStatus());
 
         // Expect meta response to the connect plus the published message

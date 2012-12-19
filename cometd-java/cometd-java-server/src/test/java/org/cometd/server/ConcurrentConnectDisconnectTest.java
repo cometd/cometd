@@ -17,7 +17,6 @@
 package org.cometd.server;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
@@ -28,6 +27,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -55,7 +55,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -66,7 +66,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"channel\": \"/meta/subscribe\"," +
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
-        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        response = subscribe.send();
         Assert.assertEquals(200, response.getStatus());
 
         Request connect1 = newBayeuxRequest("[{" +
@@ -74,7 +74,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect1.send().get(5, TimeUnit.SECONDS);
+        response = connect1.send();
         Assert.assertEquals(200, response.getStatus());
 
         Request connect2 = newBayeuxRequest("[{" +
@@ -82,7 +82,8 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        Future<ContentResponse> futureResponse = connect2.send();
+        FutureResponseListener futureResponse = new FutureResponseListener(connect2);
+        connect2.send(futureResponse);
 
         // Wait for the second connect to arrive, then disconnect
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
@@ -91,7 +92,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"channel\": \"/meta/disconnect\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
-        response = disconnect.send().get(5, TimeUnit.SECONDS);
+        response = disconnect.send();
         Assert.assertEquals(200, response.getStatus());
 
         disconnectLatch.countDown();
@@ -142,7 +143,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -153,7 +154,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"channel\": \"/meta/subscribe\"," +
                 "\"subscription\": \"" + channelName + "\"" +
                 "}]");
-        response = subscribe.send().get(5, TimeUnit.SECONDS);
+        response = subscribe.send();
         Assert.assertEquals(200, response.getStatus());
 
         Request connect1 = newBayeuxRequest("[{" +
@@ -161,7 +162,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        response = connect1.send().get(5, TimeUnit.SECONDS);
+        response = connect1.send();
         Assert.assertEquals(200, response.getStatus());
 
         Request connect2 = newBayeuxRequest("[{" +
@@ -169,7 +170,8 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        Future<ContentResponse> futureResponse = connect2.send();
+        FutureResponseListener futureResponse = new FutureResponseListener(connect2);
+        connect2.send(futureResponse);
 
         // Wait for the second connect to arrive, then disconnect
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
@@ -178,7 +180,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
                 "\"channel\": \"/meta/disconnect\"," +
                 "\"clientId\": \"" + clientId + "\"" +
                 "}]");
-        response = disconnect.send().get(5, TimeUnit.SECONDS);
+        response = disconnect.send();
         Assert.assertEquals(200, response.getStatus());
 
         disconnectLatch.countDown();

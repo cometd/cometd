@@ -17,11 +17,11 @@
 package org.cometd.server;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -37,7 +37,7 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        ContentResponse response = handshake.send().get(5, TimeUnit.SECONDS);
+        ContentResponse response = handshake.send();
         Assert.assertEquals(200, response.getStatus());
 
         String clientId = extractClientId(response);
@@ -49,7 +49,7 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest
                 "\"connectionType\": \"long-polling\"," +
                 "\"advice\": { \"timeout\": 0 }" +
                 "}]");
-        response = connect.send().get(5, TimeUnit.SECONDS);
+        response = connect.send();
 
         Assert.assertEquals(200, response.getStatus());
 
@@ -59,7 +59,8 @@ public class ServerShutdownTest extends AbstractBayeuxClientServerTest
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        Future<ContentResponse> futureResponse = connect.send();
+        FutureResponseListener futureResponse = new FutureResponseListener(connect);
+        connect.send(futureResponse);
 
         // Wait for the connect to arrive to the server
         Thread.sleep(1000);
