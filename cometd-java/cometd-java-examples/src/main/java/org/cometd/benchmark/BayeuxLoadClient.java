@@ -845,8 +845,6 @@ public class BayeuxLoadClient
                 {
                     response = true;
                     String id = (String)data.get("ID");
-                    if (id == null)
-                        System.err.println("SIMON: " + message);
                     arrivalTimes.get(id).getReference().add(now);
                 }
             }
