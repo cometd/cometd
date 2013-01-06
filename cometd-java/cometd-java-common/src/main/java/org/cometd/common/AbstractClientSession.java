@@ -43,9 +43,9 @@ public abstract class AbstractClientSession implements ClientSession
     protected static final String PUBLISH_CALLBACK_KEY = "org.cometd.client.publishCallback";
     protected static final Logger logger = LoggerFactory.getLogger(ClientSession.class);
     private static final AtomicLong _idGen = new AtomicLong(0);
-    private final List<Extension> _extensions = new CopyOnWriteArrayList<Extension>();
+    private final List<Extension> _extensions = new CopyOnWriteArrayList<>();
     private final AttributesMap _attributes = new AttributesMap();
-    private final ConcurrentMap<String, AbstractSessionChannel> _channels = new ConcurrentHashMap<String, AbstractSessionChannel>();
+    private final ConcurrentMap<String, AbstractSessionChannel> _channels = new ConcurrentHashMap<>();
     private final AtomicInteger _batch = new AtomicInteger();
 
     protected AbstractClientSession()
@@ -110,16 +110,27 @@ public abstract class AbstractClientSession implements ClientSession
 
     protected abstract AbstractSessionChannel newChannel(ChannelId channelId);
 
-    public ClientSessionChannel getChannel(String channelId)
+    public ClientSessionChannel getChannel(String channelName)
     {
-        AbstractSessionChannel channel = _channels.get(channelId);
-        if (channel==null)
+        return getChannel(channelName, null);
+    }
+
+    public ClientSessionChannel getChannel(ChannelId channelId)
+    {
+        return getChannel(channelId.toString(), channelId);
+    }
+
+    private ClientSessionChannel getChannel(String channelName, ChannelId channelId)
+    {
+        AbstractSessionChannel channel = _channels.get(channelName);
+        if (channel == null)
         {
-            ChannelId id = newChannelId(channelId);
-            AbstractSessionChannel new_channel=newChannel(id);
-            channel=_channels.putIfAbsent(channelId,new_channel);
-            if (channel==null)
-                channel=new_channel;
+            if (channelId == null)
+                channelId = newChannelId(channelName);
+            AbstractSessionChannel newChannel = newChannel(channelId);
+            channel = _channels.putIfAbsent(channelName, newChannel);
+            if (channel == null)
+                channel = newChannel;
         }
         return channel;
     }
@@ -138,7 +149,7 @@ public abstract class AbstractClientSession implements ClientSession
 
     public boolean endBatch()
     {
-        if (_batch.decrementAndGet()==0)
+        if (_batch.decrementAndGet() == 0)
         {
             sendBatch();
             return true;
@@ -183,7 +194,7 @@ public abstract class AbstractClientSession implements ClientSession
 
     public void setAttribute(String name, Object value)
     {
-        _attributes.setAttribute(name,value);
+        _attributes.setAttribute(name, value);
     }
 
     protected void resetSubscriptions()
@@ -196,6 +207,7 @@ public abstract class AbstractClientSession implements ClientSession
      * <p>Receives a message (from the server) and process it.</p>
      * <p>Processing the message involves calling the receive {@link Extension extensions}
      * and the channel {@link ClientSessionChannel.ClientSessionChannelListener listeners}.</p>
+     *
      * @param message the message received.
      */
     public void receive(final Message.Mutable message)
@@ -244,22 +256,22 @@ public abstract class AbstractClientSession implements ClientSession
 
         AbstractSessionChannel channel = ChannelId.isMeta(id) ? (AbstractSessionChannel)getChannel(id) : getChannels().get(id);
         if (channel != null)
-            return new MarkableReference<AbstractSessionChannel>(channel, false);
-        return new MarkableReference<AbstractSessionChannel>(newChannel(newChannelId(id)), true);
+            return new MarkableReference<>(channel, false);
+        return new MarkableReference<>(newChannel(newChannelId(id)), true);
     }
 
-    public void dump(StringBuilder b,String indent)
+    public void dump(StringBuilder b, String indent)
     {
         b.append(toString());
         b.append('\n');
 
-        int leaves=_channels.size();
-        int i=0;
+        int leaves = _channels.size();
+        int i = 0;
         for (AbstractSessionChannel child : _channels.values())
         {
             b.append(indent);
             b.append(" +-");
-            child.dump(b,indent+((++i==leaves)?"   ":" | "));
+            child.dump(b, indent + ((++i == leaves) ? "   " : " | "));
         }
     }
 
@@ -270,14 +282,14 @@ public abstract class AbstractClientSession implements ClientSession
     {
         private final ChannelId _id;
         private final AttributesMap _attributes = new AttributesMap();
-        private final CopyOnWriteArrayList<MessageListener> _subscriptions = new CopyOnWriteArrayList<MessageListener>();
+        private final CopyOnWriteArrayList<MessageListener> _subscriptions = new CopyOnWriteArrayList<>();
         private final AtomicInteger _subscriptionCount = new AtomicInteger();
-        private final CopyOnWriteArrayList<ClientSessionChannelListener> _listeners = new CopyOnWriteArrayList<ClientSessionChannelListener>();
+        private final CopyOnWriteArrayList<ClientSessionChannelListener> _listeners = new CopyOnWriteArrayList<>();
         private volatile boolean _released;
 
         protected AbstractSessionChannel(ChannelId id)
         {
-            _id=id;
+            _id = id;
         }
 
         public ChannelId getChannelId()
@@ -463,7 +475,7 @@ public abstract class AbstractClientSession implements ClientSession
             return old;
         }
 
-        protected void dump(StringBuilder b,String indent)
+        protected void dump(StringBuilder b, String indent)
         {
             b.append(toString());
             b.append('\n');
@@ -499,6 +511,7 @@ public abstract class AbstractClientSession implements ClientSession
 
     /**
      * Non-volatile, non-atomic version of {@link AtomicMarkableReference}.
+     *
      * @param <T> the reference type
      */
     private static class MarkableReference<T>

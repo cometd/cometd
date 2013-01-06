@@ -10,7 +10,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty-version>9.0.0.M5</jetty-version>
+        <jetty-version>9.0.0-SNAPSHOT</jetty-version>
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
         <slf4j-version>1.7.1</slf4j-version>
         <spring-version>3.1.2.RELEASE</spring-version>
@@ -395,13 +395,13 @@
     <repositories>
         <repository>
             <id>jetty-snapshots</id>
-            <!--<url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>-->
-            <url>https://oss.sonatype.org/content/repositories/jetty-452</url>
+            <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+            <!--<url>https://oss.sonatype.org/content/repositories/jetty-452</url>-->
             <releases>
-                <enabled>true</enabled>
+                <enabled>false</enabled>
             </releases>
             <snapshots>
-                <enabled>false</enabled>
+                <enabled>true</enabled>
             </snapshots>
         </repository>
     </repositories>

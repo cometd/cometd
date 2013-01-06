@@ -15,6 +15,7 @@
 
     <properties>
         <jackson-version>1.9.3</jackson-version>
+        <jetty7-version>7.6.8.v20121106</jetty7-version>
     </properties>
 
     <modules>
@@ -25,7 +26,9 @@
         <module>cometd-java-examples</module>
         <module>cometd-java-oort</module>
         <module>cometd-java-server</module>
-        <module>cometd-websocket-jetty</module>
+        <module>cometd-jetty-websocket</module>
+        <module>cometd-java-client-jetty7</module>
+        <module>cometd-java-benchmark</module>
     </modules>
 
     <dependencyManagement>

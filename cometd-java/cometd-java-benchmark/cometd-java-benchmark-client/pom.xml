@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>cometd-java-benchmark</artifactId>
+        <groupId>org.cometd.java</groupId>
+        <version>3.0.0-SNAPSHOT</version>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>cometd-java-benchmark-client</artifactId>
+    <name>CometD :: Java :: Benchmark :: Client</name>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <!--<executable>java</executable>-->
+                    <executable>/home/simon/Downloads/java/j2se/openjdk-7u6-fcs-src-b24-09_aug_2012/build/linux-amd64-fastdebug/j2sdk-image/bin/java</executable>
+                    <arguments>
+                        <argument>-showversion</argument>
+                        <argument>-Xmx2g</argument>
+                        <argument>-Xms2g</argument>
+                        <argument>-Xmn1g</argument>
+                        <argument>-XX:+PrintCommandLineFlags</argument>
+                        <argument>-XX:-UseSplitVerifier</argument>
+                        <argument>-XX:+PrintGCDateStamps</argument>
+                        <argument>-XX:+PrintGCTimeStamps</argument>
+                        <argument>-XX:+PrintGCDetails</argument>
+                        <argument>-XX:+ParallelGCVerbose</argument>
+                        <argument>-XX:+PrintGCTaskTimeStamps</argument>
+                        <argument>-XX:+UseParallelOldGC</argument>
+                        <!--<argument>-XX:-UseAdaptiveSizePolicy</argument>-->
+                        <!--<argument>-XX:+UseNUMA</argument>-->
+                        <!--<argument>-XX:+AggressiveOpts</argument>-->
+                        <!--<argument>-XX:+PrintTenuringDistribution</argument>-->
+                        <!--<argument>-XX:+PrintGCApplicationStoppedTime</argument>-->
+                        <!--<argument>-XX:+PrintHeapAtGC</argument>-->
+                        <!--<argument>-XX:+UseConcMarkSweepGC</argument>-->
+                        <!--<argument>-XX:+UseG1GC</argument>-->
+                        <argument>-cp</argument>
+                        <classpath />
+                        <argument>org.cometd.benchmark.client.BayeuxLoadClient</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.cometd.java</groupId>
+            <artifactId>bayeux-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.cometd.java</groupId>
+            <artifactId>cometd-java-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.cometd.java</groupId>
+            <artifactId>cometd-java-benchmark-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.cometd.java</groupId>
+            <artifactId>cometd-jetty-websocket-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-jmx</artifactId>
+            <version>${jetty-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>${jackson-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+
+</project>
