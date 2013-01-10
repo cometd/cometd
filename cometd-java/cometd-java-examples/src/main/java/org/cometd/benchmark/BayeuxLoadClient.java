@@ -205,6 +205,8 @@ public class BayeuxLoadClient
         LoadBayeuxClient statsClient = new LoadBayeuxClient(url, scheduler, newClientTransport(clientTransportType), null);
         statsClient.handshake();
 
+        AtomicLong ids = new AtomicLong();
+
         int clients = 100;
         int batchCount = 1000;
         int batchSize = 10;
@@ -359,11 +361,12 @@ public class BayeuxLoadClient
                         room = nextRandom(rooms);
                         clientsPerRoom = this.rooms.get(room);
                     }
-                    Map<String, Object> message = new HashMap<String, Object>(4);
+                    Map<String, Object> message = new HashMap<String, Object>(5);
                     message.put("room", room);
                     message.put("user", clientIndex);
                     message.put("chat", chat);
                     message.put("start", System.nanoTime());
+                    message.put("ID", String.valueOf(ids.incrementAndGet()));
                     ClientSessionChannel clientChannel = client.getChannel(channel + "/" + room);
                     clientChannel.publish(message);
                     clientChannel.release();
@@ -720,19 +723,19 @@ public class BayeuxLoadClient
                     end.set(endTime);
                     messages.incrementAndGet();
 
-                    String messageId = message.getId();
+                    String id = (String)data.get("ID");
 
-                    AtomicStampedReference<Long> sendTimeRef = sendTimes.get(messageId);
+                    AtomicStampedReference<Long> sendTimeRef = sendTimes.get(id);
                     long sendTime = sendTimeRef.getReference();
                     // Update count atomically
                     if (Atomics.decrement(sendTimeRef) == 0)
-                        sendTimes.remove(messageId);
+                        sendTimes.remove(id);
 
-                    AtomicStampedReference<List<Long>> arrivalTimeRef = arrivalTimes.get(messageId);
+                    AtomicStampedReference<List<Long>> arrivalTimeRef = arrivalTimes.get(id);
                     long arrivalTime = arrivalTimeRef.getReference().remove(0);
                     // Update count atomically
                     if (Atomics.decrement(arrivalTimeRef) == 0)
-                        arrivalTimes.remove(messageId);
+                        arrivalTimes.remove(id);
 
                     updateLatencies(startTime, sendTime, arrivalTime, endTime, recordDetails);
                 }
@@ -801,15 +804,13 @@ public class BayeuxLoadClient
         {
             final CountDownLatch latch = new CountDownLatch(1);
             ClientSessionChannel channel = getChannel(channelName);
-            channel.addListener(new ClientSessionChannel.MessageListener()
+            channel.publish(new HashMap<String, Object>(1), new ClientSessionChannel.MessageListener()
             {
                 public void onMessage(ClientSessionChannel channel, Message message)
                 {
-                    channel.removeListener(this);
                     latch.countDown();
                 }
             });
-            channel.publish(new HashMap<String, Object>(1));
             latch.await();
         }
 
@@ -824,9 +825,10 @@ public class BayeuxLoadClient
                 {
                     int room = (Integer)data.get("room");
                     int clientsInRoom = rooms.get(room).get();
-                    sendTimes.put(message.getId(), new AtomicStampedReference<Long>(now, clientsInRoom));
+                    String id = (String)data.get("ID");
+                    sendTimes.put(id, new AtomicStampedReference<Long>(now, clientsInRoom));
                     // There is no write-cheap concurrent list in JDK, so let's use a synchronized wrapper
-                    arrivalTimes.put(message.getId(), new AtomicStampedReference<List<Long>>(Collections.synchronizedList(new LinkedList<Long>()), clientsInRoom));
+                    arrivalTimes.put(id, new AtomicStampedReference<List<Long>>(Collections.synchronizedList(new LinkedList<Long>()), clientsInRoom));
                 }
             }
         }
@@ -838,10 +840,12 @@ public class BayeuxLoadClient
             boolean response = false;
             for (Message message : messages)
             {
-                if (message.getData() != null)
+                Map<String, Object> data = message.getDataAsMap();
+                if (data != null)
                 {
                     response = true;
-                    arrivalTimes.get(message.getId()).getReference().add(now);
+                    String id = (String)data.get("ID");
+                    arrivalTimes.get(id).getReference().add(now);
                 }
             }
             if (response)
