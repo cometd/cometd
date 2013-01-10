@@ -96,9 +96,9 @@ public class CometDServlet extends HttpServlet
                 }
 
                 // Transfer all servlet init parameters to the BayeuxServer implementation
-                for (Enumeration initParameterNames = getInitParameterNames(); initParameterNames.hasMoreElements();)
+                for (Enumeration<String> initParameterNames = getInitParameterNames(); initParameterNames.hasMoreElements();)
                 {
-                    String initParameterName = (String)initParameterNames.nextElement();
+                    String initParameterName = initParameterNames.nextElement();
                     value = getInitParameter(initParameterName);
 
                     if (!"transports".equals(initParameterName) &&

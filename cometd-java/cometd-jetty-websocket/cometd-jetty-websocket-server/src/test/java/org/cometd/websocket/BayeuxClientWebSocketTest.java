@@ -356,7 +356,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                 return true;
             }
         });
-        client.getChannel(serviceChannelName).publish(new HashMap());
+        client.getChannel(serviceChannelName).publish(new HashMap<>());
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is not responded
@@ -439,7 +439,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                 return true;
             }
         });
-        client.getChannel(serviceChannelName).publish(new HashMap());
+        client.getChannel(serviceChannelName).publish(new HashMap<>());
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is responded
@@ -528,7 +528,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
                 return true;
             }
         });
-        client.getChannel(serviceChannelName).publish(new HashMap());
+        client.getChannel(serviceChannelName).publish(new HashMap<>());
 
         Assert.assertTrue(publishLatch.get().await(5, TimeUnit.SECONDS));
         // Make sure long poll is responded

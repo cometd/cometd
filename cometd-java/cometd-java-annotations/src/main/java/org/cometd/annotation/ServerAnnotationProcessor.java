@@ -474,7 +474,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
     private static class ListenerCallback implements ServerChannel.MessageListener
     {
-        private static final Class<?>[] signature = new Class[]{ServerSession.class, ServerMessage.Mutable.class};
+        private static final Class<?>[] signature = new Class<?>[]{ServerSession.class, ServerMessage.Mutable.class};
         private final LocalSession localSession;
         private final Object target;
         private final Method method;
@@ -522,7 +522,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
     private static class SubscriptionCallback implements ClientSessionChannel.MessageListener
     {
-        private static final Class<?>[] signature = new Class[]{Message.class};
+        private static final Class<?>[] signature = new Class<?>[]{Message.class};
         private final LocalSession localSession;
         private final Object target;
         private final Method method;

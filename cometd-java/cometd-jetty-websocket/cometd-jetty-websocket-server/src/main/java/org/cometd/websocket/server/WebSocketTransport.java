@@ -323,7 +323,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
         private volatile ServerSessionImpl _session;
         private volatile WebSocketConnection _connection;
         private ServerMessage.Mutable _connectReply;
-        private ScheduledFuture _connectTask;
+        private ScheduledFuture<?> _connectTask;
 
         public WebSocketScheduler(WebSocketContext context, String userAgent)
         {
@@ -361,7 +361,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
 
         private boolean cancelMetaConnectTask(ServerSessionImpl session)
         {
-            final ScheduledFuture connectTask;
+            final ScheduledFuture<?> connectTask;
             synchronized (session.getLock())
             {
                 connectTask = _connectTask;

@@ -18,7 +18,6 @@ package org.cometd.benchmark.client;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,14 +43,13 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.benchmark.Atomics;
 import org.cometd.benchmark.BenchmarkHelper;
-import org.cometd.benchmark.MonitoringQueuedThreadPool;
 import org.cometd.benchmark.SystemTimer;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.ClientTransport;
-import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.client.transport.Jetty7LongPollingTransport;
 import org.cometd.common.JacksonJSONContextClient;
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty7.client.HttpClient;
+import org.eclipse.jetty7.util.thread.QueuedThreadPool;
 
 public class Jetty7BayeuxLoadClient
 {
@@ -74,7 +72,7 @@ public class Jetty7BayeuxLoadClient
     private final Map<String, AtomicStampedReference<Long>> sendTimes = new ConcurrentHashMap<>();
     private final Map<String, AtomicStampedReference<List<Long>>> arrivalTimes = new ConcurrentHashMap<>();
     private ScheduledExecutorService scheduler;
-    private MonitoringQueuedThreadPool threadPool;
+    private QueuedThreadPool threadPool;
     private HttpClient httpClient;
 //    private WebSocketClientFactory webSocketClientFactory;
 
@@ -180,21 +178,15 @@ public class Jetty7BayeuxLoadClient
 
         scheduler = Executors.newScheduledThreadPool(8);
 
-        MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-        mbeanContainer.beanAdded(null, this);
-
-        threadPool = new MonitoringQueuedThreadPool(maxThreads);
+        threadPool = new QueuedThreadPool(maxThreads);
         threadPool.setDaemon(true);
         threadPool.start();
-        mbeanContainer.beanAdded(null, threadPool);
 
         httpClient = new HttpClient();
-        httpClient.addBean(mbeanContainer);
         httpClient.setMaxConnectionsPerAddress(50000);
         httpClient.setThreadPool(threadPool);
         httpClient.setIdleTimeout(5000);
         httpClient.start();
-        mbeanContainer.beanAdded(null, httpClient);
 
 //        webSocketClientFactory = new WebSocketClientFactory(threadPool);
 //        webSocketClientFactory.setMasker(new ZeroMasker());
@@ -427,7 +419,7 @@ public class Jetty7BayeuxLoadClient
             {
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT, new JacksonJSONContextClient());
-                return new LongPollingTransport(options, httpClient);
+                return new Jetty7LongPollingTransport(options, httpClient);
             }
             case WEBSOCKET:
             {
@@ -615,16 +607,16 @@ public class Jetty7BayeuxLoadClient
                 messageCount == 0 ? -1 : TimeUnit.NANOSECONDS.toMillis(totLatency.get() / messageCount),
                 TimeUnit.NANOSECONDS.toMillis(maxLatency.get()));
 
-        System.err.printf("Thread Pool - Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
-                threadPool.getMaxActiveThreads(),
-                threadPool.getMaxQueueSize(),
-                TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageQueueLatency()),
-                TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxQueueLatency()));
+//        System.err.printf("Thread Pool - Concurrent Threads max = %d | Queue Size max = %d | Queue Latency avg/max = %d/%d ms%n",
+//                threadPool.getMaxActiveThreads(),
+//                threadPool.getMaxQueueSize(),
+//                TimeUnit.NANOSECONDS.toMillis(threadPool.getAverageQueueLatency()),
+//                TimeUnit.NANOSECONDS.toMillis(threadPool.getMaxQueueLatency()));
     }
 
     private void reset()
     {
-        threadPool.reset();
+//        threadPool.reset();
         start.set(0L);
         end.set(0L);
         responses.set(0L);

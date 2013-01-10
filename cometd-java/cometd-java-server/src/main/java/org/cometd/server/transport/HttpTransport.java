@@ -21,7 +21,6 @@ import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.List;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -106,10 +105,9 @@ public abstract class HttpTransport extends AbstractServerTransport
             return _request.getHeader(name);
         }
 
-        @SuppressWarnings("unchecked")
         public List<String> getHeaderValues(String name)
         {
-            return Collections.list((Enumeration<String>)_request.getHeaders(name));
+            return Collections.list(_request.getHeaders(name));
         }
 
         public String getParameter(String name)

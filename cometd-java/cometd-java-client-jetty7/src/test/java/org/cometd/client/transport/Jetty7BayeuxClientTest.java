@@ -140,7 +140,7 @@ public class Jetty7BayeuxClientTest
         reply = "[{" +
                 "\"id\":\"2\"," +
                 "\"channel\":\"/meta/connect\"," +
-                "\"successful\":true," +
+                "\"successful\":false," +
                 "\"advice\":{\"reconnect\":\"none\"}" +
                 "}]";
         response = "" +
@@ -153,7 +153,5 @@ public class Jetty7BayeuxClientTest
         output.flush();
 
         server.close();
-
-        disconnectBayeuxClient(client);
     }
 }

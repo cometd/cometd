@@ -18,8 +18,7 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <configuration>
-                    <!--<executable>java</executable>-->
-                    <executable>/home/simon/Downloads/java/j2se/openjdk-7u6-fcs-src-b24-09_aug_2012/build/linux-amd64-fastdebug/j2sdk-image/bin/java</executable>
+                    <executable>java</executable>
                     <arguments>
                         <argument>-showversion</argument>
                         <argument>-Xmx2g</argument>
@@ -31,7 +30,7 @@
                         <argument>-XX:+PrintGCTimeStamps</argument>
                         <argument>-XX:+PrintGCDetails</argument>
                         <argument>-XX:+ParallelGCVerbose</argument>
-                        <argument>-XX:+PrintGCTaskTimeStamps</argument>
+                        <!--<argument>-XX:+PrintGCTaskTimeStamps</argument>-->
                         <argument>-XX:+UseParallelOldGC</argument>
                         <!--<argument>-XX:-UseAdaptiveSizePolicy</argument>-->
                         <!--<argument>-XX:+UseNUMA</argument>-->
@@ -61,11 +60,13 @@
             <artifactId>cometd-java-client-jetty7</artifactId>
             <version>${project.version}</version>
         </dependency>
+<!--
         <dependency>
             <groupId>org.cometd.java</groupId>
             <artifactId>cometd-jetty-websocket-client</artifactId>
             <version>${project.version}</version>
         </dependency>
+-->
         <dependency>
             <groupId>org.cometd.java</groupId>
             <artifactId>cometd-java-benchmark-common</artifactId>
@@ -73,7 +74,7 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-jmx</artifactId>
+            <artifactId>jetty-util-ajax</artifactId>
             <version>${jetty-version}</version>
         </dependency>
         <dependency>

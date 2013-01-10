@@ -464,7 +464,7 @@ public abstract class AbstractClientSession implements ClientSession
         public Set<String> getAttributeNames()
         {
             throwIfReleased();
-            return _attributes.keySet();
+            return _attributes.getAttributeNameSet();
         }
 
         public Object removeAttribute(String name)

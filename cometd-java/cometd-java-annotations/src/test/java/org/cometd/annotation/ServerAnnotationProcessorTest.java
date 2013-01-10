@@ -302,7 +302,7 @@ public class ServerAnnotationProcessorTest
                 // However if the Listener.receiveOwnPublishes attribute is not taken in account
                 // this callback is called again, and we want to test that this does not happen.
                 if (count == 1)
-                    bayeuxServer.getChannel(channelName).publish(serverSession, new HashMap());
+                    bayeuxServer.getChannel(channelName).publish(serverSession, new HashMap<>());
             }
         }
 
@@ -340,7 +340,7 @@ public class ServerAnnotationProcessorTest
                 String channelName = "/foo/own";
                 bayeuxServer.createIfAbsent(channelName);
                 if (!channelName.equals(message.getChannel()))
-                    bayeuxServer.getChannel(channelName).publish(serverSession, new HashMap());
+                    bayeuxServer.getChannel(channelName).publish(serverSession, new HashMap<>());
             }
         }
 
@@ -385,7 +385,7 @@ public class ServerAnnotationProcessorTest
         remote.handshake();
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel("/foo/bar/baz");
-        message.setData(new HashMap());
+        message.setData(new HashMap<>());
         bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
 
         assertNotNull(messageRef.get());
@@ -397,7 +397,7 @@ public class ServerAnnotationProcessorTest
         messageRef.set(null);
         message = bayeuxServer.newMessage();
         message.setChannel("/foo/bar/baz");
-        message.setData(new HashMap());
+        message.setData(new HashMap<>());
         bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
 
         assertNull(messageRef.get());
@@ -435,7 +435,7 @@ public class ServerAnnotationProcessorTest
         // Fake a publish
         LocalSession remote = bayeuxServer.newLocalSession("remote");
         remote.handshake();
-        remote.getChannel("/foo").publish(new HashSet());
+        remote.getChannel("/foo").publish(new HashSet<>());
 
         assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
     }
@@ -464,7 +464,7 @@ public class ServerAnnotationProcessorTest
         remote.handshake();
         ServerMessage.Mutable message = bayeuxServer.newMessage();
         message.setChannel("/foo");
-        message.setData(new HashMap());
+        message.setData(new HashMap<>());
         bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
 
         assertTrue(messageLatch.await(5, TimeUnit.SECONDS));

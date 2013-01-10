@@ -261,7 +261,7 @@ public class ClientAnnotationProcessorTest
         assertTrue(bayeuxClient.waitFor(5000, BayeuxClient.State.CONNECTED));
         assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
-        bayeuxClient.getChannel("/foo").publish(new HashMap());
+        bayeuxClient.getChannel("/foo").publish(new HashMap<>());
         assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
@@ -278,7 +278,7 @@ public class ClientAnnotationProcessorTest
 
         messageLatch.set(new CountDownLatch(1));
 
-        bayeuxClient.getChannel("/foo").publish(new HashMap());
+        bayeuxClient.getChannel("/foo").publish(new HashMap<>());
         assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
     }
 
@@ -343,14 +343,14 @@ public class ClientAnnotationProcessorTest
         assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
 
         messageLatch.set(new CountDownLatch(1));
-        bayeuxClient.getChannel("/foo").publish(new HashMap());
+        bayeuxClient.getChannel("/foo").publish(new HashMap<>());
         assertTrue(messageLatch.get().await(5, TimeUnit.SECONDS));
 
         processor.deprocess(s);
         assertFalse(s.initialized);
 
         messageLatch.set(new CountDownLatch(1));
-        bayeuxClient.getChannel("/foo").publish(new HashMap());
+        bayeuxClient.getChannel("/foo").publish(new HashMap<>());
         assertFalse(messageLatch.get().await(1, TimeUnit.SECONDS));
     }
 

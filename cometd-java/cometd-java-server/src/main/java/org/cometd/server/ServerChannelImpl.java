@@ -381,7 +381,7 @@ public class ServerChannelImpl implements ServerChannel
 
     public Set<String> getAttributeNames()
     {
-        return _attributes.keySet();
+        return _attributes.getAttributeNameSet();
     }
 
     public Object removeAttribute(String name)

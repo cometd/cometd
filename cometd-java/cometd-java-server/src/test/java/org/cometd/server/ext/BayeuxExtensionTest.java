@@ -88,7 +88,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         JSONContext.Server jsonContext = new JettyJSONContextServer();
         ServerMessage.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(1, messages.length);
-        Map message = messages[0];
+        Map<String, Object> message = messages[0];
         Assert.assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
         Assert.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_EXT_DATA_FIELD));
         Assert.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_EXT_FIELD));
@@ -151,7 +151,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         JSONContext.Server jsonContext = new JettyJSONContextServer();
         ServerMessage.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(2, messages.length);
-        Map message = messages[0].containsKey(Message.DATA_FIELD) ? messages[0] : messages[1];
+        Map<String, Object> message = messages[0].containsKey(Message.DATA_FIELD) ? messages[0] : messages[1];
         Assert.assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
         Assert.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_EXT_DATA_FIELD));
         Assert.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_EXT_FIELD));
@@ -223,7 +223,7 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
         JSONContext.Server jsonContext = new JettyJSONContextServer();
         ServerMessage.Mutable[] messages = jsonContext.parse(response.getContentAsString());
         Assert.assertEquals(2, messages.length);
-        Map message = messages[0].containsKey(Message.DATA_FIELD) ? messages[0] : messages[1];
+        Map<String, Object> message = messages[0].containsKey(Message.DATA_FIELD) ? messages[0] : messages[1];
         Assert.assertEquals(SERVER_EXT_INFO, message.get(SERVER_EXT_MESSAGE_FIELD));
         Assert.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.DATA_FIELD)).get(SERVER_EXT_DATA_FIELD));
         Assert.assertEquals(SERVER_EXT_INFO, ((Map)message.get(Message.EXT_FIELD)).get(SERVER_EXT_EXT_FIELD));
