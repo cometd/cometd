@@ -44,6 +44,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     public static final String MAX_INTERVAL_OPTION = "maxInterval";
     public static final String MAX_LAZY_OPTION = "maxLazyTimeout";
     public static final String META_CONNECT_DELIVERY_OPTION = "metaConnectDeliverOnly";
+    public static final String MAX_QUEUE_OPTION = "maxQueue";
 
     protected final Logger _logger = LoggerFactory.getLogger(getClass().getName());
     private final BayeuxServerImpl _bayeux;

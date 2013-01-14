@@ -471,6 +471,43 @@ public class ServerAnnotationProcessorTest
     }
 
     @Test
+    public void testListenerMethodReturningNewBooleanFalse() throws Exception
+    {
+        final CountDownLatch messageLatch = new CountDownLatch(1);
+
+        @Service
+        class S
+        {
+            @Listener("/foo")
+            protected Object foo(ServerSession remote, ServerMessage.Mutable message)
+            {
+                // Do not unbox it, we are testing exactly this case
+                return new Boolean(false);
+            }
+
+            @Subscription("/foo")
+            public void foo(Message message)
+            {
+                messageLatch.countDown();
+            }
+        }
+
+        S s = new S();
+        boolean processed = processor.process(s);
+        assertTrue(processed);
+
+        // Fake a publish
+        LocalSession remote = bayeuxServer.newLocalSession("remote");
+        remote.handshake();
+        ServerMessage.Mutable message = bayeuxServer.newMessage();
+        message.setChannel("/foo");
+        message.setData(new HashMap());
+        bayeuxServer.handle((ServerSessionImpl)remote.getServerSession(), message);
+
+        assertFalse(messageLatch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
     public void testLifecycleMethodsWithWrongReturnType() throws Exception
     {
         @Service

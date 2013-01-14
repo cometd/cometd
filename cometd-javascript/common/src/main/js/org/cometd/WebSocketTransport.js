@@ -40,7 +40,7 @@ org.cometd.WebSocketTransport = function()
         }
 
         var webSocket = new org.cometd.WebSocket(url);
-        webSocket.onopen = function()
+        var onopen = function()
         {
             self._debug('WebSocket opened', webSocket);
             if (connectTimer)
@@ -57,7 +57,7 @@ org.cometd.WebSocketTransport = function()
             }
             self.onOpen();
         };
-        webSocket.onclose = function(event)
+        var onclose = function(event)
         {
             var code = event ? event.code : 1000;
             var reason = event ? event.reason : undefined;
@@ -76,11 +76,7 @@ org.cometd.WebSocketTransport = function()
             }
             self.onClose(code, reason);
         };
-        webSocket.onerror = function()
-        {
-            webSocket.onclose({ code: 1002 });
-        };
-        webSocket.onmessage = function(message)
+        var onmessage = function(message)
         {
             self._debug('WebSocket message', message, webSocket);
             if (webSocket !== _webSocket)
@@ -90,6 +86,14 @@ org.cometd.WebSocketTransport = function()
             }
             self.onMessage(message);
         };
+
+        webSocket.onopen = onopen;
+        webSocket.onclose = onclose;
+        webSocket.onerror = function()
+        {
+            onclose({ code: 1002 });
+        };
+        webSocket.onmessage = onmessage;
 
         _webSocket = webSocket;
         this._debug('Transport', this.getType(), 'configured callbacks on', webSocket);
@@ -119,11 +123,12 @@ org.cometd.WebSocketTransport = function()
             {
                 messageIds.push(message.id);
                 var self = this;
+                var webSocket = _webSocket;
                 _timeouts[message.id] = this.setTimeout(function()
                 {
-                    if (_webSocket)
+                    if (webSocket)
                     {
-                        _webSocket.close(1000, 'Timeout');
+                        webSocket.close(1000, 'Timeout');
                     }
                 }, delay);
             }
@@ -150,9 +155,10 @@ org.cometd.WebSocketTransport = function()
         catch (x)
         {
             // Keep the semantic of calling response callbacks asynchronously after the request
+            var webSocket = _webSocket;
             this.setTimeout(function()
             {
-                envelope.onFailure(_webSocket, envelope.messages, 'error', x);
+                envelope.onFailure(webSocket, envelope.messages, 'error', x);
             }, 0);
         }
     }

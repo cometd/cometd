@@ -12,8 +12,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jetty-version>9.0.0-SNAPSHOT</jetty-version>
         <jetty-plugin-version>${jetty-version}</jetty-plugin-version>
-        <slf4j-version>1.7.1</slf4j-version>
-        <spring-version>3.1.2.RELEASE</spring-version>
+        <slf4j-version>1.7.2</slf4j-version>
+        <spring-version>3.1.3.RELEASE</spring-version>
     </properties>
 
     <url>http://cometd.org</url>
@@ -90,8 +90,8 @@
         <connection>scm:git:git://github.com/cometd/cometd.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/cometd/cometd.git</developerConnection>
         <url>https://github.com/cometd/cometd</url>
-        <tag>HEAD</tag>
-    </scm>
+      <tag>HEAD</tag>
+  </scm>
 
     <organization>
         <name>Dojo Foundation</name>
@@ -107,68 +107,6 @@
     </modules>
 
     <profiles>
-        <profile>
-            <id>osgi</id>
-            <activation>
-                <jdk>[1.8,)</jdk>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.felix</groupId>
-                        <artifactId>maven-bundle-plugin</artifactId>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <archive>
-                                <addMavenDescriptor>true</addMavenDescriptor>
-                            </archive>
-                            <supportedProjectTypes>
-                                <supportedProjectType>jar</supportedProjectType>
-                                <supportedProjectType>war</supportedProjectType>
-                            </supportedProjectTypes>
-                            <instructions>
-                                <Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
-                                <Bundle-ContactAddress>${project.url}</Bundle-ContactAddress>
-                                <Bundle-Description>${project.description}</Bundle-Description>
-                                <Bundle-DocURL>http://docs.cometd.org</Bundle-DocURL>
-                                <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
-                                <Bundle-Version>${project.version}</Bundle-Version>
-                                <Import-Package>org.eclipse.jetty.*;version="[7.6,9)",*</Import-Package>
-                                <mode>development</mode>
-                                <url>${project.url}</url>
-                                <implementation-version>${project.version}</implementation-version>
-                                <package>org.cometd</package>
-                            </instructions>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>osgi</id>
-                                <goals>
-                                    <goal>manifest</goal>
-                                </goals>
-                                <inherited>true</inherited>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-jar-plugin</artifactId>
-                        <configuration>
-                            <archive>
-                                <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-                            </archive>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-war-plugin</artifactId>
-                        <configuration>
-                            <archive>
-                                <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-                            </archive>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
         <profile>
             <id>sign-artifacts</id>
             <activation>
@@ -227,6 +165,58 @@
                     <compilerArgument>-Xlint:all,-serial,-unchecked</compilerArgument>
                 </configuration>
             </plugin>
+                    <plugin>
+                        <groupId>org.apache.felix</groupId>
+                        <artifactId>maven-bundle-plugin</artifactId>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <archive>
+                                <addMavenDescriptor>true</addMavenDescriptor>
+                            </archive>
+                            <supportedProjectTypes>
+                                <supportedProjectType>jar</supportedProjectType>
+                                <supportedProjectType>war</supportedProjectType>
+                            </supportedProjectTypes>
+                            <instructions>
+                                <Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
+                                <Bundle-ContactAddress>${project.url}</Bundle-ContactAddress>
+                                <Bundle-Description>${project.description}</Bundle-Description>
+                                <Bundle-DocURL>http://docs.cometd.org</Bundle-DocURL>
+                                <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+                                <Bundle-Version>${project.version}</Bundle-Version>
+                                <Import-Package>org.eclipse.jetty.*;version="[7.6,9)",*</Import-Package>
+                                <mode>development</mode>
+                                <url>${project.url}</url>
+                                <implementation-version>${project.version}</implementation-version>
+                                <package>org.cometd</package>
+                            </instructions>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>osgi</id>
+                                <goals>
+                                    <goal>manifest</goal>
+                                </goals>
+                                <inherited>true</inherited>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <configuration>
+                            <archive>
+                                <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                            </archive>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-war-plugin</artifactId>
+                        <configuration>
+                            <archive>
+                                <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                            </archive>
+                        </configuration>
+                    </plugin>
             <plugin>
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
@@ -379,7 +369,7 @@
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
-                <version>4.10</version>
+                <version>4.11</version>
                 <scope>test</scope>
             </dependency>
             <dependency>

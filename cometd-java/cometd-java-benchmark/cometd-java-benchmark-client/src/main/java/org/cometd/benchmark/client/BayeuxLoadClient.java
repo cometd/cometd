@@ -396,8 +396,8 @@ public class BayeuxLoadClient
                         TimeUnit.NANOSECONDS.toMillis(elapsedNanos),
                         batchCount * batchSize * 1000L * 1000 * 1000 / elapsedNanos,
                         batchCount * 1000L * 1000 * 1000 / elapsedNanos,
-                        batchCount * batchSize * messageSize * 8F * 1000 * 1000 * 1000 / elapsedNanos / 1024 / 1024
-                );
+                        batchCount * batchSize * messageSize * 8F * 1000 * 1000 * 1000  / elapsedNanos / 1024 / 1024
+                        );
             }
 
             waitForMessages(expected);
@@ -531,7 +531,7 @@ public class BayeuxLoadClient
                     responses.get() * 1000L * 1000 * 1000 / elapsedNanos,
                     100F * responses.get() / messageCount,
                     messageCount * messageSize * 8F * 1000 * 1000 * 1000 / elapsedNanos / 1024 / 1024
-            );
+                    );
         }
 
         if (wallLatencies.size() > 1)
@@ -548,7 +548,7 @@ public class BayeuxLoadClient
             long[] latencyBucketFrequencies = new long[20];
             long minWallLatency = this.minWallLatency.get();
             long latencyRange = maxWallLatency.get() - minWallLatency;
-            for (Iterator<Map.Entry<Long, AtomicLong>> entries = sortedWallLatencies.entrySet().iterator(); entries.hasNext(); )
+            for (Iterator<Map.Entry<Long, AtomicLong>> entries = sortedWallLatencies.entrySet().iterator(); entries.hasNext();)
             {
                 Map.Entry<Long, AtomicLong> entry = entries.next();
                 long latency = entry.getKey();

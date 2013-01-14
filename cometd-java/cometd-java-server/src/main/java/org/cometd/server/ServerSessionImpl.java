@@ -310,7 +310,7 @@ public class ServerSessionImpl implements ServerSession
         HttpTransport transport = (HttpTransport)_bayeux.getCurrentTransport();
         if (transport != null)
         {
-            _maxQueue = transport.getOption("maxQueue", -1);
+            _maxQueue = transport.getOption(HttpTransport.MAX_QUEUE_OPTION, -1);
             _maxInterval = _interval >= 0 ? _interval + transport.getMaxInterval() : transport.getMaxInterval();
             _maxServerInterval = transport.getOption("maxServerInterval", 10 * _maxInterval);
             _maxLazy = transport.getMaxLazyTimeout();
