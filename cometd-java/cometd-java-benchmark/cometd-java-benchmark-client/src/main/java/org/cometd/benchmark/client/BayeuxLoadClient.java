@@ -53,7 +53,7 @@ import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 
 public class BayeuxLoadClient
@@ -79,7 +79,7 @@ public class BayeuxLoadClient
     private ScheduledExecutorService scheduler;
     private MonitoringQueuedThreadPool threadPool;
     private HttpClient httpClient;
-    private WebSocketClientFactory webSocketClientFactory;
+    private WebSocketClient webSocketClient;
 
     public static void main(String[] args) throws Exception
     {
@@ -199,12 +199,13 @@ public class BayeuxLoadClient
         httpClient.start();
         mbeanContainer.beanAdded(null, httpClient);
 
-        webSocketClientFactory = new WebSocketClientFactory(threadPool);
-        webSocketClientFactory.setMasker(new ZeroMasker());
-        webSocketClientFactory.getPolicy().setBufferSize(8 * 1024);
-        webSocketClientFactory.addBean(mbeanContainer);
-        webSocketClientFactory.start();
-        mbeanContainer.beanAdded(null, webSocketClientFactory);
+        webSocketClient = new WebSocketClient();
+        webSocketClient.setExecutor(threadPool);
+        webSocketClient.setMasker(new ZeroMasker());
+        webSocketClient.getPolicy().setInputBufferSize(8 * 1024);
+        webSocketClient.addBean(mbeanContainer);
+        webSocketClient.start();
+        mbeanContainer.beanAdded(null, webSocketClient);
 
         HandshakeListener handshakeListener = new HandshakeListener(channel, rooms, roomsPerClient);
         DisconnectListener disconnectListener = new DisconnectListener();
@@ -412,7 +413,7 @@ public class BayeuxLoadClient
 
         statsClient.disconnect(1000);
 
-        webSocketClientFactory.stop();
+        webSocketClient.stop();
 
         httpClient.stop();
 
@@ -437,7 +438,7 @@ public class BayeuxLoadClient
                 Map<String, Object> options = new HashMap<>();
                 options.put(ClientTransport.JSON_CONTEXT, new JacksonJSONContextClient());
                 options.put(WebSocketTransport.IDLE_TIMEOUT_OPTION, 35000);
-                return new WebSocketTransport(options, webSocketClientFactory, scheduler);
+                return new WebSocketTransport(options, webSocketClient, scheduler);
             }
             default:
             {

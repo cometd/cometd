@@ -40,7 +40,6 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.StringContentProvider;
-import org.eclipse.jetty.client.util.TimedResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -193,7 +192,8 @@ public class LongPollingTransport extends HttpClientTransport
         // Set the idle timeout for this request larger than the total timeout
         // so there are no races between the two timeouts
         request.idleTimeout(maxNetworkDelay * 2, TimeUnit.MILLISECONDS);
-        request.send(new TimedResponseListener(maxNetworkDelay, TimeUnit.MILLISECONDS, request, new BufferingResponseListener()
+        request.timeout(maxNetworkDelay, TimeUnit.MILLISECONDS);
+        request.send(new BufferingResponseListener()
         {
             @Override
             public boolean onHeader(Response response, HttpField field)
@@ -277,7 +277,7 @@ public class LongPollingTransport extends HttpClientTransport
                     listener.onFailure(new ProtocolException("Unexpected response " + status + ": " + request), messages);
                 }
             }
-        }));
+        });
     }
 
     protected void customize(Request request)

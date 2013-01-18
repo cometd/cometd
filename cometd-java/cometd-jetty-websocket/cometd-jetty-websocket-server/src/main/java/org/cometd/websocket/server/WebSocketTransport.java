@@ -102,10 +102,10 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
 
         _protocol = getOption(PROTOCOL_OPTION, _protocol);
         _messagesPerFrame = getOption(MESSAGES_PER_FRAME_OPTION, _messagesPerFrame);
-        int bufferSize = getOption(BUFFER_SIZE_OPTION, policy.getBufferSize());
-        policy.setBufferSize(bufferSize);
-        int maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, policy.getMaxTextMessageSize());
-        policy.setMaxTextMessageSize(maxMessageSize);
+        int bufferSize = getOption(BUFFER_SIZE_OPTION, policy.getInputBufferSize());
+        policy.setInputBufferSize(bufferSize);
+        long maxMessageSize = getOption(MAX_MESSAGE_SIZE_OPTION, policy.getMaxMessageSize());
+        policy.setMaxMessageSize(maxMessageSize);
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, policy.getIdleTimeout());
         policy.setIdleTimeout((int)idleTimeout);
 

@@ -64,7 +64,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
     {
         bayeux.setAllowedTransports("long-polling");
 
-        WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsFactory);
+        WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsClient);
         webSocketTransport.setDebugEnabled(debugTests());
         LongPollingTransport longPollingTransport = LongPollingTransport.create(null, httpClient);
         longPollingTransport.setDebugEnabled(debugTests());
@@ -106,7 +106,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
     {
         bayeux.setAllowedTransports("long-polling");
 
-        WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsFactory);
+        WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsClient);
         webSocketTransport.setDebugEnabled(debugTests());
         final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport)
         {
@@ -140,7 +140,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
     public void testClientRetriesWebSocketTransportIfCannotConnect() throws Exception
     {
         final CountDownLatch connectLatch = new CountDownLatch(2);
-        WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsFactory);
+        WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsClient);
         webSocketTransport.setOption(WebSocketTransport.CONNECT_TIMEOUT_OPTION, 1000L);
         webSocketTransport.setDebugEnabled(debugTests());
         LongPollingTransport longPollingTransport = LongPollingTransport.create(null, httpClient);
@@ -193,7 +193,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
     @Test
     public void testAbortThenRestart() throws Exception
     {
-        WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsFactory);
+        WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsClient);
         webSocketTransport.setDebugEnabled(debugTests());
         BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport)
         {
@@ -255,7 +255,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         Map<String,Object> options = new HashMap<>();
         options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, maxNetworkDelay);
-        WebSocketTransport transport = WebSocketTransport.create(options, wsFactory);
+        WebSocketTransport transport = WebSocketTransport.create(options, wsClient);
         transport.setDebugEnabled(debugTests());
         final BayeuxClient client = new BayeuxClient(cometdURL, transport)
         {
@@ -574,7 +574,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
     @Test
     public void testWebSocketWithAckExtension() throws Exception
     {
-        WebSocketTransport transport = WebSocketTransport.create(null, wsFactory);
+        WebSocketTransport transport = WebSocketTransport.create(null, wsClient);
         transport.setDebugEnabled(debugTests());
         final BayeuxClient client = new BayeuxClient(cometdURL, transport)
         {
@@ -696,7 +696,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
     {
         Map<String, Object> options = new HashMap<>();
         options.put("ws.maxNetworkDelay", maxNetworkDelay);
-        WebSocketTransport transport = WebSocketTransport.create(options, wsFactory);
+        WebSocketTransport transport = WebSocketTransport.create(options, wsClient);
         transport.setDebugEnabled(debugTests());
         BayeuxClient client = new BayeuxClient(cometdURL, transport)
         {
@@ -786,7 +786,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 
         Map<String, Object> clientOptions = new HashMap<>();
         clientOptions.put("ws.maxMessageSize", maxMessageSize);
-        WebSocketTransport transport = WebSocketTransport.create(clientOptions, wsFactory);
+        WebSocketTransport transport = WebSocketTransport.create(clientOptions, wsClient);
         transport.setDebugEnabled(debugTests());
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.setDebugEnabled(debugTests());
@@ -825,13 +825,14 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         serverOptions.put("ws." + org.cometd.websocket.server.WebSocketTransport.MAX_MESSAGE_SIZE_OPTION, String.valueOf(maxMessageSize));
         runServer(serverOptions);
 
-        wsFactory.stop();
-        //wsFactory.setBufferSize(bufferSize);
-        wsFactory.start();
+        // TODO: why this stop()+start() ?
+        wsClient.stop();
+        //wsClient.setBufferSize(bufferSize);
+        wsClient.start();
 
         Map<String, Object> clientOptions = new HashMap<>();
         clientOptions.put("ws." + WebSocketTransport.MAX_MESSAGE_SIZE_OPTION, maxMessageSize);
-        WebSocketTransport transport = WebSocketTransport.create(clientOptions, wsFactory);
+        WebSocketTransport transport = WebSocketTransport.create(clientOptions, wsClient);
         transport.setDebugEnabled(debugTests());
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.setDebugEnabled(debugTests());
@@ -918,7 +919,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
         runServer(options);
 
-        WebSocketTransport transport = WebSocketTransport.create(null, wsFactory);
+        WebSocketTransport transport = WebSocketTransport.create(null, wsClient);
         transport.setDebugEnabled(debugTests());
         BayeuxClient client = new BayeuxClient(cometdURL, transport)
         {

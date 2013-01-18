@@ -58,7 +58,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,7 +103,7 @@ public class Oort extends ContainerLifeCycle
     private final Logger _logger;
     private ThreadPool _threadPool;
     private HttpClient _httpClient;
-    private WebSocketClientFactory _wsFactory;
+    private WebSocketClient _wsClient;
     private final LocalSession _oortSession;
     private String _secret;
     private boolean _debug;
@@ -141,9 +141,12 @@ public class Oort extends ContainerLifeCycle
         }
         addBean(_httpClient);
 
-        if (_wsFactory == null)
-            _wsFactory = new WebSocketClientFactory(_threadPool);
-        addBean(_wsFactory);
+        if (_wsClient == null)
+        {
+            _wsClient = new WebSocketClient();
+            _wsClient.setExecutor(_threadPool);
+        }
+        addBean(_wsClient);
 
         super.doStart();
 
@@ -731,14 +734,14 @@ public class Oort extends ContainerLifeCycle
         return _threadPool;
     }
 
-    public WebSocketClientFactory getWebSocketClientFactory()
+    public WebSocketClient getWebSocketClient()
     {
-        return _wsFactory;
+        return _wsClient;
     }
 
-    public void setWebSocketClientFactory(WebSocketClientFactory wsFactory)
+    public void setWebSocketClientFactory(WebSocketClient wsClient)
     {
-        this._wsFactory = wsFactory;
+        this._wsClient = wsClient;
     }
 
     public HttpClient getHttpClient()

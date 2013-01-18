@@ -67,7 +67,7 @@ public abstract class AbstractCometDTest
     protected int expirationPeriod = 2500;
     protected ThreadModel threadModel;
     private XMLHttpRequestClient xhrClient;
-    private WebSocketClientFactory wsClientFactory;
+    private WebSocketConnector wsConnector;
 
     @Before
     public void initCometDServer() throws Exception
@@ -183,11 +183,11 @@ public abstract class AbstractCometDTest
             xhrClient = (XMLHttpRequestClient)rootScope.get("xhrClient", rootScope);
             xhrClient.start();
 
-            ScriptableObject.defineClass(rootScope, WebSocketClientFactory.class);
-            ScriptableObject.defineClass(rootScope, WebSocketClient.class);
-            jsContext.evaluateString(rootScope, "var wsClientFactory = new WebSocketClientFactory();", "wsClientFactory", 1, null);
-            wsClientFactory = (WebSocketClientFactory)rootScope.get("wsClientFactory", rootScope);
-            wsClientFactory.start();
+            ScriptableObject.defineClass(rootScope, WebSocketConnector.class);
+            ScriptableObject.defineClass(rootScope, WebSocketConnection.class);
+            jsContext.evaluateString(rootScope, "var wsConnector = new WebSocketConnector();", "wsConnector", 1, null);
+            wsConnector = (WebSocketConnector)rootScope.get("wsConnector", rootScope);
+            wsConnector.start();
         }
         finally
         {
@@ -222,7 +222,7 @@ public abstract class AbstractCometDTest
 
     protected void destroyJavaScript() throws Exception
     {
-        wsClientFactory.stop();
+        wsConnector.stop();
         xhrClient.stop();
         threadModel.destroy();
     }

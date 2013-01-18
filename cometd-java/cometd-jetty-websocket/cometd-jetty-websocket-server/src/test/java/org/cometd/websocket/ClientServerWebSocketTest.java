@@ -29,7 +29,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.client.WebSocketClientFactory;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
@@ -54,7 +54,7 @@ public abstract class ClientServerWebSocketTest
     protected String cometdServletPath;
     protected HttpClient httpClient;
     protected QueuedThreadPool wsThreadPool;
-    protected WebSocketClientFactory wsFactory;
+    protected WebSocketClient wsClient;
     protected String cometdURL;
     protected BayeuxServerImpl bayeux;
 
@@ -91,7 +91,8 @@ public abstract class ClientServerWebSocketTest
         wsThreadPool.setName(wsThreadPool.getName() + "-client");
         //wsThreadPool.setMaxStopTimeMs(1000);
 
-        wsFactory = new WebSocketClientFactory(wsThreadPool);
+        wsClient = new WebSocketClient();
+        wsClient.setExecutor(wsThreadPool);
 
         startServer();
     }
@@ -107,12 +108,12 @@ public abstract class ClientServerWebSocketTest
         httpClient.start();
 
         wsThreadPool.start();
-        wsFactory.start();
+        wsClient.start();
     }
 
     protected BayeuxClient newBayeuxClient()
     {
-        WebSocketTransport transport = WebSocketTransport.create(null, wsFactory);
+        WebSocketTransport transport = WebSocketTransport.create(null, wsClient);
         transport.setDebugEnabled(debugTests());
         BayeuxClient client = new BayeuxClient(cometdURL, transport);
         client.setDebugEnabled(debugTests());
@@ -127,7 +128,7 @@ public abstract class ClientServerWebSocketTest
     @After
     public void stopServer() throws Exception
     {
-        wsFactory.stop();
+        wsClient.stop();
         wsThreadPool.stop();
 
         httpClient.stop();

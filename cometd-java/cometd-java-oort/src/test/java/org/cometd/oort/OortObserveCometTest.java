@@ -207,7 +207,7 @@ public class OortObserveCometTest extends OortTest
         stopOort(oort2);
         Assert.assertFalse(oort2.getOortSession().isConnected());
         Assert.assertTrue(oort2.getHttpClient().isStopped());
-        Assert.assertTrue(oort2.getWebSocketClientFactory().isStopped());
+        Assert.assertTrue(oort2.getWebSocketClient().isStopped());
         Assert.assertEquals(0, oort2.getKnownComets().size());
 
         // Stopping oort2 implies oort1 must see it disappearing

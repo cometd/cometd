@@ -980,7 +980,7 @@ var window = this;
     window.WebSocket = function(url)
     {
         this._url = url;
-        this._ws = new WebSocketClient(cookies, threadModel, this, wsClientFactory, url);
+        this._ws = new WebSocketConnection(cookies, threadModel, this, wsConnector, url);
     };
     window.WebSocket.CONNECTING = 0;
     window.WebSocket.OPEN = 1;
