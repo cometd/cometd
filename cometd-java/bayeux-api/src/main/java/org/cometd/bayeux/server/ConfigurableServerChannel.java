@@ -77,6 +77,20 @@ public interface ConfigurableServerChannel extends Channel
     void setLazy(boolean lazy);
 
     /**
+     * @return the lazy timeout for this channel
+     * @see #setLazyTimeout(long)
+     */
+    long getLazyTimeout();
+
+    /**
+     * Sets the lazy timeout for this channel.
+     * A positive value makes the channel lazy, a negative value makes the channel non-lazy.
+     * @param lazyTimeout the lazy timeout for this channel
+     * @see #setLazy(boolean)
+     */
+    void setLazyTimeout(long lazyTimeout);
+
+    /**
      * @return whether the channel is persistent
      * @see #setPersistent(boolean)
      */

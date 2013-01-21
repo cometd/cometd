@@ -265,6 +265,7 @@ public class ServerChannelTest
         assertEquals(3, session2.getQueue().size());
 
         msg = _bayeux.newMessage();
+        msg.setChannel("/lazy");
         msg.setData("foostar");
         msg.setLazy(true);
         foobar.publish(session0, msg);
@@ -273,6 +274,7 @@ public class ServerChannelTest
         assertEquals(4, session2.getQueue().size());
 
         msg = _bayeux.newMessage();
+        msg.setChannel("/lazy");
         msg.setData("starstar");
         msg.setLazy(true);
         foobar.publish(session0, msg);
@@ -487,6 +489,36 @@ public class ServerChannelTest
 
         // Only weak listeners present, must be swept
         assertNull(_bayeux.getChannel(channelName));
+    }
+
+    @Test
+    public void testLazyTimeout() throws Exception
+    {
+        String channelName = "/testLazy";
+        _bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+            }
+        });
+        ServerChannel channel = _bayeux.getChannel(channelName);
+        assertFalse(channel.isLazy());
+
+        int lazyTimeout = 1000;
+        channel.setLazyTimeout(lazyTimeout);
+        assertTrue(channel.isLazy());
+
+        channel.setLazy(true);
+        assertEquals(lazyTimeout, channel.getLazyTimeout());
+
+        channel.setLazy(false);
+        assertFalse(channel.isLazy());
+        assertEquals(-1, channel.getLazyTimeout());
+
+        channel.setLazy(true);
+        assertTrue(channel.isLazy());
+        assertEquals(-1, channel.getLazyTimeout());
     }
 
     private void sweep()

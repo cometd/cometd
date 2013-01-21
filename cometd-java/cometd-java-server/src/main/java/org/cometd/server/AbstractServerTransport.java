@@ -42,7 +42,8 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
     public static final String TIMEOUT_OPTION = "timeout";
     public static final String INTERVAL_OPTION = "interval";
     public static final String MAX_INTERVAL_OPTION = "maxInterval";
-    public static final String MAX_LAZY_OPTION = "maxLazyTimeout";
+    public static final String MAX_LAZY_TIMEOUT_OPTION = "maxLazyTimeout";
+    public static final String RANDOMIZE_LAZY_TIMEOUT_OPTION = "randomizeLazyTimeout";
     public static final String META_CONNECT_DELIVERY_OPTION = "metaConnectDeliverOnly";
     public static final String MAX_QUEUE_OPTION = "maxQueue";
 
@@ -136,7 +137,7 @@ public abstract class AbstractServerTransport extends AbstractTransport implemen
         _interval = getOption(INTERVAL_OPTION, _interval);
         _maxInterval = getOption(MAX_INTERVAL_OPTION, _maxInterval);
         _timeout = getOption(TIMEOUT_OPTION, _timeout);
-        _maxLazyTimeout = getOption(MAX_LAZY_OPTION, _maxLazyTimeout);
+        _maxLazyTimeout = getOption(MAX_LAZY_TIMEOUT_OPTION, _maxLazyTimeout);
         _metaConnectDeliveryOnly = getOption(META_CONNECT_DELIVERY_OPTION, _metaConnectDeliveryOnly);
         jsonContext = (JSONContext.Server)getOption(BayeuxServerImpl.JSON_CONTEXT);
     }

@@ -52,6 +52,7 @@ public class ServerChannelImpl implements ServerChannel
     private final Set<ServerChannelImpl> _children = new ConcurrentHashSet<ServerChannelImpl>();
     private final ServerChannelImpl _parent;
     private boolean _lazy;
+    private long _lazyTimeout = -1;
     private boolean _persistent;
 
     protected ServerChannelImpl(BayeuxServerImpl bayeux, ChannelId id, ServerChannelImpl parent)
@@ -240,6 +241,19 @@ public class ServerChannelImpl implements ServerChannel
     public void setLazy(boolean lazy)
     {
         _lazy = lazy;
+        if (!lazy)
+            _lazyTimeout = -1;
+    }
+
+    public long getLazyTimeout()
+    {
+        return _lazyTimeout;
+    }
+
+    public void setLazyTimeout(long lazyTimeout)
+    {
+        _lazyTimeout = lazyTimeout;
+        setLazy(lazyTimeout > 0);
     }
 
     public void setPersistent(boolean persistent)
