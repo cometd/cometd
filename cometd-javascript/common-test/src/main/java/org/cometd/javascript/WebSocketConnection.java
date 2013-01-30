@@ -21,6 +21,7 @@ import java.net.URI;
 
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.slf4j.Logger;
@@ -37,23 +38,31 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     {
     }
 
-    public void jsConstructor(Object cookieStore, Object threadModel, Scriptable thiz, Object factory, String url)
+    public void jsConstructor(Object cookieStore, Object threadModel, Scriptable thiz, Object connector, String url)
     {
         this.threads = (ThreadModel)threadModel;
         this.thiz = thiz;
+        WebSocketClient wsClient = ((WebSocketConnector)connector).getWebSocketClient();
         try
         {
-            WebSocketConnector wsConnector = (WebSocketConnector)factory;
             URI uri = new URI(url);
             // TODO: pass in cookies
 //            wsClient.getUpgradeRequest().setCookieStore();
 //            wsClient.getCookies().putAll(((HttpCookieStore)cookieStore).getAll(uri));
             log("Opening WebSocket connection to {}", uri);
-            wsConnector.connect(this, uri);
+            wsClient.connect(this, uri).get();
         }
-        catch (Exception x)
+        catch (final Exception x)
         {
-            onWebSocketException(new WebSocketException(x));
+            // This method is invoked from JavaScript, so we must fail asynchronously
+            wsClient.getExecutor().execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    onWebSocketException(new WebSocketException(x));
+                }
+            });
         }
     }
 
@@ -107,7 +116,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     @Override
     public void onWebSocketException(WebSocketException x)
     {
-        log("WebSocket error {}", x);
+        log("WebSocket exception {}", x);
         threads.invoke(false, thiz, thiz, "onerror");
     }
 

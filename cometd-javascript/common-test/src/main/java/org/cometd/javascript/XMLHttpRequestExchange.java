@@ -252,13 +252,10 @@ public class XMLHttpRequestExchange extends ScriptableObject
         public void onHeaders(Response response)
         {
             super.onHeaders(response);
-            if (!aborted)
+            if (!aborted && async)
             {
-                if (async)
-                {
-                    readyState = ReadyState.HEADERS_RECEIVED;
-                    notifyReadyStateChange(true);
-                }
+                readyState = ReadyState.HEADERS_RECEIVED;
+                notifyReadyStateChange(true);
             }
         }
 
@@ -266,15 +263,12 @@ public class XMLHttpRequestExchange extends ScriptableObject
         public void onContent(Response response, ByteBuffer content)
         {
             super.onContent(response, content);
-            if (!aborted)
+            if (!aborted && async)
             {
-                if (async)
+                if (readyState != ReadyState.LOADING)
                 {
-                    if (readyState != ReadyState.LOADING)
-                    {
-                        readyState = ReadyState.LOADING;
-                        notifyReadyStateChange(true);
-                    }
+                    readyState = ReadyState.LOADING;
+                    notifyReadyStateChange(true);
                 }
             }
         }
@@ -282,24 +276,25 @@ public class XMLHttpRequestExchange extends ScriptableObject
         @Override
         public void onComplete(Result result)
         {
-            if (!aborted)
+            if (result.isSucceeded())
             {
-                if (result.isSucceeded())
+                Response response = result.getResponse();
+                log("Succeeded ({}) {}", response.getStatus(), this);
+                if (!aborted)
                 {
-                    Response response = result.getResponse();
-                    log("Succeeded ({}) {}", response.getStatus(), this);
                     responseText = getContentAsString();
                     readyState = ReadyState.DONE;
                     if (async)
                         notifyReadyStateChange(true);
                 }
-                else
-                {
-                    Throwable failure = result.getFailure();
-                    if (!(failure instanceof EOFException))
-                        log("Failed " + this, failure);
-                }
             }
+            else
+            {
+                Throwable failure = result.getFailure();
+                if (!(failure instanceof EOFException))
+                    log("Failed " + this, failure);
+            }
+            super.onComplete(result);
         }
 
         private void log(String message, Object... args)

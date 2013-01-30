@@ -16,9 +16,8 @@
 
 package org.cometd.javascript;
 
-import java.net.URI;
-
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.masks.ZeroMasker;
 import org.mozilla.javascript.ScriptableObject;
 
@@ -43,7 +42,7 @@ public class WebSocketConnector extends ScriptableObject
     public void start() throws Exception
     {
         threadPool = new QueuedThreadPool();
-        wsClient = new org.eclipse.jetty.websocket.client.WebSocketClient();
+        wsClient = new WebSocketClient();
         wsClient.setExecutor(threadPool);
         wsClient.setMasker(new ZeroMasker());
         wsClient.start();
@@ -52,10 +51,11 @@ public class WebSocketConnector extends ScriptableObject
     public void stop() throws Exception
     {
         wsClient.stop();
+        threadPool.stop();
     }
 
-    public void connect(Object target, URI uri) throws Exception
+    public WebSocketClient getWebSocketClient()
     {
-        wsClient.connect(target, uri).get();
+        return wsClient;
     }
 }

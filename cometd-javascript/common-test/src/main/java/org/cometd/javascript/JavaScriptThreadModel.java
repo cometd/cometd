@@ -39,7 +39,7 @@ import org.mozilla.javascript.ScriptableObject;
 public class JavaScriptThreadModel extends ScriptableObject implements Runnable, ThreadModel
 {
     private final Thread thread = new Thread(this);
-    private final BlockingQueue<FutureTask<Object>> queue = new LinkedBlockingQueue<FutureTask<Object>>();
+    private final BlockingQueue<FutureTask<Object>> queue = new LinkedBlockingQueue<>();
     private final ScriptableObject rootScope;
     private volatile boolean running;
     private volatile Context context;
@@ -104,7 +104,7 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
 
     public Object evaluate(final URL url) throws IOException
     {
-        FutureTask<Object> future = new FutureTask<Object>(new Callable<Object>()
+        FutureTask<Object> future = new FutureTask<>(new Callable<Object>()
         {
             public Object call() throws IOException
             {
@@ -132,7 +132,7 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
 
     public Object evaluate(final String scriptName, final String script)
     {
-        FutureTask<Object> future = new FutureTask<Object>(new Callable<Object>()
+        FutureTask<Object> future = new FutureTask<>(new Callable<Object>()
         {
             public Object call()
             {
@@ -195,7 +195,7 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
 
     private Object invoke(boolean sync, Callable<Object> invocation)
     {
-        FutureTask<Object> future = new FutureTask<Object>(invocation);
+        FutureTask<Object> future = new FutureTask<>(invocation);
         submit(future);
 
         if (!sync)
@@ -235,7 +235,7 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
 
     public void define(final Class clazz) throws InvocationTargetException, IllegalAccessException, InstantiationException
     {
-        FutureTask<Object> future = new FutureTask<Object>(new Callable<Object>()
+        FutureTask<Object> future = new FutureTask<>(new Callable<Object>()
         {
             public Object call() throws InvocationTargetException, IllegalAccessException, InstantiationException
             {
@@ -265,7 +265,7 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
 
     public Object get(final String name)
     {
-        FutureTask<Object> future = new FutureTask<Object>(new Callable<Object>()
+        FutureTask<Object> future = new FutureTask<>(new Callable<Object>()
         {
             public Object call()
             {
