@@ -21,7 +21,9 @@ import java.net.ConnectException;
 import java.net.ProtocolException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -372,12 +374,14 @@ public class LongPollingTransportTest
         try
         {
             HttpClient httpClient = new HttpClient();
-            httpClient.setIdleTimeout(timeout);
             httpClient.start();
 
             try
             {
-                HttpClientTransport transport = new LongPollingTransport(null, httpClient);
+
+                Map<String, Object> options = new HashMap<>();
+                options.put(ClientTransport.MAX_NETWORK_DELAY_OPTION, timeout);
+                HttpClientTransport transport = new LongPollingTransport(options, httpClient);
                 final CountDownLatch latch = new CountDownLatch(1);
                 transport.setURL(serverURL);
                 transport.setCookieStore(new HttpCookieStore());
