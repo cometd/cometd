@@ -126,6 +126,7 @@ org.cometd.WebSocketTransport = function()
                 var webSocket = _webSocket;
                 _timeouts[message.id] = this.setTimeout(function()
                 {
+                    self._debug('Transport', self.getType(), 'timing out message', message.id, 'after', delay, 'on', webSocket);
                     if (webSocket)
                     {
                         webSocket.close(1000, 'Timeout');
