@@ -183,7 +183,7 @@ public class OortMulticastConfigurer
                 byte[] cometURLBytes = cometURL.getBytes("UTF-8");
                 if (cometURLBytes.length > MTU)
                 {
-                    logger.info("Oort URL {} exceeds max transmission unit and will not be advertised", cometURL);
+                    logger.warn("Oort URL {} exceeds max transmission unit and will not be advertised", cometURL);
                     return;
                 }
 
