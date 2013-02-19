@@ -56,8 +56,8 @@ public class OortObjectTest extends OortTest
         Thread.sleep(1000);
 
         String name = "test";
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name);
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name);
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new HashMap<String, Object>());
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new HashMap<String, Object>());
 
         String oortObjectsChannel = "/oort/objects";
         Set<ServerSession> s1 = oort1.getBayeuxServer().getChannel(oortObjectsChannel).getSubscribers();
@@ -80,7 +80,7 @@ public class OortObjectTest extends OortTest
         final CountDownLatch objectLatch = new CountDownLatch(1);
         oortObject2.addListener(new OortObject.Listener.Adapter<Map<String, Object>>()
         {
-            public void onAdded(OortObject.MetaData<Map<String, Object>> metaData)
+            public void onUpdated(OortObject.MetaData<Map<String, Object>> oldMetaData, OortObject.MetaData<Map<String, Object>> newMetaData)
             {
                 objectLatch.countDown();
             }
