@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.HttpCookie;
-import java.net.ProtocolException;
 import java.net.URI;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -269,12 +268,12 @@ public class LongPollingTransport extends HttpClientTransport
                     }
                     else
                     {
-                        listener.onFailure(new ProtocolException("Empty response content " + request), messages);
+                        listener.onFailure(new ServerProtocolException("Empty response content " + request, status, false), messages);
                     }
                 }
                 else
                 {
-                    listener.onFailure(new ProtocolException("Unexpected response " + status + ": " + request), messages);
+                    listener.onFailure(new ServerProtocolException("Unexpected response " + status + ": " + request, status, false), messages);
                 }
             }
         });

@@ -40,9 +40,10 @@ import org.cometd.bayeux.Message.Mutable;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.MessageClientTransport;
+import org.cometd.client.transport.ServerProtocolException;
 import org.cometd.client.transport.TransportListener;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.Logger;
@@ -95,7 +96,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private volatile boolean _disconnected;
     private volatile boolean _aborted;
     private volatile boolean _webSocketSupported = true;
-    private volatile WebSocketConnection _connection;
+    private volatile Session _session;
     private volatile TransportListener _listener;
     private volatile Map<String, Object> _advice;
 
@@ -171,18 +172,18 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
     protected void disconnect(String reason)
     {
-        WebSocketConnection connection = _connection;
-        _connection = null;
-        if (connection != null && connection.isOpen())
+        Session session = _session;
+        _session = null;
+        if (session != null && session.isOpen())
         {
-            debug("Closing websocket connection {}", connection);
+            debug("Closing websocket connection {}", session);
             try
             {
-                connection.close(1000, reason);
+                session.close(1000, reason);
             }
             catch (IOException x)
             {
-                logger.trace("Could not close " + connection, x);
+                logger.trace("Could not close " + session, x);
             }
         }
     }
@@ -195,8 +196,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
 
         try
         {
-            WebSocketConnection connection = connect(listener, messages);
-            if (connection == null)
+            Session session = connect(listener, messages);
+            if (session == null)
                 return;
 
             for (Message.Mutable message : messages)
@@ -210,7 +211,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             debug("Sending messages {}", content);
             listener.onSending(messages);
 
-            connection.write(content);
+            session.getRemote().sendStringByFuture(content);
         }
         catch (Exception x)
         {
@@ -220,11 +221,11 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         }
     }
 
-    private WebSocketConnection connect(TransportListener listener, Mutable[] messages)
+    private Session connect(TransportListener listener, Mutable[] messages)
     {
-        WebSocketConnection connection = _connection;
-        if (connection != null)
-            return connection;
+        Session session = _session;
+        if (session != null)
+            return session;
 
         try
         {
@@ -234,12 +235,12 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             URI uri = URI.create(url);
             debug("Opening websocket connection to {}", uri);
 
-            connection = connect(uri);
+            session = connect(uri);
 
             if (_aborted)
                 listener.onFailure(new Exception("Aborted"), messages);
 
-            return _connection = connection;
+            return _session = session;
         }
         catch (ConnectException | SocketTimeoutException x)
         {
@@ -255,17 +256,21 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         return null;
     }
 
-    protected WebSocketConnection connect(URI uri) throws IOException, InterruptedException
+    protected Session connect(URI uri) throws IOException, InterruptedException
     {
         try
         {
             _webSocketClient.connect(_websocket, uri).get();
             // If the future succeeds, then we will have a non-null connection
-            return _connection;
+            return _session;
         }
         catch (ExecutionException x)
         {
             Throwable cause = x.getCause();
+            if (cause instanceof UpgradeException) {
+                int statusCode = ((UpgradeException)cause).getResponseStatusCode();
+                throw new ServerProtocolException(x.getMessage(), statusCode, true);
+            }
             if (cause instanceof IOException)
                 throw (IOException)cause;
             throw new IOException(cause);
@@ -402,18 +407,18 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     protected class CometDWebSocket implements WebSocketListener
     {
         @Override
-        public void onWebSocketConnect(WebSocketConnection connection)
+        public void onWebSocketConnect(Session session)
         {
-            _connection = connection;
-            debug("Opened websocket connection {}", connection);
+            _session = session;
+            debug("Opened websocket session {}", session);
         }
 
         @Override
         public void onWebSocketClose(int closeCode, String reason)
         {
-            debug("Closed websocket connection with code {} {}: {} ", closeCode, reason, _connection);
-            _connection = null;
-            failMessages(new EOFException("Connection closed " + closeCode + " " + reason));
+            debug("Closed websocket session with code {} {}: {} ", closeCode, reason, _session);
+            _session = null;
+            failMessages(new EOFException("Session closed " + closeCode + " " + reason));
         }
 
         @Override
@@ -438,7 +443,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         }
 
         @Override
-        public void onWebSocketException(WebSocketException failure)
+        public void onWebSocketError(Throwable failure)
         {
             failMessages(failure);
         }
