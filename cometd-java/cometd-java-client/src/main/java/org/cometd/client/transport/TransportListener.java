@@ -32,5 +32,5 @@ public interface TransportListener
 
     void onExpire(Message[] messages);
 
-    void onProtocolError(String info, Message[] messages);
+    void onProtocolError(Throwable x, Message[] messages);
 }

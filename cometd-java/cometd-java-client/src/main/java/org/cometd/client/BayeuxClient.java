@@ -16,7 +16,6 @@
 
 package org.cometd.client;
 
-import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,6 +42,7 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.client.transport.MessageClientTransport;
+import org.cometd.client.transport.ServerProtocolException;
 import org.cometd.client.transport.TransportListener;
 import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
@@ -953,8 +953,15 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             failed.setSuccessful(false);
             failed.setChannel(message.getChannel());
             failed.put("message", message);
-            if (x != null)
+            if (x != null) {
                 failed.put("exception", x);
+                if (x instanceof ServerProtocolException) {
+                    ServerProtocolException spe = ((ServerProtocolException)x);
+                    failed.put("statusCode", spe.getStatusCode());
+                    if (spe.isWebSocketUpgradeFailure())
+                        failed.put("webSocketUpgradeFailure", true);
+                }
+            }
             failed.put(PUBLISH_CALLBACK_KEY, message.remove(PUBLISH_CALLBACK_KEY));
             receive(failed);
         }
@@ -1156,9 +1163,9 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             onFailure(new TimeoutException("expired"), messages);
         }
 
-        public void onProtocolError(String info, Message[] messages)
+        public void onProtocolError(Throwable x, Message[] messages)
         {
-            onFailure(new ProtocolException(info), messages);
+            onFailure(x, messages);
         }
 
         protected void processMessage(Message.Mutable message)
