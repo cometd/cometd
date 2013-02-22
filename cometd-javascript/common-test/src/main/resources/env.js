@@ -977,8 +977,10 @@ var window = this;
         };
     }();
 
+    var wsIds = 0;
     window.WebSocket = function(url)
     {
+        this._id = ++wsIds;
         this._url = url;
         this._ws = new WebSocketConnection(cookies, threadModel, this, wsConnector, url);
     };

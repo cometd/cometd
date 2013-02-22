@@ -48,27 +48,21 @@ import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.transport.HttpTransport;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.api.WebSocketConnection;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.server.ServletWebSocketRequest;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WebSocketTransport extends HttpTransport implements WebSocketListener
+public class WebSocketTransport extends HttpTransport
 {
-    private final Logger logger = LoggerFactory.getLogger(getClass().getName() + "." + System.identityHashCode(this));
-
     public static final String PREFIX = "ws";
     public static final String NAME = "websocket";
     public static final String PROTOCOL_OPTION = "protocol";
@@ -78,7 +72,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
     public static final String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
 
-    private WebSocketServerFactory _factory;// = new WebSocketServerFactory(new WebSocketPolicy(WebSocketBehavior.SERVER));
+    private WebSocketServerFactory _factory;
     private final ThreadLocal<WebSocketContext> _handshake = new ThreadLocal<>();
     private String _protocol;
     private Executor _executor;
@@ -94,8 +88,6 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
     @Override
     public void init()
     {
-        logger.debug("server init");
-
         super.init();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
@@ -197,17 +189,18 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
         }
     }
 
+    // TODO: implement this
     public boolean checkOrigin(HttpServletRequest request, String origin)
     {
         return true;
     }
 
-    protected void handleJSONParseException(WebSocketConnection connection, String json, Throwable exception)
+    protected void handleJSONParseException(Session session, String json, Throwable exception)
     {
         _logger.warn("Error parsing JSON: " + json, exception);
     }
 
-    protected void handleException(WebSocketConnection connection, Throwable exception)
+    protected void handleException(Session session, Throwable exception)
     {
         _logger.warn("", exception);
     }
@@ -218,7 +211,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
         return _handshake.get();
     }
 
-    protected void send(WebSocketConnection connection, List<ServerMessage> messages) throws IOException
+    protected void send(Session session, List<ServerMessage> messages) throws IOException
     {
         if (messages.isEmpty())
             return;
@@ -248,22 +241,23 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
             }
             builder.append("]");
             index += batch;
-            send(connection, builder.toString());
+            send(session, builder.toString());
         }
     }
 
-    protected void send(WebSocketConnection connection, ServerMessage message) throws IOException
+    protected void send(Session session, ServerMessage message) throws IOException
     {
         StringBuilder builder = new StringBuilder(message.size() * 32);
         builder.append("[").append(message.getJSON()).append("]");
-        send(connection, builder.toString());
+        send(session, builder.toString());
     }
 
-    protected void send(WebSocketConnection connection, String data) throws IOException
+    protected void send(Session session, String data) throws IOException
     {
         debug("Sending {}", data);
-        Future<Void> result = connection.write(data);
+        Future<Void> result = session.getRemote().sendStringByFuture(data);
 
+        // TODO: do we really need to be blocking ?
         try
         {
             result.get();
@@ -279,49 +273,14 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
     {
     }
 
-    @Override
-    public void onWebSocketBinary(byte[] payload, int offset, int len)
+    protected class WebSocketScheduler implements AbstractServerTransport.Scheduler, WebSocketListener, Runnable
     {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void onWebSocketClose(int statusCode, String reason)
-    {
-        // TODO Auto-generated method stub
-        System.out.println("statusCode = " + statusCode);
-    }
-
-    @Override
-    public void onWebSocketConnect(WebSocketConnection connection)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void onWebSocketException(WebSocketException error)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void onWebSocketText(String message)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @WebSocket
-    protected class WebSocketScheduler implements AbstractServerTransport.Scheduler, Runnable
-    {
+        private final Logger _logger = LoggerFactory.getLogger(getClass().getName() + "." + Integer.toHexString(System.identityHashCode(this)));
         private final AtomicBoolean _scheduling = new AtomicBoolean();
         private final WebSocketContext _context;
         private final String _userAgent;
         private volatile ServerSessionImpl _session;
-        private volatile WebSocketConnection _connection;
+        private volatile Session _wsSession;
         private ServerMessage.Mutable _connectReply;
         private ScheduledFuture<?> _connectTask;
 
@@ -331,20 +290,13 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
             _userAgent = userAgent;
         }
 
-
-        @OnWebSocketConnect
-        public void onWebSocketConnect(WebSocketConnection connection)
+        public void onWebSocketConnect(Session session)
         {
-            logger.debug("WebSocketServer: Notified of Connect");
-            _connection = connection;
+            _wsSession = session;
         }
 
-
-        @OnWebSocketClose
         public void onWebSocketClose(int code, String reason)
         {
-            logger.debug("WebSocketServer: Notified of Close");
-
             final ServerSessionImpl session = _session;
             if (session != null)
             {
@@ -355,8 +307,15 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
                 session.startIntervalTimeout(getInterval());
                 cancelMetaConnectTask(session);
             }
-            debug("Closing {}/{}", code, reason);
+            _logger.debug("Closing {}/{}", code, reason);
             WebSocketTransport.this.onClose(code, reason);
+        }
+
+        @Override
+        public void onWebSocketError(Throwable cause)
+        {
+            _logger.info("Exception caught", cause);
+            // TODO: more to do ?
         }
 
         private boolean cancelMetaConnectTask(ServerSessionImpl session)
@@ -369,31 +328,34 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
             }
             if (connectTask == null)
                 return false;
+            _logger.debug("Cancelling meta connect task {}", connectTask);
             connectTask.cancel(false);
             return true;
         }
 
-        @OnWebSocketMessage
+        @Override
+        public void onWebSocketBinary(byte[] payload, int offset, int len)
+        {
+        }
+
         public void onWebSocketText(String data)
         {
-            logger.debug("WebSocketServer: Notified of Text");
-
             _handshake.set(_context);
             getBayeux().setCurrentTransport(WebSocketTransport.this);
             try
             {
                 ServerMessage.Mutable[] messages = parseMessages(data);
-                debug("Received messages {}", data);
+                _logger.debug("Received messages {}", data);
                 for (ServerMessage.Mutable message : messages)
                     onMessage(message);
             }
             catch (ParseException x)
             {
-                handleJSONParseException(_connection, data, x);
+                handleJSONParseException(_wsSession, data, x);
             }
             catch (Exception x)
             {
-                handleException(_connection, x);
+                handleException(_wsSession, x);
             }
             finally
             {
@@ -404,6 +366,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
 
         protected void onMessage(ServerMessage.Mutable message) throws IOException
         {
+            _logger.debug("Received {}", message);
             boolean connect = Channel.META_CONNECT.equals(message.getChannel());
 
             // Get the session from the message
@@ -473,13 +436,14 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
                                 if (session.isQueueEmpty())
                                 {
                                     if (cancelMetaConnectTask(session))
-                                        debug("Cancelled unresponded meta connect {}", _connectReply);
+                                        _logger.debug("Cancelled unresponded meta connect {}", _connectReply);
 
                                     _connectReply = reply;
 
                                     // Delay the connect reply until timeout.
                                     long expiration = System.currentTimeMillis() + timeout;
                                     _connectTask = _scheduler.schedule(new MetaConnectReplyTask(reply, expiration), timeout, TimeUnit.MILLISECONDS);
+                                    _logger.debug("Scheduled meta connect {}", _connectTask);
                                     reply = null;
                                 }
                             }
@@ -495,7 +459,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
                     try
                     {
                         if (queue != null)
-                            send(_connection, queue);
+                            send(_wsSession, queue);
                     }
                     finally
                     {
@@ -516,7 +480,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
                     if (reply != null)
                     {
                         getBayeux().freeze(reply);
-                        send(_connection, reply);
+                        send(_wsSession, reply);
                     }
                 }
             }
@@ -526,7 +490,10 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
         {
             final ServerSessionImpl session = _session;
             if (session != null)
-                cancelMetaConnectTask(session);
+            {
+                if (cancelMetaConnectTask(session))
+                    ((WebSocketSession)_wsSession).close(1000, "Cancel");
+            }
         }
 
         public void schedule()
@@ -574,7 +541,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
                     {
                         // We had a second meta connect arrived while we were expiring the first:
                         // just ignore to reply to the first connect as if we were able to cancel it
-                        debug("Flushing skipped replies that do not match: {} != {}", connectReply, expiredConnectReply);
+                        _logger.debug("Flushing skipped replies that do not match: {} != {}", connectReply, expiredConnectReply);
                         return;
                     }
 
@@ -584,7 +551,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
                         {
                             // If we need to deliver only via meta connect, but we
                             // do not have one outstanding, wait until it arrives
-                            debug("Flushing skipped since metaConnectDelivery={}, metaConnectReply={}", metaConnectDelivery, connectReply);
+                            _logger.debug("Flushing skipped since metaConnectDelivery={}, metaConnectReply={}", metaConnectDelivery, connectReply);
                             return;
                         }
                     }
@@ -605,8 +572,8 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
 
                 try
                 {
-                    debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", session, timeout, metaConnectDelivery, reply, queue);
-                    send(_connection, queue);
+                    _logger.debug("Flushing {} timeout={} metaConnectDelivery={}, metaConnectReply={}, messages={}", session, timeout, metaConnectDelivery, reply, queue);
+                    send(_wsSession, queue);
                 }
                 finally
                 {
@@ -629,13 +596,13 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
                     if (connectReply != null)
                     {
                         getBayeux().freeze(connectReply);
-                        send(_connection, connectReply);
+                        send(_wsSession, connectReply);
                     }
                 }
             }
             catch (Exception x)
             {
-                handleException(_connection, x);
+                handleException(_wsSession, x);
             }
             finally
             {
@@ -663,7 +630,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketListen
                 long now = System.currentTimeMillis();
                 long delay = now - _connectExpiration;
                 if (delay > 5000) // TODO: make the max delay a parameter ?
-                    debug("/meta/connect timeout expired {} ms too late", delay);
+                    _logger.debug("/meta/connect timeout expired {} ms too late", delay);
 
                 // Send the meta connect response after timeout.
                 // We *must* execute the next schedule() otherwise

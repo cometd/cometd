@@ -47,6 +47,7 @@ import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -114,7 +115,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
             public void onFailure(Throwable x, Message[] messages)
             {
                 // Expect exception and suppress stack trace logging
-                if (!(x instanceof ProtocolException))
+                    if (!(x.getCause() instanceof UpgradeException))
                     super.onFailure(x, messages);
             }
         };

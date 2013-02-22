@@ -37,7 +37,7 @@ public interface ThreadModel
 
     Object invoke(boolean sync, Scriptable scope, Scriptable thiz, String functionName, Object... arguments);
 
-    void define(Class clazz) throws InvocationTargetException, IllegalAccessException, InstantiationException;
+    void define(Class<?> clazz) throws InvocationTargetException, IllegalAccessException, InstantiationException;
 
     Object get(String name);
 }

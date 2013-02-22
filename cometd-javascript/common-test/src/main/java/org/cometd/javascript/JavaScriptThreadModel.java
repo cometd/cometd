@@ -233,7 +233,7 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         }
     }
 
-    public void define(final Class clazz) throws InvocationTargetException, IllegalAccessException, InstantiationException
+    public void define(final Class<?> clazz) throws InvocationTargetException, IllegalAccessException, InstantiationException
     {
         FutureTask<Object> future = new FutureTask<>(new Callable<Object>()
         {

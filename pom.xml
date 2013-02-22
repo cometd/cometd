@@ -391,18 +391,20 @@
     </dependencyManagement>
 
     <!-- TODO: remove when referencing a stable Jetty release -->
+<!--
     <repositories>
         <repository>
             <id>jetty-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-            <!--<url>https://oss.sonatype.org/content/repositories/jetty-452</url>-->
+            &lt;!&ndash;<url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>&ndash;&gt;
+            <url>https://oss.sonatype.org/content/repositories/jetty-870</url>
             <releases>
-                <enabled>false</enabled>
+                <enabled>true</enabled>
             </releases>
             <snapshots>
-                <enabled>true</enabled>
+                <enabled>false</enabled>
             </snapshots>
         </repository>
     </repositories>
+-->
 
 </project>

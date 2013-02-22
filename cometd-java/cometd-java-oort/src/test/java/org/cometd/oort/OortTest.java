@@ -54,7 +54,7 @@ public abstract class OortTest
         server.addConnector(connector);
 
         String contextPath = "";
-        ServletContextHandler context = new ServletContextHandler(server, contextPath);
+        ServletContextHandler context = new ServletContextHandler(server, contextPath, ServletContextHandler.SESSIONS);
 
         // CometD servlet
         ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);

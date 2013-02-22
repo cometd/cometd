@@ -12,7 +12,6 @@ org.cometd.WebSocketTransport = function()
     // Timeouts for messages that have been sent
     var _timeouts = {};
     var _webSocket = null;
-    var _opened = false;
     var _connected = false;
     var _successCallback;
 
@@ -23,23 +22,24 @@ org.cometd.WebSocketTransport = function()
         this._debug('Transport', this.getType(), 'connecting to URL', url);
 
         var self = this;
-        var connectTimer = null;
+        var webSocket = new org.cometd.WebSocket(url);
 
+        var connectTimer = null;
         var connectTimeout = _cometd.getConfiguration().connectTimeout;
         if (connectTimeout > 0)
         {
             connectTimer = this.setTimeout(function()
             {
                 connectTimer = null;
-                if (!_opened)
-                {
-                    self._debug('Transport', self.getType(), 'timed out while connecting to URL', url, ':', connectTimeout, 'ms');
-                    self.onClose(1002, 'Connect Timeout');
-                }
+                self._debug('Transport', self.getType(), 'timed out while connecting to URL', url, ':', connectTimeout, 'ms');
+                // The connection was not opened, close anyway.
+                var event = { code: 1000, reason: 'Connect Timeout' };
+                webSocket.close(event.code, event.reason);
+                // Force immediate failure of pending messages to trigger reconnect
+                self.onClose(webSocket, event);
             }, connectTimeout);
         }
 
-        var webSocket = new org.cometd.WebSocket(url);
         var onopen = function()
         {
             self._debug('WebSocket opened', webSocket);
@@ -48,55 +48,77 @@ org.cometd.WebSocketTransport = function()
                 self.clearTimeout(connectTimer);
                 connectTimer = null;
             }
-            if (webSocket !== _webSocket)
+
+            // It's possible that the onopen callback is invoked
+            // with a delay so that we have already reconnected
+            if (_webSocket !== null)
             {
-                // It's possible that the onopen callback is invoked
-                // with a delay so that we have already reconnected
-                self._debug('Ignoring open event, WebSocket', _webSocket);
-                return;
+                // We have a valid connection already, close this one
+                self._debug('Closing extra WebSocket', webSocket);
+                webSocket.close(1000, 'Extra Connect'); // Will eventually trigger onclose()
             }
-            self.onOpen();
+            else
+            {
+                self.onOpen(webSocket);
+            }
         };
         var onclose = function(event)
         {
-            var code = event ? event.code : 1000;
-            var reason = event ? event.reason : undefined;
-            self._debug('WebSocket closed', code, '/', reason, webSocket);
+            self._debug('WebSocket closing', webSocket, event);
             if (connectTimer)
             {
                 self.clearTimeout(connectTimer);
                 connectTimer = null;
             }
-            if (webSocket !== _webSocket)
+
+            // This callback is invoked when the server sends the close frame
+            if (_webSocket !== null && webSocket !== _webSocket)
             {
-                // The onclose callback may be invoked when the server sends
-                // the close message reply, but after we have already reconnected
-                self._debug('Ignoring close event, WebSocket', _webSocket);
-                return;
+                // We closed an extra WebSocket object that
+                // we may have created during reconnection
+                self._debug('Closed extra WebSocket', webSocket);
             }
-            self.onClose(code, reason);
+            else
+            {
+                self.onClose(webSocket, event);
+            }
         };
         var onmessage = function(message)
         {
             self._debug('WebSocket message', message, webSocket);
-            if (webSocket !== _webSocket)
+            if (webSocket === _webSocket)
             {
-                self._debug('Ignoring message event, WebSocket', _webSocket);
-                return;
+                self.onMessage(webSocket, message);
             }
-            self.onMessage(message);
+            else
+            {
+                _cometd._warn('Multiple WebSocket objects', webSocket, _webSocket);
+                throw 'Multiple WebSocket objects';
+            }
         };
 
         webSocket.onopen = onopen;
         webSocket.onclose = onclose;
         webSocket.onerror = function()
         {
-            onclose({ code: 1002 });
+            onclose({ code: 1002, reason: 'Error' });
         };
         webSocket.onmessage = onmessage;
 
-        _webSocket = webSocket;
         this._debug('Transport', this.getType(), 'configured callbacks on', webSocket);
+    }
+
+    function _timeoutFn(webSocket, message, delay)
+    {
+        var self = this;
+        return function()
+        {
+            self._debug('Transport', self.getType(), 'timing out message', message.id, 'after', delay, 'on', webSocket);
+            var event = { code: 1000, reason: 'Message Timeout' };
+            webSocket.close(event.code, event.reason);
+            // Force immediate failure of pending messages to trigger reconnect
+            self.onClose(webSocket, event);
+        };
     }
 
     function _webSocketSend(envelope, metaConnect)
@@ -122,16 +144,7 @@ org.cometd.WebSocketTransport = function()
             if (message.id)
             {
                 messageIds.push(message.id);
-                var self = this;
-                var webSocket = _webSocket;
-                _timeouts[message.id] = this.setTimeout(function()
-                {
-                    self._debug('Transport', self.getType(), 'timing out message', message.id, 'after', delay, 'on', webSocket);
-                    if (webSocket)
-                    {
-                        webSocket.close(1000, 'Timeout');
-                    }
-                }, delay);
+                _timeouts[message.id] = this.setTimeout(_timeoutFn.call(this, _webSocket, message, delay), delay);
             }
         }
 
@@ -146,9 +159,7 @@ org.cometd.WebSocketTransport = function()
             {
                 _websocketConnect.call(this);
             }
-            // We may have a non-null _webSocket, but not be open yet so
-            // to avoid out of order deliveries, we check if we are open
-            else if (_opened)
+            else
             {
                 _webSocketSend.call(this, envelope, metaConnect);
             }
@@ -159,15 +170,15 @@ org.cometd.WebSocketTransport = function()
             var webSocket = _webSocket;
             this.setTimeout(function()
             {
-                envelope.onFailure(webSocket, envelope.messages, 'error', x);
+                envelope.onFailure(webSocket, envelope.messages, 'exception', x);
             }, 0);
         }
     }
 
-    _self.onOpen = function()
+    _self.onOpen = function(webSocket)
     {
-        this._debug('Transport', this.getType(), 'opened', _webSocket);
-        _opened = true;
+        this._debug('Transport', this.getType(), 'opened', webSocket);
+        _webSocket = webSocket;
         _webSocketSupported = true;
 
         this._debug('Sending pending messages', _envelopes);
@@ -183,9 +194,9 @@ org.cometd.WebSocketTransport = function()
         }
     };
 
-    _self.onMessage = function(wsMessage)
+    _self.onMessage = function(webSocket, wsMessage)
     {
-        this._debug('Transport', this.getType(), 'received websocket message', wsMessage, _webSocket);
+        this._debug('Transport', this.getType(), 'received websocket message', wsMessage, webSocket);
 
         var close = false;
         var messages = this.convertToMessages(wsMessage.data);
@@ -195,9 +206,9 @@ org.cometd.WebSocketTransport = function()
             var message = messages[i];
 
             // Detect if the message is a response to a request we made.
-            // If it's a meta message, for sure it's a response;
-            // otherwise it's a publish message and publish responses lack the data field
-            if (/^\/meta\//.test(message.channel) || message.data === undefined)
+            // If it's a meta message, for sure it's a response; otherwise it's
+            // a publish message and publish responses have the successful field
+            if (/^\/meta\//.test(message.channel) || message.successful !== undefined)
             {
                 if (message.id)
                 {
@@ -256,16 +267,17 @@ org.cometd.WebSocketTransport = function()
 
         if (close)
         {
-            _webSocket.close(1000, 'Disconnect');
+            webSocket.close(1000, 'Disconnect');
         }
     };
 
-    _self.onClose = function(code, reason)
+    _self.onClose = function(webSocket, event)
     {
-        this._debug('Transport', this.getType(), 'closed', code, reason, _webSocket);
+        this._debug('Transport', this.getType(), 'closed', webSocket, event);
 
         // Remember if we were able to connect
-        // This close event could be due to server shutdown, and if it restarts we want to try websocket again
+        // This close event could be due to server shutdown,
+        // and if it restarts we want to try websocket again
         _supportsWebSocket = _webSocketSupported;
 
         for (var id in _timeouts)
@@ -282,15 +294,10 @@ org.cometd.WebSocketTransport = function()
             {
                 _connected = false;
             }
-            envelope.onFailure(_webSocket, envelope.messages, 'closed ' + code + '/' + reason);
+            envelope.onFailure(_webSocket, envelope.messages, 'closed ' + event);
         }
         _envelopes = {};
 
-        if (_webSocket !== null && _opened)
-        {
-            _webSocket.close(1000, 'Close');
-        }
-        _opened = false;
         _webSocket = null;
     };
 
@@ -333,7 +340,7 @@ org.cometd.WebSocketTransport = function()
         {
             try
             {
-                _webSocket.close(1001);
+                _webSocket.close(1001, 'Abort');
             }
             catch (x)
             {
@@ -347,16 +354,11 @@ org.cometd.WebSocketTransport = function()
     _self.reset = function()
     {
         _super.reset();
-        if (_webSocket !== null && _opened)
-        {
-            _webSocket.close(1000, 'Reset');
-        }
         _supportsWebSocket = true;
         _webSocketSupported = false;
         _timeouts = {};
         _envelopes = {};
         _webSocket = null;
-        _opened = false;
         _successCallback = null;
     };
 

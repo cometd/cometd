@@ -74,7 +74,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public static final int DEBUG_LOG_LEVEL = 3;
     public static final String JSON_CONTEXT = "jsonContext";
 
-    private final Logger _logger = LoggerFactory.getLogger(getClass().getName() + "." + System.identityHashCode(this));
+    private final Logger _logger = LoggerFactory.getLogger(getClass().getName() + "." + Integer.toHexString(System.identityHashCode(this)));
     private final SecureRandom _random = new SecureRandom();
     private final List<BayeuxServerListener> _listeners = new CopyOnWriteArrayList<>();
     private final List<Extension> _extensions = new CopyOnWriteArrayList<>();

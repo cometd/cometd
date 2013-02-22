@@ -19,7 +19,7 @@ package org.cometd.javascript;
 import java.io.IOException;
 import java.net.URI;
 
-import org.eclipse.jetty.websocket.api.WebSocketException;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.mozilla.javascript.Scriptable;
@@ -32,7 +32,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     private final Logger logger = LoggerFactory.getLogger(getClass().getName());
     private ThreadModel threads;
     private Scriptable thiz;
-    private org.eclipse.jetty.websocket.api.WebSocketConnection connection;
+    private Session session;
 
     public WebSocketConnection()
     {
@@ -49,8 +49,8 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
             // TODO: pass in cookies
 //            wsClient.getUpgradeRequest().setCookieStore();
 //            wsClient.getCookies().putAll(((HttpCookieStore)cookieStore).getAll(uri));
-            log("Opening WebSocket connection to {}", uri);
-            wsClient.connect(this, uri).get();
+            log("Opening WebSocket session to {}", uri);
+            wsClient.connect(this, uri);
         }
         catch (final Exception x)
         {
@@ -60,7 +60,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
                 @Override
                 public void run()
                 {
-                    onWebSocketException(new WebSocketException(x));
+                    onWebSocketError(x);
                 }
             });
         }
@@ -74,19 +74,21 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     public void jsFunction_send(String data) throws IOException
     {
         log("WebSocket sending data {}", data);
-        connection.write(data);
+        session.getRemote().sendString(data);
     }
 
     public void jsFunction_close(int code, String reason) throws IOException
     {
-        connection.close(code, reason);
+        Session session = this.session;
+        if (session != null)
+            session.close(code, reason);
     }
 
     @Override
-    public void onWebSocketConnect(org.eclipse.jetty.websocket.api.WebSocketConnection connection)
+    public void onWebSocketConnect(Session session)
     {
-        this.connection = connection;
-        log("WebSocket opened connection {}", connection);
+        this.session = session;
+        log("WebSocket opened session {}", session);
         threads.invoke(false, thiz, thiz, "onopen");
     }
 
@@ -114,7 +116,7 @@ public class WebSocketConnection extends ScriptableObject implements WebSocketLi
     }
 
     @Override
-    public void onWebSocketException(WebSocketException x)
+    public void onWebSocketError(Throwable x)
     {
         log("WebSocket exception {}", x);
         threads.invoke(false, thiz, thiz, "onerror");

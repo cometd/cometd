@@ -14,6 +14,15 @@ org.cometd.CallbackPollingTransport = function()
         throw 'Abstract';
     };
 
+    function _failTransportFn(envelope, request, x)
+    {
+        var self = this;
+        return function()
+        {
+            self.transportFailure(envelope, request, 'error', x);
+        }
+    }
+
     _self.transportSend = function(envelope, request)
     {
         var self = this;
@@ -41,10 +50,7 @@ org.cometd.CallbackPollingTransport = function()
                     var x = 'Bayeux message too big (' + urlLength + ' bytes, max is ' + _maxLength + ') ' +
                             'for transport ' + this.getType();
                     // Keep the semantic of calling response callbacks asynchronously after the request
-                    this.setTimeout(function()
-                    {
-                        self.transportFailure(envelope, request, 'error', x);
-                    }, 0);
+                    this.setTimeout(_failTransportFn.call(this, envelope, request, x), 0);
                     return;
                 }
 
@@ -105,7 +111,7 @@ org.cometd.CallbackPollingTransport = function()
                         }
                         else
                         {
-                            success=true;
+                            success = true;
                             self.transportSuccess(envelopeToSend, request, received);
                         }
                     }
