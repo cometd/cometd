@@ -17,7 +17,6 @@
         <module>cometd-java-benchmark-common</module>
         <module>cometd-java-benchmark-server</module>
         <module>cometd-java-benchmark-client</module>
-        <module>cometd-java-benchmark-client-jetty7</module>
     </modules>
 
 </project>
