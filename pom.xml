@@ -364,6 +364,7 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- TODO: unify servlet 3.0 coordinates with other modules -->
             <dependency>
                 <groupId>javax.servlet</groupId>
                 <artifactId>javax.servlet-api</artifactId>
@@ -390,21 +391,5 @@
         </dependencies>
     </dependencyManagement>
 
-    <!-- TODO: remove when referencing a stable Jetty release -->
-<!--
-    <repositories>
-        <repository>
-            <id>jetty-snapshots</id>
-            &lt;!&ndash;<url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>&ndash;&gt;
-            <url>https://oss.sonatype.org/content/repositories/jetty-870</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
--->
 
 </project>

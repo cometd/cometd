@@ -841,7 +841,7 @@ public class Oort extends ContainerLifeCycle
                 ServerCometInfo serverCometInfo = cometInfos.next();
                 if (serverCometInfo.getServerSession().getId().equals(session.getId()))
                 {
-                    _logger.info("Disconnected from comet {} with session {}", cometURL, session);
+                    _logger.debug("Disconnected from comet {} with session {}", cometURL, session);
                     assert remoteOortId.equals(serverCometInfo.getId());
                     cometInfos.remove();
 
@@ -992,7 +992,7 @@ public class Oort extends ContainerLifeCycle
                     }
 
                     if (message.isSuccessful())
-                        getLogger().info("Connected to comet {} as {} with {}/{}", url, cometURL, message.getClientId(), oortComet.getTransport());
+                        getLogger().debug("Connected to comet {} as {} with {}/{}", url, cometURL, message.getClientId(), oortComet.getTransport());
                 }
             }
 

@@ -79,7 +79,7 @@ public class AnnotationCometDServlet extends CometDServlet
         {
             Object service = newService(serviceClassName);
             processor.process(service);
-            _logger.info("Processed annotated service {}", service);
+            _logger.debug("Processed annotated service {}", service);
             return service;
         }
         catch (Exception x)
@@ -97,7 +97,7 @@ public class AnnotationCometDServlet extends CometDServlet
     protected void registerService(Object service)
     {
         getServletContext().setAttribute(service.getClass().getName(), service);
-        _logger.info("Registered annotated service {} in servlet context", service);
+        _logger.debug("Registered annotated service {} in servlet context", service);
     }
 
     @Override
@@ -114,13 +114,13 @@ public class AnnotationCometDServlet extends CometDServlet
     protected void deregisterService(Object service)
     {
         getServletContext().removeAttribute(service.getClass().getName());
-        _logger.info("Deregistered annotated service {}", service);
+        _logger.debug("Deregistered annotated service {}", service);
     }
 
     protected void deprocessService(ServerAnnotationProcessor processor, Object service)
     {
         processor.deprocess(service);
-        _logger.info("Deprocessed annotated service {}", service);
+        _logger.debug("Deprocessed annotated service {}", service);
     }
 
     protected List<Object> getServices()

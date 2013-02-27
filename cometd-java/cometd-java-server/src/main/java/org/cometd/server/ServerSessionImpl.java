@@ -63,26 +63,24 @@ public class ServerSessionImpl implements ServerSession
     private final AtomicBoolean _connected = new AtomicBoolean();
     private final AtomicBoolean _handshook = new AtomicBoolean();
     private final Map<ServerChannelImpl, Boolean> _subscribedTo = new ConcurrentHashMap<>();
-
+    private final Task _lazyTask;
     private AbstractServerTransport.Scheduler _scheduler;
     private ServerTransport _advisedTransport;
-
     private int _maxQueue = -1;
     private long _transientTimeout = -1;
     private long _transientInterval = -1;
     private long _timeout = -1;
     private long _interval = -1;
     private long _maxInterval = -1;
-    private long _maxLazy = -1;
     private long _maxServerInterval = -1;
+    private boolean _randomizeLazy = false;
+    private long _maxLazy = -1;
     private boolean _metaConnectDelivery;
     private int _batch;
     private String _userAgent;
     private long _connectTimestamp = -1;
     private long _intervalTimestamp;
     private long _lastConnect;
-    private boolean _lazyDispatch;
-    private Task _lazyTask;
 
     protected ServerSessionImpl(BayeuxServerImpl bayeux)
     {
@@ -117,6 +115,21 @@ public class ServerSessionImpl implements ServerSession
         HttpTransport transport = (HttpTransport)_bayeux.getCurrentTransport();
         if (transport != null)
             _intervalTimestamp = System.currentTimeMillis() + transport.getMaxInterval();
+
+        _lazyTask = new Timeout.Task()
+        {
+            @Override
+            public void expired()
+            {
+                flush();
+            }
+
+            @Override
+            public String toString()
+            {
+                return "LazyTask@" + getId();
+            }
+        };
     }
 
     /**
@@ -271,7 +284,7 @@ public class ServerSessionImpl implements ServerSession
         if (wakeup)
         {
             if (message.isLazy())
-                flushLazy();
+                flushLazy(message);
             else
                 flush();
         }
@@ -313,24 +326,8 @@ public class ServerSessionImpl implements ServerSession
             _maxQueue = transport.getOption(HttpTransport.MAX_QUEUE_OPTION, -1);
             _maxInterval = _interval >= 0 ? _interval + transport.getMaxInterval() : transport.getMaxInterval();
             _maxServerInterval = transport.getOption("maxServerInterval", 10 * _maxInterval);
+            _randomizeLazy = transport.getOption(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, false);
             _maxLazy = transport.getMaxLazyTimeout();
-            if (_maxLazy > 0)
-            {
-                _lazyTask = new Timeout.Task()
-                {
-                    @Override
-                    public void expired()
-                    {
-                        flush();
-                    }
-
-                    @Override
-                    public String toString()
-                    {
-                        return "LazyTask@" + getId();
-                    }
-                };
-            }
         }
     }
 
@@ -506,12 +503,8 @@ public class ServerSessionImpl implements ServerSession
         Scheduler scheduler;
         synchronized (_queue)
         {
-            if (_lazyDispatch)
-            {
-                _lazyDispatch = false;
-                if (_lazyTask != null)
-                    _bayeux.cancelTimeout(_lazyTask);
-            }
+            if (_lazyTask.getTimestamp() > 0)
+                _bayeux.cancelTimeout(_lazyTask);
 
             scheduler = _scheduler;
 
@@ -542,18 +535,28 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
-    public void flushLazy()
+    private void flushLazy(ServerMessage message)
     {
         synchronized (_queue)
         {
-            if (_maxLazy <= 0)
+            ServerChannel channel = _bayeux.getChannel(message.getChannel());
+            long lazyTimeout = -1;
+            if (channel != null)
+                lazyTimeout = channel.getLazyTimeout();
+            if (lazyTimeout <= 0)
+                lazyTimeout = _maxLazy;
+
+            if (lazyTimeout <= 0)
             {
                 flush();
             }
-            else if (!_lazyDispatch)
+            else
             {
-                _lazyDispatch = true;
-                _bayeux.startTimeout(_lazyTask, _connectTimestamp % _maxLazy);
+                long delay = _randomizeLazy ? _connectTimestamp % lazyTimeout : lazyTimeout;
+                long execution = System.currentTimeMillis() + delay;
+                long taskExecution = _lazyTask.getTimestamp();
+                if (taskExecution == 0 || execution < taskExecution)
+                    _bayeux.startTimeout(_lazyTask, delay);
             }
         }
     }
