@@ -805,9 +805,9 @@ org.cometd.Cometd = function(name)
         }
     }
 
-    function _handshakeFailure(xhr, message)
+    function _handshakeFailure(xhr, message, reason, exception)
     {
-        _failHandshake({
+        var msg = {
             successful: false,
             failure: true,
             channel: '/meta/handshake',
@@ -817,7 +817,14 @@ org.cometd.Cometd = function(name)
                 reconnect: 'retry',
                 interval: _backoff
             }
-        });
+        };
+        if (reason != null && reason.startsWith("closed 10")) // try to detect failed websocket handshake
+            msg.webSocketUpgradeFailure = true;
+        if (xhr && xhr.status && xhr.status > 0)
+            msg.statusCode = xhr.status;
+        if (exception)
+            msg.exception = exception;
+        _failHandshake(msg);
     }
 
     function _failConnect(message)
@@ -1123,7 +1130,7 @@ org.cometd.Cometd = function(name)
             switch (channel)
             {
                 case '/meta/handshake':
-                    _handshakeFailure(conduit, message);
+                    _handshakeFailure(conduit, message, reason, exception);
                     break;
                 case '/meta/connect':
                     _connectFailure(conduit, message);

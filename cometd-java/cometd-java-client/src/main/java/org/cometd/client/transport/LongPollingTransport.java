@@ -317,11 +317,11 @@ public class LongPollingTransport extends HttpClientTransport
                     }
                 }
                 else
-                    _listener.onProtocolError("Empty response: " + this, _messages);
+                    _listener.onProtocolError(new ServerProtocolException("Empty response: " + this, getResponseStatus(), false), _messages);
             }
             else
             {
-                _listener.onProtocolError("Unexpected response " + getResponseStatus() + ": " + this, _messages);
+                _listener.onProtocolError(new ServerProtocolException("Unexpected response " + getResponseStatus() + ": " + this, getResponseStatus(), false), _messages);
             }
         }
 

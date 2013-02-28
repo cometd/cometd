@@ -41,6 +41,7 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.MessageClientTransport;
+import org.cometd.client.transport.ServerProtocolException;
 import org.cometd.client.transport.TransportListener;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocket.Connection;
@@ -258,7 +259,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         catch (URISyntaxException x)
         {
             _webSocketSupported = false;
-            listener.onProtocolError(x.getMessage(), messages);
+            listener.onProtocolError(new ServerProtocolException(x.getMessage(), -1, true), messages);
         }
         catch (InterruptedException x)
         {
@@ -268,7 +269,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         catch (ProtocolException x)
         {
             _webSocketSupported = false;
-            listener.onProtocolError(x.getMessage(), messages);
+            listener.onProtocolError(new ServerProtocolException(x.getMessage(), -1, true), messages);
         }
         catch (IOException x)
         {
