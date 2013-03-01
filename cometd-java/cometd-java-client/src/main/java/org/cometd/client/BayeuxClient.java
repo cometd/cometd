@@ -16,10 +16,10 @@
 
 package org.cometd.client;
 
-import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +47,7 @@ import org.cometd.client.transport.TransportListener;
 import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
 import org.cometd.common.HashMapMessage;
+import org.cometd.common.TransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -952,10 +953,17 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             failed.setId(message.getId());
             failed.setSuccessful(false);
             failed.setChannel(message.getChannel());
-            failed.put("message", message);
-            if (x != null)
-                failed.put("exception", x);
             failed.put(PUBLISH_CALLBACK_KEY, message.remove(PUBLISH_CALLBACK_KEY));
+
+            Map<String, Object> failure = new HashMap<String, Object>();
+            failed.put("failure", failure);
+            failure.put("message", message);
+            if (x != null)
+                failure.put("exception", x);
+            if (x instanceof TransportException)
+                failure.putAll(((TransportException)x).getFields());
+            failure.put(Message.CONNECTION_TYPE_FIELD, getTransport().getName());
+
             receive(failed);
         }
     }
@@ -963,12 +971,11 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     @Override
     protected void notifyListeners(Message.Mutable message)
     {
+        ClientSessionChannel.MessageListener publishCallback = (ClientSessionChannel.MessageListener)message.remove(PUBLISH_CALLBACK_KEY);
         if (message.isPublishReply())
         {
             String messageId = message.getId();
-            ClientSessionChannel.MessageListener listener = messageId == null ?
-                    (ClientSessionChannel.MessageListener)message.remove(PUBLISH_CALLBACK_KEY) :
-                    publishCallbacks.remove(messageId);
+            ClientSessionChannel.MessageListener listener = messageId == null ? publishCallback : publishCallbacks.remove(messageId);
             if (listener != null)
                 notifyListener(listener, message);
         }
@@ -1154,11 +1161,6 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         public void onExpire(Message[] messages)
         {
             onFailure(new TimeoutException("expired"), messages);
-        }
-
-        public void onProtocolError(String info, Message[] messages)
-        {
-            onFailure(new ProtocolException(info), messages);
         }
 
         protected void processMessage(Message.Mutable message)

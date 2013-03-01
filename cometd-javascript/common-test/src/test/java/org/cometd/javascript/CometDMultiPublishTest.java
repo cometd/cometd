@@ -90,7 +90,7 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest
                 "cometd.disconnect();");
 
         Assert.assertTrue(latch.await(5000));
-        Assert.assertTrue(handler.await(5000));
+        Assert.assertTrue(failures.get().toString(), handler.await(5000));
         Assert.assertTrue(failures.get().toString(), failures.get().isEmpty());
         Assert.assertTrue(disconnect.await(5000));
     }
@@ -127,7 +127,7 @@ public class CometDMultiPublishTest extends AbstractCometDLongPollingTest
                 }
                 else
                 {
-                    Map data = (Map)((Map)message.get("request")).get("data");
+                    Map data = (Map)((Map)((Map)message.get("failure")).get("message")).get("data");
                     int dataId = ((Number)data.get("id")).intValue();
                     if (dataId != id)
                         failures.get().add(new AssertionError("data id " + dataId + ", expecting " + id));

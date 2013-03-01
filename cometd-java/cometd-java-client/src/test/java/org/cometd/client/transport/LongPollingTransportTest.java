@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
 import org.cometd.common.HashMapMessage;
+import org.cometd.common.TransportException;
 import org.eclipse.jetty.client.HttpClient;
 import org.junit.Rule;
 import org.junit.Test;
@@ -196,9 +197,10 @@ public class LongPollingTransportTest
                 transport.send(new EmptyTransportListener()
                 {
                     @Override
-                    public void onProtocolError(String info, Message[] messages)
+                    public void onException(Throwable x, Message[] messages)
                     {
-                        latch.countDown();
+                        if (x instanceof TransportException)
+                            latch.countDown();
                     }
                 });
                 long end = System.nanoTime();
@@ -416,10 +418,6 @@ public class LongPollingTransportTest
         }
 
         public void onExpire(Message[] messages)
-        {
-        }
-
-        public void onProtocolError(String info, Message[] messages)
         {
         }
     }

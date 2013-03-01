@@ -39,7 +39,9 @@ org.cometd.LongPollingTransport = function()
                         if (received.length === 0)
                         {
                             _supportsCrossDomain = false;
-                            self.transportFailure(envelope, request, 'no response', null);
+                            self.transportFailure(envelope, request, {
+                                httpCode: 204
+                            });
                         }
                         else
                         {
@@ -53,24 +55,41 @@ org.cometd.LongPollingTransport = function()
                         if (!success)
                         {
                             _supportsCrossDomain = false;
-                            self.transportFailure(envelope, request, 'bad response', x);
+                            var failure = {
+                                exception: x
+                            };
+                            var xhr = request.xhr;
+                            if (xhr)
+                            {
+                                failure.httpCode = xhr.status;
+                            }
+                            self.transportFailure(envelope, request, failure);
                         }
                     }
                 },
                 onError: function(reason, exception)
                 {
                     _supportsCrossDomain = false;
+                    var failure = {
+                        reason: reason,
+                        exception: exception
+                    };
+                    var xhr = request.xhr;
+                    if (xhr)
+                    {
+                        failure.httpCode = xhr.status;
+                    }
                     if (sameStack)
                     {
                         // Keep the semantic of calling response callbacks asynchronously after the request
                         self.setTimeout(function()
                         {
-                            self.transportFailure(envelope, request, reason, exception);
+                            self.transportFailure(envelope, request, failure);
                         }, 0);
                     }
                     else
                     {
-                        self.transportFailure(envelope, request, reason, exception);
+                        self.transportFailure(envelope, request, failure);
                     }
                 }
             });
@@ -82,7 +101,9 @@ org.cometd.LongPollingTransport = function()
             // Keep the semantic of calling response callbacks asynchronously after the request
             this.setTimeout(function()
             {
-                self.transportFailure(envelope, request, 'error', x);
+                self.transportFailure(envelope, request, {
+                    exception: x
+                });
             }, 0);
         }
     };

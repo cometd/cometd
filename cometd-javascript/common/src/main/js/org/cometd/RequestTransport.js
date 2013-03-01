@@ -53,14 +53,19 @@ org.cometd.RequestTransport = function()
             request.timeout = this.setTimeout(function()
             {
                 request.expired = true;
-                if (request.xhr)
-                {
-                    request.xhr.abort();
-                }
                 var errorMessage = 'Request ' + request.id + ' of transport ' + self.getType() + ' exceeded ' + delay + ' ms max network delay';
+                var failure = {
+                    reason: errorMessage
+                };
+                var xhr = request.xhr;
+                if (xhr)
+                {
+                    xhr.abort();
+                    failure.httpCode = xhr.status;
+                }
                 self._debug(errorMessage);
                 self.complete(request, false, request.metaConnect);
-                envelope.onFailure(request.xhr, envelope.messages, 'timeout', errorMessage);
+                envelope.onFailure(xhr, envelope.messages, failure);
             }, delay);
         }
     }
@@ -130,7 +135,15 @@ org.cometd.RequestTransport = function()
                 this.setTimeout(function()
                 {
                     self.complete(nextRequest, false, nextRequest.metaConnect);
-                    nextEnvelope.onFailure(nextRequest.xhr, nextEnvelope.messages, 'error', 'Previous request failed');
+                    var failure = {
+                        reason: 'Previous request failed'
+                    };
+                    var xhr = nextRequest.xhr;
+                    if (xhr)
+                    {
+                        failure.httpCode = xhr.status;
+                    }
+                    nextEnvelope.onFailure(xhr, nextEnvelope.messages, failure);
                 }, 0);
             }
         }
@@ -170,18 +183,20 @@ org.cometd.RequestTransport = function()
             }
             else
             {
-                envelope.onFailure(request.xhr, envelope.messages, 'Empty HTTP response');
+                envelope.onFailure(request.xhr, envelope.messages, {
+                    httpCode: 204
+                });
             }
         }
     };
 
-    _self.transportFailure = function(envelope, request, reason, exception)
+    _self.transportFailure = function(envelope, request, failure)
     {
         if (!request.expired)
         {
             this.clearTimeout(request.timeout);
             this.complete(request, false, request.metaConnect);
-            envelope.onFailure(request.xhr, envelope.messages, reason, exception);
+            envelope.onFailure(request.xhr, envelope.messages, failure);
         }
     };
 

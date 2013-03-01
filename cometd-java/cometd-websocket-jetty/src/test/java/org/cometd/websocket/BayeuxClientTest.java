@@ -449,4 +449,37 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
 
         disconnectBayeuxClient(client);
     }
+
+    @Test
+    public void testHandshakeOverWebSocketReportsHTTPFailure() throws Exception
+    {
+        // No transports on server, to make the client fail
+        bayeux.setAllowedTransports();
+
+        BayeuxClient client = newBayeuxClient();
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                // Verify the failure object is there
+                Map<String, Object> failure = (Map<String, Object>)message.get("failure");
+                Assert.assertNotNull(failure);
+                // Verify that the transport is there
+                Assert.assertEquals("websocket", failure.get(Message.CONNECTION_TYPE_FIELD));
+                // Verify the original message is there
+                Assert.assertNotNull(failure.get("message"));
+                // Verify the HTTP status code is there
+                Assert.assertEquals(400, failure.get("httpCode"));
+                // Verify the exception string is there
+                Assert.assertNotNull(failure.get("exception"));
+                latch.countDown();
+            }
+        });
+        client.handshake();
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        disconnectBayeuxClient(client);
+    }
 }

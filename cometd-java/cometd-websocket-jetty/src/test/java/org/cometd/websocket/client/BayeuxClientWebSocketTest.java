@@ -42,6 +42,7 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.common.TransportException;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
@@ -74,7 +75,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
             public void onFailure(Throwable x, Message[] messages)
             {
                 // Expect exception and suppress stack trace logging
-                if (!(x instanceof ProtocolException))
+                if (!(x instanceof TransportException))
                     super.onFailure(x, messages);
             }
         };
@@ -176,14 +177,14 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         });
 
         int port = connector.getLocalPort();
-        stopServer();
+        server.stop();
 
         client.handshake();
 
         Assert.assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
 
         connector.setPort(port);
-        startServer();
+        server.start();
 
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
 
