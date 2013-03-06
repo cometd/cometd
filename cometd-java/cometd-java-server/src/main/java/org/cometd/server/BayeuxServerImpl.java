@@ -83,7 +83,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final ConcurrentMap<String, ServerTransport> _transports = new ConcurrentHashMap<String, ServerTransport>();
     private final List<String> _allowedTransports = new CopyOnWriteArrayList<String>();
     private final ThreadLocal<AbstractServerTransport> _currentTransport = new ThreadLocal<AbstractServerTransport>();
-    private final Map<String,Object> _options = new TreeMap<String, Object>();
+    private final Map<String, Object> _options = new TreeMap<String, Object>();
     private final Timeout _timeout = new Timeout();
     private final Map<String, Object> _handshakeAdvice;
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
@@ -243,13 +243,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _options.put(JSON_CONTEXT, _jsonContext);
     }
 
-    /** Initialize the default transports.
+    /**
+     * Initialize the default transports.
      * <p>This method creates  a {@link JSONTransport} and a {@link JSONPTransport}.
      * If no allowed transport have been set then adds all known transports as allowed transports.
      */
     protected void initializeDefaultTransports()
     {
-        if (_allowedTransports.size()==0)
+        if (_allowedTransports.size() == 0)
         {
             for (ServerTransport t : _transports.values())
                 _allowedTransports.add(t.getName());
@@ -270,12 +271,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     public ChannelId newChannelId(String id)
     {
         ServerChannelImpl channel = _channels.get(id);
-        if (channel!=null)
+        if (channel != null)
             return channel.getChannelId();
         return new ChannelId(id);
     }
 
-    public Map<String,Object> getOptions()
+    public Map<String, Object> getOptions()
     {
         return _options;
     }
@@ -288,15 +289,17 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _options.get(qualifiedName);
     }
 
-    /** Get an option value as a long
+    /**
+     * Get an option value as a long
+     *
      * @param name The option name
-     * @param dft The default value
+     * @param dft  The default value
      * @return long value
      */
     protected long getOption(String name, long dft)
     {
-        Object val=getOption(name);
-        if (val==null)
+        Object val = getOption(name);
+        if (val == null)
             return dft;
         if (val instanceof Number)
             return ((Number)val).longValue();
@@ -341,8 +344,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public BayeuxContext getContext()
     {
-        ServerTransport transport=_currentTransport.get();
-        return transport==null?null:transport.getContext();
+        ServerTransport transport = _currentTransport.get();
+        return transport == null ? null : transport.getContext();
     }
 
     public SecurityPolicy getSecurityPolicy()
@@ -453,14 +456,14 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public ServerSession getSession(String clientId)
     {
-        if (clientId==null)
+        if (clientId == null)
             return null;
         return _sessions.get(clientId);
     }
 
     protected void addServerSession(ServerSessionImpl session)
     {
-        _sessions.put(session.getId(),session);
+        _sessions.put(session.getId(), session);
         for (BayeuxServerListener listener : _listeners)
         {
             if (listener instanceof BayeuxServer.SessionListener)
@@ -481,15 +484,15 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     }
 
     /**
-     * @param session the session to remove
+     * @param session  the session to remove
      * @param timedout whether the remove reason is server-side expiration
      * @return true if the session was removed and was connected
      */
-    public boolean removeServerSession(ServerSession session,boolean timedout)
+    public boolean removeServerSession(ServerSession session, boolean timedout)
     {
         debug("Removing session {}, timed out: {}", session, timedout);
 
-        ServerSessionImpl removed =_sessions.remove(session.getId());
+        ServerSessionImpl removed = _sessions.remove(session.getId());
 
         if (removed == session)
         {
@@ -527,7 +530,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public LocalSession newLocalSession(String idHint)
     {
-        return new LocalSessionImpl(this,idHint);
+        return new LocalSessionImpl(this, idHint);
     }
 
     public ServerMessage.Mutable newMessage()
@@ -539,13 +542,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         ServerMessage.Mutable mutable = newMessage();
         for (String key : tocopy.keySet())
-            mutable.put(key,tocopy.get(key));
+            mutable.put(key, tocopy.get(key));
         return mutable;
     }
 
     public void setSecurityPolicy(SecurityPolicy securityPolicy)
     {
-        _policy=securityPolicy;
+        _policy = securityPolicy;
     }
 
     public void addExtension(Extension extension)
@@ -594,7 +597,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         _listeners.remove(listener);
     }
 
-    /** Extend and handle in incoming message.
+    /**
+     * Extend and handle in incoming message.
+     *
      * @param session The session if known
      * @param message The message.
      * @return An unextended reply message
@@ -770,41 +775,28 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     protected void doPublish(ServerSessionImpl from, ServerChannelImpl to, final ServerMessage.Mutable mutable)
     {
-        // check the parent channels
-        String parent=to.getChannelId().getParent();
-        while (parent!=null)
-        {
-            ServerChannelImpl c = _channels.get(parent);
-            if (c==null)
-                return; // remove in progress
-            if (c.isLazy())
-                mutable.setLazy(true);
-            parent=c.getChannelId().getParent();
-        }
+        if (to.isLazy())
+            mutable.setLazy(true);
 
-        // Get the array of listening channels
-        final List<String> wildIds=to.getChannelId().getWilds();
-        final ServerChannelImpl[] wild_channels = new ServerChannelImpl[wildIds.size()];
-        for (int i=wildIds.size();i-->0;)
-            wild_channels[i]=_channels.get(wildIds.get(i));
+        final List<String> wildChannelNames = to.getChannelId().getWilds();
+        final ServerChannelImpl[] wildChannels = new ServerChannelImpl[wildChannelNames.size()];
+        for (int i = wildChannelNames.size(); i-- > 0; )
+            wildChannels[i] = _channels.get(wildChannelNames.get(i));
 
         // Call the wild listeners
-        for (final ServerChannelImpl channel : wild_channels)
+        for (final ServerChannelImpl wildChannel : wildChannels)
         {
-            if (channel == null)
+            if (wildChannel == null)
                 continue;
-
-            if (channel.isLazy())
+            if (wildChannel.isLazy())
                 mutable.setLazy(true);
-            for (ServerChannelListener listener : channel.getListeners())
+            for (ServerChannelListener listener : wildChannel.getListeners())
                 if (listener instanceof MessageListener)
                     if (!notifyOnMessage((MessageListener)listener, from, to, mutable))
                         return;
         }
 
         // Call the leaf listeners
-        if (to.isLazy())
-            mutable.setLazy(true);
         for (ServerChannelListener listener : to.getListeners())
             if (listener instanceof MessageListener)
                 if (!notifyOnMessage((MessageListener)listener, from, to, mutable))
@@ -829,12 +821,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         Set<String> wildSubscribers = null;
         if (ChannelId.isBroadcast(mutable.getChannel()))
         {
-            for (final ServerChannelImpl channel : wild_channels)
+            for (final ServerChannelImpl wildChannel : wildChannels)
             {
-                if (channel == null)
+                if (wildChannel == null)
                     continue;
-
-                for (ServerSession session : channel.getSubscribers())
+                for (ServerSession session : wildChannel.getSubscribers())
                 {
                     if (wildSubscribers == null)
                         wildSubscribers = new HashSet<String>();
@@ -856,7 +847,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             for (ServerChannelListener listener : to.getListeners())
                 if (listener instanceof BayeuxServerImpl.HandlerListener)
-                    ((BayeuxServerImpl.HandlerListener)listener).onMessage(from,mutable);
+                    ((BayeuxServerImpl.HandlerListener)listener).onMessage(from, mutable);
         }
     }
 
@@ -891,7 +882,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         {
             if (reply.isMeta())
             {
-                if(!to.extendSendMeta(reply))
+                if (!to.extendSendMeta(reply))
                     return null;
             }
             else
@@ -1023,9 +1014,9 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     protected boolean removeServerChannel(ServerChannelImpl channel)
     {
-        if(_channels.remove(channel.getId(),channel))
+        if (_channels.remove(channel.getId(), channel))
         {
-            debug("Removed channel {}",channel);
+            debug("Removed channel {}", channel);
             for (BayeuxServerListener listener : _listeners)
             {
                 if (listener instanceof BayeuxServer.ChannelListener)
@@ -1065,7 +1056,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public void addTransport(ServerTransport transport)
     {
-        debug("addTransport {} from {}",transport.getName(),transport.getClass());
+        debug("addTransport {} from {}", transport.getName(), transport.getClass());
         _transports.put(transport.getName(), transport);
     }
 
@@ -1098,7 +1089,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     public void setAllowedTransports(List<String> allowed)
     {
-        debug("setAllowedTransport {} of {}",allowed,_transports);
+        debug("setAllowedTransport {} of {}", allowed, _transports);
         _allowedTransports.clear();
         for (String transport : allowed)
         {
@@ -1123,12 +1114,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     protected ServerMessage.Mutable createReply(ServerMessage.Mutable message)
     {
-        ServerMessage.Mutable reply=newMessage();
+        ServerMessage.Mutable reply = newMessage();
         message.setAssociated(reply);
         reply.setAssociated(message);
 
         reply.setChannel(message.getChannel());
-        String id=message.getId();
+        String id = message.getId();
         if (id != null)
             reply.setId(id);
         return reply;
@@ -1155,22 +1146,22 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         StringBuilder b = new StringBuilder();
 
         ArrayList<Object> children = new ArrayList<Object>();
-        if (_policy!=null)
+        if (_policy != null)
             children.add(_policy);
 
-        for (ServerChannelImpl channel :_channels.values())
+        for (ServerChannelImpl channel : _channels.values())
         {
-            if (channel.getChannelId().depth()==1)
+            if (channel.getChannelId().depth() == 1)
                 children.add(channel);
         }
 
-        int leaves=children.size();
-        int i=0;
+        int leaves = children.size();
+        int i = 0;
         for (Object child : children)
         {
             b.append(" +-");
             if (child instanceof ServerChannelImpl)
-                ((ServerChannelImpl)child).dump(b,((++i==leaves)?"   ":" | "));
+                ((ServerChannelImpl)child).dump(b, ((++i == leaves) ? "   " : " | "));
             else
                 b.append(child.toString()).append("\n");
         }
@@ -1192,24 +1183,25 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             if (channels instanceof Object[])
             {
-                Object[] array=(Object[])channels;
-                List<String> channelList=new ArrayList<String>();
-                for (Object o:array)
+                Object[] array = (Object[])channels;
+                List<String> channelList = new ArrayList<String>();
+                for (Object o : array)
                     channelList.add(String.valueOf(o));
                 return channelList;
             }
 
             if (channels instanceof List)
             {
-                List<?> list=(List<?>)channels;
-                List<String> channelList=new ArrayList<String>();
-                for (Object o:list)
+                List<?> list = (List<?>)channels;
+                List<String> channelList = new ArrayList<String>();
+                for (Object o : list)
                     channelList.add(String.valueOf(o));
                 return channelList;
             }
 
             return null;
         }
+
         public abstract void onMessage(final ServerSessionImpl from, final ServerMessage.Mutable message);
     }
 
@@ -1306,7 +1298,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
 
             List<String> subscriptions = toChannelList(subscriptionField);
-            if (subscriptions==null)
+            if (subscriptions == null)
             {
                 error(reply, "403::subscription_invalid");
                 return;
@@ -1389,7 +1381,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             }
 
             List<String> subscriptions = toChannelList(subscriptionField);
-            if (subscriptions==null)
+            if (subscriptions == null)
             {
                 error(reply, "403::subscription_invalid");
                 return;

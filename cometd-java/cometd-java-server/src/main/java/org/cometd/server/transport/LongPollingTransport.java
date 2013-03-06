@@ -259,10 +259,7 @@ public abstract class LongPollingTransport extends HttpTransport
                             {
                                 try
                                 {
-                                    writer = sendQueue(request, response, session, writer);
-
-                                    // If the writer is non null, we have already started sending a response, so we should not suspend
-                                    if (writer == null && reply.isSuccessful() && session.isQueueEmpty())
+                                    if (!session.hasNonLazyMessages() && reply.isSuccessful())
                                     {
                                         // Detect if we have multiple sessions from the same browser
                                         // Note that CORS requests do not send cookies, so we need to handle them specially
@@ -282,13 +279,19 @@ public abstract class LongPollingTransport extends HttpTransport
                                             // Support old clients that do not send advice:{timeout:0} on the first connect
                                             if (timeout > 0 && wasConnected && session.isConnected())
                                             {
+                                                // Between the last time we checked for messages in the queue
+                                                // (which was false, otherwise we would not be in this branch)
+                                                // and now, messages may have been added to the queue.
+                                                // We will suspend anyway, but setting the scheduler on the
+                                                // session will decide atomically if we need to resume or not.
+
                                                 // Suspend and wait for messages
                                                 Continuation continuation = ContinuationSupport.getContinuation(request);
                                                 continuation.setTimeout(timeout);
                                                 continuation.suspend(response);
                                                 scheduler = new LongPollScheduler(session, continuation, reply, browserId);
-                                                session.setScheduler(scheduler);
                                                 request.setAttribute(LongPollScheduler.ATTRIBUTE, scheduler);
+                                                session.setScheduler(scheduler);
                                                 reply = null;
                                                 metaConnectSuspended(request, session, timeout);
                                             }
@@ -321,8 +324,14 @@ public abstract class LongPollingTransport extends HttpTransport
                                 }
                                 finally
                                 {
-                                    if (reply != null && session.isConnected())
-                                        session.startIntervalTimeout(getInterval());
+                                    if (reply != null)
+                                    {
+                                        // Start the timeout before sending the queue so that
+                                        // if the write throws we have started the timeout
+                                        if (session.isConnected())
+                                            session.startIntervalTimeout(getInterval());
+                                        writer = sendQueue(request, response, session, writer);
+                                    }
                                 }
                             }
                             else
@@ -365,10 +374,8 @@ public abstract class LongPollingTransport extends HttpTransport
                 // If we started a batch, end it now
                 if (batch)
                 {
-                    boolean ended = session.endBatch();
-
                     // Flush session if not done by the batch, since some browser order <script> requests
-                    if (!ended && isAlwaysFlushingAfterHandle())
+                    if (!session.endBatch() && isAlwaysFlushingAfterHandle())
                         session.flush();
                 }
                 else if (session != null && !connect && isAlwaysFlushingAfterHandle())

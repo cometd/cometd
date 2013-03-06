@@ -19,13 +19,18 @@ package org.cometd.client;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -234,5 +239,319 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         Assert.assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
 
         disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testServerSessionDeliverDataOnLazyChannelDeliversImmediately() throws Exception
+    {
+        // ServerSession.deliver(ServerSession sender, String channel, Object data) has
+        // the semantic that the channel is intended for the remote end, and as such
+        // it should not do any logic related to lazyness, which belongs to the server.
+
+        final long globalLazyTimeout = 1000;
+        startServer(new HashMap<String, String>(){{
+            put(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, String.valueOf(false));
+            put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
+        }});
+
+        String channelName = "/lazyDeliverData";
+        bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+                channel.addListener(new ServerChannel.MessageListener()
+                {
+                    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
+                    {
+                        for (ServerSession subscriber : channel.getSubscribers())
+                            subscriber.deliver(from, message.getChannel(), message.getData(), null);
+                        return false;
+                    }
+                });
+            }
+        });
+
+        BayeuxClient client = newBayeuxClient();
+        client.handshake();
+        client.waitFor(5000, BayeuxClient.State.CONNECTED);
+
+        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                subscribeLatch.countDown();
+            }
+        });
+        final AtomicLong begin = new AtomicLong();
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.getDataAsMap() == null)
+                    return;
+                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
+                // Must be delivered immediately
+                Assert.assertThat(elapsed, Matchers.lessThan(globalLazyTimeout / 2));
+                latch.countDown();
+            }
+        });
+        // Make sure we are subscribed so that there are no
+        // pending responses that may return the lazy message
+        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+
+        // Wait for the /meta/connect to establish
+        TimeUnit.MILLISECONDS.sleep(1000);
+
+        // Cannot publish from the client, as there will always be the "meta"
+        // publish response to send, so the lazy message will be sent with it.
+        // Send first the long lazy and then the short lazy, to verify that
+        // timeouts are properly respected.
+        begin.set(System.nanoTime());
+        bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>(), null);
+
+        Assert.assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testServerSessionDeliverLazyMessageOnLazyChannelDeliversLazily() throws Exception
+    {
+        final long globalLazyTimeout = 1000;
+        startServer(new HashMap<String, String>(){{
+            put(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, String.valueOf(false));
+            put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
+        }});
+
+        String channelName = "/lazyDeliverMessage";
+        bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+                channel.addListener(new ServerChannel.MessageListener()
+                {
+                    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
+                    {
+                        ServerMessage.Mutable newMessage = bayeux.newMessage();
+                        newMessage.setChannel(message.getChannel());
+                        newMessage.setData(message.getData());
+                        // Mark the message as lazy
+                        newMessage.setLazy(true);
+                        for (ServerSession subscriber : channel.getSubscribers())
+                            subscriber.deliver(from, newMessage);
+                        return false;
+                    }
+                });
+            }
+        });
+
+        BayeuxClient client = newBayeuxClient();
+        client.handshake();
+        client.waitFor(5000, BayeuxClient.State.CONNECTED);
+
+        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                subscribeLatch.countDown();
+            }
+        });
+        final AtomicLong begin = new AtomicLong();
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.getDataAsMap() == null)
+                    return;
+                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
+                // Must be delivered lazily
+                long accuracy = globalLazyTimeout / 10;
+                Assert.assertThat(elapsed, Matchers.greaterThan(globalLazyTimeout - accuracy));
+                latch.countDown();
+            }
+        });
+        // Make sure we are subscribed so that there are no
+        // pending responses that may return the lazy message
+        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+
+        // Wait for the /meta/connect to establish
+        TimeUnit.MILLISECONDS.sleep(1000);
+
+        // Cannot publish from the client, as there will always be the "meta"
+        // publish response to send, so the lazy message will be sent with it.
+        // Send first the long lazy and then the short lazy, to verify that
+        // timeouts are properly respected.
+        begin.set(System.nanoTime());
+        bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>(), null);
+
+        Assert.assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testQueueFullOfLazyMessagesIsNotDelivered() throws Exception
+    {
+        final long globalLazyTimeout = 1000;
+        startServer(new HashMap<String, String>(){{
+            put(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, String.valueOf(false));
+            put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
+        }});
+
+        final String channelName = "/testQueueLazy";
+        bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setLazy(true);
+                channel.setPersistent(true);
+            }
+        });
+
+        final BayeuxClient client = newBayeuxClient();
+        final AtomicLong begin = new AtomicLong();
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                client.getChannel(channelName).subscribe(new ClientSessionChannel.MessageListener()
+                {
+                    public void onMessage(ClientSessionChannel channel, Message message)
+                    {
+                        if (message.getDataAsMap() == null)
+                            return;
+                        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin.get());
+                        // Must be delivered lazily
+                        long accuracy = globalLazyTimeout / 10;
+                        Assert.assertThat(elapsed, Matchers.greaterThan(globalLazyTimeout - accuracy));
+                        latch.countDown();
+                    }
+                });
+            }
+        });
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            private final AtomicInteger connects = new AtomicInteger();
+
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                int connects = this.connects.incrementAndGet();
+                if (connects == 1)
+                {
+                    // Add a lazy message on the queue while the /meta/connect is on the client
+                    begin.set(System.nanoTime());
+                    bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>(), null);
+                }
+            }
+        });
+        final CountDownLatch subscribeLatch = new CountDownLatch(1);
+        client.getChannel(Channel.META_SUBSCRIBE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                subscribeLatch.countDown();
+            }
+        });
+
+        client.handshake();
+        client.waitFor(5000, BayeuxClient.State.CONNECTED);
+
+        Assert.assertTrue(subscribeLatch.await(5, TimeUnit.SECONDS));
+
+        Assert.assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testLazynessIsNotInheritedFromParentChannel() throws Exception
+    {
+        final long globalLazyTimeout = 1000;
+        startServer(new HashMap<String, String>(){{
+            put(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, String.valueOf(false));
+            put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
+        }});
+
+        String parentChannelName = "/foo";
+        final CountDownLatch latch = new CountDownLatch(1);
+        bayeux.createIfAbsent(parentChannelName, new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+                channel.setLazy(true);
+            }
+        });
+
+        String childChannelName = parentChannelName + "/bar";
+        bayeux.createIfAbsent(childChannelName, new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+                channel.addListener(new ServerChannel.MessageListener()
+                {
+                    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
+                    {
+                        Assert.assertFalse(message.isLazy());
+                        latch.countDown();
+                        return true;
+                    }
+                });
+            }
+        });
+        bayeux.getChannel(childChannelName).publish(null, "data", null);
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testLazynessIsInheritedFromWildChannel() throws Exception
+    {
+        final long globalLazyTimeout = 1000;
+        startServer(new HashMap<String, String>(){{
+            put(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, String.valueOf(false));
+            put(AbstractServerTransport.MAX_LAZY_TIMEOUT_OPTION, String.valueOf(globalLazyTimeout));
+        }});
+
+        String parentChannelName = "/foo";
+        String wildChannelName = parentChannelName + "/*";
+        final CountDownLatch latch = new CountDownLatch(1);
+        bayeux.createIfAbsent(wildChannelName, new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+                channel.setLazy(true);
+            }
+        });
+
+        String childChannelName = parentChannelName + "/bar";
+        bayeux.createIfAbsent(childChannelName, new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+                channel.addListener(new ServerChannel.MessageListener()
+                {
+                    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
+                    {
+                        Assert.assertTrue(message.isLazy());
+                        latch.countDown();
+                        return true;
+                    }
+                });
+            }
+        });
+        bayeux.getChannel(childChannelName).publish(null, "data", null);
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

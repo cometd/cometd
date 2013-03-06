@@ -81,6 +81,7 @@ public class ServerSessionImpl implements ServerSession
     private long _connectTimestamp = -1;
     private long _intervalTimestamp;
     private long _lastConnect;
+    private boolean _nonLazyMessages;
 
     protected ServerSessionImpl(BayeuxServerImpl bayeux)
     {
@@ -219,10 +220,10 @@ public class ServerSessionImpl implements ServerSession
 
     public void deliver(Session from, Mutable message)
     {
-        ServerSession session;
+        ServerSession session = null;
         if (from instanceof ServerSession)
             session = (ServerSession)from;
-        else
+        else if (from instanceof LocalSession)
             session = ((LocalSession)from).getServerSession();
 
         if (!_bayeux.extendSend(session, this, message))
@@ -256,6 +257,7 @@ public class ServerSessionImpl implements ServerSession
         if (message == null)
             return;
 
+        // TODO: should freeze the message here not the mutable, in case the extension changed it
         _bayeux.freeze(mutable);
 
         int maxQueueSize = _maxQueue;
@@ -277,7 +279,7 @@ public class ServerSessionImpl implements ServerSession
         boolean wakeup;
         synchronized (_queue)
         {
-            _queue.add(message);
+            addMessage(message);
             wakeup = _batch == 0;
         }
 
@@ -410,36 +412,62 @@ public class ServerSessionImpl implements ServerSession
         }
     }
 
+    public boolean hasNonLazyMessages()
+    {
+        synchronized (_queue)
+        {
+            return _nonLazyMessages;
+        }
+    }
+
     public void replaceQueue(List<ServerMessage> queue)
     {
         synchronized (_queue)
         {
-            // TODO: this is not strictly correct, as we may clear messages
-            // that are not in the queue parameter
-            // For example, right now we do not queue meta responses, but if
-            // we do, and the ack extension requests to replace the queue by
-            // calling this method, then the queue parameter will not contain
-            // meta responses so they will be lost. We should only retain all
-            // messages that are not also present in the queue parameter.
-            _queue.clear();
-            _queue.addAll(queue);
+            // Calling clear() + addAll() works because we never queue meta responses.
+            // If we queue meta responses, then we would need to retain them, removing all
+            // messages that are in both queues, and adding all messages from the new queue.
+            clearQueue();
+            for (ServerMessage message : queue)
+                addMessage(message);
         }
+    }
+
+    private void clearQueue()
+    {
+        _queue.clear();
+        _nonLazyMessages = false;
+    }
+
+    private void addMessage(ServerMessage message)
+    {
+        assert Thread.holdsLock(_queue);
+        _queue.add(message);
+        _nonLazyMessages |= !message.isLazy();
     }
 
     public List<ServerMessage> takeQueue()
     {
-        List<ServerMessage> copy = new ArrayList<ServerMessage>();
+        List<ServerMessage> copy = Collections.emptyList();
         synchronized (_queue)
         {
-            if (!_queue.isEmpty())
+            int size = _queue.size();
+            if (size > 0)
             {
                 for (ServerSessionListener listener : _listeners)
                 {
                     if (listener instanceof DeQueueListener)
                         notifyDeQueue((DeQueueListener)listener, this, _queue);
                 }
-                copy.addAll(_queue);
-                _queue.clear();
+
+                // The queue may have changed by the listeners, re-read the size
+                size = _queue.size();
+                if (size > 0)
+                {
+                    copy = new ArrayList<ServerMessage>(size);
+                    copy.addAll(_queue);
+                    clearQueue();
+                }
             }
         }
         return copy;
@@ -484,7 +512,7 @@ public class ServerSessionImpl implements ServerSession
             {
                 oldScheduler = _scheduler;
                 _scheduler = newScheduler;
-                if (_queue.size() > 0 && _batch == 0)
+                if (hasNonLazyMessages() && _batch == 0)
                 {
                     schedule = true;
                     if (newScheduler instanceof OneTimeScheduler)
@@ -523,7 +551,7 @@ public class ServerSessionImpl implements ServerSession
         }
 
         // do local delivery
-        if (_localSession != null && _queue.size() > 0)
+        if (_localSession != null && hasNonLazyMessages())
         {
             for (ServerMessage msg : takeQueue())
             {

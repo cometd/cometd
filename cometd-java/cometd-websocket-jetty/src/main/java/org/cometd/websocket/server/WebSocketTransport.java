@@ -377,7 +377,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     // If we deliver only via meta connect, and we have messages,
                     // we need to send the queue and the meta connect reply
                     boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
-                    boolean hasMessages = !session.isQueueEmpty();
+                    boolean hasMessages = session.hasNonLazyMessages();
                     boolean replyToMetaConnect = hasMessages && metaConnectDelivery;
                     if (replyToMetaConnect)
                     {
@@ -393,7 +393,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                             // In schedule() we decide atomically if reply to the meta connect
                             synchronized (session.getLock())
                             {
-                                if (session.isQueueEmpty())
+                                if (!session.hasNonLazyMessages())
                                 {
                                     if (cancelMetaConnectTask(session))
                                         debug("Cancelled unresponded meta connect {}", _connectReply);

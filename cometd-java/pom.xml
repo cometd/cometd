@@ -14,7 +14,7 @@
     <name>CometD :: Java</name>
 
     <properties>
-        <jackson-version>1.9.3</jackson-version>
+        <jackson-version>1.9.12</jackson-version>
     </properties>
 
     <modules>
