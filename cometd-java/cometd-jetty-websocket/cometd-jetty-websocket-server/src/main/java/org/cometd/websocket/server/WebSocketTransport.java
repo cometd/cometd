@@ -105,12 +105,12 @@ public class WebSocketTransport extends HttpTransport
         _factory.setCreator(new WebSocketCreator()
         {
             @Override
-            public Object createWebSocket(UpgradeRequest req, UpgradeResponse resp)
+            public Object createWebSocket(UpgradeRequest request, UpgradeResponse response)
             {
-                if (req instanceof ServletWebSocketRequest)
+                if (request instanceof ServletWebSocketRequest)
                 {
-                    WebSocketContext handshake = new WebSocketContext((ServletWebSocketRequest)req);
-                    return new WebSocketScheduler(handshake, req.getHeader("User-Agent"));
+                    WebSocketContext handshake = new WebSocketContext((ServletWebSocketRequest)request);
+                    return new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
                 }
                 return null;
             }
