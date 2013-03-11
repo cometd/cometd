@@ -341,10 +341,7 @@ public abstract class LongPollingTransport extends HttpTransport
                         if (reply != null)
                         {
                             if (connect && session != null && !session.isConnected())
-                            {
-                                reply.setSuccessful(false);
                                 reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-                            }
 
                             reply = getBayeux().extendReply(session, session, reply);
 
@@ -393,10 +390,7 @@ public abstract class LongPollingTransport extends HttpTransport
             ServerMessage.Mutable reply = scheduler.getReply();
 
             if (!session.isConnected())
-            {
-                reply.setSuccessful(false);
                 reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
-            }
 
             reply = getBayeux().extendReply(session, session, reply);
 
