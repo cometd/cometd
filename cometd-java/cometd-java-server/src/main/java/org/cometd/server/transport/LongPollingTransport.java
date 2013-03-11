@@ -325,13 +325,7 @@ public abstract class LongPollingTransport extends HttpTransport
                                 finally
                                 {
                                     if (reply != null)
-                                    {
-                                        // Start the timeout before sending the queue so that
-                                        // if the write throws we have started the timeout
-                                        if (session.isConnected())
-                                            session.startIntervalTimeout(getInterval());
-                                        writer = sendQueue(request, response, session, writer);
-                                    }
+                                        writer = sendQueueForConnect(request, response, session, writer);
                                 }
                             }
                             else
@@ -390,24 +384,7 @@ public abstract class LongPollingTransport extends HttpTransport
             ServerSessionImpl session = scheduler.getSession();
             metaConnectResumed(request, session);
 
-            PrintWriter writer;
-            try
-            {
-                // Send the message queue
-                writer = sendQueue(request, response, session, null);
-            }
-            finally
-            {
-                // We need to start the interval timeout before the connect reply
-                // otherwise we open up a race condition where the client receives
-                // the connect reply and sends a new connect request before we start
-                // the interval timeout, which will be wrong.
-                // We need to put this into a finally block in case sending the queue
-                // throws an exception (for example because the client is gone), so that
-                // we start the interval timeout that is important to sweep the session
-                if (session.isConnected())
-                    session.startIntervalTimeout(getInterval());
-            }
+            PrintWriter writer = sendQueueForConnect(request, response, session, null);
 
             // Send the connect reply
             ServerMessage.Mutable reply = scheduler.getReply();
@@ -424,6 +401,27 @@ public abstract class LongPollingTransport extends HttpTransport
             }
 
             complete(writer);
+        }
+    }
+
+    private PrintWriter sendQueueForConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, PrintWriter writer) throws IOException
+    {
+        try
+        {
+            return sendQueue(request, response, session, writer);
+        }
+        finally
+        {
+            // We need to start the interval timeout after we sent the queue
+            // (which may take time) but before sending the connect reply
+            // otherwise we open up a race condition where the client receives
+            // the connect reply and sends a new connect request before we start
+            // the interval timeout, which will be wrong.
+            // We need to put this into a finally block in case sending the queue
+            // throws an exception (for example because the client is gone), so that
+            // we start the interval timeout that is important to sweep the session
+            if (session.isConnected())
+                session.startIntervalTimeout(getInterval());
         }
     }
 
