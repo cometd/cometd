@@ -259,10 +259,7 @@ public abstract class LongPollingTransport extends HttpTransport
                             {
                                 try
                                 {
-                                    writer = sendQueue(request, response, session, writer);
-
-                                    // If the writer is non null, we have already started sending a response, so we should not suspend
-                                    if (writer == null && reply.isSuccessful() && session.isQueueEmpty())
+                                    if (!session.hasNonLazyMessages() && reply.isSuccessful())
                                     {
                                         // Detect if we have multiple sessions from the same browser
                                         // Note that CORS requests do not send cookies, so we need to handle them specially
@@ -282,13 +279,19 @@ public abstract class LongPollingTransport extends HttpTransport
                                             // Support old clients that do not send advice:{timeout:0} on the first connect
                                             if (timeout > 0 && wasConnected && session.isConnected())
                                             {
+                                                // Between the last time we checked for messages in the queue
+                                                // (which was false, otherwise we would not be in this branch)
+                                                // and now, messages may have been added to the queue.
+                                                // We will suspend anyway, but setting the scheduler on the
+                                                // session will decide atomically if we need to resume or not.
+
                                                 // Suspend and wait for messages
                                                 Continuation continuation = ContinuationSupport.getContinuation(request);
                                                 continuation.setTimeout(timeout);
                                                 continuation.suspend(response);
                                                 scheduler = new LongPollScheduler(session, continuation, reply, browserId);
-                                                session.setScheduler(scheduler);
                                                 request.setAttribute(LongPollScheduler.ATTRIBUTE, scheduler);
+                                                session.setScheduler(scheduler);
                                                 reply = null;
                                                 metaConnectSuspended(request, session, timeout);
                                             }
@@ -321,8 +324,8 @@ public abstract class LongPollingTransport extends HttpTransport
                                 }
                                 finally
                                 {
-                                    if (reply != null && session.isConnected())
-                                        session.startIntervalTimeout(getInterval());
+                                    if (reply != null)
+                                        writer = sendQueueForConnect(request, response, session, writer);
                                 }
                             }
                             else
@@ -365,10 +368,8 @@ public abstract class LongPollingTransport extends HttpTransport
                 // If we started a batch, end it now
                 if (batch)
                 {
-                    boolean ended = session.endBatch();
-
                     // Flush session if not done by the batch, since some browser order <script> requests
-                    if (!ended && isAlwaysFlushingAfterHandle())
+                    if (!session.endBatch() && isAlwaysFlushingAfterHandle())
                         session.flush();
                 }
                 else if (session != null && !connect && isAlwaysFlushingAfterHandle())
@@ -383,24 +384,7 @@ public abstract class LongPollingTransport extends HttpTransport
             ServerSessionImpl session = scheduler.getSession();
             metaConnectResumed(request, session);
 
-            PrintWriter writer;
-            try
-            {
-                // Send the message queue
-                writer = sendQueue(request, response, session, null);
-            }
-            finally
-            {
-                // We need to start the interval timeout before the connect reply
-                // otherwise we open up a race condition where the client receives
-                // the connect reply and sends a new connect request before we start
-                // the interval timeout, which will be wrong.
-                // We need to put this into a finally block in case sending the queue
-                // throws an exception (for example because the client is gone), so that
-                // we start the interval timeout that is important to sweep the session
-                if (session.isConnected())
-                    session.startIntervalTimeout(getInterval());
-            }
+            PrintWriter writer = sendQueueForConnect(request, response, session, null);
 
             // Send the connect reply
             ServerMessage.Mutable reply = scheduler.getReply();
@@ -417,6 +401,27 @@ public abstract class LongPollingTransport extends HttpTransport
             }
 
             complete(writer);
+        }
+    }
+
+    private PrintWriter sendQueueForConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, PrintWriter writer) throws IOException
+    {
+        try
+        {
+            return sendQueue(request, response, session, writer);
+        }
+        finally
+        {
+            // We need to start the interval timeout after we sent the queue
+            // (which may take time) but before sending the connect reply
+            // otherwise we open up a race condition where the client receives
+            // the connect reply and sends a new connect request before we start
+            // the interval timeout, which will be wrong.
+            // We need to put this into a finally block in case sending the queue
+            // throws an exception (for example because the client is gone), so that
+            // we start the interval timeout that is important to sweep the session
+            if (session.isConnected())
+                session.startIntervalTimeout(getInterval());
         }
     }
 

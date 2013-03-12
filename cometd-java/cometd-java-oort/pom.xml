@@ -15,8 +15,6 @@
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>servlet-api</artifactId>
-            <version>2.5</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.cometd.java</groupId>
@@ -46,8 +44,6 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j-version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.cometd.java</groupId>

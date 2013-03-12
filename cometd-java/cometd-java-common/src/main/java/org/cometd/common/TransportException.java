@@ -14,21 +14,27 @@
  * limitations under the License.
  */
 
-package org.cometd.client.transport;
+package org.cometd.common;
 
-import java.util.List;
+import java.util.Map;
 
-import org.cometd.bayeux.Message;
-
-public interface TransportListener
+public class TransportException extends RuntimeException
 {
-    void onSending(Message[] messages);
+    private final Map<String, Object> fields;
 
-    void onMessages(List<Message.Mutable> messages);
+    public TransportException(Map<String, Object> fields)
+    {
+        this.fields = fields;
+    }
 
-    void onConnectException(Throwable x, Message[] messages);
+    public TransportException(Throwable cause, Map<String, Object> fields)
+    {
+        super(cause);
+        this.fields = fields;
+    }
 
-    void onException(Throwable x, Message[] messages);
-
-    void onExpire(Message[] messages);
+    public Map<String, Object> getFields()
+    {
+        return fields;
+    }
 }

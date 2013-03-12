@@ -22,7 +22,6 @@ import java.net.ConnectException;
 import java.net.ProtocolException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,6 +34,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
@@ -42,6 +43,7 @@ import org.cometd.bayeux.Message.Mutable;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
+import org.cometd.common.TransportException;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocket.Connection;
 import org.eclipse.jetty.websocket.WebSocketClient;
@@ -237,11 +239,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             _connection = client.open(uri, _websocket, getConnectTimeout(), TimeUnit.MILLISECONDS);
 
             if (_aborted)
-            {
                 listener.onException(new IOException("Aborted"), messages);
-            }
-
-            return _connection;
         }
         catch (ConnectException x)
         {
@@ -255,22 +253,29 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         {
             listener.onConnectException(x, messages);
         }
-        catch (URISyntaxException x)
-        {
-            _webSocketSupported = false;
-            listener.onProtocolError(x.getMessage(), messages);
-        }
         catch (InterruptedException x)
         {
-            _webSocketSupported = false;
-            listener.onException(x, messages);
+            listener.onConnectException(x, messages);
         }
         catch (ProtocolException x)
         {
+            // Probably a WebSocket upgrade failure
             _webSocketSupported = false;
-            listener.onProtocolError(x.getMessage(), messages);
+            // Try to parse the HTTP error, although it's ugly
+            Map<String, Object> failure = new HashMap<String, Object>(2);
+            failure.put("websocketCode", 1002);
+            // Unfortunately the information on the HTTP status code is not available directly
+            // Try to parse it although it's ugly
+            Matcher matcher = Pattern.compile("(\\d+){3}").matcher(x.getMessage());
+            if (matcher.find())
+            {
+                int code = Integer.parseInt(matcher.group());
+                if (code > 100 && code < 600)
+                    failure.put("httpCode", code);
+            }
+            listener.onException(new TransportException(x, failure), messages);
         }
-        catch (IOException x)
+        catch (Exception x)
         {
             _webSocketSupported = false;
             listener.onException(x, messages);

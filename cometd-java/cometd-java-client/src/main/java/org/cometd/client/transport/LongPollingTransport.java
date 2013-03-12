@@ -21,6 +21,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -31,6 +32,7 @@ import java.util.regex.Pattern;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
+import org.cometd.common.TransportException;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpHeaders;
@@ -317,11 +319,20 @@ public class LongPollingTransport extends HttpClientTransport
                     }
                 }
                 else
-                    _listener.onProtocolError("Empty response: " + this, _messages);
+                {
+                    Map<String, Object> failure = new HashMap<String, Object>(2);
+                    // Convert the 200 into 204 (no content)
+                    failure.put("httpCode", 204);
+                    TransportException x = new TransportException(failure);
+                    _listener.onException(x, _messages);
+                }
             }
             else
             {
-                _listener.onProtocolError("Unexpected response " + getResponseStatus() + ": " + this, _messages);
+                Map<String, Object> failure = new HashMap<String, Object>(2);
+                failure.put("httpCode", getResponseStatus());
+                TransportException x = new TransportException(failure);
+                _listener.onException(x, _messages);
             }
         }
 
