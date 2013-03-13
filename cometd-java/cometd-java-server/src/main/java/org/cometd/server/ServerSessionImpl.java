@@ -327,7 +327,7 @@ public class ServerSessionImpl implements ServerSession
         {
             _maxQueue = transport.getOption(HttpTransport.MAX_QUEUE_OPTION, -1);
             _maxInterval = _interval >= 0 ? _interval + transport.getMaxInterval() : transport.getMaxInterval();
-            _maxServerInterval = transport.getOption("maxServerInterval", 10 * _maxInterval);
+            _maxServerInterval = transport.getOption("maxServerInterval", -1);
             _randomizeLazy = transport.getOption(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, false);
             _maxLazy = transport.getMaxLazyTimeout();
         }
