@@ -41,11 +41,11 @@ import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.BayeuxContext;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel.Initializer;
+import org.cometd.bayeux.server.ConfigurableServerChannel.ServerChannelListener;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerChannel.MessageListener;
-import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
@@ -689,7 +689,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         if (_policy != null && !_policy.canPublish(this, session, channel, message))
         {
-            _logger.warn("{} denied Publish@{} by {}", new Object[]{session, channel.getId(), _policy});
+            _logger.warn("{} denied Publish@{} by {}", session, channel.getId(), _policy);
             return Authorizer.Result.deny("denied_by_security_policy");
         }
         return isOperationAuthorized(Authorizer.Operation.PUBLISH, session, message, channel.getChannelId());
@@ -699,7 +699,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         if (_policy != null && !_policy.canSubscribe(this, session, channel, message))
         {
-            _logger.warn("{} denied Subscribe@{} by {}", new Object[]{session, channel, _policy});
+            _logger.warn("{} denied Subscribe@{} by {}", session, channel, _policy);
             return Authorizer.Result.deny("denied_by_security_policy");
         }
         return isOperationAuthorized(Authorizer.Operation.SUBSCRIBE, session, message, channel.getChannelId());
@@ -709,7 +709,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         if (_policy != null && !_policy.canCreate(BayeuxServerImpl.this, session, channel, message))
         {
-            _logger.warn("{} denied Create@{} by {}", new Object[]{session, message.getChannel(), _policy});
+            _logger.warn("{} denied Create@{} by {}", session, message.getChannel(), _policy);
             return Authorizer.Result.deny("denied_by_security_policy");
         }
         return isOperationAuthorized(Authorizer.Operation.CREATE, session, message, new ChannelId(channel));
