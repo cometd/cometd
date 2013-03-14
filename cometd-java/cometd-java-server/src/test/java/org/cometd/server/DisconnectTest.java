@@ -16,10 +16,14 @@
 
 package org.cometd.server;
 
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.common.JettyJSONContextClient;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
@@ -51,18 +55,29 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest
         String clientId = extractClientId(handshake);
         String bayeuxCookie = extractBayeuxCookie(handshake);
 
-        ContentExchange connect = newBayeuxExchange("[{" +
+        ContentExchange connect1 = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect.waitForDone());
-        Assert.assertEquals(200, connect.getResponseStatus());
+        connect1.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
+        httpClient.send(connect1);
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
+        Assert.assertEquals(200, connect1.getResponseStatus());
 
         ServerSession serverSession = bayeux.getSession(clientId);
         Assert.assertNotNull(serverSession);
+
+        ContentExchange connect2 = newBayeuxExchange("[{" +
+                "\"channel\": \"/meta/connect\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"connectionType\": \"long-polling\"" +
+                "}]");
+        connect2.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
+        httpClient.send(connect2);
+
+        // Wait for the /meta/connect to be suspended
+        Thread.sleep(1000);
 
         final CountDownLatch latch = new CountDownLatch(1);
         serverSession.addListener(new ServerSession.RemoveListener()
@@ -82,5 +97,12 @@ public class DisconnectTest extends AbstractBayeuxClientServerTest
         Assert.assertEquals(200, disconnect.getResponseStatus());
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
+        Assert.assertEquals(200, connect2.getResponseStatus());
+        Message.Mutable connectReply = new JettyJSONContextClient().parse(connect2.getResponseContent())[0];
+        Assert.assertEquals(Channel.META_CONNECT, connectReply.getChannel());
+        Map<String, Object> advice = connectReply.getAdvice(false);
+        Assert.assertTrue(Message.RECONNECT_NONE_VALUE.equals(advice.get(Message.RECONNECT_FIELD)));
     }
 }

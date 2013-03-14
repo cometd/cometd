@@ -485,30 +485,28 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
     /**
      * @param session  the session to remove
-     * @param timedout whether the remove reason is server-side expiration
+     * @param timedOut whether the remove reason is server-side expiration
      * @return true if the session was removed and was connected
      */
-    public boolean removeServerSession(ServerSession session, boolean timedout)
+    public boolean removeServerSession(ServerSession session, boolean timedOut)
     {
-        debug("Removing session {}, timed out: {}", session, timedout);
+        debug("Removing session {}, timed out: {}", session, timedOut);
 
         ServerSessionImpl removed = _sessions.remove(session.getId());
 
-        if (removed == session)
-        {
-            // Invoke BayeuxServer.SessionListener first, so that the application
-            // can be "pre-notified" that a session is being removed before the
-            // application gets notifications of channel unsubscriptions
-            for (BayeuxServerListener listener : _listeners)
-            {
-                if (listener instanceof BayeuxServer.SessionListener)
-                    notifySessionRemoved((SessionListener)listener, session, timedout);
-            }
-
-            return ((ServerSessionImpl)session).removed(timedout);
-        }
-        else
+        if (removed != session)
             return false;
+
+        // Invoke BayeuxServer.SessionListener first, so that the application
+        // can be "pre-notified" that a session is being removed before the
+        // application gets notifications of channel unsubscriptions
+        for (BayeuxServerListener listener : _listeners)
+        {
+            if (listener instanceof SessionListener)
+                notifySessionRemoved((SessionListener)listener, session, timedOut);
+        }
+
+        return removed.removed(timedOut);
     }
 
     private void notifySessionRemoved(SessionListener listener, ServerSession session, boolean timedout)
@@ -1248,7 +1246,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 return;
             }
 
-            session.connect();
+            session.connected();
 
             // Handle incoming advice
             Map<String, Object> adviceIn = message.getAdvice();

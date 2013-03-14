@@ -171,8 +171,6 @@ public abstract class LongPollingTransport extends HttpTransport
         }
     }
 
-
-
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -325,14 +323,14 @@ public abstract class LongPollingTransport extends HttpTransport
                                 finally
                                 {
                                     if (reply != null)
-                                        writer = sendQueueForConnect(request, response, session, writer);
+                                        writer = writeQueueForMetaConnect(request, response, session, writer);
                                 }
                             }
                             else
                             {
                                 if (!isMetaConnectDeliveryOnly() && !session.isMetaConnectDeliveryOnly())
                                 {
-                                    writer = sendQueue(request, response, session, writer);
+                                    writer = writeQueue(request, response, session, writer);
                                 }
                             }
                         }
@@ -340,7 +338,7 @@ public abstract class LongPollingTransport extends HttpTransport
                         // If the reply has not been otherwise handled, send it
                         if (reply != null)
                         {
-                            if (connect && session != null && !session.isConnected())
+                            if (connect && session != null && session.isDisconnected())
                                 reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
 
                             reply = getBayeux().extendReply(session, session, reply);
@@ -348,7 +346,7 @@ public abstract class LongPollingTransport extends HttpTransport
                             if (reply != null)
                             {
                                 getBayeux().freeze(reply);
-                                writer = send(request, response, writer, reply);
+                                writer = writeMessage(request, response, writer, session, reply);
                             }
                         }
                     }
@@ -357,7 +355,7 @@ public abstract class LongPollingTransport extends HttpTransport
                     message.setAssociated(null);
                 }
                 if (writer != null)
-                    complete(writer);
+                    finishWrite(writer, session);
             }
             catch (ParseException x)
             {
@@ -384,12 +382,12 @@ public abstract class LongPollingTransport extends HttpTransport
             ServerSessionImpl session = scheduler.getSession();
             metaConnectResumed(request, session);
 
-            PrintWriter writer = sendQueueForConnect(request, response, session, null);
+            PrintWriter writer = writeQueueForMetaConnect(request, response, session, null);
 
             // Send the connect reply
             ServerMessage.Mutable reply = scheduler.getReply();
 
-            if (!session.isConnected())
+            if (session.isDisconnected())
                 reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
 
             reply = getBayeux().extendReply(session, session, reply);
@@ -397,18 +395,18 @@ public abstract class LongPollingTransport extends HttpTransport
             if (reply != null)
             {
                 getBayeux().freeze(reply);
-                writer = send(request, response, writer, reply);
+                writer = writeMessage(request, response, writer, session, reply);
             }
 
-            complete(writer);
+            finishWrite(writer, session);
         }
     }
 
-    private PrintWriter sendQueueForConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, PrintWriter writer) throws IOException
+    private PrintWriter writeQueueForMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, PrintWriter writer) throws IOException
     {
         try
         {
-            return sendQueue(request, response, session, writer);
+            return writeQueue(request, response, session, writer);
         }
         finally
         {
@@ -478,12 +476,12 @@ public abstract class LongPollingTransport extends HttpTransport
         _lastSweep = now;
     }
 
-    private PrintWriter sendQueue(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, PrintWriter writer)
+    private PrintWriter writeQueue(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, PrintWriter writer)
             throws IOException
     {
-        final List<ServerMessage> queue = session.takeQueue();
+        List<ServerMessage> queue = session.takeQueue();
         for (ServerMessage m : queue)
-            writer = send(request, response, writer, m);
+            writer = writeMessage(request, response, writer, session, m);
         return writer;
     }
 
@@ -512,9 +510,9 @@ public abstract class LongPollingTransport extends HttpTransport
      */
     protected abstract boolean isAlwaysFlushingAfterHandle();
 
-    protected abstract PrintWriter send(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerMessage message) throws IOException;
+    protected abstract PrintWriter writeMessage(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerSessionImpl session, ServerMessage message) throws IOException;
 
-    protected abstract void complete(PrintWriter writer) throws IOException;
+    protected abstract void finishWrite(PrintWriter writer, ServerSessionImpl session) throws IOException;
 
     private class LongPollScheduler implements AbstractServerTransport.OneTimeScheduler, ContinuationListener
     {
