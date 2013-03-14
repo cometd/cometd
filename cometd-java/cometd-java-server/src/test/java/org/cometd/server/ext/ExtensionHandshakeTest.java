@@ -28,11 +28,18 @@ import org.cometd.server.AbstractBayeuxClientServerTest;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ExtensionHandshakeTest extends AbstractBayeuxClientServerTest
 {
     private CountingExtension extension = new CountingExtension();
+
+    @Before
+    public void prepare() throws Exception
+    {
+        startServer(null);
+    }
 
     @Test
     public void testExtension() throws Exception

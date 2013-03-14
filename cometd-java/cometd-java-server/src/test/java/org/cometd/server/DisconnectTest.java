@@ -24,10 +24,17 @@ import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class DisconnectTest extends AbstractBayeuxClientServerTest
 {
+    @Before
+    public void prepare() throws Exception
+    {
+        startServer(null);
+    }
+
     @Test
     public void testDisconnect() throws Exception
     {

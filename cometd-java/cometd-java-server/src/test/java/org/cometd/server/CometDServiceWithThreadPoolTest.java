@@ -26,10 +26,17 @@ import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class CometDServiceWithThreadPoolTest extends AbstractBayeuxClientServerTest
 {
+    @Before
+    public void prepare() throws Exception
+    {
+        startServer(null);
+    }
+
     @Test
     public void testBayeuxServiceWithThreadPool() throws Exception
     {

@@ -20,10 +20,17 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class BayeuxContextTest extends AbstractBayeuxClientServerTest
 {
+    @Before
+    public void prepare() throws Exception
+    {
+        startServer(null);
+    }
+
     @Test
     public void testAddresses() throws Exception
     {
