@@ -37,11 +37,11 @@ public class OortList<E> extends OortObject<List<E>>
             throw new IllegalArgumentException("Item " + item + " is not an element of " + list);
 
         Map<String, Object> data = new HashMap<String, Object>();
-        data.put(MetaData.OORT_URL_FIELD, getOort().getURL());
-        data.put(MetaData.NAME_FIELD, getName());
-        data.put(MetaData.OBJECT_FIELD, item);
-        data.put(MetaData.TYPE_FIELD, "item");
-        data.put(MetaData.ACTION_FIELD, "add");
+        data.put(Info.OORT_URL_FIELD, getOort().getURL());
+        data.put(Info.NAME_FIELD, getName());
+        data.put(Info.OBJECT_FIELD, item);
+        data.put(Info.TYPE_FIELD, "item");
+        data.put(Info.ACTION_FIELD, "add");
 
         logger.debug("Cloud sharing list element {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
@@ -56,25 +56,24 @@ public class OortList<E> extends OortObject<List<E>>
     @Override
     protected void onObject(Map<String, Object> data)
     {
-        if ("item".equals(data.get(MetaData.TYPE_FIELD)))
+        if ("item".equals(data.get(Info.TYPE_FIELD)))
         {
-            MetaData<List<E>> newMetaData = getMetaData((String)data.get(MetaData.OORT_URL_FIELD));
-            List<E> list = newMetaData.getObject();
+            Info<List<E>> newInfo = getInfo((String)data.get(Info.OORT_URL_FIELD));
+            List<E> list = newInfo.getObject();
 
             // Remember old data
-            Map<String, Object> oldData = newMetaData.asMap();
-            oldData.put(MetaData.OBJECT_FIELD, new ArrayList<E>(list));
-            MetaData<List<E>> oldMetaData = new MetaData<List<E>>(oldData);
+            Info<List<E>> oldInfo = new Info<List<E>>(newInfo);
+            oldInfo.put(Info.OBJECT_FIELD, new ArrayList<E>(list));
 
             // Handle item
-            E item = (E)data.get(MetaData.OBJECT_FIELD);
-            String action = (String)data.get(MetaData.ACTION_FIELD);
+            E item = (E)data.get(Info.OBJECT_FIELD);
+            String action = (String)data.get(Info.ACTION_FIELD);
             if ("add".equals(action))
                 list.add(item);
             else if ("remove".equals(action))
                 list.remove(item);
 
-            notifyOnUpdated(oldMetaData, newMetaData);
+            notifyOnUpdated(oldInfo, newInfo);
         }
         else
         {

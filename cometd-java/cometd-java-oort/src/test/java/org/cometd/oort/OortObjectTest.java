@@ -20,26 +20,27 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.bayeux.server.ServerChannel;
-import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.server.Server;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class OortObjectTest extends OortTest
 {
-    @Test
-    public void testShareObject() throws Exception
+    private Oort oort1;
+    private Oort oort2;
+
+    @Before
+    public void prepare() throws Exception
     {
         Server server1 = startServer(0);
-        final Oort oort1 = startOort(server1);
+        oort1 = startOort(server1);
         Server server2 = startServer(0);
-        Oort oort2 = startOort(server2);
+        oort2 = startOort(server2);
 
         CountDownLatch latch = new CountDownLatch(2);
         CometJoinedListener listener = new CometJoinedListener(latch);
@@ -51,48 +52,127 @@ public class OortObjectTest extends OortTest
         OortComet oortComet21 = oort2.findComet(oort1.getURL());
         Assert.assertNotNull(oortComet21);
         Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
+    }
 
-        // Wait a while to be sure to be subscribed
-        Thread.sleep(1000);
-
+    @Test
+    public void testShareObject() throws Exception
+    {
         String name = "test";
         OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new HashMap<String, Object>());
         OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new HashMap<String, Object>());
 
-        String oortObjectsChannel = "/oort/objects";
-        Set<ServerSession> s1 = oort1.getBayeuxServer().getChannel(oortObjectsChannel).getSubscribers();
-        System.err.println("s1 = " + s1);
-        List<ServerChannel.ServerChannelListener> l1 = oort1.getBayeuxServer().getChannel(oortObjectsChannel).getListeners();
-        System.err.println("l1 = " + l1);
-        Set<ServerSession> s2 = oort2.getBayeuxServer().getChannel(oortObjectsChannel).getSubscribers();
-        System.err.println("s2 = " + s2);
-        List<ServerChannel.ServerChannelListener> l2 = oort2.getBayeuxServer().getChannel(oortObjectsChannel).getListeners();
-        System.err.println("l2 = " + l2);
-
-        Map<String, Object> object1 = new HashMap<String, Object>();
-        String key1 = "key1";
-        String value1 = "value1";
-        object1.put(key1, value1);
-        oortObject1.setLocal(object1);
-        oortObject1.publish();
-
-        // Wait for the other OortObject to receive the object
+        // The other OortObject listens to receive the object
         final CountDownLatch objectLatch = new CountDownLatch(1);
         oortObject2.addListener(new OortObject.Listener.Adapter<Map<String, Object>>()
         {
-            public void onUpdated(OortObject.MetaData<Map<String, Object>> oldMetaData, OortObject.MetaData<Map<String, Object>> newMetaData)
+            public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo)
             {
                 objectLatch.countDown();
             }
         });
+
+        // Change the object and publish the change
+        Map<String, Object> object1 = oortObject1.getLocal();
+        String key1 = "key1";
+        String value1 = "value1";
+        object1.put(key1, value1);
+        oortObject1.publish();
+
         Assert.assertTrue(objectLatch.await(5, TimeUnit.SECONDS));
 
-        Assert.assertNull(oortObject2.getLocal());
+        Assert.assertTrue(oortObject2.getLocal().isEmpty());
         Map<String, Object> object1AtOort2 = oortObject2.getRemote(oort1.getURL());
         Assert.assertEquals(object1, object1AtOort2);
 
         Map<String, Object> objectAtOort2 = oortObject2.get(new OortObject.UnionMergeStrategyMap<String, Object>());
         Assert.assertEquals(object1, objectAtOort2);
+    }
+
+    @Test
+    public void testLocalObjectIsPushedWhenNodeJoins() throws Exception
+    {
+        String name = "test";
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new HashMap<String, Object>());
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new HashMap<String, Object>());
+
+        Map<String, Object> object1 = oortObject1.getLocal();
+        String key1 = "key1";
+        String value1 = "value1";
+        object1.put(key1, value1);
+        oortObject1.publish();
+
+        Map<String, Object> object2 = oortObject2.getLocal();
+        String key2 = "key2";
+        String value2 = "value2";
+        object2.put(key2, value2);
+        oortObject2.publish();
+
+        // Wait for shared objects to synchronize
+        Thread.sleep(1000);
+
+        Server server3 = startServer(0);
+        Oort oort3 = startOort(server3);
+        CountDownLatch oortLatch = new CountDownLatch(2);
+        CometJoinedListener listener = new CometJoinedListener(oortLatch);
+        oort3.addCometListener(listener);
+        OortComet oortComet31 = oort3.observeComet(oort1.getURL());
+        Assert.assertTrue(oortComet31.waitFor(5000, BayeuxClient.State.CONNECTED));
+        Assert.assertTrue(oortLatch.await(5, TimeUnit.SECONDS));
+
+        HashMap<String, Object> object3 = new HashMap<String, Object>();
+        String key3 = "key3";
+        String value3 = "value3";
+        object3.put(key3, value3);
+        OortObject<Map<String, Object>> oortObject3 = new OortObject<Map<String, Object>>(oort3, name, object3);
+        final CountDownLatch objectsLatch = new CountDownLatch(2);
+        oortObject3.addListener(new OortObject.Listener.Adapter<Map<String, Object>>()
+        {
+            @Override
+            public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo)
+            {
+                objectsLatch.countDown();
+            }
+        });
+        oortObject3.publish();
+        Assert.assertTrue(objectsLatch.await(5, TimeUnit.SECONDS));
+
+        Map<String, Object> objectAtOort1 = oortObject1.get(new OortObject.UnionMergeStrategyMap<String, Object>());
+        Assert.assertEquals(3, objectAtOort1.size());
+        Map<String, Object> objectAtOort2 = oortObject2.get(new OortObject.UnionMergeStrategyMap<String, Object>());
+        Assert.assertEquals(3, objectAtOort2.size());
+        Map<String, Object> objectAtOort3 = oortObject3.get(new OortObject.UnionMergeStrategyMap<String, Object>());
+        Assert.assertEquals(3, objectAtOort3.size());
+    }
+
+    @Test
+    public void testLocalObjectIsRemovedWhenNodeLeaves() throws Exception
+    {
+        String name = "test";
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new HashMap<String, Object>());
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new HashMap<String, Object>());
+
+        Map<String, Object> object1 = oortObject1.getLocal();
+        String key1 = "key1";
+        String value1 = "value1";
+        object1.put(key1, value1);
+        oortObject1.publish();
+
+        Map<String, Object> object2 = oortObject2.getLocal();
+        String key2 = "key2";
+        String value2 = "value2";
+        object2.put(key2, value2);
+        oortObject2.publish();
+
+        // Wait for shared objects to synchronize
+        Thread.sleep(1000);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        oort2.addCometListener(new CometLeftListener(latch));
+        stopOort(oort1);
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        Map<String, Object> objectAtOort2 = oortObject2.get(new OortObject.UnionMergeStrategyMap<String, Object>());
+        Assert.assertEquals(object2, objectAtOort2);
     }
 
     @Test

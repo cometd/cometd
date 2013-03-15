@@ -39,7 +39,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
 {
     public static final String OORT_OBJECTS_CHANNEL = "/oort/objects";
 
-    private final Map<String, MetaData<T>> objects = new ConcurrentHashMap<String, MetaData<T>>();
+    private final Map<String, Info<T>> objects = new ConcurrentHashMap<String, Info<T>>();
     private final List<Listener<T>> listeners = new CopyOnWriteArrayList<Listener<T>>();
     protected final Logger logger;
     private final Oort oort;
@@ -84,15 +84,17 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
 
     public void cometJoined(Event event)
     {
+        // Nothing to do because it is too early to push local data:
+        // the OortObject on the new Oort may not be setup yet
         logger.debug("Oort {} joined", event.getCometURL());
-        publish();
     }
 
     public void cometLeft(Event event)
     {
         logger.debug("Oort {} left", event.getCometURL());
-        MetaData<T> metaData = objects.remove(event.getCometURL());
-        notifyOnRemoved(metaData);
+        Info<T> info = objects.remove(event.getCometURL());
+        logger.debug("Removed remote info {}", info);
+        notifyOnRemoved(info);
     }
 
     public void addListener(Listener<T> listener)
@@ -105,13 +107,13 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         listeners.remove(listener);
     }
 
-    protected void notifyOnUpdated(MetaData<T> oldMetaData, MetaData<T> newMetaData)
+    protected void notifyOnUpdated(Info<T> oldInfo, Info<T> newInfo)
     {
         for (Listener<T> listener : listeners)
         {
             try
             {
-                listener.onUpdated(oldMetaData, newMetaData);
+                listener.onUpdated(oldInfo, newInfo);
             }
             catch (Exception x)
             {
@@ -120,13 +122,13 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         }
     }
 
-    protected void notifyOnRemoved(MetaData<T> metaData)
+    protected void notifyOnRemoved(Info<T> info)
     {
         for (Listener<T> listener : listeners)
         {
             try
             {
-                listener.onRemoved(metaData);
+                listener.onRemoved(info);
             }
             catch (Exception x)
             {
@@ -158,10 +160,10 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         return true;
     }
 
-    protected boolean onMessage(Map<String, Object> data)
+    private boolean onMessage(Map<String, Object> data)
     {
-        boolean sameOort = oort.getURL().equals(data.get(MetaData.OORT_URL_FIELD));
-        boolean sameName = getName().equals(data.get(MetaData.NAME_FIELD));
+        boolean sameOort = oort.getURL().equals(data.get(Info.OORT_URL_FIELD));
+        boolean sameName = getName().equals(data.get(Info.NAME_FIELD));
         if (!sameOort && sameName)
             onObject(data);
         return true;
@@ -169,11 +171,23 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
 
     protected void onObject(Map<String, Object> data)
     {
-        logger.debug("Cloud shared object {}", data);
+        Info<T> newInfo = new Info<T>(data);
+        logger.debug("Received remote info {}", newInfo);
+
         // Default behavior is to replace
-        MetaData<T> newMetaData = new MetaData<T>(data);
-        MetaData<T> oldMetaData = objects.put(newMetaData.getOortURL(), newMetaData);
-        notifyOnUpdated(oldMetaData, newMetaData);
+        String newOortURL = newInfo.getOortURL();
+        Info<T> oldInfo = objects.put(newOortURL, newInfo);
+
+        notifyOnUpdated(oldInfo, newInfo);
+
+        // If we did not have an info for the new Oort, then it's a
+        // new OortObject and we need to push our own data to it.
+        if (oldInfo == null)
+        {
+            Info<T> localInfo = getInfo(oort.getURL());
+            logger.debug("Pushing (to {}) local info {}", newOortURL, localInfo);
+            oort.getComet(newOortURL).getChannel(OORT_OBJECTS_CHANNEL).publish(localInfo);
+        }
     }
 
     public T getLocal()
@@ -185,21 +199,21 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
     {
         if (local == null)
             throw new NullPointerException();
-        Map<String, Object> data = new HashMap<String, Object>();
-        data.put(MetaData.OORT_URL_FIELD, oort.getURL());
-        data.put(MetaData.NAME_FIELD, getName());
-        data.put(MetaData.OBJECT_FIELD, local);
-        MetaData<T> metaData = new MetaData<T>(data);
-        objects.put(oort.getURL(), metaData);
+        Info<T> info = new Info<T>();
+        info.put(Info.OORT_URL_FIELD, oort.getURL());
+        info.put(Info.NAME_FIELD, getName());
+        info.put(Info.OBJECT_FIELD, local);
+        logger.debug("Setting local info {}", info);
+        objects.put(oort.getURL(), info);
     }
 
     public T getRemote(String oortURL)
     {
-        MetaData<T> metaData = getMetaData(oortURL);
-        return metaData == null ? null : metaData.getObject();
+        Info<T> info = getInfo(oortURL);
+        return info == null ? null : info.getObject();
     }
 
-    protected MetaData<T> getMetaData(String oortURL)
+    protected Info<T> getInfo(String oortURL)
     {
         return objects.get(oortURL);
     }
@@ -211,17 +225,16 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
 
     public void publish()
     {
-        MetaData<T> metaData = getMetaData(oort.getURL());
-        if (metaData != null)
+        Info<T> info = getInfo(oort.getURL());
+        if (info != null)
         {
-            Map<String, Object> data = metaData.asMap();
-            logger.debug("Cloud sharing object {}", metaData);
+            logger.debug("Sharing local info {}", info);
             BayeuxServer bayeuxServer = oort.getBayeuxServer();
-            bayeuxServer.getChannel(OORT_OBJECTS_CHANNEL).publish(sender, data, null);
+            bayeuxServer.getChannel(OORT_OBJECTS_CHANNEL).publish(sender, info, null);
         }
     }
 
-    public static class MetaData<E>
+    public static class Info<E> extends HashMap<String, Object>
     {
         public static final String OORT_URL_FIELD = "oortURL";
         public static final String NAME_FIELD = "name";
@@ -229,35 +242,28 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         public static final String TYPE_FIELD = "type";
         public static final String ACTION_FIELD = "action";
 
-        private final Map<String, Object> data;
-
-        public MetaData(Map<String, Object> data)
+        public Info()
         {
-            this.data = data;
+        }
+
+        public Info(Map<? extends String, ?> map)
+        {
+            super(map);
         }
 
         public String getOortURL()
         {
-            return (String)data.get(OORT_URL_FIELD);
+            return (String)get(OORT_URL_FIELD);
         }
 
         public String getName()
         {
-            return (String)data.get(NAME_FIELD);
+            return (String)get(NAME_FIELD);
         }
 
         public E getObject()
         {
-            return (E)data.get(OBJECT_FIELD);
-        }
-
-        public Map<String, Object> asMap()
-        {
-            Map<String, Object> result = new HashMap<String, Object>();
-            result.put(OORT_URL_FIELD, getOortURL());
-            result.put(NAME_FIELD, getName());
-            result.put(OBJECT_FIELD, getObject());
-            return result;
+            return (E)get(OBJECT_FIELD);
         }
 
         @Override
@@ -267,17 +273,17 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         }
     }
 
-    public interface MergeStrategy<S>
+    public interface MergeStrategy<E>
     {
-        public S merge(Collection<MetaData<S>> values);
+        public E merge(Collection<Info<E>> values);
     }
 
     public static class UnionMergeStrategyList<E> implements MergeStrategy<List<E>>
     {
-        public List<E> merge(Collection<MetaData<List<E>>> values)
+        public List<E> merge(Collection<Info<List<E>>> values)
         {
             List<E> result = new ArrayList<E>();
-            for (MetaData<List<E>> value : values)
+            for (Info<List<E>> value : values)
                 result.addAll(value.getObject());
             return result;
         }
@@ -285,10 +291,10 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
 
     public static class UnionMergeStrategyMap<K, V> implements MergeStrategy<Map<K, V>>
     {
-        public Map<K, V> merge(Collection<MetaData<Map<K, V>>> values)
+        public Map<K, V> merge(Collection<Info<Map<K, V>>> values)
         {
             Map<K, V> result = new HashMap<K, V>();
-            for (MetaData<Map<K, V>> value : values)
+            for (Info<Map<K, V>> value : values)
                 result.putAll(value.getObject());
             return result;
         }
@@ -296,17 +302,17 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
 
     public interface Listener<T> extends EventListener
     {
-        public void onUpdated(MetaData<T> oldMetaData, MetaData<T> newMetaData);
+        public void onUpdated(Info<T> oldInfo, Info<T> newInfo);
 
-        public void onRemoved(MetaData<T> metaData);
+        public void onRemoved(Info<T> info);
 
         public static class Adapter<Q> implements Listener<Q>
         {
-            public void onUpdated(MetaData<Q> oldMetaData, MetaData<Q> newMetaData)
+            public void onUpdated(Info<Q> oldInfo, Info<Q> newInfo)
             {
             }
 
-            public void onRemoved(MetaData<Q> metaData)
+            public void onRemoved(Info<Q> info)
             {
             }
         }
