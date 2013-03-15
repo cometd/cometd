@@ -44,7 +44,7 @@ public class BayeuxServerTest
         ServerSessionImpl session = _bayeux.newServerSession();
         _bayeux.addServerSession(session);
         session.handshake();
-        session.connect();
+        session.connected();
         return session;
     }
 

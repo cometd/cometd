@@ -21,7 +21,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import junit.framework.Assert;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -29,6 +28,7 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.DefaultSecurityPolicy;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 

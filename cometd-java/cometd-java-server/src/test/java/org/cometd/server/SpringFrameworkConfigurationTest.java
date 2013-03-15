@@ -18,6 +18,7 @@ package org.cometd.server;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.web.context.ContextLoader;
 import org.springframework.web.context.ContextLoaderListener;
@@ -31,6 +32,12 @@ import static org.junit.Assert.assertTrue;
 
 public class SpringFrameworkConfigurationTest extends AbstractBayeuxClientServerTest
 {
+    @Before
+    public void prepare() throws Exception
+    {
+        startServer(null);
+    }
+
     @Test
     public void testXMLSpringConfiguration() throws Exception
     {

@@ -61,6 +61,7 @@ public class ServerSessionImpl implements ServerSession
     private final LocalSessionImpl _localSession;
     private final AttributesMap _attributes = new AttributesMap();
     private final AtomicBoolean _connected = new AtomicBoolean();
+    private final AtomicBoolean _disconnected = new AtomicBoolean();
     private final AtomicBoolean _handshook = new AtomicBoolean();
     private final Map<ServerChannelImpl, Boolean> _subscribedTo = new ConcurrentHashMap<ServerChannelImpl, Boolean>();
     private final Task _lazyTask;
@@ -80,7 +81,6 @@ public class ServerSessionImpl implements ServerSession
     private String _userAgent;
     private long _connectTimestamp = -1;
     private long _intervalTimestamp;
-    private long _lastConnect;
     private boolean _nonLazyMessages;
 
     protected ServerSessionImpl(BayeuxServerImpl bayeux)
@@ -327,13 +327,13 @@ public class ServerSessionImpl implements ServerSession
         {
             _maxQueue = transport.getOption(HttpTransport.MAX_QUEUE_OPTION, -1);
             _maxInterval = _interval >= 0 ? _interval + transport.getMaxInterval() : transport.getMaxInterval();
-            _maxServerInterval = transport.getOption("maxServerInterval", 10 * _maxInterval);
+            _maxServerInterval = transport.getOption("maxServerInterval", -1);
             _randomizeLazy = transport.getOption(AbstractServerTransport.RANDOMIZE_LAZY_TIMEOUT_OPTION, false);
             _maxLazy = transport.getMaxLazyTimeout();
         }
     }
 
-    protected void connect()
+    protected void connected()
     {
         _connected.set(true);
         cancelIntervalTimeout();
@@ -348,8 +348,7 @@ public class ServerSessionImpl implements ServerSession
             message.setChannel(Channel.META_DISCONNECT);
             message.setSuccessful(true);
             deliver(this, message);
-            if (_queue.size() > 0)
-                flush();
+            flush();
         }
     }
 
@@ -439,11 +438,13 @@ public class ServerSessionImpl implements ServerSession
         _nonLazyMessages = false;
     }
 
-    private void addMessage(ServerMessage message)
+    protected void addMessage(ServerMessage message)
     {
-        assert Thread.holdsLock(_queue);
-        _queue.add(message);
-        _nonLazyMessages |= !message.isLazy();
+        synchronized (_queue)
+        {
+            _queue.add(message);
+            _nonLazyMessages |= !message.isLazy();
+        }
     }
 
     public List<ServerMessage> takeQueue()
@@ -618,7 +619,6 @@ public class ServerSessionImpl implements ServerSession
         long now = System.currentTimeMillis();
         synchronized (_queue)
         {
-            _lastConnect = now - _connectTimestamp;
             _intervalTimestamp = now + interval + _maxInterval;
         }
     }
@@ -655,14 +655,19 @@ public class ServerSessionImpl implements ServerSession
         _attributes.setAttribute(name, value);
     }
 
+    public boolean isHandshook()
+    {
+        return _handshook.get();
+    }
+
     public boolean isConnected()
     {
         return _connected.get();
     }
 
-    public boolean isHandshook()
+    public boolean isDisconnected()
     {
-        return _handshook.get();
+        return _disconnected.get();
     }
 
     protected boolean extendRecv(ServerMessage.Mutable message)
@@ -821,6 +826,8 @@ public class ServerSessionImpl implements ServerSession
      */
     protected boolean removed(boolean timedOut)
     {
+        if (!timedOut)
+            _disconnected.set(true);
         boolean connected = _connected.getAndSet(false);
         boolean handshook = _handshook.getAndSet(false);
         if (connected || handshook)
@@ -893,7 +900,7 @@ public class ServerSessionImpl implements ServerSession
     @Override
     public String toString()
     {
-        return String.format("%s - last connect %d ms ago", _id, _lastConnect);
+        return String.format("%s - last connect %d ms ago", _id, System.currentTimeMillis() - _connectTimestamp);
     }
 
     public long calculateTimeout(long defaultTimeout)

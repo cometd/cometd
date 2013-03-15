@@ -429,7 +429,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                         {
                             if (session.isConnected())
                                 session.startIntervalTimeout(getInterval());
-                            else
+                            else if (session.isDisconnected())
                                 reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                         }
                     }
@@ -486,7 +486,6 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                 // and allow only one thread to reply to the meta connect
                 // otherwise we may have out of order delivery.
                 boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
-                boolean disconnected = !session.isConnected();
                 boolean reply = false;
                 ServerMessage.Mutable connectReply;
                 synchronized (session.getLock())
@@ -513,7 +512,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                     }
                     else
                     {
-                        if (timeout || disconnected || metaConnectDelivery)
+                        if (timeout || metaConnectDelivery || !session.isConnected())
                         {
                             // We will reply to the meta connect, so cancel the timeout task
                             cancelMetaConnectTask(session);
@@ -538,9 +537,9 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
                         // Start the interval timeout before sending the reply to
                         // avoid race conditions, and even if sending the queue
                         // throws an exception so that we can sweep the session
-                        if (!disconnected)
+                        if (session.isConnected())
                             session.startIntervalTimeout(getInterval());
-                        else
+                        else if (session.isDisconnected())
                             connectReply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                     }
                 }

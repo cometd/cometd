@@ -31,6 +31,7 @@ import org.cometd.server.JettyJSONContextServer;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
@@ -47,6 +48,12 @@ public class BayeuxExtensionTest extends AbstractBayeuxClientServerTest
     private static final String SERVER_EXT_INFO = "fromExtension";
     private static final String CLIENT_INFO = "fromClient";
     private static final String SERVICE_INFO = "fromService";
+
+    @Before
+    public void prepare() throws Exception
+    {
+        startServer(null);
+    }
 
     @Test
     public void testBayeuxExtensionOnHandshake() throws Exception

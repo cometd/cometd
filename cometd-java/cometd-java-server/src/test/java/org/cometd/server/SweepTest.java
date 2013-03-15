@@ -18,9 +18,9 @@ package org.cometd.server;
 
 import java.util.concurrent.TimeUnit;
 
-import junit.framework.Assert;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerTransport;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class SweepTest
