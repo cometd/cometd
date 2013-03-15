@@ -42,13 +42,13 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     private final Map<String, ClientSessionChannel.MessageListener> publishCallbacks = new ConcurrentHashMap<String, ClientSessionChannel.MessageListener>();
     private final BayeuxServerImpl _bayeux;
     private final String _idHint;
-
     private ServerSessionImpl _session;
+    private String _sessionId;
 
-    protected LocalSessionImpl(BayeuxServerImpl bayeux,String idHint)
+    protected LocalSessionImpl(BayeuxServerImpl bayeux, String idHint)
     {
-        _bayeux=bayeux;
-        _idHint=idHint;
+        _bayeux = bayeux;
+        _idHint = idHint;
     }
 
     @Override
@@ -90,17 +90,17 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
     @Override
     protected void sendBatch()
     {
-        int size=_queue.size();
-        while(size-->0)
+        int size = _queue.size();
+        while (size-- > 0)
         {
             ServerMessage.Mutable message = _queue.poll();
-            doSend(_session,message);
+            doSend(_session, message);
         }
     }
 
     public ServerSession getServerSession()
     {
-        if (_session==null)
+        if (_session == null)
             throw new IllegalStateException("Method handshake() not invoked for local session " + this);
         return _session;
     }
@@ -112,44 +112,45 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
 
     public void handshake(Map<String, Object> template)
     {
-        if (_session!=null)
+        if (_session != null)
             throw new IllegalStateException();
 
-        ServerSessionImpl session = new ServerSessionImpl(_bayeux,this,_idHint);
+        ServerSessionImpl session = new ServerSessionImpl(_bayeux, this, _idHint);
 
         ServerMessage.Mutable message = _bayeux.newMessage();
-        if (template!=null)
+        if (template != null)
             message.putAll(template);
         message.setChannel(Channel.META_HANDSHAKE);
 
-        doSend(session,message);
+        doSend(session, message);
 
         ServerMessage reply = message.getAssociated();
-        if (reply!=null && reply.isSuccessful())
+        if (reply != null && reply.isSuccessful())
         {
-            _session=session;
-
             message = _bayeux.newMessage();
             message.setChannel(Channel.META_CONNECT);
             message.getAdvice(true).put(Message.INTERVAL_FIELD, -1L);
             message.setClientId(session.getId());
 
-            doSend(session,message);
+            doSend(session, message);
 
             reply = message.getAssociated();
-            if (reply==null || !reply.isSuccessful())
-                _session=null;
+            if (reply != null && reply.isSuccessful())
+            {
+                _session = session;
+                _sessionId = session.getId();
+            }
         }
     }
 
     public void disconnect()
     {
-        if (_session!=null)
+        if (_session != null)
         {
             ServerMessage.Mutable message = _bayeux.newMessage();
             message.setChannel(Channel.META_DISCONNECT);
             message.setClientId(_session.getId());
-            send(_session,message);
+            send(_session, message);
             while (isBatching())
                 endBatch();
         }
@@ -157,25 +158,25 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
 
     public String getId()
     {
-        if (_session==null)
+        if (_sessionId == null)
             throw new IllegalStateException("Method handshake() not invoked for local session " + this);
-        return _session.getId();
+        return _sessionId;
     }
 
     public boolean isConnected()
     {
-        return _session!=null && _session.isConnected();
+        return _session != null && _session.isConnected();
     }
 
     public boolean isHandshook()
     {
-        return _session!=null && _session.isHandshook();
+        return _session != null && _session.isHandshook();
     }
 
     @Override
     public String toString()
     {
-        return "L:"+(_session==null?(_idHint+"?"):_session.getId());
+        return "L:" + (_sessionId == null ? _idHint + "_" : _session.getId());
     }
 
     /**
@@ -186,18 +187,18 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
      * @param session The ServerSession to send as. This normally the current server session, but during handshake it is a proposed server session.
      * @param message The message to send.
      */
-    protected void send(ServerSessionImpl session,ServerMessage.Mutable message)
+    protected void send(ServerSessionImpl session, ServerMessage.Mutable message)
     {
         if (isBatching())
             _queue.add(message);
         else
-            doSend(session,message);
+            doSend(session, message);
     }
 
     /**
      * <p>Sends a message to the server.</p>
      *
-     * @param from The ServerSession to send as. This normally the current server session, but during handshake it is a proposed server session.
+     * @param from    The ServerSession to send as. This normally the current server session, but during handshake it is a proposed server session.
      * @param message The message to send.
      */
     protected void doSend(ServerSessionImpl from, ServerMessage.Mutable message)
@@ -275,7 +276,7 @@ public class LocalSessionImpl extends AbstractClientSession implements LocalSess
         @Override
         public String toString()
         {
-            return super.toString()+"@"+LocalSessionImpl.this.toString();
+            return super.toString() + "@" + LocalSessionImpl.this.toString();
         }
     }
 }

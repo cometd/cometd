@@ -153,9 +153,10 @@ public class BayeuxServerTest
     public void testLocalSessions() throws Exception
     {
         LocalSession session0 = _bayeux.newLocalSession("s0");
-        Assert.assertTrue(session0.toString().indexOf("s0?")>=0);
+        Assert.assertEquals("L:s0_", session0.toString());
         session0.handshake();
-        Assert.assertTrue(session0.toString().indexOf("s0_")>=0);
+        Assert.assertNotEquals("L:s0_", session0.toString());
+        Assert.assertTrue(session0.toString().startsWith("L:s0_"));
 
         final LocalSession session1 = _bayeux.newLocalSession("s1");
         session1.handshake();
