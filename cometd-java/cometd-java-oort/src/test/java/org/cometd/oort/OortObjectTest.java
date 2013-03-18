@@ -176,34 +176,38 @@ public class OortObjectTest extends OortTest
     }
 
     @Test
-    public void testShareList() throws Exception
+    public void testIterationOverInfos() throws Exception
     {
-        Server server1 = startServer(0);
-        final Oort oort1 = startOort(server1);
-        Server server2 = startServer(0);
-        Oort oort2 = startOort(server2);
-
-        CountDownLatch latch = new CountDownLatch(2);
-        CometJoinedListener listener = new CometJoinedListener(latch);
-        oort1.addCometListener(listener);
-        oort2.addCometListener(listener);
-        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
-        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        OortComet oortComet21 = oort2.findComet(oort1.getURL());
-        Assert.assertNotNull(oortComet21);
-        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
-
         String name = "test";
-        OortObject<List<String>> oortList1 = new OortObject<List<String>>(oort1, name, new ArrayList<String>());
-        List<String> list1 = oortList1.getLocal();
-        synchronized (list1)
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new HashMap<String, Object>());
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new HashMap<String, Object>());
+
+        Map<String, Object> object1 = oortObject1.getLocal();
+        String key1 = "key1";
+        String value1 = "value1";
+        object1.put(key1, value1);
+        oortObject1.publish();
+
+        Map<String, Object> object2 = oortObject2.getLocal();
+        String key2 = "key2";
+        String value2 = "value2";
+        object2.put(key2, value2);
+        oortObject2.publish();
+
+        // Wait for shared objects to synchronize
+        Thread.sleep(1000);
+
+        List<OortObject.Info<Map<String, Object>>> infos = new ArrayList<OortObject.Info<Map<String, Object>>>();
+        for (OortObject.Info<Map<String, Object>> info : oortObject1)
+            infos.add(info);
+        Assert.assertEquals(2, infos.size());
+        for (OortObject.Info<Map<String, Object>> info : infos)
         {
-            list1.add("a");
-            list1.add("b");
+            Map<String, Object> data = info.getObject();
+            if (data.containsKey(key1))
+                Assert.assertEquals(oort1.getURL(), info.getOortURL());
+            else if (data.containsKey(key2))
+                Assert.assertEquals(oort2.getURL(), info.getOortURL());
         }
-        oortList1.publish();
-
     }
-
 }

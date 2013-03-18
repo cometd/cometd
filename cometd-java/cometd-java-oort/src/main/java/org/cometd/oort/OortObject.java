@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EventListener;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,11 +36,11 @@ import org.cometd.bayeux.server.ServerSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageListener
+public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageListener, Iterable<OortObject.Info<T>>
 {
     public static final String OORT_OBJECTS_CHANNEL = "/oort/objects";
 
-    private final Map<String, Info<T>> objects = new ConcurrentHashMap<String, Info<T>>();
+    private final Map<String, Info<T>> infos = new ConcurrentHashMap<String, Info<T>>();
     private final List<Listener<T>> listeners = new CopyOnWriteArrayList<Listener<T>>();
     protected final Logger logger;
     private final Oort oort;
@@ -92,9 +93,14 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
     public void cometLeft(Event event)
     {
         logger.debug("Oort {} left", event.getCometURL());
-        Info<T> info = objects.remove(event.getCometURL());
+        Info<T> info = infos.remove(event.getCometURL());
         logger.debug("Removed remote info {}", info);
         notifyOnRemoved(info);
+    }
+
+    public Iterator<Info<T>> iterator()
+    {
+        return infos.values().iterator();
     }
 
     public void addListener(Listener<T> listener)
@@ -176,7 +182,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
 
         // Default behavior is to replace
         String newOortURL = newInfo.getOortURL();
-        Info<T> oldInfo = objects.put(newOortURL, newInfo);
+        Info<T> oldInfo = infos.put(newOortURL, newInfo);
 
         notifyOnUpdated(oldInfo, newInfo);
 
@@ -186,7 +192,9 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         {
             Info<T> localInfo = getInfo(oort.getURL());
             logger.debug("Pushing (to {}) local info {}", newOortURL, localInfo);
-            oort.getComet(newOortURL).getChannel(OORT_OBJECTS_CHANNEL).publish(localInfo);
+            OortComet oortComet = oort.getComet(newOortURL);
+            if (oortComet != null)
+                oortComet.getChannel(OORT_OBJECTS_CHANNEL).publish(localInfo);
         }
     }
 
@@ -204,7 +212,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         info.put(Info.NAME_FIELD, getName());
         info.put(Info.OBJECT_FIELD, local);
         logger.debug("Setting local info {}", info);
-        objects.put(oort.getURL(), info);
+        infos.put(oort.getURL(), info);
     }
 
     public T getRemote(String oortURL)
@@ -215,12 +223,12 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
 
     protected Info<T> getInfo(String oortURL)
     {
-        return objects.get(oortURL);
+        return infos.get(oortURL);
     }
 
     public T get(MergeStrategy<T> strategy)
     {
-        return strategy.merge(objects.values());
+        return strategy.merge(infos.values());
     }
 
     public void publish()
