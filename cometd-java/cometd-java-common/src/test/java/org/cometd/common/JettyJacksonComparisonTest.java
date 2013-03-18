@@ -21,16 +21,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.map.MappingJsonFactory;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.JavaType;
 import org.junit.Test;
 
 public class JettyJacksonComparisonTest
 {
+	
+	private static void fullGC()
+	{
+		for (int i = 0; i < 5; i++) 
+		{
+			System.gc();
+		}
+	}
+	
     @Test
     public void testParse() throws Exception
     {
@@ -59,72 +62,179 @@ public class JettyJacksonComparisonTest
         int iterations = 5;
         int count = 100000;
 
-        // Jackson
-        JsonFactory jsonFactory = new MappingJsonFactory();
+        // Jackson 2
+        com.fasterxml.jackson.core.JsonFactory jsonFactory = new com.fasterxml.jackson.databind.MappingJsonFactory();
+        fullGC();
+        
         for (int j = 0; j < iterations; ++j)
         {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
+            
             for (int i = 0; i < count; ++i)
             {
-                JsonParser jsonParser = jsonFactory.createJsonParser(json);
+            	com.fasterxml.jackson.core.JsonParser jsonParser = jsonFactory.createJsonParser(json);
                 jsonParser.readValueAs(HashMapMessage[].class);
                 jsonParser.close();
             }
             long end = System.nanoTime();
-            System.err.printf("jackson parser iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            
+            System.err.printf("library: jackson2 test: parser_readValueAs iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
         }
 
-        // Jackson
-        ObjectMapper objectMapper = new ObjectMapper();
-        JavaType type = objectMapper.constructType(HashMapMessage[].class);
+        // Jackson 2
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        com.fasterxml.jackson.databind.JavaType type = objectMapper.constructType(HashMapMessage[].class);
+        fullGC();
+        
         for (int j = 0; j < iterations; ++j)
         {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
                 objectMapper.readValue(json, type);
             }
             long end = System.nanoTime();
-            System.err.printf("jackson mapper string iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: jackson2 test: mapper_readValue_string iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
         }
 
-        // Jackson
+        // Jackson 2
         byte[] bytes = json.getBytes("UTF-8");
+        fullGC();
+        
         for (int j = 0; j < iterations; ++j)
         {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
                 objectMapper.readValue(bytes, type);
             }
             long end = System.nanoTime();
-            System.err.printf("jackson mapper bytes iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: jackson2 test: mapper_readValue_bytes iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
         }
 
-        // Jackson
+        // Jackson 2
         JacksonJSONContextClient jacksonJSONContextClient = new JacksonJSONContextClient();
+        fullGC();
+        
         for (int j = 0; j < iterations; ++j)
         {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
+            
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
                 jacksonJSONContextClient.parse(json);
             }
             long end = System.nanoTime();
-            System.err.printf("jackson context iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: jackson2 test: context_parse iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
+        }
+        
+        
+        // Jackson 1
+        org.codehaus.jackson.JsonFactory json1Factory = new org.codehaus.jackson.map.MappingJsonFactory();
+        fullGC();
+        
+        for (int j = 0; j < iterations; ++j)
+        {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
+            long start = System.nanoTime();
+            
+            for (int i = 0; i < count; ++i)
+            {
+            	org.codehaus.jackson.JsonParser jsonParser = json1Factory.createJsonParser(json);
+                jsonParser.readValueAs(HashMapMessage[].class);
+                jsonParser.close();
+            }
+            long end = System.nanoTime();
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            
+            System.err.printf("library: jackson1 test: parser_readValueAs iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
+        }
+
+        // Jackson 1
+        org.codehaus.jackson.map.ObjectMapper jackson1objectMapper = new org.codehaus.jackson.map.ObjectMapper();
+        org.codehaus.jackson.type.JavaType jackson1type = jackson1objectMapper.constructType(HashMapMessage[].class);
+        fullGC();
+        
+        for (int j = 0; j < iterations; ++j)
+        {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
+            long start = System.nanoTime();
+            for (int i = 0; i < count; ++i)
+            {
+            	jackson1objectMapper.readValue(json, jackson1type);
+            }
+            long end = System.nanoTime();
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: jackson1 test: mapper_readValue_string iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
+        }
+
+        // Jackson 1
+        bytes = json.getBytes("UTF-8");
+        fullGC();
+        
+        for (int j = 0; j < iterations; ++j)
+        {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
+            long start = System.nanoTime();
+            for (int i = 0; i < count; ++i)
+            {
+            	jackson1objectMapper.readValue(bytes, jackson1type);
+            }
+            long end = System.nanoTime();
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: jackson1 test: mapper_readValue_bytes iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
+        }
+
+        // Jackson 1
+        Jackson1JSONContextClient jackson1JSONContextClient = new Jackson1JSONContextClient();
+        fullGC();
+        
+        for (int j = 0; j < iterations; ++j)
+        {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
+            
+            long start = System.nanoTime();
+            for (int i = 0; i < count; ++i)
+            {
+            	jackson1JSONContextClient.parse(json);
+            }
+            long end = System.nanoTime();
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: jackson1 test: context_parse iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
         }
 
         // Jetty
         JettyJSONContextClient jettyJSONContextClient = new JettyJSONContextClient();
+        fullGC();
+        
         for (int j = 0; j < iterations; ++j)
         {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
                 jettyJSONContextClient.parse(json);
             }
             long end = System.nanoTime();
-            System.err.printf("jetty context iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: jetty test: context_parse iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
         }
     }
 
@@ -152,58 +262,139 @@ public class JettyJacksonComparisonTest
         int iterations = 5;
         int count = 200000;
 
-        // Jackson
-        JsonFactory jsonFactory = new MappingJsonFactory();
+        // Jackson 2
+        com.fasterxml.jackson.core.JsonFactory jsonFactory = new com.fasterxml.jackson.databind.MappingJsonFactory();
+        fullGC();
+        
         for (int j = 0; j < iterations; ++j)
         {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                JsonGenerator jsonGenerator = jsonFactory.createJsonGenerator(new StringWriter(384));
+            	com.fasterxml.jackson.core.JsonGenerator jsonGenerator = jsonFactory.createJsonGenerator(new StringWriter(384));
                 jsonGenerator.writeObject(message);
                 jsonGenerator.close();
             }
             long end = System.nanoTime();
-            System.err.printf("jackson generator iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: jackson2 test: generator_writeObject iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
         }
 
-        // Jackson
-        ObjectMapper objectMapper = new ObjectMapper();
+        // Jackson 2
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        fullGC();
+        
         for (int j = 0; j < iterations; ++j)
         {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
                 objectMapper.writeValueAsString(message);
             }
             long end = System.nanoTime();
-            System.err.printf("jackson mapper iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: jackson2 test: mapper_writeValueAsString iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
         }
 
-        // Jackson
+        // Jackson 2
         JacksonJSONContextClient jacksonJSONContextClient = new JacksonJSONContextClient();
+        fullGC();
+        
         for (int j = 0; j < iterations; ++j)
         {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
                 jacksonJSONContextClient.generate(message);
             }
             long end = System.nanoTime();
-            System.err.printf("jackson context iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: jackson2 test: context_generate iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
         }
 
-        // Jetty
-        JettyJSONContextClient jettyJSONContextClient = new JettyJSONContextClient();
+        
+        
+        
+        
+        
+        // Jackson 1
+        org.codehaus.jackson.JsonFactory json1Factory = new org.codehaus.jackson.map.MappingJsonFactory();
+        fullGC();
+        
         for (int j = 0; j < iterations; ++j)
         {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
+            long start = System.nanoTime();
+            for (int i = 0; i < count; ++i)
+            {
+            	org.codehaus.jackson.JsonGenerator jsonGenerator = json1Factory.createJsonGenerator(new StringWriter(384));
+                jsonGenerator.writeObject(message);
+                jsonGenerator.close();
+            }
+            long end = System.nanoTime();
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: jackson1 test: generator_writeObject iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
+        }
+
+        // Jackson 1
+        org.codehaus.jackson.map.ObjectMapper jackson1objectMapper = new org.codehaus.jackson.map.ObjectMapper();
+        fullGC();
+        
+        for (int j = 0; j < iterations; ++j)
+        {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
+            long start = System.nanoTime();
+            for (int i = 0; i < count; ++i)
+            {
+            	jackson1objectMapper.writeValueAsString(message);
+            }
+            long end = System.nanoTime();
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: jackson1 test: mapper_writeValueAsString iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
+        }
+
+        // Jackson 1
+        Jackson1JSONContextClient jackson1JSONContextClient = new Jackson1JSONContextClient();
+        fullGC();
+        
+        for (int j = 0; j < iterations; ++j)
+        {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
+            long start = System.nanoTime();
+            for (int i = 0; i < count; ++i)
+            {
+            	jackson1JSONContextClient.generate(message);
+            }
+            long end = System.nanoTime();
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: jackson1 test: context_generate iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
+        }
+        
+        // Jetty
+        JettyJSONContextClient jettyJSONContextClient = new JettyJSONContextClient();
+        fullGC();
+        
+        for (int j = 0; j < iterations; ++j)
+        {
+        	fullGC();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
                 jettyJSONContextClient.generate(message);
             }
             long end = System.nanoTime();
-            System.err.printf("jetty context iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: jetty test: context_generate iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
         }
     }
 }

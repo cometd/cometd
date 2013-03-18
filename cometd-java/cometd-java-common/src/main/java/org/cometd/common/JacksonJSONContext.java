@@ -21,9 +21,10 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.text.ParseException;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.JavaType;
 import org.cometd.bayeux.Message;
+
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
 {
