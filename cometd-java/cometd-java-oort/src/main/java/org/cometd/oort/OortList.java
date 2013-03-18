@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010 the original author or authors.
+ * Copyright (c) 2013 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,7 @@ public class OortList<E> extends OortObject<List<E>>
             else if ("remove".equals(action))
                 list.remove(item);
 
+            // TODO: notify just the element update...
             notifyOnUpdated(oldInfo, newInfo);
         }
         else
