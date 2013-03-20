@@ -61,7 +61,7 @@ public class OortList<E> extends OortObject<List<E>>
         return result;
     }
 
-    public void shareAdd(E... elements)
+    protected void shareAdd(E... elements)
     {
         List<E> list = getLocal();
         for (E element : elements)
@@ -91,7 +91,7 @@ public class OortList<E> extends OortObject<List<E>>
         return result;
     }
 
-    public void shareRemove(E... elements)
+    protected void shareRemove(E... elements)
     {
         Info<List<E>> info = new Info<List<E>>();
         info.put(Info.OORT_URL_FIELD, getOort().getURL());

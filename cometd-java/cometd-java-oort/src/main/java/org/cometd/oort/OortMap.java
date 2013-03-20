@@ -16,9 +16,6 @@
 
 package org.cometd.oort;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
@@ -65,17 +62,19 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         return result;
     }
 
-    public void sharePut(K key, V value)
+    protected void sharePut(K key, V value)
     {
         ConcurrentMap<K, V> map = getLocal();
         if (!map.containsKey(key))
             throw new IllegalArgumentException("Key " + key + " is not present in " + map);
 
-        Map<String, Object> entry = newEntry(key, value);
+        Map<String, Object> entry = new HashMap<String, Object>(2);
+        entry.put(KEY_FIELD, key);
+        entry.put(VALUE_FIELD, value);
         Info<List<Map.Entry<K, V>>> info = new Info<List<Map.Entry<K, V>>>();
         info.put(Info.OORT_URL_FIELD, getOort().getURL());
         info.put(Info.NAME_FIELD, getName());
-        info.put(Info.OBJECT_FIELD, Collections.singletonList(entry));
+        info.put(Info.OBJECT_FIELD, entry);
         info.put(Info.TYPE_FIELD, TYPE_FIELD_ENTRY_VALUE);
         info.put(Info.ACTION_FIELD, ACTION_FIELD_PUT_VALUE);
 
@@ -91,27 +90,20 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         return result;
     }
 
-    public void shareRemove(K key)
+    protected void shareRemove(K key)
     {
-        Map<String, Object> entry = newEntry(key, null);
+        Map<String, Object> entry = new HashMap<String, Object>(1);
+        entry.put(KEY_FIELD, key);
         Info<List<Map.Entry<K, V>>> info = new Info<List<Map.Entry<K, V>>>();
         info.put(Info.OORT_URL_FIELD, getOort().getURL());
         info.put(Info.NAME_FIELD, getName());
-        info.put(Info.OBJECT_FIELD, Collections.singletonList(entry));
+        info.put(Info.OBJECT_FIELD, entry);
         info.put(Info.TYPE_FIELD, TYPE_FIELD_ENTRY_VALUE);
         info.put(Info.ACTION_FIELD, ACTION_FIELD_REMOVE_VALUE);
 
         logger.debug("Sharing remove map entry info {}", info);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
         bayeuxServer.getChannel(OORT_OBJECTS_CHANNEL).publish(getLocalSession(), info, null);
-    }
-
-    private Map<String, Object> newEntry(K key, V value)
-    {
-        Map<String, Object> result = new HashMap<String, Object>(2);
-        result.put(KEY_FIELD, key);
-        result.put(VALUE_FIELD, value);
-        return result;
     }
 
     @Override
@@ -126,25 +118,19 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
                 ConcurrentMap<K, V> map = info.getObject();
 
                 // Handle entries
-                Object object = data.get(Info.OBJECT_FIELD);
-                if (object instanceof Object[])
-                    object = Arrays.asList((Object[])object);
-                List<Map.Entry<K, V>> entries = new ArrayList<Map.Entry<K, V>>();
-                for (Map<String, Object> entry : (List<Map<String, Object>>)object)
-                    entries.add(new Entry<K, V>((K)entry.get(KEY_FIELD), (V)entry.get(VALUE_FIELD)));
+                Map<String, Object> object = (Map<String, Object>)data.get(Info.OBJECT_FIELD);
+                Entry<K, V> entry = new Entry<K, V>((K)object.get(KEY_FIELD), (V)object.get(VALUE_FIELD));
 
                 String action = (String)data.get(Info.ACTION_FIELD);
                 if (ACTION_FIELD_PUT_VALUE.equals(action))
                 {
-                    for (Map.Entry<K, V> entry : entries)
-                        map.put(entry.getKey(), entry.getValue());
-                    notifyEntryPut(info, entries);
+                    map.put(entry.getKey(), entry.getValue());
+                    notifyEntryPut(info, entry);
                 }
                 else if (ACTION_FIELD_REMOVE_VALUE.equals(action))
                 {
-                    for (Map.Entry<K, V> entry : entries)
-                        map.remove(entry.getKey());
-                    notifyElementsRemoved(info, entries);
+                    map.remove(entry.getKey());
+                    notifyElementsRemoved(info, entry);
                 }
             }
             else
@@ -164,13 +150,13 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         }
     }
 
-    private void notifyEntryPut(Info<ConcurrentMap<K, V>> info, List<Map.Entry<K, V>> elements)
+    private void notifyEntryPut(Info<ConcurrentMap<K, V>> info, Map.Entry<K, V> entry)
     {
         for (EntryListener<K, V> listener : getEntryListeners())
         {
             try
             {
-                listener.onPut(info, elements);
+                listener.onPut(info, entry);
             }
             catch (Exception x)
             {
@@ -179,7 +165,7 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         }
     }
 
-    private void notifyElementsRemoved(Info<ConcurrentMap<K, V>> info, List<Map.Entry<K, V>> elements)
+    private void notifyElementsRemoved(Info<ConcurrentMap<K, V>> info, Map.Entry<K, V> elements)
     {
         for (EntryListener<K, V> listener : getEntryListeners())
         {
@@ -196,17 +182,17 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
 
     public interface EntryListener<K, V> extends EventListener
     {
-        public void onPut(Info<ConcurrentMap<K, V>> info, List<Map.Entry<K, V>> elements);
+        public void onPut(Info<ConcurrentMap<K, V>> info, Map.Entry<K, V> entry);
 
-        public void onRemoved(Info<ConcurrentMap<K, V>> info, List<Map.Entry<K, V>> elements);
+        public void onRemoved(Info<ConcurrentMap<K, V>> info, Map.Entry<K, V> entry);
 
         public static class Adapter<K, V> implements EntryListener<K, V>
         {
-            public void onPut(Info<ConcurrentMap<K, V>> info, List<Map.Entry<K, V>> elements)
+            public void onPut(Info<ConcurrentMap<K, V>> info, Map.Entry<K, V> entry)
             {
             }
 
-            public void onRemoved(Info<ConcurrentMap<K, V>> info, List<Map.Entry<K, V>> elements)
+            public void onRemoved(Info<ConcurrentMap<K, V>> info, Map.Entry<K, V> entry)
             {
             }
         }

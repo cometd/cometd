@@ -16,7 +16,6 @@
 
 package org.cometd.oort;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -77,10 +76,8 @@ public class OortMapTest extends OortTest
         oortMap2.addEntryListener(new OortMap.EntryListener.Adapter<String, String>()
         {
             @Override
-            public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, List<Map.Entry<String, String>> elements)
+            public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, Map.Entry<String, String> entry)
             {
-                Assert.assertEquals(1, elements.size());
-                Map.Entry<String, String> entry = elements.get(0);
                 Assert.assertEquals(key, entry.getKey());
                 Assert.assertEquals(value, entry.getValue());
                 putLatch.countDown();
@@ -118,10 +115,8 @@ public class OortMapTest extends OortTest
         oortMap2.addEntryListener(new OortMap.EntryListener.Adapter<String, String>()
         {
             @Override
-            public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info, List<Map.Entry<String, String>> elements)
+            public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info, Map.Entry<String, String> entry)
             {
-                Assert.assertEquals(1, elements.size());
-                Map.Entry<String, String> entry = elements.get(0);
                 Assert.assertEquals(key, entry.getKey());
                 removeLatch.countDown();
             }
