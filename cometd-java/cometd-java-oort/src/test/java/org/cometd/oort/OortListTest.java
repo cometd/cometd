@@ -55,7 +55,7 @@ public class OortListTest extends OortTest
     public void testElementAdded() throws Exception
     {
         String name = "test";
-        OortObject.Factory<List<Long>> factory = new OortObject.ConcurrentListFactory<Long>();
+        OortObject.Factory<List<Long>> factory = OortObjectFactories.forConcurrentList();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
@@ -91,7 +91,7 @@ public class OortListTest extends OortTest
     public void testElementRemoved() throws Exception
     {
         String name = "test";
-        OortObject.Factory<List<Long>> factory = new OortObject.ConcurrentListFactory<Long>();
+        OortObject.Factory<List<Long>> factory = OortObjectFactories.forConcurrentList();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);

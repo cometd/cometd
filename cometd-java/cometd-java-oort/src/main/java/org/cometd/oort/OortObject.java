@@ -16,7 +16,6 @@
 
 package org.cometd.oort;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EventListener;
@@ -241,7 +240,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         return infos.get(oortURL);
     }
 
-    public T get(MergeStrategy<T> strategy)
+    public T get(Merger<T> strategy)
     {
         return strategy.merge(infos.values());
     }
@@ -253,62 +252,11 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         {
             logger.debug("Sharing local info {}", info);
             BayeuxServer bayeuxServer = oort.getBayeuxServer();
+
+            // TODO: we may want to add a conversion step here for the OBJECT_FIELD
+            // TODO: so that we can convert, e.g. AtomicInteger to Long to serialize it
+
             bayeuxServer.getChannel(OORT_OBJECTS_CHANNEL).publish(sender, info, null);
-        }
-    }
-
-    public interface Factory<E>
-    {
-        public E newObject(Object representation);
-    }
-
-    public static class MapFactory implements Factory<Map<String, Object>>
-    {
-        @SuppressWarnings("unchecked")
-        public Map<String, Object> newObject(Object representation)
-        {
-            if (representation == null)
-                return new HashMap<String, Object>();
-            if (representation instanceof Map)
-                return (Map<String, Object>)representation;
-            throw new IllegalArgumentException();
-        }
-    }
-
-    public static class ConcurrentListFactory<E> implements Factory<List<E>>
-    {
-        @SuppressWarnings("unchecked")
-        public List<E> newObject(Object representation)
-        {
-            if (representation == null)
-                return new CopyOnWriteArrayList<E>();
-            if (representation instanceof CopyOnWriteArrayList)
-                return (List<E>)representation;
-            if (representation instanceof List)
-                return new CopyOnWriteArrayList<E>((List<E>)representation);
-            if (representation instanceof Object[])
-            {
-                List<E> result = new CopyOnWriteArrayList<E>();
-                for (Object element : (Object[])representation)
-                    result.add((E)element);
-                return result;
-            }
-            throw new IllegalArgumentException();
-        }
-    }
-
-    public static class ConcurrentMapFactory<K, V> implements Factory<ConcurrentMap<K, V>>
-    {
-        @SuppressWarnings("unchecked")
-        public ConcurrentMap<K, V> newObject(Object representation)
-        {
-            if (representation == null)
-                return new ConcurrentHashMap<K, V>();
-            if (representation instanceof ConcurrentMap)
-                return (ConcurrentMap<K, V>)representation;
-            if (representation instanceof Map)
-                return new ConcurrentHashMap<K, V>((Map<K, V>)representation);
-            throw new IllegalArgumentException();
         }
     }
 
@@ -355,31 +303,14 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         }
     }
 
-    public interface MergeStrategy<E>
+    public interface Factory<E>
     {
-        public E merge(Collection<Info<E>> values);
+        public E newObject(Object representation);
     }
 
-    public static class UnionMergeStrategyList<E> implements MergeStrategy<List<E>>
+    public interface Merger<E>
     {
-        public List<E> merge(Collection<Info<List<E>>> values)
-        {
-            List<E> result = new ArrayList<E>();
-            for (Info<List<E>> value : values)
-                result.addAll(value.getObject());
-            return result;
-        }
-    }
-
-    public static class UnionMergeStrategyMap<K, V> implements MergeStrategy<Map<K, V>>
-    {
-        public Map<K, V> merge(Collection<Info<Map<K, V>>> values)
-        {
-            Map<K, V> result = new HashMap<K, V>();
-            for (Info<Map<K, V>> value : values)
-                result.putAll(value.getObject());
-            return result;
-        }
+        public E merge(Collection<Info<E>> infos);
     }
 
     public interface Listener<T> extends EventListener

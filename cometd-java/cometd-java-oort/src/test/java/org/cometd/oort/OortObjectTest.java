@@ -57,8 +57,9 @@ public class OortObjectTest extends OortTest
     public void testShareObject() throws Exception
     {
         String name = "test";
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new OortObject.MapFactory());
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new OortObject.MapFactory());
+        OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
 
         // The other OortObject listens to receive the object
         final CountDownLatch objectLatch = new CountDownLatch(1);
@@ -83,7 +84,7 @@ public class OortObjectTest extends OortTest
         Map<String, Object> object1AtOort2 = oortObject2.getRemote(oort1.getURL());
         Assert.assertEquals(object1, object1AtOort2);
 
-        Map<String, Object> objectAtOort2 = oortObject2.get(new OortObject.UnionMergeStrategyMap<String, Object>());
+        Map<String, Object> objectAtOort2 = oortObject2.get(OortObjectMergers.<String, Object>mapUnion());
         Assert.assertEquals(object1, objectAtOort2);
     }
 
@@ -91,8 +92,9 @@ public class OortObjectTest extends OortTest
     public void testLocalObjectIsPushedWhenNodeJoins() throws Exception
     {
         String name = "test";
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new OortObject.MapFactory());
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new OortObject.MapFactory());
+        OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
 
         Map<String, Object> object1 = oortObject1.getLocal();
         String key1 = "key1";
@@ -118,7 +120,7 @@ public class OortObjectTest extends OortTest
         Assert.assertTrue(oortComet31.waitFor(5000, BayeuxClient.State.CONNECTED));
         Assert.assertTrue(oortLatch.await(5, TimeUnit.SECONDS));
 
-        OortObject<Map<String, Object>> oortObject3 = new OortObject<Map<String, Object>>(oort3, name, new OortObject.MapFactory());
+        OortObject<Map<String, Object>> oortObject3 = new OortObject<Map<String, Object>>(oort3, name, factory);
         Map<String, Object> object3 = oortObject3.getLocal();
         String key3 = "key3";
         String value3 = "value3";
@@ -135,11 +137,12 @@ public class OortObjectTest extends OortTest
         oortObject3.share();
         Assert.assertTrue(objectsLatch.await(5, TimeUnit.SECONDS));
 
-        Map<String, Object> objectAtOort1 = oortObject1.get(new OortObject.UnionMergeStrategyMap<String, Object>());
+        OortObject.Merger<Map<String, Object>> merger = OortObjectMergers.mapUnion();
+        Map<String, Object> objectAtOort1 = oortObject1.get(merger);
         Assert.assertEquals(3, objectAtOort1.size());
-        Map<String, Object> objectAtOort2 = oortObject2.get(new OortObject.UnionMergeStrategyMap<String, Object>());
+        Map<String, Object> objectAtOort2 = oortObject2.get(merger);
         Assert.assertEquals(3, objectAtOort2.size());
-        Map<String, Object> objectAtOort3 = oortObject3.get(new OortObject.UnionMergeStrategyMap<String, Object>());
+        Map<String, Object> objectAtOort3 = oortObject3.get(merger);
         Assert.assertEquals(3, objectAtOort3.size());
     }
 
@@ -147,8 +150,9 @@ public class OortObjectTest extends OortTest
     public void testLocalObjectIsRemovedWhenNodeLeaves() throws Exception
     {
         String name = "test";
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new OortObject.MapFactory());
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new OortObject.MapFactory());
+        OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
 
         Map<String, Object> object1 = oortObject1.getLocal();
         String key1 = "key1";
@@ -170,7 +174,7 @@ public class OortObjectTest extends OortTest
         stopOort(oort1);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        Map<String, Object> objectAtOort2 = oortObject2.get(new OortObject.UnionMergeStrategyMap<String, Object>());
+        Map<String, Object> objectAtOort2 = oortObject2.get(OortObjectMergers.<String, Object>mapUnion());
         Assert.assertEquals(object2, objectAtOort2);
     }
 
@@ -178,8 +182,9 @@ public class OortObjectTest extends OortTest
     public void testIterationOverInfos() throws Exception
     {
         String name = "test";
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new OortObject.MapFactory());
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new OortObject.MapFactory());
+        OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
 
         Map<String, Object> object1 = oortObject1.getLocal();
         String key1 = "key1";
@@ -208,6 +213,47 @@ public class OortObjectTest extends OortTest
             else if (data.containsKey(key2))
                 Assert.assertEquals(oort2.getURL(), info.getOortURL());
         }
+    }
+
+    @Test
+    public void testNonCompositeObject() throws Exception
+    {
+        String name = "test";
+        OortObject.Factory<Long> factory = OortObjectFactories.forLong();
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
+        oort1.getBayeuxServer().addListener(subscriptionListener);
+        oort2.getBayeuxServer().addListener(subscriptionListener);
+        OortObject<Long> oortObject1 = new OortObject<Long>(oort1, name, factory);
+        OortObject<Long> oortObject2 = new OortObject<Long>(oort2, name, factory);
+        Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
+
+        long value1 = 2;
+        oortObject1.setLocal(value1);
+        OortObjectTest.OortObjectInitialListener<Long> listener = new OortObjectTest.OortObjectInitialListener<Long>(2);
+        oortObject1.addListener(listener);
+        oortObject2.addListener(listener);
+        oortObject1.share();
+        Assert.assertTrue(listener.await(5, TimeUnit.SECONDS));
+
+        long value2 = 3;
+        oortObject2.setLocal(value2);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        oortObject1.addListener(new OortObject.Listener.Adapter<Long>()
+        {
+            @Override
+            public void onUpdated(OortObject.Info<Long> oldInfo, OortObject.Info<Long> newInfo)
+            {
+                latch.countDown();
+            }
+        });
+        oortObject2.share();
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        long sum = oortObject1.get(OortObjectMergers.longSum());
+
+        Assert.assertEquals(value1 + value2, sum);
     }
 
     public static class OortObjectInitialListener<T> extends OortObject.Listener.Adapter<T>

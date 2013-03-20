@@ -117,7 +117,7 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
             {
                 ConcurrentMap<K, V> map = info.getObject();
 
-                // Handle entries
+                // Handle entry
                 Map<String, Object> object = (Map<String, Object>)data.get(Info.OBJECT_FIELD);
                 Entry<K, V> entry = new Entry<K, V>((K)object.get(KEY_FIELD), (V)object.get(VALUE_FIELD));
 

@@ -56,7 +56,7 @@ public class OortMapTest extends OortTest
     public void testEntryPut() throws Exception
     {
         String name = "test";
-        OortObject.Factory<ConcurrentMap<String, String>> factory = new OortObject.ConcurrentMapFactory<String, String>();
+        OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
@@ -93,7 +93,7 @@ public class OortMapTest extends OortTest
     public void testEntryRemoved() throws Exception
     {
         String name = "test";
-        OortObject.Factory<ConcurrentMap<String, String>> factory = new OortObject.ConcurrentMapFactory<String, String>();
+        OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
