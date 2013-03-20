@@ -297,14 +297,29 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         }
     }
 
+    public static class ConcurrentMapFactory<K, V> implements Factory<ConcurrentMap<K, V>>
+    {
+        @SuppressWarnings("unchecked")
+        public ConcurrentMap<K, V> newObject(Object representation)
+        {
+            if (representation == null)
+                return new ConcurrentHashMap<K, V>();
+            if (representation instanceof ConcurrentMap)
+                return (ConcurrentMap<K, V>)representation;
+            if (representation instanceof Map)
+                return new ConcurrentHashMap<K, V>((Map<K, V>)representation);
+            throw new IllegalArgumentException();
+        }
+    }
+
     public static class Info<E> extends HashMap<String, Object>
     {
         public static final String OORT_URL_FIELD = "oortURL";
         public static final String NAME_FIELD = "name";
         public static final String OBJECT_FIELD = "object";
         public static final String TYPE_FIELD = "type";
-        public static final String ACTION_FIELD = "action";
         public static final String TYPE_FIELD_INITIAL_VALUE = "initial";
+        public static final String ACTION_FIELD = "action";
 
         public Info()
         {

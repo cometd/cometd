@@ -27,9 +27,9 @@ import org.cometd.bayeux.server.BayeuxServer;
 
 public class OortList<E> extends OortObject<List<E>>
 {
-    public static final String TYPE_FIELD_ELEMENT_VALUE = "element";
-    public static final String ACTION_FIELD_ADD_VALUE = "add";
-    public static final String ACTION_FIELD_REMOVE_VALUE = "remove";
+    public static final String TYPE_FIELD_ELEMENT_VALUE = "oort.list.element";
+    public static final String ACTION_FIELD_ADD_VALUE = "oort.list.add";
+    public static final String ACTION_FIELD_REMOVE_VALUE = "oort.list.remove";
 
     private final List<ElementListener<E>> listeners = new CopyOnWriteArrayList<ElementListener<E>>();
 

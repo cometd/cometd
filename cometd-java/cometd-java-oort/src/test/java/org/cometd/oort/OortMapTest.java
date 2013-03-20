@@ -17,6 +17,8 @@
 package org.cometd.oort;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -26,7 +28,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class OortListTest extends OortTest
+public class OortMapTest extends OortTest
 {
     private Oort oort1;
     private Oort oort2;
@@ -52,75 +54,80 @@ public class OortListTest extends OortTest
     }
 
     @Test
-    public void testElementAdded() throws Exception
+    public void testEntryPut() throws Exception
     {
         String name = "test";
-        OortObject.Factory<List<Long>> factory = new OortObject.ConcurrentListFactory<Long>();
+        OortObject.Factory<ConcurrentMap<String, String>> factory = new OortObject.ConcurrentMapFactory<String, String>();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
-        OortList<Long> oortList1 = new OortList<Long>(oort1, name, factory);
-        OortList<Long> oortList2 = new OortList<Long>(oort2, name, factory);
+        OortMap<String, String> oortMap1 = new OortMap<String, String>(oort1, name, factory);
+        OortMap<String, String> oortMap2 = new OortMap<String, String>(oort2, name, factory);
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
-        OortObjectTest.OortObjectInitialListener<List<Long>> listener = new OortObjectTest.OortObjectInitialListener<List<Long>>(2);
-        oortList1.addListener(listener);
-        oortList2.addListener(listener);
-        oortList1.share();
+        OortObjectTest.OortObjectInitialListener<ConcurrentMap<String, String>> listener = new OortObjectTest.OortObjectInitialListener<ConcurrentMap<String, String>>(2);
+        oortMap1.addListener(listener);
+        oortMap2.addListener(listener);
+        oortMap1.share();
         Assert.assertTrue(listener.await(5, TimeUnit.SECONDS));
 
-        final long element = 1;
-        final CountDownLatch addLatch = new CountDownLatch(1);
-        oortList2.addElementListener(new OortList.ElementListener.Adapter<Long>()
+        final String key = "key";
+        final String value = "value";
+        final CountDownLatch putLatch = new CountDownLatch(1);
+        oortMap2.addEntryListener(new OortMap.EntryListener.Adapter<String, String>()
         {
             @Override
-            public void onAdded(OortObject.Info<List<Long>> info, List<Long> elements)
+            public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, List<Map.Entry<String, String>> elements)
             {
                 Assert.assertEquals(1, elements.size());
-                Assert.assertEquals(element, (long)elements.get(0));
-                addLatch.countDown();
+                Map.Entry<String, String> entry = elements.get(0);
+                Assert.assertEquals(key, entry.getKey());
+                Assert.assertEquals(value, entry.getValue());
+                putLatch.countDown();
             }
         });
 
-        oortList1.addAndShare(element);
+        oortMap1.putAndShare(key, value);
 
-        Assert.assertTrue(addLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(putLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
-    public void testElementRemoved() throws Exception
+    public void testEntryRemoved() throws Exception
     {
         String name = "test";
-        OortObject.Factory<List<Long>> factory = new OortObject.ConcurrentListFactory<Long>();
+        OortObject.Factory<ConcurrentMap<String, String>> factory = new OortObject.ConcurrentMapFactory<String, String>();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
-        OortList<Long> oortList1 = new OortList<Long>(oort1, name, factory);
-        OortList<Long> oortList2 = new OortList<Long>(oort2, name, factory);
+        OortMap<String, String> oortMap1 = new OortMap<String, String>(oort1, name, factory);
+        OortMap<String, String> oortMap2 = new OortMap<String, String>(oort2, name, factory);
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
-        final long element = 1;
-        oortList1.getLocal().add(element);
+        final String key = "key";
+        final String value = "value";
+        oortMap1.getLocal().put(key, value);
 
-        OortObjectTest.OortObjectInitialListener<List<Long>> listener = new OortObjectTest.OortObjectInitialListener<List<Long>>(2);
-        oortList1.addListener(listener);
-        oortList2.addListener(listener);
-        oortList1.share();
+        OortObjectTest.OortObjectInitialListener<ConcurrentMap<String, String>> listener = new OortObjectTest.OortObjectInitialListener<ConcurrentMap<String, String>>(2);
+        oortMap1.addListener(listener);
+        oortMap2.addListener(listener);
+        oortMap1.share();
         Assert.assertTrue(listener.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
-        oortList2.addElementListener(new OortList.ElementListener.Adapter<Long>()
+        oortMap2.addEntryListener(new OortMap.EntryListener.Adapter<String, String>()
         {
             @Override
-            public void onRemoved(OortObject.Info<List<Long>> info, List<Long> elements)
+            public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info, List<Map.Entry<String, String>> elements)
             {
                 Assert.assertEquals(1, elements.size());
-                Assert.assertEquals(element, (long)elements.get(0));
+                Map.Entry<String, String> entry = elements.get(0);
+                Assert.assertEquals(key, entry.getKey());
                 removeLatch.countDown();
             }
         });
 
-        oortList1.removeAndShare(element);
+        oortMap1.removeAndShare(key);
 
         Assert.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
     }
