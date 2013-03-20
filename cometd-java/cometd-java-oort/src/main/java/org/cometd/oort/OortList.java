@@ -16,69 +16,186 @@
 
 package org.cometd.oort;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.cometd.bayeux.server.BayeuxServer;
 
 public class OortList<E> extends OortObject<List<E>>
 {
-    public OortList(Oort oort, String name, List<E> initial)
+    public static final String TYPE_FIELD_ELEMENT_VALUE = "element";
+    public static final String ACTION_FIELD_ADD_VALUE = "add";
+    public static final String ACTION_FIELD_REMOVE_VALUE = "remove";
+
+    private final List<ElementListener<E>> listeners = new CopyOnWriteArrayList<ElementListener<E>>();
+
+    public OortList(Oort oort, String name, Factory<List<E>> factory)
     {
-        super(oort, name, initial);
+        super(oort, name, factory);
     }
 
-    public void publishAdd(E item)
+    public void addElementListener(ElementListener<E> listener)
+    {
+        listeners.add(listener);
+    }
+
+    public void removeElementListener(ElementListener<E> listener)
+    {
+        listeners.remove(listener);
+    }
+
+    public List<ElementListener<E>> getElementListeners()
+    {
+        return listeners;
+    }
+
+    public boolean addAndShare(E... elements)
+    {
+        boolean result = Collections.addAll(getLocal(), elements);
+        if (result)
+            shareAdd(elements);
+        return result;
+    }
+
+    public void shareAdd(E... elements)
     {
         List<E> list = getLocal();
-        if (!list.contains(item))
-            throw new IllegalArgumentException("Item " + item + " is not an element of " + list);
+        for (E element : elements)
+            if (!list.contains(element))
+                throw new IllegalArgumentException("Element " + element + " is not an element of " + list);
 
-        Map<String, Object> data = new HashMap<String, Object>();
-        data.put(Info.OORT_URL_FIELD, getOort().getURL());
-        data.put(Info.NAME_FIELD, getName());
-        data.put(Info.OBJECT_FIELD, item);
-        data.put(Info.TYPE_FIELD, "item");
-        data.put(Info.ACTION_FIELD, "add");
+        Info<List<E>> info = new Info<List<E>>();
+        info.put(Info.OORT_URL_FIELD, getOort().getURL());
+        info.put(Info.NAME_FIELD, getName());
+        info.put(Info.OBJECT_FIELD, elements);
+        info.put(Info.TYPE_FIELD, TYPE_FIELD_ELEMENT_VALUE);
+        info.put(Info.ACTION_FIELD, ACTION_FIELD_ADD_VALUE);
 
-        logger.debug("Cloud sharing list element {}", data);
+        logger.debug("Sharing add list elements info {}", info);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(OORT_OBJECTS_CHANNEL).publish(getLocalSession(), data, null);
+        bayeuxServer.getChannel(OORT_OBJECTS_CHANNEL).publish(getLocalSession(), info, null);
     }
 
-    public void publishRemove(E item)
+    public boolean removeAndShare(E... elements)
     {
-        throw new UnsupportedOperationException("Not Yet Implemented");
+        boolean result = false;
+        List<E> list = getLocal();
+        for (E element : elements)
+            result |= list.remove(element);
+        if (result)
+            shareRemove(elements);
+        return result;
+    }
+
+    public void shareRemove(E... elements)
+    {
+        Info<List<E>> info = new Info<List<E>>();
+        info.put(Info.OORT_URL_FIELD, getOort().getURL());
+        info.put(Info.NAME_FIELD, getName());
+        info.put(Info.OBJECT_FIELD, elements);
+        info.put(Info.TYPE_FIELD, TYPE_FIELD_ELEMENT_VALUE);
+        info.put(Info.ACTION_FIELD, ACTION_FIELD_REMOVE_VALUE);
+
+        logger.debug("Sharing remove list elements info {}", info);
+        BayeuxServer bayeuxServer = getOort().getBayeuxServer();
+        bayeuxServer.getChannel(OORT_OBJECTS_CHANNEL).publish(getLocalSession(), info, null);
     }
 
     @Override
     protected void onObject(Map<String, Object> data)
     {
-        if ("item".equals(data.get(Info.TYPE_FIELD)))
+        if (TYPE_FIELD_ELEMENT_VALUE.equals(data.get(Info.TYPE_FIELD)))
         {
-            Info<List<E>> newInfo = getInfo((String)data.get(Info.OORT_URL_FIELD));
-            List<E> list = newInfo.getObject();
+            String remoteOortURL = (String)data.get(Info.OORT_URL_FIELD);
+            Info<List<E>> info = getInfo(remoteOortURL);
+            if (info != null)
+            {
+                List<E> list = info.getObject();
 
-            // Remember old data
-            Info<List<E>> oldInfo = new Info<List<E>>(newInfo);
-            oldInfo.put(Info.OBJECT_FIELD, new ArrayList<E>(list));
+                // Handle element
+                Object object = data.get(Info.OBJECT_FIELD);
+                if (object instanceof Object[])
+                    object = Arrays.asList((Object[])object);
+                List<E> elements = (List<E>)object;
 
-            // Handle item
-            E item = (E)data.get(Info.OBJECT_FIELD);
-            String action = (String)data.get(Info.ACTION_FIELD);
-            if ("add".equals(action))
-                list.add(item);
-            else if ("remove".equals(action))
-                list.remove(item);
-
-            // TODO: notify just the element update...
-            notifyOnUpdated(oldInfo, newInfo);
+                String action = (String)data.get(Info.ACTION_FIELD);
+                if (ACTION_FIELD_ADD_VALUE.equals(action))
+                {
+                    list.addAll(elements);
+                    notifyElementsAdded(info, elements);
+                }
+                else if (ACTION_FIELD_REMOVE_VALUE.equals(action))
+                {
+                    list.removeAll(elements);
+                    notifyElementsRemoved(info, elements);
+                }
+            }
+            else
+            {
+                logger.debug("Could not find info for {}", remoteOortURL);
+            }
         }
         else
         {
+            Object object = data.get(Info.OBJECT_FIELD);
+            if (!(object instanceof List))
+            {
+                List<E> list = getFactory().newObject(object);
+                data.put(Info.OBJECT_FIELD, list);
+            }
             super.onObject(data);
+        }
+    }
+
+    private void notifyElementsAdded(Info<List<E>> info, List<E> elements)
+    {
+        for (ElementListener<E> listener : getElementListeners())
+        {
+            try
+            {
+                listener.onAdded(info, elements);
+            }
+            catch (Exception x)
+            {
+                logger.info("Exception while invoking listener " + listener, x);
+            }
+        }
+    }
+
+    private void notifyElementsRemoved(Info<List<E>> info, List<E> elements)
+    {
+        for (ElementListener<E> listener : getElementListeners())
+        {
+            try
+            {
+                listener.onRemoved(info, elements);
+            }
+            catch (Exception x)
+            {
+                logger.info("Exception while invoking listener " + listener, x);
+            }
+        }
+    }
+
+    public interface ElementListener<E> extends EventListener
+    {
+        public void onAdded(Info<List<E>> info, List<E> elements);
+
+        public void onRemoved(Info<List<E>> info, List<E> elements);
+
+        public static class Adapter<E> implements ElementListener<E>
+        {
+            public void onAdded(Info<List<E>> info, List<E> elements)
+            {
+            }
+
+            public void onRemoved(Info<List<E>> info, List<E> elements)
+            {
+            }
         }
     }
 }

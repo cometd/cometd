@@ -17,7 +17,6 @@
 package org.cometd.oort;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -58,8 +57,8 @@ public class OortObjectTest extends OortTest
     public void testShareObject() throws Exception
     {
         String name = "test";
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new HashMap<String, Object>());
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new HashMap<String, Object>());
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new OortObject.MapFactory());
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new OortObject.MapFactory());
 
         // The other OortObject listens to receive the object
         final CountDownLatch objectLatch = new CountDownLatch(1);
@@ -71,12 +70,12 @@ public class OortObjectTest extends OortTest
             }
         });
 
-        // Change the object and publish the change
+        // Change the object and share the change
         Map<String, Object> object1 = oortObject1.getLocal();
         String key1 = "key1";
         String value1 = "value1";
         object1.put(key1, value1);
-        oortObject1.publish();
+        oortObject1.share();
 
         Assert.assertTrue(objectLatch.await(5, TimeUnit.SECONDS));
 
@@ -92,20 +91,20 @@ public class OortObjectTest extends OortTest
     public void testLocalObjectIsPushedWhenNodeJoins() throws Exception
     {
         String name = "test";
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new HashMap<String, Object>());
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new HashMap<String, Object>());
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new OortObject.MapFactory());
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new OortObject.MapFactory());
 
         Map<String, Object> object1 = oortObject1.getLocal();
         String key1 = "key1";
         String value1 = "value1";
         object1.put(key1, value1);
-        oortObject1.publish();
+        oortObject1.share();
 
         Map<String, Object> object2 = oortObject2.getLocal();
         String key2 = "key2";
         String value2 = "value2";
         object2.put(key2, value2);
-        oortObject2.publish();
+        oortObject2.share();
 
         // Wait for shared objects to synchronize
         Thread.sleep(1000);
@@ -119,11 +118,11 @@ public class OortObjectTest extends OortTest
         Assert.assertTrue(oortComet31.waitFor(5000, BayeuxClient.State.CONNECTED));
         Assert.assertTrue(oortLatch.await(5, TimeUnit.SECONDS));
 
-        HashMap<String, Object> object3 = new HashMap<String, Object>();
+        OortObject<Map<String, Object>> oortObject3 = new OortObject<Map<String, Object>>(oort3, name, new OortObject.MapFactory());
+        Map<String, Object> object3 = oortObject3.getLocal();
         String key3 = "key3";
         String value3 = "value3";
         object3.put(key3, value3);
-        OortObject<Map<String, Object>> oortObject3 = new OortObject<Map<String, Object>>(oort3, name, object3);
         final CountDownLatch objectsLatch = new CountDownLatch(2);
         oortObject3.addListener(new OortObject.Listener.Adapter<Map<String, Object>>()
         {
@@ -133,7 +132,7 @@ public class OortObjectTest extends OortTest
                 objectsLatch.countDown();
             }
         });
-        oortObject3.publish();
+        oortObject3.share();
         Assert.assertTrue(objectsLatch.await(5, TimeUnit.SECONDS));
 
         Map<String, Object> objectAtOort1 = oortObject1.get(new OortObject.UnionMergeStrategyMap<String, Object>());
@@ -148,20 +147,20 @@ public class OortObjectTest extends OortTest
     public void testLocalObjectIsRemovedWhenNodeLeaves() throws Exception
     {
         String name = "test";
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new HashMap<String, Object>());
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new HashMap<String, Object>());
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new OortObject.MapFactory());
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new OortObject.MapFactory());
 
         Map<String, Object> object1 = oortObject1.getLocal();
         String key1 = "key1";
         String value1 = "value1";
         object1.put(key1, value1);
-        oortObject1.publish();
+        oortObject1.share();
 
         Map<String, Object> object2 = oortObject2.getLocal();
         String key2 = "key2";
         String value2 = "value2";
         object2.put(key2, value2);
-        oortObject2.publish();
+        oortObject2.share();
 
         // Wait for shared objects to synchronize
         Thread.sleep(1000);
@@ -179,20 +178,20 @@ public class OortObjectTest extends OortTest
     public void testIterationOverInfos() throws Exception
     {
         String name = "test";
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new HashMap<String, Object>());
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new HashMap<String, Object>());
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, new OortObject.MapFactory());
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, new OortObject.MapFactory());
 
         Map<String, Object> object1 = oortObject1.getLocal();
         String key1 = "key1";
         String value1 = "value1";
         object1.put(key1, value1);
-        oortObject1.publish();
+        oortObject1.share();
 
         Map<String, Object> object2 = oortObject2.getLocal();
         String key2 = "key2";
         String value2 = "value2";
         object2.put(key2, value2);
-        oortObject2.publish();
+        oortObject2.share();
 
         // Wait for shared objects to synchronize
         Thread.sleep(1000);
@@ -208,6 +207,28 @@ public class OortObjectTest extends OortTest
                 Assert.assertEquals(oort1.getURL(), info.getOortURL());
             else if (data.containsKey(key2))
                 Assert.assertEquals(oort2.getURL(), info.getOortURL());
+        }
+    }
+
+    public static class OortObjectInitialListener<T> extends OortObject.Listener.Adapter<T>
+    {
+        private final CountDownLatch latch;
+
+        public OortObjectInitialListener(int parties)
+        {
+            this.latch = new CountDownLatch(parties);
+        }
+
+        @Override
+        public void onUpdated(OortObject.Info<T> oldInfo, OortObject.Info<T> newInfo)
+        {
+            if (oldInfo == null)
+                latch.countDown();
+        }
+
+        public boolean await(long timeout, TimeUnit unit) throws InterruptedException
+        {
+            return latch.await(timeout, unit);
         }
     }
 }

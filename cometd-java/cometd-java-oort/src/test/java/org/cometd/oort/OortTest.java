@@ -26,6 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.CometdServlet;
@@ -232,6 +234,33 @@ public abstract class OortTest
         public void cometLeft(Event event)
         {
             latch.countDown();
+        }
+    }
+
+    protected static class CometSubscriptionListener implements BayeuxServer.SubscriptionListener
+    {
+        private final String channelName;
+        private final CountDownLatch latch;
+
+        public CometSubscriptionListener(String channelName, int parties)
+        {
+            this.channelName = channelName;
+            this.latch = new CountDownLatch(parties);
+        }
+
+        public void subscribed(ServerSession session, ServerChannel channel)
+        {
+            if (channelName.equals(channel.getId()))
+                latch.countDown();
+        }
+
+        public void unsubscribed(ServerSession session, ServerChannel channel)
+        {
+        }
+
+        public boolean await(long timeout, TimeUnit unit) throws InterruptedException
+        {
+            return latch.await(timeout, unit);
         }
     }
 }

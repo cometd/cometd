@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.cometd.bayeux.server.BayeuxServer;
@@ -40,19 +41,21 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
 {
     public static final String OORT_OBJECTS_CHANNEL = "/oort/objects";
 
-    private final Map<String, Info<T>> infos = new ConcurrentHashMap<String, Info<T>>();
+    private final ConcurrentMap<String, Info<T>> infos = new ConcurrentHashMap<String, Info<T>>();
     private final List<Listener<T>> listeners = new CopyOnWriteArrayList<Listener<T>>();
     protected final Logger logger;
     private final Oort oort;
     private final String name;
+    private final Factory<T> factory;
     private final LocalSession sender;
 
-    public OortObject(Oort oort, String name, T initial)
+    public OortObject(Oort oort, String name, Factory<T> factory)
     {
         this.oort = oort;
         this.name = name;
+        this.factory = factory;
         logger = LoggerFactory.getLogger(getClass().getName() + "." + oort.getURL() + "." + name);
-        setLocal(initial);
+        setLocal(factory.newObject(null));
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         this.sender = bayeuxServer.newLocalSession(getClass().getSimpleName() + "." + name);
         this.sender.handshake();
@@ -78,6 +81,11 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         return name;
     }
 
+    public Factory<T> getFactory()
+    {
+        return factory;
+    }
+
     public LocalSession getLocalSession()
     {
         return sender;
@@ -95,7 +103,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         logger.debug("Oort {} left", event.getCometURL());
         Info<T> info = infos.remove(event.getCometURL());
         logger.debug("Removed remote info {}", info);
-        notifyOnRemoved(info);
+        notifyRemoved(info);
     }
 
     public Iterator<Info<T>> iterator()
@@ -113,7 +121,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         listeners.remove(listener);
     }
 
-    protected void notifyOnUpdated(Info<T> oldInfo, Info<T> newInfo)
+    protected void notifyUpdated(Info<T> oldInfo, Info<T> newInfo)
     {
         for (Listener<T> listener : listeners)
         {
@@ -128,7 +136,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         }
     }
 
-    protected void notifyOnRemoved(Info<T> info)
+    protected void notifyRemoved(Info<T> info)
     {
         for (Listener<T> listener : listeners)
         {
@@ -150,9 +158,8 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
             return onMessage((Map<String, Object>)data);
 
         if (data instanceof Object[])
-        {
             data = Arrays.asList((Object[])data);
-        }
+
         if (data instanceof List)
         {
             boolean result = true;
@@ -180,17 +187,25 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         Info<T> newInfo = new Info<T>(data);
         logger.debug("Received remote info {}", newInfo);
 
-        // Default behavior is to replace
+        // Default behavior is to replace atomically
+        Info<T> oldInfo;
         String newOortURL = newInfo.getOortURL();
-        Info<T> oldInfo = infos.put(newOortURL, newInfo);
+        boolean initial = Info.TYPE_FIELD_INITIAL_VALUE.equals(newInfo.get(Info.TYPE_FIELD));
+        if (initial)
+            // Make sure we don't overwrite existing data with initial data
+            oldInfo = infos.putIfAbsent(newOortURL, newInfo);
+        else
+            oldInfo = infos.put(newOortURL, newInfo);
 
-        notifyOnUpdated(oldInfo, newInfo);
+        if (!initial || oldInfo == null)
+            notifyUpdated(oldInfo, newInfo);
 
         // If we did not have an info for the new Oort, then it's a
         // new OortObject and we need to push our own data to it.
         if (oldInfo == null)
         {
             Info<T> localInfo = getInfo(oort.getURL());
+            localInfo.put(Info.TYPE_FIELD, Info.TYPE_FIELD_INITIAL_VALUE);
             logger.debug("Pushing (to {}) local info {}", newOortURL, localInfo);
             OortComet oortComet = oort.getComet(newOortURL);
             if (oortComet != null)
@@ -231,7 +246,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         return strategy.merge(infos.values());
     }
 
-    public void publish()
+    public void share()
     {
         Info<T> info = getInfo(oort.getURL());
         if (info != null)
@@ -242,6 +257,46 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         }
     }
 
+    public interface Factory<E>
+    {
+        public E newObject(Object representation);
+    }
+
+    public static class MapFactory implements Factory<Map<String, Object>>
+    {
+        @SuppressWarnings("unchecked")
+        public Map<String, Object> newObject(Object representation)
+        {
+            if (representation == null)
+                return new HashMap<String, Object>();
+            if (representation instanceof Map)
+                return (Map<String, Object>)representation;
+            throw new IllegalArgumentException();
+        }
+    }
+
+    public static class ConcurrentListFactory<E> implements Factory<List<E>>
+    {
+        @SuppressWarnings("unchecked")
+        public List<E> newObject(Object representation)
+        {
+            if (representation == null)
+                return new CopyOnWriteArrayList<E>();
+            if (representation instanceof CopyOnWriteArrayList)
+                return (List<E>)representation;
+            if (representation instanceof List)
+                return new CopyOnWriteArrayList<E>((List<E>)representation);
+            if (representation instanceof Object[])
+            {
+                List<E> result = new CopyOnWriteArrayList<E>();
+                for (Object element : (Object[])representation)
+                    result.add((E)element);
+                return result;
+            }
+            throw new IllegalArgumentException();
+        }
+    }
+
     public static class Info<E> extends HashMap<String, Object>
     {
         public static final String OORT_URL_FIELD = "oortURL";
@@ -249,6 +304,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         public static final String OBJECT_FIELD = "object";
         public static final String TYPE_FIELD = "type";
         public static final String ACTION_FIELD = "action";
+        public static final String TYPE_FIELD_INITIAL_VALUE = "initial";
 
         public Info()
         {
@@ -269,6 +325,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
             return (String)get(NAME_FIELD);
         }
 
+        @SuppressWarnings("unchecked")
         public E getObject()
         {
             return (E)get(OBJECT_FIELD);
@@ -277,7 +334,9 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         @Override
         public String toString()
         {
-            return String.format("'%s' (from %s): %s", getName(), getOortURL(), getObject());
+            E object = getObject();
+            String objectString = object instanceof Object[] ? Arrays.toString((Object[])object) : String.valueOf(object);
+            return String.format("'%s' (from %s): %s", getName(), getOortURL(), objectString);
         }
     }
 
@@ -314,13 +373,13 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
 
         public void onRemoved(Info<T> info);
 
-        public static class Adapter<Q> implements Listener<Q>
+        public static class Adapter<T> implements Listener<T>
         {
-            public void onUpdated(Info<Q> oldInfo, Info<Q> newInfo)
+            public void onUpdated(Info<T> oldInfo, Info<T> newInfo)
             {
             }
 
-            public void onRemoved(Info<Q> info)
+            public void onRemoved(Info<T> info)
             {
             }
         }
