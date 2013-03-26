@@ -84,7 +84,7 @@ public class OortObjectTest extends OortTest
         Map<String, Object> object1AtOort2 = oortObject2.getRemote(oort1.getURL());
         Assert.assertEquals(object1, object1AtOort2);
 
-        Map<String, Object> objectAtOort2 = oortObject2.get(OortObjectMergers.<String, Object>mapUnion());
+        Map<String, Object> objectAtOort2 = oortObject2.merge(OortObjectMergers.<String, Object>mapUnion());
         Assert.assertEquals(object1, objectAtOort2);
     }
 
@@ -138,11 +138,11 @@ public class OortObjectTest extends OortTest
         Assert.assertTrue(objectsLatch.await(5, TimeUnit.SECONDS));
 
         OortObject.Merger<Map<String, Object>> merger = OortObjectMergers.mapUnion();
-        Map<String, Object> objectAtOort1 = oortObject1.get(merger);
+        Map<String, Object> objectAtOort1 = oortObject1.merge(merger);
         Assert.assertEquals(3, objectAtOort1.size());
-        Map<String, Object> objectAtOort2 = oortObject2.get(merger);
+        Map<String, Object> objectAtOort2 = oortObject2.merge(merger);
         Assert.assertEquals(3, objectAtOort2.size());
-        Map<String, Object> objectAtOort3 = oortObject3.get(merger);
+        Map<String, Object> objectAtOort3 = oortObject3.merge(merger);
         Assert.assertEquals(3, objectAtOort3.size());
     }
 
@@ -174,7 +174,7 @@ public class OortObjectTest extends OortTest
         stopOort(oort1);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        Map<String, Object> objectAtOort2 = oortObject2.get(OortObjectMergers.<String, Object>mapUnion());
+        Map<String, Object> objectAtOort2 = oortObject2.merge(OortObjectMergers.<String, Object>mapUnion());
         Assert.assertEquals(object2, objectAtOort2);
     }
 
@@ -251,7 +251,7 @@ public class OortObjectTest extends OortTest
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        long sum = oortObject1.get(OortObjectMergers.longSum());
+        long sum = oortObject1.merge(OortObjectMergers.longSum());
 
         Assert.assertEquals(value1 + value2, sum);
     }

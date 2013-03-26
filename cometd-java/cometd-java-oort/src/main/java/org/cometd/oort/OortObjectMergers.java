@@ -21,6 +21,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class OortObjectMergers
 {
@@ -36,6 +38,11 @@ public class OortObjectMergers
     public static <K, V> OortObject.Merger<Map<K, V>> mapUnion()
     {
         return new MapUnionMerger<K, V>();
+    }
+
+    public static <K, V> OortObject.Merger<ConcurrentMap<K, V>> concurrentMapUnion()
+    {
+        return new ConcurrentMapUnionMerger<K, V>();
     }
 
     public static <E> OortObject.Merger<List<E>> listUnion()
@@ -60,6 +67,17 @@ public class OortObjectMergers
         {
             Map<K, V> result = new HashMap<K, V>();
             for (OortObject.Info<Map<K, V>> value : infos)
+                result.putAll(value.getObject());
+            return result;
+        }
+    }
+
+    private static class ConcurrentMapUnionMerger<K, V> implements OortObject.Merger<ConcurrentMap<K, V>>
+    {
+        public ConcurrentMap<K, V> merge(Collection<OortObject.Info<ConcurrentMap<K, V>>> infos)
+        {
+            ConcurrentMap<K, V> result = new ConcurrentHashMap<K, V>();
+            for (OortObject.Info<ConcurrentMap<K, V>> value : infos)
                 result.putAll(value.getObject());
             return result;
         }

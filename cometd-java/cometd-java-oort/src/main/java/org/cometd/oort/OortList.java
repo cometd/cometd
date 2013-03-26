@@ -53,6 +53,11 @@ public class OortList<E> extends OortObject<List<E>>
         return listeners;
     }
 
+    public List<E> elements()
+    {
+        return merge(OortObjectMergers.<E>listUnion());
+    }
+
     public boolean addAndShare(E... elements)
     {
         boolean result = Collections.addAll(getLocal(), elements);

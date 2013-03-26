@@ -240,7 +240,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         return infos.get(oortURL);
     }
 
-    public T get(Merger<T> strategy)
+    public T merge(Merger<T> strategy)
     {
         return strategy.merge(infos.values());
     }
