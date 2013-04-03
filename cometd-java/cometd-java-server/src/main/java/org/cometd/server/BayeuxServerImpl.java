@@ -20,7 +20,6 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
@@ -85,7 +84,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     private final ThreadLocal<AbstractServerTransport> _currentTransport = new ThreadLocal<AbstractServerTransport>();
     private final Map<String, Object> _options = new TreeMap<String, Object>();
     private final Timeout _timeout = new Timeout();
-    private final Map<String, Object> _handshakeAdvice;
     private SecurityPolicy _policy = new DefaultSecurityPolicy();
     private int _logLevel = OFF_LOG_LEVEL;
     private JSONContext.Server _jsonContext;
@@ -95,9 +93,6 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         addTransport(new JSONTransport(this));
         addTransport(new JSONPTransport(this));
-        _handshakeAdvice = new HashMap<String, Object>(2);
-        _handshakeAdvice.put(Message.RECONNECT_FIELD, Message.RECONNECT_HANDSHAKE_VALUE);
-        _handshakeAdvice.put(Message.INTERVAL_FIELD, 0L);
     }
 
     /**
@@ -1101,7 +1096,11 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         error(reply, "402::Unknown client");
         if (Channel.META_HANDSHAKE.equals(reply.getChannel()) || Channel.META_CONNECT.equals(reply.getChannel()))
-            reply.put(Message.ADVICE_FIELD, _handshakeAdvice);
+        {
+            Map<String, Object> advice = reply.getAdvice(true);
+            advice.put(Message.RECONNECT_FIELD, Message.RECONNECT_HANDSHAKE_VALUE);
+            advice.put(Message.INTERVAL_FIELD, 0L);
+        }
     }
 
     protected void error(ServerMessage.Mutable reply, String error)

@@ -16,14 +16,17 @@
 
 package org.cometd.server;
 
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpExchange;
@@ -113,9 +116,32 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
         Assert.assertEquals(200, connect2.getResponseStatus());
 
-        Assert.assertTrue(connect2.getResponseContent().toLowerCase().contains("unknown"));
+        JettyJSONContextClient parser = new JettyJSONContextClient();
+        Message.Mutable connectReply2 = parser.parse(connect2.getResponseContent())[0];
+        String error = (String)connectReply2.get(Message.ERROR_FIELD);
+        Assert.assertNotNull(error);
+        Assert.assertTrue(error.toLowerCase().contains("unknown"));
+        Map<String,Object> advice = connectReply2.getAdvice();
+        Assert.assertNotNull(advice);
+        Assert.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get(Message.RECONNECT_FIELD));
 
         Assert.assertNull(bayeux.getSession(clientId));
+
+        // Test that sending a connect for an expired session
+        // will return an advice with reconnect:"handshake"
+        ContentExchange connect3 = newBayeuxExchange("[{" +
+                "\"channel\": \"/meta/connect\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"connectionType\": \"long-polling\"" +
+                "}]");
+        connect3.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
+        httpClient.send(connect3);
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect3.waitForDone());
+        Assert.assertEquals(200, connect3.getResponseStatus());
+        Message.Mutable connectReply3 = parser.parse(connect3.getResponseContent())[0];
+        advice = connectReply3.getAdvice();
+        Assert.assertNotNull(advice);
+        Assert.assertEquals(Message.RECONNECT_HANDSHAKE_VALUE, advice.get(Message.RECONNECT_FIELD));
     }
 
     @Test
