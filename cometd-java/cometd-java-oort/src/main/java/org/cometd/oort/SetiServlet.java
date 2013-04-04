@@ -30,7 +30,7 @@ import javax.servlet.http.HttpServletResponse;
  * user mapper.</p>
  * <p>This servlet must be initialized after an instance the Oort servlet
  * that creates the {@link Oort} instance.</p>
- * <p>Override method {@link #newSeti(Oort, String)} to return a customized
+ * <p>Override method {@link #newSeti(Oort)} to return a customized
  * instance of {@link Seti}.</p>
  *
  * @see OortMulticastConfigServlet

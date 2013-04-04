@@ -325,6 +325,17 @@ public class Seti extends AbstractLifeCycle
     }
 
     /**
+     * @return the set of {@code userId}s known to this Seti
+     */
+    public Set<String> getUserIds()
+    {
+        synchronized (_uid2Location)
+        {
+            return new HashSet<String>(_uid2Location.keySet());
+        }
+    }
+
+    /**
      * <p>Sends a message to the given userId in the Oort cloud.</p>
      *
      * @param toUserId  the userId to send the message to
