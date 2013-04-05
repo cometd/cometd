@@ -238,6 +238,7 @@ public class Seti extends AbstractLifeCycle
      * @return whether the given userId has been associated via {@link #associate(String, ServerSession)}
      * @see #associate(String, ServerSession)
      * @see #isPresent(String)
+     * @see #getAssociationCount(String)
      */
     public boolean isAssociated(String userId)
     {
@@ -256,10 +257,34 @@ public class Seti extends AbstractLifeCycle
     }
 
     /**
+     * @param userId the user identifier to test for association count
+     * @return the number of local associations
+     * @see #isAssociated(String)
+     * @see #getPresenceCount(String)
+     */
+    public int getAssociationCount(String userId)
+    {
+        synchronized (_uid2Location)
+        {
+            Set<Location> locations = _uid2Location.get(userId);
+            if (locations == null)
+                return 0;
+            int result = 0;
+            for (Location location : locations)
+            {
+                if (location instanceof LocalLocation)
+                    ++result;
+            }
+            return result;
+        }
+    }
+
+    /**
      * @param userId the user identifier to test for presence
      * @return whether the given userId is present on the cloud (and therefore has been associated
      * either locally or remotely)
      * @see #isAssociated(String)
+     * @see #getPresenceCount(String)
      */
     public boolean isPresent(String userId)
     {
@@ -267,6 +292,21 @@ public class Seti extends AbstractLifeCycle
         {
             Set<Location> locations = _uid2Location.get(userId);
             return locations != null;
+        }
+    }
+
+    /**
+     * @param userId the user identifier to test for presence count
+     * @return the number of associations (local or remote) on the cloud
+     * @see #isPresent(String)
+     * @see #getAssociationCount(String)
+     */
+    public int getPresenceCount(String userId)
+    {
+        synchronized (_uid2Location)
+        {
+            Set<Location> locations = _uid2Location.get(userId);
+            return locations == null ? 0 : locations.size();
         }
     }
 
