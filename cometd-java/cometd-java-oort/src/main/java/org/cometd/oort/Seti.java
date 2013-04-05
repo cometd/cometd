@@ -78,7 +78,7 @@ public class Seti extends AbstractLifeCycle
         _logger = LoggerFactory.getLogger(getClass().getName() + "." + oort.getURL());
         _oort = oort;
         _setiId = oort.getURL().replace("://", "_").replace(":", "_").replace("/", "_");
-        _session = oort.getBayeuxServer().newLocalSession("seti");
+        _session = oort.getBayeuxServer().newLocalSession(_setiId);
         _debug = oort.isDebugEnabled();
     }
 
@@ -456,26 +456,25 @@ public class Seti extends AbstractLifeCycle
      */
     protected void receivePresence(Message message)
     {
-        Map<String, Object> presence = message.getDataAsMap();
-        String setiId = (String)presence.get(SetiPresence.SETI_ID_FIELD);
-        if (_setiId.equals(setiId))
-            return;
-
         debug("Received presence message {}", message);
 
-        String userId = (String)presence.get(SetiPresence.USER_ID_FIELD);
+        Map<String, Object> presence = message.getDataAsMap();
+        String setiId = (String)presence.get(SetiPresence.SETI_ID_FIELD);
         boolean present = (Boolean)presence.get(SetiPresence.PRESENCE_FIELD);
-        SetiLocation location = new SetiLocation(userId, "/seti/" + setiId);
+        if (!_setiId.equals(setiId))
+        {
+            String userId = (String)presence.get(SetiPresence.USER_ID_FIELD);
+            SetiLocation location = new SetiLocation(userId, "/seti/" + setiId);
+            if (present)
+                associate(userId, location);
+            else
+                disassociate(userId, location);
+        }
+
         if (present)
-        {
-            associate(userId, location);
             notifyPresenceAdded(presence);
-        }
         else
-        {
-            disassociate(userId, location);
             notifyPresenceRemoved(presence);
-        }
     }
 
     public void addPresenceListener(PresenceListener listener)
@@ -561,6 +560,12 @@ public class Seti extends AbstractLifeCycle
         debug("Received message {} for locations {}", message, copy);
         for (Location location : copy)
             location.receive(userId, channel, data);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s]", getClass().getName(), getId());
     }
 
     /**
@@ -749,14 +754,46 @@ public class Seti extends AbstractLifeCycle
                 this.url = url;
             }
 
+            /**
+             * @return the local Seti object
+             */
+            public Seti getSeti()
+            {
+                return (Seti)getSource();
+            }
+
+            /**
+             * @return the userId associated to this presence event
+             */
             public String getUserId()
             {
                 return userId;
             }
 
+            /**
+             * @return the Oort URL where this presence event happened
+             */
             public String getURL()
             {
                 return url;
+            }
+
+            /**
+             * @return whether this presence event happened on the local Seti or on a remote Seti
+             */
+            public boolean isLocal()
+            {
+                return getURL().equals(getSeti().getOort().getURL());
+            }
+
+            @Override
+            public String toString()
+            {
+                return String.format("%s[%s %s on %s]",
+                        getClass().getName(),
+                        getUserId(),
+                        isLocal() ? "local" : "remote",
+                        getSeti());
             }
         }
     }
