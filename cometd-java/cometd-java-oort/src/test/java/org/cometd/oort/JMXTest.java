@@ -16,11 +16,17 @@
 
 package org.cometd.oort;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.Set;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import javax.servlet.GenericServlet;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
 import org.cometd.websocket.server.WebSocketTransport;
@@ -33,7 +39,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class JMXTest extends OortTest
+public class JMXTest
 {
     @Test
     public void testJMX() throws Exception
@@ -100,5 +106,76 @@ public class JMXTest extends OortTest
         Assert.assertEquals("oort", oortObjectName.getKeyProperty("type"));
 
         server.stop();
+    }
+
+    @Test
+    public void testPortableJMX() throws Exception
+    {
+        Server server = new Server();
+        Connector connector = new SelectChannelConnector();
+        server.addConnector(connector);
+
+        String contextPath = "";
+        ServletContextHandler context = new ServletContextHandler(server, contextPath);
+
+        String value = BayeuxServerImpl.ATTRIBUTE + "," + Oort.OORT_ATTRIBUTE + "," + Seti.SETI_ATTRIBUTE;
+        context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, value);
+
+        // CometD servlet
+        ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
+        cometdServletHolder.setInitParameter("timeout", "10000");
+        cometdServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
+        if (Boolean.getBoolean("debugTests"))
+            cometdServletHolder.setInitParameter("logLevel", "3");
+        cometdServletHolder.setInitOrder(1);
+        String cometdServletPath = "/cometd";
+        context.addServlet(cometdServletHolder, cometdServletPath + "/*");
+
+        ServletHolder jmxServletHolder = new ServletHolder(CometDJMXExporter.class);
+        jmxServletHolder.setInitOrder(2);
+        context.addServlet(jmxServletHolder, "/jmx");
+
+        server.start();
+        server.join();
+    }
+
+    public static class CometDJMXExporter extends GenericServlet
+    {
+        private volatile MBeanContainer mbeanContainer;
+
+        @Override
+        public void init() throws ServletException
+        {
+            try
+            {
+                mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+                BayeuxServer bayeuxServer = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+                mbeanContainer.addBean(bayeuxServer);
+                // Add other components
+                mbeanContainer.start();
+            }
+            catch (Exception x)
+            {
+                throw new ServletException(x);
+            }
+        }
+
+        @Override
+        public void service(ServletRequest servletRequest, ServletResponse servletResponse) throws ServletException, IOException
+        {
+            throw new ServletException();
+        }
+
+        @Override
+        public void destroy()
+        {
+            try
+            {
+                mbeanContainer.stop();
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
     }
 }
