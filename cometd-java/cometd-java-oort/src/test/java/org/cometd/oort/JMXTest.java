@@ -136,7 +136,16 @@ public class JMXTest
         context.addServlet(jmxServletHolder, "/jmx");
 
         server.start();
-        server.join();
+
+        MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+        String domain = BayeuxServerImpl.class.getPackage().getName();
+        Set<ObjectName> mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(domain + ":*"), null);
+        Assert.assertEquals(1, mbeanNames.size());
+        ObjectName objectName = mbeanNames.iterator().next();
+        Set <String> channels = (Set<String>)mbeanServer.getAttribute(objectName, "channels");
+        Assert.assertTrue(channels.size() > 0);
+
+        server.stop();
     }
 
     public static class CometDJMXExporter extends GenericServlet
