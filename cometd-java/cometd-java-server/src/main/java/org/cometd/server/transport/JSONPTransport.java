@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.server.BayeuxServerImpl;
+import org.cometd.server.ServerSessionImpl;
 
 public class JSONPTransport extends LongPollingTransport
 {
@@ -81,7 +82,7 @@ public class JSONPTransport extends LongPollingTransport
     }
 
     @Override
-    protected PrintWriter send(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerMessage message) throws IOException
+    protected PrintWriter writeMessage(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerSessionImpl session, ServerMessage message) throws IOException
     {
         if (writer == null)
         {
@@ -99,7 +100,7 @@ public class JSONPTransport extends LongPollingTransport
     }
 
     @Override
-    protected void complete(PrintWriter writer) throws IOException
+    protected void finishWrite(PrintWriter writer, ServerSessionImpl session) throws IOException
     {
         writer.append("])");
         writer.close();

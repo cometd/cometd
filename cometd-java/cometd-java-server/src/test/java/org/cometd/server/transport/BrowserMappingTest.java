@@ -25,10 +25,17 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class BrowserMappingTest extends AbstractBayeuxClientServerTest
 {
+    @Before
+    public void prepare() throws Exception
+    {
+        startServer(null);
+    }
+
     @Test
     public void testBayeuxBrowserMapping() throws Exception
     {

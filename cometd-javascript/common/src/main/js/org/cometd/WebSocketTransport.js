@@ -170,7 +170,9 @@ org.cometd.WebSocketTransport = function()
             var webSocket = _webSocket;
             this.setTimeout(function()
             {
-                envelope.onFailure(webSocket, envelope.messages, 'exception', x);
+                envelope.onFailure(webSocket, envelope.messages, {
+                    exception: x
+                });
             }, 0);
         }
     }
@@ -294,7 +296,10 @@ org.cometd.WebSocketTransport = function()
             {
                 _connected = false;
             }
-            envelope.onFailure(_webSocket, envelope.messages, 'closed ' + event);
+            envelope.onFailure(_webSocket, envelope.messages, {
+                websocketCode: code,
+                reason: reason
+            });
         }
         _envelopes = {};
 

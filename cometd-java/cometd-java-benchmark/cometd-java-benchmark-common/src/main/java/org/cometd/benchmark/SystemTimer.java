@@ -136,6 +136,6 @@ public class SystemTimer
     public static void main(String[] args)
     {
         final SystemTimer systemTimer = SystemTimer.detect();
-        System.out.println("systemTimer = " + systemTimer);
+        System.err.println("systemTimer = " + systemTimer);
     }
 }

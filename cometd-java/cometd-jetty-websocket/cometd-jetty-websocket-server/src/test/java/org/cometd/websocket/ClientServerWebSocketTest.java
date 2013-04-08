@@ -107,7 +107,6 @@ public abstract class ClientServerWebSocketTest
 
         httpClient.start();
 
-        wsThreadPool.start();
         wsClient.start();
     }
 
@@ -129,7 +128,6 @@ public abstract class ClientServerWebSocketTest
     public void stopServer() throws Exception
     {
         wsClient.stop();
-        wsThreadPool.stop();
 
         httpClient.stop();
 

@@ -51,8 +51,7 @@ public abstract class AbstractBayeuxServerTest
     protected BayeuxServerImpl bayeux;
     protected long timeout = 2000;
 
-    @Before
-    public void startServer() throws Exception
+    public void startServer(Map<String, String> options) throws Exception
     {
         server = new Server();
         connector = new ServerConnector(server);
@@ -67,14 +66,14 @@ public abstract class AbstractBayeuxServerTest
         // Setup comet servlet
         cometdServlet = new CometDServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
-        Map<String, String> options = new HashMap<>();
+        if (options == null)
+            options = new HashMap<String, String>();
         options.put("timeout", String.valueOf(timeout));
         if (Boolean.getBoolean("debugTests"))
         {
             options.put("logLevel", "3");
             options.put("jsonDebug", "true");
         }
-        customizeOptions(options);
         for (Map.Entry<String, String> entry : options.entrySet())
             cometdServletHolder.setInitParameter(entry.getKey(), entry.getValue());
         String cometdServletPath = "/cometd";
@@ -94,9 +93,5 @@ public abstract class AbstractBayeuxServerTest
     {
         server.stop();
         server.join();
-    }
-
-    protected void customizeOptions(Map<String, String> options)
-    {
     }
 }

@@ -23,10 +23,17 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ServerRedeployTest extends AbstractBayeuxClientServerTest
 {
+    @Before
+    public void prepare() throws Exception
+    {
+        startServer(null);
+    }
+
     @Test
     public void testServerRedeploy() throws Exception
     {

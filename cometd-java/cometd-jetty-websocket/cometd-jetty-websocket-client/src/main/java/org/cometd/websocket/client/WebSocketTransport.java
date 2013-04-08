@@ -19,15 +19,17 @@ package org.cometd.websocket.client;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.ProtocolException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -37,7 +39,6 @@ import java.util.concurrent.TimeoutException;
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.Message.Mutable;
-import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
@@ -139,6 +140,16 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             _scheduler = Executors.newSingleThreadScheduledExecutor();
             // TODO: remove on cancel policy ? or reuse wsClient's ?
         }
+    }
+
+    private long getMaxNetworkDelay()
+    {
+        return _maxNetworkDelay;
+    }
+
+    private long getConnectTimeout()
+    {
+        return _connectTimeout;
     }
 
     @Override
@@ -245,6 +256,26 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             // Cannot connect, assume the server supports WebSocket until proved otherwise
             listener.onFailure(x, messages);
         }
+        catch (ProtocolException x)
+        {
+			// TODO: use better information from Jetty 9's WebSocket 
+
+            // Probably a WebSocket upgrade failure
+            _webSocketSupported = false;
+            // Try to parse the HTTP error, although it's ugly
+            Map<String, Object> failure = new HashMap<String, Object>(2);
+            failure.put("websocketCode", 1002);
+            // Unfortunately the information on the HTTP status code is not available directly
+            // Try to parse it although it's ugly
+            Matcher matcher = Pattern.compile("(\\d+){3}").matcher(x.getMessage());
+            if (matcher.find())
+            {
+                int code = Integer.parseInt(matcher.group());
+                if (code > 100 && code < 600)
+                    failure.put("httpCode", code);
+            }
+            listener.onException(new TransportException(x, failure), messages);
+        }
         catch (Exception x)
         {
             _webSocketSupported = false;
@@ -280,7 +311,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private void registerMessage(final Message.Mutable message, final TransportListener listener)
     {
         // Calculate max network delay
-        long maxNetworkDelay = _maxNetworkDelay;
+        long maxNetworkDelay = getMaxNetworkDelay();
         if (Channel.META_CONNECT.equals(message.getChannel()))
         {
             Map<String, Object> advice = message.getAdvice();

@@ -18,8 +18,8 @@ package org.cometd.bayeux.server;
 
 import java.util.List;
 
+import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Channel;
-import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
 
 /**
  * <p>A {@link ConfigurableServerChannel} offers an API that can be used to
@@ -32,19 +32,6 @@ import org.cometd.bayeux.server.ServerChannel.ServerChannelListener;
  */
 public interface ConfigurableServerChannel extends Channel
 {
-    /**
-     * A listener interface by means of which listeners can atomically
-     * set the initial configuration of a channel.
-     */
-    public interface Initializer
-    {
-        /**
-         * Callback invoked when a channel is created and needs to be configured
-         * @param channel the channel to configure
-         */
-        void configureChannel(ConfigurableServerChannel channel);
-    }
-
     /**
      * @param listener the listener to add
      * @see #removeListener(ServerChannelListener)
@@ -124,4 +111,34 @@ public interface ConfigurableServerChannel extends Channel
      * @return an immutable list of authorizers for this channel
      */
     public List<Authorizer> getAuthorizers();
+
+    /**
+     * A listener interface by means of which listeners can atomically
+     * set the initial configuration of a channel.
+     */
+    public interface Initializer
+    {
+        /**
+         * Callback invoked when a channel is created and needs to be configured
+         * @param channel the channel to configure
+         */
+        void configureChannel(ConfigurableServerChannel channel);
+    }
+
+    /**
+     * <p>Common interface for {@link ServerChannel} listeners.</p>
+     * <p>Specific sub-interfaces define what kind of event listeners will be notified.</p>
+     */
+    public interface ServerChannelListener extends Bayeux.BayeuxListener
+    {
+        /**
+         * <p>Tag interface that marks {@link ServerChannelListener}s as "weak".</p>
+         * <p>{@link ServerChannel}s that are not {@link ServerChannel#isPersistent() persistent},
+         * that have no subscribers and that only have weak listeners are eligible to be
+         * {@link ServerChannel#remove() removed}.</p>
+         */
+        public interface Weak extends ServerChannelListener
+        {
+        }
+    }
 }

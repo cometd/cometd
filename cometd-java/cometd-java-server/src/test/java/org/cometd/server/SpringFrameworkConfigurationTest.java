@@ -35,6 +35,12 @@ import static org.junit.Assert.assertTrue;
         "so the Spring context listener runs after the CometD servlet, causing the test to fail")
 public class SpringFrameworkConfigurationTest extends AbstractBayeuxClientServerTest
 {
+    @Before
+    public void prepare() throws Exception
+    {
+        startServer(null);
+    }
+
     @Test
     public void testXMLSpringConfiguration() throws Exception
     {

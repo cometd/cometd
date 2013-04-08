@@ -269,12 +269,19 @@ public class LongPollingTransport extends HttpClientTransport
                     }
                     else
                     {
-                        listener.onFailure(new ProtocolException("Empty response content " + request), messages);
+		                Map<String, Object> failure = new HashMap<>(2);
+		                // Convert the 200 into 204 (no content)
+		                failure.put("httpCode", 204);
+		                TransportException x = new TransportException(failure);
+		                _listener.onException(x, _messages);
                     }
                 }
                 else
                 {
-                    listener.onFailure(new ProtocolException("Unexpected response " + status + ": " + request), messages);
+		            Map<String, Object> failure = new HashMap<>(2);
+		            failure.put("httpCode", getResponseStatus());
+		            TransportException x = new TransportException(failure);
+		            _listener.onException(x, _messages);
                 }
             }
         });

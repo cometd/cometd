@@ -962,10 +962,17 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
             failed.setId(message.getId());
             failed.setSuccessful(false);
             failed.setChannel(message.getChannel());
-            failed.put("message", message);
-            if (x != null)
-                failed.put("exception", x);
             failed.put(PUBLISH_CALLBACK_KEY, message.remove(PUBLISH_CALLBACK_KEY));
+
+            Map<String, Object> failure = new HashMap<>();
+            failed.put("failure", failure);
+            failure.put("message", message);
+            if (x != null)
+                failure.put("exception", x);
+            if (x instanceof TransportException)
+                failure.putAll(((TransportException)x).getFields());
+            failure.put(Message.CONNECTION_TYPE_FIELD, getTransport().getName());
+
             receive(failed);
         }
     }
@@ -973,6 +980,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
     @Override
     protected void notifyListeners(Message.Mutable message)
     {
+        ClientSessionChannel.MessageListener publishCallback = (ClientSessionChannel.MessageListener)message.remove(PUBLISH_CALLBACK_KEY);
         if (message.isPublishReply())
         {
             String messageId = message.getId();
