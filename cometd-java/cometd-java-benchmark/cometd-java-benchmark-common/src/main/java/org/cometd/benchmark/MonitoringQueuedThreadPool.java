@@ -34,8 +34,7 @@ public class MonitoringQueuedThreadPool extends QueuedThreadPool
 
     public MonitoringQueuedThreadPool(int maxThreads)
     {
-        setMaxThreads(maxThreads);
-        setQueue(new MonitoringBlockingArrayQueue(maxThreads, maxThreads));
+        super(maxThreads, maxThreads, 20000, new MonitoringBlockingArrayQueue(maxThreads, maxThreads));
         queue = (MonitoringBlockingArrayQueue)getQueue();
         setStopTimeout(2000);
     }

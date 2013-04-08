@@ -702,13 +702,13 @@ public class WebSocketTransport extends HttpTransport
 //                }
             }
 
-            StringBuffer url = request.getRequestURL();
+            String url = request.getRequestURI().toString();
             String query = request.getQueryString();
 
             if (query != null)
-                url.append("?").append(query);
+                url = url +"?" + query;
 
-            this._url = url.toString();
+            this._url = url;
 
             _origin = request.getOrigin();
         }
