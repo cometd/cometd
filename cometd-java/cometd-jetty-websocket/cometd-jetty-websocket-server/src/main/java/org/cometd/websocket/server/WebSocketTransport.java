@@ -109,8 +109,15 @@ public class WebSocketTransport extends HttpTransport
             {
                 if (request instanceof ServletWebSocketRequest)
                 {
-                    WebSocketContext handshake = new WebSocketContext((ServletWebSocketRequest)request);
-                    return new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
+                    ServletWebSocketRequest serverRequest = (ServletWebSocketRequest)request;
+                    String origin = request.getHeader("Origin");
+                    if (origin == null)
+                        origin = request.getHeader("Sec-WebSocket-Origin");
+                    if (checkOrigin(serverRequest, origin))
+                    {
+                        WebSocketContext handshake = new WebSocketContext((ServletWebSocketRequest)request);
+                        return new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
+                    }
                 }
                 return null;
             }
@@ -189,8 +196,7 @@ public class WebSocketTransport extends HttpTransport
         }
     }
 
-    // TODO: implement this
-    public boolean checkOrigin(HttpServletRequest request, String origin)
+    public boolean checkOrigin(ServletWebSocketRequest request, String origin)
     {
         return true;
     }
