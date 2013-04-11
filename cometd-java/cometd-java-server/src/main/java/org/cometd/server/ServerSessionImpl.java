@@ -257,8 +257,7 @@ public class ServerSessionImpl implements ServerSession
         if (message == null)
             return;
 
-        // TODO: should freeze the message here not the mutable, in case the extension changed it
-        _bayeux.freeze(mutable);
+        _bayeux.freeze((Mutable)message);
 
         int maxQueueSize = _maxQueue;
         int queueSize = _queue.size();

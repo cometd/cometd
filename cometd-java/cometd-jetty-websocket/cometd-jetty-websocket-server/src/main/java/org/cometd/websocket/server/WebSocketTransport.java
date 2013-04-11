@@ -24,11 +24,9 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -261,18 +259,10 @@ public class WebSocketTransport extends HttpTransport
     protected void send(Session session, String data) throws IOException
     {
         debug("Sending {}", data);
-        Future<Void> result = session.getRemote().sendStringByFuture(data);
-
-        // TODO: do we really need to be blocking ?
-        try
-        {
-            result.get();
-        }
-        catch (InterruptedException | ExecutionException e)
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        // Blocking write.
+        // We trade - for now - a blocked thread with the frame queue growing
+        // and consequent increased message latency (messages sit in the queue).
+        session.getRemote().sendString(data);
     }
 
     protected void onClose(int code, String message)

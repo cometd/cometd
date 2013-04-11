@@ -29,9 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -139,8 +139,10 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         if (_scheduler == null)
         {
             _shutdownScheduler = true;
-            _scheduler = Executors.newSingleThreadScheduledExecutor();
-            // TODO: remove on cancel policy ? or reuse wsClient's ?
+            int threads = Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
+            ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(threads);
+            scheduler.setRemoveOnCancelPolicy(true);
+            _scheduler = scheduler;
         }
     }
 

@@ -148,7 +148,6 @@ public abstract class LongPollingTransport extends HttpTransport
         if (sessions == 1)
             _browserSweep.remove(browserId);
 
-        // TODO, the maxSessionsPerBrowser should be parameterized on user-agent
         if (sessions > _maxSessionsPerBrowser)
         {
             count.decrementAndGet();
