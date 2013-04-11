@@ -113,7 +113,7 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
         Assert.assertTrue(response.getContentAsString().toLowerCase().contains("unknown"));
 
         JettyJSONContextClient parser = new JettyJSONContextClient();
-        Message.Mutable connectReply2 = parser.parse(connect2.getResponseContent())[0];
+        Message.Mutable connectReply2 = parser.parse(response.getContentAsString())[0];
         String error = (String)connectReply2.get(Message.ERROR_FIELD);
         Assert.assertNotNull(error);
         Assert.assertTrue(error.toLowerCase().contains("unknown"));
@@ -125,16 +125,14 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
 
         // Test that sending a connect for an expired session
         // will return an advice with reconnect:"handshake"
-        ContentExchange connect3 = newBayeuxExchange("[{" +
+        Request connect3 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect3.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect3);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect3.waitForDone());
-        Assert.assertEquals(200, connect3.getResponseStatus());
-        Message.Mutable connectReply3 = parser.parse(connect3.getResponseContent())[0];
+        response = connect3.send();
+        Assert.assertEquals(200, response.getStatus());
+        Message.Mutable connectReply3 = parser.parse(response.getContentAsString())[0];
         advice = connectReply3.getAdvice();
         Assert.assertNotNull(advice);
         Assert.assertEquals(Message.RECONNECT_HANDSHAKE_VALUE, advice.get(Message.RECONNECT_FIELD));

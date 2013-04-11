@@ -36,6 +36,10 @@ import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.cometd.server.authorizer.GrantAuthorizer;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +64,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see SetiServlet
  */
+@ManagedObject("CometD cloud peer discovery component")
 public class Seti extends AbstractLifeCycle
 {
     public static final String SETI_ATTRIBUTE = Seti.class.getName();
@@ -87,6 +92,7 @@ public class Seti extends AbstractLifeCycle
         return _logger;
     }
 
+    @ManagedAttribute("Whether log debugging for this Seti is enabled")
     public boolean isDebugEnabled()
     {
         return _debug;
@@ -105,11 +111,13 @@ public class Seti extends AbstractLifeCycle
             _logger.debug(message, args);
     }
 
+    @ManagedAttribute(value = "The Oort of this Seti", readonly = true)
     public Oort getOort()
     {
         return _oort;
     }
 
+    @ManagedAttribute(value = "The unique ID of this Seti", readonly = true)
     public String getId()
     {
         return _setiId;
@@ -240,7 +248,8 @@ public class Seti extends AbstractLifeCycle
      * @see #isPresent(String)
      * @see #getAssociationCount(String)
      */
-    public boolean isAssociated(String userId)
+    @ManagedOperation(value = "Whether the given userId is associated locally", impact = "INFO")
+    public boolean isAssociated(@Name(value = "userId", description = "The userId to test for local association") String userId)
     {
         synchronized (_uid2Location)
         {
@@ -262,7 +271,8 @@ public class Seti extends AbstractLifeCycle
      * @see #isAssociated(String)
      * @see #getPresenceCount(String)
      */
-    public int getAssociationCount(String userId)
+    @ManagedOperation(value = "The number of local associations for the given userId", impact = "INFO")
+    public int getAssociationCount(@Name(value = "userId", description = "The userId to test for local association count") String userId)
     {
         synchronized (_uid2Location)
         {
@@ -286,7 +296,8 @@ public class Seti extends AbstractLifeCycle
      * @see #isAssociated(String)
      * @see #getPresenceCount(String)
      */
-    public boolean isPresent(String userId)
+    @ManagedOperation(value = "Whether the given userId is present in the cloud", impact = "INFO")
+    public boolean isPresent(@Name(value = "userId", description = "The userId to test for presence in the cloud") String userId)
     {
         synchronized (_uid2Location)
         {
@@ -301,7 +312,8 @@ public class Seti extends AbstractLifeCycle
      * @see #isPresent(String)
      * @see #getAssociationCount(String)
      */
-    public int getPresenceCount(String userId)
+    @ManagedOperation(value = "The number of local and remote associations for the given userId", impact = "INFO")
+    public int getPresenceCount(@Name(value = "userId", description = "The userId to test for presence count") String userId)
     {
         synchronized (_uid2Location)
         {
@@ -367,11 +379,12 @@ public class Seti extends AbstractLifeCycle
     /**
      * @return the set of {@code userId}s known to this Seti
      */
+    @ManagedAttribute(value = "The set of userIds known to this Seti", readonly = true)
     public Set<String> getUserIds()
     {
         synchronized (_uid2Location)
         {
-            return new HashSet<String>(_uid2Location.keySet());
+            return new HashSet<>(_uid2Location.keySet());
         }
     }
 

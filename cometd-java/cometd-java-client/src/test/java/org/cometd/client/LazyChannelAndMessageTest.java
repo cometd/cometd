@@ -91,7 +91,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         begin.set(System.nanoTime());
         // Cannot publish from the client, as there will always be the "meta"
         // publish response to send, so the lazy message will be sent with it.
-        bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>());
+        bayeux.getChannel(channelName).publish(null, new HashMap<>());
 
         Assert.assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
 
@@ -155,7 +155,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         begin.set(System.nanoTime());
         // Cannot publish from the client, as there will always be the "meta"
         // publish response to send, so the lazy message will be sent with it.
-        bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>());
+        bayeux.getChannel(channelName).publish(null, new HashMap<>());
 
         Assert.assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
 
@@ -233,8 +233,8 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         // publish response to send, so the lazy message will be sent with it.
         // Send first the long lazy and then the short lazy, to verify that
         // timeouts are properly respected.
-        bayeux.getChannel(longLazyChannelName).publish(null, new HashMap<String, Object>());
-        bayeux.getChannel(shortLazyChannelName).publish(null, new HashMap<String, Object>());
+        bayeux.getChannel(longLazyChannelName).publish(null, new HashMap<>());
+        bayeux.getChannel(shortLazyChannelName).publish(null, new HashMap<>());
 
         Assert.assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
 
@@ -310,7 +310,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         // Send first the long lazy and then the short lazy, to verify that
         // timeouts are properly respected.
         begin.set(System.nanoTime());
-        bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>(), null);
+        bayeux.getChannel(channelName).publish(null, new HashMap<>());
 
         Assert.assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
 
@@ -388,7 +388,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         // Send first the long lazy and then the short lazy, to verify that
         // timeouts are properly respected.
         begin.set(System.nanoTime());
-        bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>(), null);
+        bayeux.getChannel(channelName).publish(null, new HashMap<>());
 
         Assert.assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
 
@@ -447,7 +447,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
                 {
                     // Add a lazy message on the queue while the /meta/connect is on the client
                     begin.set(System.nanoTime());
-                    bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>(), null);
+                    bayeux.getChannel(channelName).publish(null, new HashMap<>());
                 }
             }
         });
@@ -507,7 +507,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
                 });
             }
         });
-        bayeux.getChannel(childChannelName).publish(null, "data", null);
+        bayeux.getChannel(childChannelName).publish(null, "data");
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -550,7 +550,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
                 });
             }
         });
-        bayeux.getChannel(childChannelName).publish(null, "data", null);
+        bayeux.getChannel(childChannelName).publish(null, "data");
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }

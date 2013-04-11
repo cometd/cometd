@@ -37,7 +37,9 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.BayeuxClient.State;
 import org.cometd.common.HashMapMessage;
+import org.cometd.common.TransportException;
 import org.cometd.server.DefaultSecurityPolicy;
+import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;
 import org.junit.Before;
@@ -456,7 +458,19 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         // No transports on server, to make the client fail
         bayeux.setAllowedTransports();
 
-        BayeuxClient client = newBayeuxClient();
+        WebSocketTransport transport = WebSocketTransport.create(null, wsClient);
+        transport.setDebugEnabled(debugTests());
+        BayeuxClient client = new BayeuxClient(cometdURL, transport)
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                // Suppress expected exception logging
+                if (!(x instanceof TransportException))
+                    super.onFailure(x, messages);
+            }
+        };
+        client.setDebugEnabled(debugTests());
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {

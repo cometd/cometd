@@ -458,11 +458,4 @@
         </dependencies>
     </dependencyManagement>
 
-    <repositories>
-        <repository>
-            <id>jetty.staging</id>
-            <url>https://oss.sonatype.org/content/repositories/jetty-547</url>
-        </repository>
-    </repositories>
-
 </project>

@@ -25,7 +25,6 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -67,7 +66,7 @@ public abstract class AbstractBayeuxServerTest
         cometdServlet = new CometDServlet();
         ServletHolder cometdServletHolder = new ServletHolder(cometdServlet);
         if (options == null)
-            options = new HashMap<String, String>();
+            options = new HashMap<>();
         options.put("timeout", String.valueOf(timeout));
         if (Boolean.getBoolean("debugTests"))
         {

@@ -165,7 +165,7 @@ public class BayeuxClientTest extends ClientServerTest
             public void onFailure(Throwable x, Message[] messages)
             {
                 // Suppress logging of expected exception
-                if (!(x instanceof ProtocolException))
+                if (!(x instanceof TransportException))
                     super.onFailure(x, messages);
             }
         };

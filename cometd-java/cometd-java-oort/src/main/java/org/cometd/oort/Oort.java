@@ -54,6 +54,10 @@ import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -78,6 +82,7 @@ import org.slf4j.LoggerFactory;
  * @see OortMulticastConfigServlet
  * @see OortStaticConfigServlet
  */
+@ManagedObject("CometD cloud node")
 public class Oort extends ContainerLifeCycle
 {
     public final static String OORT_ATTRIBUTE = Oort.class.getName();
@@ -205,6 +210,7 @@ public class Oort extends ContainerLifeCycle
         super.doStop();
     }
 
+    @ManagedAttribute(value = "The BayeuxServer of this Oort", readonly = true)
     public BayeuxServer getBayeuxServer()
     {
         return _bayeux;
@@ -213,16 +219,19 @@ public class Oort extends ContainerLifeCycle
     /**
      * @return the public absolute URL of the Oort CometD server
      */
+    @ManagedAttribute(value = "The URL of this Oort", readonly = true)
     public String getURL()
     {
         return _url;
     }
 
+    @ManagedAttribute(value = "The unique ID of this Oort", readonly = true)
     public String getId()
     {
         return _id;
     }
 
+    @ManagedAttribute("The secret of this Oort")
     public String getSecret()
     {
         return _secret;
@@ -233,6 +242,7 @@ public class Oort extends ContainerLifeCycle
         this._secret = secret;
     }
 
+    @ManagedAttribute("Whether log debugging for this Oort is enabled")
     public boolean isDebugEnabled()
     {
         return _debug;
@@ -251,6 +261,7 @@ public class Oort extends ContainerLifeCycle
             _logger.debug(message, args);
     }
 
+    @ManagedAttribute("Whether log debugging for CometD clients used by Oort is enabled")
     public boolean isClientDebugEnabled()
     {
         return _clientDebug;
@@ -263,6 +274,7 @@ public class Oort extends ContainerLifeCycle
             cometInfo.comet.setDebugEnabled(clientDebugEnabled);
     }
 
+    @ManagedAttribute("Whether the acknowledgement extension is enabled")
     public boolean isAckExtensionEnabled()
     {
         return _ackExtensionEnabled;
@@ -411,6 +423,7 @@ public class Oort extends ContainerLifeCycle
     /**
      * @return the set of known Oort comet servers URLs.
      */
+    @ManagedAttribute(value = "URLs of known Oorts in the cluster", readonly = true)
     public Set<String> getKnownComets()
     {
         Set<String> result = new HashSet<>();
@@ -456,7 +469,8 @@ public class Oort extends ContainerLifeCycle
      *
      * @param channelName the channel to observe
      */
-    public void observeChannel(String channelName)
+    @ManagedOperation(value = "Observes the given channel", impact = "ACTION")
+    public void observeChannel(@Name(value = "channel", description = "The channel to observe") String channelName)
     {
         if (!ChannelId.isBroadcast(channelName))
             throw new IllegalArgumentException("Channel " + channelName + " cannot be observed because is not a broadcast channel");
@@ -469,7 +483,8 @@ public class Oort extends ContainerLifeCycle
         }
     }
 
-    public void deobserveChannel(String channelId)
+    @ManagedOperation(value = "Deobserves the given channel", impact = "ACTION")
+    public void deobserveChannel(@Name(value = "channel", description = "The channel to deobserve") String channelId)
     {
         if (_channels.remove(channelId) != null)
         {

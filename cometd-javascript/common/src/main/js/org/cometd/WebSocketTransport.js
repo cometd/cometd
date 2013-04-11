@@ -297,8 +297,8 @@ org.cometd.WebSocketTransport = function()
                 _connected = false;
             }
             envelope.onFailure(_webSocket, envelope.messages, {
-                websocketCode: code,
-                reason: reason
+                websocketCode: event.code,
+                reason: event.reason
             });
         }
         _envelopes = {};

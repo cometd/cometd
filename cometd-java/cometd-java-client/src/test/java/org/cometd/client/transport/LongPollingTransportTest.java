@@ -18,7 +18,6 @@ package org.cometd.client.transport;
 
 import java.io.OutputStream;
 import java.net.ConnectException;
-import java.net.ProtocolException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
@@ -31,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
 import org.cometd.common.HashMapMessage;
+import org.cometd.common.TransportException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.junit.Rule;
@@ -205,7 +205,7 @@ public class LongPollingTransportTest
                     @Override
                     public void onFailure(Throwable failure, Message[] messages)
                     {
-                        if (failure instanceof ProtocolException)
+                        if (failure instanceof TransportException)
                             latch.countDown();
                     }
                 });

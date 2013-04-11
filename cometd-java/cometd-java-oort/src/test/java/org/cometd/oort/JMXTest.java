@@ -18,6 +18,8 @@ package org.cometd.oort;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -28,12 +30,11 @@ import javax.servlet.ServletResponse;
 
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.CometdServlet;
+import org.cometd.server.CometDServlet;
 import org.cometd.websocket.server.WebSocketTransport;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Assert;
@@ -45,12 +46,11 @@ public class JMXTest
     public void testJMX() throws Exception
     {
         Server server = new Server();
-        Connector connector = new SelectChannelConnector();
+        ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
         MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
-        server.getContainer().addEventListener(mbeanContainer);
         server.addBean(mbeanContainer);
 
         String contextPath = "";
@@ -60,7 +60,7 @@ public class JMXTest
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, value);
 
         // CometD servlet
-        ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
+        ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
         if (Boolean.getBoolean("debugTests"))
@@ -112,7 +112,7 @@ public class JMXTest
     public void testPortableJMX() throws Exception
     {
         Server server = new Server();
-        Connector connector = new SelectChannelConnector();
+        ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
         String contextPath = "";
@@ -122,7 +122,7 @@ public class JMXTest
         context.setInitParameter(ServletContextHandler.MANAGED_ATTRIBUTES, value);
 
         // CometD servlet
-        ServletHolder cometdServletHolder = new ServletHolder(CometdServlet.class);
+        ServletHolder cometdServletHolder = new ServletHolder(CometDServlet.class);
         cometdServletHolder.setInitParameter("timeout", "10000");
         cometdServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
         if (Boolean.getBoolean("debugTests"))
@@ -150,23 +150,17 @@ public class JMXTest
 
     public static class CometDJMXExporter extends GenericServlet
     {
+        private final List<Object> mbeans = new ArrayList<>();
         private volatile MBeanContainer mbeanContainer;
 
         @Override
         public void init() throws ServletException
         {
-            try
-            {
-                mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-                BayeuxServer bayeuxServer = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
-                mbeanContainer.addBean(bayeuxServer);
-                // Add other components
-                mbeanContainer.start();
-            }
-            catch (Exception x)
-            {
-                throw new ServletException(x);
-            }
+            mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+            BayeuxServer bayeuxServer = (BayeuxServer)getServletContext().getAttribute(BayeuxServer.ATTRIBUTE);
+            mbeanContainer.beanAdded(null, bayeuxServer);
+            mbeans.add(bayeuxServer);
+            // Add other components
         }
 
         @Override
@@ -178,13 +172,8 @@ public class JMXTest
         @Override
         public void destroy()
         {
-            try
-            {
-                mbeanContainer.stop();
-            }
-            catch (Exception ignored)
-            {
-            }
+            for (int i = mbeans.size() - 1; i >= 0; --i)
+                mbeanContainer.beanRemoved(null, mbeans.get(i));
         }
     }
 }

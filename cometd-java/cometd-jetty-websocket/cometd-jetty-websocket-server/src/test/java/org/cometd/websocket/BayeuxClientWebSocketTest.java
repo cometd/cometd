@@ -18,7 +18,6 @@ package org.cometd.websocket;
 
 import java.io.EOFException;
 import java.net.ConnectException;
-import java.net.ProtocolException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;

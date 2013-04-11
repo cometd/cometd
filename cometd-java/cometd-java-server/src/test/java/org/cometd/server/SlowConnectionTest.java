@@ -17,11 +17,14 @@
 package org.cometd.server;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URI;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.DispatcherType;
@@ -34,8 +37,13 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -50,7 +58,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
     public void testSessionSweptDoesNotSendReconnectNoneAdvice() throws Exception
     {
         long maxInterval = 1000;
-        Map<String, String> options = new HashMap<String, String>();
+        Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
         startServer(options);
 
@@ -68,44 +76,38 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
             }
         });
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send();
+        Assert.assertEquals(200, response.getStatus());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange connect1 = newBayeuxExchange("[{" +
+        Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect1.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect1);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        Assert.assertEquals(200, connect1.getResponseStatus());
+        response = connect1.send();
+        Assert.assertEquals(200, response.getStatus());
 
         // Do not send the second connect, so the sweeper can do its job
         Assert.assertTrue(sweeperLatch.await(2 * maxInterval, TimeUnit.MILLISECONDS));
 
         // Send the second connect, we should not get the reconnect:"none" advice
-        ContentExchange connect2 = newBayeuxExchange("[{" +
+        Request connect2 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect2.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect2);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect2.waitForDone());
-        Assert.assertEquals(200, connect2.getResponseStatus());
+        response = connect2.send();
+        Assert.assertEquals(200, response.getStatus());
 
-        Message.Mutable reply = new JettyJSONContextClient().parse(connect2.getResponseContent())[0];
+        Message.Mutable reply = new JettyJSONContextClient().parse(response.getContentAsString())[0];
         Assert.assertEquals(Channel.META_CONNECT, reply.getChannel());
         Map<String, Object> advice = reply.getAdvice(false);
         if (advice != null)
@@ -116,7 +118,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
     public void testSessionSweptConcurrentlyDoesNotSendReconnectNoneAdvice() throws Exception
     {
         final long maxInterval = 1000;
-        Map<String, String> options = new HashMap<String, String>();
+        Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
         startServer(options);
 
@@ -151,32 +153,28 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
             }
         });
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send();
+        Assert.assertEquals(200, response.getStatus());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange connect1 = newBayeuxExchange("[{" +
+        Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect1.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect1);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        Assert.assertEquals(200, connect1.getResponseStatus());
+        response = connect1.send();
+        Assert.assertEquals(200, response.getStatus());
 
         Assert.assertTrue(sweeperLatch.await(maxInterval, TimeUnit.MILLISECONDS));
 
-        Message.Mutable reply = new JettyJSONContextClient().parse(connect1.getResponseContent())[0];
+        Message.Mutable reply = new JettyJSONContextClient().parse(response.getContentAsString())[0];
         Assert.assertEquals(Channel.META_CONNECT, reply.getChannel());
         Map<String, Object> advice = reply.getAdvice(false);
         if (advice != null)
@@ -187,7 +185,7 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
     public void testSessionSweptWhileWritingQueueDoesNotSendReconnectNoneAdvice() throws Exception
     {
         final long maxInterval = 1000;
-        Map<String, String> options = new HashMap<String, String>();
+        Map<String, String> options = new HashMap<>();
         options.put(AbstractServerTransport.MAX_INTERVAL_OPTION, String.valueOf(maxInterval));
         startServer(options);
 
@@ -235,32 +233,28 @@ public class SlowConnectionTest extends AbstractBayeuxClientServerTest
             }
         });
 
-        ContentExchange handshake = newBayeuxExchange("[{" +
+        Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +
                 "\"minimumVersion\": \"1.0\"," +
                 "\"supportedConnectionTypes\": [\"long-polling\"]" +
                 "}]");
-        httpClient.send(handshake);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, handshake.waitForDone());
-        Assert.assertEquals(200, handshake.getResponseStatus());
+        ContentResponse response = handshake.send();
+        Assert.assertEquals(200, response.getStatus());
 
-        String clientId = extractClientId(handshake);
-        String bayeuxCookie = extractBayeuxCookie(handshake);
+        String clientId = extractClientId(response);
 
-        ContentExchange connect1 = newBayeuxExchange("[{" +
+        Request connect1 = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/connect\"," +
                 "\"clientId\": \"" + clientId + "\"," +
                 "\"connectionType\": \"long-polling\"" +
                 "}]");
-        connect1.setRequestHeader(HttpHeaders.COOKIE, bayeuxCookie);
-        httpClient.send(connect1);
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, connect1.waitForDone());
-        Assert.assertEquals(200, connect1.getResponseStatus());
+        response = connect1.send();
+        Assert.assertEquals(200, response.getStatus());
 
         Assert.assertTrue(sweeperLatch.await(maxInterval, TimeUnit.MILLISECONDS));
 
-        Message.Mutable[] replies = new JettyJSONContextClient().parse(connect1.getResponseContent());
+        Message.Mutable[] replies = new JettyJSONContextClient().parse(response.getContentAsString());
         Message.Mutable reply = replies[replies.length - 1];
         Assert.assertEquals(Channel.META_CONNECT, reply.getChannel());
         Map<String, Object> advice = reply.getAdvice(false);

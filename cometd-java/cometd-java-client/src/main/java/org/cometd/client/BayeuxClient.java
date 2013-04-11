@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,7 @@ import org.cometd.client.transport.TransportListener;
 import org.cometd.client.transport.TransportRegistry;
 import org.cometd.common.AbstractClientSession;
 import org.cometd.common.HashMapMessage;
+import org.cometd.common.TransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -984,9 +986,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         if (message.isPublishReply())
         {
             String messageId = message.getId();
-            ClientSessionChannel.MessageListener listener = messageId == null ?
-                    (ClientSessionChannel.MessageListener)message.remove(PUBLISH_CALLBACK_KEY) :
-                    publishCallbacks.remove(messageId);
+            ClientSessionChannel.MessageListener listener = messageId == null ? publishCallback : publishCallbacks.remove(messageId);
             if (listener != null)
                 notifyListener(listener, message);
         }

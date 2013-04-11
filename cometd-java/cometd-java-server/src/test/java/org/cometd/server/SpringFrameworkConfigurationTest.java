@@ -18,7 +18,7 @@ package org.cometd.server;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.junit.Ignore;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.web.context.ContextLoader;
 import org.springframework.web.context.ContextLoaderListener;
@@ -30,9 +30,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
-// TODO
-@Ignore("Test fails because in Jetty 9 servlets are eagerly initialized (while before they were lazily initialized)" +
-        "so the Spring context listener runs after the CometD servlet, causing the test to fail")
 public class SpringFrameworkConfigurationTest extends AbstractBayeuxClientServerTest
 {
     @Before

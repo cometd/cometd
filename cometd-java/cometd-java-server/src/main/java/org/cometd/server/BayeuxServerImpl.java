@@ -52,6 +52,10 @@ import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.JSONContext;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.slf4j.Logger;
@@ -64,6 +68,7 @@ import org.slf4j.LoggerFactory;
  * invalid subscribers and non-persistent channels</td>
  * </dl>
  */
+@ManagedObject("The CometD server")
 public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 {
     public static final String LOG_LEVEL = "logLevel";
@@ -279,7 +284,8 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     /**
      * @see org.cometd.bayeux.Bayeux#getOption(java.lang.String)
      */
-    public Object getOption(String qualifiedName)
+    @ManagedOperation(value = "The value of the given configuration option", impact = "INFO")
+    public Object getOption(@Name("optionName") String qualifiedName)
     {
         return _options.get(qualifiedName);
     }
@@ -1070,6 +1076,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return new ArrayList<>(_transports.values());
     }
 
+    @ManagedAttribute(value = "The transports allowed by this server", readonly = true)
     public List<String> getAllowedTransports()
     {
         return Collections.unmodifiableList(_allowedTransports);
@@ -1122,6 +1129,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return reply;
     }
 
+    @ManagedOperation(value = "Sweeps channels and sessions of this BayeuxServer", impact = "ACTION")
     public void sweep()
     {
         for (ServerChannelImpl channel : _channels.values())
@@ -1138,6 +1146,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             session.sweep(now);
     }
 
+    @ManagedOperation(value = "Dumps the BayeuxServer state", impact = "INFO")
     public String dump()
     {
         StringBuilder b = new StringBuilder();

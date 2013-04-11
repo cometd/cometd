@@ -21,7 +21,10 @@ import java.util.TreeSet;
 
 import org.cometd.oort.Oort;
 import org.eclipse.jetty.jmx.ObjectMBean;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
+@ManagedObject
 public class OortMBean extends ObjectMBean
 {
     private final Oort oort;
@@ -33,8 +36,9 @@ public class OortMBean extends ObjectMBean
     }
 
     // Replicated here because ConcurrentMap.KeySet is not serializable
+    @ManagedAttribute(value = "Channels that are observed among Oort instances", readonly = true)
     public Set<String> getObservedChannels()
     {
-        return new TreeSet<String>(oort.getObservedChannels());
+        return new TreeSet<>(oort.getObservedChannels());
     }
 }

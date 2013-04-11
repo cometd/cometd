@@ -36,6 +36,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 public abstract class AbstractCometDTest
@@ -239,7 +240,7 @@ public abstract class AbstractCometDTest
         return (T)threadModel.evaluate(scriptName, script);
     }
 
-    protected void defineClass(Class clazz) throws InvocationTargetException, InstantiationException, IllegalAccessException
+    protected void defineClass(Class<? extends Scriptable> clazz) throws InvocationTargetException, InstantiationException, IllegalAccessException
     {
         threadModel.define(clazz);
     }

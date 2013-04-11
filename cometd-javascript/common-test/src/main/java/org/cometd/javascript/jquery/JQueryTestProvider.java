@@ -28,6 +28,10 @@ public class JQueryTestProvider implements TestProvider
         // Order of the script evaluation is important, as they depend one from the other
         threadModel.evaluate(new URL(contextURL + "/json2.js"));
         threadModel.evaluate(new URL(contextURL + "/env.js"));
+        // Rhino 1.7 puts the top Java packages in the root scope.
+        // Unfortunately, "org" is also used as a JavaScript namespace,
+        // so we need to remove the Java package to avoid clashes.
+        threadModel.remove("org");
         threadModel.evaluate("window_location", "window.location = '" + contextURL + "'");
         threadModel.evaluate(new URL(contextURL + "/jquery/jquery-1.9.1.js"));
         threadModel.evaluate(new URL(contextURL + "/org/cometd.js"));
