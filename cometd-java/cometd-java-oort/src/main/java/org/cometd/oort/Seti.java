@@ -78,7 +78,7 @@ public class Seti extends AbstractLifeCycle
         _logger = LoggerFactory.getLogger(getClass().getName() + "." + oort.getURL());
         _oort = oort;
         _setiId = oort.getURL().replace("://", "_").replace(":", "_").replace("/", "_");
-        _session = oort.getBayeuxServer().newLocalSession("seti");
+        _session = oort.getBayeuxServer().newLocalSession(_setiId);
         _debug = oort.isDebugEnabled();
     }
 
@@ -238,6 +238,7 @@ public class Seti extends AbstractLifeCycle
      * @return whether the given userId has been associated via {@link #associate(String, ServerSession)}
      * @see #associate(String, ServerSession)
      * @see #isPresent(String)
+     * @see #getAssociationCount(String)
      */
     public boolean isAssociated(String userId)
     {
@@ -256,10 +257,34 @@ public class Seti extends AbstractLifeCycle
     }
 
     /**
+     * @param userId the user identifier to test for association count
+     * @return the number of local associations
+     * @see #isAssociated(String)
+     * @see #getPresenceCount(String)
+     */
+    public int getAssociationCount(String userId)
+    {
+        synchronized (_uid2Location)
+        {
+            Set<Location> locations = _uid2Location.get(userId);
+            if (locations == null)
+                return 0;
+            int result = 0;
+            for (Location location : locations)
+            {
+                if (location instanceof LocalLocation)
+                    ++result;
+            }
+            return result;
+        }
+    }
+
+    /**
      * @param userId the user identifier to test for presence
      * @return whether the given userId is present on the cloud (and therefore has been associated
      * either locally or remotely)
      * @see #isAssociated(String)
+     * @see #getPresenceCount(String)
      */
     public boolean isPresent(String userId)
     {
@@ -267,6 +292,21 @@ public class Seti extends AbstractLifeCycle
         {
             Set<Location> locations = _uid2Location.get(userId);
             return locations != null;
+        }
+    }
+
+    /**
+     * @param userId the user identifier to test for presence count
+     * @return the number of associations (local or remote) on the cloud
+     * @see #isPresent(String)
+     * @see #getAssociationCount(String)
+     */
+    public int getPresenceCount(String userId)
+    {
+        synchronized (_uid2Location)
+        {
+            Set<Location> locations = _uid2Location.get(userId);
+            return locations == null ? 0 : locations.size();
         }
     }
 
@@ -321,6 +361,17 @@ public class Seti extends AbstractLifeCycle
             }
             debug("Associations {}", _uid2Location);
             return result;
+        }
+    }
+
+    /**
+     * @return the set of {@code userId}s known to this Seti
+     */
+    public Set<String> getUserIds()
+    {
+        synchronized (_uid2Location)
+        {
+            return new HashSet<String>(_uid2Location.keySet());
         }
     }
 
@@ -405,26 +456,25 @@ public class Seti extends AbstractLifeCycle
      */
     protected void receivePresence(Message message)
     {
-        Map<String, Object> presence = message.getDataAsMap();
-        String setiId = (String)presence.get(SetiPresence.SETI_ID_FIELD);
-        if (_setiId.equals(setiId))
-            return;
-
         debug("Received presence message {}", message);
 
-        String userId = (String)presence.get(SetiPresence.USER_ID_FIELD);
+        Map<String, Object> presence = message.getDataAsMap();
+        String setiId = (String)presence.get(SetiPresence.SETI_ID_FIELD);
         boolean present = (Boolean)presence.get(SetiPresence.PRESENCE_FIELD);
-        SetiLocation location = new SetiLocation(userId, "/seti/" + setiId);
+        if (!_setiId.equals(setiId))
+        {
+            String userId = (String)presence.get(SetiPresence.USER_ID_FIELD);
+            SetiLocation location = new SetiLocation(userId, "/seti/" + setiId);
+            if (present)
+                associate(userId, location);
+            else
+                disassociate(userId, location);
+        }
+
         if (present)
-        {
-            associate(userId, location);
             notifyPresenceAdded(presence);
-        }
         else
-        {
-            disassociate(userId, location);
             notifyPresenceRemoved(presence);
-        }
     }
 
     public void addPresenceListener(PresenceListener listener)
@@ -510,6 +560,12 @@ public class Seti extends AbstractLifeCycle
         debug("Received message {} for locations {}", message, copy);
         for (Location location : copy)
             location.receive(userId, channel, data);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s]", getClass().getName(), getId());
     }
 
     /**
@@ -698,14 +754,46 @@ public class Seti extends AbstractLifeCycle
                 this.url = url;
             }
 
+            /**
+             * @return the local Seti object
+             */
+            public Seti getSeti()
+            {
+                return (Seti)getSource();
+            }
+
+            /**
+             * @return the userId associated to this presence event
+             */
             public String getUserId()
             {
                 return userId;
             }
 
+            /**
+             * @return the Oort URL where this presence event happened
+             */
             public String getURL()
             {
                 return url;
+            }
+
+            /**
+             * @return whether this presence event happened on the local Seti or on a remote Seti
+             */
+            public boolean isLocal()
+            {
+                return getURL().equals(getSeti().getOort().getURL());
+            }
+
+            @Override
+            public String toString()
+            {
+                return String.format("%s[%s %s on %s]",
+                        getClass().getName(),
+                        getUserId(),
+                        isLocal() ? "local" : "remote",
+                        getSeti());
             }
         }
     }

@@ -58,4 +58,10 @@ public class BayeuxServerImplMBean extends ObjectMBean
     {
         return new TreeSet<String>(bayeux.getKnownTransportNames());
     }
+
+    // Replicated here because ConcurrentMap.KeySet is not serializable
+    public Set<String> getOptionNames()
+    {
+        return new TreeSet<String>(bayeux.getOptionNames());
+    }
 }
