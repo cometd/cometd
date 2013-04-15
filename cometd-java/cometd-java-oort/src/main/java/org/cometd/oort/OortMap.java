@@ -71,7 +71,7 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         Map<String, Object> entry = new HashMap<String, Object>(2);
         entry.put(KEY_FIELD, key);
         entry.put(VALUE_FIELD, value);
-        Info<List<Map.Entry<K, V>>> info = new Info<List<Map.Entry<K, V>>>();
+        Info<List<Map.Entry<K, V>>> info = new Info<List<Map.Entry<K, V>>>(5);
         info.put(Info.OORT_URL_FIELD, getOort().getURL());
         info.put(Info.NAME_FIELD, getName());
         info.put(Info.OBJECT_FIELD, entry);
@@ -94,7 +94,7 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
     {
         Map<String, Object> entry = new HashMap<String, Object>(1);
         entry.put(KEY_FIELD, key);
-        Info<List<Map.Entry<K, V>>> info = new Info<List<Map.Entry<K, V>>>();
+        Info<List<Map.Entry<K, V>>> info = new Info<List<Map.Entry<K, V>>>(5);
         info.put(Info.OORT_URL_FIELD, getOort().getURL());
         info.put(Info.NAME_FIELD, getName());
         info.put(Info.OBJECT_FIELD, entry);
@@ -140,12 +140,6 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         }
         else
         {
-            Object object = data.get(Info.OBJECT_FIELD);
-            if (!(object instanceof ConcurrentMap))
-            {
-                ConcurrentMap<K, V> map = getFactory().newObject(object);
-                data.put(Info.OBJECT_FIELD, map);
-            }
             super.onObject(data);
         }
     }

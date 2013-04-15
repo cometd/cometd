@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.server.Server;
@@ -229,6 +230,7 @@ public class OortObjectTest extends OortTest
 
         long value1 = 2;
         oortObject1.setLocal(value1);
+
         OortObjectTest.OortObjectInitialListener<Long> listener = new OortObjectTest.OortObjectInitialListener<Long>(2);
         oortObject1.addListener(listener);
         oortObject2.addListener(listener);
@@ -256,6 +258,53 @@ public class OortObjectTest extends OortTest
         Assert.assertEquals(value1 + value2, sum);
     }
 
+    @Test
+    public void testAtomicLongSharedObject() throws Exception
+    {
+        String name = "test";
+        OortObject.Factory<AtomicLong> factory = OortObjectFactories.forConcurrentLong();
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
+        oort1.getBayeuxServer().addListener(subscriptionListener);
+        oort2.getBayeuxServer().addListener(subscriptionListener);
+        OortObject<AtomicLong> oortObject1 = new OortObject<AtomicLong>(oort1, name, factory);
+        OortObject<AtomicLong> oortObject2 = new OortObject<AtomicLong>(oort2, name, factory);
+        Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
+
+        long value1 = 2;
+        oortObject1.getLocal().set(value1);
+
+        OortObjectTest.OortObjectInitialListener<AtomicLong> listener = new OortObjectTest.OortObjectInitialListener<AtomicLong>(2);
+        oortObject1.addListener(listener);
+        oortObject2.addListener(listener);
+        oortObject1.share();
+        Assert.assertTrue(listener.await(5, TimeUnit.SECONDS));
+
+        long value2 = 3;
+        oortObject2.getLocal().set(value2);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        oortObject1.addListener(new OortObject.Listener.Adapter<AtomicLong>()
+        {
+            @Override
+            public void onUpdated(OortObject.Info<AtomicLong> oldInfo, OortObject.Info<AtomicLong> newInfo)
+            {
+                latch.countDown();
+            }
+        });
+        oortObject2.share();
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        AtomicLong sum = oortObject1.merge(OortObjectMergers.concurrentLongSum());
+
+        Assert.assertEquals(value1 + value2, sum.get());
+    }
+
+    /**
+     * An {@link OortObject.Listener} that counts down a latch every time it receives an update
+     * from a node that was not known before.
+     * @param <T>
+     */
     public static class OortObjectInitialListener<T> extends OortObject.Listener.Adapter<T>
     {
         private final CountDownLatch latch;

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class OortObjectMergers
 {
@@ -33,6 +34,11 @@ public class OortObjectMergers
     public static OortObject.Merger<Long> longSum()
     {
         return new LongSumMerger();
+    }
+
+    public static OortObject.Merger<AtomicLong> concurrentLongSum()
+    {
+        return new AtomicLongSumMerger();
     }
 
     public static <K, V> OortObject.Merger<Map<K, V>> mapUnion()
@@ -57,6 +63,17 @@ public class OortObjectMergers
             long sum = 0;
             for (OortObject.Info<Long> info : infos)
                 sum += info.getObject();
+            return sum;
+        }
+    }
+
+    private static class AtomicLongSumMerger implements OortObject.Merger<AtomicLong>
+    {
+        public AtomicLong merge(Collection<OortObject.Info<AtomicLong>> infos)
+        {
+            AtomicLong sum = new AtomicLong();
+            for (OortObject.Info<AtomicLong> info : infos)
+                sum.addAndGet(info.getObject().get());
             return sum;
         }
     }

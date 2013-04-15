@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class OortObjectFactories
 {
@@ -32,6 +33,11 @@ public class OortObjectFactories
     public static OortObject.Factory<Long> forLong()
     {
         return new LongFactory();
+    }
+
+    public static OortObject.Factory<AtomicLong> forConcurrentLong()
+    {
+        return new AtomicLongFactory();
     }
 
     public static <K, V> OortObject.Factory<Map<K, V>> forMap()
@@ -58,6 +64,20 @@ public class OortObjectFactories
             if (representation instanceof Number)
                 return ((Number)representation).longValue();
             throw new IllegalArgumentException();
+        }
+    }
+
+    private static class AtomicLongFactory implements OortObject.Factory<AtomicLong>
+    {
+        public AtomicLong newObject(Object representation)
+        {
+            if (representation == null)
+                return new AtomicLong();
+            if (representation instanceof AtomicLong)
+                return (AtomicLong)representation;
+            if (representation instanceof Number)
+                return new AtomicLong(((Number)representation).longValue());
+            return null;
         }
     }
 

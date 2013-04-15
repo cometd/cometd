@@ -183,32 +183,43 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
 
     protected void onObject(Map<String, Object> data)
     {
-        Info<T> newInfo = new Info<T>(data);
-        logger.debug("Received remote info {}", newInfo);
+        logger.debug("Received remote data {}", data);
+
+        // Convert the object, for example from a JSON serialized Map to a ConcurrentMap
+        data.put(Info.OBJECT_FIELD, getFactory().newObject(data.get(Info.OBJECT_FIELD)));
 
         // Default behavior is to replace atomically
+        Info<T> newInfo = new Info<T>(data);
         Info<T> oldInfo;
         String newOortURL = newInfo.getOortURL();
-        boolean initial = Info.TYPE_FIELD_INITIAL_VALUE.equals(newInfo.get(Info.TYPE_FIELD));
+        boolean initial = Info.TYPE_FIELD_INITIAL_VALUE.equals(data.get(Info.TYPE_FIELD));
         if (initial)
+        {
             // Make sure we don't overwrite existing data with initial data
             oldInfo = infos.putIfAbsent(newOortURL, newInfo);
+            if (oldInfo == null)
+            {
+                logger.debug("Initialized remote info {}", newInfo);
+                notifyUpdated(oldInfo, newInfo);
+            }
+        }
         else
+        {
             oldInfo = infos.put(newOortURL, newInfo);
-
-        if (!initial || oldInfo == null)
+            logger.debug("Replaced remote info {} with {}", oldInfo, newInfo);
             notifyUpdated(oldInfo, newInfo);
+        }
 
         // If we did not have an info for the new Oort, then it's a
         // new OortObject and we need to push our own data to it.
         if (oldInfo == null)
         {
-            Info<T> localInfo = getInfo(oort.getURL());
-            localInfo.put(Info.TYPE_FIELD, Info.TYPE_FIELD_INITIAL_VALUE);
-            logger.debug("Pushing (to {}) local info {}", newOortURL, localInfo);
+            Map<String, Object> localData = new HashMap<String, Object>(getInfo(oort.getURL()));
+            localData.put(Info.TYPE_FIELD, Info.TYPE_FIELD_INITIAL_VALUE);
+            logger.debug("Pushing (to {}) local data {}", newOortURL, localData);
             OortComet oortComet = oort.getComet(newOortURL);
             if (oortComet != null)
-                oortComet.getChannel(OORT_OBJECTS_CHANNEL).publish(localInfo);
+                oortComet.getChannel(OORT_OBJECTS_CHANNEL).publish(localData);
         }
     }
 
@@ -221,7 +232,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
     {
         if (local == null)
             throw new NullPointerException();
-        Info<T> info = new Info<T>();
+        Info<T> info = new Info<T>(3);
         info.put(Info.OORT_URL_FIELD, oort.getURL());
         info.put(Info.NAME_FIELD, getName());
         info.put(Info.OBJECT_FIELD, local);
@@ -269,13 +280,19 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         public static final String TYPE_FIELD_INITIAL_VALUE = "initial";
         public static final String ACTION_FIELD = "action";
 
-        public Info()
+        protected Info(int capacity)
         {
+            super(capacity);
         }
 
-        public Info(Map<? extends String, ?> map)
+        protected Info(Map<? extends String, ?> map)
         {
-            super(map);
+            super(3);
+            // Constructor used for storage, only keep the
+            // required fields discarding metadata fields
+            put(OORT_URL_FIELD, map.get(OORT_URL_FIELD));
+            put(NAME_FIELD, map.get(NAME_FIELD));
+            put(OBJECT_FIELD, map.get(OBJECT_FIELD));
         }
 
         public String getOortURL()

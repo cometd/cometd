@@ -73,7 +73,7 @@ public class OortList<E> extends OortObject<List<E>>
             if (!list.contains(element))
                 throw new IllegalArgumentException("Element " + element + " is not an element of " + list);
 
-        Info<List<E>> info = new Info<List<E>>();
+        Info<List<E>> info = new Info<List<E>>(5);
         info.put(Info.OORT_URL_FIELD, getOort().getURL());
         info.put(Info.NAME_FIELD, getName());
         info.put(Info.OBJECT_FIELD, elements);
@@ -98,7 +98,7 @@ public class OortList<E> extends OortObject<List<E>>
 
     protected void shareRemove(E... elements)
     {
-        Info<List<E>> info = new Info<List<E>>();
+        Info<List<E>> info = new Info<List<E>>(5);
         info.put(Info.OORT_URL_FIELD, getOort().getURL());
         info.put(Info.NAME_FIELD, getName());
         info.put(Info.OBJECT_FIELD, elements);
@@ -146,12 +146,6 @@ public class OortList<E> extends OortObject<List<E>>
         }
         else
         {
-            Object object = data.get(Info.OBJECT_FIELD);
-            if (!(object instanceof List))
-            {
-                List<E> list = getFactory().newObject(object);
-                data.put(Info.OBJECT_FIELD, list);
-            }
             super.onObject(data);
         }
     }
