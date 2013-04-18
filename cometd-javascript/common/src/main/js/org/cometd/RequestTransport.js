@@ -60,8 +60,8 @@ org.cometd.RequestTransport = function()
                 var xhr = request.xhr;
                 if (xhr)
                 {
-                    xhr.abort();
                     failure.httpCode = xhr.status;
+                    xhr.abort();
                 }
                 self._debug(errorMessage);
                 self.complete(request, false, request.metaConnect);
