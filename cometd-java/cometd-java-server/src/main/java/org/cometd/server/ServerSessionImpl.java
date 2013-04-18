@@ -554,12 +554,7 @@ public class ServerSessionImpl implements ServerSession
         if (_localSession != null && hasNonLazyMessages())
         {
             for (ServerMessage msg : takeQueue())
-            {
-                if (msg instanceof Message.Mutable)
-                    _localSession.receive((Message.Mutable)msg);
-                else
-                    _localSession.receive(new HashMapMessage(msg));
-            }
+                _localSession.receive(new HashMapMessage(msg));
         }
     }
 
