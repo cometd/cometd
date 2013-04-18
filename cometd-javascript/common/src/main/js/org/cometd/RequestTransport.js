@@ -58,11 +58,8 @@ org.cometd.RequestTransport = function()
                     reason: errorMessage
                 };
                 var xhr = request.xhr;
-                if (xhr)
-                {
-                    xhr.abort();
-                    failure.httpCode = xhr.status;
-                }
+                failure.httpCode = self.xhrStatus(xhr);
+                self.abortXHR(xhr);
                 self._debug(errorMessage);
                 self.complete(request, false, request.metaConnect);
                 envelope.onFailure(xhr, envelope.messages, failure);
@@ -139,10 +136,7 @@ org.cometd.RequestTransport = function()
                         reason: 'Previous request failed'
                     };
                     var xhr = nextRequest.xhr;
-                    if (xhr)
-                    {
-                        failure.httpCode = xhr.status;
-                    }
+                    failure.httpCode = self.xhrStatus(xhr);
                     nextEnvelope.onFailure(xhr, nextEnvelope.messages, failure);
                 }, 0);
             }
@@ -236,18 +230,12 @@ org.cometd.RequestTransport = function()
         {
             var request = _requests[i];
             this._debug('Aborting request', request);
-            if (request.xhr)
-            {
-                request.xhr.abort();
-            }
+            this.abortXHR(request.xhr);
         }
         if (_metaConnectRequest)
         {
             this._debug('Aborting metaConnect request', _metaConnectRequest);
-            if (_metaConnectRequest.xhr)
-            {
-                _metaConnectRequest.xhr.abort();
-            }
+            this.abortXHR(_metaConnectRequest.xhr);
         }
         this.reset();
     };
@@ -258,6 +246,37 @@ org.cometd.RequestTransport = function()
         _metaConnectRequest = null;
         _requests = [];
         _envelopes = [];
+    };
+
+    _self.abortXHR = function(xhr)
+    {
+        if (xhr)
+        {
+            try
+            {
+                xhr.abort();
+            }
+            catch (x)
+            {
+                this._debug(x);
+            }
+        }
+    };
+
+    _self.xhrStatus = function(xhr)
+    {
+        if (xhr)
+        {
+            try
+            {
+                return xhr.status;
+            }
+            catch (x)
+            {
+                this._debug(x);
+            }
+        }
+        return -1;
     };
 
     return _self;

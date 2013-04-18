@@ -60,6 +60,18 @@ org.cometd.CometD = function(name)
         }
     };
 
+    function _fieldValue(object, name)
+    {
+        try
+        {
+            return object[name];
+        }
+        catch (x)
+        {
+            return undefined;
+        }
+    }
+
     /**
      * Mixes in the given objects into the target object by copying the properties.
      * @param deep if the copy must be deep
@@ -82,8 +94,8 @@ org.cometd.CometD = function(name)
 
             for (var propName in object)
             {
-                var prop = object[propName];
-                var targ = result[propName];
+                var prop = _fieldValue(object, propName);
+                var targ = _fieldValue(result, propName);
 
                 // Avoid infinite loops
                 if (prop === target)

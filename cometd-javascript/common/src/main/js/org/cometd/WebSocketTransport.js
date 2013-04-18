@@ -115,7 +115,7 @@ org.cometd.WebSocketTransport = function()
         {
             self._debug('Transport', self.getType(), 'timing out message', message.id, 'after', delay, 'on', webSocket);
             var event = { code: 1000, reason: 'Message Timeout' };
-            webSocket.close(event.code, event.reason);
+            self.webSocketClose(webSocket, event.code, event.reason);
             // Force immediate failure of pending messages to trigger reconnect
             self.onClose(webSocket, event);
         };
@@ -269,7 +269,7 @@ org.cometd.WebSocketTransport = function()
 
         if (close)
         {
-            webSocket.close(1000, 'Disconnect');
+            this.webSocketClose(webSocket, 1000, 'Disconnect');
         }
     };
 
@@ -338,21 +338,25 @@ org.cometd.WebSocketTransport = function()
         _send.call(this, envelope, metaConnect);
     };
 
-    _self.abort = function()
+    _self.webSocketClose = function(webSocket, code, reason)
     {
-        _super.abort();
-        if (_webSocket !== null)
+        if (webSocket)
         {
             try
             {
-                _webSocket.close(1001, 'Abort');
+                webSocket.close(code, reason);
             }
             catch (x)
             {
-                // Firefox may throw, just ignore
                 this._debug(x);
             }
         }
+    };
+
+    _self.abort = function()
+    {
+        _super.abort();
+        this.webSocketClose(_webSocket, 1001, 'Abort');
         this.reset();
     };
 

@@ -864,7 +864,9 @@ public class Oort extends ContainerLifeCycle
                     if (clientCometInfo != null)
                         clientCometInfo.getOortComet().disconnect();
 
-                    notifyCometLeft(serverCometInfo.getURL());
+                    // Do not notify if we are stopping
+                    if (isRunning())
+                        notifyCometLeft(serverCometInfo.getURL());
 
                     break;
                 }
