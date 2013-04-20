@@ -49,7 +49,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest
  		return Arrays.asList(new Object[][] 
  				{ 
  					{ TestJackson2JSONContextServer.class, TestJackson2JSONContextClient.class }, 
- 					{ TestJackson1JSONContextServer.class, TestJackson1JSONContextClient.class } 
+ 					{ TestJackson1JSONContextServer.class, TestJackson1JSONContextClient.class },
  				}
  		);
      }
