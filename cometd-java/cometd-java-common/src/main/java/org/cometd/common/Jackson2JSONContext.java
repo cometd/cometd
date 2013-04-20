@@ -26,12 +26,12 @@ import org.cometd.bayeux.Message;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
+public abstract class Jackson2JSONContext<T extends Message.Mutable, I extends T>
 {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final JavaType rootArrayType;
 
-    protected JacksonJSONContext()
+    protected Jackson2JSONContext()
     {
         rootArrayType = objectMapper.constructType(rootArrayClass());
     }
