@@ -23,16 +23,21 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
+/**
+ * 
+ * Note: to obtain meaningful memory related results from this test you need to ensure that 
+ * the garbage collector doesn't get triggered.
+ * 
+ * To do that you could run the tests with JVM parameters along the lines of
+ * 
+ * -Xmx1024m -Xms1024m -XX:MaxNewSize=512m -XX:NewSize=512m
+ * 
+ * You should also enable verbose garbage collector logging so that you know whether you obtained
+ * usable results (no GCs traced) or whether you should repeat the test with different JVM args.
+ * 
+ */
 public class JettyJacksonComparisonTest
 {
-	
-	private static void fullGC()
-	{
-		for (int i = 0; i < 5; i++) 
-		{
-			System.gc();
-		}
-	}
 	
     @Test
     public void testParse() throws Exception
@@ -64,11 +69,11 @@ public class JettyJacksonComparisonTest
 
         // Jackson 2
         com.fasterxml.jackson.core.JsonFactory jsonFactory = new com.fasterxml.jackson.databind.MappingJsonFactory();
-        fullGC();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             
@@ -87,11 +92,11 @@ public class JettyJacksonComparisonTest
         // Jackson 2
         com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
         com.fasterxml.jackson.databind.JavaType type = objectMapper.constructType(HashMapMessage[].class);
-        fullGC();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
@@ -105,11 +110,11 @@ public class JettyJacksonComparisonTest
 
         // Jackson 2
         byte[] bytes = json.getBytes("UTF-8");
-        fullGC();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
@@ -122,12 +127,12 @@ public class JettyJacksonComparisonTest
         }
 
         // Jackson 2
-        JacksonJSONContextClient jacksonJSONContextClient = new JacksonJSONContextClient();
-        fullGC();
+        Jackson2JSONContextClient jacksonJSONContextClient = new Jackson2JSONContextClient();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             
             long start = System.nanoTime();
@@ -143,11 +148,11 @@ public class JettyJacksonComparisonTest
         
         // Jackson 1
         org.codehaus.jackson.JsonFactory json1Factory = new org.codehaus.jackson.map.MappingJsonFactory();
-        fullGC();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             
@@ -166,11 +171,11 @@ public class JettyJacksonComparisonTest
         // Jackson 1
         org.codehaus.jackson.map.ObjectMapper jackson1objectMapper = new org.codehaus.jackson.map.ObjectMapper();
         org.codehaus.jackson.type.JavaType jackson1type = jackson1objectMapper.constructType(HashMapMessage[].class);
-        fullGC();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
@@ -184,11 +189,11 @@ public class JettyJacksonComparisonTest
 
         // Jackson 1
         bytes = json.getBytes("UTF-8");
-        fullGC();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
@@ -202,11 +207,11 @@ public class JettyJacksonComparisonTest
 
         // Jackson 1
         Jackson1JSONContextClient jackson1JSONContextClient = new Jackson1JSONContextClient();
-        fullGC();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             
             long start = System.nanoTime();
@@ -221,11 +226,11 @@ public class JettyJacksonComparisonTest
 
         // Jetty
         JettyJSONContextClient jettyJSONContextClient = new JettyJSONContextClient();
-        fullGC();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
@@ -264,11 +269,11 @@ public class JettyJacksonComparisonTest
 
         // Jackson 2
         com.fasterxml.jackson.core.JsonFactory jsonFactory = new com.fasterxml.jackson.databind.MappingJsonFactory();
-        fullGC();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
@@ -284,11 +289,11 @@ public class JettyJacksonComparisonTest
 
         // Jackson 2
         com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
-        fullGC();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
@@ -301,12 +306,12 @@ public class JettyJacksonComparisonTest
         }
 
         // Jackson 2
-        JacksonJSONContextClient jacksonJSONContextClient = new JacksonJSONContextClient();
-        fullGC();
+        Jackson2JSONContextClient jacksonJSONContextClient = new Jackson2JSONContextClient();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
@@ -325,11 +330,11 @@ public class JettyJacksonComparisonTest
         
         // Jackson 1
         org.codehaus.jackson.JsonFactory json1Factory = new org.codehaus.jackson.map.MappingJsonFactory();
-        fullGC();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
@@ -345,11 +350,11 @@ public class JettyJacksonComparisonTest
 
         // Jackson 1
         org.codehaus.jackson.map.ObjectMapper jackson1objectMapper = new org.codehaus.jackson.map.ObjectMapper();
-        fullGC();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
@@ -363,11 +368,11 @@ public class JettyJacksonComparisonTest
 
         // Jackson 1
         Jackson1JSONContextClient jackson1JSONContextClient = new Jackson1JSONContextClient();
-        fullGC();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
+        	
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
@@ -381,11 +386,10 @@ public class JettyJacksonComparisonTest
         
         // Jetty
         JettyJSONContextClient jettyJSONContextClient = new JettyJSONContextClient();
-        fullGC();
+        
         
         for (int j = 0; j < iterations; ++j)
         {
-        	fullGC();
             long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
