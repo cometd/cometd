@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -62,7 +61,6 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class BayeuxClientTest extends ClientServerTest
@@ -635,14 +633,7 @@ public class BayeuxClientTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
-    
-    /**
-     * mrossi975: Simone, this test does not pass when I build the project on my local machine 
-     * but I doubt it's anything to do with my changes.
-     * I have set it to @Ignore for now 
-     */
     @Test
-    @Ignore
     public void testURLWithImplicitPort() throws Exception
     {
         final AtomicBoolean listening = new AtomicBoolean();
