@@ -16,44 +16,61 @@
 
 package org.cometd.client;
 
-import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.map.DeserializationContext;
-import org.codehaus.jackson.map.JsonSerializer;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializerProvider;
-import org.codehaus.jackson.map.deser.std.UntypedObjectDeserializer;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.common.JacksonJSONContextClient;
+import org.cometd.common.Jackson1JSONContextClient;
+import org.cometd.common.Jackson2JSONContextClient;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.JacksonJSONContextServer;
+import org.cometd.server.Jackson1JSONContextServer;
+import org.cometd.server.Jackson2JSONContextServer;
 import org.cometd.server.transport.HttpTransport;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class JacksonCustomSerializationTest extends ClientServerTest
 {
+	@Parameters(name= "{index}: Jackson Context Server: {0} Jackson Context Client: {1}")
+ 	public static Iterable<Object[]> data() 
+ 	{
+ 		return Arrays.asList(new Object[][] 
+ 				{ 
+ 					{ TestJackson2JSONContextServer.class, TestJackson2JSONContextClient.class }, 
+ 					{ TestJackson1JSONContextServer.class, TestJackson1JSONContextClient.class },
+ 				}
+ 		);
+     }
+
+	private final String jacksonContextServerClassName;
+	private final String jacksonContextClientClassName;
+
+	public JacksonCustomSerializationTest(final Object jacksonContextServerClass, final Object jacksonContextClientClass) 
+	{
+		this.jacksonContextServerClassName = ((Class<?>) jacksonContextServerClass).getName();
+		this.jacksonContextClientClassName =  ((Class<?>) jacksonContextClientClass).getName();
+	}
+	
     @Test
     public void testJacksonCustomSerialization() throws Exception
     {
         Map<String, String> serverOptions = new HashMap<>();
-        serverOptions.put(BayeuxServerImpl.JSON_CONTEXT, TestJacksonJSONContextServer.class.getName());
+        serverOptions.put(BayeuxServerImpl.JSON_CONTEXT, jacksonContextServerClassName);
         serverOptions.put(HttpTransport.JSON_DEBUG_OPTION, "true");
         Map<String, Object> clientOptions = new HashMap<>();
-        clientOptions.put(ClientTransport.JSON_CONTEXT, new TestJacksonJSONContextClient());
+        clientOptions.put(ClientTransport.JSON_CONTEXT, jacksonContextClientClassName);
 
         startServer(serverOptions);
 
@@ -110,9 +127,9 @@ public class JacksonCustomSerializationTest extends ClientServerTest
         }
     }
 
-    public static class TestJacksonJSONContextServer extends JacksonJSONContextServer
+    public static class TestJackson1JSONContextServer extends Jackson1JSONContextServer
     {
-        public TestJacksonJSONContextServer()
+        public TestJackson1JSONContextServer()
         {
             // Configuration needed to work with de/serializers
 //            SimpleModule module = new SimpleModule("test", Version.unknownVersion());
@@ -120,13 +137,13 @@ public class JacksonCustomSerializationTest extends ClientServerTest
 //            module.addDeserializer(Object.class, new DataDeserializer());
 //            getObjectMapper().registerModule(module);
 
-            getObjectMapper().enableDefaultTyping(ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
+            getObjectMapper().enableDefaultTyping(org.codehaus.jackson.map.ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
 
-    public static class TestJacksonJSONContextClient extends JacksonJSONContextClient
+    public static class TestJackson1JSONContextClient extends Jackson1JSONContextClient
     {
-        public TestJacksonJSONContextClient()
+        public TestJackson1JSONContextClient()
         {
             // Configuration needed to work with de/serializers
 //            SimpleModule module = new SimpleModule("test", Version.unknownVersion());
@@ -134,13 +151,42 @@ public class JacksonCustomSerializationTest extends ClientServerTest
 //            module.addDeserializer(Object.class, new DataDeserializer());
 //            getObjectMapper().registerModule(module);
 
-            getObjectMapper().enableDefaultTyping(ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
+            getObjectMapper().enableDefaultTyping(org.codehaus.jackson.map.ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
+        }
+    }
+    
+    public static class TestJackson2JSONContextServer extends Jackson2JSONContextServer
+    {
+        public TestJackson2JSONContextServer()
+        {
+            // Configuration needed to work with de/serializers
+//            SimpleModule module = new SimpleModule("test", Version.unknownVersion());
+//            module.addSerializer(Data.class, new DataSerializer());
+//            module.addDeserializer(Object.class, new DataDeserializer());
+//            getObjectMapper().registerModule(module);
+
+            getObjectMapper().enableDefaultTyping(com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
+        }
+    }
+
+    public static class TestJackson2JSONContextClient extends Jackson2JSONContextClient
+    {
+        public TestJackson2JSONContextClient()
+        {
+            // Configuration needed to work with de/serializers
+//            SimpleModule module = new SimpleModule("test", Version.unknownVersion());
+//            module.addSerializer(Data.class, new DataSerializer());
+//            module.addDeserializer(Object.class, new DataDeserializer());
+//            getObjectMapper().registerModule(module);
+
+            getObjectMapper().enableDefaultTyping(com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
 
     private static class Data
     {
-        @JsonProperty
+        @com.fasterxml.jackson.annotation.JsonProperty
+        @org.codehaus.jackson.annotate.JsonProperty
         private String content;
 
         private Data()
@@ -156,7 +202,8 @@ public class JacksonCustomSerializationTest extends ClientServerTest
 
     private static class Extra
     {
-        @JsonProperty
+    	@com.fasterxml.jackson.annotation.JsonProperty
+        @org.codehaus.jackson.annotate.JsonProperty
         private String content;
 
         private Extra()
@@ -170,7 +217,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest
         }
     }
 
-    // Alternative way to make it working (see above SimpleModule configuration)
+    /* Alternative way to make it working (see above SimpleModule configuration)
 
     private static class DataSerializer extends JsonSerializer<Data>
     {
@@ -199,4 +246,5 @@ public class JacksonCustomSerializationTest extends ClientServerTest
             return object;
         }
     }
+    */
 }

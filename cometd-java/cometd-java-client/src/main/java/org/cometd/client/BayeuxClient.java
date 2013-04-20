@@ -619,7 +619,7 @@ public class BayeuxClient extends AbstractClientSession implements Bayeux
         if (handshake.isSuccessful())
         {
             Object field = handshake.get(Message.SUPPORTED_CONNECTION_TYPES_FIELD);
-            Object[] serverTransports = field instanceof List ? ((List)field).toArray() : (Object[])field;
+            Object[] serverTransports = field instanceof List ? ((List<?>)field).toArray() : (Object[])field;
             List<ClientTransport> negotiatedTransports = transportRegistry.negotiate(serverTransports, BAYEUX_VERSION);
             final ClientTransport newTransport = negotiatedTransports.isEmpty() ? null : negotiatedTransports.get(0);
             if (newTransport == null)
