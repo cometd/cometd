@@ -19,7 +19,6 @@ package org.cometd.client;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.ProtocolException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.EnumSet;
@@ -53,6 +52,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient.State;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.common.HashMapMessage;
+import org.cometd.common.TransportException;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.DefaultSecurityPolicy;
 import org.eclipse.jetty.client.api.Request;
@@ -167,7 +167,7 @@ public class BayeuxClientTest extends ClientServerTest
             public void onFailure(Throwable x, Message[] messages)
             {
                 // Suppress logging of expected exception
-                if (!(x instanceof ProtocolException))
+                if (!(x instanceof TransportException))
                     super.onFailure(x, messages);
             }
         };
@@ -213,7 +213,7 @@ public class BayeuxClientTest extends ClientServerTest
             public void onFailure(Throwable x, Message[] messages)
             {
                 // Suppress logging of expected exception
-                if (!(x instanceof ProtocolException))
+                if (!(x instanceof TransportException))
                     super.onFailure(x, messages);
             }
         };
@@ -379,17 +379,17 @@ public class BayeuxClientTest extends ClientServerTest
         Message message = queue.poll(backoffIncrement, TimeUnit.MILLISECONDS);
         Assert.assertFalse(message.isSuccessful());
         Object exception = message.get("exception");
-        Assert.assertTrue(exception instanceof ProtocolException);
+        Assert.assertTrue(exception instanceof TransportException);
 
         message = queue.poll(2000 + 2 * backoffIncrement, TimeUnit.MILLISECONDS);
         Assert.assertFalse(message.isSuccessful());
         exception = message.get("exception");
-        Assert.assertTrue(exception instanceof ProtocolException);
+        Assert.assertTrue(exception instanceof TransportException);
 
         message = queue.poll(2000 + 3 * backoffIncrement, TimeUnit.MILLISECONDS);
         Assert.assertFalse(message.isSuccessful());
         exception = message.get("exception");
-        Assert.assertTrue(exception instanceof ProtocolException);
+        Assert.assertTrue(exception instanceof TransportException);
 
         filter.code = 0;
 
@@ -675,11 +675,14 @@ public class BayeuxClientTest extends ClientServerTest
 
                 // If port 80 is listening, it's probably some other HTTP server
                 // and a bayeux request will result in a 404, which is converted
-                // to a ProtocolException; if not listening, it will be a ConnectException
+                // to a TransportException; if not listening, it will be a ConnectException
+                Map<String, Object> failure = (Map<String, Object>)message.get("failure");
+                Assert.assertNotNull(failure);
+                Object exception = failure.get("exception");
                 if (listening.get())
-                    Assert.assertTrue(message.get("exception") instanceof ProtocolException);
+                    Assert.assertTrue(exception instanceof TransportException);
                 else
-                    Assert.assertTrue(message.get("exception") instanceof ConnectException);
+                    Assert.assertTrue(exception instanceof ConnectException);
                 latch.countDown();
             }
         });
@@ -1243,6 +1246,50 @@ public class BayeuxClientTest extends ClientServerTest
         if (Channel.META_CONNECT.equals(message.getChannel()))
             message = (Message)results.poll(10, TimeUnit.SECONDS);
         Assert.assertEquals(Channel.META_SUBSCRIBE, message.getChannel());
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testHandshakeOverHTTPReportsHTTPFailure() throws Exception
+    {
+        startServer(null);
+        // No transports on server, to make the client fail
+        ((BayeuxServerImpl)bayeux).setAllowedTransports();
+
+        BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(null, httpClient))
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                // Suppress logging of expected exception
+                if (!(x instanceof TransportException))
+                    super.onFailure(x, messages);
+            }
+        };
+        client.setDebugEnabled(debugTests());
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                // Verify the failure object is there
+                Map<String, Object> failure = (Map<String, Object>)message.get("failure");
+                Assert.assertNotNull(failure);
+                // Verify that the transport is there
+                Assert.assertEquals("long-polling", failure.get(Message.CONNECTION_TYPE_FIELD));
+                // Verify the original message is there
+                Assert.assertNotNull(failure.get("message"));
+                // Verify the HTTP status code is there
+                Assert.assertEquals(400, failure.get("httpCode"));
+                // Verify the exception string is there
+                Assert.assertNotNull(failure.get("exception"));
+                latch.countDown();
+            }
+        });
+        client.handshake();
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
     }

@@ -107,7 +107,9 @@ org.cometd.CallbackPollingTransport = function()
                         var received = self.convertToMessages(responses);
                         if (received.length === 0)
                         {
-                            self.transportFailure(envelopeToSend, request, 'no response');
+                            self.transportFailure(envelopeToSend, request, {
+                                httpCode: 204
+                            });
                         }
                         else
                         {
@@ -120,23 +122,29 @@ org.cometd.CallbackPollingTransport = function()
                         self._debug(x);
                         if (!success)
                         {
-                            self.transportFailure(envelopeToSend, request, 'bad response', x);
+                            self.transportFailure(envelopeToSend, request, {
+                                exception: x
+                            });
                         }
                     }
                 },
                 onError: function(reason, exception)
                 {
+                    var failure = {
+                        reason: reason,
+                        exception: exception
+                    };
                     if (sameStack)
                     {
                         // Keep the semantic of calling response callbacks asynchronously after the request
                         self.setTimeout(function()
                         {
-                            self.transportFailure(envelopeToSend, request, reason, exception);
+                            self.transportFailure(envelopeToSend, request, failure);
                         }, 0);
                     }
                     else
                     {
-                        self.transportFailure(envelopeToSend, request, reason, exception);
+                        self.transportFailure(envelopeToSend, request, failure);
                     }
                 }
             });
@@ -147,7 +155,9 @@ org.cometd.CallbackPollingTransport = function()
             // Keep the semantic of calling response callbacks asynchronously after the request
             this.setTimeout(function()
             {
-                self.transportFailure(envelopeToSend, request, 'error', xx);
+                self.transportFailure(envelopeToSend, request, {
+                    exception: xx
+                });
             }, 0);
         }
     };

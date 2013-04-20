@@ -233,7 +233,7 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         }
     }
 
-    public void define(final Class<?> clazz) throws InvocationTargetException, IllegalAccessException, InstantiationException
+    public void define(final Class<? extends Scriptable> clazz) throws InvocationTargetException, IllegalAccessException, InstantiationException
     {
         FutureTask<Object> future = new FutureTask<>(new Callable<Object>()
         {
@@ -284,6 +284,34 @@ public class JavaScriptThreadModel extends ScriptableObject implements Runnable,
         {
             Thread.currentThread().interrupt();
             return null;
+        }
+        catch (ExecutionException x)
+        {
+            Throwable xx = x.getCause();
+            if (xx instanceof Error) throw (Error)xx;
+            throw (RuntimeException)xx;
+        }
+    }
+
+    @Override
+    public void remove(final String name)
+    {
+        FutureTask<Object> future = new FutureTask<>(new Callable<Object>()
+        {
+            public Object call()
+            {
+                rootScope.delete(name);
+                return null;
+            }
+        });
+        submit(future);
+        try
+        {
+            future.get();
+        }
+        catch (InterruptedException x)
+        {
+            Thread.currentThread().interrupt();
         }
         catch (ExecutionException x)
         {

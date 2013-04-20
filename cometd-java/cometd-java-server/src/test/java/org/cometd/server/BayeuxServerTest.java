@@ -44,7 +44,7 @@ public class BayeuxServerTest
         ServerSessionImpl session = _bayeux.newServerSession();
         _bayeux.addServerSession(session);
         session.handshake();
-        session.connect();
+        session.connected();
         return session;
     }
 
@@ -153,9 +153,10 @@ public class BayeuxServerTest
     public void testLocalSessions() throws Exception
     {
         LocalSession session0 = _bayeux.newLocalSession("s0");
-        Assert.assertTrue(session0.toString().contains("s0?"));
+        Assert.assertEquals("L:s0_", session0.toString());
         session0.handshake();
-        Assert.assertTrue(session0.toString().contains("s0_"));
+        Assert.assertNotEquals("L:s0_", session0.toString());
+        Assert.assertTrue(session0.toString().startsWith("L:s0_"));
 
         final LocalSession session1 = _bayeux.newLocalSession("s1");
         session1.handshake();

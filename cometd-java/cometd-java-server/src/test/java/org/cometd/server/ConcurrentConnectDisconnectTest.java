@@ -16,23 +16,33 @@
 
 package org.cometd.server;
 
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerTest
 {
+    @Before
+    public void prepare() throws Exception
+    {
+        startServer(null);
+    }
+
     @Test
     public void testConnectListenerThenDisconnectThenConnectHandler() throws Exception
     {
@@ -102,7 +112,30 @@ public class ConcurrentConnectDisconnectTest extends AbstractBayeuxClientServerT
 
         Assert.assertTrue(response.getContentAsString().toLowerCase().contains("unknown"));
 
+        JettyJSONContextClient parser = new JettyJSONContextClient();
+        Message.Mutable connectReply2 = parser.parse(response.getContentAsString())[0];
+        String error = (String)connectReply2.get(Message.ERROR_FIELD);
+        Assert.assertNotNull(error);
+        Assert.assertTrue(error.toLowerCase().contains("unknown"));
+        Map<String,Object> advice = connectReply2.getAdvice();
+        Assert.assertNotNull(advice);
+        Assert.assertEquals(Message.RECONNECT_NONE_VALUE, advice.get(Message.RECONNECT_FIELD));
+
         Assert.assertNull(bayeux.getSession(clientId));
+
+        // Test that sending a connect for an expired session
+        // will return an advice with reconnect:"handshake"
+        Request connect3 = newBayeuxRequest("[{" +
+                "\"channel\": \"/meta/connect\"," +
+                "\"clientId\": \"" + clientId + "\"," +
+                "\"connectionType\": \"long-polling\"" +
+                "}]");
+        response = connect3.send();
+        Assert.assertEquals(200, response.getStatus());
+        Message.Mutable connectReply3 = parser.parse(response.getContentAsString())[0];
+        advice = connectReply3.getAdvice();
+        Assert.assertNotNull(advice);
+        Assert.assertEquals(Message.RECONNECT_HANDSHAKE_VALUE, advice.get(Message.RECONNECT_FIELD));
     }
 
     @Test

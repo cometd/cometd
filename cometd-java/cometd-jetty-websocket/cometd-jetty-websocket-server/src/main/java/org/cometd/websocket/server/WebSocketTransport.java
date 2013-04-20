@@ -24,11 +24,9 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -109,8 +107,15 @@ public class WebSocketTransport extends HttpTransport
             {
                 if (request instanceof ServletWebSocketRequest)
                 {
-                    WebSocketContext handshake = new WebSocketContext((ServletWebSocketRequest)request);
-                    return new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
+                    ServletWebSocketRequest serverRequest = (ServletWebSocketRequest)request;
+                    String origin = request.getHeader("Origin");
+                    if (origin == null)
+                        origin = request.getHeader("Sec-WebSocket-Origin");
+                    if (checkOrigin(serverRequest, origin))
+                    {
+                        WebSocketContext handshake = new WebSocketContext((ServletWebSocketRequest)request);
+                        return new WebSocketScheduler(handshake, request.getHeader("User-Agent"));
+                    }
                 }
                 return null;
             }
@@ -189,8 +194,7 @@ public class WebSocketTransport extends HttpTransport
         }
     }
 
-    // TODO: implement this
-    public boolean checkOrigin(HttpServletRequest request, String origin)
+    public boolean checkOrigin(ServletWebSocketRequest request, String origin)
     {
         return true;
     }
@@ -255,18 +259,10 @@ public class WebSocketTransport extends HttpTransport
     protected void send(Session session, String data) throws IOException
     {
         debug("Sending {}", data);
-        Future<Void> result = session.getRemote().sendStringByFuture(data);
-
-        // TODO: do we really need to be blocking ?
-        try
-        {
-            result.get();
-        }
-        catch (InterruptedException | ExecutionException e)
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        // Blocking write.
+        // We trade - for now - a blocked thread with the frame queue growing
+        // and consequent increased message latency (messages sit in the queue).
+        session.getRemote().sendString(data);
     }
 
     protected void onClose(int code, String message)
@@ -417,7 +413,7 @@ public class WebSocketTransport extends HttpTransport
                     // If we deliver only via meta connect, and we have messages,
                     // we need to send the queue and the meta connect reply
                     boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
-                    boolean hasMessages = !session.isQueueEmpty();
+                    boolean hasMessages = session.hasNonLazyMessages();
                     boolean replyToMetaConnect = hasMessages && metaConnectDelivery;
                     if (replyToMetaConnect)
                     {
@@ -433,7 +429,7 @@ public class WebSocketTransport extends HttpTransport
                             // In schedule() we decide atomically if reply to the meta connect
                             synchronized (session.getLock())
                             {
-                                if (session.isQueueEmpty())
+                                if (!session.hasNonLazyMessages())
                                 {
                                     if (cancelMetaConnectTask(session))
                                         _logger.debug("Cancelled unresponded meta connect {}", _connectReply);
@@ -470,7 +466,7 @@ public class WebSocketTransport extends HttpTransport
                         {
                             if (session.isConnected())
                                 session.startIntervalTimeout(getInterval());
-                            else
+                            else if (session.isDisconnected())
                                 reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                         }
                     }
@@ -530,7 +526,6 @@ public class WebSocketTransport extends HttpTransport
                 // and allow only one thread to reply to the meta connect
                 // otherwise we may have out of order delivery.
                 boolean metaConnectDelivery = isMetaConnectDeliveryOnly() || session.isMetaConnectDeliveryOnly();
-                boolean disconnected = !session.isConnected();
                 boolean reply = false;
                 ServerMessage.Mutable connectReply;
                 synchronized (session.getLock())
@@ -557,7 +552,7 @@ public class WebSocketTransport extends HttpTransport
                     }
                     else
                     {
-                        if (timeout || disconnected || metaConnectDelivery)
+                        if (timeout || metaConnectDelivery || !session.isConnected())
                         {
                             // We will reply to the meta connect, so cancel the timeout task
                             cancelMetaConnectTask(session);
@@ -582,9 +577,9 @@ public class WebSocketTransport extends HttpTransport
                         // Start the interval timeout before sending the reply to
                         // avoid race conditions, and even if sending the queue
                         // throws an exception so that we can sweep the session
-                        if (!disconnected)
+                        if (session.isConnected())
                             session.startIntervalTimeout(getInterval());
-                        else
+                        else if (session.isDisconnected())
                             connectReply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
                     }
                 }
@@ -702,13 +697,13 @@ public class WebSocketTransport extends HttpTransport
 //                }
             }
 
-            StringBuffer url = request.getRequestURL();
+            String url = request.getRequestURI().toString();
             String query = request.getQueryString();
 
             if (query != null)
-                url.append("?").append(query);
+                url = url +"?" + query;
 
-            this._url = url.toString();
+            this._url = url;
 
             _origin = request.getOrigin();
         }

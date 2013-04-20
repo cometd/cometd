@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.cometd.client;
+package org.cometd.client.ext;
 
 import java.io.EOFException;
 import java.net.ConnectException;
@@ -26,7 +26,8 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ServerChannel;
-import org.cometd.client.ext.AckExtension;
+import org.cometd.client.BayeuxClient;
+import org.cometd.client.ClientServerTest;
 import org.cometd.client.transport.LongPollingTransport;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.eclipse.jetty.util.BlockingArrayQueue;

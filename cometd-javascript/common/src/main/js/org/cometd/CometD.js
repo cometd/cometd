@@ -60,6 +60,18 @@ org.cometd.CometD = function(name)
         }
     };
 
+    function _fieldValue(object, name)
+    {
+        try
+        {
+            return object[name];
+        }
+        catch (x)
+        {
+            return undefined;
+        }
+    }
+
     /**
      * Mixes in the given objects into the target object by copying the properties.
      * @param deep if the copy must be deep
@@ -82,8 +94,8 @@ org.cometd.CometD = function(name)
 
             for (var propName in object)
             {
-                var prop = object[propName];
-                var targ = result[propName];
+                var prop = _fieldValue(object, propName);
+                var targ = _fieldValue(result, propName);
 
                 // Avoid infinite loops
                 if (prop === target)
@@ -494,11 +506,12 @@ org.cometd.CometD = function(name)
                     _cometd._debug('Exception during handling of messages', x);
                 }
             },
-            onFailure: function(conduit, messages, reason, exception)
+            onFailure: function(conduit, messages, failure)
             {
                 try
                 {
-                    _handleFailure.call(_cometd, conduit, messages, reason, exception);
+                    failure.connectionType = _cometd.getTransport().getType();
+                    _handleFailure.call(_cometd, conduit, messages, failure);
                 }
                 catch (x)
                 {
@@ -644,7 +657,9 @@ org.cometd.CometD = function(name)
         // Fail any existing queued message
         if (_messageQueue.length > 0)
         {
-            _handleFailure.call(_cometd, undefined, _messageQueue, 'error', 'Disconnected');
+            _handleFailure.call(_cometd, undefined, _messageQueue, {
+                reason: 'Disconnected'
+            });
             _messageQueue = [];
         }
     }
@@ -805,14 +820,12 @@ org.cometd.CometD = function(name)
         }
     }
 
-    function _handshakeFailure(xhr, message)
+    function _handshakeFailure(failure)
     {
         _failHandshake({
             successful: false,
-            failure: true,
+            failure: failure,
             channel: '/meta/handshake',
-            request: message,
-            xhr: xhr,
             advice: {
                 reconnect: 'retry',
                 interval: _backoff
@@ -883,15 +896,13 @@ org.cometd.CometD = function(name)
         }
     }
 
-    function _connectFailure(xhr, message)
+    function _connectFailure(failure)
     {
         _connected = false;
         _failConnect({
             successful: false,
-            failure: true,
+            failure: failure,
             channel: '/meta/connect',
-            request: message,
-            xhr: xhr,
             advice: {
                 reconnect: 'retry',
                 interval: _backoff
@@ -919,14 +930,12 @@ org.cometd.CometD = function(name)
         }
     }
 
-    function _disconnectFailure(xhr, message)
+    function _disconnectFailure(failure)
     {
         _failDisconnect({
             successful: false,
-            failure: true,
+            failure: failure,
             channel: '/meta/disconnect',
-            request: message,
-            xhr: xhr,
             advice: {
                 reconnect: 'none',
                 interval: 0
@@ -952,14 +961,12 @@ org.cometd.CometD = function(name)
         }
     }
 
-    function _subscribeFailure(xhr, message)
+    function _subscribeFailure(failure)
     {
         _failSubscribe({
             successful: false,
-            failure: true,
+            failure: failure,
             channel: '/meta/subscribe',
-            request: message,
-            xhr: xhr,
             advice: {
                 reconnect: 'none',
                 interval: 0
@@ -985,14 +992,12 @@ org.cometd.CometD = function(name)
         }
     }
 
-    function _unsubscribeFailure(xhr, message)
+    function _unsubscribeFailure(failure)
     {
         _failUnsubscribe({
             successful: false,
-            failure: true,
+            failure: failure,
             channel: '/meta/unsubscribe',
-            request: message,
-            xhr: xhr,
             advice: {
                 reconnect: 'none',
                 interval: 0
@@ -1045,14 +1050,12 @@ org.cometd.CometD = function(name)
         }
     }
 
-    function _messageFailure(xhr, message)
+    function _messageFailure(message, failure)
     {
         _failMessage({
             successful: false,
-            failure: true,
+            failure: failure,
             channel: message.channel,
-            request: message,
-            xhr: xhr,
             advice: {
                 reconnect: 'none',
                 interval: 0
@@ -1112,33 +1115,34 @@ org.cometd.CometD = function(name)
         }
     };
 
-    _handleFailure = function(conduit, messages, reason, exception)
+    _handleFailure = function(conduit, messages, failure)
     {
-        _cometd._debug('handleFailure', conduit, messages, reason, exception);
+        _cometd._debug('handleFailure', conduit, messages, failure);
 
         for (var i = 0; i < messages.length; ++i)
         {
             var message = messages[i];
+            var messageFailure = _cometd._mixin(false, { message: message, transport: conduit }, failure);
             var channel = message.channel;
             switch (channel)
             {
                 case '/meta/handshake':
-                    _handshakeFailure(conduit, message);
+                    _handshakeFailure(messageFailure);
                     break;
                 case '/meta/connect':
-                    _connectFailure(conduit, message);
+                    _connectFailure(messageFailure);
                     break;
                 case '/meta/disconnect':
-                    _disconnectFailure(conduit, message);
+                    _disconnectFailure(messageFailure);
                     break;
                 case '/meta/subscribe':
-                    _subscribeFailure(conduit, message);
+                    _subscribeFailure(messageFailure);
                     break;
                 case '/meta/unsubscribe':
-                    _unsubscribeFailure(conduit, message);
+                    _unsubscribeFailure(messageFailure);
                     break;
                 default:
-                    _messageFailure(conduit, message);
+                    _messageFailure(message, messageFailure);
                     break;
             }
         }

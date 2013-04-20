@@ -16,6 +16,7 @@
 
 package org.cometd.server;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -30,15 +31,13 @@ import org.junit.Test;
 
 public class ServiceWithCustomDataClassTest extends AbstractBayeuxClientServerTest
 {
-    @Override
-    protected void customizeOptions(Map<String, String> options)
-    {
-        options.put(BayeuxServerImpl.JSON_CONTEXT, TestJettyJSONContextServer.class.getName());
-    }
-
     @Test
     public void testServiceWithCustomDataClass() throws Exception
     {
+        Map<String, String> options = new HashMap<String, String>();
+        options.put(BayeuxServerImpl.JSON_CONTEXT, TestJettyJSONContextServer.class.getName());
+        startServer(options);
+
         String channelName = "/foo";
         CountDownLatch latch = new CountDownLatch(1);
         TestService service = new TestService(bayeux, latch);

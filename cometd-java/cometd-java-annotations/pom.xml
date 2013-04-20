@@ -94,12 +94,6 @@
             <version>${spring-version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>cglib</groupId>
-            <artifactId>cglib-nodep</artifactId>
-            <version>2.2</version>
-            <scope>test</scope>
-        </dependency>
         <!-- Guice dependencies -->
         <dependency>
             <groupId>com.google.inject</groupId>

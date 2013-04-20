@@ -16,6 +16,7 @@
 
 package org.cometd.server.transport;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.cometd.bayeux.Message;
@@ -29,15 +30,13 @@ import org.junit.Test;
 
 public class JSONTransportMetaConnectDeliveryTest extends AbstractBayeuxClientServerTest
 {
-    @Override
-    protected void customizeOptions(Map<String, String> options)
-    {
-        options.put("long-polling.json.metaConnectDeliverOnly", "true");
-    }
-
     @Test
     public void testJSONTransportMetaConnectDelivery() throws Exception
     {
+        Map<String, String> options = new HashMap<>();
+        options.put("long-polling.json.metaConnectDeliverOnly", "true");
+        startServer(options);
+
         Request handshake = newBayeuxRequest("[{" +
                 "\"channel\": \"/meta/handshake\"," +
                 "\"version\": \"1.0\"," +

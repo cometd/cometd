@@ -27,6 +27,10 @@ public class DojoTestProvider implements TestProvider
     {
         // Order of the script evaluation is important, as they depend one from the other
         threadModel.evaluate(new URL(fullContextURL + "/env.js"));
+        // Rhino 1.7 puts the top Java packages in the root scope.
+        // Unfortunately, "org" is also used as a JavaScript namespace,
+        // so we need to remove the Java package to avoid clashes.
+        threadModel.remove("org");
         threadModel.evaluate("window_location", "window.location = '" + fullContextURL + "'");
         String dojoBaseURL = "/dojo";
         threadModel.evaluate(new URL(fullContextURL + dojoBaseURL + "/dojo.js.uncompressed.js"));

@@ -31,10 +31,17 @@ import org.cometd.common.JettyJSONContextClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class CustomResponseOnSecurityPolicyDenyTest extends AbstractBayeuxClientServerTest
 {
+    @Before
+    public void prepare() throws Exception
+    {
+        startServer(null);
+    }
+
     @Test
     public void testCanHandshakeDenies() throws Exception
     {

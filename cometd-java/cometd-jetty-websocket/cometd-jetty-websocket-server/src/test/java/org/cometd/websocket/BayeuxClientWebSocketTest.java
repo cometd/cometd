@@ -18,7 +18,6 @@ package org.cometd.websocket;
 
 import java.io.EOFException;
 import java.net.ConnectException;
-import java.net.ProtocolException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,6 +41,7 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.common.TransportException;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
@@ -75,7 +75,7 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
             public void onFailure(Throwable x, Message[] messages)
             {
                 // Expect exception and suppress stack trace logging
-                if (!(x instanceof ProtocolException))
+                if (!(x instanceof TransportException))
                     super.onFailure(x, messages);
             }
         };

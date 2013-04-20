@@ -36,6 +36,10 @@ import org.cometd.bayeux.server.SecurityPolicy;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractService;
 import org.cometd.server.authorizer.GrantAuthorizer;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.annotation.ManagedOperation;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +64,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see SetiServlet
  */
+@ManagedObject("CometD cloud peer discovery component")
 public class Seti extends AbstractLifeCycle
 {
     public static final String SETI_ATTRIBUTE = Seti.class.getName();
@@ -78,7 +83,7 @@ public class Seti extends AbstractLifeCycle
         _logger = LoggerFactory.getLogger(getClass().getName() + "." + oort.getURL());
         _oort = oort;
         _setiId = oort.getURL().replace("://", "_").replace(":", "_").replace("/", "_");
-        _session = oort.getBayeuxServer().newLocalSession("seti");
+        _session = oort.getBayeuxServer().newLocalSession(_setiId);
         _debug = oort.isDebugEnabled();
     }
 
@@ -87,6 +92,7 @@ public class Seti extends AbstractLifeCycle
         return _logger;
     }
 
+    @ManagedAttribute("Whether log debugging for this Seti is enabled")
     public boolean isDebugEnabled()
     {
         return _debug;
@@ -105,11 +111,13 @@ public class Seti extends AbstractLifeCycle
             _logger.debug(message, args);
     }
 
+    @ManagedAttribute(value = "The Oort of this Seti", readonly = true)
     public Oort getOort()
     {
         return _oort;
     }
 
+    @ManagedAttribute(value = "The unique ID of this Seti", readonly = true)
     public String getId()
     {
         return _setiId;
@@ -238,8 +246,10 @@ public class Seti extends AbstractLifeCycle
      * @return whether the given userId has been associated via {@link #associate(String, ServerSession)}
      * @see #associate(String, ServerSession)
      * @see #isPresent(String)
+     * @see #getAssociationCount(String)
      */
-    public boolean isAssociated(String userId)
+    @ManagedOperation(value = "Whether the given userId is associated locally", impact = "INFO")
+    public boolean isAssociated(@Name(value = "userId", description = "The userId to test for local association") String userId)
     {
         synchronized (_uid2Location)
         {
@@ -256,17 +266,59 @@ public class Seti extends AbstractLifeCycle
     }
 
     /**
+     * @param userId the user identifier to test for association count
+     * @return the number of local associations
+     * @see #isAssociated(String)
+     * @see #getPresenceCount(String)
+     */
+    @ManagedOperation(value = "The number of local associations for the given userId", impact = "INFO")
+    public int getAssociationCount(@Name(value = "userId", description = "The userId to test for local association count") String userId)
+    {
+        synchronized (_uid2Location)
+        {
+            Set<Location> locations = _uid2Location.get(userId);
+            if (locations == null)
+                return 0;
+            int result = 0;
+            for (Location location : locations)
+            {
+                if (location instanceof LocalLocation)
+                    ++result;
+            }
+            return result;
+        }
+    }
+
+    /**
      * @param userId the user identifier to test for presence
      * @return whether the given userId is present on the cloud (and therefore has been associated
      * either locally or remotely)
      * @see #isAssociated(String)
+     * @see #getPresenceCount(String)
      */
-    public boolean isPresent(String userId)
+    @ManagedOperation(value = "Whether the given userId is present in the cloud", impact = "INFO")
+    public boolean isPresent(@Name(value = "userId", description = "The userId to test for presence in the cloud") String userId)
     {
         synchronized (_uid2Location)
         {
             Set<Location> locations = _uid2Location.get(userId);
             return locations != null;
+        }
+    }
+
+    /**
+     * @param userId the user identifier to test for presence count
+     * @return the number of associations (local or remote) on the cloud
+     * @see #isPresent(String)
+     * @see #getAssociationCount(String)
+     */
+    @ManagedOperation(value = "The number of local and remote associations for the given userId", impact = "INFO")
+    public int getPresenceCount(@Name(value = "userId", description = "The userId to test for presence count") String userId)
+    {
+        synchronized (_uid2Location)
+        {
+            Set<Location> locations = _uid2Location.get(userId);
+            return locations == null ? 0 : locations.size();
         }
     }
 
@@ -321,6 +373,18 @@ public class Seti extends AbstractLifeCycle
             }
             debug("Associations {}", _uid2Location);
             return result;
+        }
+    }
+
+    /**
+     * @return the set of {@code userId}s known to this Seti
+     */
+    @ManagedAttribute(value = "The set of userIds known to this Seti", readonly = true)
+    public Set<String> getUserIds()
+    {
+        synchronized (_uid2Location)
+        {
+            return new HashSet<>(_uid2Location.keySet());
         }
     }
 
@@ -405,26 +469,25 @@ public class Seti extends AbstractLifeCycle
      */
     protected void receivePresence(Message message)
     {
-        Map<String, Object> presence = message.getDataAsMap();
-        String setiId = (String)presence.get(SetiPresence.SETI_ID_FIELD);
-        if (_setiId.equals(setiId))
-            return;
-
         debug("Received presence message {}", message);
 
-        String userId = (String)presence.get(SetiPresence.USER_ID_FIELD);
+        Map<String, Object> presence = message.getDataAsMap();
+        String setiId = (String)presence.get(SetiPresence.SETI_ID_FIELD);
         boolean present = (Boolean)presence.get(SetiPresence.PRESENCE_FIELD);
-        SetiLocation location = new SetiLocation(userId, "/seti/" + setiId);
+        if (!_setiId.equals(setiId))
+        {
+            String userId = (String)presence.get(SetiPresence.USER_ID_FIELD);
+            SetiLocation location = new SetiLocation(userId, "/seti/" + setiId);
+            if (present)
+                associate(userId, location);
+            else
+                disassociate(userId, location);
+        }
+
         if (present)
-        {
-            associate(userId, location);
             notifyPresenceAdded(presence);
-        }
         else
-        {
-            disassociate(userId, location);
             notifyPresenceRemoved(presence);
-        }
     }
 
     public void addPresenceListener(PresenceListener listener)
@@ -510,6 +573,12 @@ public class Seti extends AbstractLifeCycle
         debug("Received message {} for locations {}", message, copy);
         for (Location location : copy)
             location.receive(userId, channel, data);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s]", getClass().getName(), getId());
     }
 
     /**
@@ -698,14 +767,46 @@ public class Seti extends AbstractLifeCycle
                 this.url = url;
             }
 
+            /**
+             * @return the local Seti object
+             */
+            public Seti getSeti()
+            {
+                return (Seti)getSource();
+            }
+
+            /**
+             * @return the userId associated to this presence event
+             */
             public String getUserId()
             {
                 return userId;
             }
 
+            /**
+             * @return the Oort URL where this presence event happened
+             */
             public String getURL()
             {
                 return url;
+            }
+
+            /**
+             * @return whether this presence event happened on the local Seti or on a remote Seti
+             */
+            public boolean isLocal()
+            {
+                return getURL().equals(getSeti().getOort().getURL());
+            }
+
+            @Override
+            public String toString()
+            {
+                return String.format("%s[%s %s on %s]",
+                        getClass().getName(),
+                        getUserId(),
+                        isLocal() ? "local" : "remote",
+                        getSeti());
             }
         }
     }

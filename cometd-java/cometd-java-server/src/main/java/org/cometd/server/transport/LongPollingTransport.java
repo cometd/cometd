@@ -148,7 +148,6 @@ public abstract class LongPollingTransport extends HttpTransport
         if (sessions == 1)
             _browserSweep.remove(browserId);
 
-        // TODO, the maxSessionsPerBrowser should be parameterized on user-agent
         if (sessions > _maxSessionsPerBrowser)
         {
             count.decrementAndGet();
@@ -169,8 +168,6 @@ public abstract class LongPollingTransport extends HttpTransport
             _browserSweep.put(browserId, new AtomicInteger(0));
         }
     }
-
-
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -258,10 +255,7 @@ public abstract class LongPollingTransport extends HttpTransport
                             {
                                 try
                                 {
-                                    writer = sendQueue(request, response, session, writer);
-
-                                    // If the writer is non null, we have already started sending a response, so we should not suspend
-                                    if (writer == null && reply.isSuccessful() && session.isQueueEmpty())
+                                    if (!session.hasNonLazyMessages() && reply.isSuccessful())
                                     {
                                         // Detect if we have multiple sessions from the same browser
                                         // Note that CORS requests do not send cookies, so we need to handle them specially
@@ -281,13 +275,19 @@ public abstract class LongPollingTransport extends HttpTransport
                                             // Support old clients that do not send advice:{timeout:0} on the first connect
                                             if (timeout > 0 && wasConnected && session.isConnected())
                                             {
+                                                // Between the last time we checked for messages in the queue
+                                                // (which was false, otherwise we would not be in this branch)
+                                                // and now, messages may have been added to the queue.
+                                                // We will suspend anyway, but setting the scheduler on the
+                                                // session will decide atomically if we need to resume or not.
+
                                                 // Suspend and wait for messages
                                                 Continuation continuation = ContinuationSupport.getContinuation(request);
                                                 continuation.setTimeout(timeout);
                                                 continuation.suspend(response);
                                                 scheduler = new LongPollScheduler(session, continuation, reply, browserId);
-                                                session.setScheduler(scheduler);
                                                 request.setAttribute(LongPollScheduler.ATTRIBUTE, scheduler);
+                                                session.setScheduler(scheduler);
                                                 reply = null;
                                                 metaConnectSuspended(request, session, timeout);
                                             }
@@ -320,15 +320,15 @@ public abstract class LongPollingTransport extends HttpTransport
                                 }
                                 finally
                                 {
-                                    if (reply != null && session.isConnected())
-                                        session.startIntervalTimeout(getInterval());
+                                    if (reply != null)
+                                        writer = writeQueueForMetaConnect(request, response, session, writer);
                                 }
                             }
                             else
                             {
                                 if (!isMetaConnectDeliveryOnly() && !session.isMetaConnectDeliveryOnly())
                                 {
-                                    writer = sendQueue(request, response, session, writer);
+                                    writer = writeQueue(request, response, session, writer);
                                 }
                             }
                         }
@@ -336,7 +336,7 @@ public abstract class LongPollingTransport extends HttpTransport
                         // If the reply has not been otherwise handled, send it
                         if (reply != null)
                         {
-                            if (connect && session != null && !session.isConnected())
+                            if (connect && session != null && session.isDisconnected())
                                 reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
 
                             reply = getBayeux().extendReply(session, session, reply);
@@ -344,7 +344,7 @@ public abstract class LongPollingTransport extends HttpTransport
                             if (reply != null)
                             {
                                 getBayeux().freeze(reply);
-                                writer = send(request, response, writer, reply);
+                                writer = writeMessage(request, response, writer, session, reply);
                             }
                         }
                     }
@@ -353,7 +353,7 @@ public abstract class LongPollingTransport extends HttpTransport
                     message.setAssociated(null);
                 }
                 if (writer != null)
-                    complete(writer);
+                    finishWrite(writer, session);
             }
             catch (ParseException x)
             {
@@ -364,10 +364,8 @@ public abstract class LongPollingTransport extends HttpTransport
                 // If we started a batch, end it now
                 if (batch)
                 {
-                    boolean ended = session.endBatch();
-
                     // Flush session if not done by the batch, since some browser order <script> requests
-                    if (!ended && isAlwaysFlushingAfterHandle())
+                    if (!session.endBatch() && isAlwaysFlushingAfterHandle())
                         session.flush();
                 }
                 else if (session != null && !connect && isAlwaysFlushingAfterHandle())
@@ -382,29 +380,12 @@ public abstract class LongPollingTransport extends HttpTransport
             ServerSessionImpl session = scheduler.getSession();
             metaConnectResumed(request, session);
 
-            PrintWriter writer;
-            try
-            {
-                // Send the message queue
-                writer = sendQueue(request, response, session, null);
-            }
-            finally
-            {
-                // We need to start the interval timeout before the connect reply
-                // otherwise we open up a race condition where the client receives
-                // the connect reply and sends a new connect request before we start
-                // the interval timeout, which will be wrong.
-                // We need to put this into a finally block in case sending the queue
-                // throws an exception (for example because the client is gone), so that
-                // we start the interval timeout that is important to sweep the session
-                if (session.isConnected())
-                    session.startIntervalTimeout(getInterval());
-            }
+            PrintWriter writer = writeQueueForMetaConnect(request, response, session, null);
 
             // Send the connect reply
             ServerMessage.Mutable reply = scheduler.getReply();
 
-            if (!session.isConnected())
+            if (session.isDisconnected())
                 reply.getAdvice(true).put(Message.RECONNECT_FIELD, Message.RECONNECT_NONE_VALUE);
 
             reply = getBayeux().extendReply(session, session, reply);
@@ -412,10 +393,31 @@ public abstract class LongPollingTransport extends HttpTransport
             if (reply != null)
             {
                 getBayeux().freeze(reply);
-                writer = send(request, response, writer, reply);
+                writer = writeMessage(request, response, writer, session, reply);
             }
 
-            complete(writer);
+            finishWrite(writer, session);
+        }
+    }
+
+    private PrintWriter writeQueueForMetaConnect(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, PrintWriter writer) throws IOException
+    {
+        try
+        {
+            return writeQueue(request, response, session, writer);
+        }
+        finally
+        {
+            // We need to start the interval timeout after we sent the queue
+            // (which may take time) but before sending the connect reply
+            // otherwise we open up a race condition where the client receives
+            // the connect reply and sends a new connect request before we start
+            // the interval timeout, which will be wrong.
+            // We need to put this into a finally block in case sending the queue
+            // throws an exception (for example because the client is gone), so that
+            // we start the interval timeout that is important to sweep the session
+            if (session.isConnected())
+                session.startIntervalTimeout(getInterval());
         }
     }
 
@@ -472,12 +474,12 @@ public abstract class LongPollingTransport extends HttpTransport
         _lastSweep = now;
     }
 
-    private PrintWriter sendQueue(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, PrintWriter writer)
+    private PrintWriter writeQueue(HttpServletRequest request, HttpServletResponse response, ServerSessionImpl session, PrintWriter writer)
             throws IOException
     {
-        final List<ServerMessage> queue = session.takeQueue();
+        List<ServerMessage> queue = session.takeQueue();
         for (ServerMessage m : queue)
-            writer = send(request, response, writer, m);
+            writer = writeMessage(request, response, writer, session, m);
         return writer;
     }
 
@@ -506,9 +508,9 @@ public abstract class LongPollingTransport extends HttpTransport
      */
     protected abstract boolean isAlwaysFlushingAfterHandle();
 
-    protected abstract PrintWriter send(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerMessage message) throws IOException;
+    protected abstract PrintWriter writeMessage(HttpServletRequest request, HttpServletResponse response, PrintWriter writer, ServerSessionImpl session, ServerMessage message) throws IOException;
 
-    protected abstract void complete(PrintWriter writer) throws IOException;
+    protected abstract void finishWrite(PrintWriter writer, ServerSessionImpl session) throws IOException;
 
     private class LongPollScheduler implements AbstractServerTransport.OneTimeScheduler, ContinuationListener
     {

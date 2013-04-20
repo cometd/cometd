@@ -24,13 +24,14 @@ import java.net.URI;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -41,7 +42,9 @@ import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.HttpClientTransport;
 import org.cometd.client.transport.MessageClientTransport;
 import org.cometd.client.transport.TransportListener;
+import org.cometd.common.TransportException;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.slf4j.Logger;
@@ -136,9 +139,21 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         if (_scheduler == null)
         {
             _shutdownScheduler = true;
-            _scheduler = Executors.newSingleThreadScheduledExecutor();
-            // TODO: remove on cancel policy ? or reuse wsClient's ?
+            int threads = Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
+            ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(threads);
+            scheduler.setRemoveOnCancelPolicy(true);
+            _scheduler = scheduler;
         }
+    }
+
+    private long getMaxNetworkDelay()
+    {
+        return _maxNetworkDelay;
+    }
+
+    private long getConnectTimeout()
+    {
+        return _connectTimeout;
     }
 
     @Override
@@ -245,6 +260,14 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
             // Cannot connect, assume the server supports WebSocket until proved otherwise
             listener.onFailure(x, messages);
         }
+        catch (UpgradeException x)
+        {
+            _webSocketSupported = false;
+            Map<String, Object> failure = new HashMap<>(2);
+            failure.put("websocketCode", 1002);
+            failure.put("httpCode", x.getResponseStatusCode());
+            listener.onFailure(new TransportException(x, failure), messages);
+        }
         catch (Exception x)
         {
             _webSocketSupported = false;
@@ -265,6 +288,8 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
         catch (ExecutionException x)
         {
             Throwable cause = x.getCause();
+            if (cause instanceof RuntimeException)
+                throw (RuntimeException)cause;
             if (cause instanceof IOException)
                 throw (IOException)cause;
             throw new IOException(cause);
@@ -280,7 +305,7 @@ public class WebSocketTransport extends HttpClientTransport implements MessageCl
     private void registerMessage(final Message.Mutable message, final TransportListener listener)
     {
         // Calculate max network delay
-        long maxNetworkDelay = _maxNetworkDelay;
+        long maxNetworkDelay = getMaxNetworkDelay();
         if (Channel.META_CONNECT.equals(message.getChannel()))
         {
             Map<String, Object> advice = message.getAdvice();

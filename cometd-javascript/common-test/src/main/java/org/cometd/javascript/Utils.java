@@ -17,6 +17,7 @@
 package org.cometd.javascript;
 
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 import org.mozilla.javascript.NativeArray;
@@ -31,35 +32,54 @@ public class Utils
 
     public static Object jsToJava(Object jsObject)
     {
-        if (jsObject == null) return null;
-        if (jsObject == org.mozilla.javascript.Context.getUndefinedValue()) return null;
-        if (jsObject instanceof String) return jsObject;
-        if (jsObject instanceof Boolean) return jsObject;
-        if (jsObject instanceof Integer) return jsObject;
-        if (jsObject instanceof Long) return jsObject;
-        if (jsObject instanceof Float) return jsObject;
-        if (jsObject instanceof Double) return jsObject;
-        if (jsObject instanceof NativeArray) return convertArray((NativeArray) jsObject);
-        if (jsObject instanceof NativeObject) return convertObject((NativeObject) jsObject);
-        if (jsObject instanceof NativeJavaObject) return ((NativeJavaObject) jsObject).unwrap();
+        return jsToJava(jsObject, new IdentityHashMap<Object, Boolean>());
+    }
+
+    private static Object jsToJava(Object jsObject, Map<Object, Boolean> identities)
+    {
+        Object existing = identities.put(jsObject, Boolean.TRUE);
+        if (existing != null)
+            return jsObject;
+        if (jsObject == null)
+            return null;
+        if (jsObject == org.mozilla.javascript.Context.getUndefinedValue())
+            return null;
+        if (jsObject instanceof String)
+            return jsObject;
+        if (jsObject instanceof Boolean)
+            return jsObject;
+        if (jsObject instanceof Integer)
+            return jsObject;
+        if (jsObject instanceof Long)
+            return jsObject;
+        if (jsObject instanceof Float)
+            return jsObject;
+        if (jsObject instanceof Double)
+            return jsObject;
+        if (jsObject instanceof NativeArray)
+            return convertArray((NativeArray)jsObject, identities);
+        if (jsObject instanceof NativeObject)
+            return convertObject((NativeObject)jsObject, identities);
+        if (jsObject instanceof NativeJavaObject)
+            return ((NativeJavaObject)jsObject).unwrap();
         return jsObject;
     }
 
-    private static Object[] convertArray(NativeArray jsArray)
+    private static Object[] convertArray(NativeArray jsArray, Map<Object, Boolean> identities)
     {
         Object[] ids = jsArray.getIds();
         Object[] result = new Object[ids.length];
         for (int i = 0; i < ids.length; i++)
         {
             Object id = ids[i];
-            int index = (Integer) id;
+            int index = (Integer)id;
             Object jsValue = jsArray.get(index, jsArray);
-            result[i] = jsToJava(jsValue);
+            result[i] = jsToJava(jsValue, identities);
         }
         return result;
     }
 
-    private static Object convertObject(NativeObject jsObject)
+    private static Object convertObject(NativeObject jsObject, Map<Object, Boolean> identities)
     {
         Object[] ids = jsObject.getIds();
         Map result = new HashMap(ids.length);
@@ -67,16 +87,18 @@ public class Utils
         {
             if (id instanceof String)
             {
-                Object jsValue = jsObject.get((String) id, jsObject);
-                result.put(id, jsToJava(jsValue));
+                Object jsValue = jsObject.get((String)id, jsObject);
+                result.put(id, jsToJava(jsValue, identities));
             }
             else if (id instanceof Integer)
             {
-                Object jsValue = jsObject.get((Integer) id, jsObject);
-                result.put(id, jsToJava(jsValue));
+                Object jsValue = jsObject.get((Integer)id, jsObject);
+                result.put(id, jsToJava(jsValue, identities));
             }
             else
+            {
                 throw new AssertionError();
+            }
         }
         return result;
     }

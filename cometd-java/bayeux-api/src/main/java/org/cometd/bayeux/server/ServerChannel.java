@@ -18,7 +18,6 @@ package org.cometd.bayeux.server;
 
 import java.util.Set;
 
-import org.cometd.bayeux.Bayeux;
 import org.cometd.bayeux.Session;
 import org.cometd.bayeux.client.ClientSessionChannel;
 
@@ -94,23 +93,6 @@ public interface ServerChannel extends ConfigurableServerChannel
      * listeners.</p>
      */
     public void remove();
-
-    /**
-     * <p>Common interface for {@link ServerChannel} listeners.</p>
-     * <p>Specific sub-interfaces define what kind of event listeners will be notified.</p>
-     */
-    public interface ServerChannelListener extends Bayeux.BayeuxListener
-    {
-        /**
-         * <p>Tag interface that marks {@link ServerChannelListener}s as "weak".</p>
-         * <p>{@link ServerChannel}s that are not {@link ServerChannel#isPersistent() persistent},
-         * that have no subscribers and that only have weak listeners are eligible to be
-         * {@link ServerChannel#remove() removed}.</p>
-         */
-        public interface Weak extends ServerChannelListener
-        {
-        }
-    }
 
     /**
      * <p>Listeners objects that implement this interface will be notified of message publish.</p>

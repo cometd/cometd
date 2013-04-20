@@ -27,10 +27,17 @@ import org.cometd.bayeux.server.ServerSession;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClientServerTest
 {
+    @Before
+    public void prepare() throws Exception
+    {
+        startServer(null);
+    }
+
     @Test
     public void testDisconnectSubscribe() throws Exception
     {
