@@ -16,6 +16,7 @@
 
 package org.cometd.client;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -26,15 +27,44 @@ import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.common.JacksonJSONContextClient;
+import org.cometd.common.Jackson1JSONContextClient;
+import org.cometd.common.Jackson2JSONContextClient;
+import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.JacksonJSONContextServer;
+import org.cometd.server.Jackson1JSONContextServer;
+import org.cometd.server.Jackson2JSONContextServer;
+import org.cometd.server.JettyJSONContextServer;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class BayeuxClientUsageTest extends ClientServerTest
 {
+	@Parameters(name= "{index}: JSON Context Server: {0} JSON Context Client: {1}")
+ 	public static Iterable<Object[]> data() 
+ 	{
+ 		return Arrays.asList(new Object[][] 
+ 				{ 
+ 					{ Jackson2JSONContextServer.class, Jackson2JSONContextClient.class }, 
+ 					{ Jackson1JSONContextServer.class, Jackson1JSONContextClient.class },
+ 					{ JettyJSONContextServer.class, JettyJSONContextClient.class}
+ 				}
+ 		);
+     }
+
+	private final String jacksonContextServerClassName;
+	private final String jacksonContextClientClassName;
+
+	public BayeuxClientUsageTest(final Object jacksonContextServerClass, final Object jacksonContextClientClass) 
+	{
+		this.jacksonContextServerClassName = ((Class<?>) jacksonContextServerClass).getName();
+		this.jacksonContextClientClassName =  ((Class<?>) jacksonContextClientClass).getName();
+	}
+	
     @Test
     public void testClientWithSelectConnector() throws Exception
     {
@@ -46,11 +76,11 @@ public class BayeuxClientUsageTest extends ClientServerTest
     public void testClientWithJackson() throws Exception
     {
         Map<String, String> serverOptions = new HashMap<>();
-        serverOptions.put(BayeuxServerImpl.JSON_CONTEXT, JacksonJSONContextServer.class.getName());
+        serverOptions.put(BayeuxServerImpl.JSON_CONTEXT, jacksonContextServerClassName);
         startServer(serverOptions);
 
         Map<String, Object> clientOptions = new HashMap<>();
-        clientOptions.put(ClientTransport.JSON_CONTEXT, new JacksonJSONContextClient());
+        clientOptions.put(ClientTransport.JSON_CONTEXT, jacksonContextClientClassName);
         BayeuxClient client = new BayeuxClient(cometdURL, new LongPollingTransport(clientOptions, httpClient));
 
         testClient(client);

@@ -45,12 +45,44 @@ public abstract class ClientTransport extends AbstractTransport
         super(name, options);
     }
 
-    public void init()
-    {
-        jsonContext = (JSONContext.Client)getOption(JSON_CONTEXT);
-        if (jsonContext == null)
-            jsonContext = new JettyJSONContextClient();
-    }
+	public void init() 
+	{
+		Object option = null;
+		try 
+		{
+			option = getOption(JSON_CONTEXT);
+			if (option == null) 
+			{
+				jsonContext = new JettyJSONContextClient();
+			} 
+			else 
+			{
+				if (option instanceof String) 
+				{
+					Class<?> jsonContextClass = Thread.currentThread().getContextClassLoader().loadClass((String) option);
+					if (JSONContext.Client.class.isAssignableFrom(jsonContextClass)) 
+					{
+						jsonContext = (JSONContext.Client) jsonContextClass.newInstance();
+					} 
+					else 
+					{
+						throw new IllegalArgumentException("Invalid implementation of " + JSONContext.Client.class.getName() + " provided (" + option + ")");
+					}
+				} 
+				else if (option instanceof JSONContext.Client) 
+				{
+					jsonContext = (JSONContext.Client) option;
+				} 
+				else 
+				{
+					throw new IllegalArgumentException("Invalid implementation of " + JSONContext.Client.class.getName() + " provided (" + option + ")");
+				}
+			}
+			setOption(JSON_CONTEXT, jsonContext);
+		} catch (Exception ex) {
+			throw new IllegalArgumentException("Exception ["+ex+"] while trying to initialise "+this+" with JSON Context "+option, ex);
+		}
+	}
 
     public boolean isDebugEnabled()
     {

@@ -99,7 +99,6 @@ public class HashMapMessage extends HashMap<String, Object> implements Message.M
 
     public Map<String, Object> getDataAsMap(boolean create)
     {
-        @SuppressWarnings("unchecked")
         Map<String, Object> data = getDataAsMap();
         if (create && data == null)
         {
