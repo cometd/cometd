@@ -99,7 +99,8 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j-version}</version>
+            <!-- Travis build failing if I use ${slf4j-version}, trying hard-coding version -->
+            <version>1.7.5</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
