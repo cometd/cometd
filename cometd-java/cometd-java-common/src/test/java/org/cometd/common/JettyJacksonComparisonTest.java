@@ -53,9 +53,9 @@ public class JettyJacksonComparisonTest
  	{
  		return Arrays.asList(new Object[][] 
  				{ 
- 					{ Jackson1JSONProvider.class, 5, 1000 }, 
- 					{ Jackson2JSONProvider.class, 5, 1000 },
- 					{ JettyJSONProvider.class, 5, 1000 }
+ 					{ Jackson1JSONProvider.class, 50, 50000 }, 
+ 					{ Jackson2JSONProvider.class, 50, 50000 },
+ 					{ JettyJSONProvider.class, 50, 50000 }
  				}
  		);
      }
@@ -88,6 +88,7 @@ public class JettyJacksonComparisonTest
 		private final org.codehaus.jackson.JsonFactory json1Factory = new org.codehaus.jackson.map.MappingJsonFactory();
 		private final Jackson1JSONContextClient jackson1ContextClient = new Jackson1JSONContextClient();
 		
+		@SuppressWarnings("unused")
 		Jackson1JSONProvider()
 		{
 			super();
@@ -161,6 +162,7 @@ public class JettyJacksonComparisonTest
 		private final com.fasterxml.jackson.databind.JavaType jackson2Type = jackson2ObjectMapper.constructType(HashMapMessage[].class);
 		private final Jackson2JSONContextClient jackson2ContextClient = new Jackson2JSONContextClient();
 		
+		@SuppressWarnings("unused")
 		Jackson2JSONProvider()
 		{
 			super();
@@ -230,7 +232,8 @@ public class JettyJacksonComparisonTest
 	{
 		private JettyJSONContextClient jettyJSONContextClient = new JettyJSONContextClient();
 		
-		JettyJSONProvider()
+		@SuppressWarnings("unused")
+        JettyJSONProvider()
 		{
 			super();
 		}
