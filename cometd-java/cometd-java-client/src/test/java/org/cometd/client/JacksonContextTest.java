@@ -46,26 +46,26 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class JacksonContextTest extends ClientServerTest
 {
-	@Parameters(name= "{index}: Jackson Context Server: {0} Jackson Context Client: {1}")
- 	public static Iterable<Object[]> data() 
- 	{
- 		return Arrays.asList(new Object[][] 
- 				{ 
- 					{ Jackson2JSONContextServer.class, Jackson2JSONContextClient.class }, 
- 					{ Jackson1JSONContextServer.class, Jackson1JSONContextClient.class },
- 				}
- 		);
+    @Parameters(name= "{index}: Jackson Context Server: {0} Jackson Context Client: {1}")
+     public static Iterable<Object[]> data()
+     {
+         return Arrays.asList(new Object[][]
+                 {
+                     { Jackson2JSONContextServer.class, Jackson2JSONContextClient.class },
+                     { Jackson1JSONContextServer.class, Jackson1JSONContextClient.class },
+                 }
+         );
      }
 
-	private final String jacksonContextServerClassName;
-	private final String jacksonContextClientClassName;
+    private final String jacksonContextServerClassName;
+    private final String jacksonContextClientClassName;
 
-	public JacksonContextTest(final Object jacksonContextServerClass, final Object jacksonContextClientClass) 
-	{
-		this.jacksonContextServerClassName = ((Class<?>) jacksonContextServerClass).getName();
-		this.jacksonContextClientClassName =  ((Class<?>) jacksonContextClientClass).getName();
-	}
-	
+    public JacksonContextTest(final Class<?> jacksonContextServerClass, final Class<?> jacksonContextClientClass)
+    {
+        this.jacksonContextServerClassName = jacksonContextServerClass.getName();
+        this.jacksonContextClientClassName = jacksonContextClientClass.getName();
+    }
+
     @Test
     public void testAllMessagesUseJackson() throws Exception
     {

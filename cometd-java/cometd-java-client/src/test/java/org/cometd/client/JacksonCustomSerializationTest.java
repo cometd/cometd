@@ -43,26 +43,26 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class JacksonCustomSerializationTest extends ClientServerTest
 {
-	@Parameters(name= "{index}: Jackson Context Server: {0} Jackson Context Client: {1}")
- 	public static Iterable<Object[]> data() 
- 	{
- 		return Arrays.asList(new Object[][] 
- 				{ 
- 					{ TestJackson2JSONContextServer.class, TestJackson2JSONContextClient.class }, 
- 					{ TestJackson1JSONContextServer.class, TestJackson1JSONContextClient.class },
- 				}
- 		);
+    @Parameters(name= "{index}: Jackson Context Server: {0} Jackson Context Client: {1}")
+     public static Iterable<Object[]> data()
+     {
+         return Arrays.asList(new Object[][]
+                 {
+                         {TestJackson2JSONContextServer.class, TestJackson2JSONContextClient.class},
+                         {TestJackson1JSONContextServer.class, TestJackson1JSONContextClient.class},
+                 }
+         );
      }
 
-	private final String jacksonContextServerClassName;
-	private final String jacksonContextClientClassName;
+    private final String jacksonContextServerClassName;
+    private final String jacksonContextClientClassName;
 
-	public JacksonCustomSerializationTest(final Object jacksonContextServerClass, final Object jacksonContextClientClass) 
-	{
-		this.jacksonContextServerClassName = ((Class<?>) jacksonContextServerClass).getName();
-		this.jacksonContextClientClassName =  ((Class<?>) jacksonContextClientClass).getName();
-	}
-	
+    public JacksonCustomSerializationTest(final Class<?> jacksonContextServerClass, final Class<?> jacksonContextClientClass)
+    {
+        this.jacksonContextServerClassName = jacksonContextServerClass.getName();
+        this.jacksonContextClientClassName = jacksonContextClientClass.getName();
+    }
+
     @Test
     public void testJacksonCustomSerialization() throws Exception
     {
@@ -154,7 +154,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest
             getObjectMapper().enableDefaultTyping(org.codehaus.jackson.map.ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
-    
+
     public static class TestJackson2JSONContextServer extends Jackson2JSONContextServer
     {
         public TestJackson2JSONContextServer()
@@ -202,7 +202,7 @@ public class JacksonCustomSerializationTest extends ClientServerTest
 
     private static class Extra
     {
-    	@com.fasterxml.jackson.annotation.JsonProperty
+        @com.fasterxml.jackson.annotation.JsonProperty
         @org.codehaus.jackson.annotate.JsonProperty
         private String content;
 

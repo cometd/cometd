@@ -44,27 +44,27 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class BayeuxClientUsageTest extends ClientServerTest
 {
-	@Parameters(name= "{index}: JSON Context Server: {0} JSON Context Client: {1}")
- 	public static Iterable<Object[]> data() 
- 	{
- 		return Arrays.asList(new Object[][] 
- 				{ 
- 					{ Jackson2JSONContextServer.class, Jackson2JSONContextClient.class }, 
- 					{ Jackson1JSONContextServer.class, Jackson1JSONContextClient.class },
- 					{ JettyJSONContextServer.class, JettyJSONContextClient.class}
- 				}
- 		);
+    @Parameters(name= "{index}: JSON Context Server: {0} JSON Context Client: {1}")
+     public static Iterable<Object[]> data()
+     {
+         return Arrays.asList(new Object[][]
+                 {
+                         {Jackson2JSONContextServer.class, Jackson2JSONContextClient.class},
+                         {Jackson1JSONContextServer.class, Jackson1JSONContextClient.class},
+                         {JettyJSONContextServer.class, JettyJSONContextClient.class}
+                 }
+         );
      }
 
-	private final String jacksonContextServerClassName;
-	private final String jacksonContextClientClassName;
+    private final String jacksonContextServerClassName;
+    private final String jacksonContextClientClassName;
 
-	public BayeuxClientUsageTest(final Object jacksonContextServerClass, final Object jacksonContextClientClass) 
-	{
-		this.jacksonContextServerClassName = ((Class<?>) jacksonContextServerClass).getName();
-		this.jacksonContextClientClassName =  ((Class<?>) jacksonContextClientClass).getName();
-	}
-	
+    public BayeuxClientUsageTest(final Class<?> jacksonContextServerClass, final Class<?> jacksonContextClientClass)
+    {
+        this.jacksonContextServerClassName = jacksonContextServerClass.getName();
+        this.jacksonContextClientClassName = jacksonContextClientClass.getName();
+    }
+
     @Test
     public void testClientWithSelectConnector() throws Exception
     {

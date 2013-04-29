@@ -21,11 +21,9 @@
                     <executable>java</executable>
                     <arguments>
                         <argument>-showversion</argument>
-                        <argument>-Xmx1g</argument>
-                        <argument>-Xms1g</argument>
-                        <!-- 
+                        <argument>-Xmx2g</argument>
+                        <argument>-Xms2g</argument>
                         <argument>-Xmn1g</argument>
-                         -->
                         <argument>-XX:+PrintCommandLineFlags</argument>
                         <argument>-XX:-UseSplitVerifier</argument>
                         <argument>-XX:+PrintGCDateStamps</argument>
@@ -77,7 +75,6 @@
             <artifactId>jetty-jmx</artifactId>
             <version>${jetty-version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>

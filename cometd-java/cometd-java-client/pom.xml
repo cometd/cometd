@@ -90,13 +90,13 @@
             <version>${jetty-version}</version>
             <scope>test</scope>
         </dependency>
-       	<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
-			<version>${jackson2-version}</version>
-			<scope>test</scope>
-		</dependency>
-		 <dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson2-version}</version>
+            <scope>test</scope>
+        </dependency>
+         <dependency>
             <groupId>org.codehaus.jackson</groupId>
             <artifactId>jackson-mapper-asl</artifactId>
             <version>${jackson1-version}</version>

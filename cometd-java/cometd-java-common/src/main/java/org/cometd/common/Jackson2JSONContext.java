@@ -21,10 +21,9 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.text.ParseException;
 
-import org.cometd.bayeux.Message;
-
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.cometd.bayeux.Message;
 
 public abstract class Jackson2JSONContext<T extends Message.Mutable, I extends T>
 {
