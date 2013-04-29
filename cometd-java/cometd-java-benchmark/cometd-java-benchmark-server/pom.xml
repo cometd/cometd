@@ -78,10 +78,30 @@
             <artifactId>websocket-server</artifactId>
             <version>${jetty-version}</version>
         </dependency>
-        <dependency>
+       	<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>${jackson2-version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>${jackson2-version}</version>
+		</dependency>
+		
+		<dependency>
             <groupId>org.codehaus.jackson</groupId>
             <artifactId>jackson-mapper-asl</artifactId>
-            <version>${jackson-version}</version>
+            <version>${jackson1-version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <!-- Travis build failing if I use ${slf4j-version}, trying hard-coding version -->
+            <version>1.7.5</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -89,5 +109,4 @@
             <scope>runtime</scope>
         </dependency>
     </dependencies>
-
 </project>

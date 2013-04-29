@@ -18,7 +18,7 @@ package org.cometd.common;
 
 import org.cometd.bayeux.Message;
 
-public class JacksonJSONContextClient extends JacksonJSONContext<Message.Mutable, HashMapMessage> implements JSONContext.Client
+public class Jackson2JSONContextClient extends Jackson2JSONContext<Message.Mutable, HashMapMessage> implements JSONContext.Client
 {
     @Override
     protected Class<HashMapMessage[]> rootArrayClass()

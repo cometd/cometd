@@ -17,20 +17,295 @@
 package org.cometd.common;
 
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.map.MappingJsonFactory;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.JavaType;
+import org.cometd.bayeux.Message;
+import org.cometd.bayeux.Message.Mutable;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+/**
+ * 
+ * Note: to obtain meaningful memory related results from this test you need to ensure that 
+ * the garbage collector doesn't get triggered during the execution.
+ * 
+ * To do that you could run the tests with JVM parameters along the lines of
+ * 
+ * -Xmx1024m -Xms1024m -XX:MaxNewSize=512m -XX:NewSize=512m
+ * 
+ * You should also enable verbose garbage collector logging so that you know whether you obtained
+ * usable results (no GCs traced) or whether you should repeat the test with different JVM args.
+ * 
+ * You can still run the test without all of the above if you choose to focus on times and not on 
+ * garbage generated.
+ */
+@RunWith(Parameterized.class)
 public class JettyJacksonComparisonTest
 {
+	
+	@Parameters(name= "{index}: JSON Provider: {0} Iterations: {1} Count: {2}")
+ 	public static Iterable<Object[]> data() 
+ 	{
+ 		return Arrays.asList(new Object[][] 
+ 				{ 
+ 					{ Jackson1JSONProvider.class, 50, 50000 }, 
+ 					{ Jackson2JSONProvider.class, 50, 50000 },
+ 					{ JettyJSONProvider.class, 50, 50000 }
+ 				}
+ 		);
+     }
+
+	private interface JSONProvider 
+	{
+		HashMapMessage[] readValueAs(String json) throws Exception;	
+		
+		HashMapMessage[] readValue(String json) throws Exception;
+		
+		HashMapMessage[] readValue(byte[] json) throws Exception;
+		
+		Message.Mutable[] parse(String json) throws Exception;
+		
+		void writeObject(Object pojo) throws Exception;
+		
+		String generate(Message.Mutable message) throws Exception;
+		
+		String writeValueAsString(Object value) throws Exception;
+		
+		String getProviderKey();
+		
+		boolean supportsContextClientOnly();
+	}
+	
+	private static class Jackson1JSONProvider implements JSONProvider 
+	{
+		private final org.codehaus.jackson.map.ObjectMapper jackson1ObjectMapper = new org.codehaus.jackson.map.ObjectMapper();
+		private final org.codehaus.jackson.type.JavaType jackson1Type = jackson1ObjectMapper.constructType(HashMapMessage[].class);
+		private final org.codehaus.jackson.JsonFactory json1Factory = new org.codehaus.jackson.map.MappingJsonFactory();
+		private final Jackson1JSONContextClient jackson1ContextClient = new Jackson1JSONContextClient();
+		
+		@SuppressWarnings("unused")
+		Jackson1JSONProvider()
+		{
+			super();
+		}
+		
+		@Override
+        public HashMapMessage[] readValueAs(String json) throws Exception
+		{
+			org.codehaus.jackson.JsonParser jsonParser = json1Factory.createJsonParser(json);
+			HashMapMessage[] value = jsonParser.readValueAs(HashMapMessage[].class);
+            jsonParser.close();
+            return value;
+        }
+
+		@Override
+        public HashMapMessage[] readValue(String json) throws Exception 
+        {
+			return jackson1ObjectMapper.readValue(json, jackson1Type);
+        }
+		
+		@Override
+        public HashMapMessage[] readValue(byte[] json) throws Exception 
+        {
+	        return jackson1ObjectMapper.readValue(json, jackson1Type);
+        }
+
+		@Override
+        public Message.Mutable[] parse(String json) throws Exception 
+        {
+	        return jackson1ContextClient.parse(json);
+        }
+
+		@Override
+        public void writeObject(Object pojo) throws Exception 
+        {
+			org.codehaus.jackson.JsonGenerator jsonGenerator = json1Factory.createJsonGenerator(new StringWriter(384));
+            jsonGenerator.writeObject(pojo);
+            jsonGenerator.close();
+        }
+
+		@Override
+        public String generate(Message.Mutable message) throws Exception 
+        {
+	        return jackson1ContextClient.generate(message);
+        }
+
+		@Override
+        public String writeValueAsString(Object value) throws Exception 
+        {
+	        return jackson1ObjectMapper.writeValueAsString(value);
+        }
+		
+		@Override
+        public String getProviderKey() 
+		{
+	        return "jackson1";
+        }
+		
+		@Override
+        public boolean supportsContextClientOnly() 
+		{
+	        return false;
+        }
+		
+	}
+	
+	private static class Jackson2JSONProvider implements JSONProvider
+	{
+		private final com.fasterxml.jackson.core.JsonFactory json2Factory = new com.fasterxml.jackson.databind.MappingJsonFactory();
+		private final com.fasterxml.jackson.databind.ObjectMapper jackson2ObjectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+		private final com.fasterxml.jackson.databind.JavaType jackson2Type = jackson2ObjectMapper.constructType(HashMapMessage[].class);
+		private final Jackson2JSONContextClient jackson2ContextClient = new Jackson2JSONContextClient();
+		
+		@SuppressWarnings("unused")
+		Jackson2JSONProvider()
+		{
+			super();
+		}
+		
+		@Override
+        public HashMapMessage[] readValueAs(String json) throws Exception 
+        {
+			com.fasterxml.jackson.core.JsonParser jsonParser = json2Factory.createJsonParser(json);
+            HashMapMessage[] value = jsonParser.readValueAs(HashMapMessage[].class);
+            jsonParser.close();
+            return value;
+        }
+
+		@Override
+        public HashMapMessage[] readValue(String json) throws Exception 
+        {
+	        return jackson2ObjectMapper.readValue(json, jackson2Type);
+        }
+		
+		@Override
+        public HashMapMessage[] readValue(byte[] json) throws Exception 
+        {
+	        return jackson2ObjectMapper.readValue(json, jackson2Type);
+        }
+
+		@Override
+        public org.cometd.bayeux.Message.Mutable[] parse(String json) throws Exception 
+        {
+	        return jackson2ContextClient.parse(json);
+        }
+		
+		@Override
+        public void writeObject(Object pojo) throws Exception 
+        {
+			com.fasterxml.jackson.core.JsonGenerator jsonGenerator = json2Factory.createJsonGenerator(new StringWriter(384));
+            jsonGenerator.writeObject(pojo);
+            jsonGenerator.close();
+        }
+
+		@Override
+        public String generate(Message.Mutable message) throws Exception 
+        {
+	        return jackson2ContextClient.generate(message);
+        }
+
+		@Override
+        public String writeValueAsString(Object value) throws Exception 
+        {
+	        return jackson2ObjectMapper.writeValueAsString(value);
+        }
+		
+		@Override
+        public String getProviderKey() 
+		{
+	        return "jackson2";
+        }
+		
+		@Override
+        public boolean supportsContextClientOnly() 
+		{
+	        return false;
+        }
+	}
+	
+	private static final class JettyJSONProvider implements JSONProvider
+	{
+		private JettyJSONContextClient jettyJSONContextClient = new JettyJSONContextClient();
+		
+		@SuppressWarnings("unused")
+        JettyJSONProvider()
+		{
+			super();
+		}
+		
+		@Override
+        public HashMapMessage[] readValueAs(String json) throws Exception 
+        {
+			throw new UnsupportedOperationException();
+        }
+
+		@Override
+        public HashMapMessage[] readValue(String json) throws Exception 
+        {
+			throw new UnsupportedOperationException();
+        }
+
+		@Override
+        public HashMapMessage[] readValue(byte[] json) throws Exception 
+        {
+	        throw new UnsupportedOperationException();
+        }
+
+		@Override
+        public Mutable[] parse(String json) throws Exception 
+        {
+	        return jettyJSONContextClient.parse(json);
+        }
+		
+
+		@Override
+        public void writeObject(Object pojo) throws Exception 
+        {
+			throw new UnsupportedOperationException();
+        }
+
+		@Override
+        public String generate(Message.Mutable message) throws Exception 
+        {
+	        return jettyJSONContextClient.generate(message);
+        }
+
+		@Override
+        public String writeValueAsString(Object value) throws Exception 
+        {
+			throw new UnsupportedOperationException();
+        }
+
+		@Override
+        public String getProviderKey() 
+		{
+	        return "jetty";
+        }
+
+		@Override
+        public boolean supportsContextClientOnly() 
+		{
+	        return true;
+        }
+	}
+	
+	
+	private final JSONProvider jsonProvider;
+	private final int iterations;
+	private final int count;
+	
+	public JettyJacksonComparisonTest(final Object jsonProvider, final Integer iterations, final Integer count) throws Exception
+	{
+		this.jsonProvider =  (JSONProvider) ((Class<?>) jsonProvider).newInstance();
+		this.iterations = iterations.intValue();
+		this.count = count.intValue();
+	}
+	
     @Test
     public void testParse() throws Exception
     {
@@ -56,75 +331,71 @@ public class JettyJacksonComparisonTest
                 "   }" +
                 "}]";
 
-        int iterations = 5;
-        int count = 100000;
-
-        // Jackson
-        JsonFactory jsonFactory = new MappingJsonFactory();
         for (int j = 0; j < iterations; ++j)
         {
+        	System.gc();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
+            
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                JsonParser jsonParser = jsonFactory.createJsonParser(json);
-                jsonParser.readValueAs(HashMapMessage[].class);
-                jsonParser.close();
+            	jsonProvider.parse(json);
             }
             long end = System.nanoTime();
-            System.err.printf("jackson parser iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: "+jsonProvider.getProviderKey()+" test: context_parse iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
+        }
+        
+        if (jsonProvider.supportsContextClientOnly())
+        {
+        	return;
         }
 
-        // Jackson
-        ObjectMapper objectMapper = new ObjectMapper();
-        JavaType type = objectMapper.constructType(HashMapMessage[].class);
         for (int j = 0; j < iterations; ++j)
         {
+        	System.gc();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
+            long start = System.nanoTime();
+            
+            for (int i = 0; i < count; ++i)
+            {
+            	jsonProvider.readValueAs(json);
+            }
+            long end = System.nanoTime();
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            
+            System.err.printf("library: "+jsonProvider.getProviderKey()+" test: parser_readValueAs iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
+        }
+
+        
+        for (int j = 0; j < iterations; ++j)
+        {
+        	System.gc();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                objectMapper.readValue(json, type);
+            	jsonProvider.readValue(json);
             }
             long end = System.nanoTime();
-            System.err.printf("jackson mapper string iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: "+jsonProvider.getProviderKey()+" test: mapper_readValue_string iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
         }
 
-        // Jackson
         byte[] bytes = json.getBytes("UTF-8");
+        
         for (int j = 0; j < iterations; ++j)
         {
+        	System.gc();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                objectMapper.readValue(bytes, type);
+            	jsonProvider.readValue(bytes);
             }
             long end = System.nanoTime();
-            System.err.printf("jackson mapper bytes iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
-        }
-
-        // Jackson
-        JacksonJSONContextClient jacksonJSONContextClient = new JacksonJSONContextClient();
-        for (int j = 0; j < iterations; ++j)
-        {
-            long start = System.nanoTime();
-            for (int i = 0; i < count; ++i)
-            {
-                jacksonJSONContextClient.parse(json);
-            }
-            long end = System.nanoTime();
-            System.err.printf("jackson context iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
-        }
-
-        // Jetty
-        JettyJSONContextClient jettyJSONContextClient = new JettyJSONContextClient();
-        for (int j = 0; j < iterations; ++j)
-        {
-            long start = System.nanoTime();
-            for (int i = 0; i < count; ++i)
-            {
-                jettyJSONContextClient.parse(json);
-            }
-            long end = System.nanoTime();
-            System.err.printf("jetty context iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: "+jsonProvider.getProviderKey()+" test: mapper_readValue_bytes iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
         }
     }
 
@@ -149,61 +420,51 @@ public class JettyJacksonComparisonTest
         ext.put("com.acme.auth", acmeExt);
         acmeExt.put("token", "0123456789");
 
-        int iterations = 5;
-        int count = 200000;
-
-        // Jackson
-        JsonFactory jsonFactory = new MappingJsonFactory();
         for (int j = 0; j < iterations; ++j)
         {
+        	System.gc();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                JsonGenerator jsonGenerator = jsonFactory.createJsonGenerator(new StringWriter(384));
-                jsonGenerator.writeObject(message);
-                jsonGenerator.close();
+                jsonProvider.generate(message);
             }
             long end = System.nanoTime();
-            System.err.printf("jackson generator iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: "+jsonProvider.getProviderKey()+" test: context_generate iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
+        }
+        
+        if (jsonProvider.supportsContextClientOnly())
+        {
+        	return;
         }
 
-        // Jackson
-        ObjectMapper objectMapper = new ObjectMapper();
         for (int j = 0; j < iterations; ++j)
         {
+        	System.gc();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                objectMapper.writeValueAsString(message);
+                jsonProvider.writeObject(message);
             }
             long end = System.nanoTime();
-            System.err.printf("jackson mapper iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: "+jsonProvider.getProviderKey()+" test: generator_writeObject iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
         }
 
-        // Jackson
-        JacksonJSONContextClient jacksonJSONContextClient = new JacksonJSONContextClient();
         for (int j = 0; j < iterations; ++j)
         {
+        	System.gc();
+            long freeMemBefore = Runtime.getRuntime().freeMemory();
             long start = System.nanoTime();
             for (int i = 0; i < count; ++i)
             {
-                jacksonJSONContextClient.generate(message);
+            	jsonProvider.writeValueAsString(message);
             }
             long end = System.nanoTime();
-            System.err.printf("jackson context iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
-        }
-
-        // Jetty
-        JettyJSONContextClient jettyJSONContextClient = new JettyJSONContextClient();
-        for (int j = 0; j < iterations; ++j)
-        {
-            long start = System.nanoTime();
-            for (int i = 0; i < count; ++i)
-            {
-                jettyJSONContextClient.generate(message);
-            }
-            long end = System.nanoTime();
-            System.err.printf("jetty context iteration %d: %d ms%n", j, TimeUnit.NANOSECONDS.toMillis(end - start));
+            long generatedGarbage = freeMemBefore-Runtime.getRuntime().freeMemory();
+            System.err.printf("library: "+jsonProvider.getProviderKey()+" test: mapper_writeValueAsString iteration: %d time: %d ms garbage: %d%n", j, TimeUnit.NANOSECONDS.toMillis(end - start), generatedGarbage);
         }
     }
 }
