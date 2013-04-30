@@ -58,11 +58,7 @@ org.cometd.LongPollingTransport = function()
                             var failure = {
                                 exception: x
                             };
-                            var xhr = request.xhr;
-                            if (xhr)
-                            {
-                                failure.httpCode = xhr.status;
-                            }
+                            failure.httpCode = self.xhrStatus(request.xhr);
                             self.transportFailure(envelope, request, failure);
                         }
                     }
@@ -74,11 +70,7 @@ org.cometd.LongPollingTransport = function()
                         reason: reason,
                         exception: exception
                     };
-                    var xhr = request.xhr;
-                    if (xhr)
-                    {
-                        failure.httpCode = xhr.status;
-                    }
+                    failure.httpCode = self.xhrStatus(request.xhr);
                     if (sameStack)
                     {
                         // Keep the semantic of calling response callbacks asynchronously after the request

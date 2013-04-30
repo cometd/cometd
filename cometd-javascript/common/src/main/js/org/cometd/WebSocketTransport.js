@@ -115,6 +115,8 @@ org.cometd.WebSocketTransport = function()
             _connected = true;
         }
 
+        var self = this;
+        var webSocket = _webSocket;
         var messageIds = [];
         for (var i = 0; i < envelope.messages.length; ++i)
         {
@@ -122,14 +124,9 @@ org.cometd.WebSocketTransport = function()
             if (message.id)
             {
                 messageIds.push(message.id);
-                var self = this;
-                var webSocket = _webSocket;
                 _timeouts[message.id] = this.setTimeout(function()
                 {
-                    if (webSocket)
-                    {
-                        webSocket.close(1000, 'Timeout');
-                    }
+                    self.webSocketClose(webSocket, 1000, 'Timeout');
                 }, delay);
             }
         }
@@ -257,7 +254,7 @@ org.cometd.WebSocketTransport = function()
 
         if (close)
         {
-            _webSocket.close(1000, 'Disconnect');
+            this.webSocketClose(_webSocket, 1000, 'Disconnect');
         }
     };
 
@@ -290,9 +287,9 @@ org.cometd.WebSocketTransport = function()
         }
         _envelopes = {};
 
-        if (_webSocket !== null && _opened)
+        if (_opened)
         {
-            _webSocket.close(1000, 'Close');
+            this.webSocketClose(_webSocket, 1000, 'Close');
         }
         _opened = false;
         _webSocket = null;
@@ -330,30 +327,34 @@ org.cometd.WebSocketTransport = function()
         _send.call(this, envelope, metaConnect);
     };
 
-    _self.abort = function()
+    _self.webSocketClose = function(webSocket, code, reason)
     {
-        _super.abort();
-        if (_webSocket !== null)
+        if (webSocket)
         {
             try
             {
-                _webSocket.close(1001);
+                webSocket.close(code, reason);
             }
             catch (x)
             {
-                // Firefox may throw, just ignore
                 this._debug(x);
             }
         }
+    };
+
+    _self.abort = function()
+    {
+        _super.abort();
+        this.webSocketClose(_webSocket, 1001, 'Abort');
         this.reset();
     };
 
     _self.reset = function()
     {
         _super.reset();
-        if (_webSocket !== null && _opened)
+        if (_opened)
         {
-            _webSocket.close(1000, 'Reset');
+            this.webSocketClose(_webSocket, 1000, 'Reset');
         }
         _supportsWebSocket = true;
         _webSocketSupported = false;

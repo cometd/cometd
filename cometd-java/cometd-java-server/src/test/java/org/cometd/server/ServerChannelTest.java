@@ -16,6 +16,9 @@
 
 package org.cometd.server;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.ServerChannel;
@@ -24,6 +27,7 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -77,6 +81,30 @@ public class ServerChannelTest
         assertEquals(6, _bayeuxChannelListener._calls);
         assertEquals("initadded", _bayeuxChannelListener._method);
         assertEquals("/foo/bob", _bayeuxChannelListener._channel);
+    }
+
+    @Test
+    public void testCreateChildChannelAfterParent() throws Exception
+    {
+        final CountDownLatch latch = new CountDownLatch(2);
+        String channelName = "/root";
+        Assert.assertTrue(_bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+                latch.countDown();
+            }
+        }));
+        Assert.assertTrue(_bayeux.createIfAbsent(channelName + "/1", new ConfigurableServerChannel.Initializer()
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+                latch.countDown();
+            }
+        }));
+        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
     @Test

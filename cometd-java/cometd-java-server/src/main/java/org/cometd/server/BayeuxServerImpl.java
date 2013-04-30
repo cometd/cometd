@@ -182,9 +182,12 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
     {
         super.doStop();
 
-        for (ServerTransport transport : _transports.values())
+        for (String allowedTransportName : getAllowedTransports())
+        {
+            ServerTransport transport = getTransport(allowedTransportName);
             if (transport instanceof AbstractServerTransport)
                 ((AbstractServerTransport)transport).destroy();
+        }
 
         _listeners.clear();
         _extensions.clear();
