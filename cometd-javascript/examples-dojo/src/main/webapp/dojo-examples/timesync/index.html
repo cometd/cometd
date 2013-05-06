@@ -8,7 +8,7 @@
         dojo.require("dojox.cometd");
         dojo.require("dojox.cometd.timesync");
 
-        dojox.cometd.init(new String(document.location).replace(/\/dojo-examples\/.*$/, '') + "/cometd");
+        dojox.cometd.init(location.href.replace(/\/dojo-examples\/.*$/, '') + "/cometd");
         dojox.cometd.subscribe("/chat/demo", function()
         {
         });

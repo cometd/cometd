@@ -66,6 +66,17 @@
                 <groupId>org.mortbay.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
                 <configuration>
+                    <connectors>
+                        <connector implementation="org.eclipse.jetty.server.nio.SelectChannelConnector">
+                            <port>8080</port>
+                        </connector>
+                        <connector implementation="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
+                            <port>8443</port>
+                            <keystore>src/main/resources/keystore.jks</keystore>
+                            <password>storepwd</password>
+                            <keyPassword>keypwd</keyPassword>
+                        </connector>
+                    </connectors>
                     <scanIntervalSeconds>1</scanIntervalSeconds>
                     <webAppConfig>
                         <contextPath>/</contextPath>
@@ -135,6 +146,7 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <version>${slf4j-version}</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
