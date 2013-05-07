@@ -1,12 +1,9 @@
 require({
         baseUrl: '../..',
-        packages: [{
-            name: 'dojox/cometd',
-            location: 'dojox/cometd'
-        },{
-            name: 'org',
-            location: 'org'
-        }]
+        // Specify 'paths' since CometD is not bundled with Dojo anymore
+        paths: {
+            'dojox/cometd': 'dojox/cometd'
+        }
     },
     ['dojox/cometd', 'dojo/dom', 'dojo/_base/unload', 'dojox/cometd/reload'],
     function(cometd, dom, unload)
@@ -41,7 +38,7 @@ require({
     });
 
     /* Initialize CometD */
-    var cometURL = new String(document.location).replace(/\/dojo-examples\/.*$/, '') + "/cometd";
+    var cometURL = location.href.replace(/\/dojo-examples\/.*$/, '') + "/cometd";
     cometd.init({
         url: cometURL,
         logLevel: "debug"

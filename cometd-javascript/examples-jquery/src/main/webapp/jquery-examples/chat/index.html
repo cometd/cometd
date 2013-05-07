@@ -14,8 +14,8 @@
     <script type="text/javascript" src="chat.js"></script>
     <script type="text/javascript">
         var config = {
-            contextPath: (new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/jquery-examples\/.*$/, ''))
-        };
+            contextPath: location.href.replace(/https?:\/\/[^\/]*/, '').replace(/\/jquery-examples\/.*$/, '')
+        }
     </script>
 </head>
 

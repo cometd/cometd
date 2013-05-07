@@ -58,7 +58,7 @@
                 return false;
             });
 
-            dojox.cometd.init(new String(document.location).replace(/\/dojo-examples\/.*$/, '') + "/cometd");
+            dojox.cometd.init(location.href.replace(/\/dojo-examples\/.*$/, '') + "/cometd");
             dojox.cometd.subscribe("/service/echo", echoRpcReturn);
         }
 
