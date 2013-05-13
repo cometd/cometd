@@ -17,6 +17,7 @@
 package org.cometd.oort;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -148,6 +149,12 @@ public class OortComet extends BayeuxClient
                     debug("Handshake completed, observing channels {}", channels);
                     subscribe(channels);
 
+                    // Advertise the remote node that we have joined
+                    Map<String, Object> data = new HashMap<String, Object>(1);
+                    data.put(Oort.EXT_OORT_URL_FIELD, _oort.getURL());
+                    getChannel(Oort.OORT_SERVICE_CHANNEL).publish(data);
+
+                    // Advertise our own network
                     getChannel(Oort.OORT_CLOUD_CHANNEL).publish(new ArrayList<String>(_oort.getKnownComets()));
                 }
             });
