@@ -143,7 +143,10 @@ public class OortComet extends BayeuxClient
                     // (and not multiple ones) is subscribed.
                     clearSubscriptions();
                     _subscriptionsAllowed = true;
-                    subscribe(_oort.getObservedChannels());
+
+                    Set<String> channels = _oort.getObservedChannels();
+                    debug("Handshake completed, observing channels {}", channels);
+                    subscribe(channels);
 
                     getChannel(Oort.OORT_CLOUD_CHANNEL).publish(new ArrayList<String>(_oort.getKnownComets()));
                 }

@@ -48,7 +48,9 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.ext.AckExtension;
+import org.cometd.client.transport.ClientTransport;
 import org.cometd.common.HashMapMessage;
+import org.cometd.common.JSONContext;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
@@ -109,6 +111,7 @@ public class Oort extends AggregateLifeCycle
     private boolean _debug;
     private boolean _clientDebug;
     private boolean _ackExtensionEnabled;
+    private JSONContext.Client _jsonContext;
 
     public Oort(BayeuxServer bayeux, String url)
     {
@@ -270,6 +273,16 @@ public class Oort extends AggregateLifeCycle
         _ackExtensionEnabled = value;
     }
 
+    public JSONContext.Client getJSONContextClient()
+    {
+        return _jsonContext;
+    }
+
+    public void setJSONContextClient(JSONContext.Client jsonContext)
+    {
+        _jsonContext = jsonContext;
+    }
+
     /**
      * <p>Connects (if not already connected) and observes another Oort instance
      * (identified by the given URL) via a {@link OortComet} instance.</p>
@@ -285,6 +298,7 @@ public class Oort extends AggregateLifeCycle
 
     protected OortComet observeComet(String cometURL, String cometAliasURL)
     {
+        debug("Observing comet {}", cometURL);
         try
         {
             URI uri = new URI(cometURL);
@@ -356,6 +370,10 @@ public class Oort extends AggregateLifeCycle
             if (!present)
                 oortComet.addExtension(new AckExtension());
         }
+
+        JSONContext.Client jsonContext = getJSONContextClient();
+        if (jsonContext != null)
+            oortComet.setOption(ClientTransport.JSON_CONTEXT, jsonContext);
     }
 
     protected String encodeSecret(String secret)
@@ -455,6 +473,8 @@ public class Oort extends AggregateLifeCycle
      */
     public void observeChannel(String channelName)
     {
+        debug("Observing channel {}", channelName);
+
         if (!ChannelId.isBroadcast(channelName))
             throw new IllegalArgumentException("Channel " + channelName + " cannot be observed because is not a broadcast channel");
 

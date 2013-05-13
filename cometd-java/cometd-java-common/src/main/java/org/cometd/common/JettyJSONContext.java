@@ -28,9 +28,9 @@ import org.eclipse.jetty.util.ajax.JSON;
 
 public abstract class JettyJSONContext<T extends Message.Mutable>
 {
-    private FieldJSON _jsonParser = new FieldJSON();
-    private FieldJSON _messageParser = new MessageJSON();
-    private FieldJSON _messagesParser = new MessagesJSON();
+    private final FieldJSON _jsonParser = new FieldJSON();
+    private final FieldJSON _messageParser = new MessageJSON();
+    private final FieldJSON _messagesParser = new MessagesJSON();
 
     protected JettyJSONContext()
     {
