@@ -28,8 +28,8 @@ import org.cometd.common.JSONContext;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestWatchman;
-import org.junit.runners.model.FrameworkMethod;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -39,13 +39,13 @@ import static org.junit.Assert.fail;
 public class ServerMessageImplTest
 {
     @Rule
-    public final TestWatchman testName = new TestWatchman()
+    public final TestWatcher testName = new TestWatcher()
     {
         @Override
-        public void starting(FrameworkMethod method)
+        protected void starting(Description description)
         {
-            super.starting(method);
-            System.err.printf("Running %s.%s%n", method.getMethod().getDeclaringClass().getName(), method.getName());
+            super.starting(description);
+            System.err.printf("Running %s.%s%n", description.getClassName(), description.getMethodName());
         }
     };
 

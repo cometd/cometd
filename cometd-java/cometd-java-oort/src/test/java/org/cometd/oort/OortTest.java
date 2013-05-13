@@ -39,19 +39,19 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Rule;
-import org.junit.rules.TestWatchman;
-import org.junit.runners.model.FrameworkMethod;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 public abstract class OortTest
 {
     @Rule
-    public final TestWatchman testName = new TestWatchman()
+    public final TestWatcher testName = new TestWatcher()
     {
         @Override
-        public void starting(FrameworkMethod method)
+        protected void starting(Description description)
         {
-            super.starting(method);
-            System.err.printf("Running %s.%s%n", method.getMethod().getDeclaringClass().getName(), method.getName());
+            super.starting(description);
+            System.err.printf("Running %s.%s%n", description.getClassName(), description.getMethodName());
         }
     };
     private final List<Server> servers = new ArrayList<Server>();
