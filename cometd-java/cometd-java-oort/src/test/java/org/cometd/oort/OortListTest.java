@@ -55,12 +55,15 @@ public class OortListTest extends OortTest
     public void testElementAdded() throws Exception
     {
         String name = "test";
+        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<List<Long>> factory = OortObjectFactories.forConcurrentList();
-        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
         OortList<Long> oortList1 = new OortList<Long>(oort1, name, factory);
+        oortList1.start();
         OortList<Long> oortList2 = new OortList<Long>(oort2, name, factory);
+        oortList2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
         OortObjectTest.OortObjectInitialListener<List<Long>> listener = new OortObjectTest.OortObjectInitialListener<List<Long>>(2);
@@ -91,12 +94,15 @@ public class OortListTest extends OortTest
     public void testElementRemoved() throws Exception
     {
         String name = "test";
+        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<List<Long>> factory = OortObjectFactories.forConcurrentList();
-        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
         OortList<Long> oortList1 = new OortList<Long>(oort1, name, factory);
+        oortList1.start();
         OortList<Long> oortList2 = new OortList<Long>(oort2, name, factory);
+        oortList2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
         final long element = 1;

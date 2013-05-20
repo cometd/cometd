@@ -36,7 +36,7 @@ import org.cometd.bayeux.server.ServerSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageListener, Iterable<OortObject.Info<T>>
+public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oort.CometListener, ServerChannel.MessageListener, Iterable<OortObject.Info<T>>
 {
     public static final String OORT_OBJECTS_CHANNEL = "/oort/objects";
 
@@ -47,27 +47,39 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
     private final String name;
     private final Factory<T> factory;
     private final LocalSession sender;
+    private final String channelName;
 
     public OortObject(Oort oort, String name, Factory<T> factory)
     {
         this.oort = oort;
         this.name = name;
         this.factory = factory;
-        logger = LoggerFactory.getLogger(getClass().getName() + "." + oort.getURL() + "." + name);
+        this.logger = LoggerFactory.getLogger(getClass().getName() + "." + oort.getURL() + "." + name);
+        this.sender = oort.getBayeuxServer().newLocalSession(getClass().getSimpleName() + "." + name);
+        this.channelName = OORT_OBJECTS_CHANNEL + "/" + name;
+    }
+
+    public void start()
+    {
         setLocal(factory.newObject(null));
-        BayeuxServer bayeuxServer = oort.getBayeuxServer();
-        this.sender = bayeuxServer.newLocalSession(getClass().getSimpleName() + "." + name);
-        this.sender.handshake();
+        sender.handshake();
         oort.addCometListener(this);
-        bayeuxServer.createIfAbsent(OORT_OBJECTS_CHANNEL, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.setPersistent(true);
-            }
-        });
-        bayeuxServer.getChannel(OORT_OBJECTS_CHANNEL).addListener(this);
-        oort.observeChannel(OORT_OBJECTS_CHANNEL);
+        oort.getBayeuxServer().createIfAbsent(channelName, this);
+        oort.getBayeuxServer().getChannel(channelName).addListener(this);
+        oort.observeChannel(channelName);
+    }
+
+    public void stop()
+    {
+        oort.deobserveChannel(channelName);
+        oort.getBayeuxServer().getChannel(channelName).removeListener(this);
+        oort.removeCometListener(this);
+        sender.disconnect();
+    }
+
+    public void configureChannel(ConfigurableServerChannel channel)
+    {
+        channel.setPersistent(true);
     }
 
     public Oort getOort()
@@ -90,19 +102,26 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         return sender;
     }
 
+    public String getChannelName()
+    {
+        return channelName;
+    }
+
     public void cometJoined(Event event)
     {
-        // Nothing to do because it is too early to push local data:
-        // the OortObject on the new Oort may not be setup yet
         logger.debug("Oort {} joined", event.getCometURL());
+        share();
     }
 
     public void cometLeft(Event event)
     {
         logger.debug("Oort {} left", event.getCometURL());
         Info<T> info = infos.remove(event.getCometURL());
-        logger.debug("Removed remote info {}", info);
-        notifyRemoved(info);
+        if (info != null)
+        {
+            logger.debug("Removed remote info {}", info);
+            notifyRemoved(info);
+        }
     }
 
     public Iterator<Info<T>> iterator()
@@ -150,6 +169,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         }
     }
 
+    @SuppressWarnings("unchecked")
     public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
     {
         Object data = message.getData();
@@ -165,7 +185,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
             for (Object element : (List<?>)data)
             {
                 if (element instanceof Map)
-                    result &= onMessage((Map<String, Object>)data);
+                    result &= onMessage((Map<String, Object>)element);
             }
             return result;
         }
@@ -174,22 +194,21 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
 
     private boolean onMessage(Map<String, Object> data)
     {
-        boolean sameOort = oort.getURL().equals(data.get(Info.OORT_URL_FIELD));
         boolean sameName = getName().equals(data.get(Info.NAME_FIELD));
-        if (!sameOort && sameName)
+        if (sameName)
             onObject(data);
         return true;
     }
 
     protected void onObject(Map<String, Object> data)
     {
-        logger.debug("Received remote data {}", data);
+        logger.debug("Received data {}", data);
 
         // Convert the object, for example from a JSON serialized Map to a ConcurrentMap
         data.put(Info.OBJECT_FIELD, getFactory().newObject(data.get(Info.OBJECT_FIELD)));
 
         // Default behavior is to replace atomically
-        Info<T> newInfo = new Info<T>(data);
+        Info<T> newInfo = new Info<T>(oort.getURL(), data);
         Info<T> oldInfo;
         String newOortURL = newInfo.getOortURL();
         boolean initial = Info.TYPE_FIELD_INITIAL_VALUE.equals(data.get(Info.TYPE_FIELD));
@@ -199,15 +218,25 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
             oldInfo = infos.putIfAbsent(newOortURL, newInfo);
             if (oldInfo == null)
             {
-                logger.debug("Initialized remote info {}", newInfo);
+                logger.debug("Initialized info {}", newInfo);
                 notifyUpdated(oldInfo, newInfo);
             }
         }
         else
         {
-            oldInfo = infos.put(newOortURL, newInfo);
-            logger.debug("Replaced remote info {} with {}", oldInfo, newInfo);
-            notifyUpdated(oldInfo, newInfo);
+            if (newInfo.isLocal())
+            {
+                // It will always fail, but we will have a reference to the oldInfo
+                oldInfo = infos.putIfAbsent(newOortURL, newInfo);
+                // Notify a full difference
+                notifyUpdated(null, oldInfo);
+            }
+            else
+            {
+                oldInfo = infos.put(newOortURL, newInfo);
+                logger.debug("Replaced info {} with {}", oldInfo, newInfo);
+                notifyUpdated(oldInfo, newInfo);
+            }
         }
 
         // If we did not have an info for the new Oort, then it's a
@@ -219,7 +248,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
             logger.debug("Pushing (to {}) local data {}", newOortURL, localData);
             OortComet oortComet = oort.getComet(newOortURL);
             if (oortComet != null)
-                oortComet.getChannel(OORT_OBJECTS_CHANNEL).publish(localData);
+                oortComet.getChannel(channelName).publish(localData);
         }
     }
 
@@ -232,7 +261,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
     {
         if (local == null)
             throw new NullPointerException();
-        Info<T> info = new Info<T>(3);
+        Info<T> info = new Info<T>(oort.getURL(), 3);
         info.put(Info.OORT_URL_FIELD, oort.getURL());
         info.put(Info.NAME_FIELD, getName());
         info.put(Info.OBJECT_FIELD, local);
@@ -263,11 +292,7 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         {
             logger.debug("Sharing local info {}", info);
             BayeuxServer bayeuxServer = oort.getBayeuxServer();
-
-            // TODO: we may want to add a conversion step here for the OBJECT_FIELD
-            // TODO: so that we can convert, e.g. AtomicInteger to Long to serialize it
-
-            bayeuxServer.getChannel(OORT_OBJECTS_CHANNEL).publish(sender, info, null);
+            bayeuxServer.getChannel(channelName).publish(sender, info, null);
         }
     }
 
@@ -280,14 +305,18 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         public static final String TYPE_FIELD_INITIAL_VALUE = "initial";
         public static final String ACTION_FIELD = "action";
 
-        protected Info(int capacity)
+        // The local Oort URL
+        private final String oortURL;
+
+        protected Info(String oortURL, int capacity)
         {
             super(capacity);
+            this.oortURL = oortURL;
         }
 
-        protected Info(Map<? extends String, ?> map)
+        protected Info(String oortURL, Map<? extends String, ?> map)
         {
-            super(3);
+            this(oortURL, 3);
             // Constructor used for storage, only keep the
             // required fields discarding metadata fields
             put(OORT_URL_FIELD, map.get(OORT_URL_FIELD));
@@ -309,6 +338,11 @@ public class OortObject<T> implements Oort.CometListener, ServerChannel.MessageL
         public E getObject()
         {
             return (E)get(OBJECT_FIELD);
+        }
+
+        public boolean isLocal()
+        {
+            return oortURL.equals(getOortURL());
         }
 
         @Override

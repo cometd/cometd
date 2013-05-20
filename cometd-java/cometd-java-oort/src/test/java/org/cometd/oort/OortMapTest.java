@@ -56,12 +56,15 @@ public class OortMapTest extends OortTest
     public void testEntryPut() throws Exception
     {
         String name = "test";
+        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
-        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
         OortMap<String, String> oortMap1 = new OortMap<String, String>(oort1, name, factory);
+        oortMap1.start();
         OortMap<String, String> oortMap2 = new OortMap<String, String>(oort2, name, factory);
+        oortMap2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
         OortObjectTest.OortObjectInitialListener<ConcurrentMap<String, String>> listener = new OortObjectTest.OortObjectInitialListener<ConcurrentMap<String, String>>(2);
@@ -93,12 +96,15 @@ public class OortMapTest extends OortTest
     public void testEntryRemoved() throws Exception
     {
         String name = "test";
+        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
-        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
         OortMap<String, String> oortMap1 = new OortMap<String, String>(oort1, name, factory);
+        oortMap1.start();
         OortMap<String, String> oortMap2 = new OortMap<String, String>(oort2, name, factory);
+        oortMap2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
         final String key = "key";

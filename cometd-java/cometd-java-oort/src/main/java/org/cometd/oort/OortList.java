@@ -16,6 +16,7 @@
 
 package org.cometd.oort;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EventListener;
@@ -73,16 +74,17 @@ public class OortList<E> extends OortObject<List<E>>
             if (!list.contains(element))
                 throw new IllegalArgumentException("Element " + element + " is not an element of " + list);
 
-        Info<List<E>> info = new Info<List<E>>(5);
-        info.put(Info.OORT_URL_FIELD, getOort().getURL());
+        String oortURL = getOort().getURL();
+        Info<List<E>> info = new Info<List<E>>(oortURL, 5);
+        info.put(Info.OORT_URL_FIELD, oortURL);
         info.put(Info.NAME_FIELD, getName());
         info.put(Info.OBJECT_FIELD, elements);
         info.put(Info.TYPE_FIELD, TYPE_FIELD_ELEMENT_VALUE);
         info.put(Info.ACTION_FIELD, ACTION_FIELD_ADD_VALUE);
 
-        logger.debug("Sharing add list elements info {}", info);
+        logger.debug("Sharing add list elements {}", info);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(OORT_OBJECTS_CHANNEL).publish(getLocalSession(), info, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), info, null);
     }
 
     public boolean removeAndShare(E... elements)
@@ -98,16 +100,29 @@ public class OortList<E> extends OortObject<List<E>>
 
     protected void shareRemove(E... elements)
     {
-        Info<List<E>> info = new Info<List<E>>(5);
-        info.put(Info.OORT_URL_FIELD, getOort().getURL());
+        String oortURL = getOort().getURL();
+        Info<List<E>> info = new Info<List<E>>(oortURL, 5);
+        info.put(Info.OORT_URL_FIELD, oortURL);
         info.put(Info.NAME_FIELD, getName());
         info.put(Info.OBJECT_FIELD, elements);
         info.put(Info.TYPE_FIELD, TYPE_FIELD_ELEMENT_VALUE);
         info.put(Info.ACTION_FIELD, ACTION_FIELD_REMOVE_VALUE);
 
-        logger.debug("Sharing remove list elements info {}", info);
+        logger.debug("Sharing remove list elements {}", info);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(OORT_OBJECTS_CHANNEL).publish(getLocalSession(), info, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), info, null);
+    }
+
+    public List<E> removeAll(Info<List<E>> info1, Info<List<E>> info2)
+    {
+        List<E> result = new ArrayList<E>();
+        if (info1 != null)
+        {
+            result.addAll(info1.getObject());
+            if (info2 != null)
+                result.removeAll(info2.getObject());
+        }
+        return result;
     }
 
     @Override
@@ -130,12 +145,14 @@ public class OortList<E> extends OortObject<List<E>>
                 String action = (String)data.get(Info.ACTION_FIELD);
                 if (ACTION_FIELD_ADD_VALUE.equals(action))
                 {
-                    list.addAll(elements);
+                    if (!info.isLocal())
+                        list.addAll(elements);
                     notifyElementsAdded(info, elements);
                 }
                 else if (ACTION_FIELD_REMOVE_VALUE.equals(action))
                 {
-                    list.removeAll(elements);
+                    if (!info.isLocal())
+                        list.removeAll(elements);
                     notifyElementsRemoved(info, elements);
                 }
             }

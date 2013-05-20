@@ -58,21 +58,44 @@ public class OortObjectTest extends OortTest
     public void testShareObject() throws Exception
     {
         String name = "test";
+        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
-        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
         OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
+        oortObject1.start();
         OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
+        oortObject2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
+        final CountDownLatch objectLatch1 = new CountDownLatch(1);
+        oortObject1.addListener(new OortObject.Listener.Adapter<Map<String, Object>>()
+        {
+            @Override
+            public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo)
+            {
+                if (newInfo.isLocal())
+                {
+                    Assert.assertNotNull(oldInfo);
+                    Assert.assertSame(oldInfo, newInfo);
+                    objectLatch1.countDown();
+                }
+            }
+        });
+
         // The other OortObject listens to receive the object
-        final CountDownLatch objectLatch = new CountDownLatch(1);
+        final CountDownLatch objectLatch2 = new CountDownLatch(1);
         oortObject2.addListener(new OortObject.Listener.Adapter<Map<String, Object>>()
         {
             public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo)
             {
-                objectLatch.countDown();
+                if (!newInfo.isLocal())
+                {
+                    Assert.assertNull(oldInfo);
+                    Assert.assertNotNull(newInfo);
+                    objectLatch2.countDown();
+                }
             }
         });
 
@@ -83,7 +106,8 @@ public class OortObjectTest extends OortTest
         object1.put(key1, value1);
         oortObject1.share();
 
-        Assert.assertTrue(objectLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(objectLatch1.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(objectLatch2.await(5, TimeUnit.SECONDS));
 
         Assert.assertTrue(oortObject2.getLocal().isEmpty());
         Map<String, Object> object1AtOort2 = oortObject2.getRemote(oort1.getURL());
@@ -97,12 +121,15 @@ public class OortObjectTest extends OortTest
     public void testLocalObjectIsPushedWhenNodeJoins() throws Exception
     {
         String name = "test";
+        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
-        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
         OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
+        oortObject1.start();
         OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
+        oortObject2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
         Map<String, Object> object1 = oortObject1.getLocal();
@@ -122,7 +149,7 @@ public class OortObjectTest extends OortTest
 
         Server server3 = startServer(0);
         Oort oort3 = startOort(server3);
-        subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
+        subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort3.getBayeuxServer().addListener(subscriptionListener);
         OortComet oortComet31 = oort3.observeComet(oort1.getURL());
         Assert.assertTrue(oortComet31.waitFor(5000, BayeuxClient.State.CONNECTED));
@@ -131,6 +158,7 @@ public class OortObjectTest extends OortTest
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
         OortObject<Map<String, Object>> oortObject3 = new OortObject<Map<String, Object>>(oort3, name, factory);
+        oortObject3.start();
         Map<String, Object> object3 = oortObject3.getLocal();
         String key3 = "key3";
         String value3 = "value3";
@@ -160,12 +188,15 @@ public class OortObjectTest extends OortTest
     public void testLocalObjectIsRemovedWhenNodeLeaves() throws Exception
     {
         String name = "test";
+        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
-        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
         OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
+        oortObject1.start();
         OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
+        oortObject2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
         Map<String, Object> object1 = oortObject1.getLocal();
@@ -196,12 +227,15 @@ public class OortObjectTest extends OortTest
     public void testIterationOverInfos() throws Exception
     {
         String name = "test";
+        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
-        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
         OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
+        oortObject1.start();
         OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
+        oortObject2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
         Map<String, Object> object1 = oortObject1.getLocal();
@@ -237,12 +271,15 @@ public class OortObjectTest extends OortTest
     public void testNonCompositeObject() throws Exception
     {
         String name = "test";
+        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<Long> factory = OortObjectFactories.forLong();
-        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
         OortObject<Long> oortObject1 = new OortObject<Long>(oort1, name, factory);
+        oortObject1.start();
         OortObject<Long> oortObject2 = new OortObject<Long>(oort2, name, factory);
+        oortObject2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
         long value1 = 2;
@@ -279,12 +316,15 @@ public class OortObjectTest extends OortTest
     public void testAtomicLongSharedObject() throws Exception
     {
         String name = "test";
-        OortObject.Factory<AtomicLong> factory = OortObjectFactories.forConcurrentLong();
-        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(OortObject.OORT_OBJECTS_CHANNEL, 2);
+        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
+        OortObject.Factory< AtomicLong > factory = OortObjectFactories.forConcurrentLong();
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
         OortObject<AtomicLong> oortObject1 = new OortObject<AtomicLong>(oort1, name, factory);
+        oortObject1.start();
         OortObject<AtomicLong> oortObject2 = new OortObject<AtomicLong>(oort2, name, factory);
+        oortObject2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
         long value1 = 2;
