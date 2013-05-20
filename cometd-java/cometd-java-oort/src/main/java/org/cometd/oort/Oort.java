@@ -361,7 +361,11 @@ public class Oort extends AggregateLifeCycle
 
     protected OortComet newOortComet(String cometURL)
     {
-        return new OortComet(this, cometURL);
+        Map<String, Object> options = new HashMap<String, Object>(1);
+        JSONContext.Client jsonContext = getJSONContextClient();
+        if (jsonContext != null)
+            options.put(ClientTransport.JSON_CONTEXT, jsonContext);
+        return new OortComet(this, cometURL, options);
     }
 
     protected void configureOortComet(OortComet oortComet)
@@ -380,10 +384,6 @@ public class Oort extends AggregateLifeCycle
             if (!present)
                 oortComet.addExtension(new AckExtension());
         }
-
-        JSONContext.Client jsonContext = getJSONContextClient();
-        if (jsonContext != null)
-            oortComet.setOption(ClientTransport.JSON_CONTEXT, jsonContext);
     }
 
     protected String encodeSecret(String secret)

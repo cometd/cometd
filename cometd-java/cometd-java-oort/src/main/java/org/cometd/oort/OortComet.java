@@ -43,7 +43,13 @@ public class OortComet extends BayeuxClient
 
     public OortComet(Oort oort, String cometURL)
     {
-        super(cometURL,WebSocketTransport.create(null,oort.getWebSocketClientFactory()),LongPollingTransport.create(null, oort.getHttpClient()));
+        this(oort, cometURL, null);
+    }
+
+    public OortComet(Oort oort, String cometURL, Map<String, Object> options)
+    {
+        super(cometURL, WebSocketTransport.create(options, oort.getWebSocketClientFactory()),
+                LongPollingTransport.create(options, oort.getHttpClient()));
         _oort = oort;
         _cometURL = cometURL;
         setDebugEnabled(oort.isClientDebugEnabled());
