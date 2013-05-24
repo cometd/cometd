@@ -26,7 +26,7 @@ public class CometDListenerExceptionCallbackTest extends AbstractCometDTest
     {
         defineClass(Latch.class);
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = (Latch)get("latch");
+        Latch latch = get("latch");
         evaluateScript("var connectLatch = new Latch(1);");
         Latch connectLatch = get("connectLatch");
         evaluateScript("" +
@@ -56,7 +56,7 @@ public class CometDListenerExceptionCallbackTest extends AbstractCometDTest
     {
         defineClass(Latch.class);
         evaluateScript("var latch = new Latch(1);");
-        Latch latch = (Latch)get("latch");
+        Latch latch = get("latch");
         evaluateScript("" +
                 "cometd.configure({url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "'});" +
                 "var channelSubscription = undefined;" +

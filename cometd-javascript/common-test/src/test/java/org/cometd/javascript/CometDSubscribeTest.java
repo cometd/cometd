@@ -112,4 +112,79 @@ public class CometDSubscribeTest extends AbstractCometDTest
 
         evaluateScript("cometd.disconnect(true);");
     }
+
+    @Test
+    public void testDynamicResubscription() throws Exception
+    {
+        defineClass(Latch.class);
+        evaluateScript("var latch = new Latch(1);");
+        Latch latch = get("latch");
+        evaluateScript("" +
+                "cometd.configure({ url: '" + cometdURL + "', logLevel: '" + getLogLevel() + "' });" +
+                "" +
+                "var _subscription;" +
+                "cometd.addListener('/meta/handshake', function(m)" +
+                "{" +
+                "    if (m.successful)" +
+                "    {" +
+                "        cometd.batch(function()" +
+                "        {" +
+                "            cometd.subscribe('/static', latch, 'countDown');" +
+                "            if (_subscription)" +
+                "                _subscription = cometd.resubscribe(_subscription);" +
+                "        });" +
+                "    }" +
+                "});" +
+                "" +
+                "cometd.handshake();" +
+                "");
+
+        // Wait for /meta/connect
+        Thread.sleep(1000);
+
+        evaluateScript("cometd.publish('/static', {});");
+
+        Assert.assertTrue(latch.await(5000));
+        latch.reset(2);
+
+        evaluateScript("" +
+                "cometd.batch(function()" +
+                "{" +
+                "    _subscription = cometd.subscribe('/dynamic', latch, 'countDown');" +
+                "    cometd.publish('/static', {});" +
+                "    cometd.publish('/dynamic', {});" +
+                "});" +
+                "");
+
+        Assert.assertTrue(latch.await(5000));
+        latch.reset(2);
+
+        stopServer();
+
+        evaluateScript("" +
+                "var connectLatch = new Latch(1);" +
+                "cometd.addListener('/meta/connect', function(m)" +
+                "{" +
+                "    if (m.successful)" +
+                "        connectLatch.countDown();" +
+                "});" +
+                "");
+        Latch connectLatch = get("connectLatch");
+
+        // Restart the server to trigger a re-handshake
+        startServer();
+
+        // Wait until we are fully reconnected
+        Assert.assertTrue(connectLatch.await(5000));
+
+        evaluateScript("" +
+                "cometd.batch(function()" +
+                "{" +
+                "    cometd.publish('/static', {});" +
+                "    cometd.publish('/dynamic', {});" +
+                "});" +
+                "");
+
+        Assert.assertTrue(latch.await(5000));
+    }
 }

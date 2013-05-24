@@ -23,6 +23,7 @@ import org.cometd.javascript.jquery.JQueryTestProvider;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.CometdServlet;
 import org.cometd.websocket.server.WebSocketTransport;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -56,8 +57,10 @@ public abstract class AbstractCometDTest
     };
     protected TestProvider provider;
     private HttpCookieStore cookies;
-    private Server server;
+    protected Server server;
+    protected Connector connector;
     protected ServletContextHandler context;
+    protected CometdServlet cometdServlet;
     protected int longPollingPeriod = 5000;
     protected String cometServletPath = "/cometd";
     protected int port;
@@ -78,7 +81,7 @@ public abstract class AbstractCometDTest
         cookies = new HttpCookieStore();
 
         server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector();
+        connector = new SelectChannelConnector();
         server.addConnector(connector);
 
         HandlerCollection handlers = new HandlerCollection();
@@ -91,7 +94,7 @@ public abstract class AbstractCometDTest
         context.addServlet(DefaultServlet.class, "/");
 
         // Setup CometD servlet
-        CometdServlet cometdServlet = new CometdServlet();
+        cometdServlet = new CometdServlet();
         ServletHolder cometServletHolder = new ServletHolder(cometdServlet);
         cometServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
         cometServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
@@ -101,22 +104,31 @@ public abstract class AbstractCometDTest
 
         customizeContext(context);
 
-        server.start();
-        port = connector.getLocalPort();
+        startServer();
 
         contextURL = "http://localhost:" + port + contextPath;
         cometdURL = contextURL + cometServletPath;
 
-        bayeuxServer = cometdServlet.getBayeux();
-
         initPage();
+    }
+
+    protected void startServer() throws Exception
+    {
+        connector.setPort(port);
+        server.start();
+        port = connector.getLocalPort();
+        bayeuxServer = cometdServlet.getBayeux();
     }
 
     @After
     public void destroyCometDServer() throws Exception
     {
         destroyPage();
+        stopServer();
+    }
 
+    protected void stopServer() throws Exception
+    {
         server.stop();
         server.join();
         cookies.clear();

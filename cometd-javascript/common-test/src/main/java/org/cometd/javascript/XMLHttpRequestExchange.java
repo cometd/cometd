@@ -19,6 +19,7 @@ package org.cometd.javascript;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
@@ -59,10 +60,12 @@ public class XMLHttpRequestExchange extends ScriptableObject
         return exchange.isAsynchronous();
     }
 
-    public void await() throws InterruptedException
+    public void await() throws Exception
     {
-        exchange.waitForDone();
-        exchange.notifyReadyStateChange(false);
+        if (exchange.waitForDone() == HttpExchange.STATUS_COMPLETED)
+            exchange.notifyReadyStateChange(false);
+        else
+            exchange.rethrow();
     }
 
     public void jsFunction_addRequestHeader(String name, String value)
@@ -136,6 +139,7 @@ public class XMLHttpRequestExchange extends ScriptableObject
         private volatile ReadyState readyState = ReadyState.UNSENT;
         private volatile String responseText;
         private volatile String responseStatusText;
+        private volatile Throwable failure;
 
         public CometDExchange(HttpCookieStore cookieStore, ThreadModel threads, Scriptable thiz, String method, String url, boolean async)
         {
@@ -296,10 +300,44 @@ public class XMLHttpRequestExchange extends ScriptableObject
         }
 
         @Override
+        protected void onConnectionFailed(Throwable x)
+        {
+            super.onConnectionFailed(x);
+            fail(x);
+        }
+
+        @Override
         protected void onException(Throwable x)
         {
             if (!(x instanceof EOFException))
                 super.onException(x);
+            fail(x);
+        }
+
+        @Override
+        protected void onExpire()
+        {
+            super.onExpire();
+            fail(new TimeoutException());
+        }
+
+        private void fail(Throwable x)
+        {
+            failure = x;
+            log("Failed: {}", x);
+            if (async)
+            {
+                readyState = ReadyState.DONE;
+                notifyReadyStateChange(true);
+            }
+        }
+
+        public void rethrow() throws Exception
+        {
+            if (failure instanceof Exception)
+                throw (Exception)failure;
+            if (failure instanceof Error)
+                throw (Error)failure;
         }
 
         @Override
