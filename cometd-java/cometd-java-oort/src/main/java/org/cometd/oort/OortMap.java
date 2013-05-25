@@ -121,7 +121,7 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         return null;
     }
 
-    public Info<ConcurrentMap<K, V>> findInfo(K key)
+    public Info<ConcurrentMap<K, V>> findInfoByKey(K key)
     {
         for (Info<ConcurrentMap<K, V>> info : this)
         {
@@ -234,12 +234,10 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
     public static class DeltaListener<K, V> implements Listener<ConcurrentMap<K, V>>
     {
         private final OortMap<K, V> oortMap;
-        private final EntryListener<K, V> listener;
 
-        public DeltaListener(OortMap<K, V> oortMap, EntryListener<K, V> listener)
+        public DeltaListener(OortMap<K, V> oortMap)
         {
             this.oortMap = oortMap;
-            this.listener = listener;
         }
 
         public void onUpdated(Info<ConcurrentMap<K, V>> oldInfo, Info<ConcurrentMap<K, V>> newInfo)

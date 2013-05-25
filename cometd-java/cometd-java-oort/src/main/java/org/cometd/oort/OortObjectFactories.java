@@ -30,6 +30,11 @@ public class OortObjectFactories
     {
     }
 
+    public static OortObject.Factory<Boolean> forBoolean()
+    {
+        return new BooleanFactory();
+    }
+
     public static OortObject.Factory<Long> forLong()
     {
         return new LongFactory();
@@ -53,6 +58,18 @@ public class OortObjectFactories
     public static <E> OortObject.Factory<List<E>> forConcurrentList()
     {
         return new ConcurrentListFactory<E>();
+    }
+
+    private static class BooleanFactory implements OortObject.Factory<Boolean>
+    {
+        public Boolean newObject(Object representation)
+        {
+            if (representation == null)
+                return false;
+            if (representation instanceof Boolean)
+                return (Boolean)representation;
+            return Boolean.valueOf(representation.toString());
+        }
     }
 
     private static class LongFactory implements OortObject.Factory<Long>

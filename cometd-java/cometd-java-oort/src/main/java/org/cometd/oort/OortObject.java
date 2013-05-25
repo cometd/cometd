@@ -129,6 +129,16 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
         return infos.values().iterator();
     }
 
+    public Info<T> findInfo(T object)
+    {
+        for (Info<T> info : this)
+        {
+            if (info.getObject().equals(object))
+                return info;
+        }
+        return null;
+    }
+
     public void addListener(Listener<T> listener)
     {
         listeners.add(listener);

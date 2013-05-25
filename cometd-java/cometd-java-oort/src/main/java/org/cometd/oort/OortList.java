@@ -59,6 +59,16 @@ public class OortList<E> extends OortObject<List<E>>
         return merge(OortObjectMergers.<E>listUnion());
     }
 
+    public boolean contains(E element)
+    {
+        for (Info<List<E>> info : this)
+        {
+            if (info.getObject().contains(element))
+                return true;
+        }
+        return false;
+    }
+
     public boolean addAndShare(E... elements)
     {
         boolean result = Collections.addAll(getLocal(), elements);
