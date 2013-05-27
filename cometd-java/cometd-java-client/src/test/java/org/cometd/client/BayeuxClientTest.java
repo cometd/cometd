@@ -902,14 +902,15 @@ public class BayeuxClientTest extends ClientServerTest
             public void onFailure(Throwable x, Message[] messages)
             {
                 // Suppress expected exceptions
-                if (!(x instanceof EOFException))
-                    super.onFailure(x, messages);
+                if ((x instanceof EOFException) || (x instanceof ConnectException))
+                    return;
+                super.onFailure(x, messages);
             }
         };
         client.setDebugEnabled(debugTests());
 
         final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
-        final AtomicReference<CountDownLatch> disconnectedLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> disconnectedLatch = new AtomicReference<CountDownLatch>(new CountDownLatch(2));
         client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
         {
             public void onMessage(ClientSessionChannel channel, Message message)
@@ -929,7 +930,6 @@ public class BayeuxClientTest extends ClientServerTest
 
         // Stop server
         int port = connector.getLocalPort();
-        disconnectedLatch.set(new CountDownLatch(1));
         server.stop();
         Assert.assertTrue(disconnectedLatch.get().await(10, TimeUnit.SECONDS));
         Assert.assertTrue(!client.isConnected());
