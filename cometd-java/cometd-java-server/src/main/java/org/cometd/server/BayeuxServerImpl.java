@@ -31,7 +31,6 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicMarkableReference;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -50,6 +49,7 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.JSONContext;
+import org.cometd.common.MarkedReference;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -356,7 +356,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return createChannelIfAbsent(channelName, initializers).isMarked();
     }
 
-    private AtomicMarkableReference<ServerChannelImpl> createChannelIfAbsent(String channelName, Initializer... initializers)
+    private MarkedReference<ServerChannelImpl> createChannelIfAbsent(String channelName, Initializer... initializers)
     {
         boolean initialized = false;
         ServerChannelImpl channel = _channels.get(channelName);
@@ -420,7 +420,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
         // Another thread may add this channel concurrently, so wait until it is initialized
         channel.waitForInitialized();
-        return new AtomicMarkableReference<ServerChannelImpl>(channel, initialized);
+        return new MarkedReference<ServerChannelImpl>(channel, initialized);
     }
 
     private void notifyConfigureChannel(Initializer listener, ServerChannel channel)
