@@ -20,12 +20,18 @@ import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.common.MarkedReference;
 
+/**
+ *
+ * @param <K>
+ * @param <V>
+ */
 public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
 {
     public static final String TYPE_FIELD_ENTRY_VALUE = "oort.map.entry";
@@ -51,65 +57,66 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         listeners.remove(listener);
     }
 
-    public List<EntryListener<K, V>> getEntryListeners()
-    {
-        return listeners;
-    }
-
     public V putAndShare(K key, V value)
     {
-        V result = getLocal().put(key, value);
-        sharePut(key, value);
-        return result;
-    }
-
-    protected void sharePut(K key, V value)
-    {
-        ConcurrentMap<K, V> map = getLocal();
-        if (!map.containsKey(key))
-            throw new IllegalArgumentException("Key " + key + " is not present in " + map);
-
         Map<String, Object> entry = new HashMap<String, Object>(2);
         entry.put(KEY_FIELD, key);
         entry.put(VALUE_FIELD, value);
-        String oortURL = getOort().getURL();
-        Info<List<Map.Entry<K, V>>> info = new Info<List<Map.Entry<K, V>>>(oortURL, 5);
-        info.put(Info.OORT_URL_FIELD, oortURL);
-        info.put(Info.NAME_FIELD, getName());
-        info.put(Info.OBJECT_FIELD, entry);
-        info.put(Info.TYPE_FIELD, TYPE_FIELD_ENTRY_VALUE);
-        info.put(Info.ACTION_FIELD, ACTION_FIELD_PUT_VALUE);
 
-        logger.debug("Sharing put map entry info {}", info);
+        Data data = new Data(6);
+        data.put(Info.ID_FIELD, nextId());
+        data.put(Info.OORT_URL_FIELD, getOort().getURL());
+        data.put(Info.NAME_FIELD, getName());
+        data.put(Info.OBJECT_FIELD, entry);
+        data.put(Info.TYPE_FIELD, TYPE_FIELD_ENTRY_VALUE);
+        data.put(Info.ACTION_FIELD, ACTION_FIELD_PUT_VALUE);
+
+        logger.debug("Sharing map put {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), info, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+
+        return (V)data.getResult();
     }
 
     public V removeAndShare(K key)
     {
-        V value = getLocal().remove(key);
-        shareRemove(key, value);
-        return value;
-    }
-
-    protected void shareRemove(K key, V value)
-    {
         Map<String, Object> entry = new HashMap<String, Object>(1);
         entry.put(KEY_FIELD, key);
-        entry.put(VALUE_FIELD, value);
-        String oortURL = getOort().getURL();
-        Info<List<Map.Entry<K, V>>> info = new Info<List<Map.Entry<K, V>>>(oortURL, 5);
-        info.put(Info.OORT_URL_FIELD, oortURL);
-        info.put(Info.NAME_FIELD, getName());
-        info.put(Info.OBJECT_FIELD, entry);
-        info.put(Info.TYPE_FIELD, TYPE_FIELD_ENTRY_VALUE);
-        info.put(Info.ACTION_FIELD, ACTION_FIELD_REMOVE_VALUE);
 
-        logger.debug("Sharing remove map entry info {}", info);
+        Data data = new Data(6);
+        data.put(Info.ID_FIELD, nextId());
+        data.put(Info.OORT_URL_FIELD, getOort().getURL());
+        data.put(Info.NAME_FIELD, getName());
+        data.put(Info.OBJECT_FIELD, entry);
+        data.put(Info.TYPE_FIELD, TYPE_FIELD_ENTRY_VALUE);
+        data.put(Info.ACTION_FIELD, ACTION_FIELD_REMOVE_VALUE);
+
+        logger.debug("Sharing map remove {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), info, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+
+        return (V)data.getResult();
     }
 
+    /**
+     * Returns the value mapped to the given key from the local map.
+     *
+     * @param key the key mapped to the value to return
+     * @return the value mapped to the given key, or
+     *         {@code null} if the local map does not contain the given key
+     * @see #find(Object)
+     */
+    public V get(K key)
+    {
+        return getInfo(getOort().getURL()).getObject().get(key);
+    }
+
+    /**
+     * Returns the first non-null value mapped to the given key from all the maps.
+     * @param key the key mapped to the value to return
+     * @return the value mapped to the given key, or
+     *         {@code null} if the maps do not contain the given key
+     */
     public V find(K key)
     {
         for (Info<ConcurrentMap<K, V>> info : this)
@@ -121,7 +128,13 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         return null;
     }
 
-    public Info<ConcurrentMap<K, V>> findInfoByKey(K key)
+    /**
+     * Returns the first {@link Info} whose map contains the given key.
+     *
+     * @param key the key
+     * @return
+     */
+    public Info<ConcurrentMap<K, V>> findInfo(K key)
     {
         for (Info<ConcurrentMap<K, V>> info : this)
         {
@@ -131,50 +144,66 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         return null;
     }
 
-    public ConcurrentMap<K, V> removeAll(Info<ConcurrentMap<K, V>> info1, Info<ConcurrentMap<K, V>> info2)
-    {
-        ConcurrentMap<K, V> result = new ConcurrentHashMap<K, V>();
-        if (info1 != null)
-        {
-            result.putAll(info1.getObject());
-            if (info2 != null)
-                result.keySet().removeAll(info2.getObject().keySet());
-        }
-        return result;
-    }
-
     @Override
     protected void onObject(Map<String, Object> data)
     {
         if (TYPE_FIELD_ENTRY_VALUE.equals(data.get(Info.TYPE_FIELD)))
         {
-            String remoteOortURL = (String)data.get(Info.OORT_URL_FIELD);
-            Info<ConcurrentMap<K, V>> info = getInfo(remoteOortURL);
+            String action = (String)data.get(Info.ACTION_FIELD);
+            final boolean remove = ACTION_FIELD_REMOVE_VALUE.equals(action);
+            if (!ACTION_FIELD_PUT_VALUE.equals(action) && !remove)
+                throw new IllegalArgumentException(action);
+
+            String oortURL = (String)data.get(Info.OORT_URL_FIELD);
+            Info<ConcurrentMap<K, V>> info = getInfo(oortURL);
             if (info != null)
             {
-                ConcurrentMap<K, V> map = info.getObject();
-
-                // Handle entry
+                // Retrieve entry
+                @SuppressWarnings("unchecked")
                 Map<String, Object> object = (Map<String, Object>)data.get(Info.OBJECT_FIELD);
-                Entry<K, V> entry = new Entry<K, V>((K)object.get(KEY_FIELD), (V)object.get(VALUE_FIELD));
+                @SuppressWarnings("unchecked")
+                final K key = (K)object.get(KEY_FIELD);
+                @SuppressWarnings("unchecked")
+                final V value = (V)object.get(VALUE_FIELD);
 
-                String action = (String)data.get(Info.ACTION_FIELD);
-                if (ACTION_FIELD_PUT_VALUE.equals(action))
+                // Set the new Info
+                Info<ConcurrentMap<K, V>> newInfo = new Info<ConcurrentMap<K, V>>(getOort().getURL(), data);
+                final ConcurrentMap<K, V> map = info.getObject();
+                newInfo.put(Info.OBJECT_FIELD, map);
+                final AtomicReference<V> result = new AtomicReference<V>();
+                MarkedReference<Info<ConcurrentMap<K, V>>> old = setInfo(newInfo, new Runnable()
                 {
-                    if (!info.isLocal())
-                        map.put(entry.getKey(), entry.getValue());
-                    notifyEntryPut(info, entry);
-                }
-                else if (ACTION_FIELD_REMOVE_VALUE.equals(action))
+                    public void run()
+                    {
+                        if (remove)
+                            result.set(map.remove(key));
+                        else
+                            result.set(map.put(key, value));
+                    }
+                });
+
+                Entry<K, V> entry = new Entry<K, V>(key, result.get(), value);
+
+                logger.debug("{} {} map {} of {}",
+                        old.isMarked() ? "Performed" : "Skipped",
+                        newInfo.isLocal() ? "local" : "remote",
+                        remove ? "remove" : "put",
+                        entry);
+
+                if (old.isMarked())
                 {
-                    if (!info.isLocal())
-                        map.remove(entry.getKey());
-                    notifyEntryRemoved(info, entry);
+                    if (remove)
+                        notifyEntryRemoved(info, entry);
+                    else
+                        notifyEntryPut(info, entry);
                 }
+
+                if (data instanceof Data)
+                    ((Data)data).setResult(result.get());
             }
             else
             {
-                logger.debug("Could not find info for {}", remoteOortURL);
+                logger.debug("No info for {}", oortURL);
             }
         }
         else
@@ -183,9 +212,9 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         }
     }
 
-    private void notifyEntryPut(Info<ConcurrentMap<K, V>> info, Map.Entry<K, V> entry)
+    private void notifyEntryPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry)
     {
-        for (EntryListener<K, V> listener : getEntryListeners())
+        for (EntryListener<K, V> listener : listeners)
         {
             try
             {
@@ -198,9 +227,9 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         }
     }
 
-    private void notifyEntryRemoved(Info<ConcurrentMap<K, V>> info, Map.Entry<K, V> elements)
+    private void notifyEntryRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> elements)
     {
-        for (EntryListener<K, V> listener : getEntryListeners())
+        for (EntryListener<K, V> listener : listeners)
         {
             try
             {
@@ -215,17 +244,17 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
 
     public interface EntryListener<K, V> extends EventListener
     {
-        public void onPut(Info<ConcurrentMap<K, V>> info, Map.Entry<K, V> entry);
+        public void onPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry);
 
-        public void onRemoved(Info<ConcurrentMap<K, V>> info, Map.Entry<K, V> entry);
+        public void onRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry);
 
         public static class Adapter<K, V> implements EntryListener<K, V>
         {
-            public void onPut(Info<ConcurrentMap<K, V>> info, Map.Entry<K, V> entry)
+            public void onPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry)
             {
             }
 
-            public void onRemoved(Info<ConcurrentMap<K, V>> info, Map.Entry<K, V> entry)
+            public void onRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry)
             {
             }
         }
@@ -242,30 +271,46 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
 
         public void onUpdated(Info<ConcurrentMap<K, V>> oldInfo, Info<ConcurrentMap<K, V>> newInfo)
         {
-            ConcurrentMap<K, V> added = oortMap.removeAll(newInfo, oldInfo);
-            ConcurrentMap<K, V> removed = oortMap.removeAll(oldInfo, newInfo);
-            for (Map.Entry<K, V> entry : added.entrySet())
+            Map<K, V> oldMap = oldInfo.getObject();
+            Map<K, V> newMap = new HashMap<K, V>(newInfo.getObject());
+            for (Map.Entry<K, V> oldEntry : oldMap.entrySet())
+            {
+                K key = oldEntry.getKey();
+                V newValue = newMap.remove(key);
+                Entry<K, V> entry = new Entry<K, V>(key, oldEntry.getValue(), newValue);
+                if (newValue == null)
+                    oortMap.notifyEntryRemoved(newInfo, entry);
+                else
+                    oortMap.notifyEntryPut(newInfo, entry);
+            }
+            for (Map.Entry<K, V> newEntry : newMap.entrySet())
+            {
+                Entry<K, V> entry = new Entry<K, V>(newEntry.getKey(), null, newEntry.getValue());
                 oortMap.notifyEntryPut(newInfo, entry);
-            for (Map.Entry<K, V> entry : removed.entrySet())
-                oortMap.notifyEntryRemoved(newInfo, entry);
+            }
         }
 
         public void onRemoved(Info<ConcurrentMap<K, V>> info)
         {
-            for (Map.Entry<K, V> entry : info.getObject().entrySet())
+            for (Map.Entry<K, V> oldEntry : info.getObject().entrySet())
+            {
+                Entry<K, V> entry = new Entry<K, V>(oldEntry.getKey(), oldEntry.getValue(), null);
                 oortMap.notifyEntryRemoved(info, entry);
+            }
         }
     }
 
-    private static class Entry<K, V> implements Map.Entry<K, V>
+    public static class Entry<K, V>
     {
         private final K key;
-        private final V value;
+        private final V oldValue;
+        private final V newValue;
 
-        public Entry(K key, V value)
+        public Entry(K key, V oldValue, V newValue)
         {
             this.key = key;
-            this.value = value;
+            this.oldValue = oldValue;
+            this.newValue = newValue;
         }
 
         public K getKey()
@@ -273,14 +318,20 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
             return key;
         }
 
-        public V getValue()
+        public V getOldValue()
         {
-            return value;
+            return oldValue;
         }
 
-        public V setValue(V value)
+        public V getNewValue()
         {
-            throw new UnsupportedOperationException();
+            return newValue;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("(%s=%s->%s)", getKey(), getOldValue(), getNewValue());
         }
     }
 }

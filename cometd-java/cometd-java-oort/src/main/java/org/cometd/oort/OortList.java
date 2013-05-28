@@ -16,15 +16,15 @@
 
 package org.cometd.oort;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.common.MarkedReference;
 
 public class OortList<E> extends OortObject<List<E>>
 {
@@ -49,16 +49,6 @@ public class OortList<E> extends OortObject<List<E>>
         listeners.remove(listener);
     }
 
-    public List<ElementListener<E>> getElementListeners()
-    {
-        return listeners;
-    }
-
-    public List<E> elements()
-    {
-        return merge(OortObjectMergers.<E>listUnion());
-    }
-
     public boolean contains(E element)
     {
         for (Info<List<E>> info : this)
@@ -71,68 +61,36 @@ public class OortList<E> extends OortObject<List<E>>
 
     public boolean addAndShare(E... elements)
     {
-        boolean result = Collections.addAll(getLocal(), elements);
-        if (result)
-            shareAdd(elements);
-        return result;
-    }
+        Data data = new Data(6);
+        data.put(Info.ID_FIELD, nextId());
+        data.put(Info.OORT_URL_FIELD, getOort().getURL());
+        data.put(Info.NAME_FIELD, getName());
+        data.put(Info.OBJECT_FIELD, elements);
+        data.put(Info.TYPE_FIELD, TYPE_FIELD_ELEMENT_VALUE);
+        data.put(Info.ACTION_FIELD, ACTION_FIELD_ADD_VALUE);
 
-    protected void shareAdd(E... elements)
-    {
-        List<E> list = getLocal();
-        for (E element : elements)
-            if (!list.contains(element))
-                throw new IllegalArgumentException("Element " + element + " is not an element of " + list);
-
-        String oortURL = getOort().getURL();
-        Info<List<E>> info = new Info<List<E>>(oortURL, 5);
-        info.put(Info.OORT_URL_FIELD, oortURL);
-        info.put(Info.NAME_FIELD, getName());
-        info.put(Info.OBJECT_FIELD, elements);
-        info.put(Info.TYPE_FIELD, TYPE_FIELD_ELEMENT_VALUE);
-        info.put(Info.ACTION_FIELD, ACTION_FIELD_ADD_VALUE);
-
-        logger.debug("Sharing add list elements {}", info);
+        logger.debug("Sharing list add {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), info, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+
+        return (Boolean)data.getResult();
     }
 
     public boolean removeAndShare(E... elements)
     {
-        boolean result = false;
-        List<E> list = getLocal();
-        for (E element : elements)
-            result |= list.remove(element);
-        if (result)
-            shareRemove(elements);
-        return result;
-    }
+        Data data = new Data(6);
+        data.put(Info.ID_FIELD, nextId());
+        data.put(Info.OORT_URL_FIELD, getOort().getURL());
+        data.put(Info.NAME_FIELD, getName());
+        data.put(Info.OBJECT_FIELD, elements);
+        data.put(Info.TYPE_FIELD, TYPE_FIELD_ELEMENT_VALUE);
+        data.put(Info.ACTION_FIELD, ACTION_FIELD_REMOVE_VALUE);
 
-    protected void shareRemove(E... elements)
-    {
-        String oortURL = getOort().getURL();
-        Info<List<E>> info = new Info<List<E>>(oortURL, 5);
-        info.put(Info.OORT_URL_FIELD, oortURL);
-        info.put(Info.NAME_FIELD, getName());
-        info.put(Info.OBJECT_FIELD, elements);
-        info.put(Info.TYPE_FIELD, TYPE_FIELD_ELEMENT_VALUE);
-        info.put(Info.ACTION_FIELD, ACTION_FIELD_REMOVE_VALUE);
-
-        logger.debug("Sharing remove list elements {}", info);
+        logger.debug("Sharing list remove {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), info, null);
-    }
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
 
-    public List<E> removeAll(Info<List<E>> info1, Info<List<E>> info2)
-    {
-        List<E> result = new ArrayList<E>();
-        if (info1 != null)
-        {
-            result.addAll(info1.getObject());
-            if (info2 != null)
-                result.removeAll(info2.getObject());
-        }
-        return result;
+        return (Boolean)data.getResult();
     }
 
     @Override
@@ -140,35 +98,57 @@ public class OortList<E> extends OortObject<List<E>>
     {
         if (TYPE_FIELD_ELEMENT_VALUE.equals(data.get(Info.TYPE_FIELD)))
         {
-            String remoteOortURL = (String)data.get(Info.OORT_URL_FIELD);
-            Info<List<E>> info = getInfo(remoteOortURL);
+            String action = (String)data.get(Info.ACTION_FIELD);
+            final boolean remove = ACTION_FIELD_REMOVE_VALUE.equals(action);
+            if (!ACTION_FIELD_ADD_VALUE.equals(action) && !remove)
+                throw new IllegalArgumentException(action);
+
+            String oortURL = (String)data.get(Info.OORT_URL_FIELD);
+            Info<List<E>> info = getInfo(oortURL);
             if (info != null)
             {
-                List<E> list = info.getObject();
-
-                // Handle element
+                // Retrieve elements
                 Object object = data.get(Info.OBJECT_FIELD);
                 if (object instanceof Object[])
                     object = Arrays.asList((Object[])object);
-                List<E> elements = (List<E>)object;
+                final List<E> elements = (List<E>)object;
 
-                String action = (String)data.get(Info.ACTION_FIELD);
-                if (ACTION_FIELD_ADD_VALUE.equals(action))
+                // Set the new Info
+                Info<List<E>> newInfo = new Info<List<E>>(getOort().getURL(), data);
+                final List<E> list = info.getObject();
+                newInfo.put(Info.OBJECT_FIELD, list);
+                final AtomicBoolean result = new AtomicBoolean();
+                MarkedReference<Info<List<E>>> old = setInfo(newInfo, new Runnable()
                 {
-                    if (!info.isLocal())
-                        list.addAll(elements);
-                    notifyElementsAdded(info, elements);
-                }
-                else if (ACTION_FIELD_REMOVE_VALUE.equals(action))
+                    public void run()
+                    {
+                        if (remove)
+                            result.set(list.removeAll(elements));
+                        else
+                            result.set(list.addAll(elements));
+                    }
+                });
+
+                logger.debug("{} {} map {} of {}",
+                        old.isMarked() ? "Performed" : "Skipped",
+                        newInfo.isLocal() ? "local" : "remote",
+                        remove ? "remove" : "add",
+                        elements);
+
+                if (old.isMarked())
                 {
-                    if (!info.isLocal())
-                        list.removeAll(elements);
-                    notifyElementsRemoved(info, elements);
+                    if (remove)
+                        notifyElementsRemoved(info, elements);
+                    else
+                        notifyElementsAdded(info, elements);
                 }
+
+                if (data instanceof Data)
+                    ((Data)data).setResult(result.get());
             }
             else
             {
-                logger.debug("Could not find info for {}", remoteOortURL);
+                logger.debug("No info for {}", oortURL);
             }
         }
         else
@@ -179,7 +159,7 @@ public class OortList<E> extends OortObject<List<E>>
 
     private void notifyElementsAdded(Info<List<E>> info, List<E> elements)
     {
-        for (ElementListener<E> listener : getElementListeners())
+        for (ElementListener<E> listener : listeners)
         {
             try
             {
@@ -194,7 +174,7 @@ public class OortList<E> extends OortObject<List<E>>
 
     private void notifyElementsRemoved(Info<List<E>> info, List<E> elements)
     {
-        for (ElementListener<E> listener : getElementListeners())
+        for (ElementListener<E> listener : listeners)
         {
             try
             {

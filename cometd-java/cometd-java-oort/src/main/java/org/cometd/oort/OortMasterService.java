@@ -64,7 +64,7 @@ public abstract class OortMasterService<R, C> extends OortService<R, C>
      */
     public String getMasterOortURL()
     {
-        OortObject.Info<Boolean> info = nodes.findInfo(true);
+        OortObject.Info<Boolean> info = nodes.getInfoByObject(true);
         return info == null ? null : info.getOortURL();
     }
 
@@ -74,10 +74,7 @@ public abstract class OortMasterService<R, C> extends OortService<R, C>
         super.start();
         nodes.start();
         if (chooser.choose(this))
-        {
-            nodes.setLocal(true);
-            nodes.share();
-        }
+            nodes.setAndShare(true);
     }
 
     @Override

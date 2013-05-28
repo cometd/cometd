@@ -21,8 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
+import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.server.Server;
 import org.junit.Assert;
@@ -58,27 +61,39 @@ public class OortObjectTest extends OortTest
     public void testShareObject() throws Exception
     {
         String name = "test";
-        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
+        String channelName = oortObject1.getChannelName();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
         oortObject1.start();
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
         oortObject2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
-        final CountDownLatch objectLatch1 = new CountDownLatch(1);
+        final String key1 = "key1";
+        final String value1 = "value1";
+        final CountDownLatch objectLatch1 = new CountDownLatch(2);
         oortObject1.addListener(new OortObject.Listener.Adapter<Map<String, Object>>()
         {
             @Override
             public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo)
             {
+                // Expect a local change and a remote change
                 if (newInfo.isLocal())
                 {
                     Assert.assertNotNull(oldInfo);
-                    Assert.assertSame(oldInfo, newInfo);
+                    Assert.assertTrue(oldInfo.getObject().isEmpty());
+                    Assert.assertNotSame(oldInfo, newInfo);
+                    Assert.assertEquals(value1, newInfo.getObject().get(key1));
+                    objectLatch1.countDown();
+                }
+                else
+                {
+                    Assert.assertNull(oldInfo);
+                    Assert.assertNotNull(newInfo);
+                    Assert.assertTrue(newInfo.getObject().isEmpty());
                     objectLatch1.countDown();
                 }
             }
@@ -90,63 +105,69 @@ public class OortObjectTest extends OortTest
         {
             public void onUpdated(OortObject.Info<Map<String, Object>> oldInfo, OortObject.Info<Map<String, Object>> newInfo)
             {
+                // Expect a remote change
                 if (!newInfo.isLocal())
                 {
                     Assert.assertNull(oldInfo);
                     Assert.assertNotNull(newInfo);
+                    Assert.assertEquals(value1, newInfo.getObject().get(key1));
                     objectLatch2.countDown();
                 }
             }
         });
 
         // Change the object and share the change
-        Map<String, Object> object1 = oortObject1.getLocal();
-        String key1 = "key1";
-        String value1 = "value1";
+        Map<String, Object> object1 = factory.newObject(null);
         object1.put(key1, value1);
-        oortObject1.share();
+        oortObject1.setAndShare(object1);
 
         Assert.assertTrue(objectLatch1.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(objectLatch2.await(5, TimeUnit.SECONDS));
 
-        Assert.assertTrue(oortObject2.getLocal().isEmpty());
-        Map<String, Object> object1AtOort2 = oortObject2.getRemote(oort1.getURL());
-        Assert.assertEquals(object1, object1AtOort2);
+        Assert.assertEquals(value1, oortObject1.getInfo(oort1.getURL()).getObject().get(key1));
+        Assert.assertTrue(oortObject1.getInfo(oort2.getURL()).getObject().isEmpty());
+
+        Assert.assertTrue(oortObject2.getInfo(oort2.getURL()).getObject().isEmpty());
+        Assert.assertEquals(object1, oortObject2.getInfo(oort1.getURL()).getObject());
 
         Map<String, Object> objectAtOort2 = oortObject2.merge(OortObjectMergers.<String, Object>mapUnion());
         Assert.assertEquals(object1, objectAtOort2);
+
+        oortObject2.stop();
+        oortObject1.stop();
     }
 
     @Test
     public void testLocalObjectIsPushedWhenNodeJoins() throws Exception
     {
         String name = "test";
-        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
+        String channelName = oortObject1.getChannelName();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
         oortObject1.start();
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
         oortObject2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
-        Map<String, Object> object1 = oortObject1.getLocal();
+        Map<String, Object> object1 = factory.newObject(null);
         String key1 = "key1";
         String value1 = "value1";
         object1.put(key1, value1);
-        oortObject1.share();
+        oortObject1.setAndShare(object1);
 
-        Map<String, Object> object2 = oortObject2.getLocal();
+        Map<String, Object> object2 = factory.newObject(null);
         String key2 = "key2";
         String value2 = "value2";
         object2.put(key2, value2);
-        oortObject2.share();
+        oortObject2.setAndShare(object2);
 
         // Wait for shared objects to synchronize
         Thread.sleep(1000);
 
+        // Connect node3
         Server server3 = startServer(0);
         Oort oort3 = startOort(server3);
         subscriptionListener = new CometSubscriptionListener(channelName, 2);
@@ -159,11 +180,12 @@ public class OortObjectTest extends OortTest
 
         OortObject<Map<String, Object>> oortObject3 = new OortObject<Map<String, Object>>(oort3, name, factory);
         oortObject3.start();
-        Map<String, Object> object3 = oortObject3.getLocal();
+
+        Map<String, Object> object3 = factory.newObject(null);
         String key3 = "key3";
         String value3 = "value3";
         object3.put(key3, value3);
-        final CountDownLatch objectsLatch = new CountDownLatch(2);
+        final CountDownLatch objectsLatch = new CountDownLatch(3);
         oortObject3.addListener(new OortObject.Listener.Adapter<Map<String, Object>>()
         {
             @Override
@@ -172,44 +194,48 @@ public class OortObjectTest extends OortTest
                 objectsLatch.countDown();
             }
         });
-        oortObject3.share();
+        oortObject3.setAndShare(object3);
         Assert.assertTrue(objectsLatch.await(5, TimeUnit.SECONDS));
 
-        OortObject.Merger<Map<String, Object>> merger = OortObjectMergers.mapUnion();
+        OortObject.Merger<Map<String, Object>, Map<String, Object>> merger = OortObjectMergers.mapUnion();
         Map<String, Object> objectAtOort1 = oortObject1.merge(merger);
         Assert.assertEquals(3, objectAtOort1.size());
         Map<String, Object> objectAtOort2 = oortObject2.merge(merger);
         Assert.assertEquals(3, objectAtOort2.size());
         Map<String, Object> objectAtOort3 = oortObject3.merge(merger);
         Assert.assertEquals(3, objectAtOort3.size());
+
+        oortObject2.stop();
+        oortObject1.stop();
+        oortObject3.stop();
     }
 
     @Test
     public void testLocalObjectIsRemovedWhenNodeLeaves() throws Exception
     {
         String name = "test";
-        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
+        String channelName = oortObject1.getChannelName();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
         oortObject1.start();
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
         oortObject2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
-        Map<String, Object> object1 = oortObject1.getLocal();
+        Map<String, Object> object1 = factory.newObject(null);
         String key1 = "key1";
         String value1 = "value1";
         object1.put(key1, value1);
-        oortObject1.share();
+        oortObject1.setAndShare(object1);
 
-        Map<String, Object> object2 = oortObject2.getLocal();
+        Map<String, Object> object2 = factory.newObject(null);
         String key2 = "key2";
         String value2 = "value2";
         object2.put(key2, value2);
-        oortObject2.share();
+        oortObject2.setAndShare(object2);
 
         // Wait for shared objects to synchronize
         Thread.sleep(1000);
@@ -221,34 +247,37 @@ public class OortObjectTest extends OortTest
 
         Map<String, Object> objectAtOort2 = oortObject2.merge(OortObjectMergers.<String, Object>mapUnion());
         Assert.assertEquals(object2, objectAtOort2);
+
+        oortObject2.stop();
+        oortObject1.stop();
     }
 
     @Test
     public void testIterationOverInfos() throws Exception
     {
         String name = "test";
-        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<Map<String, Object>> factory = OortObjectFactories.forMap();
+        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
+        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
+        String channelName = oortObject1.getChannelName();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
-        OortObject<Map<String, Object>> oortObject1 = new OortObject<Map<String, Object>>(oort1, name, factory);
         oortObject1.start();
-        OortObject<Map<String, Object>> oortObject2 = new OortObject<Map<String, Object>>(oort2, name, factory);
         oortObject2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
-        Map<String, Object> object1 = oortObject1.getLocal();
+        Map<String, Object> object1 = factory.newObject(null);
         String key1 = "key1";
         String value1 = "value1";
         object1.put(key1, value1);
-        oortObject1.share();
+        oortObject1.setAndShare(object1);
 
-        Map<String, Object> object2 = oortObject2.getLocal();
+        Map<String, Object> object2 = factory.newObject(null);
         String key2 = "key2";
         String value2 = "value2";
         object2.put(key2, value2);
-        oortObject2.share();
+        oortObject2.setAndShare(object2);
 
         // Wait for shared objects to synchronize
         Thread.sleep(1000);
@@ -265,34 +294,32 @@ public class OortObjectTest extends OortTest
             else if (data.containsKey(key2))
                 Assert.assertEquals(oort2.getURL(), info.getOortURL());
         }
+
+        oortObject2.stop();
+        oortObject1.stop();
     }
 
     @Test
     public void testNonCompositeObject() throws Exception
     {
         String name = "test";
-        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<Long> factory = OortObjectFactories.forLong();
+        OortObject<Long> oortObject1 = new OortObject<Long>(oort1, name, factory);
+        OortObject<Long> oortObject2 = new OortObject<Long>(oort2, name, factory);
+        String channelName = oortObject1.getChannelName();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
-        OortObject<Long> oortObject1 = new OortObject<Long>(oort1, name, factory);
         oortObject1.start();
-        OortObject<Long> oortObject2 = new OortObject<Long>(oort2, name, factory);
         oortObject2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
-        long value1 = 2;
-        oortObject1.setLocal(value1);
-
-        OortObjectTest.OortObjectInitialListener<Long> listener = new OortObjectTest.OortObjectInitialListener<Long>(2);
+        OortObjectInitialListener<Long> listener = new OortObjectInitialListener<Long>(2);
         oortObject1.addListener(listener);
         oortObject2.addListener(listener);
-        oortObject1.share();
+        long value1 = 2;
+        oortObject1.setAndShare(value1);
         Assert.assertTrue(listener.await(5, TimeUnit.SECONDS));
-
-        long value2 = 3;
-        oortObject2.setLocal(value2);
 
         final CountDownLatch latch = new CountDownLatch(1);
         oortObject1.addListener(new OortObject.Listener.Adapter<Long>()
@@ -303,58 +330,90 @@ public class OortObjectTest extends OortTest
                 latch.countDown();
             }
         });
-        oortObject2.share();
-
+        long value2 = 3;
+        oortObject2.setAndShare(value2);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         long sum = oortObject1.merge(OortObjectMergers.longSum());
-
         Assert.assertEquals(value1 + value2, sum);
+
+        oortObject2.stop();
+        oortObject1.stop();
     }
 
     @Test
-    public void testAtomicLongSharedObject() throws Exception
+    public void testStaleUpdateIsDiscarded() throws Exception
     {
         String name = "test";
-        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
-        OortObject.Factory< AtomicLong > factory = OortObjectFactories.forConcurrentLong();
+        OortObject.Factory<Long> factory = OortObjectFactories.forLong();
+        OortObject<Long> oortObject1 = new OortObject<Long>(oort1, name, factory);
+        OortObject<Long> oortObject2 = new OortObject<Long>(oort2, name, factory);
+        final String channelName = oortObject1.getChannelName();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
-        OortObject<AtomicLong> oortObject1 = new OortObject<AtomicLong>(oort1, name, factory);
         oortObject1.start();
-        OortObject<AtomicLong> oortObject2 = new OortObject<AtomicLong>(oort2, name, factory);
         oortObject2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
-        long value1 = 2;
-        oortObject1.getLocal().set(value1);
-
-        OortObjectTest.OortObjectInitialListener<AtomicLong> listener = new OortObjectTest.OortObjectInitialListener<AtomicLong>(2);
+        OortObjectInitialListener<Long> listener = new OortObjectInitialListener<Long>(2);
         oortObject1.addListener(listener);
         oortObject2.addListener(listener);
-        oortObject1.share();
+        long value1 = 1;
+        oortObject1.setAndShare(value1);
         Assert.assertTrue(listener.await(5, TimeUnit.SECONDS));
 
-        long value2 = 3;
-        oortObject2.getLocal().set(value2);
+        // Wait for shared objects to synchronize
+        Thread.sleep(1000);
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        oortObject1.addListener(new OortObject.Listener.Adapter<AtomicLong>()
+        // Update "concurrently": the concurrence will be simulated
+        final long delay = 1000;
+        final long value2 = 2;
+        final long value3 = 3;
+        oort2.getBayeuxServer().addExtension(new BayeuxServer.Extension.Adapter()
         {
             @Override
-            public void onUpdated(OortObject.Info<AtomicLong> oldInfo, OortObject.Info<AtomicLong> newInfo)
+            public boolean rcv(ServerSession from, final ServerMessage.Mutable message)
             {
-                latch.countDown();
+                if (channelName.equals(message.getChannel()))
+                {
+                    Map<String, Object> data = message.getDataAsMap();
+                    if (data != null)
+                    {
+                        if (value2 == ((Number)data.get(OortObject.Info.OBJECT_FIELD)).longValue())
+                        {
+                            new Thread()
+                            {
+                                public void run()
+                                {
+                                    try
+                                    {
+                                        sleep(delay);
+                                        ServerChannel channel = oort2.getBayeuxServer().getChannel(message.getChannel());
+                                        channel.publish(oort2.getOortSession(), message);
+                                    }
+                                    catch (InterruptedException ignored)
+                                    {
+                                    }
+                                }
+                            }.start();
+                            return false;
+                        }
+                    }
+                }
+                return true;
             }
         });
-        oortObject2.share();
+        Assert.assertEquals(value1, (long)oortObject1.setAndShare(value2));
+        Assert.assertEquals(value2, (long)oortObject1.setAndShare(value3));
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Thread.sleep(2 * delay);
 
-        AtomicLong sum = oortObject1.merge(OortObjectMergers.concurrentLongSum());
+        long valueAtNode2 = oortObject2.getInfo(oort1.getURL()).getObject();
+        Assert.assertEquals(value3, valueAtNode2);
 
-        Assert.assertEquals(value1 + value2, sum.get());
+        oortObject2.stop();
+        oortObject1.stop();
     }
 
     /**

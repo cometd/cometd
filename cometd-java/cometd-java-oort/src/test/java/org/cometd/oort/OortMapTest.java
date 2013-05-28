@@ -16,7 +16,9 @@
 
 package org.cometd.oort;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -56,80 +58,151 @@ public class OortMapTest extends OortTest
     public void testEntryPut() throws Exception
     {
         String name = "test";
-        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
+        OortMap<String, String> oortMap1 = new OortMap<String, String>(oort1, name, factory);
+        OortMap<String, String> oortMap2 = new OortMap<String, String>(oort2, name, factory);
+        String channelName = oortMap1.getChannelName();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
-        OortMap<String, String> oortMap1 = new OortMap<String, String>(oort1, name, factory);
         oortMap1.start();
-        OortMap<String, String> oortMap2 = new OortMap<String, String>(oort2, name, factory);
         oortMap2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
         OortObjectTest.OortObjectInitialListener<ConcurrentMap<String, String>> listener = new OortObjectTest.OortObjectInitialListener<ConcurrentMap<String, String>>(2);
         oortMap1.addListener(listener);
         oortMap2.addListener(listener);
-        oortMap1.share();
+        final String key = "key";
+        final String value1 = "value1";
+        ConcurrentMap<String, String> map = new ConcurrentHashMap<String, String>();
+        map.put(key, value1);
+        oortMap1.setAndShare(map);
         Assert.assertTrue(listener.await(5, TimeUnit.SECONDS));
 
-        final String key = "key";
-        final String value = "value";
+        final String value2 = "value2";
         final CountDownLatch putLatch = new CountDownLatch(1);
         oortMap2.addEntryListener(new OortMap.EntryListener.Adapter<String, String>()
         {
             @Override
-            public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, Map.Entry<String, String> entry)
+            public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry)
             {
                 Assert.assertEquals(key, entry.getKey());
-                Assert.assertEquals(value, entry.getValue());
+                Assert.assertEquals(value1, entry.getOldValue());
+                Assert.assertEquals(value2, entry.getNewValue());
                 putLatch.countDown();
             }
         });
 
-        oortMap1.putAndShare(key, value);
-
+        Assert.assertEquals(value1, oortMap1.putAndShare(key, value2));
         Assert.assertTrue(putLatch.await(5, TimeUnit.SECONDS));
+
+        oortMap2.stop();
+        oortMap1.stop();
     }
 
     @Test
     public void testEntryRemoved() throws Exception
     {
         String name = "test";
-        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
+        OortMap<String, String> oortMap1 = new OortMap<String, String>(oort1, name, factory);
+        OortMap<String, String> oortMap2 = new OortMap<String, String>(oort2, name, factory);
+        String channelName = oortMap1.getChannelName();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
-        OortMap<String, String> oortMap1 = new OortMap<String, String>(oort1, name, factory);
         oortMap1.start();
-        OortMap<String, String> oortMap2 = new OortMap<String, String>(oort2, name, factory);
         oortMap2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
-
-        final String key = "key";
-        final String value = "value";
-        oortMap1.getLocal().put(key, value);
 
         OortObjectTest.OortObjectInitialListener<ConcurrentMap<String, String>> listener = new OortObjectTest.OortObjectInitialListener<ConcurrentMap<String, String>>(2);
         oortMap1.addListener(listener);
         oortMap2.addListener(listener);
-        oortMap1.share();
+        final String key = "key";
+        final String value1 = "value1";
+        ConcurrentMap<String, String> map = new ConcurrentHashMap<String, String>();
+        map.put(key, value1);
+        oortMap1.setAndShare(map);
         Assert.assertTrue(listener.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
         oortMap2.addEntryListener(new OortMap.EntryListener.Adapter<String, String>()
         {
             @Override
-            public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info, Map.Entry<String, String> entry)
+            public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry)
             {
                 Assert.assertEquals(key, entry.getKey());
+                Assert.assertEquals(value1, entry.getOldValue());
+                Assert.assertNull(entry.getNewValue());
                 removeLatch.countDown();
             }
         });
 
-        oortMap1.removeAndShare(key);
-
+        Assert.assertEquals(value1, oortMap1.removeAndShare(key));
         Assert.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
+
+        oortMap2.stop();
+        oortMap1.stop();
+    }
+
+    @Test
+    public void testDeltaListener() throws Exception
+    {
+        String name = "test";
+        OortObject.Factory<ConcurrentMap<String, String>> factory = OortObjectFactories.forConcurrentMap();
+        OortMap<String, String> oortMap1 = new OortMap<String, String>(oort1, name, factory);
+        OortMap<String, String> oortMap2 = new OortMap<String, String>(oort2, name, factory);
+        String channelName = oortMap1.getChannelName();
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
+        oort1.getBayeuxServer().addListener(subscriptionListener);
+        oort2.getBayeuxServer().addListener(subscriptionListener);
+        oortMap1.start();
+        oortMap2.start();
+        Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
+
+        OortObjectTest.OortObjectInitialListener<ConcurrentMap<String, String>> listener = new OortObjectTest.OortObjectInitialListener<ConcurrentMap<String, String>>(2);
+        oortMap1.addListener(listener);
+        oortMap2.addListener(listener);
+        ConcurrentMap<String, String> oldMap = new ConcurrentHashMap<String, String>();
+        String key1 = "key1";
+        String valueA1 = "valueA1";
+        oldMap.put(key1, valueA1);
+        String key2 = "key2";
+        String valueB = "valueB";
+        oldMap.put(key2, valueB);
+        oortMap1.setAndShare(oldMap);
+        Assert.assertTrue(listener.await(5, TimeUnit.SECONDS));
+
+        ConcurrentMap<String, String> newMap = new ConcurrentHashMap<String, String>();
+        String valueA2 = "valueA2";
+        newMap.put(key1, valueA2);
+        String key3 = "key3";
+        String valueC = "valueC";
+        newMap.put(key3, valueC);
+
+        final List<OortMap.Entry<String, String>> puts = new ArrayList<OortMap.Entry<String, String>>();
+        final List<OortMap.Entry<String, String>> removes = new ArrayList<OortMap.Entry<String, String>>();
+
+        final CountDownLatch latch = new CountDownLatch(3);
+        oortMap1.addListener(new OortMap.DeltaListener<String, String>(oortMap1));
+        oortMap1.addEntryListener(new OortMap.EntryListener<String, String>()
+        {
+            public void onPut(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry)
+            {
+                puts.add(entry);
+                latch.countDown();
+            }
+
+            public void onRemoved(OortObject.Info<ConcurrentMap<String, String>> info, OortMap.Entry<String, String> entry)
+            {
+                removes.add(entry);
+                latch.countDown();
+            }
+        });
+        oortMap1.setAndShare(newMap);
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(2, puts.size());
+        Assert.assertEquals(1, removes.size());
     }
 }

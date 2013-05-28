@@ -43,7 +43,8 @@ public class OortMasterCounter extends OortMasterService<Long, OortMasterCounter
     }
 
     /**
-     * Sets the value of the local counter, which makes sense only if performed on the "master" node.
+     * Sets the value of the local counter, which makes sense only if performed on the "master" node
+     * before it is started.
      * <p />
      * When the value is set on the "master" node after it is started, the results are undefined
      * since setting the value may happen concurrently with a modification triggered by methods

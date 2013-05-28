@@ -17,6 +17,7 @@
 package org.cometd.oort;
 
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -55,21 +56,21 @@ public class OortListTest extends OortTest
     public void testElementAdded() throws Exception
     {
         String name = "test";
-        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<List<Long>> factory = OortObjectFactories.forConcurrentList();
+        OortList<Long> oortList1 = new OortList<Long>(oort1, name, factory);
+        OortList<Long> oortList2 = new OortList<Long>(oort2, name, factory);
+        String channelName = oortList1.getChannelName();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
-        OortList<Long> oortList1 = new OortList<Long>(oort1, name, factory);
         oortList1.start();
-        OortList<Long> oortList2 = new OortList<Long>(oort2, name, factory);
         oortList2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
 
         OortObjectTest.OortObjectInitialListener<List<Long>> listener = new OortObjectTest.OortObjectInitialListener<List<Long>>(2);
         oortList1.addListener(listener);
         oortList2.addListener(listener);
-        oortList1.share();
+        oortList1.setAndShare(new CopyOnWriteArrayList<Long>());
         Assert.assertTrue(listener.await(5, TimeUnit.SECONDS));
 
         final long element = 1;
@@ -88,30 +89,33 @@ public class OortListTest extends OortTest
         oortList1.addAndShare(element);
 
         Assert.assertTrue(addLatch.await(5, TimeUnit.SECONDS));
+
+        oortList2.stop();
+        oortList1.stop();
     }
 
     @Test
     public void testElementRemoved() throws Exception
     {
         String name = "test";
-        String channelName = OortObject.OORT_OBJECTS_CHANNEL + "/" + name;
         OortObject.Factory<List<Long>> factory = OortObjectFactories.forConcurrentList();
+        OortList<Long> oortList1 = new OortList<Long>(oort1, name, factory);
+        OortList<Long> oortList2 = new OortList<Long>(oort2, name, factory);
+        String channelName = oortList1.getChannelName();
         CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
         oort1.getBayeuxServer().addListener(subscriptionListener);
         oort2.getBayeuxServer().addListener(subscriptionListener);
-        OortList<Long> oortList1 = new OortList<Long>(oort1, name, factory);
         oortList1.start();
-        OortList<Long> oortList2 = new OortList<Long>(oort2, name, factory);
         oortList2.start();
         Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
-
-        final long element = 1;
-        oortList1.getLocal().add(element);
 
         OortObjectTest.OortObjectInitialListener<List<Long>> listener = new OortObjectTest.OortObjectInitialListener<List<Long>>(2);
         oortList1.addListener(listener);
         oortList2.addListener(listener);
-        oortList1.share();
+        List<Long> list = new CopyOnWriteArrayList<Long>();
+        final long element = 1;
+        list.add(element);
+        oortList1.setAndShare(list);
         Assert.assertTrue(listener.await(5, TimeUnit.SECONDS));
 
         final CountDownLatch removeLatch = new CountDownLatch(1);
@@ -129,5 +133,8 @@ public class OortListTest extends OortTest
         oortList1.removeAndShare(element);
 
         Assert.assertTrue(removeLatch.await(5, TimeUnit.SECONDS));
+
+        oortList2.stop();
+        oortList1.stop();
     }
 }
