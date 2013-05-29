@@ -16,10 +16,11 @@
 
 package org.cometd.oort;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.client.BayeuxClient;
 import org.eclipse.jetty.server.Server;
@@ -70,7 +71,7 @@ public class OortListTest extends OortTest
         OortObjectTest.OortObjectInitialListener<List<Long>> listener = new OortObjectTest.OortObjectInitialListener<List<Long>>(2);
         oortList1.addListener(listener);
         oortList2.addListener(listener);
-        oortList1.setAndShare(new CopyOnWriteArrayList<Long>());
+        oortList1.setAndShare(factory.newObject(null));
         Assert.assertTrue(listener.await(5, TimeUnit.SECONDS));
 
         final long element = 1;
@@ -112,7 +113,7 @@ public class OortListTest extends OortTest
         OortObjectTest.OortObjectInitialListener<List<Long>> listener = new OortObjectTest.OortObjectInitialListener<List<Long>>(2);
         oortList1.addListener(listener);
         oortList2.addListener(listener);
-        List<Long> list = new CopyOnWriteArrayList<Long>();
+        List<Long> list = factory.newObject(null);
         final long element = 1;
         list.add(element);
         oortList1.setAndShare(list);
@@ -136,5 +137,145 @@ public class OortListTest extends OortTest
 
         oortList2.stop();
         oortList1.stop();
+    }
+
+    @Test
+    public void testDeltaListener() throws Exception
+    {
+        String name = "test";
+        OortObject.Factory<List<String>> factory = OortObjectFactories.forConcurrentList();
+        OortList<String> oortList1 = new OortList<String>(oort1, name, factory);
+        OortList<String> oortList2 = new OortList<String>(oort2, name, factory);
+        String channelName = oortList1.getChannelName();
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
+        oort1.getBayeuxServer().addListener(subscriptionListener);
+        oort2.getBayeuxServer().addListener(subscriptionListener);
+        oortList1.start();
+        oortList2.start();
+        Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
+
+        OortObjectTest.OortObjectInitialListener<List<String>> listener = new OortObjectTest.OortObjectInitialListener<List<String>>(2);
+        oortList1.addListener(listener);
+        oortList2.addListener(listener);
+        List<String> oldList = factory.newObject(null);
+        String elementA = "A";
+        String elementB = "B";
+        oldList.add(elementA);
+        oldList.add(elementB);
+        oortList1.setAndShare(oldList);
+        Assert.assertTrue(listener.await(5, TimeUnit.SECONDS));
+
+        List<String> newList = factory.newObject(null);
+        String elementC = "C";
+        String elementD = "D";
+        newList.add(elementA);
+        newList.add(elementC);
+        newList.add(elementD);
+
+        final List<String> adds = new ArrayList<String>();
+        final List<String> removes = new ArrayList<String>();
+        final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(4));
+        oortList1.addListener(new OortList.DeltaListener<String>(oortList1));
+        oortList2.addListener(new OortList.DeltaListener<String>(oortList2));
+        OortList.ElementListener<String> elementListener = new OortList.ElementListener<String>()
+        {
+            public void onAdded(OortObject.Info<List<String>> info, List<String> elements)
+            {
+                System.err.println("SIMON: ADD " + elements);
+                adds.addAll(elements);
+                latch.get().countDown();
+            }
+
+            public void onRemoved(OortObject.Info<List<String>> info, List<String> elements)
+            {
+                System.err.println("SIMON: REMOVE " + elements);
+                removes.addAll(elements);
+                latch.get().countDown();
+            }
+        };
+        oortList1.addElementListener(elementListener);
+        oortList2.addElementListener(elementListener);
+        oortList1.setAndShare(newList);
+
+        Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(4, adds.size());
+        Assert.assertEquals(2, removes.size());
+
+        adds.clear();
+        removes.clear();
+        latch.set(new CountDownLatch(1));
+        // Stop Oort1 so that OortList2 gets the notification
+        stopOort(oort1);
+
+        Assert.assertTrue(latch.get().await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(3, removes.size());
+    }
+
+    @Test
+    public void testContains() throws Exception
+    {
+        String name = "test";
+        OortObject.Factory<List<String>> factory = OortObjectFactories.forConcurrentList();
+        OortList<String> oortList1 = new OortList<String>(oort1, name, factory);
+        OortList<String> oortList2 = new OortList<String>(oort2, name, factory);
+        String channelName = oortList1.getChannelName();
+        CometSubscriptionListener subscriptionListener = new CometSubscriptionListener(channelName, 2);
+        oort1.getBayeuxServer().addListener(subscriptionListener);
+        oort2.getBayeuxServer().addListener(subscriptionListener);
+        oortList1.start();
+        oortList2.start();
+        Assert.assertTrue(subscriptionListener.await(5, TimeUnit.SECONDS));
+
+        OortObjectTest.OortObjectInitialListener<List<String>> listener = new OortObjectTest.OortObjectInitialListener<List<String>>(2);
+        oortList1.addListener(listener);
+        oortList2.addListener(listener);
+        oortList1.setAndShare(factory.newObject(null));
+        Assert.assertTrue(listener.await(5, TimeUnit.SECONDS));
+
+        ElementAddedListener<String> addedListener = new ElementAddedListener<String>(4);
+        oortList1.addElementListener(addedListener);
+        oortList2.addElementListener(addedListener);
+        String element1A = "1A";
+        oortList1.addAndShare(element1A);
+        String element2A = "2A";
+        oortList2.addAndShare(element2A);
+        Assert.assertTrue(addedListener.await(5, TimeUnit.SECONDS));
+
+        Assert.assertTrue(oortList1.contains(element1A));
+        Assert.assertFalse(oortList2.contains(element1A));
+        Assert.assertFalse(oortList1.contains(element2A));
+        Assert.assertTrue(oortList2.contains(element2A));
+
+        Assert.assertTrue(oortList1.isPresent(element1A));
+        Assert.assertTrue(oortList2.isPresent(element1A));
+        Assert.assertTrue(oortList1.isPresent(element2A));
+        Assert.assertTrue(oortList2.isPresent(element2A));
+
+        oortList2.removeElementListener(addedListener);
+        oortList1.removeElementListener(addedListener);
+
+        oortList2.stop();
+        oortList1.stop();
+    }
+
+    private static class ElementAddedListener<T> extends OortList.ElementListener.Adapter<T>
+    {
+        private final CountDownLatch latch;
+
+        private ElementAddedListener(int count)
+        {
+            latch = new CountDownLatch(count);
+        }
+
+        @Override
+        public void onAdded(OortObject.Info<List<T>> info, List<T> elements)
+        {
+            latch.countDown();
+        }
+
+        private boolean await(long time, TimeUnit unit) throws InterruptedException
+        {
+            return latch.await(time, unit);
+        }
     }
 }

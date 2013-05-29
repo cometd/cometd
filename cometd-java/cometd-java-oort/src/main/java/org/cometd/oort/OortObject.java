@@ -40,16 +40,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An {@link OortObject} represents a named composite object that is distributed in an Oort cluster.
- * <p />
+ * An {@link OortObject} represents a named composite entity that is distributed in an Oort cluster.
+ * <p/>
  * A typical example is an oort object that stores the number of users connected to an Oort node.
+ * The entity in this case is a {@code long} value representing the number of connected users.
  * Such oort object may be named 'user_count', and there will be an oort object instance with this name in each node.
  * Each oort object instance will have a different local value, along with all the values from the other nodes.
- * <p />
+ * <p/>
  * A particular {@link OortObject} has a unique name across the node and is made of N parts,
  * where N is the number of active nodes. A part is represented by {@link Info} instances.
  * Each {@link Info} instance represents the contribution of that node to the whole {@link OortObject}
- * and stores the Oort URL of the node it represents along with the object value in that node.
+ * and stores the Oort URL of the node it represents along with the entity in that node.
  * <pre>
  *     +------------+
  *     | user_count |
@@ -71,18 +72,18 @@ import org.slf4j.LoggerFactory;
  * instances that have the same name that live in the other nodes.
  * The communication is performed on a channel constructed from the oort object's name and returned by
  * {@link #getChannelName()}.
- * <p />
- * Oort objects work best when the value they hold is an immutable, value-type object: {@code OortObject<Long>}
- * works better than {@code OortObject<AtomicLong>} because the AtomicLong is mutable and its APIs
+ * <p/>
+ * Oort objects work best when the entity they hold is an immutable, value-type object: {@code OortObject<Long>}
+ * works better than {@code OortObject<AtomicLong>} because AtomicLong is mutable and its APIs
  * (for example, {@link AtomicLong#compareAndSet(long, long)}) are not exposed by {@link OortObject}.
- * <p />
+ * <p/>
  * Objects stored by an oort object are created using a {@link Factory}. This is necessary to recreate
- * objects that may be serialized differently when transmitted via JSON.
+ * objects that may be serialized differently when transmitted via JSON, without forcing a global JSON serializer.
  * A number of factories are available in {@link OortObjectFactories}, and applications can write their own.
- * <p />
- * Applications can change the value of the oort object and broadcast the change to other nodes via
+ * <p/>
+ * Applications can change the entity value of the oort object and broadcast the change to other nodes via
  * {@link #setAndShare(Object)}. The other nodes will receive a message on the oort object's channel
- * and set the new value in the part that corresponds to the node that changed the value.
+ * and set the new entity value in the part that corresponds to the node that changed the entity.
  * The diagram below shows one oort object with name "user_count" in two nodes.
  * On the left of the arrow (A), the situation before calling:
  * <pre>
@@ -102,7 +103,12 @@ import org.slf4j.LoggerFactory;
  * | remote | 19 |  | remote | 13 |         | remote | 19     |       | remote | 17 (3) |
  * +--------+----+  +-------+----+          +--------+--------+       +-------+---------+
  * </pre>
- * When a value is updated, either locally or remotely, an event is fired to registered {@link Listener}s.
+ * When an entity is updated, either locally or remotely, an event is fired to registered {@link Listener}s.
+ * <p/>
+ * Oort objects can only update the entity they own; in the example above, {@code node_1} can only update
+ * the "local" value 13 to 17, but cannot modify the "remote" value 19, which is owned by {@code node_2}.
+ * Only update messages from {@code node_1} can update the "remote" value on {@code node_2}.
+ * Every node has a part that belongs to a particular node, and only that particular node can update it.
  * <p />
  * Values of oort objects may be merged using a {@link Merger} via {@link #merge(Merger)}.
  * A number of mergers are available in {@link OortObjectMergers}, and applications can write their own.
@@ -145,6 +151,7 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
 
     /**
      * Starts this oort object, making it available to other nodes in the cluster.
+     *
      * @see #stop()
      */
     public void start()
@@ -164,6 +171,7 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
 
     /**
      * Stops this oort object, making it unavailable to other nodes in the cluster.
+     *
      * @see #start()
      */
     public void stop()
@@ -234,8 +242,8 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
 
     /**
      * Sets the given new object on this oort object, and then broadcast the new object to all nodes in the cluster.
-     * <p />
-     * Setting an object triggers notification of {@link Listener}s.
+     * <p/>
+     * Setting an object triggers notification of {@link Listener}s, both on this node and on remote nodes.
      *
      * @param newObject the new object to set
      * @return the old object
@@ -314,7 +322,7 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
     /**
      * @param object the object used to search the corresponding {@link Info}
      * @return the first {@link Info} whose object equals (via a possibly overridden {@link Object#equals(Object)})
-     * the given {@code object}
+     *         the given {@code object}
      */
     public Info<T> getInfoByObject(T object)
     {
@@ -330,7 +338,7 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
      * Merges the objects of all the {@link Info}s known to this oort object using the given {@code strategy}.
      *
      * @param strategy the strategy to merge the objects
-     * @param <R> the merge result type
+     * @param <R>      the merge result type
      * @return the merged result
      */
     public <R> R merge(Merger<T, R> strategy)
@@ -400,8 +408,13 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
         // new OortObject and we need to push our own data to it.
         if (oldInfo == null)
         {
-            Info<T> localInfo = getInfo(oort.getURL());
-            pushInfo(newInfo.getOortURL(), localInfo);
+            if (!oort.getURL().equals(data.get(Info.PEER_FIELD)))
+            {
+                Map<String, Object> localInfo = new HashMap<String, Object>(getInfo(oort.getURL()));
+                String oortURL = newInfo.getOortURL();
+                localInfo.put(Info.PEER_FIELD, oortURL);
+                pushInfo(oortURL, localInfo);
+            }
         }
 
         // Set the result
@@ -423,7 +436,7 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
         return holder.set(newInfo, action);
     }
 
-    protected void pushInfo(String oortURL, Info<T> info)
+    protected void pushInfo(String oortURL, Map<String, Object> info)
     {
         OortComet oortComet = oort.getComet(oortURL);
         if (oortComet != null)
@@ -454,12 +467,13 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
      */
     public static class Info<T> extends HashMap<String, Object>
     {
-        public static final String ID_FIELD = "id";
-        public static final String OORT_URL_FIELD = "oortURL";
-        public static final String NAME_FIELD = "name";
-        public static final String OBJECT_FIELD = "object";
-        public static final String TYPE_FIELD = "type";
-        public static final String ACTION_FIELD = "action";
+        public static final String ID_FIELD = "oort.info.id";
+        public static final String OORT_URL_FIELD = "oort.info.url";
+        public static final String NAME_FIELD = "oort.info.name";
+        public static final String OBJECT_FIELD = "oort.info.object";
+        public static final String TYPE_FIELD = "oort.info.type";
+        public static final String ACTION_FIELD = "oort.info.action";
+        public static final String PEER_FIELD = "oort.info.peer";
 
         // The local Oort URL
         private final String oortURL;
@@ -610,6 +624,7 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
 
         /**
          * An empty implementation of {@link Listener}.
+         *
          * @param <T> the object type
          */
         public static class Adapter<T> implements Listener<T>

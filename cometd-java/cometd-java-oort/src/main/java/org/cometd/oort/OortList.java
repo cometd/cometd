@@ -16,6 +16,7 @@
 
 package org.cometd.oort;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EventListener;
 import java.util.List;
@@ -26,11 +27,29 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.common.MarkedReference;
 
+/**
+ * A specialized oort object whose entity is a {@link List}.
+ * <p />
+ * {@link OortList} specializes {@code OortObject} and allows optimized replication of elements
+ * across the cluster: instead of replicating the whole list, that may be contain a lot of elements,
+ * only elements that are added or removed are replicated.
+ * <p/>
+ * Applications can use {@link #addAndShare(Object[])} and {@link #removeAndShare(Object[])}
+ * to broadcast changes related to elements, as well as {@link #setAndShare(Object)} to
+ * change the whole list.
+ * <p/>
+ * When one or more elements are changed, {@link ElementListener}s are notified.
+ * {@link DeltaListener} converts whole list updates triggered by {@link #setAndShare(Object)}
+ * into events for {@link ElementListener}s, giving applications a single listener type to implement
+ * their business logic.
+ *
+ * @param <E> the element type
+ */
 public class OortList<E> extends OortObject<List<E>>
 {
-    public static final String TYPE_FIELD_ELEMENT_VALUE = "oort.list.element";
-    public static final String ACTION_FIELD_ADD_VALUE = "oort.list.add";
-    public static final String ACTION_FIELD_REMOVE_VALUE = "oort.list.remove";
+    private static final String TYPE_FIELD_ELEMENT_VALUE = "oort.list.element";
+    private static final String ACTION_FIELD_ADD_VALUE = "oort.list.add";
+    private static final String ACTION_FIELD_REMOVE_VALUE = "oort.list.remove";
 
     private final List<ElementListener<E>> listeners = new CopyOnWriteArrayList<ElementListener<E>>();
 
@@ -49,7 +68,26 @@ public class OortList<E> extends OortObject<List<E>>
         listeners.remove(listener);
     }
 
+    /**
+     * Returns whether the given {@code element} is present in the local entity list of this node.
+     * Differently from {@link #isPresent(Object)}, only the local entity list is scanned.
+     *
+     * @param element the element to test for presence
+     * @return true if the {@code element} is contained in the local entity list, false otherwise
+     */
     public boolean contains(E element)
+    {
+        return getInfo(getOort().getURL()).getObject().contains(element);
+    }
+
+    /**
+     * Returns whether the given {@code element} is present in one of the entity lists of all nodes.
+     * Differently from {@link #contains(Object)} entity lists of all nodes are scanned.
+     *
+     * @param element the element to test for presence
+     * @return true if the {@code element} is contained in one of the entity lists of all nodes, false otherwise
+     */
+    public boolean isPresent(E element)
     {
         for (Info<List<E>> info : this)
         {
@@ -59,6 +97,15 @@ public class OortList<E> extends OortObject<List<E>>
         return false;
     }
 
+    /**
+     * Adds the given {@code elements} to the local entity list,
+     * and then broadcasts the addition to all nodes in the cluster.
+     * <p/>
+     * Calling this method triggers notifications {@link ElementListener}s, both on this node and on remote nodes.
+     *
+     * @param elements the elements to add
+     * @return whether at least one of the elements was added to the local entity list
+     */
     public boolean addAndShare(E... elements)
     {
         Data data = new Data(6);
@@ -76,6 +123,15 @@ public class OortList<E> extends OortObject<List<E>>
         return (Boolean)data.getResult();
     }
 
+    /**
+     * Removes the given {@code elements} to the local entity list,
+     * and then broadcasts the removal to all nodes in the cluster.
+     * <p/>
+     * Calling this method triggers notifications {@link ElementListener}s, both on this node and on remote nodes.
+     *
+     * @param elements the elements to remove
+     * @return whether at least one of the elements was removed from the local entity list
+     */
     public boolean removeAndShare(E... elements)
     {
         Data data = new Data(6);
@@ -129,7 +185,7 @@ public class OortList<E> extends OortObject<List<E>>
                     }
                 });
 
-                logger.debug("{} {} map {} of {}",
+                logger.debug("{} {} list {} of {}",
                         old.isMarked() ? "Performed" : "Skipped",
                         newInfo.isLocal() ? "local" : "remote",
                         remove ? "remove" : "add",
@@ -187,12 +243,34 @@ public class OortList<E> extends OortObject<List<E>>
         }
     }
 
+    /**
+     * Listener for element events that update the entity list, either locally or remotely.
+     *
+     * @param <E> the element type
+     */
     public interface ElementListener<E> extends EventListener
     {
+        /**
+         * Callback method invoked when elements are added to the entity list.
+         *
+         * @param info the {@link Info} that was changed by the addition
+         * @param elements the elements added
+         */
         public void onAdded(Info<List<E>> info, List<E> elements);
 
+        /**
+         * Callback method invoked when elements are removed from the entity list.
+         *
+         * @param info the {@link Info} that was changed by the removal
+         * @param elements the elements removed
+         */
         public void onRemoved(Info<List<E>> info, List<E> elements);
 
+        /**
+         * Empty implementation of {@link ElementListener}.
+         *
+         * @param <E> the element type
+         */
         public static class Adapter<E> implements ElementListener<E>
         {
             public void onAdded(Info<List<E>> info, List<E> elements)
@@ -202,6 +280,51 @@ public class OortList<E> extends OortObject<List<E>>
             public void onRemoved(Info<List<E>> info, List<E> elements)
             {
             }
+        }
+    }
+
+    /**
+     * An implementation of {@link Listener} that converts whole list events into {@link ElementListener} events.
+     * <p />
+     * For example, if an entity list:
+     * <pre>
+     * [A, B]
+     * </pre>
+     * is replaced by a list:
+     * <pre>
+     * [A, C, D]
+     * </pre>
+     * then this listener generates two "add" events for {@code C} and {@code D}
+     * and one "remove" event for {@code B}
+     *
+     * @param <E> the element type
+     */
+    public static class DeltaListener<E> implements Listener<List<E>>
+    {
+        private final OortList<E> oortList;
+
+        public DeltaListener(OortList<E> oortList)
+        {
+            this.oortList = oortList;
+        }
+
+        public void onUpdated(Info<List<E>> oldInfo, Info<List<E>> newInfo)
+        {
+            List<E> added = new ArrayList<E>(newInfo.getObject());
+            added.removeAll(oldInfo.getObject());
+
+            List<E> removed = new ArrayList<E>(oldInfo.getObject());
+            removed.removeAll(newInfo.getObject());
+
+            if (!added.isEmpty())
+                oortList.notifyElementsAdded(newInfo, added);
+            if (!removed.isEmpty())
+                oortList.notifyElementsRemoved(newInfo, removed);
+        }
+
+        public void onRemoved(Info<List<E>> info)
+        {
+            oortList.notifyElementsRemoved(info, info.getObject());
         }
     }
 }
