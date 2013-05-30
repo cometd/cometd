@@ -16,6 +16,7 @@
 
 package org.cometd.oort;
 
+import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +35,7 @@ import org.cometd.common.MarkedReference;
  * across the cluster: instead of replicating the whole map, that may be contain a lot of entries,
  * only entries that are modified are replicated.
  * <p/>
- * Applications can use {@link #putAndShare(Object, Object)} and {@link #removeAndShare(Object)}
+ * Applications can use {@link #putAndShare(String, Object)} and {@link #removeAndShare(String)}
  * to broadcast changes related to single entries, as well as {@link #setAndShare(Object)} to
  * change the whole map.
  * <p/>
@@ -43,10 +44,9 @@ import org.cometd.common.MarkedReference;
  * into events for {@link EntryListener}s, giving applications a single listener type to implement
  * their business logic.
  *
- * @param <K> the key type
  * @param <V> the value type
  */
-public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
+public class OortMap<V> extends OortObject<ConcurrentMap<String, V>>
 {
     private static final String TYPE_FIELD_ENTRY_VALUE = "oort.map.entry";
     private static final String ACTION_FIELD_PUT_VALUE = "oort.map.put";
@@ -54,19 +54,19 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
     private static final String KEY_FIELD = "oort.map.key";
     private static final String VALUE_FIELD = "oort.map.value";
 
-    private final List<EntryListener<K, V>> listeners = new CopyOnWriteArrayList<EntryListener<K, V>>();
+    private final List<EntryListener<V>> listeners = new CopyOnWriteArrayList<EntryListener<V>>();
 
-    public OortMap(Oort oort, String name, Factory<ConcurrentMap<K, V>> factory)
+    public OortMap(Oort oort, String name, Factory<ConcurrentMap<String, V>> factory)
     {
         super(oort, name, factory);
     }
 
-    public void addEntryListener(EntryListener<K, V> listener)
+    public void addEntryListener(EntryListener<V> listener)
     {
         listeners.add(listener);
     }
 
-    public void removeEntryListener(EntryListener<K, V> listener)
+    public void removeEntryListener(EntryListener<V> listener)
     {
         listeners.remove(listener);
     }
@@ -80,9 +80,9 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
      * @param key   the key to associate the value to
      * @param value the value associated with the key
      * @return the previous value associated with the key, or null if no previous value was associated with the key
-     * @see #removeAndShare(Object)
+     * @see #removeAndShare(String)
      */
-    public V putAndShare(K key, V value)
+    public V putAndShare(String key, V value)
     {
         Map<String, Object> entry = new HashMap<String, Object>(2);
         entry.put(KEY_FIELD, key);
@@ -111,9 +111,9 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
      *
      * @param key the key to remove
      * @return the value associated with the key, or null if no value was associated with the key
-     * @see #putAndShare(Object, Object)
+     * @see #putAndShare(String, Object)
      */
-    public V removeAndShare(K key)
+    public V removeAndShare(String key)
     {
         Map<String, Object> entry = new HashMap<String, Object>(1);
         entry.put(KEY_FIELD, key);
@@ -135,29 +135,29 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
 
     /**
      * Returns the value mapped to the given key from the local entity map of this node.
-     * Differently from {@link #find(Object)}, only the local entity map is scanned.
+     * Differently from {@link #find(String)}, only the local entity map is scanned.
      *
      * @param key the key mapped to the value to return
      * @return the value mapped to the given key, or
      *         {@code null} if the local map does not contain the given key
-     * @see #find(Object)
+     * @see #find(String)
      */
-    public V get(K key)
+    public V get(String key)
     {
         return getInfo(getOort().getURL()).getObject().get(key);
     }
 
     /**
      * Returns the first non-null value mapped to the given key from the entity maps of all nodes.
-     * Differently from {@link #get(Object)}, entity maps of all nodes are scanned.
+     * Differently from {@link #get(String)}, entity maps of all nodes are scanned.
      *
      * @param key the key mapped to the value to return
      * @return the value mapped to the given key, or
      *         {@code null} if the maps do not contain the given key
      */
-    public V find(K key)
+    public V find(String key)
     {
-        for (Info<ConcurrentMap<K, V>> info : this)
+        for (Info<ConcurrentMap<String, V>> info : this)
         {
             V result = info.getObject().get(key);
             if (result != null)
@@ -170,9 +170,9 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
      * @param key the key to search
      * @return the first {@link Info} whose entity map contains the given key.
      */
-    public Info<ConcurrentMap<K, V>> findInfo(K key)
+    public Info<ConcurrentMap<String, V>> findInfo(String key)
     {
-        for (Info<ConcurrentMap<K, V>> info : this)
+        for (Info<ConcurrentMap<String, V>> info : this)
         {
             if (info.getObject().get(key) != null)
                 return info;
@@ -191,23 +191,22 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
                 throw new IllegalArgumentException(action);
 
             String oortURL = (String)data.get(Info.OORT_URL_FIELD);
-            Info<ConcurrentMap<K, V>> info = getInfo(oortURL);
+            Info<ConcurrentMap<String, V>> info = getInfo(oortURL);
             if (info != null)
             {
                 // Retrieve entry
                 @SuppressWarnings("unchecked")
                 Map<String, Object> object = (Map<String, Object>)data.get(Info.OBJECT_FIELD);
-                @SuppressWarnings("unchecked")
-                final K key = (K)object.get(KEY_FIELD);
+                final String key = (String)object.get(KEY_FIELD);
                 @SuppressWarnings("unchecked")
                 final V value = (V)object.get(VALUE_FIELD);
 
                 // Set the new Info
-                Info<ConcurrentMap<K, V>> newInfo = new Info<ConcurrentMap<K, V>>(getOort().getURL(), data);
-                final ConcurrentMap<K, V> map = info.getObject();
+                Info<ConcurrentMap<String, V>> newInfo = new Info<ConcurrentMap<String, V>>(getOort().getURL(), data);
+                final ConcurrentMap<String, V> map = info.getObject();
                 newInfo.put(Info.OBJECT_FIELD, map);
                 final AtomicReference<V> result = new AtomicReference<V>();
-                MarkedReference<Info<ConcurrentMap<K, V>>> old = setInfo(newInfo, new Runnable()
+                MarkedReference<Info<ConcurrentMap<String, V>>> old = setInfo(newInfo, new Runnable()
                 {
                     public void run()
                     {
@@ -218,7 +217,7 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
                     }
                 });
 
-                Entry<K, V> entry = new Entry<K, V>(key, result.get(), value);
+                Entry<V> entry = new Entry<V>(key, result.get(), value);
 
                 logger.debug("{} {} map {} of {}",
                         old.isMarked() ? "Performed" : "Skipped",
@@ -248,9 +247,9 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         }
     }
 
-    private void notifyEntryPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry)
+    private void notifyEntryPut(Info<ConcurrentMap<String, V>> info, Entry<V> entry)
     {
-        for (EntryListener<K, V> listener : listeners)
+        for (EntryListener<V> listener : listeners)
         {
             try
             {
@@ -263,9 +262,9 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         }
     }
 
-    private void notifyEntryRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> elements)
+    private void notifyEntryRemoved(Info<ConcurrentMap<String, V>> info, Entry<V> elements)
     {
-        for (EntryListener<K, V> listener : listeners)
+        for (EntryListener<V> listener : listeners)
         {
             try
             {
@@ -281,10 +280,9 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
     /**
      * Listener for entry events that update the entity map, either locally or remotely.
      *
-     * @param <K> the key type
      * @param <V> the value type
      */
-    public interface EntryListener<K, V> extends EventListener
+    public interface EntryListener<V> extends EventListener
     {
         /**
          * Callback method invoked after an entry is put into the entity map.
@@ -292,7 +290,7 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
          * @param info the {@link Info} that was changed by the put
          * @param entry the entry values
          */
-        public void onPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry);
+        public void onPut(Info<ConcurrentMap<String, V>> info, Entry<V> entry);
 
         /**
          * Callback method invoked after an entry is removed from the entity map.
@@ -300,21 +298,20 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
          * @param info the {@link Info} that was changed by the remove
          * @param entry the entry values
          */
-        public void onRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry);
+        public void onRemoved(Info<ConcurrentMap<String, V>> info, Entry<V> entry);
 
         /**
          * Empty implementation of {@link EntryListener}.
          *
-         * @param <K> the key type
          * @param <V> the value type
          */
-        public static class Adapter<K, V> implements EntryListener<K, V>
+        public static class Adapter<V> implements EntryListener<V>
         {
-            public void onPut(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry)
+            public void onPut(Info<ConcurrentMap<String, V>> info, Entry<V> entry)
             {
             }
 
-            public void onRemoved(Info<ConcurrentMap<K, V>> info, Entry<K, V> entry)
+            public void onRemoved(Info<ConcurrentMap<String, V>> info, Entry<V> entry)
             {
             }
         }
@@ -326,16 +323,15 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
      * (key, oldValue, newValue)
      * </pre>
      *
-     * @param <K> the key type
      * @param <V> the value type
      */
-    public static class Entry<K, V>
+    public static class Entry<V>
     {
-        private final K key;
+        private final String key;
         private final V oldValue;
         private final V newValue;
 
-        protected Entry(K key, V oldValue, V newValue)
+        protected Entry(String key, V oldValue, V newValue)
         {
             this.key = key;
             this.oldValue = oldValue;
@@ -345,7 +341,7 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
         /**
          * @return the key
          */
-        public K getKey()
+        public String getKey()
         {
             return key;
         }
@@ -400,44 +396,43 @@ public class OortMap<K, V> extends OortObject<ConcurrentMap<K, V>>
      * (key2, value2, null)
      * </pre>
      *
-     * @param <K> the key type
      * @param <V> the value type
      */
-    public static class DeltaListener<K, V> implements Listener<ConcurrentMap<K, V>>
+    public static class DeltaListener<V> implements Listener<ConcurrentMap<String, V>>
     {
-        private final OortMap<K, V> oortMap;
+        private final OortMap<V> oortMap;
 
-        public DeltaListener(OortMap<K, V> oortMap)
+        public DeltaListener(OortMap<V> oortMap)
         {
             this.oortMap = oortMap;
         }
 
-        public void onUpdated(Info<ConcurrentMap<K, V>> oldInfo, Info<ConcurrentMap<K, V>> newInfo)
+        public void onUpdated(Info<ConcurrentMap<String, V>> oldInfo, Info<ConcurrentMap<String, V>> newInfo)
         {
-            Map<K, V> oldMap = oldInfo.getObject();
-            Map<K, V> newMap = new HashMap<K, V>(newInfo.getObject());
-            for (Map.Entry<K, V> oldEntry : oldMap.entrySet())
+            Map<String, V> oldMap = oldInfo == null ? Collections.<String, V>emptyMap() : oldInfo.getObject();
+            Map<String, V> newMap = new HashMap<String, V>(newInfo.getObject());
+            for (Map.Entry<String, V> oldEntry : oldMap.entrySet())
             {
-                K key = oldEntry.getKey();
+                String key = oldEntry.getKey();
                 V newValue = newMap.remove(key);
-                Entry<K, V> entry = new Entry<K, V>(key, oldEntry.getValue(), newValue);
+                Entry<V> entry = new Entry<V>(key, oldEntry.getValue(), newValue);
                 if (newValue == null)
                     oortMap.notifyEntryRemoved(newInfo, entry);
                 else
                     oortMap.notifyEntryPut(newInfo, entry);
             }
-            for (Map.Entry<K, V> newEntry : newMap.entrySet())
+            for (Map.Entry<String, V> newEntry : newMap.entrySet())
             {
-                Entry<K, V> entry = new Entry<K, V>(newEntry.getKey(), null, newEntry.getValue());
+                Entry<V> entry = new Entry<V>(newEntry.getKey(), null, newEntry.getValue());
                 oortMap.notifyEntryPut(newInfo, entry);
             }
         }
 
-        public void onRemoved(Info<ConcurrentMap<K, V>> info)
+        public void onRemoved(Info<ConcurrentMap<String, V>> info)
         {
-            for (Map.Entry<K, V> oldEntry : info.getObject().entrySet())
+            for (Map.Entry<String, V> oldEntry : info.getObject().entrySet())
             {
-                Entry<K, V> entry = new Entry<K, V>(oldEntry.getKey(), oldEntry.getValue(), null);
+                Entry<V> entry = new Entry<V>(oldEntry.getKey(), oldEntry.getValue(), null);
                 oortMap.notifyEntryRemoved(info, entry);
             }
         }
