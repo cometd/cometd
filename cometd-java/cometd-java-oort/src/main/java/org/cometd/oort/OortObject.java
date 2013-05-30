@@ -457,7 +457,7 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
     @Override
     public String toString()
     {
-        return String.format("%s[%s]", getClass().getSimpleName(), getName());
+        return String.format("%s[%s]@%s", getClass().getSimpleName(), getName(), getOort().getURL());
     }
 
     /**

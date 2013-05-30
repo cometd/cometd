@@ -56,9 +56,21 @@ public class OortMasterCounter extends OortMasterService<Long, OortMasterCounter
      *
      * @param value the value to set
      */
-    public void set(long value)
+    public void setInitialValue(long value)
     {
         this.value.set(value);
+    }
+
+    /**
+     * Retrieves the value from the "master" node and then invokes the given {@code callback}
+     * with the result value.
+     *
+     * @param callback the callback invoked when the result is available
+     * @return whether the request could be forwarded to the "master" node
+     */
+    public boolean get(Callback callback)
+    {
+        return getAndAdd(0, callback);
     }
 
     /**
@@ -69,11 +81,12 @@ public class OortMasterCounter extends OortMasterService<Long, OortMasterCounter
      *
      * @param delta    the value to add, may be negative
      * @param callback the callback invoked when the result is available
+     * @return whether the request could be forwarded to the "master" node
      * @see #getAndAdd(long, Callback)
      */
-    public void addAndGet(long delta, Callback callback)
+    public boolean addAndGet(long delta, Callback callback)
     {
-        forward(getMasterOortURL(), delta, new Context(delta, callback, true));
+        return forward(getMasterOortURL(), delta, new Context(delta, callback, true));
     }
 
     /**
@@ -82,17 +95,18 @@ public class OortMasterCounter extends OortMasterService<Long, OortMasterCounter
      *
      * @param delta    the value to add, may be negative
      * @param callback the callback invoked when the result is available
+     * @return whether the request could be forwarded to the "master" node
      * @see #addAndGet(long, Callback)
      */
-    public void getAndAdd(long delta, Callback callback)
+    public boolean getAndAdd(long delta, Callback callback)
     {
-        forward(getMasterOortURL(), delta, new Context(delta, callback, false));
+        return forward(getMasterOortURL(), delta, new Context(delta, callback, false));
     }
 
     @Override
     protected Long onForward(Object actionData)
     {
-        long delta = (Long)actionData;
+        long delta = ((Number)actionData).longValue();
         long oldValue = value.get();
         while (true)
         {

@@ -69,16 +69,15 @@ public abstract class OortMasterService<R, C> extends OortService<R, C>
     }
 
     @Override
-    public void start() throws Exception
+    public void start()
     {
         super.start();
         nodes.start();
-        if (chooser.choose(this))
-            nodes.setAndShare(true);
+        nodes.setAndShare(chooser.choose(this));
     }
 
     @Override
-    public void stop() throws Exception
+    public void stop()
     {
         nodes.stop();
         super.stop();
@@ -94,6 +93,6 @@ public abstract class OortMasterService<R, C> extends OortService<R, C>
          *                {@link #OortMasterService(Oort, String, Chooser) was passed to}
          * @return true if the node is a "master" node, false otherwise
          */
-        public boolean choose(OortMasterService service) throws Exception;
+        public boolean choose(OortMasterService service);
     }
 }

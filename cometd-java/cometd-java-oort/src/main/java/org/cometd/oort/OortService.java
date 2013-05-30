@@ -22,9 +22,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.cometd.bayeux.Message;
-import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.slf4j.Logger;
@@ -35,8 +35,8 @@ import org.slf4j.LoggerFactory;
  * nodes that own the entity onto which the action should be applied.
  * <p/>
  * An {@link OortService} builds on the concept introduced by {@link OortObject}
- * that the ownership of an entity belongs only to one node. Any node can read
- * the entity, but only the owner can create/modify/delete it.
+ * that the ownership of a particular entity belongs only to one node.
+ * Any node can read the entity, but only the owner can create/modify/delete it.
  * <p/>
  * In order to perform actions that modify the entity, a node has to know
  * what is the node that owns the entity, and then forward the action to
@@ -85,23 +85,22 @@ import org.slf4j.LoggerFactory;
  * @param <R> the result type
  * @param <C> the opaque context type
  */
-public abstract class OortService<R, C> implements ClientSessionChannel.MessageListener
+public abstract class OortService<R, C> implements ServerChannel.MessageListener
 {
-    private static final String ACTION = "org.cometd.oort.OortService.action";
-    private static final String ACTION_ID = "org.cometd.oort.OortService.actionId";
-    private static final String OORT_URL = "org.cometd.oort.OortService.oortURL";
-    private static final String RESULT = "org.cometd.oort.OortService.result";
-    private static final String FAILURE = "org.cometd.oort.OortService.failure";
+    private static final String ACTION_FIELD = "oort.service.action";
+    private static final String ID_FIELD = "oort.service.id";
+    private static final String OORT_URL_FIELD = "oort.service.url";
+    private static final String RESULT_FIELD = "oort.service.result";
+    private static final String FAILURE_FIELD = "oort.service.failure";
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
     private final AtomicLong actions = new AtomicLong();
     private final ConcurrentMap<Long, C> callbacks = new ConcurrentHashMap<Long, C>();
     private final Oort oort;
     private final String name;
-    private final String forwardChannel;
-    private final String resultChannel;
+    private final String forwardChannelName;
+    private final String resultChannelName;
     private final LocalSession session;
-    private final Seti forwarder;
+    protected final Logger logger;
 
     /**
      * Creates an {@link OortService} with the given name.
@@ -113,10 +112,15 @@ public abstract class OortService<R, C> implements ClientSessionChannel.MessageL
     {
         this.oort = oort;
         this.name = name;
-        this.forwardChannel = "/service/seti/" + name;
-        this.resultChannel = forwardChannel + "/result";
+        this.forwardChannelName = "/service/oort/service/" + name;
+        this.resultChannelName = forwardChannelName + "/result";
         this.session = oort.getBayeuxServer().newLocalSession(name);
-        this.forwarder = new Seti(oort);
+        this.logger = LoggerFactory.getLogger(getLoggerName());
+    }
+
+    protected String getLoggerName()
+    {
+        return getClass().getName();
     }
 
     /**
@@ -146,29 +150,29 @@ public abstract class OortService<R, C> implements ClientSessionChannel.MessageL
     /**
      * Starts the functionalities offered by this service.
      *
-     * @throws Exception if the start fails
      * @see #stop()
      */
-    public void start() throws Exception
+    public void start()
     {
         session.handshake();
-        forwarder.start();
-        forwarder.associate(getOort().getURL(), session.getServerSession());
-        session.getChannel(forwardChannel).subscribe(this);
-        session.getChannel(resultChannel).subscribe(this);
+        BayeuxServer bayeuxServer = oort.getBayeuxServer();
+        bayeuxServer.createIfAbsent(forwardChannelName);
+        bayeuxServer.getChannel(forwardChannelName).addListener(this);
+        bayeuxServer.createIfAbsent(resultChannelName);
+        bayeuxServer.getChannel(resultChannelName).addListener(this);
         logger.debug("Started {}", this);
     }
 
     /**
      * Stops the functionalities offered by this service.
      *
-     * @throws Exception if the stop fails
      * @see #start()
      */
-    public void stop() throws Exception
+    public void stop()
     {
-        forwarder.disassociate(getOort().getURL(), session.getServerSession());
-        forwarder.stop();
+        BayeuxServer bayeuxServer = oort.getBayeuxServer();
+        bayeuxServer.getChannel(resultChannelName).removeListener(this);
+        bayeuxServer.getChannel(forwardChannelName).removeListener(this);
         session.disconnect();
         logger.debug("Stopped {}", this);
     }
@@ -176,59 +180,104 @@ public abstract class OortService<R, C> implements ClientSessionChannel.MessageL
     /**
      * Subclasses must call this method to forward the action to the owner node.
      *
-     * @param oortURL the owner node Oort URL
+     * @param targetOortURL the owner node Oort URL
      * @param actionData the action data that will be passed to {@link #onForward(Object)}
      * @param context the opaque context passed to {@link #onForwardSucceeded(Object, Object)}
+     * @return whether the forward succeeded
      */
-    protected void forward(String oortURL, Object actionData, C context)
+    protected boolean forward(String targetOortURL, Object actionData, C context)
     {
         long actionId = actions.incrementAndGet();
         if (context != null)
             callbacks.put(actionId, context);
         Map<String, Object> data = new HashMap<String, Object>(3);
-        data.put(ACTION_ID, actionId);
-        data.put(ACTION, actionData);
-        data.put(OORT_URL, getOort().getURL());
-        logger.debug("Forwarding action to {}", oortURL);
-        forwarder.sendMessage(oortURL, "/service/seti/" + getName(), data);
+        data.put(ID_FIELD, actionId);
+        data.put(ACTION_FIELD, actionData);
+        String localOortURL = getOort().getURL();
+        data.put(OORT_URL_FIELD, localOortURL);
+
+        if (localOortURL.equals(targetOortURL))
+        {
+            // Local case
+            logger.debug("Forwarding action locally ({}): {}", localOortURL, data);
+            oort.getBayeuxServer().getChannel(forwardChannelName).publish(getLocalSession(), data, null);
+            return true;
+        }
+        else
+        {
+            // Remote case
+            if (targetOortURL != null)
+            {
+                OortComet comet = getOort().getComet(targetOortURL);
+                if (comet != null)
+                {
+                    logger.debug("Forwarding action from {} to {}: {}", localOortURL, targetOortURL, data);
+                    comet.getChannel(forwardChannelName).publish(data);
+                    return true;
+                }
+            }
+            logger.debug("Could not forward action from {} to {}: {}", localOortURL, targetOortURL, data);
+            return false;
+        }
     }
 
-    public void onMessage(ClientSessionChannel clientSessionChannel, Message message)
+    public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
     {
-        if (forwardChannel.equals(message.getChannel()))
+        if (forwardChannelName.equals(message.getChannel()))
         {
             logger.debug("Received forwarded action {}", message);
             Map<String, Object> data = message.getDataAsMap();
             Map<String, Object> resultData = new HashMap<String, Object>(3);
-            resultData.put(ACTION_ID, data.get(ACTION_ID));
-            resultData.put(OORT_URL, getOort().getURL());
+            resultData.put(ID_FIELD, data.get(ID_FIELD));
+            resultData.put(OORT_URL_FIELD, getOort().getURL());
             try
             {
-                R result = onForward(data.get(ACTION));
-                resultData.put(RESULT, result);
+                R result = onForward(data.get(ACTION_FIELD));
+                resultData.put(RESULT_FIELD, result);
             }
             catch (ServiceException x)
             {
-                resultData.put(FAILURE, x.getFailure());
+                resultData.put(FAILURE_FIELD, x.getFailure());
             }
             catch (Exception x)
             {
                 String failure = x.getMessage();
                 if (failure == null || failure.length() == 0)
                     failure = x.getClass().getName();
-                resultData.put(FAILURE, failure);
+                resultData.put(FAILURE_FIELD, failure);
             }
-            forwarder.sendMessage((String)data.get(OORT_URL), resultChannel, resultData);
+
+            String oortURL = (String)data.get(OORT_URL_FIELD);
+            if (getOort().getURL().equals(oortURL))
+            {
+                // Local case
+                logger.debug("Returning forwarded action result {} to local {}", resultData, oortURL);
+                oort.getBayeuxServer().getChannel(resultChannelName).publish(getLocalSession(), resultData, null);
+            }
+            else
+            {
+                // Remote case
+                OortComet comet = getOort().getComet(oortURL);
+                if (comet != null)
+                {
+                    logger.debug("Returning forwarded action result {} to remote {}", resultData, oortURL);
+                    comet.getChannel(resultChannelName).publish(resultData);
+                }
+                else
+                {
+                    logger.debug("Could not return forwarded action result {} to remote {}", resultData, oortURL);
+                }
+            }
         }
-        else if (resultChannel.equals(message.getChannel()))
+        else if (resultChannelName.equals(message.getChannel()))
         {
-            logger.debug("Received forwarded result {}", message);
+            logger.debug("Received forwarded action result {}", message);
             Map<String, Object> data = message.getDataAsMap();
-            long actionId = ((Number)data.get(ACTION_ID)).longValue();
+            long actionId = ((Number)data.get(ID_FIELD)).longValue();
             C context = callbacks.remove(actionId);
             if (context != null)
             {
-                Object failure = data.get(FAILURE);
+                Object failure = data.get(FAILURE_FIELD);
                 if (failure != null)
                 {
                     onForwardFailed(failure, context);
@@ -236,11 +285,12 @@ public abstract class OortService<R, C> implements ClientSessionChannel.MessageL
                 else
                 {
                     @SuppressWarnings("unchecked")
-                    R result = (R)data.get(RESULT);
+                    R result = (R)data.get(RESULT_FIELD);
                     onForwardSucceeded(result, context);
                 }
             }
         }
+        return true;
     }
 
     /**
@@ -273,7 +323,7 @@ public abstract class OortService<R, C> implements ClientSessionChannel.MessageL
     @Override
     public String toString()
     {
-        return String.format("%s[%s]", getClass().getSimpleName(), getName());
+        return String.format("%s[%s]@%s", getClass().getSimpleName(), getName(), getOort().getURL());
     }
 
     /**
@@ -301,6 +351,36 @@ public abstract class OortService<R, C> implements ClientSessionChannel.MessageL
         }
     }
 
+    /**
+     * Utility context that stores the {@link ServerSession} and the {@link ServerMessage}.
+     * <p />
+     * CometD services that extend {@link OortService} may register themselves as listeners
+     * for messages sent by remote clients. In such case, this class will come handy in this way:
+     * <pre>
+     * &#64;Service
+     * class MyService extends OortService&lt;Boolean, ServerContext&gt;
+     * {
+     *     &#64;Listener("/service/some")
+     *     public void processSome(ServerSession remote, ServerMessage message)
+     *     {
+     *         String ownerOortURL = findOwnerOortURL();
+     *         forward(ownerOortURL, "some", new ServerContext(remote, message));
+     *     }
+     *
+     *     protected Boolean onForward(Object forwardedData)
+     *     {
+     *         return "some".equals(forwardedData);
+     *     }
+     *
+     *     protected void onForwardSucceeded(Boolean result, ServerContext context)
+     *     {
+     *         context.getServerSession().deliver(getLocalSession(), "/service/some", result, null);
+     *     }
+     *
+     *     ...
+     * }
+     * </pre>
+     */
     public static class ServerContext
     {
         private final ServerSession session;
