@@ -32,6 +32,16 @@ public interface JSONContext
     public interface Server extends JSONParserGenerator<ServerMessage.Mutable>
     {
     }
+
+    public interface Parser
+    {
+        public <T> T parse(Reader reader, Class<T> type) throws ParseException;
+    }
+
+    public interface Generator
+    {
+        public String generate(Object object);
+    }
 }
 
 interface JSONParserGenerator<T extends Message.Mutable>
@@ -45,4 +55,8 @@ interface JSONParserGenerator<T extends Message.Mutable>
     public String generate(T message);
 
     public String generate(T[] messages);
+
+    public JSONContext.Parser getParser();
+
+    public JSONContext.Generator getGenerator();
 }

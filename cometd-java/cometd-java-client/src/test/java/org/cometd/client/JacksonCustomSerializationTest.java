@@ -16,27 +16,21 @@
 
 package org.cometd.client;
 
-import java.io.IOException;
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.map.DeserializationContext;
-import org.codehaus.jackson.map.JsonSerializer;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializerProvider;
-import org.codehaus.jackson.map.deser.std.UntypedObjectDeserializer;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.common.JSONContext;
 import org.cometd.common.JacksonJSONContextClient;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JacksonJSONContextServer;
@@ -92,6 +86,32 @@ public class JacksonCustomSerializationTest extends ClientServerTest
         disconnectBayeuxClient(client);
     }
 
+    @Test
+    public void testParserGenerator() throws Exception
+    {
+        // Note: Jackson does not seem to be able to serialize/deserialize correctly a single Data/Extra object.
+        // However, if they are put into a container like a Map, then Jackson produces a different JSON than
+        // what it produces for the standalone object that allows correct deserialization, of this form:
+        // { field: ["className", {object}] }
+        // It is way easier to have Jetty serialize and deserialize this form than make Jackson use Jetty's form.
+        // They problem is that Jackson tries to be "smart" in figuring out the typing, but with a Map<String, Object>
+        // there is no way to have type information for the values, so Jackson defaults to a basic deserializer
+        // that either is not very flexible, or it's very difficult to configure, so much that I could not so far.
+
+        JSONContext.Client jsonContext = new TestJacksonJSONContextClient();
+        Data data1 = new Data("data");
+        Extra extra1 = new Extra("extra");
+        Map<String, Object> map1 = new HashMap<String, Object>();
+        map1.put("data", data1);
+        map1.put("extra", extra1);
+        String json = jsonContext.getGenerator().generate(map1);
+        Map map2 = jsonContext.getParser().parse(new StringReader(json), Map.class);
+        Data data2 = (Data)map2.get("data");
+        Extra extra2 = (Extra)map2.get("extra");
+        Assert.assertEquals(data1.content, data2.content);
+        Assert.assertEquals(extra1.content, extra2.content);
+    }
+
     private static class ExtraExtension extends ClientSession.Extension.Adapter
     {
         private final String content;
@@ -114,12 +134,6 @@ public class JacksonCustomSerializationTest extends ClientServerTest
     {
         public TestJacksonJSONContextServer()
         {
-            // Configuration needed to work with de/serializers
-//            SimpleModule module = new SimpleModule("test", Version.unknownVersion());
-//            module.addSerializer(Data.class, new DataSerializer());
-//            module.addDeserializer(Object.class, new DataDeserializer());
-//            getObjectMapper().registerModule(module);
-
             getObjectMapper().enableDefaultTyping(ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
@@ -128,12 +142,6 @@ public class JacksonCustomSerializationTest extends ClientServerTest
     {
         public TestJacksonJSONContextClient()
         {
-            // Configuration needed to work with de/serializers
-//            SimpleModule module = new SimpleModule("test", Version.unknownVersion());
-//            module.addSerializer(Data.class, new DataSerializer());
-//            module.addDeserializer(Object.class, new DataDeserializer());
-//            getObjectMapper().registerModule(module);
-
             getObjectMapper().enableDefaultTyping(ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
         }
     }
@@ -167,36 +175,6 @@ public class JacksonCustomSerializationTest extends ClientServerTest
         private Extra(String content)
         {
             this.content = content;
-        }
-    }
-
-    // Alternative way to make it working (see above SimpleModule configuration)
-
-    private static class DataSerializer extends JsonSerializer<Data>
-    {
-        @Override
-        public void serialize(Data data, JsonGenerator jsonGenerator, SerializerProvider provider) throws IOException, JsonProcessingException
-        {
-            jsonGenerator.writeStartObject();
-            jsonGenerator.writeStringField("class", Data.class.getName());
-            jsonGenerator.writeStringField("content", data.content);
-            jsonGenerator.writeEndObject();
-        }
-    }
-
-    private static class DataDeserializer extends UntypedObjectDeserializer
-    {
-        @Override
-        public Object deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException, JsonProcessingException
-        {
-            Object object = super.deserialize(jsonParser, context);
-            if (object instanceof Map)
-            {
-                Map<String, Object> map = (Map<String, Object>)object;
-                if (Data.class.getName().equals(map.get("class")))
-                    return new Data((String)map.get("content"));
-            }
-            return object;
         }
     }
 }
