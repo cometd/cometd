@@ -89,7 +89,7 @@ public class OortMap<V> extends OortObject<ConcurrentMap<String, V>>
         entry.put(VALUE_FIELD, value);
 
         Data data = new Data(6);
-        data.put(Info.ID_FIELD, nextId());
+        data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
         data.put(Info.OBJECT_FIELD, entry);
@@ -119,7 +119,7 @@ public class OortMap<V> extends OortObject<ConcurrentMap<String, V>>
         entry.put(KEY_FIELD, key);
 
         Data data = new Data(6);
-        data.put(Info.ID_FIELD, nextId());
+        data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
         data.put(Info.OBJECT_FIELD, entry);

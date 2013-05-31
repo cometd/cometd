@@ -127,7 +127,7 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
 {
     public static final String OORT_OBJECTS_CHANNEL = "/oort/objects";
 
-    private final AtomicLong ids = new AtomicLong();
+    private final AtomicLong versions = new AtomicLong();
     private final ConcurrentMap<String, Holder<T>> infos = new ConcurrentHashMap<String, Holder<T>>();
     private final List<Listener<T>> listeners = new CopyOnWriteArrayList<Listener<T>>();
     protected final Logger logger;
@@ -161,11 +161,19 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
         holder.set(info, null);
         infos.put(oort.getURL(), holder);
         logger.debug("Set local {}", info);
+
         sender.handshake();
         oort.addCometListener(this);
-        oort.getBayeuxServer().createIfAbsent(channelName, this);
-        oort.getBayeuxServer().getChannel(channelName).addListener(messageListener);
+        BayeuxServer bayeuxServer = oort.getBayeuxServer();
+        bayeuxServer.createIfAbsent(channelName, this);
+        ServerChannel channel = bayeuxServer.getChannel(channelName);
+        channel.addListener(messageListener);
         oort.observeChannel(channelName);
+
+        // Notify other nodes of our initial value.
+        // Must be done after registering listeners, to avoid missing responses from other nodes.
+        channel.publish(getLocalSession(), info, null);
+
         logger.debug("{} started", this);
     }
 
@@ -180,6 +188,7 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
         oort.getBayeuxServer().getChannel(channelName).removeListener(messageListener);
         oort.removeCometListener(this);
         sender.disconnect();
+        infos.remove(oort.getURL());
         logger.debug("{} stopped", this);
     }
 
@@ -254,7 +263,7 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
             throw new NullPointerException();
 
         Data data = new Data(4);
-        data.put(Info.ID_FIELD, nextId());
+        data.put(Info.VERSION_FIELD, nextVersion());
         data.put(Info.OORT_URL_FIELD, getOort().getURL());
         data.put(Info.NAME_FIELD, getName());
         data.put(Info.OBJECT_FIELD, newObject);
@@ -270,16 +279,16 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
     {
         if (local == null)
             throw new NullPointerException();
-        Info<T> info = new Info<T>(nextId(), oort.getURL());
+        Info<T> info = new Info<T>(nextVersion(), oort.getURL());
         info.put(Info.OORT_URL_FIELD, oort.getURL());
         info.put(Info.NAME_FIELD, getName());
         info.put(Info.OBJECT_FIELD, local);
         return info;
     }
 
-    protected long nextId()
+    protected long nextVersion()
     {
-        return ids.getAndIncrement();
+        return versions.getAndIncrement();
     }
 
     public void cometJoined(Event event)
@@ -467,7 +476,7 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
      */
     public static class Info<T> extends HashMap<String, Object>
     {
-        public static final String ID_FIELD = "oort.info.id";
+        public static final String VERSION_FIELD = "oort.info.version";
         public static final String OORT_URL_FIELD = "oort.info.url";
         public static final String NAME_FIELD = "oort.info.name";
         public static final String OBJECT_FIELD = "oort.info.object";
@@ -478,16 +487,16 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
         // The local Oort URL
         private final String oortURL;
 
-        protected Info(long id, String oortURL)
+        protected Info(long version, String oortURL)
         {
             super(4);
             this.oortURL = oortURL;
-            put(ID_FIELD, id);
+            put(VERSION_FIELD, version);
         }
 
         protected Info(String oortURL, Map<? extends String, ?> map)
         {
-            this((Long)map.get(ID_FIELD), oortURL);
+            this((Long)map.get(VERSION_FIELD), oortURL);
             // Discard metadata, only keep data
             put(OORT_URL_FIELD, map.get(OORT_URL_FIELD));
             put(NAME_FIELD, map.get(NAME_FIELD));
@@ -496,7 +505,7 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
 
         protected long getId()
         {
-            return (Long)get(ID_FIELD);
+            return (Long)get(VERSION_FIELD);
         }
 
         /**

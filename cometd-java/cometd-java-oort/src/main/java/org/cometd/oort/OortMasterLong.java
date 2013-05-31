@@ -33,11 +33,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * invoked on the <em>requesting node</em> when the result has been
  * computed and transmitted back by the "master" node.
  */
-public class OortMasterCounter extends OortMasterService<Long, OortMasterCounter.Context>
+public class OortMasterLong extends OortMasterService<Long, OortMasterLong.Context>
 {
     private final AtomicLong value = new AtomicLong();
 
-    public OortMasterCounter(Oort oort, String name, Chooser chooser)
+    public OortMasterLong(Oort oort, String name, Chooser chooser)
     {
         super(oort, name, chooser);
     }

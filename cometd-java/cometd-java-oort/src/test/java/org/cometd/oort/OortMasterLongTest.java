@@ -19,37 +19,11 @@ package org.cometd.oort;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.cometd.client.BayeuxClient;
-import org.eclipse.jetty.server.Server;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
-public class OortMasterCounterTest extends OortTest
+public class OortMasterLongTest extends AbstractOortObjectTest
 {
-    private Oort oort1;
-    private Oort oort2;
-
-    @Before
-    public void prepare() throws Exception
-    {
-        Server server1 = startServer(0);
-        oort1 = startOort(server1);
-        Server server2 = startServer(0);
-        oort2 = startOort(server2);
-
-        CountDownLatch latch = new CountDownLatch(2);
-        CometJoinedListener listener = new CometJoinedListener(latch);
-        oort1.addCometListener(listener);
-        oort2.addCometListener(listener);
-        OortComet oortComet12 = oort1.observeComet(oort2.getURL());
-        Assert.assertTrue(oortComet12.waitFor(5000, BayeuxClient.State.CONNECTED));
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        OortComet oortComet21 = oort2.findComet(oort1.getURL());
-        Assert.assertNotNull(oortComet21);
-        Assert.assertTrue(oortComet21.waitFor(5000, BayeuxClient.State.CONNECTED));
-    }
-
     @Test
     public void testCount() throws Exception
     {
@@ -61,21 +35,21 @@ public class OortMasterCounterTest extends OortTest
             {
                 boolean master = oort1.getURL().equals(service.getOort().getURL());
                 if (master)
-                    ((OortMasterCounter)service).setInitialValue(initial);
+                    ((OortMasterLong)service).setInitialValue(initial);
                 return master;
             }
         };
 
-        OortMasterCounter counter1 = new OortMasterCounter(oort1, name, chooser);
+        OortMasterLong counter1 = new OortMasterLong(oort1, name, chooser);
         counter1.start();
-        OortMasterCounter counter2 = new OortMasterCounter(oort2, name, chooser);
+        OortMasterLong counter2 = new OortMasterLong(oort2, name, chooser);
         counter2.start();
 
         // Wait for the nodes to synchronize
         Thread.sleep(1000);
 
         final CountDownLatch latch1 = new CountDownLatch(1);
-        Assert.assertTrue(counter1.get(new OortMasterCounter.Callback.Adapter()
+        Assert.assertTrue(counter1.get(new OortMasterLong.Callback.Adapter()
         {
             @Override
             public void succeeded(Long result)
@@ -89,7 +63,7 @@ public class OortMasterCounterTest extends OortTest
         Assert.assertEquals(initial, (long)counter1.onForward(0));
 
         final CountDownLatch latch2 = new CountDownLatch(1);
-        Assert.assertTrue(counter2.get(new OortMasterCounter.Callback.Adapter()
+        Assert.assertTrue(counter2.get(new OortMasterLong.Callback.Adapter()
         {
             @Override
             public void succeeded(Long result)
@@ -103,7 +77,7 @@ public class OortMasterCounterTest extends OortTest
         Assert.assertEquals(0, (long)counter2.onForward(0));
 
         final CountDownLatch latch3 = new CountDownLatch(1);
-        Assert.assertTrue(counter1.addAndGet(1, new OortMasterCounter.Callback.Adapter()
+        Assert.assertTrue(counter1.addAndGet(1, new OortMasterLong.Callback.Adapter()
         {
             @Override
             public void succeeded(Long result)
@@ -117,7 +91,7 @@ public class OortMasterCounterTest extends OortTest
         Assert.assertEquals(initial + 1, (long)counter1.onForward(0));
 
         final CountDownLatch latch4 = new CountDownLatch(1);
-        Assert.assertTrue(counter2.addAndGet(1, new OortMasterCounter.Callback.Adapter()
+        Assert.assertTrue(counter2.addAndGet(1, new OortMasterLong.Callback.Adapter()
         {
             @Override
             public void succeeded(Long result)
@@ -131,7 +105,7 @@ public class OortMasterCounterTest extends OortTest
         Assert.assertEquals(0, (long)counter2.onForward(0));
 
         final CountDownLatch latch5 = new CountDownLatch(1);
-        Assert.assertTrue(counter2.getAndAdd(1, new OortMasterCounter.Callback.Adapter()
+        Assert.assertTrue(counter2.getAndAdd(1, new OortMasterLong.Callback.Adapter()
         {
             @Override
             public void succeeded(Long result)
@@ -145,7 +119,7 @@ public class OortMasterCounterTest extends OortTest
         Assert.assertEquals(0, (long)counter2.onForward(0));
 
         final CountDownLatch latch6 = new CountDownLatch(1);
-        Assert.assertTrue(counter1.get(new OortMasterCounter.Callback.Adapter()
+        Assert.assertTrue(counter1.get(new OortMasterLong.Callback.Adapter()
         {
             @Override
             public void succeeded(Long result)
