@@ -101,4 +101,44 @@ public abstract class JacksonJSONContext<T extends Message.Mutable, I extends T>
             throw new RuntimeException(x);
         }
     }
+
+    public JSONContext.Parser getParser()
+    {
+        return new ObjectMapperParser();
+    }
+
+    public JSONContext.Generator getGenerator()
+    {
+        return new ObjectMapperGenerator();
+    }
+
+    private class ObjectMapperParser implements JSONContext.Parser
+    {
+        public <T> T parse(Reader reader, Class<T> type) throws ParseException
+        {
+            try
+            {
+                return getObjectMapper().readValue(reader, type);
+            }
+            catch (IOException x)
+            {
+                throw (ParseException)new ParseException("", -1).initCause(x);
+            }
+        }
+    }
+
+    private class ObjectMapperGenerator implements JSONContext.Generator
+    {
+        public String generate(Object object)
+        {
+            try
+            {
+                return getObjectMapper().writeValueAsString(object);
+            }
+            catch (IOException x)
+            {
+                throw new RuntimeException(x);
+            }
+        }
+    }
 }

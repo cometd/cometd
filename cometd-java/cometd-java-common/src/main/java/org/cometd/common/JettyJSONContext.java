@@ -28,9 +28,9 @@ import org.eclipse.jetty.util.ajax.JSON;
 
 public abstract class JettyJSONContext<T extends Message.Mutable>
 {
-    private FieldJSON _jsonParser = new FieldJSON();
-    private FieldJSON _messageParser = new MessageJSON();
-    private FieldJSON _messagesParser = new MessagesJSON();
+    private final FieldJSON _jsonParser = new FieldJSON();
+    private final FieldJSON _messageParser = new MessageJSON();
+    private final FieldJSON _messagesParser = new MessagesJSON();
 
     protected JettyJSONContext()
     {
@@ -98,6 +98,16 @@ public abstract class JettyJSONContext<T extends Message.Mutable>
         return _messagesParser.toJSON(messages);
     }
 
+    public JSONContext.Parser getParser()
+    {
+        return new JSONParser();
+    }
+
+    public JSONContext.Generator getGenerator()
+    {
+        return new JSONGenerator();
+    }
+
     private class FieldJSON extends JSON
     {
         // Allows for optimizations
@@ -161,6 +171,22 @@ public abstract class JettyJSONContext<T extends Message.Mutable>
         protected Convertor getConvertor(Class forClass)
         {
             return _messageParser.getConvertor(forClass);
+        }
+    }
+
+    private class JSONParser implements JSONContext.Parser
+    {
+        public <T> T parse(Reader reader, Class<T> type) throws ParseException
+        {
+            return (T)getJSON().parse(new JSON.ReaderSource(reader));
+        }
+    }
+
+    private class JSONGenerator implements JSONContext.Generator
+    {
+        public String generate(Object object)
+        {
+            return getJSON().toJSON(object);
         }
     }
 }

@@ -24,6 +24,10 @@ import java.util.concurrent.TimeUnit;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.bayeux.server.LocalSession;
+import org.cometd.bayeux.server.ServerChannel;
+import org.cometd.bayeux.server.ServerMessage;
+import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.ext.AckExtension;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
@@ -544,5 +548,56 @@ public class OortObserveCometTest extends OortTest
             if (extension instanceof AckExtension)
                 ++ackExtensions;
         Assert.assertEquals(1, ackExtensions);
+    }
+
+    @Test
+    public void testPublishDuringCometJoined() throws Exception
+    {
+        Server serverA = startServer(0);
+        final Oort oortA = startOort(serverA);
+        final BayeuxServer bayeuxServerA = oortA.getBayeuxServer();
+
+        final LocalSession serviceA = bayeuxServerA.newLocalSession("test");
+        serviceA.handshake();
+        final String channelName = "/test";
+        final String data = "data";
+        final CountDownLatch joinedLatch = new CountDownLatch(1);
+        oortA.addCometListener(new Oort.CometListener()
+        {
+            public void cometJoined(Event event)
+            {
+                bayeuxServerA.createIfAbsent(channelName);
+                bayeuxServerA.getChannel(channelName).publish(serviceA, data, null);
+                joinedLatch.countDown();
+            }
+
+            public void cometLeft(Event event)
+            {
+            }
+        });
+        oortA.observeChannel(channelName);
+
+        Server serverB = startServer(0);
+        Oort oortB = startOort(serverB);
+        oortB.observeChannel(channelName);
+
+        BayeuxServer bayeuxServerB = oortB.getBayeuxServer();
+        bayeuxServerB.createIfAbsent(channelName);
+        final CountDownLatch latch = new CountDownLatch(1);
+        bayeuxServerB.getChannel(channelName).addListener(new ServerChannel.MessageListener()
+        {
+            public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
+            {
+                if (data.equals(message.getData()))
+                    latch.countDown();
+                return true;
+            }
+        });
+
+        // Link the nodes
+        oortB.observeComet(oortA.getURL());
+
+        Assert.assertTrue(joinedLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }
