@@ -18,6 +18,8 @@ package org.cometd.oort;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+
 /**
  * A shared atomic long made of an internal {@link AtomicLong} and of an internal
  * {@link OortObject OortObject&lt;Long&gt;}.
@@ -46,31 +48,50 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @see OortMasterLong
  */
-public class OortLong
+public class OortLong extends AbstractLifeCycle
 {
     private final AtomicLong atomic = new AtomicLong();
     private final OortObject<Long> value;
 
     public OortLong(Oort oort, String name)
     {
-        value = new OortObject<Long>(oort, name, OortObjectFactories.forLong());
+        this(oort, name, 0);
     }
 
-    public void start()
+    /**
+     * @param oort the oort this instance is associated to
+     * @param name the name of this service
+     * @param initial the initial local value
+     */
+    public OortLong(Oort oort, String name, long initial)
+    {
+        value = new OortObject<Long>(oort, name, OortObjectFactories.forLong(initial));
+    }
+
+    @Override
+    protected void doStart() throws Exception
     {
         value.start();
     }
 
-    public void stop()
+    @Override
+    protected void doStop() throws Exception
     {
         value.stop();
     }
 
+    /**
+     * @return the local value
+     */
     public long get()
     {
         return atomic.get();
     }
 
+    /**
+     * @param delta the delta to add to the local value (may be negative)
+     * @return the new local value
+     */
     public long addAndGet(long delta)
     {
         long result = atomic.addAndGet(delta);
@@ -78,6 +99,10 @@ public class OortLong
         return result;
     }
 
+    /**
+     * @param delta the delta to add to the local value (may be negative)
+     * @return the old local value
+     */
     public long getAndAdd(long delta)
     {
         long result = atomic.getAndAdd(delta);
@@ -85,6 +110,10 @@ public class OortLong
         return result;
     }
 
+    /**
+     * @param newValue the new local value to set
+     * @return the old local value
+     */
     public long getAndSet(long newValue)
     {
         long result = atomic.getAndSet(newValue);
@@ -92,6 +121,11 @@ public class OortLong
         return result;
     }
 
+    /**
+     * @param expected the expected local value
+     * @param newValue the new local value
+     * @return whether the operation was successful
+     */
     public boolean compareAndSet(long expected, long newValue)
     {
         boolean result = atomic.compareAndSet(expected, newValue);
@@ -100,13 +134,11 @@ public class OortLong
         return result;
     }
 
+    /**
+     * @return the sum of local values of each node
+     */
     public long sum()
     {
         return value.merge(OortObjectMergers.longSum());
-    }
-
-    protected OortObject<Long> getValue()
-    {
-        return value;
     }
 }

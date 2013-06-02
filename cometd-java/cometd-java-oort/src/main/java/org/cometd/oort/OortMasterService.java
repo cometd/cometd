@@ -28,18 +28,15 @@ package org.cometd.oort;
  * instead must be owned by one node only, usually referred to as the "master"
  * node.
  * <p/>
- * A typical example of such an entity is a unique ID generator that produces
- * IDs in the form of {@code long} - the primitive Java type - values, or a
- * service that accesses a storage (such as a file system) that is only available
- * on a particular node, etc.
+ * A typical example of such an entity is a unique (across the cluster) ID
+ * generator that produces IDs in the form of {@code long} - the primitive Java
+ * type - values, or a service that accesses a storage (such as a file system)
+ * that is only available on a particular node, etc.
  * <p/>
  * {@link OortMasterService} makes easier to write services that perform actions
  * on entities that must be owned by a single node only.
  * There is one instance of {@link OortMasterService} with the same name for each
  * node, but only one of them is the "master".
- * Applications should provide to the constructor an instance of a {@link Chooser}
- * that can determine whether the {@link OortMasterService} instance is the
- * "master" one.
  * Then, applications may call {@link #getMasterOortURL()} to get the Oort URL
  * of the "master" node, and pass that Oort URL to
  * {@link #forward(String, Object, Object)} as described in {@link OortService}.
@@ -49,14 +46,17 @@ package org.cometd.oort;
  */
 public abstract class OortMasterService<R, C> extends OortService<R, C>
 {
-    private final Chooser chooser;
     private final OortObject<Boolean> nodes;
 
-    public OortMasterService(Oort oort, String name, Chooser chooser)
+    /**
+     * @param oort the oort this instance is associated to
+     * @param name the name of this service
+     * @param master whether this service lives on the "master" node
+     */
+    public OortMasterService(Oort oort, String name, boolean master)
     {
         super(oort, name);
-        this.chooser = chooser;
-        nodes = new OortObject<Boolean>(oort, name, OortObjectFactories.forBoolean());
+        nodes = new OortObject<Boolean>(oort, name, OortObjectFactories.forBoolean(master));
     }
 
     /**
@@ -69,30 +69,16 @@ public abstract class OortMasterService<R, C> extends OortService<R, C>
     }
 
     @Override
-    public void start()
+    protected void doStart() throws Exception
     {
-        super.start();
+        super.doStart();
         nodes.start();
-        nodes.setAndShare(chooser.choose(this));
     }
 
     @Override
-    public void stop()
+    protected void doStop() throws Exception
     {
         nodes.stop();
-        super.stop();
-    }
-
-    /**
-     * Chooses which node is a "master" node.
-     */
-    public interface Chooser
-    {
-        /**
-         * @param service the OortMasterService to which this chooser
-         *                {@link #OortMasterService(Oort, String, Chooser) was passed to}
-         * @return true if the node is a "master" node, false otherwise
-         */
-        public boolean choose(OortMasterService service);
+        super.doStop();
     }
 }

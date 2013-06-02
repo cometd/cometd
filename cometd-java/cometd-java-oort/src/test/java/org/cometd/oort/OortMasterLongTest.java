@@ -29,22 +29,12 @@ public class OortMasterLongTest extends AbstractOortObjectTest
     {
         String name = "test";
         final long initial = 3;
-        OortMasterService.Chooser chooser = new OortMasterService.Chooser()
-        {
-            public boolean choose(OortMasterService service)
-            {
-                boolean master = oort1.getURL().equals(service.getOort().getURL());
-                if (master)
-                    ((OortMasterLong)service).setInitialValue(initial);
-                return master;
-            }
-        };
-
-        OortMasterLong counter1 = new OortMasterLong(oort1, name, chooser);
+        OortMasterLong counter1 = new OortMasterLong(oort1, name, true, initial);
+        OortMasterLong counter2 = new OortMasterLong(oort2, name, false);
         counter1.start();
-        OortMasterLong counter2 = new OortMasterLong(oort2, name, chooser);
+        // Wait for counter1 to be started
+        Thread.sleep(1000);
         counter2.start();
-
         // Wait for the nodes to synchronize
         Thread.sleep(1000);
 
@@ -60,7 +50,7 @@ public class OortMasterLongTest extends AbstractOortObjectTest
         }));
         Assert.assertTrue(latch1.await(5, TimeUnit.SECONDS));
         // Make sure the local value is set
-        Assert.assertEquals(initial, (long)counter1.onForward(0));
+        Assert.assertEquals(initial, counter1.getValue());
 
         final CountDownLatch latch2 = new CountDownLatch(1);
         Assert.assertTrue(counter2.get(new OortMasterLong.Callback.Adapter()
@@ -74,7 +64,7 @@ public class OortMasterLongTest extends AbstractOortObjectTest
         }));
         Assert.assertTrue(latch2.await(5, TimeUnit.SECONDS));
         // Make sure the local value is not set
-        Assert.assertEquals(0, (long)counter2.onForward(0));
+        Assert.assertEquals(0, counter2.getValue());
 
         final CountDownLatch latch3 = new CountDownLatch(1);
         Assert.assertTrue(counter1.addAndGet(1, new OortMasterLong.Callback.Adapter()
@@ -88,7 +78,7 @@ public class OortMasterLongTest extends AbstractOortObjectTest
         }));
         Assert.assertTrue(latch3.await(5, TimeUnit.SECONDS));
         // Make sure the local value is set
-        Assert.assertEquals(initial + 1, (long)counter1.onForward(0));
+        Assert.assertEquals(initial + 1, counter1.getValue());
 
         final CountDownLatch latch4 = new CountDownLatch(1);
         Assert.assertTrue(counter2.addAndGet(1, new OortMasterLong.Callback.Adapter()
@@ -102,7 +92,7 @@ public class OortMasterLongTest extends AbstractOortObjectTest
         }));
         Assert.assertTrue(latch4.await(5, TimeUnit.SECONDS));
         // Make sure the local value is not set
-        Assert.assertEquals(0, (long)counter2.onForward(0));
+        Assert.assertEquals(0, counter2.getValue());
 
         final CountDownLatch latch5 = new CountDownLatch(1);
         Assert.assertTrue(counter2.getAndAdd(1, new OortMasterLong.Callback.Adapter()
@@ -116,7 +106,7 @@ public class OortMasterLongTest extends AbstractOortObjectTest
         }));
         Assert.assertTrue(latch5.await(5, TimeUnit.SECONDS));
         // Make sure the local value is not set
-        Assert.assertEquals(0, (long)counter2.onForward(0));
+        Assert.assertEquals(0, counter2.getValue());
 
         final CountDownLatch latch6 = new CountDownLatch(1);
         Assert.assertTrue(counter1.get(new OortMasterLong.Callback.Adapter()
@@ -130,6 +120,6 @@ public class OortMasterLongTest extends AbstractOortObjectTest
         }));
         Assert.assertTrue(latch6.await(5, TimeUnit.SECONDS));
         // Make sure the local value is set
-        Assert.assertEquals(initial + 3, (long)counter1.onForward(0));
+        Assert.assertEquals(initial + 3, counter1.getValue());
     }
 }

@@ -16,6 +16,7 @@
 
 package org.cometd.oort;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,37 +30,59 @@ public class OortObjectFactories
     {
     }
 
-    public static OortObject.Factory<Boolean> forBoolean()
+    public static OortObject.Factory<Boolean> forBoolean(boolean defaultValue)
     {
-        return new BooleanFactory();
+        return new BooleanFactory(defaultValue);
     }
 
-    public static OortObject.Factory<Long> forLong()
+    public static OortObject.Factory<Long> forLong(long defaultValue)
     {
-        return new LongFactory();
+        return new LongFactory(defaultValue);
     }
 
     public static <K, V> OortObject.Factory<Map<K, V>> forMap()
     {
-        return new MapFactory<K, V>();
+        return forMap(new HashMap<K, V>());
+    }
+
+    public static <K, V> OortObject.Factory<Map<K, V>> forMap(Map<K, V> defaultValue)
+    {
+        return new MapFactory<K, V>(defaultValue);
     }
 
     public static <K, V> OortObject.Factory<ConcurrentMap<K, V>> forConcurrentMap()
     {
-        return new ConcurrentMapFactory<K, V>();
+        return forConcurrentMap(new HashMap<K, V>());
+    }
+
+    public static <K, V> OortObject.Factory<ConcurrentMap<K, V>> forConcurrentMap(Map<K, V> defaultValue)
+    {
+        return new ConcurrentMapFactory<K, V>(defaultValue);
     }
 
     public static <E> OortObject.Factory<List<E>> forConcurrentList()
     {
-        return new ConcurrentListFactory<E>();
+        return forConcurrentList(new ArrayList<E>());
+    }
+
+    public static <E> OortObject.Factory<List<E>> forConcurrentList(List<E> defaultValue)
+    {
+        return new ConcurrentListFactory<E>(defaultValue);
     }
 
     private static class BooleanFactory implements OortObject.Factory<Boolean>
     {
+        private final boolean defaultValue;
+
+        public BooleanFactory(boolean defaultValue)
+        {
+            this.defaultValue = defaultValue;
+        }
+
         public Boolean newObject(Object representation)
         {
             if (representation == null)
-                return false;
+                return defaultValue;
             if (representation instanceof Boolean)
                 return (Boolean)representation;
             return Boolean.valueOf(representation.toString());
@@ -68,10 +91,17 @@ public class OortObjectFactories
 
     private static class LongFactory implements OortObject.Factory<Long>
     {
+        private final long defaultValue;
+
+        public LongFactory(long defaultValue)
+        {
+            this.defaultValue = defaultValue;
+        }
+
         public Long newObject(Object representation)
         {
             if (representation == null)
-                return 0L;
+                return defaultValue;
             if (representation instanceof Number)
                 return ((Number)representation).longValue();
             throw new IllegalArgumentException();
@@ -80,11 +110,18 @@ public class OortObjectFactories
 
     private static class MapFactory<K, V> implements OortObject.Factory<Map<K, V>>
     {
+        private final Map<K, V> defaultValue;
+
+        public MapFactory(Map<K, V> defaultValue)
+        {
+            this.defaultValue = defaultValue;
+        }
+
         @SuppressWarnings("unchecked")
         public Map<K, V> newObject(Object representation)
         {
             if (representation == null)
-                return new HashMap<K, V>();
+                return new HashMap<K, V>(defaultValue);
             if (representation instanceof Map)
                 return (Map<K, V>)representation;
             throw new IllegalArgumentException();
@@ -93,11 +130,18 @@ public class OortObjectFactories
 
     private static class ConcurrentMapFactory<K, V> implements OortObject.Factory<ConcurrentMap<K, V>>
     {
+        private final Map<K, V> defaultValue;
+
+        public ConcurrentMapFactory(Map<K, V> defaultValue)
+        {
+            this.defaultValue = defaultValue;
+        }
+
         @SuppressWarnings("unchecked")
         public ConcurrentMap<K, V> newObject(Object representation)
         {
             if (representation == null)
-                return new ConcurrentHashMap<K, V>();
+                return new ConcurrentHashMap<K, V>(defaultValue);
             if (representation instanceof ConcurrentMap)
                 return (ConcurrentMap<K, V>)representation;
             if (representation instanceof Map)
@@ -108,11 +152,18 @@ public class OortObjectFactories
 
     private static class ConcurrentListFactory<E> implements OortObject.Factory<List<E>>
     {
+        private final List<E> defaultValue;
+
+        public ConcurrentListFactory(List<E> defaultValue)
+        {
+            this.defaultValue = defaultValue;
+        }
+
         @SuppressWarnings("unchecked")
         public List<E> newObject(Object representation)
         {
             if (representation == null)
-                return new CopyOnWriteArrayList<E>();
+                return new CopyOnWriteArrayList<E>(defaultValue);
             if (representation instanceof CopyOnWriteArrayList)
                 return (List<E>)representation;
             if (representation instanceof List)

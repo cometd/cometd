@@ -27,6 +27,7 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +86,7 @@ import org.slf4j.LoggerFactory;
  * @param <R> the result type
  * @param <C> the opaque context type
  */
-public abstract class OortService<R, C> implements ServerChannel.MessageListener
+public abstract class OortService<R, C> extends AbstractLifeCycle implements ServerChannel.MessageListener
 {
     private static final String ACTION_FIELD = "oort.service.action";
     private static final String ID_FIELD = "oort.service.id";
@@ -147,12 +148,8 @@ public abstract class OortService<R, C> implements ServerChannel.MessageListener
         return session;
     }
 
-    /**
-     * Starts the functionalities offered by this service.
-     *
-     * @see #stop()
-     */
-    public void start()
+    @Override
+    protected void doStart() throws Exception
     {
         session.handshake();
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
@@ -163,12 +160,8 @@ public abstract class OortService<R, C> implements ServerChannel.MessageListener
         logger.debug("Started {}", this);
     }
 
-    /**
-     * Stops the functionalities offered by this service.
-     *
-     * @see #start()
-     */
-    public void stop()
+    @Override
+    protected void doStop() throws Exception
     {
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
         bayeuxServer.getChannel(resultChannelName).removeListener(this);

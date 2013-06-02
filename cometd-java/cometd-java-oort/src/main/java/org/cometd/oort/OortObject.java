@@ -36,6 +36,7 @@ import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.common.MarkedReference;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,7 +124,7 @@ import org.slf4j.LoggerFactory;
  *
  * @param <T> the type of value object stored in this oort object
  */
-public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oort.CometListener, Iterable<OortObject.Info<T>>
+public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServerChannel.Initializer, Oort.CometListener, Iterable<OortObject.Info<T>>
 {
     public static final String OORT_OBJECTS_CHANNEL = "/oort/objects";
 
@@ -149,12 +150,8 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
         this.messageListener = new MessageListener();
     }
 
-    /**
-     * Starts this oort object, making it available to other nodes in the cluster.
-     *
-     * @see #stop()
-     */
-    public void start()
+    @Override
+    protected void doStart() throws Exception
     {
         Holder<T> holder = new Holder<T>();
         Info<T> info = newInfo(factory.newObject(null));
@@ -177,12 +174,8 @@ public class OortObject<T> implements ConfigurableServerChannel.Initializer, Oor
         logger.debug("{} started", this);
     }
 
-    /**
-     * Stops this oort object, making it unavailable to other nodes in the cluster.
-     *
-     * @see #start()
-     */
-    public void stop()
+    @Override
+    protected void doStop() throws Exception
     {
         oort.deobserveChannel(channelName);
         oort.getBayeuxServer().getChannel(channelName).removeListener(messageListener);

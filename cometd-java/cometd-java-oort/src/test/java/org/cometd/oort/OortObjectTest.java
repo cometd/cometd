@@ -239,7 +239,7 @@ public class OortObjectTest extends AbstractOortObjectTest
     public void testNonCompositeObject() throws Exception
     {
         String name = "test";
-        OortObject.Factory<Long> factory = OortObjectFactories.forLong();
+        OortObject.Factory<Long> factory = OortObjectFactories.forLong(0);
         OortObject<Long> oortObject1 = new OortObject<Long>(oort1, name, factory);
         OortObject<Long> oortObject2 = new OortObject<Long>(oort2, name, factory);
         startOortObjects(oortObject1, oortObject2);
@@ -282,7 +282,7 @@ public class OortObjectTest extends AbstractOortObjectTest
     public void testStaleUpdateIsDiscarded() throws Exception
     {
         String name = "test";
-        OortObject.Factory<Long> factory = OortObjectFactories.forLong();
+        OortObject.Factory<Long> factory = OortObjectFactories.forLong(0);
         final OortObject<Long> oortObject1 = new OortObject<Long>(oort1, name, factory);
         OortObject<Long> oortObject2 = new OortObject<Long>(oort2, name, factory);
         startOortObjects(oortObject1, oortObject2);

@@ -37,28 +37,29 @@ public class OortMasterLong extends OortMasterService<Long, OortMasterLong.Conte
 {
     private final AtomicLong value = new AtomicLong();
 
-    public OortMasterLong(Oort oort, String name, Chooser chooser)
+    public OortMasterLong(Oort oort, String name, boolean master)
     {
-        super(oort, name, chooser);
+        this(oort, name, master, 0);
     }
 
     /**
-     * Sets the value of the local counter, which makes sense only if performed on the "master" node
-     * before it is started.
-     * <p />
-     * When the value is set on the "master" node after it is started, the results are undefined
-     * since setting the value may happen concurrently with a modification triggered by methods
-     * such as {@link #addAndGet(long, Callback)}.
-     * <p />
-     * This method is typically only called from an implementation of {@link Chooser#choose(OortMasterService)}
-     * that decides which node is the "master" and hence may call this method at the right time and
-     * on the right node.
-     *
-     * @param value the value to set
+     * @param oort the oort this instance is associated to
+     * @param name the name of this service
+     * @param master whether this service lives on the "master" node
+     * @param initial the initial local value
      */
-    public void setInitialValue(long value)
+    public OortMasterLong(Oort oort, String name, boolean master, long initial)
     {
-        this.value.set(value);
+        super(oort, name, master);
+        value.set(initial);
+    }
+
+    /**
+     * @return the local value, which makes sense only if called on the "master" node.
+     */
+    protected long getValue()
+    {
+        return value.get();
     }
 
     /**
