@@ -1579,7 +1579,11 @@ org.cometd.Cometd = function(name)
     this.resubscribe = function(subscription, subscribeProps)
     {
         _removeSubscription(subscription);
-        return this.subscribe(subscription.channel, subscription.scope, subscription.callback, subscribeProps);
+        if (subscription)
+        {
+            return this.subscribe(subscription.channel, subscription.scope, subscription.callback, subscribeProps);
+        }
+        return undefined;
     };
 
     /**
