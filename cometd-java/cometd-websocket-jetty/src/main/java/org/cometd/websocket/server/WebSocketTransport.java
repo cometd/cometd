@@ -63,7 +63,6 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
     public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
     public static final String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
-    public static final String MIN_WEBSOCKET_VERSION = "minVersion";
 
     private final WebSocketFactory _factory = new WebSocketFactory(this);
     private final ThreadLocal<WebSocketContext> _handshake = new ThreadLocal<WebSocketContext>();
@@ -90,8 +89,6 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
         _factory.setMaxTextMessageSize(maxMessageSize);
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, _factory.getMaxIdleTime());
         _factory.setMaxIdleTime((int)idleTimeout);
-        int minVersion = getOption(MIN_WEBSOCKET_VERSION, 13);
-        _factory.setMinVersion(minVersion);
         _executor = newExecutor();
         _scheduler = newScheduledExecutor();
         try
