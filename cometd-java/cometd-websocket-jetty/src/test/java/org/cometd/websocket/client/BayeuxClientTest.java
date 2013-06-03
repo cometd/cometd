@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.cometd.websocket;
+package org.cometd.websocket.client;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +38,7 @@ import org.cometd.client.BayeuxClient;
 import org.cometd.client.BayeuxClient.State;
 import org.cometd.common.HashMapMessage;
 import org.cometd.server.DefaultSecurityPolicy;
+import org.cometd.websocket.ClientServerWebSocketTest;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;
 import org.junit.Before;

@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -616,7 +617,7 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
             _remote = new InetSocketAddress(request.getRemoteAddr(), request.getRemotePort());
 
             for (String name : Collections.list((Enumeration<String>)request.getHeaderNames()))
-                _headers.put(name, Collections.unmodifiableList(Collections.list(request.getHeaders(name))));
+                _headers.put(name.toLowerCase(Locale.ENGLISH), Collections.unmodifiableList(Collections.list(request.getHeaders(name))));
 
             for (String name : Collections.list((Enumeration<String>)request.getParameterNames()))
                 _parameters.put(name, Collections.unmodifiableList(Arrays.asList(request.getParameterValues(name))));
@@ -687,13 +688,13 @@ public class WebSocketTransport extends HttpTransport implements WebSocketFactor
 
         public String getHeader(String name)
         {
-            List<String> headers = _headers.get(name);
+            List<String> headers = _headers.get(name.toLowerCase(Locale.ENGLISH));
             return headers != null && headers.size() > 0 ? headers.get(0) : null;
         }
 
         public List<String> getHeaderValues(String name)
         {
-            return _headers.get(name);
+            return _headers.get(name.toLowerCase(Locale.ENGLISH));
         }
 
         public String getParameter(String name)
