@@ -7,7 +7,7 @@
     <script data-dojo-config="async: true, deps: ['chat.js'], tlmSiblingOfDojo: true" src="../../dojo/dojo.js"></script>
     <script type="text/javascript">
         var config = {
-            contextPath: (new String(document.location).replace(/http:\/\/[^\/]*/, '').replace(/\/dojo-examples\/.*$/, ''))
+            contextPath: location.href.replace(/https?:\/\/[^\/]*/, '').replace(/\/dojo-examples\/.*$/, '')
         };
     </script>
 </head>

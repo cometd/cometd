@@ -69,6 +69,7 @@ public class WebSocketTransport extends HttpTransport
     public static final String MAX_MESSAGE_SIZE_OPTION = "maxMessageSize";
     public static final String IDLE_TIMEOUT_OPTION = "idleTimeout";
     public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
+    public static final String MIN_WEBSOCKET_VERSION = "minVersion";
 
     private WebSocketServerFactory _factory;
     private final ThreadLocal<WebSocketContext> _handshake = new ThreadLocal<>();
@@ -98,6 +99,8 @@ public class WebSocketTransport extends HttpTransport
         policy.setMaxMessageSize(maxMessageSize);
         long idleTimeout = getOption(IDLE_TIMEOUT_OPTION, policy.getIdleTimeout());
         policy.setIdleTimeout((int)idleTimeout);
+        int minVersion = getOption(MIN_WEBSOCKET_VERSION, 13);
+        _factory.setMinVersion(minVersion);
 
         _factory = new WebSocketServerFactory(policy);
         _factory.setCreator(new WebSocketCreator()
@@ -660,7 +663,7 @@ public class WebSocketTransport extends HttpTransport
 //
             for (String name : request.getHeaders().keySet())
             {
-                _headers.put(name, request.getHeaders(name));
+                _headers.put(name.toLowerCase(Locale.ENGLISH), request.getHeaders(name));
             }
 
             _parameters.putAll(request.getServletParameters());
@@ -728,14 +731,14 @@ public class WebSocketTransport extends HttpTransport
         @Override
         public String getHeader(String name)
         {
-            List<String> headers = _headers.get(name);
+            List<String> headers = _headers.get(name.toLowerCase(Locale.ENGLISH));
             return headers != null && headers.size() > 0 ? headers.get(0) : null;
         }
 
         @Override
         public List<String> getHeaderValues(String name)
         {
-            return _headers.get(name);
+            return _headers.get(name.toLowerCase(Locale.ENGLISH));
         }
 
         public String getParameter(String name)

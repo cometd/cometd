@@ -42,7 +42,7 @@ function($, cometd)
       });
 
       /* Initialize CometD */
-      var cometURL = new String(document.location).replace(/\/jquery-examples\/.*$/, '') + '/cometd';
+      var cometURL = location.href.replace(/\/jquery-examples\/.*$/, '') + '/cometd';
       cometd.init({
           url: cometURL,
           logLevel: 'debug'

@@ -57,8 +57,10 @@ public abstract class AbstractCometDTest
     };
     protected TestProvider provider;
     private HttpCookieStore cookies;
-    private Server server;
+    protected Server server;
+    protected ServerConnector connector;
     protected ServletContextHandler context;
+    protected CometDServlet cometdServlet;
     protected int longPollingPeriod = 5000;
     protected String cometServletPath = "/cometd";
     protected int port;
@@ -79,7 +81,7 @@ public abstract class AbstractCometDTest
         cookies = new HttpCookieStore();
 
         server = new Server();
-        ServerConnector connector = new ServerConnector(server);
+        connector = new ServerConnector(server);
         server.addConnector(connector);
 
         HandlerCollection handlers = new HandlerCollection();
@@ -92,7 +94,7 @@ public abstract class AbstractCometDTest
         context.addServlet(DefaultServlet.class, "/");
 
         // Setup CometD servlet
-        CometDServlet cometdServlet = new CometDServlet();
+        cometdServlet = new CometDServlet();
         ServletHolder cometServletHolder = new ServletHolder(cometdServlet);
         cometServletHolder.setInitParameter("timeout", String.valueOf(longPollingPeriod));
         cometServletHolder.setInitParameter("transports", WebSocketTransport.class.getName());
@@ -102,22 +104,31 @@ public abstract class AbstractCometDTest
 
         customizeContext(context);
 
-        server.start();
-        port = connector.getLocalPort();
+        startServer();
 
         contextURL = "http://localhost:" + port + contextPath;
         cometdURL = contextURL + cometServletPath;
 
-        bayeuxServer = cometdServlet.getBayeux();
-
         initPage();
+    }
+
+    protected void startServer() throws Exception
+    {
+        connector.setPort(port);
+        server.start();
+        port = connector.getLocalPort();
+        bayeuxServer = cometdServlet.getBayeux();
     }
 
     @After
     public void destroyCometDServer() throws Exception
     {
         destroyPage();
+        stopServer();
+    }
 
+    protected void stopServer() throws Exception
+    {
         server.stop();
         server.join();
         cookies.clear();

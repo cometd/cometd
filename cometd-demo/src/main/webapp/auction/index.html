@@ -30,7 +30,7 @@
 
     dojo.addOnLoad(function()
     {
-        var cometURL = (new String(document.location).replace(/\/auction\/.*$/, '')) + "/cometd";
+        var cometURL = location.href.replace(/\/auction\/.*$/, '') + "/cometd";
         dojox.cometd.init({ url: cometURL, logLevel: "info" });
 
         var tick=function()

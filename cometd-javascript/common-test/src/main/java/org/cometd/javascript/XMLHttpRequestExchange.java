@@ -293,6 +293,11 @@ public class XMLHttpRequestExchange extends ScriptableObject
                 Throwable failure = result.getFailure();
                 if (!(failure instanceof EOFException))
                     log("Failed " + this, failure);
+		        if (async)
+		        {
+		            readyState = ReadyState.DONE;
+		            notifyReadyStateChange(true);
+		        }
             }
             super.onComplete(result);
         }

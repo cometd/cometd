@@ -123,6 +123,17 @@ public interface ConfigurableServerChannel extends Channel
          * @param channel the channel to configure
          */
         void configureChannel(ConfigurableServerChannel channel);
+
+        /**
+         * Utility class that initializes channels to be persistent
+         */
+        public static class Persistent implements Initializer
+        {
+            public void configureChannel(ConfigurableServerChannel channel)
+            {
+                channel.setPersistent(true);
+            }
+        }
     }
 
     /**

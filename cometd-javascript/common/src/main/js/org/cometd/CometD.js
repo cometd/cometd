@@ -246,18 +246,37 @@ org.cometd.CometD = function(name)
         }
     }
 
+    function _removeListener(subscription)
+    {
+        if (subscription)
+        {
+            var subscriptions = _listeners[subscription.channel];
+            if (subscriptions && subscriptions[subscription.id])
+            {
+                delete subscriptions[subscription.id];
+                _cometd._debug('Removed', subscription.listener ? 'listener' : 'subscription', subscription);
+            }
+        }
+    }
+
+    function _removeSubscription(subscription)
+    {
+        if (subscription && !subscription.listener)
+        {
+            _removeListener(subscription);
+        }
+    }
+
     function _clearSubscriptions()
     {
         for (var channel in _listeners)
         {
             var subscriptions = _listeners[channel];
-            for (var i = 0; i < subscriptions.length; ++i)
+            if (subscriptions)
             {
-                var subscription = subscriptions[i];
-                if (subscription && !subscription.listener)
+                for (var i = 0; i < subscriptions.length; ++i)
                 {
-                    delete subscriptions[i];
-                    _cometd._debug('Removed subscription', subscription, 'for channel', channel);
+                    _removeSubscription(subscriptions[i]);
                 }
             }
         }
@@ -373,7 +392,7 @@ org.cometd.CometD = function(name)
                             _cometd._debug('Invoking listener exception callback', subscription, x);
                             try
                             {
-                                listenerCallback.call(_cometd, x, subscription.handle, subscription.listener, message);
+                                listenerCallback.call(_cometd, x, subscription, subscription.listener, message);
                             }
                             catch (xx)
                             {
@@ -432,8 +451,10 @@ org.cometd.CometD = function(name)
 
     /**
      * Delivers the messages to the CometD server
+     * @param sync whether the send is synchronous
      * @param messages the array of messages to send
      * @param longpoll true if this send is a long poll
+     * @param extraPath an extra path to append to the Bayeux server URL
      */
     function _send(sync, messages, longpoll, extraPath)
     {
@@ -1203,7 +1224,7 @@ org.cometd.CometD = function(name)
         // holds the callback to be called and its scope.
 
         var delegate = _resolveScopedCallback(scope, callback);
-        _cometd._debug('Adding listener on', channel, 'with scope', delegate.scope, 'and callback', delegate.method);
+        _cometd._debug('Adding', isListener ? 'listener' : 'subscription', 'on', channel, 'with scope', delegate.scope, 'and callback', delegate.method);
 
         var subscription = {
             channel: channel,
@@ -1224,24 +1245,15 @@ org.cometd.CometD = function(name)
         // a.push('a'); var hb=a.push('b'); delete a[hb-1]; var hc=a.push('c');
         // then:
         // hc==3, a.join()=='a',,'c', a.length==3
-        var subscriptionID = subscriptions.push(subscription) - 1;
-        subscription.id = subscriptionID;
-        subscription.handle = [channel, subscriptionID];
+        subscription.id = subscriptions.push(subscription) - 1;
 
-        _cometd._debug('Added listener', subscription, 'for channel', channel, 'having id =', subscriptionID);
+        _cometd._debug('Added', isListener ? 'listener' : 'subscription', subscription);
 
-        // The subscription to allow removal of the listener is made of the channel and the index
-        return subscription.handle;
-    }
+        // For backward compatibility: we used to return [channel, subscription.id]
+        subscription[0] = channel;
+        subscription[1] = subscription.id;
 
-    function _removeListener(subscription)
-    {
-        var subscriptions = _listeners[subscription[0]];
-        if (subscriptions)
-        {
-            delete subscriptions[subscription[1]];
-            _cometd._debug('Removed listener', subscription);
-        }
+        return subscription;
     }
 
     //
@@ -1424,7 +1436,7 @@ org.cometd.CometD = function(name)
         }
         catch (x)
         {
-            this._debug('Exception during execution of batch', x);
+            this._info('Exception during execution of batch', x);
             this.endBatch();
             throw x;
         }
@@ -1460,7 +1472,8 @@ org.cometd.CometD = function(name)
      */
     this.removeListener = function(subscription)
     {
-        if (!org.cometd.Utils.isArray(subscription))
+        // Beware of subscription.id == 0, which is falsy => cannot use !subscription.id
+        if (!subscription || !subscription.channel || !("id" in subscription))
         {
             throw 'Invalid argument: expected subscription, not ' + subscription;
         }
@@ -1533,6 +1546,7 @@ org.cometd.CometD = function(name)
     /**
      * Unsubscribes the subscription obtained with a call to {@link #subscribe(string, object, function)}.
      * @param subscription the subscription to unsubscribe.
+     * @param unsubscribeProps an object to be merged with the unsubscribe message
      */
     this.unsubscribe = function(subscription, unsubscribeProps)
     {
@@ -1549,7 +1563,7 @@ org.cometd.CometD = function(name)
         // This ensures that if the server fails, this client does not get notifications
         this.removeListener(subscription);
 
-        var channel = subscription[0];
+        var channel = subscription.channel;
         // Only send the message to the server if this client unsubscribes the last subscription
         if (!_hasSubscriptions(channel))
         {
@@ -1560,6 +1574,16 @@ org.cometd.CometD = function(name)
             var message = this._mixin(false, {}, unsubscribeProps, bayeuxMessage);
             _queueSend(message);
         }
+    };
+
+    this.resubscribe = function(subscription, subscribeProps)
+    {
+        _removeSubscription(subscription);
+        if (subscription)
+        {
+            return this.subscribe(subscription.channel, subscription.scope, subscription.callback, subscribeProps);
+        }
+        return undefined;
     };
 
     /**
@@ -1576,6 +1600,7 @@ org.cometd.CometD = function(name)
      * @param channel the channel to publish the message to
      * @param content the content of the message
      * @param publishProps an object to be merged with the publish message
+     * @param publishCallback a function to be invoked when the publish is acknowledged by the server
      */
     this.publish = function(channel, content, publishProps, publishCallback)
     {

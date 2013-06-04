@@ -26,6 +26,7 @@ import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cometd.bayeux.server.BayeuxServer;
+import org.cometd.common.JSONContext;
 
 /**
  * <p>This servlet serves as a base class for initializing and configuring an
@@ -52,6 +53,7 @@ public abstract class OortConfigServlet implements Servlet
     public static final String OORT_CHANNELS_PARAM = "oort.channels";
     public static final String OORT_CLIENT_DEBUG_PARAM = "clientDebug";
     public static final String OORT_ENABLE_ACK_EXTENSION_PARAM = "enableAckExtension";
+    public static final String OORT_JSON_CONTEXT_PARAM = "jsonContext";
 
     private ServletConfig _config;
 
@@ -90,6 +92,10 @@ public abstract class OortConfigServlet implements Servlet
 
             boolean enableAckExtension = Boolean.parseBoolean(_config.getInitParameter(OORT_ENABLE_ACK_EXTENSION_PARAM));
             oort.setAckExtensionEnabled(enableAckExtension);
+
+            String jsonContext = config.getInitParameter(OORT_JSON_CONTEXT_PARAM);
+            if (jsonContext != null)
+                oort.setJSONContextClient((JSONContext.Client)getClass().getClassLoader().loadClass(jsonContext).newInstance());
 
             oort.start();
             _config.getServletContext().setAttribute(Oort.OORT_ATTRIBUTE, oort);

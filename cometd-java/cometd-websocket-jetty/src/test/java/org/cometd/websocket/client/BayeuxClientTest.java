@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.cometd.websocket;
+package org.cometd.websocket.client;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,9 +37,8 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.BayeuxClient;
 import org.cometd.client.BayeuxClient.State;
 import org.cometd.common.HashMapMessage;
-import org.cometd.common.TransportException;
 import org.cometd.server.DefaultSecurityPolicy;
-import org.cometd.websocket.client.WebSocketTransport;
+import org.cometd.websocket.ClientServerWebSocketTest;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Assert;
 import org.junit.Before;
@@ -75,7 +74,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         client.handshake();
 
         final String channelName = "/foo/bar";
-        final BlockingArrayQueue<String> messages = new BlockingArrayQueue<>();
+        final BlockingArrayQueue<String> messages = new BlockingArrayQueue<String>();
         client.batch(new Runnable()
         {
             public void run()
@@ -117,7 +116,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         });
         try
         {
-            final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
+            final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
             client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
             {
                 public void onMessage(ClientSessionChannel channel, Message message)
@@ -240,7 +239,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
     @Test
     public void testPublish() throws Exception
     {
-        final BlockingArrayQueue<String> results = new BlockingArrayQueue<>();
+        final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
 
         String channelName = "/chat/msg";
         bayeux.createIfAbsent(channelName);
@@ -273,7 +272,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
     @Test
     public void testWaitFor() throws Exception
     {
-        final BlockingArrayQueue<String> results = new BlockingArrayQueue<>();
+        final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
 
         String channelName = "/chat/msg";
         bayeux.createIfAbsent(channelName);
@@ -319,7 +318,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
     @Test
     public void testAuthentication() throws Exception
     {
-        final AtomicReference<String> sessionId = new AtomicReference<>();
+        final AtomicReference<String> sessionId = new AtomicReference<String>();
         class A extends DefaultSecurityPolicy implements ServerSession.RemoveListener
         {
             @Override
@@ -359,7 +358,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         {
             BayeuxClient client = newBayeuxClient();
 
-            Map<String, Object> authentication = new HashMap<>();
+            Map<String, Object> authentication = new HashMap<String, Object>();
             authentication.put("token", "1234567890");
             Message.Mutable fields = new HashMapMessage();
             fields.getExt(true).put("authentication", authentication);
@@ -458,19 +457,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         // No transports on server, to make the client fail
         bayeux.setAllowedTransports();
 
-        WebSocketTransport transport = WebSocketTransport.create(null, wsClient);
-        transport.setDebugEnabled(debugTests());
-        BayeuxClient client = new BayeuxClient(cometdURL, transport)
-        {
-            @Override
-            public void onFailure(Throwable x, Message[] messages)
-            {
-                // Suppress expected exception logging
-                if (!(x instanceof TransportException))
-                    super.onFailure(x, messages);
-            }
-        };
-        client.setDebugEnabled(debugTests());
+        BayeuxClient client = newBayeuxClient();
         final CountDownLatch latch = new CountDownLatch(1);
         client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
         {

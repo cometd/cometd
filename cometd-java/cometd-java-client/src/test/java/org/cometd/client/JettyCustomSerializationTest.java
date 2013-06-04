@@ -16,6 +16,7 @@
 
 package org.cometd.client;
 
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -27,6 +28,7 @@ import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
+import org.cometd.common.JSONContext;
 import org.cometd.common.JettyJSONContextClient;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.JettyJSONContextServer;
@@ -79,6 +81,23 @@ public class JettyCustomSerializationTest extends ClientServerTest
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testParserGenerator() throws Exception
+    {
+        JSONContext.Client jsonContext = new TestJettyJSONContextClient();
+        Data data1 = new Data("data");
+        Extra extra1 = new Extra("extra");
+        Map<String, Object> map1 = new HashMap<String, Object>();
+        map1.put("data", data1);
+        map1.put("extra", extra1);
+        String json = jsonContext.getGenerator().generate(map1);
+        Map map2 = jsonContext.getParser().parse(new StringReader(json), Map.class);
+        Data data2 = (Data)map2.get("data");
+        Extra extra2 = (Extra)map2.get("extra");
+        Assert.assertEquals(data1.content, data2.content);
+        Assert.assertEquals(extra1.content, extra2.content);
     }
 
     private static class ExtraExtension extends ClientSession.Extension.Adapter

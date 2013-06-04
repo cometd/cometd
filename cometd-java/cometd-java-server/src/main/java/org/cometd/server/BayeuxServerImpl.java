@@ -31,7 +31,6 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicMarkableReference;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
@@ -362,7 +361,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return createChannelIfAbsent(channelName, initializers).isMarked();
     }
 
-    private AtomicMarkableReference<ServerChannelImpl> createChannelIfAbsent(String channelName, Initializer... initializers)
+    private MarkedReference<ServerChannelImpl> createChannelIfAbsent(String channelName, Initializer... initializers)
     {
         boolean initialized = false;
         ServerChannelImpl channel = _channels.get(channelName);
@@ -426,7 +425,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
         // Another thread may add this channel concurrently, so wait until it is initialized
         channel.waitForInitialized();
-        return new AtomicMarkableReference<>(channel, initialized);
+        return new MarkedReference<>(channel, initialized);
     }
 
     private void notifyConfigureChannel(Initializer listener, ServerChannel channel)
@@ -1193,7 +1192,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (channels instanceof Object[])
             {
                 Object[] array = (Object[])channels;
-                List<String> channelList = new ArrayList<>();
+                List<String> channelList = new ArrayList<String>();
                 for (Object o : array)
                     channelList.add(String.valueOf(o));
                 return channelList;
@@ -1202,7 +1201,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (channels instanceof List)
             {
                 List<?> list = (List<?>)channels;
-                List<String> channelList = new ArrayList<>();
+                List<String> channelList = new ArrayList<String>();
                 for (Object o : list)
                     channelList.add(String.valueOf(o));
                 return channelList;

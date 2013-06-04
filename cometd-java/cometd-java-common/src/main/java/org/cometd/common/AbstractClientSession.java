@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicMarkableReference;
 
 import org.cometd.bayeux.ChannelId;
 import org.cometd.bayeux.Message;
@@ -223,7 +222,7 @@ public abstract class AbstractClientSession implements ClientSession
 
     protected void notifyListeners(Message.Mutable message)
     {
-        MarkableReference<AbstractSessionChannel> channelRef = getReleasableChannel(message.getChannel());
+        MarkedReference<AbstractSessionChannel> channelRef = getReleasableChannel(message.getChannel());
         AbstractSessionChannel channel = channelRef.getReference();
         channel.notifyMessageListeners(message);
         if (channelRef.isMarked())
@@ -232,7 +231,7 @@ public abstract class AbstractClientSession implements ClientSession
         ChannelId channelId = channel.getChannelId();
         for (String wildChannelName : channelId.getWilds())
         {
-            MarkableReference<AbstractSessionChannel> wildChannelRef = getReleasableChannel(wildChannelName);
+            MarkedReference<AbstractSessionChannel> wildChannelRef = getReleasableChannel(wildChannelName);
             AbstractSessionChannel wildChannel = wildChannelRef.getReference();
             wildChannel.notifyMessageListeners(message);
             if (wildChannelRef.isMarked())
@@ -242,22 +241,22 @@ public abstract class AbstractClientSession implements ClientSession
 
     protected void notifyListener(ClientSessionChannel.MessageListener listener, Message.Mutable message)
     {
-        MarkableReference<AbstractSessionChannel> channelRef = getReleasableChannel(message.getChannel());
+        MarkedReference<AbstractSessionChannel> channelRef = getReleasableChannel(message.getChannel());
         AbstractSessionChannel channel = channelRef.getReference();
         channel.notifyOnMessage(listener, message);
         if (channelRef.isMarked())
             channel.release();
     }
 
-    private MarkableReference<AbstractSessionChannel> getReleasableChannel(String id)
+    private MarkedReference<AbstractSessionChannel> getReleasableChannel(String id)
     {
         // Use getChannels().get(channelName) instead of getChannel(channelName)
         // to avoid to cache channels that can be released immediately.
 
         AbstractSessionChannel channel = ChannelId.isMeta(id) ? (AbstractSessionChannel)getChannel(id) : getChannels().get(id);
         if (channel != null)
-            return new MarkableReference<>(channel, false);
-        return new MarkableReference<>(newChannel(newChannelId(id)), true);
+            return new MarkedReference<>(channel, false);
+        return new MarkedReference<>(newChannel(newChannelId(id)), true);
     }
 
     public void dump(StringBuilder b, String indent)
@@ -506,33 +505,6 @@ public abstract class AbstractClientSession implements ClientSession
         public String toString()
         {
             return _id.toString();
-        }
-    }
-
-    /**
-     * Non-volatile, non-atomic version of {@link AtomicMarkableReference}.
-     *
-     * @param <T> the reference type
-     */
-    private static class MarkableReference<T>
-    {
-        private final T reference;
-        private final boolean mark;
-
-        private MarkableReference(T reference, boolean mark)
-        {
-            this.reference = reference;
-            this.mark = mark;
-        }
-
-        public T getReference()
-        {
-            return reference;
-        }
-
-        public boolean isMarked()
-        {
-            return mark;
         }
     }
 }

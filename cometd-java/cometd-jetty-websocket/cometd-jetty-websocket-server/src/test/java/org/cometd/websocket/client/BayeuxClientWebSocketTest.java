@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.cometd.websocket;
+package org.cometd.websocket.client;
 
 import java.io.EOFException;
 import java.net.ConnectException;
@@ -45,6 +45,7 @@ import org.cometd.common.TransportException;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
+import org.cometd.websocket.ClientServerWebSocketTest;
 import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.websocket.api.UpgradeException;
@@ -228,6 +229,63 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         });
         client.handshake();
         Assert.assertTrue(connectLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(client.isConnected());
+
+        disconnectBayeuxClient(client);
+    }
+
+    @Test
+    public void testRestart() throws Exception
+    {
+        WebSocketTransport webSocketTransport = WebSocketTransport.create(null, wsClient);
+        webSocketTransport.setDebugEnabled(debugTests());
+        LongPollingTransport longPollingTransport = LongPollingTransport.create(null, httpClient);
+        longPollingTransport.setDebugEnabled(debugTests());
+        final BayeuxClient client = new BayeuxClient(cometdURL, webSocketTransport, longPollingTransport)
+        {
+            @Override
+            public void onFailure(Throwable x, Message[] messages)
+            {
+                // Suppress expected exceptions
+                if ((x instanceof EOFException) || (x instanceof ConnectException))
+                    return;
+                super.onFailure(x, messages);
+            }
+        };
+        client.setDebugEnabled(debugTests());
+
+        final AtomicReference<CountDownLatch> connectedLatch = new AtomicReference<>(new CountDownLatch(1));
+        final AtomicReference<CountDownLatch> disconnectedLatch = new AtomicReference<>(new CountDownLatch(2));
+        client.getChannel(Channel.META_CONNECT).addListener(new ClientSessionChannel.MessageListener()
+        {
+            public void onMessage(ClientSessionChannel channel, Message message)
+            {
+                if (message.isSuccessful() && "websocket".equals(client.getTransport().getName()))
+                    connectedLatch.get().countDown();
+                else
+                    disconnectedLatch.get().countDown();
+            }
+        });
+        client.handshake();
+
+        // Wait for connect
+        Assert.assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(client.isConnected());
+        Thread.sleep(1000);
+
+        // Stop server
+        int port = connector.getLocalPort();
+        server.stop();
+        Assert.assertTrue(disconnectedLatch.get().await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(!client.isConnected());
+
+        // restart server
+        connector.setPort(port);
+        connectedLatch.set(new CountDownLatch(1));
+        server.start();
+
+        // Wait for connect
+        Assert.assertTrue(connectedLatch.get().await(10, TimeUnit.SECONDS));
         Assert.assertTrue(client.isConnected());
 
         disconnectBayeuxClient(client);

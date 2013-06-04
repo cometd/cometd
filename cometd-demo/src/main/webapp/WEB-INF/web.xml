@@ -56,6 +56,10 @@
             <param-value>org.cometd.websocket.server.WebSocketTransport</param-value>
         </init-param>
         <init-param>
+            <param-name>ws.minVersion</param-name>
+            <param-value>-1</param-value>
+        </init-param>
+        <init-param>
             <param-name>services</param-name>
             <param-value>org.cometd.examples.ChatService</param-value>
         </init-param>

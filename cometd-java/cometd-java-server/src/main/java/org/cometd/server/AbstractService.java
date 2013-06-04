@@ -102,6 +102,11 @@ public abstract class AbstractService
         return _bayeux;
     }
 
+    public String getName()
+    {
+        return _name;
+    }
+
     /**
      * @return The {@link LocalSession} associated with this CometD service
      */

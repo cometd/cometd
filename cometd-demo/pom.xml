@@ -66,6 +66,17 @@
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
                 <configuration>
+                    <connectors>
+                        <connector implementation="org.eclipse.jetty.server.nio.SelectChannelConnector">
+                            <port>8080</port>
+                        </connector>
+                        <connector implementation="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
+                            <port>8443</port>
+                            <keystore>src/main/resources/keystore.jks</keystore>
+                            <password>storepwd</password>
+                            <keyPassword>keypwd</keyPassword>
+                        </connector>
+                    </connectors>
                     <scanIntervalSeconds>1</scanIntervalSeconds>
                     <webAppConfig>
                         <contextPath>/</contextPath>
@@ -129,11 +140,18 @@
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlets</artifactId>
             <version>${jetty-version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>jetty-client</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <version>${slf4j-version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>
