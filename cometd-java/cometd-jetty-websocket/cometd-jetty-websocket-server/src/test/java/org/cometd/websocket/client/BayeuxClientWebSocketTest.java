@@ -46,7 +46,6 @@ import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.ServerSessionImpl;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
 import org.cometd.websocket.ClientServerWebSocketTest;
-import org.cometd.websocket.client.WebSocketTransport;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.junit.Assert;

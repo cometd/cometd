@@ -48,7 +48,9 @@ import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.ext.AckExtension;
+import org.cometd.client.transport.ClientTransport;
 import org.cometd.common.HashMapMessage;
+import org.cometd.common.JSONContext;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.authorizer.GrantAuthorizer;
 import org.cometd.server.ext.AcknowledgedMessagesExtension;
@@ -374,7 +376,7 @@ public class Oort extends ContainerLifeCycle
 
     protected OortComet newOortComet(String cometURL)
     {
-        Map<String, Object> options = new HashMap<String, Object>(1);
+        Map<String, Object> options = new HashMap<>(1);
         JSONContext.Client jsonContext = getJSONContextClient();
         if (jsonContext != null)
             options.put(ClientTransport.JSON_CONTEXT, jsonContext);
@@ -667,14 +669,14 @@ public class Oort extends ContainerLifeCycle
         return _threadPool;
     }
 
-    public WebSocketClientFactory getWebSocketClientFactory()
+    public WebSocketClient getWebSocketClient()
     {
-        return _wsFactory;
+        return _wsClient;
     }
 
-    public void setWebSocketClientFactory(WebSocketClientFactory wsFactory)
+    public void setWebSocketClientFactory(WebSocketClient wsClient)
     {
-        this._wsFactory = wsFactory;
+        this._wsClient = wsClient;
     }
 
     public HttpClient getHttpClient()
@@ -694,7 +696,7 @@ public class Oort extends ContainerLifeCycle
 
     public Set<String> getObservedChannels()
     {
-        return new HashSet<String>(_channels.keySet());
+        return new HashSet<>(_channels.keySet());
     }
 
     /**
@@ -1041,7 +1043,7 @@ public class Oort extends ContainerLifeCycle
     protected static class ClientCometInfo extends CometInfo
     {
         private final OortComet comet;
-        private final Map<String, Boolean> urls = new ConcurrentHashMap<String, Boolean>();
+        private final Map<String, Boolean> urls = new ConcurrentHashMap<>();
 
         protected ClientCometInfo(String id, String url, OortComet comet)
         {

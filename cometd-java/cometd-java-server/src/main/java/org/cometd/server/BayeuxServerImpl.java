@@ -49,6 +49,7 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.JSONContext;
+import org.cometd.common.MarkedReference;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -1192,7 +1193,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (channels instanceof Object[])
             {
                 Object[] array = (Object[])channels;
-                List<String> channelList = new ArrayList<String>();
+                List<String> channelList = new ArrayList<>();
                 for (Object o : array)
                     channelList.add(String.valueOf(o));
                 return channelList;
@@ -1201,7 +1202,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             if (channels instanceof List)
             {
                 List<?> list = (List<?>)channels;
-                List<String> channelList = new ArrayList<String>();
+                List<String> channelList = new ArrayList<>();
                 for (Object o : list)
                     channelList.add(String.valueOf(o));
                 return channelList;

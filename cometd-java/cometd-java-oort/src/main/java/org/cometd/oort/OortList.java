@@ -51,7 +51,7 @@ public class OortList<E> extends OortObject<List<E>>
     private static final String ACTION_FIELD_ADD_VALUE = "oort.list.add";
     private static final String ACTION_FIELD_REMOVE_VALUE = "oort.list.remove";
 
-    private final List<ElementListener<E>> listeners = new CopyOnWriteArrayList<ElementListener<E>>();
+    private final List<ElementListener<E>> listeners = new CopyOnWriteArrayList<>();
 
     public OortList(Oort oort, String name, Factory<List<E>> factory)
     {
@@ -118,7 +118,7 @@ public class OortList<E> extends OortObject<List<E>>
 
         logger.debug("Sharing list add {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
         return (Boolean)data.getResult();
     }
@@ -144,7 +144,7 @@ public class OortList<E> extends OortObject<List<E>>
 
         logger.debug("Sharing list remove {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
         return (Boolean)data.getResult();
     }
@@ -170,7 +170,7 @@ public class OortList<E> extends OortObject<List<E>>
                 final List<E> elements = (List<E>)object;
 
                 // Set the new Info
-                Info<List<E>> newInfo = new Info<List<E>>(getOort().getURL(), data);
+                Info<List<E>> newInfo = new Info<>(getOort().getURL(), data);
                 final List<E> list = info.getObject();
                 newInfo.put(Info.OBJECT_FIELD, list);
                 final AtomicBoolean result = new AtomicBoolean();
@@ -310,10 +310,10 @@ public class OortList<E> extends OortObject<List<E>>
 
         public void onUpdated(Info<List<E>> oldInfo, Info<List<E>> newInfo)
         {
-            List<E> added = new ArrayList<E>(newInfo.getObject());
+            List<E> added = new ArrayList<>(newInfo.getObject());
             added.removeAll(oldInfo.getObject());
 
-            List<E> removed = new ArrayList<E>(oldInfo.getObject());
+            List<E> removed = new ArrayList<>(oldInfo.getObject());
             removed.removeAll(newInfo.getObject());
 
             if (!added.isEmpty())

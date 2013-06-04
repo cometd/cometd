@@ -74,7 +74,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         client.handshake();
 
         final String channelName = "/foo/bar";
-        final BlockingArrayQueue<String> messages = new BlockingArrayQueue<String>();
+        final BlockingArrayQueue<String> messages = new BlockingArrayQueue<>();
         client.batch(new Runnable()
         {
             public void run()
@@ -116,7 +116,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         });
         try
         {
-            final AtomicReference<CountDownLatch> latch = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
+            final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
             client.getChannel(Channel.META_HANDSHAKE).addListener(new ClientSessionChannel.MessageListener()
             {
                 public void onMessage(ClientSessionChannel channel, Message message)
@@ -239,7 +239,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
     @Test
     public void testPublish() throws Exception
     {
-        final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
+        final BlockingArrayQueue<String> results = new BlockingArrayQueue<>();
 
         String channelName = "/chat/msg";
         bayeux.createIfAbsent(channelName);
@@ -272,7 +272,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
     @Test
     public void testWaitFor() throws Exception
     {
-        final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
+        final BlockingArrayQueue<String> results = new BlockingArrayQueue<>();
 
         String channelName = "/chat/msg";
         bayeux.createIfAbsent(channelName);
@@ -318,7 +318,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
     @Test
     public void testAuthentication() throws Exception
     {
-        final AtomicReference<String> sessionId = new AtomicReference<String>();
+        final AtomicReference<String> sessionId = new AtomicReference<>();
         class A extends DefaultSecurityPolicy implements ServerSession.RemoveListener
         {
             @Override
@@ -358,7 +358,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         {
             BayeuxClient client = newBayeuxClient();
 
-            Map<String, Object> authentication = new HashMap<String, Object>();
+            Map<String, Object> authentication = new HashMap<>();
             authentication.put("token", "1234567890");
             Message.Mutable fields = new HashMapMessage();
             fields.getExt(true).put("authentication", authentication);

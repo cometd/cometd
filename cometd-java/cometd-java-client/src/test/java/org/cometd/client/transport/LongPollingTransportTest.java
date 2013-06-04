@@ -17,15 +17,18 @@
 package org.cometd.client.transport;
 
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Message;
-import org.cometd.bayeux.Message.Mutable;
 import org.cometd.common.HashMapMessage;
 import org.cometd.common.TransportException;
 import org.eclipse.jetty.client.HttpClient;

@@ -48,7 +48,7 @@ public class OortComet extends BayeuxClient
 
     public OortComet(Oort oort, String cometURL, Map<String, Object> options)
     {
-        super(cometURL, WebSocketTransport.create(options, oort.getWebSocketClientFactory()),
+        super(cometURL, WebSocketTransport.create(options, oort.getWebSocketClient()),
                 LongPollingTransport.create(options, oort.getHttpClient()));
         _oort = oort;
         _cometURL = cometURL;
@@ -156,7 +156,7 @@ public class OortComet extends BayeuxClient
                     subscribe(channels);
 
                     // Advertise the remote node that we have joined
-                    Map<String, Object> data = new HashMap<String, Object>(1);
+                    Map<String, Object> data = new HashMap<>(1);
                     data.put(Oort.EXT_OORT_URL_FIELD, _oort.getURL());
                     getChannel(Oort.OORT_SERVICE_CHANNEL).publish(data);
 

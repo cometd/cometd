@@ -129,8 +129,8 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     public static final String OORT_OBJECTS_CHANNEL = "/oort/objects";
 
     private final AtomicLong versions = new AtomicLong();
-    private final ConcurrentMap<String, Holder<T>> infos = new ConcurrentHashMap<String, Holder<T>>();
-    private final List<Listener<T>> listeners = new CopyOnWriteArrayList<Listener<T>>();
+    private final ConcurrentMap<String, Holder<T>> infos = new ConcurrentHashMap<>();
+    private final List<Listener<T>> listeners = new CopyOnWriteArrayList<>();
     protected final Logger logger;
     private final Oort oort;
     private final String name;
@@ -153,7 +153,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     @Override
     protected void doStart() throws Exception
     {
-        Holder<T> holder = new Holder<T>();
+        Holder<T> holder = new Holder<>();
         Info<T> info = newInfo(factory.newObject(null));
         holder.set(info, null);
         infos.put(oort.getURL(), holder);
@@ -169,7 +169,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
         // Notify other nodes of our initial value.
         // Must be done after registering listeners, to avoid missing responses from other nodes.
-        channel.publish(getLocalSession(), info, null);
+        channel.publish(getLocalSession(), info);
 
         logger.debug("{} started", this);
     }
@@ -263,7 +263,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
         logger.debug("Sharing {}", data);
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
         return (T)data.getResult();
     }
@@ -272,7 +272,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     {
         if (local == null)
             throw new NullPointerException();
-        Info<T> info = new Info<T>(nextVersion(), oort.getURL());
+        Info<T> info = new Info<>(nextVersion(), oort.getURL());
         info.put(Info.OORT_URL_FIELD, oort.getURL());
         info.put(Info.NAME_FIELD, getName());
         info.put(Info.OBJECT_FIELD, local);
@@ -392,7 +392,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
     {
         // Convert the object, for example from a JSON serialized Map to a ConcurrentMap
         data.put(Info.OBJECT_FIELD, getFactory().newObject(data.get(Info.OBJECT_FIELD)));
-        Info<T> newInfo = new Info<T>(oort.getURL(), data);
+        Info<T> newInfo = new Info<>(oort.getURL(), data);
 
         MarkedReference<Info<T>> old = setInfo(newInfo, null);
 
@@ -412,7 +412,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         {
             if (!oort.getURL().equals(data.get(Info.PEER_FIELD)))
             {
-                Map<String, Object> localInfo = new HashMap<String, Object>(getInfo(oort.getURL()));
+                Map<String, Object> localInfo = new HashMap<>(getInfo(oort.getURL()));
                 String oortURL = newInfo.getOortURL();
                 localInfo.put(Info.PEER_FIELD, oortURL);
                 pushInfo(oortURL, localInfo);
@@ -430,7 +430,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         Holder<T> holder = infos.get(newOortURL);
         if (holder == null)
         {
-            holder = new Holder<T>();
+            holder = new Holder<>();
             Holder<T> existing = infos.putIfAbsent(newOortURL, holder);
             if (existing != null)
                 holder = existing;
@@ -450,7 +450,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
 
     protected Collection<Info<T>> getInfos()
     {
-        List<Info<T>> result = new ArrayList<Info<T>>(infos.size());
+        List<Info<T>> result = new ArrayList<>(infos.size());
         for (Holder<T> holders : infos.values())
             result.add(holders.get());
         return result;
@@ -658,7 +658,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
                     if (action != null)
                         action.run();
                 }
-                return new MarkedReference<Info<T>>(oldInfo, marked);
+                return new MarkedReference<>(oldInfo, marked);
             }
         }
 

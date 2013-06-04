@@ -95,7 +95,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     private static final String FAILURE_FIELD = "oort.service.failure";
 
     private final AtomicLong actions = new AtomicLong();
-    private final ConcurrentMap<Long, C> callbacks = new ConcurrentHashMap<Long, C>();
+    private final ConcurrentMap<Long, C> callbacks = new ConcurrentHashMap<>();
     private final Oort oort;
     private final String name;
     private final String forwardChannelName;
@@ -183,7 +183,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         long actionId = actions.incrementAndGet();
         if (context != null)
             callbacks.put(actionId, context);
-        Map<String, Object> data = new HashMap<String, Object>(3);
+        Map<String, Object> data = new HashMap<>(3);
         data.put(ID_FIELD, actionId);
         data.put(ACTION_FIELD, actionData);
         String localOortURL = getOort().getURL();
@@ -193,7 +193,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         {
             // Local case
             logger.debug("Forwarding action locally ({}): {}", localOortURL, data);
-            oort.getBayeuxServer().getChannel(forwardChannelName).publish(getLocalSession(), data, null);
+            oort.getBayeuxServer().getChannel(forwardChannelName).publish(getLocalSession(), data);
             return true;
         }
         else
@@ -220,7 +220,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         {
             logger.debug("Received forwarded action {}", message);
             Map<String, Object> data = message.getDataAsMap();
-            Map<String, Object> resultData = new HashMap<String, Object>(3);
+            Map<String, Object> resultData = new HashMap<>(3);
             resultData.put(ID_FIELD, data.get(ID_FIELD));
             resultData.put(OORT_URL_FIELD, getOort().getURL());
             try
@@ -245,7 +245,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
             {
                 // Local case
                 logger.debug("Returning forwarded action result {} to local {}", resultData, oortURL);
-                oort.getBayeuxServer().getChannel(resultChannelName).publish(getLocalSession(), resultData, null);
+                oort.getBayeuxServer().getChannel(resultChannelName).publish(getLocalSession(), resultData);
             }
             else
             {

@@ -54,7 +54,7 @@ public class OortMap<V> extends OortObject<ConcurrentMap<String, V>>
     private static final String KEY_FIELD = "oort.map.key";
     private static final String VALUE_FIELD = "oort.map.value";
 
-    private final List<EntryListener<V>> listeners = new CopyOnWriteArrayList<EntryListener<V>>();
+    private final List<EntryListener<V>> listeners = new CopyOnWriteArrayList<>();
 
     public OortMap(Oort oort, String name, Factory<ConcurrentMap<String, V>> factory)
     {
@@ -84,7 +84,7 @@ public class OortMap<V> extends OortObject<ConcurrentMap<String, V>>
      */
     public V putAndShare(String key, V value)
     {
-        Map<String, Object> entry = new HashMap<String, Object>(2);
+        Map<String, Object> entry = new HashMap<>(2);
         entry.put(KEY_FIELD, key);
         entry.put(VALUE_FIELD, value);
 
@@ -98,7 +98,7 @@ public class OortMap<V> extends OortObject<ConcurrentMap<String, V>>
 
         logger.debug("Sharing map put {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
         return (V)data.getResult();
     }
@@ -115,7 +115,7 @@ public class OortMap<V> extends OortObject<ConcurrentMap<String, V>>
      */
     public V removeAndShare(String key)
     {
-        Map<String, Object> entry = new HashMap<String, Object>(1);
+        Map<String, Object> entry = new HashMap<>(1);
         entry.put(KEY_FIELD, key);
 
         Data data = new Data(6);
@@ -128,7 +128,7 @@ public class OortMap<V> extends OortObject<ConcurrentMap<String, V>>
 
         logger.debug("Sharing map remove {}", data);
         BayeuxServer bayeuxServer = getOort().getBayeuxServer();
-        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data, null);
+        bayeuxServer.getChannel(getChannelName()).publish(getLocalSession(), data);
 
         return (V)data.getResult();
     }
@@ -202,10 +202,10 @@ public class OortMap<V> extends OortObject<ConcurrentMap<String, V>>
                 final V value = (V)object.get(VALUE_FIELD);
 
                 // Set the new Info
-                Info<ConcurrentMap<String, V>> newInfo = new Info<ConcurrentMap<String, V>>(getOort().getURL(), data);
+                Info<ConcurrentMap<String, V>> newInfo = new Info<>(getOort().getURL(), data);
                 final ConcurrentMap<String, V> map = info.getObject();
                 newInfo.put(Info.OBJECT_FIELD, map);
-                final AtomicReference<V> result = new AtomicReference<V>();
+                final AtomicReference<V> result = new AtomicReference<>();
                 MarkedReference<Info<ConcurrentMap<String, V>>> old = setInfo(newInfo, new Runnable()
                 {
                     public void run()
@@ -217,7 +217,7 @@ public class OortMap<V> extends OortObject<ConcurrentMap<String, V>>
                     }
                 });
 
-                Entry<V> entry = new Entry<V>(key, result.get(), value);
+                Entry<V> entry = new Entry<>(key, result.get(), value);
 
                 logger.debug("{} {} map {} of {}",
                         old.isMarked() ? "Performed" : "Skipped",
@@ -410,12 +410,12 @@ public class OortMap<V> extends OortObject<ConcurrentMap<String, V>>
         public void onUpdated(Info<ConcurrentMap<String, V>> oldInfo, Info<ConcurrentMap<String, V>> newInfo)
         {
             Map<String, V> oldMap = oldInfo == null ? Collections.<String, V>emptyMap() : oldInfo.getObject();
-            Map<String, V> newMap = new HashMap<String, V>(newInfo.getObject());
+            Map<String, V> newMap = new HashMap<>(newInfo.getObject());
             for (Map.Entry<String, V> oldEntry : oldMap.entrySet())
             {
                 String key = oldEntry.getKey();
                 V newValue = newMap.remove(key);
-                Entry<V> entry = new Entry<V>(key, oldEntry.getValue(), newValue);
+                Entry<V> entry = new Entry<>(key, oldEntry.getValue(), newValue);
                 if (newValue == null)
                     oortMap.notifyEntryRemoved(newInfo, entry);
                 else
@@ -423,7 +423,7 @@ public class OortMap<V> extends OortObject<ConcurrentMap<String, V>>
             }
             for (Map.Entry<String, V> newEntry : newMap.entrySet())
             {
-                Entry<V> entry = new Entry<V>(newEntry.getKey(), null, newEntry.getValue());
+                Entry<V> entry = new Entry<>(newEntry.getKey(), null, newEntry.getValue());
                 oortMap.notifyEntryPut(newInfo, entry);
             }
         }
@@ -432,7 +432,7 @@ public class OortMap<V> extends OortObject<ConcurrentMap<String, V>>
         {
             for (Map.Entry<String, V> oldEntry : info.getObject().entrySet())
             {
-                Entry<V> entry = new Entry<V>(oldEntry.getKey(), oldEntry.getValue(), null);
+                Entry<V> entry = new Entry<>(oldEntry.getKey(), oldEntry.getValue(), null);
                 oortMap.notifyEntryRemoved(info, entry);
             }
         }

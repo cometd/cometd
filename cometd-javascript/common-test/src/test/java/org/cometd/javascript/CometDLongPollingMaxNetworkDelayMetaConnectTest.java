@@ -76,19 +76,19 @@ public class CometDLongPollingMaxNetworkDelayMetaConnectTest extends AbstractCom
 
         evaluateScript("cometd.handshake();");
 
-        // First connect returns immediately (time = 0)
-        // Second connect is delayed, but client is not aware of this
+        // First connect (id=2) returns immediately (time = 0)
+        // Second connect (id=3) is delayed, but client is not aware of this
         // MaxNetworkDelay elapses, second connect is failed on the client (time = longPollingPeriod + maxNetworkDelay)
-        // Client sends third connect
+        // Client sends third connect (id=4)
         // Third connect returns immediately
-        // Fourth connect is held
+        // Fourth connect (id=5) is held
         // Second connect is processed on server (time = longPollingPeriod + 2 * maxNetworkDelay)
         //  + Fourth connect is replied with a 408
         //  + Second connect is held
-        // Client sends fifth connect
+        // Client sends fifth connect (id=6)
         // Fifth connect returns immediately
-        // Sixth connect is processed on server:
-        //  + Second connect is replied with a 408, but connection is closed
+        // Client sends sixth connect (id=7) and it is processed on server:
+        //  + Second connect is replied with a 408, but connection is already closed by the client
         //  + Sixth connect is held
         // Sixth connect returns (time = 2 * longPollingPeriod + 2 * maxNetworkDelay)
 

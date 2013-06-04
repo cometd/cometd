@@ -16,30 +16,25 @@
 
 package org.cometd.client;
 
-import java.io.IOException;
+import java.io.StringReader;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.map.DeserializationContext;
-import org.codehaus.jackson.map.JsonSerializer;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializerProvider;
-import org.codehaus.jackson.map.deser.std.UntypedObjectDeserializer;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.client.transport.ClientTransport;
 import org.cometd.client.transport.LongPollingTransport;
-import org.cometd.common.JacksonJSONContextClient;
+import org.cometd.common.JSONContext;
+import org.cometd.common.Jackson1JSONContextClient;
+import org.cometd.common.Jackson2JSONContextClient;
 import org.cometd.server.BayeuxServerImpl;
-import org.cometd.server.JacksonJSONContextServer;
+import org.cometd.server.Jackson1JSONContextServer;
+import org.cometd.server.Jackson2JSONContextServer;
 import org.cometd.server.transport.HttpTransport;
 import org.junit.Assert;
 import org.junit.Test;
@@ -127,10 +122,10 @@ public class JacksonCustomSerializationTest extends ClientServerTest
         // there is no way to have type information for the values, so Jackson defaults to a basic deserializer
         // that either is not very flexible, or it's very difficult to configure, so much that I could not so far.
 
-        JSONContext.Client jsonContext = new TestJacksonJSONContextClient();
+        JSONContext.Client jsonContext = (JSONContext.Client)getClass().getClassLoader().loadClass(jacksonContextClientClassName).newInstance();
         Data data1 = new Data("data");
         Extra extra1 = new Extra("extra");
-        Map<String, Object> map1 = new HashMap<String, Object>();
+        Map<String, Object> map1 = new HashMap<>();
         map1.put("data", data1);
         map1.put("extra", extra1);
         String json = jsonContext.getGenerator().generate(map1);

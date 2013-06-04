@@ -25,7 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,9 +41,6 @@ import org.cometd.bayeux.server.ServerSession;
 import org.cometd.server.AbstractServerTransport;
 import org.cometd.server.BayeuxServerImpl;
 import org.cometd.server.ServerSessionImpl;
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationListener;
-import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -282,10 +283,9 @@ public abstract class LongPollingTransport extends HttpTransport
                                                 // session will decide atomically if we need to resume or not.
 
                                                 // Suspend and wait for messages
-                                                Continuation continuation = ContinuationSupport.getContinuation(request);
-                                                continuation.setTimeout(timeout);
-                                                continuation.suspend(response);
-                                                scheduler = new LongPollScheduler(session, continuation, reply, browserId);
+                                                AsyncContext asyncContext = request.startAsync();
+                                                asyncContext.setTimeout(timeout);
+                                                scheduler = new LongPollScheduler(session, asyncContext, reply, browserId);
                                                 request.setAttribute(LongPollScheduler.ATTRIBUTE, scheduler);
                                                 session.setScheduler(scheduler);
                                                 reply = null;
@@ -512,32 +512,35 @@ public abstract class LongPollingTransport extends HttpTransport
 
     protected abstract void finishWrite(PrintWriter writer, ServerSessionImpl session) throws IOException;
 
-    private class LongPollScheduler implements AbstractServerTransport.OneTimeScheduler, ContinuationListener
+    private class LongPollScheduler implements AbstractServerTransport.OneTimeScheduler, AsyncListener
     {
         private static final String ATTRIBUTE = "org.cometd.scheduler";
 
         private final ServerSessionImpl _session;
-        private final Continuation _continuation;
+        private final AsyncContext _asyncContext;
         private final ServerMessage.Mutable _reply;
-        private String _browserId;
+        private volatile String _browserId;
+        private volatile boolean _expired;
 
-        public LongPollScheduler(ServerSessionImpl session, Continuation continuation, ServerMessage.Mutable reply, String browserId)
+        public LongPollScheduler(ServerSessionImpl session, AsyncContext asyncContext, ServerMessage.Mutable reply, String browserId)
         {
             _session = session;
-            _continuation = continuation;
-            _continuation.addContinuationListener(this);
+            _asyncContext = asyncContext;
+            _asyncContext.addListener(this);
             _reply = reply;
             _browserId = browserId;
         }
 
         public void cancel()
         {
-            if (_continuation != null && _continuation.isSuspended() && !_continuation.isExpired())
+            if (_asyncContext.getRequest().isAsyncStarted() && !_expired)
             {
                 try
                 {
+                    _logger.debug("Duplicate /meta/connect, canceling {}", _reply);
                     decBrowserId();
-                    ((HttpServletResponse)_continuation.getServletResponse()).sendError(HttpServletResponse.SC_REQUEST_TIMEOUT);
+                    ServletResponse response = _asyncContext.getResponse();
+                    ((HttpServletResponse)response).sendError(HttpServletResponse.SC_REQUEST_TIMEOUT);
                 }
                 catch (IOException x)
                 {
@@ -546,7 +549,7 @@ public abstract class LongPollingTransport extends HttpTransport
 
                 try
                 {
-                    _continuation.complete();
+                    _asyncContext.complete();
                 }
                 catch (Exception x)
                 {
@@ -558,7 +561,7 @@ public abstract class LongPollingTransport extends HttpTransport
         public void schedule()
         {
             decBrowserId();
-            _continuation.resume();
+            dispatch();
         }
 
         public ServerSessionImpl getSession()
@@ -574,14 +577,42 @@ public abstract class LongPollingTransport extends HttpTransport
             return _reply;
         }
 
-        public void onComplete(Continuation continuation)
+        @Override
+        public void onStartAsync(AsyncEvent asyncEvent) throws IOException
+        {
+            _expired = false;
+        }
+
+        @Override
+        public void onComplete(AsyncEvent asyncEvent) throws IOException
         {
             decBrowserId();
         }
 
-        public void onTimeout(Continuation continuation)
+        @Override
+        public void onTimeout(AsyncEvent asyncEvent) throws IOException
         {
+            _expired = true;
             _session.setScheduler(null);
+            dispatch();
+        }
+
+        private void dispatch()
+        {
+            // We dispatch() when either we are suspended or timed out, instead of doing a write() + complete().
+            // If we have to write a message to 10 clients, and the first client write() blocks, then we would
+            // be delaying the other 9 clients.
+            // By always calling dispatch() we allow each write to be on its own thread, and it may block without
+            // affecting other writes.
+            // Only with Servlet 3.1 and standard asynchronous I/O we would be able to do write() + complete()
+            // without blocking, and it will be much more efficient because there is no thread dispatching and
+            // there will be more mechanical sympathy.
+            _asyncContext.dispatch();
+        }
+
+        @Override
+        public void onError(AsyncEvent asyncEvent) throws IOException
+        {
         }
 
         private void decBrowserId()

@@ -568,7 +568,7 @@ public class OortObserveCometTest extends OortTest
             public void cometJoined(Event event)
             {
                 bayeuxServerA.createIfAbsent(channelName);
-                bayeuxServerA.getChannel(channelName).publish(serviceA, data, null);
+                bayeuxServerA.getChannel(channelName).publish(serviceA, data);
                 joinedLatch.countDown();
             }
 
