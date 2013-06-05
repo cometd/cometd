@@ -8,6 +8,16 @@
     <name>CometD</name>
     <version>3.0.0-SNAPSHOT</version>
 
+    <repositories>
+        <repository>
+            <id>jetty.snapshots</id>
+            <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!--<jetty-version>9.0.3.v20130506</jetty-version>-->
