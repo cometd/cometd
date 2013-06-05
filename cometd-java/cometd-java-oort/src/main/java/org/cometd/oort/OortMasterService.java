@@ -46,6 +46,7 @@ package org.cometd.oort;
  */
 public abstract class OortMasterService<R, C> extends OortService<R, C>
 {
+    private final boolean master;
     private final OortObject<Boolean> nodes;
 
     /**
@@ -56,7 +57,16 @@ public abstract class OortMasterService<R, C> extends OortService<R, C>
     public OortMasterService(Oort oort, String name, boolean master)
     {
         super(oort, name);
-        nodes = new OortObject<Boolean>(oort, name, OortObjectFactories.forBoolean(master));
+        this.master = master;
+        this.nodes = new OortObject<Boolean>(oort, name, OortObjectFactories.forBoolean(master));
+    }
+
+    /**
+     * @return whether this node is the "master" node
+     */
+    public boolean isMaster()
+    {
+        return master;
     }
 
     /**
