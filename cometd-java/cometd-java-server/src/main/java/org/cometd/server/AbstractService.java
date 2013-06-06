@@ -17,6 +17,7 @@
 package org.cometd.server;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -237,6 +238,13 @@ public abstract class AbstractService
         if (!ServerSession.class.isAssignableFrom(method.getParameterTypes()[0]))
             throw new IllegalArgumentException("Method '" + methodName + "' does not have Session as first parameter");
 
+        if (!Modifier.isPublic(c.getModifiers())) {
+        	throw new IllegalArgumentException("Class " + c.getName() + " is not public.");
+        }
+        if (!Modifier.isPublic(method.getModifiers())) {
+        	throw new IllegalArgumentException("Method '" + methodName + "' is not public.");
+        }
+
         _bayeux.createIfAbsent(channelName);
         ServerChannel channel = _bayeux.getChannel(channelName);
         Invoker invoker = new Invoker(channelName, method);
@@ -353,27 +361,18 @@ public abstract class AbstractService
                 if (Message.class.isAssignableFrom(parameterTypes[messageParameterIndex]))
                     messageArgument = msg;
 
-                boolean accessible = method.isAccessible();
                 Object reply = null;
-                try
+                switch (method.getParameterTypes().length)
                 {
-                    method.setAccessible(true);
-                    switch (method.getParameterTypes().length)
-                    {
-                        case 2:
-                            reply = method.invoke(this, fromClient, messageArgument);
-                            break;
-                        case 3:
-                            reply = method.invoke(this, fromClient, messageArgument, id);
-                            break;
-                        case 4:
-                            reply = method.invoke(this, fromClient, channel, messageArgument, id);
-                            break;
-                    }
-                }
-                finally
-                {
-                    method.setAccessible(accessible);
+                    case 2:
+                        reply = method.invoke(this, fromClient, messageArgument);
+                        break;
+                    case 3:
+                        reply = method.invoke(this, fromClient, messageArgument, id);
+                        break;
+                    case 4:
+                        reply = method.invoke(this, fromClient, channel, messageArgument, id);
+                        break;
                 }
 
                 if (reply != null)
