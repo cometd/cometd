@@ -19,6 +19,7 @@ package org.cometd.annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -147,7 +148,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                                 boolean flip = false;
                                 try
                                 {
-                                    logger.debug("Configure channel {} with method {} on bean {}", new Object[]{channel, method, bean});
+                                    logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
                                     if (!method.isAccessible())
                                     {
                                         flip = true;
@@ -171,13 +172,13 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
                         if (initialized)
                         {
-                            logger.debug("Channel {} already initialized. Not called method {} on bean {}", new Object[]{channel, method, bean});
+                            logger.debug("Channel {} already initialized. Not called method {} on bean {}", channel, method, bean);
                         }
                         else
                         {
                             if (configure.configureIfExists())
                             {
-                                logger.debug("Configure channel {} with method {} on bean {}", new Object[]{channel, method, bean});
+                                logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
                                 init.configureChannel(bayeuxServer.getChannel(channel));
                             }
                             else if (configure.errorIfExists())
@@ -241,6 +242,9 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
         Service serviceAnnotation = klass.getAnnotation(Service.class);
         if (serviceAnnotation == null)
             return false;
+
+        if (!Modifier.isPublic(klass.getModifiers()))
+            throw new IllegalArgumentException("Service class '" + klass.getName() + "' must be public");
 
         LocalSession session = findOrCreateLocalSession(bean, serviceAnnotation.value());
         boolean result = processListener(bean, session);
@@ -335,7 +339,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                     {
                         setField(bean, field, value);
                         result = true;
-                        logger.debug("Injected {} to field {} on bean {}", new Object[]{value, field, bean});
+                        logger.debug("Injected {} to field {} on bean {}", value, field, bean);
                     }
                 }
             }
@@ -358,7 +362,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         {
                             invokeMethod(bean, method, value);
                             result = true;
-                            logger.debug("Injected {} to method {} on bean {}", new Object[]{value, method, bean});
+                            logger.debug("Injected {} to method {} on bean {}", value, method, bean);
                         }
                     }
                 }
@@ -378,6 +382,9 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                 Listener listener = method.getAnnotation(Listener.class);
                 if (listener != null)
                 {
+                    if (!Modifier.isPublic(method.getModifiers()))
+                        throw new IllegalArgumentException("Service method '" + method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+
                     String[] channels = listener.value();
                     for (String channel : channels)
                     {
@@ -395,7 +402,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         }
                         callbacks.add(listenerCallback);
                         result = true;
-                        logger.debug("Registered listener for channel {} to method {} on bean {}", new Object[]{channel, method, bean});
+                        logger.debug("Registered listener for channel {} to method {} on bean {}", channel, method, bean);
                     }
                 }
             }
@@ -433,6 +440,9 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                 Subscription subscription = method.getAnnotation(Subscription.class);
                 if (subscription != null)
                 {
+                    if (!Modifier.isPublic(method.getModifiers()))
+                        throw new IllegalArgumentException("Service method '" + method.getName() + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
+
                     String[] channels = subscription.value();
                     for (String channel : channels)
                     {
@@ -449,7 +459,7 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                         }
                         callbacks.add(subscriptionCallback);
                         result = true;
-                        logger.debug("Registered subscriber for channel {} to method {} on bean {}", new Object[]{channel, method, bean});
+                        logger.debug("Registered subscriber for channel {} to method {} on bean {}", channel, method, bean);
                     }
                 }
             }
@@ -498,24 +508,23 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
             if (from == localSession.getServerSession() && !receiveOwnPublishes)
                 return true;
 
-            boolean accessible = method.isAccessible();
             try
             {
-                method.setAccessible(true);
                 Object result = method.invoke(target, from, message);
                 return !Boolean.FALSE.equals(result);
             }
             catch (InvocationTargetException x)
             {
-                throw new RuntimeException(x.getCause());
+                Throwable cause = x.getCause();
+                if (cause instanceof RuntimeException)
+                    throw (RuntimeException)cause;
+                if (cause instanceof Error)
+                    throw (Error)cause;
+                throw new RuntimeException(cause);
             }
             catch (IllegalAccessException x)
             {
                 throw new RuntimeException(x);
-            }
-            finally
-            {
-                method.setAccessible(accessible);
             }
         }
     }
@@ -541,23 +550,22 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
 
         public void onMessage(ClientSessionChannel channel, Message message)
         {
-            boolean accessible = method.isAccessible();
             try
             {
-                method.setAccessible(true);
                 method.invoke(target, message);
             }
             catch (InvocationTargetException x)
             {
-                throw new RuntimeException(x.getCause());
+                Throwable cause = x.getCause();
+                if (cause instanceof RuntimeException)
+                    throw (RuntimeException)cause;
+                if (cause instanceof Error)
+                    throw (Error)cause;
+                throw new RuntimeException(cause);
             }
             catch (IllegalAccessException x)
             {
                 throw new RuntimeException(x);
-            }
-            finally
-            {
-                method.setAccessible(accessible);
             }
         }
     }

@@ -17,6 +17,7 @@
 package org.cometd.server;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -95,6 +96,8 @@ public abstract class AbstractService
         _session.handshake();
         if (maxThreads > 0)
             setThreadPool(new QueuedThreadPool(maxThreads));
+        if (!Modifier.isPublic(getClass().getModifiers()))
+            throw new IllegalArgumentException("Service class '" + getClass().getName() + "' must be public");
     }
 
     public BayeuxServer getBayeux()
@@ -195,7 +198,7 @@ public abstract class AbstractService
      * <p>Typically a service will be used to a channel in the <code>/service/**</code>
      * space which is not a broadcast channel.</p>
      * <p>Any object returned by a mapped method is delivered back to the
-     * client that sent the message and not broadcasted. If the method returns void or null,
+     * client that sent the message and not broadcast. If the method returns void or null,
      * then no response is sent.</p>
      * <p>A mapped method may also call {@link #send(ServerSession, String, Object, String)}
      * to deliver message(s) to specific clients and/or channels.</p>
@@ -209,10 +212,9 @@ public abstract class AbstractService
      */
     protected void addService(String channelName, String methodName)
     {
-        _logger.debug("Mapping {}#{} to {}", new Object[]{_name, methodName, channelName});
+        _logger.debug("Mapping {}#{} to {}", _name, methodName, channelName);
 
         Method method = null;
-
         Class<?> c = this.getClass();
         while (c != null && c != Object.class)
         {
@@ -222,7 +224,7 @@ public abstract class AbstractService
                 if (methodName.equals(methods[i].getName()))
                 {
                     if (method != null)
-                        throw new IllegalArgumentException("Multiple methods called '" + methodName + "'");
+                        throw new IllegalArgumentException("Multiple service methods called '" + methodName + "'");
                     method = methods[i];
                 }
             }
@@ -233,9 +235,11 @@ public abstract class AbstractService
             throw new NoSuchMethodError(methodName);
         int params = method.getParameterTypes().length;
         if (params < 2 || params > 4)
-            throw new IllegalArgumentException("Method '" + methodName + "' does not have 2, 3 or 4 parameters");
+            throw new IllegalArgumentException("Service method '" + methodName + "' does not have 2, 3 or 4 parameters");
         if (!ServerSession.class.isAssignableFrom(method.getParameterTypes()[0]))
-            throw new IllegalArgumentException("Method '" + methodName + "' does not have Session as first parameter");
+            throw new IllegalArgumentException("Service method '" + methodName + "' does not have " + ServerSession.class.getName() + " as first parameter");
+        if (!Modifier.isPublic(method.getModifiers()))
+            throw new IllegalArgumentException("Service method '" + methodName + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
 
         _bayeux.createIfAbsent(channelName);
         ServerChannel channel = _bayeux.getChannel(channelName);
@@ -320,11 +324,13 @@ public abstract class AbstractService
 
     private void invoke(final Method method, final ServerSession fromClient, final ServerMessage msg)
     {
-        _logger.debug("Invoking {}#{} from {} with {}", new Object[]{_name, method.getName(), fromClient, msg});
+        _logger.debug("Invoking {}#{} from {} with {}", _name, method.getName(), fromClient, msg);
 
         ThreadPool threadPool = getThreadPool();
         if (threadPool == null)
+        {
             doInvoke(method, fromClient, msg);
+        }
         else
         {
             threadPool.dispatch(new Runnable()
@@ -353,27 +359,18 @@ public abstract class AbstractService
                 if (Message.class.isAssignableFrom(parameterTypes[messageParameterIndex]))
                     messageArgument = msg;
 
-                boolean accessible = method.isAccessible();
                 Object reply = null;
-                try
+                switch (method.getParameterTypes().length)
                 {
-                    method.setAccessible(true);
-                    switch (method.getParameterTypes().length)
-                    {
-                        case 2:
-                            reply = method.invoke(this, fromClient, messageArgument);
-                            break;
-                        case 3:
-                            reply = method.invoke(this, fromClient, messageArgument, id);
-                            break;
-                        case 4:
-                            reply = method.invoke(this, fromClient, channel, messageArgument, id);
-                            break;
-                    }
-                }
-                finally
-                {
-                    method.setAccessible(accessible);
+                    case 2:
+                        reply = method.invoke(this, fromClient, messageArgument);
+                        break;
+                    case 3:
+                        reply = method.invoke(this, fromClient, messageArgument, id);
+                        break;
+                    case 4:
+                        reply = method.invoke(this, fromClient, channel, messageArgument, id);
+                        break;
                 }
 
                 if (reply != null)

@@ -45,41 +45,7 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
         final CountDownLatch subscribeLatch = new CountDownLatch(1);
         final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
-        new AbstractService(bayeux, "test")
-        {
-            {
-                addService(Channel.META_HANDSHAKE, "metaHandshake");
-                addService(Channel.META_CONNECT, "metaConnect");
-                addService(Channel.META_SUBSCRIBE, "metaSubscribe");
-                addService(Channel.META_UNSUBSCRIBE, "metaUnsubscribe");
-                addService(Channel.META_DISCONNECT, "metaDisconnect");
-            }
-
-            public void metaHandshake(ServerSession remote, Message message)
-            {
-                handshakeLatch.countDown();
-            }
-
-            public void metaConnect(ServerSession remote, Message message)
-            {
-                connectLatch.countDown();
-            }
-
-            public void metaSubscribe(ServerSession remote, Message message)
-            {
-                subscribeLatch.countDown();
-            }
-
-            public void metaUnsubscribe(ServerSession remote, Message message)
-            {
-                unsubscribeLatch.countDown();
-            }
-
-            public void metaDisconnect(ServerSession remote, Message message)
-            {
-                disconnectLatch.countDown();
-            }
-        };
+        new MetaChannelsService(bayeux, handshakeLatch, connectLatch, subscribeLatch, unsubscribeLatch, disconnectLatch);
 
         ContentExchange handshake = newBayeuxExchange("[{" +
                                                   "\"channel\": \"/meta/handshake\"," +
@@ -135,5 +101,54 @@ public class CometDServiceMetaNotificationsTest extends AbstractBayeuxClientServ
         Assert.assertTrue(disconnectLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
         Assert.assertEquals(200, disconnect.getResponseStatus());
+    }
+
+    public static class MetaChannelsService extends AbstractService
+    {
+        private final CountDownLatch handshakeLatch;
+        private final CountDownLatch connectLatch;
+        private final CountDownLatch subscribeLatch;
+        private final CountDownLatch unsubscribeLatch;
+        private final CountDownLatch disconnectLatch;
+
+        public MetaChannelsService(BayeuxServerImpl bayeux, CountDownLatch handshakeLatch, CountDownLatch connectLatch, CountDownLatch subscribeLatch, CountDownLatch unsubscribeLatch, CountDownLatch disconnectLatch)
+        {
+            super(bayeux, "test");
+            this.handshakeLatch = handshakeLatch;
+            this.connectLatch = connectLatch;
+            this.subscribeLatch = subscribeLatch;
+            this.unsubscribeLatch = unsubscribeLatch;
+            this.disconnectLatch = disconnectLatch;
+            addService(Channel.META_HANDSHAKE, "metaHandshake");
+            addService(Channel.META_CONNECT, "metaConnect");
+            addService(Channel.META_SUBSCRIBE, "metaSubscribe");
+            addService(Channel.META_UNSUBSCRIBE, "metaUnsubscribe");
+            addService(Channel.META_DISCONNECT, "metaDisconnect");
+        }
+
+        public void metaHandshake(ServerSession remote, Message message)
+        {
+            handshakeLatch.countDown();
+        }
+
+        public void metaConnect(ServerSession remote, Message message)
+        {
+            connectLatch.countDown();
+        }
+
+        public void metaSubscribe(ServerSession remote, Message message)
+        {
+            subscribeLatch.countDown();
+        }
+
+        public void metaUnsubscribe(ServerSession remote, Message message)
+        {
+            unsubscribeLatch.countDown();
+        }
+
+        public void metaDisconnect(ServerSession remote, Message message)
+        {
+            disconnectLatch.countDown();
+        }
     }
 }

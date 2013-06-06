@@ -56,17 +56,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
         });
 
         final AtomicBoolean serviced = new AtomicBoolean(false);
-        new AbstractService(bayeux, "test")
-        {
-            {
-                addService(Channel.META_SUBSCRIBE, "metaSubscribe");
-            }
-
-            public void metaSubscribe(ServerSession remote, Message message)
-            {
-                serviced.set(remote!=null && remote.isHandshook());
-            }
-        };
+        new MetaSubscribeService(bayeux, serviced);
 
         ContentExchange handshake = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -116,17 +106,7 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
     {
         final String channel = "/foo";
         final AtomicInteger publishes = new AtomicInteger();
-        new AbstractService(bayeux, "test")
-        {
-            {
-                addService(channel, "handle");
-            }
-
-            public void handle(ServerSession remote, Message message)
-            {
-                publishes.incrementAndGet();
-            }
-        };
+        new BroadcastChannelService(bayeux, channel, publishes);
 
         ContentExchange handshake = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -179,5 +159,39 @@ public class ConcurrentDisconnectSubscribePublishTest extends AbstractBayeuxClie
         Assert.assertEquals(1, publishes.get());
         // The response to the subscribe must be that the client is unknown
         Assert.assertTrue(disconnect.getResponseContent().contains("402::"));
+    }
+
+    public static class MetaSubscribeService extends AbstractService
+    {
+        private final AtomicBoolean serviced;
+
+        public MetaSubscribeService(BayeuxServerImpl bayeux, AtomicBoolean serviced)
+        {
+            super(bayeux, "test");
+            this.serviced = serviced;
+            addService(Channel.META_SUBSCRIBE, "metaSubscribe");
+        }
+
+        public void metaSubscribe(ServerSession remote, Message message)
+        {
+            serviced.set(remote!=null && remote.isHandshook());
+        }
+    }
+
+    public static class BroadcastChannelService extends AbstractService
+    {
+        private final AtomicInteger publishes;
+
+        public BroadcastChannelService(BayeuxServerImpl bayeux, String channel, AtomicInteger publishes)
+        {
+            super(bayeux, "test");
+            this.publishes = publishes;
+            addService(channel, "handle");
+        }
+
+        public void handle(ServerSession remote, Message message)
+        {
+            publishes.incrementAndGet();
+        }
     }
 }

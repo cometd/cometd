@@ -27,23 +27,7 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
         final String channel2 = "/bar";
         final AtomicReference<CountDownLatch> publishLatch1 = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
         final AtomicReference<CountDownLatch> publishLatch2 = new AtomicReference<CountDownLatch>(new CountDownLatch(1));
-        AbstractService service = new AbstractService(bayeux, "test_remove")
-        {
-            {
-                addService(channel1, "one");
-                addService(channel2, "two");
-            }
-
-            public void one(ServerSession remote, ServerMessage.Mutable message)
-            {
-                publishLatch1.get().countDown();
-            }
-
-            public void two(ServerSession remote, ServerMessage.Mutable message)
-            {
-                publishLatch2.get().countDown();
-            }
-        };
+        AbstractService service = new OneTwoService(bayeux, channel1, channel2, publishLatch1, publishLatch2);
 
         ContentExchange handshake = newBayeuxExchange("[{" +
                 "\"channel\": \"/meta/handshake\"," +
@@ -121,5 +105,30 @@ public class CometDServiceTest extends AbstractBayeuxClientServerTest
         httpClient.send(disconnect);
         Assert.assertEquals(HttpExchange.STATUS_COMPLETED, disconnect.waitForDone());
         Assert.assertEquals(200, disconnect.getResponseStatus());
+    }
+
+    public static class OneTwoService extends AbstractService
+    {
+        private final AtomicReference<CountDownLatch> publishLatch1;
+        private final AtomicReference<CountDownLatch> publishLatch2;
+
+        public OneTwoService(BayeuxServerImpl bayeux, String channel1, String channel2, AtomicReference<CountDownLatch> publishLatch1, AtomicReference<CountDownLatch> publishLatch2)
+        {
+            super(bayeux, "test_remove");
+            this.publishLatch1 = publishLatch1;
+            this.publishLatch2 = publishLatch2;
+            addService(channel1, "one");
+            addService(channel2, "two");
+        }
+
+        public void one(ServerSession remote, ServerMessage.Mutable message)
+        {
+            publishLatch1.get().countDown();
+        }
+
+        public void two(ServerSession remote, ServerMessage.Mutable message)
+        {
+            publishLatch2.get().countDown();
+        }
     }
 }
