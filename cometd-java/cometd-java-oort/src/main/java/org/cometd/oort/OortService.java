@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.server.BayeuxServer;
@@ -27,7 +28,9 @@ import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
+import org.cometd.server.BayeuxServerImpl;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.thread.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,14 +91,16 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class OortService<R, C> extends AbstractLifeCycle implements ServerChannel.MessageListener
 {
-    private static final String PARAMETER_FIELD = "oort.service.parameter";
+    private static final String CONTEXT_FIELD = "oort.service.context";
+    private static final String DATA_FIELD = "oort.service.data";
     private static final String ID_FIELD = "oort.service.id";
     private static final String OORT_URL_FIELD = "oort.service.url";
+    private static final String PARAMETER_FIELD = "oort.service.parameter";
     private static final String RESULT_FIELD = "oort.service.result";
-    private static final String DATA_FIELD = "oort.service.data";
+    private static final String TIMEOUT_FIELD = "oort.service.timeout";
 
-    private final AtomicLong actions = new AtomicLong();
-    private final ConcurrentMap<Long, C> callbacks = new ConcurrentHashMap<Long, C>();
+    private final AtomicLong contextIds = new AtomicLong();
+    private final ConcurrentMap<Long, Map<String, Object>> callbacks = new ConcurrentHashMap<Long, Map<String, Object>>();
     private final Oort oort;
     private final String name;
     private final String forwardChannelName;
@@ -103,6 +108,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     private final String resultChannelName;
     private final LocalSession session;
     protected final Logger logger;
+    private volatile long timeout = 5000;
 
     /**
      * Creates an {@link OortService} with the given name.
@@ -150,6 +156,22 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         return session;
     }
 
+    /**
+     * @return the timeout, in milliseconds, for an action to return a result (by default 5000 ms)
+     */
+    public long getTimeout()
+    {
+        return timeout;
+    }
+
+    /**
+     * @param timeout the timeout, in milliseconds, for an action to return a result
+     */
+    public void setTimeout(long timeout)
+    {
+        this.timeout = timeout;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
@@ -191,11 +213,14 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
      */
     protected boolean forward(String targetOortURL, Object parameter, C context)
     {
-        long actionId = actions.incrementAndGet();
-        if (context != null)
-            callbacks.put(actionId, context);
+        Map<String, Object> ctx = new HashMap<String, Object>(4);
+        long contextId = contextIds.incrementAndGet();
+        ctx.put(ID_FIELD, contextId);
+        ctx.put(CONTEXT_FIELD, context);
+        callbacks.put(contextId, ctx);
+
         Map<String, Object> data = new HashMap<String, Object>(3);
-        data.put(ID_FIELD, actionId);
+        data.put(ID_FIELD, contextId);
         data.put(PARAMETER_FIELD, parameter);
         String localOortURL = getOort().getURL();
         data.put(OORT_URL_FIELD, localOortURL);
@@ -203,6 +228,8 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         if (targetOortURL == null)
         {
             // Application does not know where the entity is, broadcast
+            logger.debug("Broadcasting action: {}", data);
+            startTimeout(ctx);
             oort.getBayeuxServer().getChannel(broadcastChannelName).publish(getLocalSession(), data, null);
             return true;
         }
@@ -212,6 +239,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
             {
                 // Local case
                 logger.debug("Forwarding action locally ({}): {}", localOortURL, data);
+                startTimeout(ctx);
                 onForwardMessage(data, false);
                 return true;
             }
@@ -222,6 +250,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
                 if (comet != null)
                 {
                     logger.debug("Forwarding action from {} to {}: {}", localOortURL, targetOortURL, data);
+                    startTimeout(ctx);
                     comet.getChannel(forwardChannelName).publish(data);
                     return true;
                 }
@@ -238,17 +267,14 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     {
         if (forwardChannelName.equals(message.getChannel()))
         {
-            logger.debug("Received forwarded action {}", message);
             onForwardMessage(message.getDataAsMap(), false);
         }
         else if (broadcastChannelName.equals(message.getChannel()))
         {
-            logger.debug("Received broadcast action {}", message);
             onForwardMessage(message.getDataAsMap(), true);
         }
         else if (resultChannelName.equals(message.getChannel()))
         {
-            logger.debug("Received forwarded action result {}", message);
             onResultMessage(message.getDataAsMap());
         }
         return true;
@@ -256,6 +282,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
 
     protected void onForwardMessage(Map<String, Object> data, boolean broadcast)
     {
+        logger.debug("Received {} action {}", broadcast ? "broadcast" : "forwarded", data);
         Map<String, Object> resultData = new HashMap<String, Object>(3);
         resultData.put(ID_FIELD, data.get(ID_FIELD));
         resultData.put(OORT_URL_FIELD, getOort().getURL());
@@ -263,7 +290,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         try
         {
             Result<R> result = onForward(new Request(oort.getURL(), data.get(PARAMETER_FIELD), oortURL));
-            logger.debug("Forwarded action {}", result);
+            logger.debug("Forwarded action result {}", result);
             if (result.succeeded())
             {
                 resultData.put(RESULT_FIELD, true);
@@ -279,6 +306,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
                 if (broadcast)
                 {
                     // Ignore and therefore return
+                    logger.debug("Ignoring broadcast action result {}", result);
                     return;
                 }
                 else
@@ -327,12 +355,17 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     protected void onResultMessage(Map<String, Object> data)
     {
         long actionId = ((Number)data.get(ID_FIELD)).longValue();
-        C context = callbacks.remove(actionId);
+        Map<String, Object> ctx = callbacks.remove(actionId);
+        logger.debug("Action result {} with context {}", data, ctx);
         // Atomically remove the callback, so we guarantee one notification only.
         // Multiple notifications may happen when broadcasting the forward request
         // and nodes mistakenly return multiple results.
-        if (context != null)
+        if (ctx != null)
         {
+            cancelTimeout(ctx);
+
+            @SuppressWarnings("unchecked")
+            C context = (C)ctx.get(CONTEXT_FIELD);
             boolean success = (Boolean)data.get(RESULT_FIELD);
             if (success)
             {
@@ -348,9 +381,29 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         }
     }
 
+    private void startTimeout(Map<String, Object> ctx)
+    {
+        long contextId = (Long)ctx.get(ID_FIELD);
+        Timeout.Task timeoutTask = new TimeoutTask(contextId);
+        ctx.put(TIMEOUT_FIELD, timeoutTask);
+        ((BayeuxServerImpl)oort.getBayeuxServer()).startTimeout(timeoutTask, getTimeout());
+    }
+
+    private void cancelTimeout(Map<String, Object> ctx)
+    {
+        Timeout.Task timeoutTask = (Timeout.Task)ctx.get(TIMEOUT_FIELD);
+        if (timeoutTask != null)
+            ((BayeuxServerImpl)oort.getBayeuxServer()).cancelTimeout(timeoutTask);
+    }
+
     /**
      * Subclasses must implement this method, that runs on the <em>owner node</em>,
      * to implement the action functionality.
+     * <p />
+     * The result to return is {@link Result#success(Object)} or {@link Result#failure(Object)}
+     * if the implementation of this method was able to find the entity on which the action
+     * functionality was meant to be applied, or {@link Result#ignore(Object)} if the entity
+     * was not found.
      *
      * @param request the request containing the parameter passed from {@link #forward(String, Object, Object)}
      * @return the result containing the data that will be passed to {@link #onForwardSucceeded(Object, Object)}
@@ -570,6 +623,26 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         public ServerMessage getServerMessage()
         {
             return message;
+        }
+    }
+
+    private class TimeoutTask extends Timeout.Task
+    {
+        private final long contextId;
+
+        private TimeoutTask(long contextId)
+        {
+            this.contextId = contextId;
+        }
+
+        @Override
+        public void expired()
+        {
+            Map<String, Object> data = new HashMap<String, Object>(3);
+            data.put(ID_FIELD, contextId);
+            data.put(RESULT_FIELD, false);
+            data.put(DATA_FIELD, new TimeoutException());
+            onResultMessage(data);
         }
     }
 }

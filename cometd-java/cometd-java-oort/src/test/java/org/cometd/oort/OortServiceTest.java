@@ -18,6 +18,7 @@ package org.cometd.oort;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -174,6 +175,104 @@ public class OortServiceTest extends AbstractOortObjectTest
         service1.stop();
     }
 
+    @Test
+    public void testActionBroadcastTimeout() throws Exception
+    {
+        long timeout = 1000;
+        CountDownLatch latch1 = new CountDownLatch(1);
+        ExpireService service1 = new ExpireService(oort1, latch1)
+        {
+            @Override
+            protected Result<Void> onForward(Request request)
+            {
+                return Result.ignore(null);
+            }
+        };
+        service1.setTimeout(timeout);
+        CountDownLatch latch2 = new CountDownLatch(1);
+        ExpireService service2 = new ExpireService(oort2, latch2)
+        {
+            @Override
+            protected Result<Void> onForward(Request request)
+            {
+                return Result.ignore(null);
+            }
+        };
+        service2.setTimeout(timeout);
+        String channelName = service1.getBroadcastChannelName();
+        CometSubscriptionListener listener1 = new CometSubscriptionListener(channelName, 1);
+        oort1.getBayeuxServer().addListener(listener1);
+        CometSubscriptionListener listener2 = new CometSubscriptionListener(channelName, 1);
+        oort2.getBayeuxServer().addListener(listener2);
+        service1.start();
+        // Wait for node1 to be subscribed on node2
+        Assert.assertTrue(listener2.await(5, TimeUnit.SECONDS));
+        service2.start();
+        // Wait for node2 to be subscribed on node1
+        Assert.assertTrue(listener1.await(5, TimeUnit.SECONDS));
+
+        Assert.assertTrue(service1.perform(null));
+        Assert.assertTrue(latch1.await(2 * timeout, TimeUnit.MILLISECONDS));
+
+        Assert.assertTrue(service2.perform(null));
+        Assert.assertTrue(latch2.await(2 * timeout, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testActionForwardTimeout() throws Exception
+    {
+        final long timeout = 1000;
+        CountDownLatch latch1 = new CountDownLatch(1);
+        ExpireService service1 = new ExpireService(oort1, latch1)
+        {
+            @Override
+            protected Result<Void> onForward(Request request)
+            {
+                try
+                {
+                    TimeUnit.MILLISECONDS.sleep(2 * timeout);
+                    return Result.success(null);
+                }
+                catch (InterruptedException x)
+                {
+                    return Result.failure(null);
+                }
+            }
+        };
+        service1.setTimeout(timeout);
+        service1.start();
+        CountDownLatch latch2 = new CountDownLatch(1);
+        ExpireService service2 = new ExpireService(oort2, latch2)
+        {
+            @Override
+            protected Result<Void> onForward(Request request)
+            {
+                try
+                {
+                    TimeUnit.MILLISECONDS.sleep(2 * timeout);
+                    return Result.success(null);
+                }
+                catch (InterruptedException x)
+                {
+                    return Result.failure(null);
+                }
+            }
+        };
+        service2.setTimeout(timeout);
+        service2.start();
+
+        Assert.assertTrue(service1.perform(oort2.getURL()));
+        Assert.assertTrue(latch1.await(3 * timeout, TimeUnit.MILLISECONDS));
+
+        TimeUnit.MILLISECONDS.sleep(2 * timeout);
+
+        Assert.assertTrue(service2.perform(oort2.getURL()));
+        Assert.assertTrue(latch2.await(3 * timeout, TimeUnit.MILLISECONDS));
+
+        // Allow last perform to complete without exceptions
+        TimeUnit.MILLISECONDS.sleep(2 * timeout);
+    }
+
     private static class Service extends OortService<Boolean, String>
     {
         private final CountDownLatch latch;
@@ -277,6 +376,45 @@ public class OortServiceTest extends AbstractOortObjectTest
             Assert.assertSame(this.context, context);
             this.failure = failure;
             latch.countDown();
+        }
+    }
+
+    private abstract static class ExpireService extends OortService<Void, Void>
+    {
+        private final CountDownLatch latch;
+
+        private ExpireService(Oort oort, CountDownLatch latch)
+        {
+            super(oort, "test");
+            this.latch = latch;
+        }
+
+        @Override
+        protected String getLoggerName()
+        {
+            return OortService.class.getName() + "." + Integer.toHexString(System.identityHashCode(this));
+        }
+
+        public String getBroadcastChannelName()
+        {
+            return "/oort/service/" + getName();
+        }
+
+        public boolean perform(String oortURL)
+        {
+            return forward(oortURL, null, null);
+        }
+
+        @Override
+        protected void onForwardSucceeded(Void result, Void context)
+        {
+        }
+
+        @Override
+        protected void onForwardFailed(Object failure, Void context)
+        {
+            if (failure instanceof TimeoutException)
+                latch.countDown();
         }
     }
 }
