@@ -625,15 +625,22 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 channel = getChannel(channelName);
                 if (channel == null)
                 {
-                    Authorizer.Result creationResult = isCreationAuthorized(session, message, channelName);
-                    if (creationResult instanceof Authorizer.Result.Denied)
+                    if (session == null)
                     {
-                        String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
-                        error(reply, "403:" + denyReason + ":create denied");
+                        unknownSession(reply);
                     }
                     else
                     {
-                        channel = createChannelIfAbsent(channelName).getReference();
+                        Authorizer.Result creationResult = isCreationAuthorized(session, message, channelName);
+                        if (creationResult instanceof Authorizer.Result.Denied)
+                        {
+                            String denyReason = ((Authorizer.Result.Denied)creationResult).getReason();
+                            error(reply, "403:" + denyReason + ":create denied");
+                        }
+                        else
+                        {
+                            channel = createChannelIfAbsent(channelName).getReference();
+                        }
                     }
                 }
 
