@@ -348,11 +348,17 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         return strategy.merge(getInfos());
     }
 
+    /**
+     * @param listener the listener to add
+     */
     public void addListener(Listener<T> listener)
     {
         listeners.add(listener);
     }
 
+    /**
+     * @param listener the listener to remove
+     */
     public void removeListener(Listener<T> listener)
     {
         listeners.remove(listener);
