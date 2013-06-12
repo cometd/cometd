@@ -343,7 +343,7 @@ public class ChannelId
 
     /**
      * <p>Helper method to test if the string form of a {@code ChannelId}
-     * represents a {@link #isService()} service} {@code ChannelId}.</p>
+     * represents a {@link #isService() service} {@code ChannelId}.</p>
      *
      * @param channelId the channel id to test
      * @return whether the given channel id is a service channel id
@@ -355,7 +355,7 @@ public class ChannelId
 
     /**
      * <p>Helper method to test if the string form of a {@code ChannelId}
-     * represents a {@link #isBroadcast()} broadcast} {@code ChannelId}.</p>
+     * represents a {@link #isBroadcast() broadcast} {@code ChannelId}.</p>
      *
      * @param channelId the channel id to test
      * @return whether the given channel id is a broadcast channel id
