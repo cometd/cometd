@@ -24,8 +24,8 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.common.MarkedReference;
 
 /**
  * A specialized oort object whose entity is a {@link List}.

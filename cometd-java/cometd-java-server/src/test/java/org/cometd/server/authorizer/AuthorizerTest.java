@@ -42,7 +42,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
     @Test
     public void testAuthorizersOnSlashStarStar() throws Exception
     {
-        bayeux.createIfAbsent("/**", new ConfigurableServerChannel.Initializer()
+        bayeux.createChannelIfAbsent("/**", new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -106,7 +106,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
     public void testIgnoringAuthorizerDenies() throws Exception
     {
         String channelName = "/test";
-        bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -197,7 +197,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
     @Test
     public void testDenyAuthorizerDenies() throws Exception
     {
-        bayeux.createIfAbsent("/test/*", new ConfigurableServerChannel.Initializer()
+        bayeux.createChannelIfAbsent("/test/*", new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -205,7 +205,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
             }
         });
         String channelName = "/test/denied";
-        bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -265,7 +265,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
     @Test
     public void testAddRemoveAuthorizer() throws Exception
     {
-        bayeux.createIfAbsent("/test/*", new ConfigurableServerChannel.Initializer()
+        bayeux.createChannelIfAbsent("/test/*", new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -273,7 +273,7 @@ public class AuthorizerTest extends AbstractBayeuxClientServerTest
             }
         });
         String channelName = "/test/granted";
-        bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(final ConfigurableServerChannel channel)
             {

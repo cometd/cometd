@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -242,8 +243,8 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
 
         String channelName = "/chat/msg";
-        bayeux.createIfAbsent(channelName);
-        bayeux.getChannel(channelName).addListener(new ServerChannel.MessageListener()
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName);
+        channel.getReference().addListener(new ServerChannel.MessageListener()
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
             {
@@ -275,8 +276,8 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         final BlockingArrayQueue<String> results = new BlockingArrayQueue<String>();
 
         String channelName = "/chat/msg";
-        bayeux.createIfAbsent(channelName);
-        bayeux.getChannel(channelName).addListener(new ServerChannel.MessageListener()
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName);
+        channel.getReference().addListener(new ServerChannel.MessageListener()
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
             {

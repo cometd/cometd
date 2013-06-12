@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.cometd.common;
+package org.cometd.bayeux;
 
 import java.util.concurrent.atomic.AtomicMarkableReference;
 
 /**
  * Immutable, non-volatile, non-atomic version of {@link AtomicMarkableReference}.
+ *
  * @param <T> the reference type
  */
 public class MarkedReference<T>

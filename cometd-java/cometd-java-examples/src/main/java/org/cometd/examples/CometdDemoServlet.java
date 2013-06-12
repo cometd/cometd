@@ -62,7 +62,7 @@ public class CometdDemoServlet extends GenericServlet
 
         // Deny unless granted
 
-        bayeux.createIfAbsent("/**",new ServerChannel.Initializer()
+        bayeux.createChannelIfAbsent("/**",new ServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -78,13 +78,7 @@ public class CometdDemoServlet extends GenericServlet
         processor.process(new Monitor());
         // processor.process(new ChatService());
 
-        bayeux.createIfAbsent("/foo/bar/baz",new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.setPersistent(true);
-            }
-        });
+        bayeux.createChannelIfAbsent("/foo/bar/baz", new ConfigurableServerChannel.Initializer.Persistent());
 
         logger.debug(bayeux.dump());
     }

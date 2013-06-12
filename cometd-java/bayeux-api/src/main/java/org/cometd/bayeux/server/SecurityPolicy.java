@@ -62,7 +62,7 @@ public interface SecurityPolicy
      * {@link ClientSessionChannel#subscribe(ClientSessionChannel.MessageListener)} or
      * {@link ClientSessionChannel#publish(Object)} are therefore subject to this check.
      * <p />
-     * Direct calls to {@link BayeuxServer#createIfAbsent(String, ConfigurableServerChannel.Initializer...)}
+     * Direct calls to {@link BayeuxServer#createChannelIfAbsent(String, ConfigurableServerChannel.Initializer...)}
      * are not subject to this check.
      *
      * @param server the {@link BayeuxServer} object

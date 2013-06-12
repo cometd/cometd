@@ -121,7 +121,7 @@ public class Seti extends AbstractLifeCycle
         _listeners.clear();
 
         BayeuxServer bayeux = _oort.getBayeuxServer();
-        bayeux.createIfAbsent("/seti/**", new ConfigurableServerChannel.Initializer()
+        bayeux.createChannelIfAbsent("/seti/**", new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -130,13 +130,7 @@ public class Seti extends AbstractLifeCycle
         });
 
         String channel = "/seti/" + _setiId;
-        bayeux.createIfAbsent(channel, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.setPersistent(true);
-            }
-        });
+        bayeux.createChannelIfAbsent(channel, new ConfigurableServerChannel.Initializer.Persistent());
         _oort.observeChannel(channel);
 
         _session.handshake();
@@ -149,13 +143,7 @@ public class Seti extends AbstractLifeCycle
             }
         });
 
-        bayeux.createIfAbsent(SETI_ALL_CHANNEL, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.setPersistent(true);
-            }
-        });
+        bayeux.createChannelIfAbsent(SETI_ALL_CHANNEL, new ConfigurableServerChannel.Initializer.Persistent());
         _oort.observeChannel(SETI_ALL_CHANNEL);
         _session.getChannel(SETI_ALL_CHANNEL).subscribe(new ClientSessionChannel.MessageListener()
         {

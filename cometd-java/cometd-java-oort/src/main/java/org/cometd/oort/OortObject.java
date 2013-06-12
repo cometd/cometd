@@ -29,13 +29,13 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
-import org.cometd.common.MarkedReference;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -162,8 +162,7 @@ public class OortObject<T> extends AbstractLifeCycle implements ConfigurableServ
         sender.handshake();
         oort.addCometListener(this);
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
-        bayeuxServer.createIfAbsent(channelName, this);
-        ServerChannel channel = bayeuxServer.getChannel(channelName);
+        ServerChannel channel = bayeuxServer.createChannelIfAbsent(channelName, this).getReference();
         channel.addListener(messageListener);
         oort.observeChannel(channelName);
 

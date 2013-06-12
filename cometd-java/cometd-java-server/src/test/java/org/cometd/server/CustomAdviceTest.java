@@ -58,7 +58,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
 
         String channelName = "/connect";
         final long newTimeout = timeout / 2;
-        bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -144,7 +144,7 @@ public class CustomAdviceTest extends AbstractBayeuxClientServerTest
 
         String channelName = "/interval";
         final long newInterval = 1000;
-        bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {

@@ -34,6 +34,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.ChannelId;
+import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.Authorizer;
 import org.cometd.bayeux.server.BayeuxContext;
@@ -49,7 +50,6 @@ import org.cometd.bayeux.server.ServerMessage.Mutable;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.bayeux.server.ServerTransport;
 import org.cometd.common.JSONContext;
-import org.cometd.common.MarkedReference;
 import org.cometd.server.transport.JSONPTransport;
 import org.cometd.server.transport.JSONTransport;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -351,12 +351,13 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         return _policy;
     }
 
+    @Deprecated
     public boolean createIfAbsent(String channelName, Initializer... initializers)
     {
         return createChannelIfAbsent(channelName, initializers).isMarked();
     }
 
-    private MarkedReference<ServerChannelImpl> createChannelIfAbsent(String channelName, Initializer... initializers)
+    public MarkedReference<ServerChannel> createChannelIfAbsent(String channelName, Initializer... initializers)
     {
         boolean initialized = false;
         ServerChannelImpl channel = _channels.get(channelName);
@@ -365,7 +366,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
             ChannelId channelId = new ChannelId(channelName);
 
             // Be sure the parent is there
-            ServerChannelImpl parentChannel = null;
+            ServerChannel parentChannel = null;
             if (channelId.depth() > 1)
             {
                 String parentName = channelId.getParent();
@@ -375,7 +376,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
                 parentChannel = createChannelIfAbsent(parentName).getReference();
             }
 
-            ServerChannelImpl candidate = new ServerChannelImpl(this, channelId, parentChannel);
+            ServerChannelImpl candidate = new ServerChannelImpl(this, channelId, (ServerChannelImpl)parentChannel);
             channel = _channels.putIfAbsent(channelName, candidate);
             if (channel == null)
             {
@@ -420,7 +421,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
         // Another thread may add this channel concurrently, so wait until it is initialized
         channel.waitForInitialized();
-        return new MarkedReference<ServerChannelImpl>(channel, initialized);
+        return new MarkedReference<ServerChannel>(channel, initialized);
     }
 
     private void notifyConfigureChannel(Initializer listener, ServerChannel channel)
@@ -1313,7 +1314,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
 
             for (String subscription : subscriptions)
             {
-                ServerChannelImpl channel = (ServerChannelImpl)getChannel(subscription);
+                ServerChannel channel = getChannel(subscription);
                 if (channel == null)
                 {
                     Authorizer.Result creationResult = isCreationAuthorized(from, message, subscription);

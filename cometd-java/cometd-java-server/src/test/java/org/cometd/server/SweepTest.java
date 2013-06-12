@@ -40,7 +40,7 @@ public class SweepTest
             {
                 char letter = (char)('a' + j);
                 String name = builder.append("/").append(letter).append(i).toString();
-                bayeuxServer.createIfAbsent(name);
+                bayeuxServer.createChannelIfAbsent(name);
             }
         }
 
@@ -69,7 +69,7 @@ public class SweepTest
             {
                 char letter = (char)('a' + j);
                 String name = builder.append("/").append(letter).append(i).toString();
-                bayeuxServer.createIfAbsent(name);
+                bayeuxServer.createChannelIfAbsent(name);
             }
         }
 

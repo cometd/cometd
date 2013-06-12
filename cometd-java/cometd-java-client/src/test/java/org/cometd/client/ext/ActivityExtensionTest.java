@@ -49,13 +49,7 @@ public class ActivityExtensionTest extends ClientServerTest
         Map<String,String> options = new HashMap<String, String>();
         options.put("timeout", String.valueOf(timeout));
         startServer(options);
-        bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.setPersistent(true);
-            }
-        });
+        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer.Persistent());
         scheduler = Executors.newSingleThreadScheduledExecutor();
     }
 

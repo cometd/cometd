@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
@@ -46,7 +47,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         }});
 
         String channelName = "/testLazy";
-        bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -91,7 +92,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         begin.set(System.nanoTime());
         // Cannot publish from the client, as there will always be the "meta"
         // publish response to send, so the lazy message will be sent with it.
-        bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>(), null);
+        channel.getReference().publish(null, new HashMap<String, Object>(), null);
 
         Assert.assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
 
@@ -109,7 +110,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         }});
 
         String channelName = "/testLazy";
-        bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -155,7 +156,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         begin.set(System.nanoTime());
         // Cannot publish from the client, as there will always be the "meta"
         // publish response to send, so the lazy message will be sent with it.
-        bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>(), null);
+        channel.getReference().publish(null, new HashMap<String, Object>(), null);
 
         Assert.assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
 
@@ -173,7 +174,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         }});
 
         String shortLazyChannelName = "/shortLazy";
-        bayeux.createIfAbsent(shortLazyChannelName, new ConfigurableServerChannel.Initializer()
+        MarkedReference<ServerChannel> shortLazyChannel = bayeux.createChannelIfAbsent(shortLazyChannelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -183,7 +184,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         });
 
         String longLazyChannelName = "/longLazy";
-        bayeux.createIfAbsent(longLazyChannelName, new ConfigurableServerChannel.Initializer()
+        MarkedReference<ServerChannel> longLazyChannel = bayeux.createChannelIfAbsent(longLazyChannelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -233,8 +234,8 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         // publish response to send, so the lazy message will be sent with it.
         // Send first the long lazy and then the short lazy, to verify that
         // timeouts are properly respected.
-        bayeux.getChannel(longLazyChannelName).publish(null, new HashMap<String, Object>(), null);
-        bayeux.getChannel(shortLazyChannelName).publish(null, new HashMap<String, Object>(), null);
+        longLazyChannel.getReference().publish(null, new HashMap<String, Object>(), null);
+        shortLazyChannel.getReference().publish(null, new HashMap<String, Object>(), null);
 
         Assert.assertTrue(latch.await(2 * globalLazyTimeout, TimeUnit.MILLISECONDS));
 
@@ -255,7 +256,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         }});
 
         String channelName = "/lazyDeliverData";
-        bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -310,7 +311,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         // Send first the long lazy and then the short lazy, to verify that
         // timeouts are properly respected.
         begin.set(System.nanoTime());
-        bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>(), null);
+        channel.getReference().publish(null, new HashMap<String, Object>(), null);
 
         Assert.assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
 
@@ -327,7 +328,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         }});
 
         String channelName = "/lazyDeliverMessage";
-        bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -388,7 +389,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         // Send first the long lazy and then the short lazy, to verify that
         // timeouts are properly respected.
         begin.set(System.nanoTime());
-        bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>(), null);
+        channel.getReference().publish(null, new HashMap<String, Object>(), null);
 
         Assert.assertTrue(latch.await(globalLazyTimeout * 2, TimeUnit.MILLISECONDS));
 
@@ -405,7 +406,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         }});
 
         final String channelName = "/testQueueLazy";
-        bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+        final MarkedReference<ServerChannel> serverChannel = bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -447,7 +448,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
                 {
                     // Add a lazy message on the queue while the /meta/connect is on the client
                     begin.set(System.nanoTime());
-                    bayeux.getChannel(channelName).publish(null, new HashMap<String, Object>(), null);
+                    serverChannel.getReference().publish(null, new HashMap<String, Object>(), null);
                 }
             }
         });
@@ -481,7 +482,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
 
         String parentChannelName = "/foo";
         final CountDownLatch latch = new CountDownLatch(1);
-        bayeux.createIfAbsent(parentChannelName, new ConfigurableServerChannel.Initializer()
+        bayeux.createChannelIfAbsent(parentChannelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -491,7 +492,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         });
 
         String childChannelName = parentChannelName + "/bar";
-        bayeux.createIfAbsent(childChannelName, new ConfigurableServerChannel.Initializer()
+        MarkedReference<ServerChannel> childChannel = bayeux.createChannelIfAbsent(childChannelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -507,7 +508,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
                 });
             }
         });
-        bayeux.getChannel(childChannelName).publish(null, "data", null);
+        childChannel.getReference().publish(null, "data", null);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -524,7 +525,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         String parentChannelName = "/foo";
         String wildChannelName = parentChannelName + "/*";
         final CountDownLatch latch = new CountDownLatch(1);
-        bayeux.createIfAbsent(wildChannelName, new ConfigurableServerChannel.Initializer()
+        bayeux.createChannelIfAbsent(wildChannelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -534,7 +535,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         });
 
         String childChannelName = parentChannelName + "/bar";
-        bayeux.createIfAbsent(childChannelName, new ConfigurableServerChannel.Initializer()
+        MarkedReference<ServerChannel> childChannel = bayeux.createChannelIfAbsent(childChannelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -550,7 +551,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
                 });
             }
         });
-        bayeux.getChannel(childChannelName).publish(null, "data", null);
+        childChannel.getReference().publish(null, "data", null);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }

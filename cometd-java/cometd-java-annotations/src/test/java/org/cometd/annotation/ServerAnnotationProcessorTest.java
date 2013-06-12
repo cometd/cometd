@@ -29,6 +29,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
+import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ConfigurableServerChannel;
@@ -328,13 +329,13 @@ public class ServerAnnotationProcessorTest
             int count = counter.incrementAndGet();
 
             String channelName = "/foo/own";
-            bayeuxServer.createIfAbsent(channelName);
+            MarkedReference<ServerChannel> channel = bayeuxServer.createChannelIfAbsent(channelName);
 
             // This callback should be called only once, triggered by the client's publish
             // However if the Listener.receiveOwnPublishes attribute is not taken in account
             // this callback is called again, and we want to test that this does not happen.
             if (count == 1)
-                bayeuxServer.getChannel(channelName).publish(serverSession, new HashMap(), null);
+                channel.getReference().publish(serverSession, new HashMap(), null);
         }
     }
 
@@ -376,9 +377,9 @@ public class ServerAnnotationProcessorTest
         {
             counter.incrementAndGet();
             String channelName = "/foo/own";
-            bayeuxServer.createIfAbsent(channelName);
+            MarkedReference<ServerChannel> channel = bayeuxServer.createChannelIfAbsent(channelName);
             if (!channelName.equals(message.getChannel()))
-                bayeuxServer.getChannel(channelName).publish(serverSession, new HashMap(), null);
+                channel.getReference().publish(serverSession, new HashMap(), null);
         }
     }
 

@@ -168,7 +168,7 @@ public class Oort extends AggregateLifeCycle
         }
 
         _bayeux.addExtension(_oortExtension);
-        _bayeux.createIfAbsent(OORT_CLOUD_CHANNEL, new ConfigurableServerChannel.Initializer()
+        _bayeux.createChannelIfAbsent(OORT_CLOUD_CHANNEL, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
@@ -176,7 +176,7 @@ public class Oort extends AggregateLifeCycle
                 channel.addListener(_cloudListener);
             }
         });
-        _bayeux.createIfAbsent(OORT_SERVICE_CHANNEL, new ConfigurableServerChannel.Initializer()
+        _bayeux.createChannelIfAbsent(OORT_SERVICE_CHANNEL, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {

@@ -177,12 +177,9 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     {
         session.handshake();
         BayeuxServer bayeuxServer = oort.getBayeuxServer();
-        bayeuxServer.createIfAbsent(forwardChannelName);
-        bayeuxServer.getChannel(forwardChannelName).addListener(this);
-        bayeuxServer.createIfAbsent(broadcastChannelName);
-        bayeuxServer.getChannel(broadcastChannelName).addListener(this);
-        bayeuxServer.createIfAbsent(resultChannelName);
-        bayeuxServer.getChannel(resultChannelName).addListener(this);
+        bayeuxServer.createChannelIfAbsent(forwardChannelName).getReference().addListener(this);
+        bayeuxServer.createChannelIfAbsent(broadcastChannelName).getReference().addListener(this);
+        bayeuxServer.createChannelIfAbsent(resultChannelName).getReference().addListener(this);
         oort.observeChannel(broadcastChannelName);
         logger.debug("Started {}", this);
     }

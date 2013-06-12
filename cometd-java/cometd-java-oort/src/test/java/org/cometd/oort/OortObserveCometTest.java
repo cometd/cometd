@@ -566,8 +566,7 @@ public class OortObserveCometTest extends OortTest
         {
             public void cometJoined(Event event)
             {
-                bayeuxServerA.createIfAbsent(channelName);
-                bayeuxServerA.getChannel(channelName).publish(serviceA, data, null);
+                bayeuxServerA.createChannelIfAbsent(channelName).getReference().publish(serviceA, data, null);
                 joinedLatch.countDown();
             }
 
@@ -582,9 +581,8 @@ public class OortObserveCometTest extends OortTest
         oortB.observeChannel(channelName);
 
         BayeuxServer bayeuxServerB = oortB.getBayeuxServer();
-        bayeuxServerB.createIfAbsent(channelName);
         final CountDownLatch latch = new CountDownLatch(1);
-        bayeuxServerB.getChannel(channelName).addListener(new ServerChannel.MessageListener()
+        bayeuxServerB.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener()
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {

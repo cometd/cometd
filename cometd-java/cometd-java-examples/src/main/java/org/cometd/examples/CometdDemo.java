@@ -34,23 +34,16 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
-/* ------------------------------------------------------------ */
 /**
  * Main class for cometd demo.
  */
 public class CometdDemo
 {
-    /* ------------------------------------------------------------ */
-    /**
-     * @param args
-     */
     public static void main(String[] args) throws Exception
     {
         int port = args.length==0?8080:Integer.parseInt(args[0]);
 
-        String base="..";
-
-        // Manually contruct context to avoid hassles with webapp classloaders for now.
+        // Manually construct context to avoid hassles with webapp classloaders for now.
         Server server = new Server();
         QueuedThreadPool qtp = new QueuedThreadPool();
         qtp.setMinThreads(5);
@@ -89,23 +82,18 @@ public class CometdDemo
 
         ServletContextHandler context = new ServletContextHandler(contexts,"/",ServletContextHandler.SESSIONS);
         context.setBaseResource(
-                new ResourceCollection(new Resource[]
-                {
+                new ResourceCollection(
                         Resource.newResource("../../cometd-demo/src/main/webapp/"),
-
                         Resource.newResource("../../cometd-javascript/common/src/main/webapp/"),
                         Resource.newResource("../../cometd-javascript/jquery/src/main/webapp/"),
                         Resource.newResource("../../cometd-javascript/examples-jquery/src/main/webapp/"),
-
                         Resource.newResource("../../cometd-javascript/dojo/src/main/webapp/"),
                         Resource.newResource("../../cometd-javascript/examples-dojo/src/main/webapp/"),
-
                         // access unpacked toolkits
                         Resource.newResource("../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-dojo/"),
                         Resource.newResource("../../cometd-demo/target/war/work/org.cometd.javascript/cometd-javascript-jquery/")
-
-                }));
-
+                )
+        );
 
         ServletHolder dftServlet = context.addServlet(DefaultServlet.class, "/");
         dftServlet.setInitOrder(1);
@@ -140,7 +128,7 @@ public class CometdDemo
                 @Override
                 public boolean rcv(ServerSession from, Mutable message)
                 {
-                    if (message.getChannel().startsWith("/chat/") && message.getData()!=null && message.getData().toString().indexOf("lazy")>=0)
+                    if (message.getChannel().startsWith("/chat/") && message.getData()!=null && message.getData().toString().contains("lazy"))
                         (message).setLazy(true);
                     return true;
                 }
@@ -151,8 +139,7 @@ public class CometdDemo
         if (Boolean.getBoolean("LAZYCHAT"))
         {
             String channelName = "/chat/demo";
-            bayeux.createIfAbsent(channelName);
-            final ServerChannel chat_demo = bayeux.getChannel(channelName);
+            final ServerChannel chat_demo = bayeux.createChannelIfAbsent(channelName).getReference();
             chat_demo.setLazy(true);
             chat_demo.setPersistent(true);
         }

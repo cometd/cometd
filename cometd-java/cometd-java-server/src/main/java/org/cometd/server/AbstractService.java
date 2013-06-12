@@ -241,8 +241,7 @@ public abstract class AbstractService
         if (!Modifier.isPublic(method.getModifiers()))
             throw new IllegalArgumentException("Service method '" + methodName + "' in class '" + method.getDeclaringClass().getName() + "' must be public");
 
-        _bayeux.createIfAbsent(channelName);
-        ServerChannel channel = _bayeux.getChannel(channelName);
+        ServerChannel channel = _bayeux.createChannelIfAbsent(channelName).getReference();
         Invoker invoker = new Invoker(channelName, method);
         invokers.put(methodName, invoker);
         channel.addListener(invoker);
