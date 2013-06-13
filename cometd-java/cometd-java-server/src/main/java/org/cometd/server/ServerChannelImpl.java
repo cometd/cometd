@@ -69,7 +69,7 @@ public class ServerChannelImpl implements ServerChannel
      * Waits for the channel to be {@link #initialized() initialized}, to avoid
      * that channels are returned to applications in a half-initialized state,
      * in particular before {@link Initializer}s have run.
-     * @see BayeuxServerImpl#createIfAbsent(String, Initializer...)
+     * @see BayeuxServerImpl#createChannelIfAbsent(String, Initializer...)
      */
     void waitForInitialized()
     {

@@ -56,21 +56,20 @@ public class MessageFlowControlTest extends ClientServerTest
         testMessageFlowControlWithDeQueueListener(true, maxLazyTimeout);
     }
 
-    public void testMessageFlowControlWithDeQueueListener(boolean lazyChannel, long maxLazyTimeout) throws Exception
+    public void testMessageFlowControlWithDeQueueListener(final boolean lazyChannel, long maxLazyTimeout) throws Exception
     {
         bayeux.addExtension(new TimestampExtension("yyyyMMddHHmmss"));
 
         final String channelName = "/test";
-        if (lazyChannel)
+        bayeux.createChannelIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
         {
-            bayeux.createIfAbsent(channelName, new ConfigurableServerChannel.Initializer()
+            public void configureChannel(ConfigurableServerChannel channel)
             {
-                public void configureChannel(ConfigurableServerChannel channel)
-                {
+                channel.setPersistent(true);
+                if (lazyChannel)
                     channel.setLazy(true);
-                }
-            });
-        }
+            }
+        });
 
         int totalMessages = 8;
         final CountDownLatch queuedMessages = new CountDownLatch(totalMessages);

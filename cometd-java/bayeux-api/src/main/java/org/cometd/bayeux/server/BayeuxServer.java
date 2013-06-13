@@ -19,6 +19,7 @@ package org.cometd.bayeux.server;
 import java.util.List;
 
 import org.cometd.bayeux.Bayeux;
+import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Transport;
 import org.cometd.bayeux.client.ClientSession;
 import org.cometd.bayeux.client.ClientSessionChannel;
@@ -88,7 +89,7 @@ public interface BayeuxServer extends Bayeux
      * @param channelId the channel identifier
      * @return a {@link ServerChannel} with the given {@code channelId},
      * or null if no such channel exists
-     * @see #createIfAbsent(String, org.cometd.bayeux.server.ConfigurableServerChannel.Initializer...)
+     * @see #createChannelIfAbsent(String, ConfigurableServerChannel.Initializer...)
      */
     ServerChannel getChannel(String channelId);
 
@@ -98,20 +99,30 @@ public interface BayeuxServer extends Bayeux
     List<ServerChannel> getChannels();
 
     /**
-     * <p>Creates a {@link ServerChannel} and initializes it atomically.</p>
+     * @deprecated use {@link #createChannelIfAbsent(String, ConfigurableServerChannel.Initializer...)}
+     */
+    @Deprecated
+    boolean createIfAbsent(String channelId, ConfigurableServerChannel.Initializer... initializers);
+
+    /**
+     * <p>Creates a {@link ServerChannel} and initializes it atomically if the
+     * channel does not exist, or returns it if it already exists.</p>
      * <p>This method can be used instead of adding a {@link ChannelListener}
-     * to atomically initialize a channel. The initializer will be called before
-     * any other thread can access the new channel instance.</p>
-     * <p>The createIfAbsent method should be used when a channel needs to be
+     * to atomically initialize a channel. The {@code initializers} will be
+     * called before any other thread can access the new channel instance.</p>
+     * <p>Method {@link #createChannelIfAbsent(String, ConfigurableServerChannel.Initializer...)}
+     * should be used when a channel needs to be
      * initialized (e.g. by adding listeners) before any publish or subscribes
      * can occur on the channel, or before any other thread may concurrently
      * create the same channel.</p>
      *
-     * @param channelId the channel identifier
+     * @param channelName the channel name
      * @param initializers the initializers invoked to configure the channel
-     * @return true if the channel was initialized, false otherwise
+     * @return a {@link MarkedReference} whose reference is the channel, and
+     * the mark signals whether the channel has been created because it
+     * did not exist before.
      */
-    boolean createIfAbsent(String channelId, ConfigurableServerChannel.Initializer... initializers);
+    MarkedReference<ServerChannel> createChannelIfAbsent(String channelName, ConfigurableServerChannel.Initializer... initializers);
 
     /**
      * @param clientId the {@link ServerSession} identifier

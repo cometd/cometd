@@ -58,14 +58,14 @@ public class AuctionChatService extends AbstractService
             throw new RuntimeException("Missing " + Seti.SETI_ATTRIBUTE + " from " + ServletContext.class.getSimpleName() + "; " +
                     "is " + SetiServlet.class.getSimpleName() + " declared in web.xml ?");
 
-        getBayeux().createIfAbsent("/auction/chat/**", new ConfigurableServerChannel.Initializer()
+        getBayeux().createChannelIfAbsent("/auction/chat/**", new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {
                 channel.addAuthorizer(GrantAuthorizer.GRANT_ALL);
             }
         });
-        getBayeux().createIfAbsent("/service/auction/chat", new ConfigurableServerChannel.Initializer()
+        getBayeux().createChannelIfAbsent("/service/auction/chat", new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {

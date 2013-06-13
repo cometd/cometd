@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Channel;
+import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -100,8 +101,8 @@ public class MessagesAfterFailedHandshakeTest extends ClientServerTest
     {
         final CountDownLatch serverLatch = new CountDownLatch(1);
         final String channelName = "/test_subscribe_after_failed_handshake";
-        bayeux.createIfAbsent(channelName);
-        bayeux.getChannel(channelName).addListener(new ServerChannel.MessageListener()
+        MarkedReference<ServerChannel> channel = bayeux.createChannelIfAbsent(channelName);
+        channel.getReference().addListener(new ServerChannel.MessageListener()
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {

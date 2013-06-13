@@ -30,6 +30,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
+import org.cometd.bayeux.MarkedReference;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
@@ -168,9 +169,9 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                             }
                         };
 
-                        boolean initialized = bayeuxServer.createIfAbsent(channel, init);
+                        MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channel, init);
 
-                        if (initialized)
+                        if (initializedChannel.isMarked())
                         {
                             logger.debug("Channel {} already initialized. Not called method {} on bean {}", channel, method, bean);
                         }
@@ -179,10 +180,12 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                             if (configure.configureIfExists())
                             {
                                 logger.debug("Configure channel {} with method {} on bean {}", channel, method, bean);
-                                init.configureChannel(bayeuxServer.getChannel(channel));
+                                init.configureChannel(initializedChannel.getReference());
                             }
                             else if (configure.errorIfExists())
+                            {
                                 throw new IllegalStateException("Channel already configured: " + channel);
+                            }
                         }
                     }
                 }
@@ -388,9 +391,9 @@ public class ServerAnnotationProcessor extends AnnotationProcessor
                     String[] channels = listener.value();
                     for (String channel : channels)
                     {
-                        bayeuxServer.createIfAbsent(channel);
+                        MarkedReference<ServerChannel> initializedChannel = bayeuxServer.createChannelIfAbsent(channel);
                         ListenerCallback listenerCallback = new ListenerCallback(localSession, bean, method, channel, listener.receiveOwnPublishes());
-                        bayeuxServer.getChannel(channel).addListener(listenerCallback);
+                        initializedChannel.getReference().addListener(listenerCallback);
 
                         List<ListenerCallback> callbacks = listeners.get(bean);
                         if (callbacks == null)

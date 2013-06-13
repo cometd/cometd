@@ -50,8 +50,7 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
 
         final String data = new String(new byte[]{(byte)0xC3, (byte)0xA9}, "UTF-8");
         String channelName = "/test_charset";
-        bayeux.createIfAbsent(channelName);
-        bayeux.getChannel(channelName).addListener(new ServerChannel.MessageListener()
+        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener()
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {
@@ -99,8 +98,7 @@ public class CharsetTest extends AbstractBayeuxClientServerTest
         // Lowercase greek letter alpha
         final String data = new String(new byte[]{(byte)0xE1}, encoding);
         String channelName = "/test_charset";
-        bayeux.createIfAbsent(channelName);
-        bayeux.getChannel(channelName).addListener(new ServerChannel.MessageListener()
+        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener()
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {

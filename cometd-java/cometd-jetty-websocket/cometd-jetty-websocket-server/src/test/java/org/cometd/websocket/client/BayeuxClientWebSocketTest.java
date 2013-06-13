@@ -32,7 +32,6 @@ import org.cometd.bayeux.Channel;
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
 import org.cometd.bayeux.server.BayeuxServer;
-import org.cometd.bayeux.server.ConfigurableServerChannel;
 import org.cometd.bayeux.server.LocalSession;
 import org.cometd.bayeux.server.ServerChannel;
 import org.cometd.bayeux.server.ServerMessage;
@@ -51,6 +50,8 @@ import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.cometd.bayeux.server.ConfigurableServerChannel.Initializer.Persistent;
 
 public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
 {
@@ -399,14 +400,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         publishLatch.set(new CountDownLatch(1));
         connectLatch.set(new CountDownLatch(1));
         String serviceChannelName = "/service/test";
-        bayeux.createIfAbsent(serviceChannelName, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.setPersistent(true);
-            }
-        });
-        bayeux.getChannel(serviceChannelName).addListener(new ServerChannel.MessageListener()
+        final ServerChannel serviceChannel = bayeux.createChannelIfAbsent(serviceChannelName, new Persistent()).getReference();
+        serviceChannel.addListener(new ServerChannel.MessageListener()
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {
@@ -482,14 +477,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         publishLatch.set(new CountDownLatch(1));
         connectLatch.set(new CountDownLatch(1));
         String serviceChannelName = "/service/test";
-        bayeux.createIfAbsent(serviceChannelName, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.setPersistent(true);
-            }
-        });
-        bayeux.getChannel(serviceChannelName).addListener(new ServerChannel.MessageListener()
+        ServerChannel serviceChannel = bayeux.createChannelIfAbsent(serviceChannelName, new Persistent()).getReference();
+        serviceChannel.addListener(new ServerChannel.MessageListener()
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {
@@ -571,14 +560,8 @@ public class BayeuxClientWebSocketTest extends ClientServerWebSocketTest
         publishLatch.set(new CountDownLatch(1));
         connectLatch.set(new CountDownLatch(1));
         String serviceChannelName = "/service/test";
-        bayeux.createIfAbsent(serviceChannelName, new ConfigurableServerChannel.Initializer()
-        {
-            public void configureChannel(ConfigurableServerChannel channel)
-            {
-                channel.setPersistent(true);
-            }
-        });
-        bayeux.getChannel(serviceChannelName).addListener(new ServerChannel.MessageListener()
+        final ServerChannel serviceChannel = bayeux.createChannelIfAbsent(serviceChannelName, new Persistent()).getReference();
+        serviceChannel.addListener(new ServerChannel.MessageListener()
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, ServerMessage.Mutable message)
             {
