@@ -66,7 +66,7 @@ public class OortLong extends AbstractLifeCycle
      */
     public OortLong(Oort oort, String name, long initial)
     {
-        value = new OortObject<Long>(oort, name, OortObjectFactories.forLong(initial));
+        value = new OortObject<>(oort, name, OortObjectFactories.forLong(initial));
     }
 
     @Override

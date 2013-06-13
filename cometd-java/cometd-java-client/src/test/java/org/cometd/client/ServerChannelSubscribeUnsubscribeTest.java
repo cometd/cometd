@@ -160,7 +160,7 @@ public class ServerChannelSubscribeUnsubscribeTest extends ClientServerTest
         final String systemChannelName = "/service/system";
 
         final CountDownLatch unsubscribeLatch = new CountDownLatch(1);
-        final AtomicReference<ServerSession> sessionRef = new AtomicReference<ServerSession>();
+        final AtomicReference<ServerSession> sessionRef = new AtomicReference<>();
         new SystemChannelService2(bayeux, systemChannelName, actionField, unsubscribeAction, testChannelName, sessionRef, unsubscribeLatch);
 
         BayeuxClient client = newBayeuxClient();

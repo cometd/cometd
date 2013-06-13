@@ -95,7 +95,7 @@ public interface SecurityPolicy
      * Both remote and local sessions are subject to this check when performing publishes via
      * {@link ClientSessionChannel#publish(Object)}.
      * <p />
-     * {@link ServerChannel#publish(Session, Object, String)} is not subject to this check.
+     * {@link ServerChannel#publish(Session, Object)} is not subject to this check.
      *
      * @param server the {@link BayeuxServer} object
      * @param session the client sending the message

@@ -58,7 +58,7 @@ public abstract class OortMasterService<R, C> extends OortService<R, C>
     {
         super(oort, name);
         this.master = master;
-        this.nodes = new OortObject<Boolean>(oort, name, OortObjectFactories.forBoolean(master));
+        this.nodes = new OortObject<>(oort, name, OortObjectFactories.forBoolean(master));
     }
 
     /**

@@ -227,8 +227,8 @@ public class ServerAnnotationProcessorTest
     @Test
     public void testListenUnlisten() throws Exception
     {
-        final AtomicReference<ServerSession> sessionRef = new AtomicReference<ServerSession>();
-        final AtomicReference<ServerMessage> messageRef = new AtomicReference<ServerMessage>();
+        final AtomicReference<ServerSession> sessionRef = new AtomicReference<>();
+        final AtomicReference<ServerMessage> messageRef = new AtomicReference<>();
 
         ListenUnlistenService s = new ListenUnlistenService(sessionRef, messageRef);
         boolean processed = processor.process(s);
@@ -334,7 +334,7 @@ public class ServerAnnotationProcessorTest
             // However if the Listener.receiveOwnPublishes attribute is not taken in account
             // this callback is called again, and we want to test that this does not happen.
             if (count == 1)
-                bayeuxServer.getChannel(channelName).publish(serverSession, new HashMap(), null);
+                bayeuxServer.getChannel(channelName).publish(serverSession, new HashMap<>());
         }
     }
 
@@ -378,14 +378,14 @@ public class ServerAnnotationProcessorTest
             String channelName = "/foo/own";
             bayeuxServer.createIfAbsent(channelName);
             if (!channelName.equals(message.getChannel()))
-                bayeuxServer.getChannel(channelName).publish(serverSession, new HashMap(), null);
+                bayeuxServer.getChannel(channelName).publish(serverSession, new HashMap());
         }
     }
 
     @Test
     public void testSubscribeUnsubscribe() throws Exception
     {
-        final AtomicReference<Message> messageRef = new AtomicReference<Message>();
+        final AtomicReference<Message> messageRef = new AtomicReference<>();
 
         SubscribeUnsubscribeService s = new SubscribeUnsubscribeService(messageRef);
         boolean processed = processor.process(s);
@@ -928,7 +928,7 @@ public class ServerAnnotationProcessorTest
     @Test
     public void testConfigureDefault() throws Exception
     {
-        final Set<String> configured = new HashSet<String>();
+        final Set<String> configured = new HashSet<>();
 
         ConfigureDefaultService s = new ConfigureDefaultService(configured);
         boolean processed = processor.process(s);
@@ -975,7 +975,7 @@ public class ServerAnnotationProcessorTest
     @Test
     public void testConfigureNoErrorIfExists() throws Exception
     {
-        final List<String> configured = new ArrayList<String>();
+        final List<String> configured = new ArrayList<>();
 
         ConfigureNoErrorIfExistsService s1 = new ConfigureNoErrorIfExistsService(configured);
         boolean processed = processor.process(s1);
@@ -1008,7 +1008,7 @@ public class ServerAnnotationProcessorTest
     @Test
     public void testConfigureConfigureIfExists() throws Exception
     {
-        final List<String> configured = new ArrayList<String>();
+        final List<String> configured = new ArrayList<>();
 
         ConfigureConfigureIfExistsService s1 = new ConfigureConfigureIfExistsService(configured);
         boolean processed = processor.process(s1);

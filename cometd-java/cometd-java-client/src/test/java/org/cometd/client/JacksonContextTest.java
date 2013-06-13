@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.cometd.bayeux.Message;
 import org.cometd.bayeux.client.ClientSessionChannel;
+import org.cometd.bayeux.server.BayeuxServer;
 import org.cometd.bayeux.server.ServerMessage;
 import org.cometd.bayeux.server.ServerSession;
 import org.cometd.client.transport.ClientTransport;
@@ -162,11 +163,11 @@ public class JacksonContextTest extends ClientServerTest
         {
             // Republish
             Map<String, Object> data = message.getDataAsMap();
-            Map<String, Object> republishData = new HashMap<String, Object>(data);
+            Map<String, Object> republishData = new HashMap<>(data);
             republishData.put("republish", true);
-            getBayeux().getChannel(channelName).publish(getServerSession(), republishData, null);
+            getBayeux().getChannel(channelName).publish(getServerSession(), republishData);
             // Deliver
-            Map<String, Object> deliverData = new HashMap<String, Object>(data);
+            Map<String, Object> deliverData = new HashMap<>(data);
             deliverData.put("deliver", true);
             session.deliver(getServerSession(), channelName, deliverData, null);
         }

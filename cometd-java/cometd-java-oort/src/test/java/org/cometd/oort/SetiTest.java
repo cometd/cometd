@@ -547,7 +547,7 @@ public class SetiTest extends OortTest
 
         // Login user1
         final CountDownLatch loginLatch1 = new CountDownLatch(1);
-        Map<String, Object> login1 = new HashMap<String, Object>();
+        Map<String, Object> login1 = new HashMap<>();
         String userId1 = "user1";
         login1.put("user", userId1);
         ClientSessionChannel loginChannel1 = client1.getChannel("/service/login");
@@ -563,7 +563,7 @@ public class SetiTest extends OortTest
 
         // Login user2
         final CountDownLatch loginLatch2 = new CountDownLatch(1);
-        Map<String, Object> login2 = new HashMap<String, Object>();
+        Map<String, Object> login2 = new HashMap<>();
         String userId2 = "user2";
         login2.put("user", userId2);
         ClientSessionChannel loginChannel2 = client2.getChannel("/service/login");
@@ -579,7 +579,7 @@ public class SetiTest extends OortTest
 
         // Logout user2
         final CountDownLatch logoutLatch2 = new CountDownLatch(1);
-        Map<String, Object> logout2 = new HashMap<String, Object>();
+        Map<String, Object> logout2 = new HashMap<>();
         logout2.put("user", userId2);
         ClientSessionChannel logoutChannel2 = client2.getChannel("/service/logout");
         logoutChannel2.publish(logout2, new ClientSessionChannel.MessageListener()
@@ -594,7 +594,7 @@ public class SetiTest extends OortTest
 
         // Logout user1
         final CountDownLatch logoutLatch1 = new CountDownLatch(1);
-        Map<String, Object> logout1 = new HashMap<String, Object>();
+        Map<String, Object> logout1 = new HashMap<>();
         logout1.put("user", userId1);
         ClientSessionChannel logoutChannel1 = client1.getChannel("/service/logout");
         logoutChannel1.publish(logout1, new ClientSessionChannel.MessageListener()

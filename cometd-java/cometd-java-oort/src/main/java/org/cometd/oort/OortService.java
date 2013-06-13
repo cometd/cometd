@@ -100,7 +100,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     private static final String TIMEOUT_FIELD = "oort.service.timeout";
 
     private final AtomicLong contextIds = new AtomicLong();
-    private final ConcurrentMap<Long, Map<String, Object>> callbacks = new ConcurrentHashMap<Long, Map<String, Object>>();
+    private final ConcurrentMap<Long, Map<String, Object>> callbacks = new ConcurrentHashMap<>();
     private final Oort oort;
     private final String name;
     private final String forwardChannelName;
@@ -213,7 +213,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
      */
     protected boolean forward(String targetOortURL, Object parameter, C context)
     {
-        Map<String, Object> ctx = new HashMap<String, Object>(4);
+        Map<String, Object> ctx = new HashMap<>(4);
         long contextId = contextIds.incrementAndGet();
         ctx.put(ID_FIELD, contextId);
         ctx.put(CONTEXT_FIELD, context);
@@ -230,7 +230,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
             // Application does not know where the entity is, broadcast
             logger.debug("Broadcasting action: {}", data);
             startTimeout(ctx);
-            oort.getBayeuxServer().getChannel(broadcastChannelName).publish(getLocalSession(), data, null);
+            oort.getBayeuxServer().getChannel(broadcastChannelName).publish(getLocalSession(), data);
             return true;
         }
         else
@@ -283,7 +283,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
     protected void onForwardMessage(Map<String, Object> data, boolean broadcast)
     {
         logger.debug("Received {} action {}", broadcast ? "broadcast" : "forwarded", data);
-        Map<String, Object> resultData = new HashMap<String, Object>(3);
+        Map<String, Object> resultData = new HashMap<>(3);
         resultData.put(ID_FIELD, data.get(ID_FIELD));
         resultData.put(OORT_URL_FIELD, getOort().getURL());
         String oortURL = (String)data.get(OORT_URL_FIELD);
@@ -638,7 +638,7 @@ public abstract class OortService<R, C> extends AbstractLifeCycle implements Ser
         @Override
         public void expired()
         {
-            Map<String, Object> data = new HashMap<String, Object>(3);
+            Map<String, Object> data = new HashMap<>(3);
             data.put(ID_FIELD, contextId);
             data.put(RESULT_FIELD, false);
             data.put(DATA_FIELD, new TimeoutException());
