@@ -242,8 +242,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         final BlockingArrayQueue<String> results = new BlockingArrayQueue<>();
 
         String channelName = "/chat/msg";
-        bayeux.createIfAbsent(channelName);
-        bayeux.getChannel(channelName).addListener(new ServerChannel.MessageListener()
+        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener()
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
             {
@@ -275,8 +274,7 @@ public class BayeuxClientTest extends ClientServerWebSocketTest
         final BlockingArrayQueue<String> results = new BlockingArrayQueue<>();
 
         String channelName = "/chat/msg";
-        bayeux.createIfAbsent(channelName);
-        bayeux.getChannel(channelName).addListener(new ServerChannel.MessageListener()
+        bayeux.createChannelIfAbsent(channelName).getReference().addListener(new ServerChannel.MessageListener()
         {
             public boolean onMessage(ServerSession from, ServerChannel channel, Mutable message)
             {

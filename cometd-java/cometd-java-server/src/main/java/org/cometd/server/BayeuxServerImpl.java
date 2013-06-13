@@ -427,7 +427,7 @@ public class BayeuxServerImpl extends AbstractLifeCycle implements BayeuxServer
         }
         // Another thread may add this channel concurrently, so wait until it is initialized
         channel.waitForInitialized();
-        return new MarkedReference<>(channel, initialized);
+        return new MarkedReference<ServerChannel>(channel, initialized);
     }
 
     private void notifyConfigureChannel(Initializer listener, ServerChannel channel)

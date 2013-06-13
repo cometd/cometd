@@ -525,7 +525,7 @@ public class LazyChannelAndMessageTest extends ClientServerTest
         String parentChannelName = "/foo";
         String wildChannelName = parentChannelName + "/*";
         final CountDownLatch latch = new CountDownLatch(1);
-        bayeux.createIfAbsent(wildChannelName, new ConfigurableServerChannel.Initializer()
+        bayeux.createChannelIfAbsent(wildChannelName, new ConfigurableServerChannel.Initializer()
         {
             public void configureChannel(ConfigurableServerChannel channel)
             {

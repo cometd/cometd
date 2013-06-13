@@ -121,8 +121,7 @@ public class CometDDemo
         if (Boolean.getBoolean("LAZYCHAT"))
         {
             String channelName = "/chat/demo";
-            bayeux.createIfAbsent(channelName);
-            final ServerChannel chat_demo = bayeux.getChannel(channelName);
+            final ServerChannel chat_demo = bayeux.createChannelIfAbsent(channelName).getReference();
             chat_demo.setLazy(true);
             chat_demo.setPersistent(true);
         }
